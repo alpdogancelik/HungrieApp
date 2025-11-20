@@ -161,7 +161,7 @@ const Search = () => {
     const getQuantity = (id: string) =>
         items.filter((entry) => entry.id === id).reduce((total, entry) => total + entry.quantity, 0);
 
-const handleQuantityChange = (item: MenuItem, nextValue: number) => {
+    const handleQuantityChange = (item: MenuItem, nextValue: number) => {
         const id = String(item.$id ?? item.id);
         const current = getQuantity(id);
         if (nextValue === current) return;
@@ -248,7 +248,7 @@ const handleQuantityChange = (item: MenuItem, nextValue: number) => {
         <SafeAreaView style={styles.safeArea}>
             <FlatList
                 data={listData}
-                keyExtractor={(item, index) => (item.type === "categories" ? "categories" : String((item.item as MenuItem).$id ?? (item.item as MenuItem).id ?? index))}
+                keyExtractor={(item, index) => (item.type === "categories" ? "categories" : String(('item' in item ? (item.item as MenuItem).$id ?? (item.item as MenuItem).id : null) ?? index))}
                 renderItem={renderItem}
                 stickyHeaderIndices={[1]}
                 contentContainerStyle={styles.listContent}
@@ -319,6 +319,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 12,
         backgroundColor: "#F8FAFC",
+    },
+    categoryListContent: {
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        gap: 12,
     },
     categorySkeleton: {
         width: 80,

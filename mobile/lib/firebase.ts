@@ -30,13 +30,20 @@ const firebaseConfig = {
     measurementId: env("EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID") || "",
 };
 
-const firebaseConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId);
+// Firebase is intentionally disabled so the app can run as an Appwrite-only demo.
+// Set this to false (and provide EXPO_PUBLIC_FIREBASE_* values) to re-enable.
+const firebaseDisabledForDemo = true;
+
+const firebaseConfigured =
+    !firebaseDisabledForDemo && Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId);
 const useMockData = env("EXPO_PUBLIC_USE_MOCK_DATA") === "true";
 
 let firebaseApp: FirebaseApp | undefined;
 
 if (firebaseConfigured) {
     firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
+} else if (firebaseDisabledForDemo && __DEV__) {
+    console.info("[Firebase] Disabled for Appwrite demo. Flip firebaseDisabledForDemo to re-enable.");
 } else if (__DEV__) {
     console.warn("[Firebase] Missing config. Populate EXPO_PUBLIC_FIREBASE_* values in app.json.");
 }

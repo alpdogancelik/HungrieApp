@@ -3,13 +3,11 @@ module.exports = function (api) {
     return {
         presets: [
             ["babel-preset-expo", { jsxImportSource: "nativewind" }],
-            "nativewind/babel"
+            "nativewind/babel",
         ],
         plugins: [
-            // Required by expo-router for improved performance & animations
-            ["react-native-worklets/plugin"],
-            // Reanimated must come last per its docs
-            require.resolve("react-native-reanimated/plugin")
-        ]
+            // Keep only Reanimated to avoid duplicate worklet plugins during web bundling.
+            require.resolve("react-native-reanimated/plugin"),
+        ],
     };
 };

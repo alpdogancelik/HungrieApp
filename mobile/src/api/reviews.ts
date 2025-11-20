@@ -2,8 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { nanoid } from "nanoid/non-secure";
 import type { Review } from "@/src/domain/types";
 
-const REVIEWS_KEY = "@munchies/reviews";
-const REVIEW_QUEUE_KEY = "@munchies/review-queue";
+const REVIEWS_KEY = "@hungrie/reviews";
+const REVIEW_QUEUE_KEY = "@hungrie/review-queue";
 
 type PendingReview = Omit<Review, "id" | "createdAt"> & { tempId: string };
 

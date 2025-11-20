@@ -1,6 +1,6 @@
-# MunchiesOrder (Expo)
+# Hungrie (Expo)
 
-munchies order application / eating app for all campus residents.  
+Hungrie order application / eating app for all campus residents.  
 The repo now focuses exclusively on the Expo React Native client; the older Vite/Express stack was removed to keep things lean and mobile-first.
 
 ## Structure

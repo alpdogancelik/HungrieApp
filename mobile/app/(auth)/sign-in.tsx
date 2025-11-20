@@ -39,7 +39,7 @@ const SignIn = () => {
     return (
         <View className="gap-10 bg-white rounded-3xl p-6 mt-6 shadow-lg shadow-primary/10">
             <View className="items-center gap-2">
-                <Text className="text-4xl font-quicksand-bold text-dark-100 tracking-[8px]">MUNCHIES</Text>
+                <Text className="text-4xl font-quicksand-bold text-dark-100 tracking-[8px]">HUNGRIE</Text>
                 <Text className="body-medium text-dark-60 text-center">
                     Late-night cravings? Sign in and get fed in minutes.
                 </Text>

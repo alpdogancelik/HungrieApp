@@ -30,7 +30,7 @@ type ThemeContextValue = {
     hydrated: boolean;
 };
 
-const THEME_CACHE_KEY = "munchies_theme_variant";
+const THEME_CACHE_KEY = "hungrie_theme_variant";
 
 const buildTheme = (variant: ThemeVariant): ThemeDefinition => ({
     colors: variant === "dark" ? darkColors : lightColors,

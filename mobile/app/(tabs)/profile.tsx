@@ -35,7 +35,7 @@ const Profile = () => {
     const [emailDraft, setEmailDraft] = useState(user?.email ?? "");
     const { t } = useTranslation();
 
-    const initials = (user?.name || "Munchies User")
+    const initials = (user?.name || "Hungrie User")
         .split(" ")
         .map((part) => part[0])
         .join("")
@@ -104,7 +104,7 @@ const Profile = () => {
                                 <Text className="h3-bold text-white">{initials}</Text>
                             </View>
                             <View className="flex-1">
-                                <Text className="text-white text-2xl font-quicksand-bold">{user?.name || "Munchies Student"}</Text>
+                                <Text className="text-white text-2xl font-quicksand-bold">{user?.name || "Hungrie Student"}</Text>
                                 <Text className="body-medium text-white/70">{user?.email || "student@campus.edu"}</Text>
                             </View>
                         </View>

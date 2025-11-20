@@ -1,4 +1,4 @@
-﻿# Munchies Mobile - Expo Router + Appwrite
+# Hungrie Mobile - Expo Router + Appwrite
 
 This app mirrors the `food_ordering-main` architecture: Expo Router, NativeWind, Zustand, and Appwrite helpers, packaged as a pure Expo project.
 
@@ -7,7 +7,7 @@ This app mirrors the `food_ordering-main` architecture: Expo Router, NativeWind,
 1. Install dependencies:
 
 ```powershell
-cd "c:\Users\alpdo\OneDrive\Desktop\MunchiesOrder (3)\MunchiesOrder\mobile"
+cd "c:\Users\alpdo\OneDrive\Desktop\Hungrie (3)\Hungrie\mobile"
 npm install
 ```
 
@@ -87,3 +87,4 @@ Config lives in `tailwind.config.js`; Babel/Metro are already wired for NativeWi
 - Wire Appwrite collections (IDs referenced in `lib/appwrite.ts`) or adapt the schema to your liking.
 - Seed optional content with `scripts/seed-appwrite.mjs` once your backend is reachable.
 - Drop production secrets (Appwrite, API base URL, Pexels, Sentry) into `app.json` or runtime env before publishing.
+

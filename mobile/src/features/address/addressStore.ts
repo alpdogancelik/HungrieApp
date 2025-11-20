@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { nanoid } from "nanoid/non-secure";
 import type { Address } from "@/src/domain/types";
 
-const STORAGE_KEY = "@munchies/addresses";
+const STORAGE_KEY = "@hungrie/addresses";
 
 export type AddressInput = Omit<Address, "id" | "createdAt"> & { id?: string; isDefault?: boolean };
 type Listener = (addresses: Address[]) => void;

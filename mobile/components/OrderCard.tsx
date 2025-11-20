@@ -53,7 +53,7 @@ const OrderCard = ({ order, variant = "restaurant", onAdvance, disableActions = 
     const orderId = useMemo(() => String(order.$id ?? order.id ?? Date.now()), [order.$id, order.id]);
     const items = order.orderItems ?? [];
     const total = Number(order.total || 0).toFixed(2);
-    const headerTitle = variant === "restaurant" ? order.customerName || "Walk-in guest" : order.restaurant?.name || "Munchies";
+    const headerTitle = variant === "restaurant" ? order.customerName || "Walk-in guest" : order.restaurant?.name || "Hungrie";
     const headerSubtitle =
         variant === "restaurant" ? order.address || "Campus pickup" : formatTimestamp(order.updatedAt);
 

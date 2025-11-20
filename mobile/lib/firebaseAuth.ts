@@ -40,7 +40,7 @@ const mapDoc = (snap: { id: string; data: () => any }) => ({
 });
 
 const avatarUrl = (name: string) =>
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "Munchies User")}&background=FF8C42&color=ffffff`;
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "Hungrie User")}&background=FF8C42&color=ffffff`;
 
 const getMockMenus = ({ query }: { query?: string }) => {
     const all = Object.values(sampleMenu).flat();
@@ -82,7 +82,7 @@ const mapOrderDoc = (snap: { id: string; data: () => any }) => {
 
 const buildMockProfile = (overrides: Partial<Profile> = {}): Profile => ({
     name: overrides.name || "Campus Operator",
-    email: overrides.email || "owner@munchies.app",
+    email: overrides.email || "owner@hungrie.app",
     avatar: overrides.avatar || avatarUrl(overrides.name || "Campus Operator"),
 });
 
@@ -164,9 +164,9 @@ export const getCurrentUser = async () => {
     if (!current) return null;
 
     const fallback: Profile = {
-        name: current.displayName || current.email || "Munchies User",
-        email: current.email || "operator@munchies.app",
-        avatar: avatarUrl(current.displayName || current.email || "Munchies User"),
+        name: current.displayName || current.email || "Hungrie User",
+        email: current.email || "operator@hungrie.app",
+        avatar: avatarUrl(current.displayName || current.email || "Hungrie User"),
     };
 
     if (!firestore) return fallback;
