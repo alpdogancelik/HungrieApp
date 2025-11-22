@@ -10,15 +10,17 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import CartButton from "@/components/CartButton";
-import { images } from "@/constants";
-import useAppwrite from "@/lib/useAppwrite";
+import RestaurantCard from "@/components/RestaurantCard";
+import { images } from "@/constants/mediaCatalog";
+import useAsyncResource from "@/lib/useAsyncResource";
 import { getCategories } from "@/lib/firebaseAuth";
 import type { MenuItem } from "@/type";
-import { Chip, Stepper, Card } from "@/src/components";
+import { Chip, Stepper, Card } from "@/src/components/componentRegistry";
 import useSearch, { SearchSort } from "@/src/hooks/useSearch";
 import { useCartStore } from "@/store/cart.store";
+import Icon from "@/components/Icon";
 
 const sortOptions: { id: SearchSort; label: string }[] = [
     { id: "relevance", label: "Relevance" },
@@ -43,9 +45,9 @@ const SearchBar = ({ value, onDebouncedChange }: { value: string; onDebouncedCha
 
     return (
         <View style={styles.searchBar}>
-            <Image source={images.search} style={styles.searchIcon} contentFit="contain" />
+            <Icon name="search" size={20} color="#94A3B8" style={styles.searchIcon} />
             <TextInput
-                placeholder="Search for pizzas, burgers..."
+                placeholder="Type a craving or ingredient, e.g. 'crispy taco'"
                 placeholderTextColor="#94A3B8"
                 value={text}
                 onChangeText={setText}
@@ -140,15 +142,18 @@ const Search = () => {
         sort,
         setSort,
         results,
+        restaurants,
         loading,
+        restaurantsLoading,
         error,
         refetch,
     } = useSearch({
         initialQuery: typeof initialQuery === "string" ? initialQuery : "",
         initialCategory: typeof initialCategory === "string" ? initialCategory : undefined,
     });
-    const { data: categoriesData, loading: categoriesLoading } = useAppwrite({ fn: getCategories });
+    const { data: categoriesData, loading: categoriesLoading } = useAsyncResource({ fn: getCategories });
     const { items, addItem, increaseQty, decreaseQty, removeItem } = useCartStore();
+    const router = useRouter();
 
     const listData = useMemo(
         () => [
@@ -216,11 +221,13 @@ const Search = () => {
         if (error) {
             return (
                 <View style={styles.emptyState}>
-                    <Image source={images.emptyState} style={styles.emptyImage} contentFit="contain" />
-                    <Text style={styles.emptyTitle}>Bir şeyler ters gitti</Text>
-                    <Text style={styles.emptyDescription}>{error}</Text>
+                    <Image source={images.deliveryProcess} style={styles.emptyImage} contentFit="cover" />
+                    <Text style={styles.emptyTitle}>Kitchen radios are quiet</Text>
+                    <Text style={styles.emptyDescription}>
+                        We couldn't reach our restaurants. {error || "Pull to refresh or try again."}
+                    </Text>
                     <TouchableOpacity style={styles.retryButton} onPress={refetch}>
-                        <Text style={styles.retryButtonText}>Retry</Text>
+                        <Text style={styles.retryButtonText}>Refresh feed</Text>
                     </TouchableOpacity>
                 </View>
             );
@@ -228,9 +235,11 @@ const Search = () => {
         if (showEmpty) {
             return (
                 <View style={styles.emptyState}>
-                    <Image source={images.emptyState} style={styles.emptyImage} contentFit="contain" />
-                    <Text style={styles.emptyTitle}>No meals found</Text>
-                    <Text style={styles.emptyDescription}>Try adjusting your search or filters.</Text>
+                    <Image source={images.deliveryReview} style={styles.emptyImage} contentFit="cover" />
+                    <Text style={styles.emptyTitle}>No meals matched that vibe</Text>
+                    <Text style={styles.emptyDescription}>
+                        Try a feeling ("cozy soup"), a texture ("crispy"), or a favorite ingredient.
+                    </Text>
                 </View>
             );
         }
@@ -262,6 +271,15 @@ const Search = () => {
                             </View>
                             <CartButton />
                         </View>
+                        <View style={styles.discoveryCard}>
+                            <Image source={images.fastDelivery} style={styles.discoveryImage} contentFit="cover" />
+                            <View style={styles.discoveryText}>
+                                <Text style={styles.discoveryTitle}>Search like a human.</Text>
+                                <Text style={styles.discoverySubtitle}>
+                                    Describe a feeling or ingredient and we surface campus meals that match.
+                                </Text>
+                            </View>
+                        </View>
                         <SearchBar value={query} onDebouncedChange={onParamChange} />
                         <View style={styles.sortRow}>
                             {sortOptions.map((option) => (
@@ -273,6 +291,41 @@ const Search = () => {
                                 />
                             ))}
                         </View>
+                        <View style={styles.sectionHeadingRow}>
+                            <View>
+                                <Text style={styles.sectionHeading}>Restaurants</Text>
+                                <Text style={styles.sectionMeta}>
+                                    {restaurantsLoading ? "Checking kitchens..." : `${restaurants.length} matches`}
+                                </Text>
+                            </View>
+                            {restaurantsLoading ? (
+                                <ActivityIndicator size="small" color="#FF8C42" />
+                            ) : null}
+                        </View>
+                        {restaurantsLoading ? (
+                            <View style={styles.restaurantSkeletonContainer}>
+                                {[...Array(2)].map((_, index) => (
+                                    <View key={`restaurant-skel-${index}`} style={styles.restaurantSkeleton} />
+                                ))}
+                            </View>
+                        ) : restaurants.length ? (
+                            <View style={styles.restaurantList}>
+                                {restaurants.slice(0, 3).map((restaurant) => (
+                                    <RestaurantCard
+                                        key={String(restaurant.id ?? restaurant.$id ?? restaurant.name)}
+                                        restaurant={restaurant}
+                                        onPress={() =>
+                                            router.push({
+                                                pathname: "/search",
+                                                params: { query: restaurant.name },
+                                            })
+                                        }
+                                    />
+                                ))}
+                            </View>
+                        ) : (
+                            <Text style={styles.restaurantEmpty}>No restaurants matched that search.</Text>
+                        )}
                     </View>
                 }
                 ListFooterComponent={renderFooter}
@@ -287,9 +340,23 @@ const styles = StyleSheet.create({
     listContent: { paddingBottom: 160, gap: 16 },
     headerContainer: { paddingHorizontal: 20, paddingTop: 20, gap: 16, paddingBottom: 12, backgroundColor: "#F8FAFC" },
     topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-    headerEyebrow: { color: "#FF8C42", fontFamily: "QuickSand-SemiBold", fontSize: 12, letterSpacing: 1 },
-    headerTitle: { fontFamily: "QuickSand-Bold", fontSize: 24, color: "#0F172A" },
+    headerEyebrow: { color: "#FF8C42", fontFamily: "Ezra-SemiBold", fontSize: 12, letterSpacing: 1 },
+    headerTitle: { fontFamily: "Ezra-Bold", fontSize: 24, color: "#0F172A" },
     headerSubtitle: { color: "#475569", marginTop: 4 },
+    discoveryCard: {
+        flexDirection: "row",
+        gap: 12,
+        borderRadius: 28,
+        borderWidth: 1,
+        borderColor: "#FEEAD1",
+        padding: 12,
+        backgroundColor: "#FFF9F2",
+        alignItems: "center",
+    },
+    discoveryImage: { width: 72, height: 72, borderRadius: 20 },
+    discoveryText: { flex: 1, gap: 4 },
+    discoveryTitle: { fontFamily: "Ezra-Bold", color: "#0F172A", fontSize: 16 },
+    discoverySubtitle: { color: "#475569", fontFamily: "Ezra-Medium", lineHeight: 18 },
     searchBar: {
         flexDirection: "row",
         alignItems: "center",
@@ -301,8 +368,15 @@ const styles = StyleSheet.create({
         backgroundColor: "#FFFFFF",
     },
     searchIcon: { width: 20, height: 20, marginRight: 8 },
-    searchInput: { flex: 1, fontFamily: "QuickSand-Medium", fontSize: 16, color: "#0F172A" },
+    searchInput: { flex: 1, fontFamily: "Ezra-Medium", fontSize: 16, color: "#0F172A" },
     sortRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    sectionHeadingRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
+    sectionHeading: { fontFamily: "Ezra-Bold", fontSize: 18, color: "#0F172A" },
+    sectionMeta: { color: "#94A3B8", fontFamily: "Ezra-Medium", marginTop: 4 },
+    restaurantList: { gap: 12 },
+    restaurantEmpty: { color: "#94A3B8", fontFamily: "Ezra-Medium" },
+    restaurantSkeletonContainer: { gap: 12 },
+    restaurantSkeleton: { height: 96, borderRadius: 28, backgroundColor: "#E2E8F0" },
     categoryRow: {
         flexDirection: "row",
         flexWrap: "wrap",
@@ -332,16 +406,16 @@ const styles = StyleSheet.create({
         backgroundColor: "#E2E8F0",
     },
     resultCard: { flexDirection: "row", alignItems: "center", gap: 12 },
-    resultTitle: { fontFamily: "QuickSand-Bold", fontSize: 18, color: "#0F172A" },
+    resultTitle: { fontFamily: "Ezra-Bold", fontSize: 18, color: "#0F172A" },
     resultDescription: { color: "#475569" },
     resultMetaRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 8 },
-    resultPrice: { color: "#FF8C42", fontFamily: "QuickSand-Bold" },
-    resultEta: { color: "#475569", fontFamily: "QuickSand-Medium" },
+    resultPrice: { color: "#FF8C42", fontFamily: "Ezra-Bold" },
+    resultEta: { color: "#475569", fontFamily: "Ezra-Medium" },
     skeletonContainer: { gap: 12, padding: 20 },
     resultSkeleton: { height: 90, borderRadius: 24, backgroundColor: "#E2E8F0" },
     emptyState: { alignItems: "center", gap: 12, padding: 32 },
-    emptyImage: { width: 160, height: 160 },
-    emptyTitle: { fontFamily: "QuickSand-Bold", fontSize: 18, color: "#0F172A" },
+    emptyImage: { width: 220, height: 160, borderRadius: 24 },
+    emptyTitle: { fontFamily: "Ezra-Bold", fontSize: 18, color: "#0F172A" },
     emptyDescription: { color: "#475569", textAlign: "center" },
     retryButton: {
         marginTop: 8,
@@ -350,7 +424,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 10,
     },
-    retryButtonText: { color: "#fff", fontFamily: "QuickSand-SemiBold" },
+    retryButtonText: { color: "#fff", fontFamily: "Ezra-SemiBold" },
 });
 
 export default Search;
+

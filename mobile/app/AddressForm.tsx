@@ -1,3 +1,3 @@
-import { AddressFormScreen } from "@/src/features/address";
+import { AddressFormScreen } from "@/src/features/address/addressFeature";
 
 export default AddressFormScreen;

@@ -150,7 +150,7 @@ const SuperAdminDashboard = () => {
                                 } ${isUpdating ? "opacity-60" : "opacity-100"}`}
                             >
                                 <Text
-                                    className={`text-sm font-quicksand-semibold ${
+                                    className={`text-sm font-ezra-semibold ${
                                         isActive ? "text-white" : "text-dark-80"
                                     }`}
                                 >
@@ -175,7 +175,7 @@ const SuperAdminDashboard = () => {
                             isUpdating ? "opacity-60" : "opacity-100"
                         }`}
                     >
-                        <Text className="text-center text-sm font-quicksand-semibold text-emerald-900">
+                        <Text className="text-center text-sm font-ezra-semibold text-emerald-900">
                             Mark as Delivered
                         </Text>
                     </TouchableOpacity>
@@ -191,17 +191,17 @@ const SuperAdminDashboard = () => {
                 <View className="flex-row items-start justify-between gap-3">
                     <View className="flex-1 gap-1">
                         <Text className="text-xs uppercase tracking-[2px] text-dark-60">Order ID</Text>
-                        <Text className="text-lg font-quicksand-bold text-dark-100">{order.id}</Text>
+                        <Text className="text-lg font-ezra-bold text-dark-100">{order.id}</Text>
                     </View>
                     <View className={`items-center rounded-full border px-3 py-1 ${badgeClass}`}>
-                        <Text className="text-xs font-quicksand-semibold uppercase">{humanizeStatus(order.status)}</Text>
+                        <Text className="text-xs font-ezra-semibold uppercase">{humanizeStatus(order.status)}</Text>
                     </View>
                 </View>
 
                 <View className="mt-4 gap-3">
                     <View>
                         <Text className="text-xs uppercase tracking-wide text-dark-60">Customer</Text>
-                        <Text className="text-base font-quicksand-semibold text-dark-100">{order.customerName}</Text>
+                        <Text className="text-base font-ezra-semibold text-dark-100">{order.customerName}</Text>
                         {!!order.customerEmail && (
                             <Text className="text-sm text-dark-60">{order.customerEmail}</Text>
                         )}
@@ -215,7 +215,7 @@ const SuperAdminDashboard = () => {
                     <View className="flex-row items-center justify-between">
                         <View>
                             <Text className="text-xs uppercase tracking-wide text-dark-60">Total</Text>
-                            <Text className="text-xl font-quicksand-bold text-primary-dark">
+                            <Text className="text-xl font-ezra-bold text-primary-dark">
                                 {formatCurrency(order.totalPrice)}
                             </Text>
                         </View>
@@ -233,7 +233,7 @@ const SuperAdminDashboard = () => {
                         <View className="flex-row items-center gap-2">
                             <Text className="text-xs uppercase tracking-wide text-dark-60">Courier</Text>
                             <View className="rounded-full bg-dark-100/10 px-3 py-1">
-                                <Text className="text-sm font-quicksand-semibold text-dark-80">
+                                <Text className="text-sm font-ezra-semibold text-dark-80">
                                     {order.courierLabel}
                                 </Text>
                             </View>
@@ -261,13 +261,13 @@ const SuperAdminDashboard = () => {
             >
                 <View className="gap-5 px-5 pt-6">
                     <View className="gap-1">
-                        <Text className="text-3xl font-quicksand-bold text-dark-100">Super Admin</Text>
+                        <Text className="text-3xl font-ezra-bold text-dark-100">Super Admin</Text>
                         <Text className="text-base text-dark-60">Track every order across restaurants in real time.</Text>
                     </View>
 
                     {!firebaseOrdersEnabled && (
                         <View className="rounded-3xl border border-amber-200 bg-amber-50 p-4">
-                            <Text className="text-base font-quicksand-semibold text-amber-900">
+                            <Text className="text-base font-ezra-semibold text-amber-900">
                                 Firebase has not been configured.
                             </Text>
                             <Text className="mt-1 text-sm text-amber-900/80">
@@ -278,12 +278,12 @@ const SuperAdminDashboard = () => {
 
                     {errorMessage && (
                         <View className="rounded-3xl border border-error/40 bg-error/10 p-4">
-                            <Text className="text-base font-quicksand-semibold text-error">{errorMessage}</Text>
+                            <Text className="text-base font-ezra-semibold text-error">{errorMessage}</Text>
                             <TouchableOpacity
                                 onPress={handleRefresh}
                                 className="mt-3 self-start rounded-full bg-error px-4 py-2"
                             >
-                                <Text className="text-sm font-quicksand-semibold text-white">Try again</Text>
+                                <Text className="text-sm font-ezra-semibold text-white">Try again</Text>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -297,7 +297,7 @@ const SuperAdminDashboard = () => {
 
                     {showEmptyState && (
                         <View className="rounded-3xl border border-gray-100 bg-white/90 p-6 items-center">
-                            <Text className="text-xl font-quicksand-semibold text-dark-80">No orders yet</Text>
+                            <Text className="text-xl font-ezra-semibold text-dark-80">No orders yet</Text>
                             <Text className="mt-2 text-center text-dark-60">
                                 Orders from every restaurant will appear here. Pull down to refresh once the first order
                                 arrives.
@@ -315,3 +315,4 @@ const SuperAdminDashboard = () => {
 };
 
 export default SuperAdminDashboard;
+

@@ -1,5 +1,5 @@
 import { Text, View } from "react-native";
-import { useTheme } from "@/src/theme";
+import { useTheme } from "@/src/theme/themeContext";
 
 type BadgeStatus = "success" | "warning" | "danger" | "info";
 
@@ -25,7 +25,7 @@ export const Badge = ({ label, status = "info" }: { label: string; status?: Badg
             <Text
                 style={{
                     color: palette.text,
-                    fontFamily: "QuickSand-SemiBold",
+                    fontFamily: "Ezra-SemiBold",
                     fontSize: theme.typography.caption,
                 }}
             >
@@ -36,3 +36,4 @@ export const Badge = ({ label, status = "info" }: { label: string; status?: Badg
 };
 
 export default Badge;
+

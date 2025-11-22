@@ -1,90 +1,50 @@
-# Hungrie Mobile - Expo Router + Appwrite
+# Hungrie Mobile - Expo Router + Firebase
 
-This app mirrors the `food_ordering-main` architecture: Expo Router, NativeWind, Zustand, and Appwrite helpers, packaged as a pure Expo project.
+This app mirrors the `food_ordering-main` experience with Expo Router, NativeWind, Zustand, and Firebase helpers bundled into a pure Expo project. Mock data paths stay available for developers without backend access.
 
 ## Quick start
 
-1. Install dependencies:
-
-```powershell
-cd "c:\Users\alpdo\OneDrive\Desktop\Hungrie (3)\Hungrie\mobile"
-npm install
-```
-
-2. Configure environment values in `app.json -> expo.extra`:
-
-   **Appwrite (required)**
-   - `EXPO_PUBLIC_APPWRITE_ENDPOINT`
-   - `EXPO_PUBLIC_APPWRITE_PROJECT_ID`
-   - `EXPO_PUBLIC_APPWRITE_DATABASE_ID`
-   - `EXPO_PUBLIC_APPWRITE_USER_COLLECTION_ID`
-   - `EXPO_PUBLIC_APPWRITE_CATEGORIES_COLLECTION_ID`
-   - `EXPO_PUBLIC_APPWRITE_MENU_COLLECTION_ID`
-   - `EXPO_PUBLIC_APPWRITE_CUSTOMIZATIONS_COLLECTION_ID`
-   - `EXPO_PUBLIC_APPWRITE_MENU_CUSTOMIZATIONS_COLLECTION_ID`
-   - `EXPO_PUBLIC_APPWRITE_RESTAURANTS_COLLECTION_ID`
-   - `EXPO_PUBLIC_APPWRITE_ORDERS_COLLECTION_ID`
-   - `EXPO_PUBLIC_APPWRITE_BUCKET_ID`
-
-   **Runtime toggles**
-   - `EXPO_PUBLIC_USE_MOCK_DATA` &mdash; keep as `"true"` for local mocks, set to `"false"` to hit the live Appwrite backend once your IDs are ready.
-   - `EXPO_PUBLIC_SENTRY_DSN` &mdash; optional; Sentry only initialises when this value exists.
-
-   **Firebase (optional super admin dashboard)**
-   - `EXPO_PUBLIC_FIREBASE_API_KEY`
-   - `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`
-   - `EXPO_PUBLIC_FIREBASE_PROJECT_ID`
-   - `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`
-   - `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
-   - `EXPO_PUBLIC_FIREBASE_APP_ID`
-   - `EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID` (optional but required for Analytics)
-
-   **Other services**
-   - `EXPO_PUBLIC_API_BASE_URL` (optional Node/Express API for courier/restaurant tooling)
-   - `EXPO_PUBLIC_PEXELS_API_KEY` (enables the menu photo search helper)
-
-3. Copy assets from `food_ordering-main` (required):
+1. **Install dependencies**
+   ```powershell
+   cd "c:\Users\alpdo\OneDrive\Desktop\MunchiesOrder (3)\MunchiesOrder\mobile"
+   npm install
+   ```
+2. **Configure runtime values** in `app.json -> expo.extra`:
+   - **Firebase** (required for live data) - `EXPO_PUBLIC_FIREBASE_*` keys.
+   - **Runtime toggles** - `EXPO_PUBLIC_USE_MOCK_DATA`, `EXPO_PUBLIC_DISABLE_FIREBASE`, `EXPO_PUBLIC_SENTRY_DSN`, and `EXPO_PUBLIC_REQUIRE_AUTH` (flip to `"true"` when you want the auth screens to gate the tab layout).
+   - **Other services** - `EXPO_PUBLIC_API_BASE_URL` (optional Node/Express API) and `EXPO_PUBLIC_PEXELS_API_KEY` (image search helper).
+3. **Copy assets** from the shared design repo:
    - `assets/fonts/*.ttf` -> `mobile/assets/fonts/`
    - `assets/icons/*.png` -> `mobile/assets/icons/`
    - `assets/images/*.png` -> `mobile/assets/images/`
-
-4. Start the app:
-
-```powershell
-npm run start
-```
-
-Press `a` in the Expo CLI to open Android (if an emulator is running) or scan the QR code with Expo Go.
+4. **Start the app**
+   ```powershell
+   npm run start
+   ```
+   Press `a` in Expo CLI for Android (when an emulator is running) or scan the QR code with Expo Go.
 
 ## Structure
 
-- `app/` - Expo Router groups `(auth)`, `(tabs)`, `restaurant/*`; `_layout.tsx` wires fonts/theme/auth gating.
-- `components/` - Reusable UI (inputs, buttons, cards, search/filter, etc.).
-- `constants/` - Image/icon references plus seed lists.
-- `lib/` - Appwrite SDK helpers, API client fallbacks, hooks, and mock data.
-- `src/` - Shared order services, polling hooks, and screens (OrderPending experience).
-- `store/` - Zustand stores for auth and cart state.
-- `scripts/` - Utility scripts such as `seed-appwrite.mjs`.
+- `app/` - Expo Router groups `(auth)`, `(tabs)`, `order/*`, and `restaurant/*` plus layout guards.
+- `components/` - Reusable UI (inputs, cards, lists, cart cells, etc.).
+- `constants/mediaCatalog.ts` - Centralised icons, emoji, cooking scenes, categories, and offer data.
+- `lib/` - Firebase helpers, async hooks, mock data, and API utilities.
+- `src/` - Feature modules (`features/address`, `features/reviews`), theme provider, and domain hooks.
+- `store/` - Zustand stores for auth/cart state.
+- `data/` - Firestore JSON seeds kept for quick demos.
 
 ## Styling
 
-NativeWind (Tailwind) is enabled. Use the `className` prop on React Native primitives:
-
-```tsx
-<View className="p-4 bg-white" />
-```
-
-Config lives in `tailwind.config.js`; Babel/Metro are already wired for NativeWind.
+NativeWind (Tailwind) powers styling through the `className` prop on React Native primitives. Configuration lives in `tailwind.config.js`; Babel/Metro are ready to go.
 
 ## Notes
 
-- The legacy Vite/Supabase stack was removed; `expo-router/entry` is the only entry point.
-- `EXPO_PUBLIC_USE_MOCK_DATA` keeps the UI in fully-offline mock mode. Flip it to `"false"` (or remove it) once real Appwrite collections are configured.
-- Fonts load in `app/_layout.tsx`; if you have not copied them yet, temporarily comment out `useFonts` while iterating.
+- Legacy Appwrite/Supabase helpers were removed; Firebase plus offline mocks power every surface.
+- `EXPO_PUBLIC_USE_MOCK_DATA` keeps the UI offline. Flip to `"false"` once your Firebase project is wired.
+- Fonts load inside `app/_layout.tsx`. If you have not copied them yet, temporarily comment out `useFonts` while iterating.
 
 ## Next steps
 
-- Wire Appwrite collections (IDs referenced in `lib/appwrite.ts`) or adapt the schema to your liking.
-- Seed optional content with `scripts/seed-appwrite.mjs` once your backend is reachable.
-- Drop production secrets (Appwrite, API base URL, Pexels, Sentry) into `app.json` or runtime env before publishing.
-
+- Provide a real `EXPO_PUBLIC_API_BASE_URL` if the courier/restaurant tooling will hit your backend.
+- Drop production secrets (Firebase, API base URL, Pexels, Sentry) into `app.json` or a runtime env before publishing.
+- Run end-to-end (auth -> restaurant console -> cart) once Firebase + Sentry keys are configured.

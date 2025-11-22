@@ -1,7 +1,6 @@
 import { useRouter } from "expo-router";
-import { Image, Text, TouchableOpacity, View } from "react-native";
-
-import { images } from "@/constants";
+import { Text, TouchableOpacity, View } from "react-native";
+import Icon from "./Icon";
 
 const CustomHeader = ({ title }: { title?: string }) => {
     const router = useRouter();
@@ -9,16 +8,12 @@ const CustomHeader = ({ title }: { title?: string }) => {
     return (
         <View className="custom-header">
             <TouchableOpacity onPress={() => router.back()}>
-                <Image
-                    source={images.arrowBack}
-                    className="size-5"
-                    resizeMode="contain"
-                />
+                <Icon name="arrowBack" size={22} color="#0F172A" />
             </TouchableOpacity>
 
             {title && <Text className="base-semibold text-dark-100">{title}</Text>}
 
-            <Image source={images.search} className="size-5" resizeMode="contain" />
+            <Icon name="search" size={22} color="#94A3B8" />
         </View>
     );
 };

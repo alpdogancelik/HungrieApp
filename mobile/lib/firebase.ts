@@ -14,36 +14,50 @@ import {
     where,
 } from "firebase/firestore";
 
-import { sampleMenu, sampleOwnerRestaurants } from "./sampleData";
-
 const extra: Record<string, string | undefined> = Constants.expoConfig?.extra || {};
 const env = (name: string) =>
     (typeof process !== "undefined" ? (process as any).env?.[name] : undefined) || (extra[name] as string | undefined);
 
-const firebaseConfig = {
-    apiKey: env("EXPO_PUBLIC_FIREBASE_API_KEY") || "",
-    authDomain: env("EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN") || "",
-    projectId: env("EXPO_PUBLIC_FIREBASE_PROJECT_ID") || "",
-    storageBucket: env("EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET") || "",
-    messagingSenderId: env("EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID") || "",
-    appId: env("EXPO_PUBLIC_FIREBASE_APP_ID") || "",
-    measurementId: env("EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID") || "",
+// Enable App Check debug token for local/dev if provided.
+const appCheckDebugToken = env("EXPO_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN");
+if (appCheckDebugToken && typeof globalThis !== "undefined") {
+    (globalThis as any).FIREBASE_APPCHECK_DEBUG_TOKEN = appCheckDebugToken;
+}
+
+const defaultFirebaseConfig = {
+    apiKey: "AIzaSyAqR--zHc7u-JF0EkJ5boTYjqew1HG3Kvs",
+    authDomain: "hungrie-b5458.firebaseapp.com",
+    projectId: "hungrie-b5458",
+    storageBucket: "hungrie-b5458.firebasestorage.app",
+    messagingSenderId: "115590895272",
+    appId: "1:115590895272:web:0b89fe4164a8d7cba8549d",
+    measurementId: "G-NC9CL8HT4C",
+    databaseURL: "https://hungrie-b5458-default-rtdb.firebaseio.com",
 };
 
-// Firebase is intentionally disabled so the app can run as an Appwrite-only demo.
-// Set this to false (and provide EXPO_PUBLIC_FIREBASE_* values) to re-enable.
-const firebaseDisabledForDemo = true;
+const firebaseConfig = {
+    apiKey: env("EXPO_PUBLIC_FIREBASE_API_KEY") || defaultFirebaseConfig.apiKey,
+    authDomain: env("EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN") || defaultFirebaseConfig.authDomain,
+    projectId: env("EXPO_PUBLIC_FIREBASE_PROJECT_ID") || defaultFirebaseConfig.projectId,
+    storageBucket: env("EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET") || defaultFirebaseConfig.storageBucket,
+    messagingSenderId: env("EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID") || defaultFirebaseConfig.messagingSenderId,
+    appId: env("EXPO_PUBLIC_FIREBASE_APP_ID") || defaultFirebaseConfig.appId,
+    measurementId: env("EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID") || defaultFirebaseConfig.measurementId,
+    databaseURL: env("EXPO_PUBLIC_FIREBASE_DATABASE_URL") || defaultFirebaseConfig.databaseURL,
+};
+
+// Allow Firebase by default; can be disabled by setting EXPO_PUBLIC_DISABLE_FIREBASE.
+const firebaseDisabledForDemo = env("EXPO_PUBLIC_DISABLE_FIREBASE") === "true";
 
 const firebaseConfigured =
     !firebaseDisabledForDemo && Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId);
-const useMockData = env("EXPO_PUBLIC_USE_MOCK_DATA") === "true";
 
 let firebaseApp: FirebaseApp | undefined;
 
 if (firebaseConfigured) {
     firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 } else if (firebaseDisabledForDemo && __DEV__) {
-    console.info("[Firebase] Disabled for Appwrite demo. Flip firebaseDisabledForDemo to re-enable.");
+    console.info("[Firebase] Disabled via EXPO_PUBLIC_DISABLE_FIREBASE flag.");
 } else if (__DEV__) {
     console.warn("[Firebase] Missing config. Populate EXPO_PUBLIC_FIREBASE_* values in app.json.");
 }
@@ -71,23 +85,6 @@ const mapSnapshot = (snap: { id: string; data: () => DocumentData }) => ({
     ...snap.data(),
 });
 
-const fallbackRestaurants = () =>
-    sampleOwnerRestaurants.map((restaurant) => ({
-        ...restaurant,
-        id: String(restaurant.id ?? restaurant.name),
-    }));
-
-const fallbackMenu = (restaurantId?: string) => {
-    if (!restaurantId) return [];
-    const list = sampleMenu[Number(restaurantId)] || Object.values(sampleMenu).flat();
-    return list.map((item) => ({
-        ...item,
-        id: String(item.id ?? item.$id ?? `${restaurantId}-${item.name}`),
-        restaurantId,
-        price: Number(item.price),
-    }));
-};
-
 const ensureFirestore = () => {
     if (!firebaseConfigured || !firestore) {
         throw new Error("Firebase is not configured yet.");
@@ -96,54 +93,28 @@ const ensureFirestore = () => {
 };
 
 export const getRestaurants = async () => {
-    if (!firebaseConfigured || !firestore || useMockData) {
-        return fallbackRestaurants();
-    }
-
-    try {
-        const snapshot = await getDocs(collection(firestore, FIREBASE_COLLECTIONS.restaurants));
-        return snapshot.docs.map(mapSnapshot);
-    } catch (error) {
-        if (__DEV__) console.warn("[Firebase] getRestaurants failed, falling back to mock data.", error);
-        return fallbackRestaurants();
-    }
+    const db = ensureFirestore();
+    const snapshot = await getDocs(collection(db, FIREBASE_COLLECTIONS.restaurants));
+    return snapshot.docs.map(mapSnapshot);
 };
 
 export const getRestaurantMenu = async (restaurantId: string) => {
     if (!restaurantId) return [];
-    if (!firebaseConfigured || !firestore || useMockData) {
-        return fallbackMenu(restaurantId);
-    }
-
-    try {
-        const q = query(
-            collection(firestore, FIREBASE_COLLECTIONS.menus),
-            where("restaurantId", "==", restaurantId),
-        );
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map((snap) => {
-            const data = snap.data();
-            return {
-                ...mapSnapshot(snap),
-                price: Number(data.price ?? 0),
-            };
-        });
-    } catch (error) {
-        if (__DEV__) console.warn("[Firebase] getRestaurantMenu failed, returning mock menu.", error);
-        return fallbackMenu(restaurantId);
-    }
+    const db = ensureFirestore();
+    const q = query(collection(db, FIREBASE_COLLECTIONS.menus), where("restaurantId", "==", restaurantId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((snap) => {
+        const data = snap.data();
+        return {
+            ...mapSnapshot(snap),
+            price: Number(data.price ?? 0),
+        };
+    });
 };
 
 export const createMenuItem = async (restaurantId: string, payload: MenuPayload) => {
     if (!restaurantId) throw new Error("restaurantId is required.");
-    if (!firebaseConfigured || !firestore || useMockData) {
-        return {
-            ...payload,
-            id: `mock-menu-${Date.now()}`,
-            restaurantId,
-            price: Number(payload.price),
-        };
-    }
+    const db = ensureFirestore();
 
     const data = {
         ...payload,
@@ -153,28 +124,12 @@ export const createMenuItem = async (restaurantId: string, payload: MenuPayload)
         updatedAt: Date.now(),
     };
 
-    try {
-        const ref = await addDoc(collection(firestore, FIREBASE_COLLECTIONS.menus), data);
-        return { id: ref.id, ...data };
-    } catch (error) {
-        if (__DEV__) console.warn("[Firebase] createMenuItem failed, returning mock entry.", error);
-        return {
-            ...data,
-            id: `mock-menu-${Date.now()}`,
-        };
-    }
+    const ref = await addDoc(collection(db, FIREBASE_COLLECTIONS.menus), data);
+    return { id: ref.id, ...data };
 };
 
 export const updateMenuItem = async (itemId: string, updates: Partial<MenuPayload>) => {
     if (!itemId) throw new Error("Menu item id is required.");
-    if (!firebaseConfigured || !firestore || useMockData) {
-        return {
-            id: itemId,
-            ...updates,
-            price: updates.price !== undefined ? Number(updates.price) : undefined,
-        };
-    }
-
     const ref = doc(ensureFirestore(), FIREBASE_COLLECTIONS.menus, itemId);
     const sanitized: Record<string, any> = { updatedAt: Date.now() };
     const response: Record<string, unknown> = { id: itemId };
@@ -190,4 +145,4 @@ export const updateMenuItem = async (itemId: string, updates: Partial<MenuPayloa
     return response;
 };
 
-export { firebaseConfig, firebaseConfigured, firebaseApp, auth, firestore, useMockData, FIREBASE_COLLECTIONS };
+export { firebaseConfig, firebaseConfigured, firebaseApp, auth, firestore, FIREBASE_COLLECTIONS };

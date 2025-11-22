@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ThemeProvider, useTheme } from "@/src/theme";
-import { AppBar, Badge, Button, Card, Chip, SectionHeader, Stepper } from "@/src/components";
+import { ThemeProvider, useTheme } from "@/src/theme/themeContext";
+import { AppBar, Badge, Button, Card, Chip, SectionHeader, Stepper } from "@/src/components/componentRegistry";
 
 const DemoContent = () => {
     const { theme, toggleTheme, variant } = useTheme();
@@ -36,10 +36,10 @@ const DemoContent = () => {
 
                 <SectionHeader title="Card + Stepper" />
                 <Card elevation={2}>
-                    <Text style={{ color: theme.colors.ink, fontFamily: "QuickSand-Bold", fontSize: theme.typography.h2 }}>
+                    <Text style={{ color: theme.colors.ink, fontFamily: "Ezra-Bold", fontSize: theme.typography.h2 }}>
                         Kampüs Burger Menü
                     </Text>
-                    <Text style={{ color: theme.colors.muted, fontFamily: "QuickSand-Medium" }}>
+                    <Text style={{ color: theme.colors.muted, fontFamily: "Ezra-Medium" }}>
                         Gece yarısı promosyonu devam ediyor.
                     </Text>
                     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: theme.spacing.md }}>
@@ -59,3 +59,4 @@ const DesignSystemDemo = () => (
 );
 
 export default DesignSystemDemo;
+

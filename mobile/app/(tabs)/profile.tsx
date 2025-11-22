@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Alert, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
@@ -8,8 +9,9 @@ import useAuthStore from "@/store/auth.store";
 import useServerResource from "@/lib/useServerResource";
 import { getUserOrders, logout } from "@/lib/api";
 import { router } from "expo-router";
-import { Badge, SectionHeader } from "@/src/components";
-import { useDefaultAddress, type ManageAddressesNavigation } from "@/src/features/address";
+import { Badge, SectionHeader } from "@/src/components/componentRegistry";
+import { useDefaultAddress, type ManageAddressesNavigation } from "@/src/features/address/addressFeature";
+import { images, illustrations } from "@/constants/mediaCatalog";
 
 const formatCurrency = (value?: number | string) => {
     const amount = Number(value ?? 0);
@@ -43,6 +45,7 @@ const Profile = () => {
         .toUpperCase();
 
     const activeOrders = (orders || []).filter((order: any) => order.status !== "delivered");
+    const TrackingIllustration = illustrations.tracking;
 
     const handleManageAddressesPress = () => {
         const routeNames = navigation.getState?.()?.routeNames ?? [];
@@ -104,7 +107,7 @@ const Profile = () => {
                                 <Text className="h3-bold text-white">{initials}</Text>
                             </View>
                             <View className="flex-1">
-                                <Text className="text-white text-2xl font-quicksand-bold">{user?.name || "Hungrie Student"}</Text>
+                                <Text className="text-white text-2xl font-ezra-bold">{user?.name || "Hungrie Student"}</Text>
                                 <Text className="body-medium text-white/70">{user?.email || "student@campus.edu"}</Text>
                             </View>
                         </View>
@@ -122,6 +125,37 @@ const Profile = () => {
                                 </Text>
                             </TouchableOpacity>
                         </View>
+                    </View>
+
+                    <View className="secondary-card flex-row items-center gap-4 bg-white border border-[#FFE6C5]">
+                        <Image source={images.deliveryReview} className="w-24 h-24 rounded-2xl" contentFit="cover" />
+                        <View className="flex-1 gap-1">
+                            <Text className="text-xs uppercase text-primary font-ezra-semibold">Weekly ritual</Text>
+                            <Text className="paragraph-semibold text-dark-100">Save reviews as reminders.</Text>
+                            <Text className="body-medium text-dark-60">
+                                Tag what you loved so we ping you when it returns to campus.
+                            </Text>
+                            <TouchableOpacity className="chip self-start mt-1" onPress={() => router.push("/orders")}>
+                                <Text className="paragraph-semibold text-primary-dark">Open review log</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    <View className="secondary-card flex-row items-center gap-4 bg-[#0F172A] border-0">
+                        <View className="flex-1 gap-2">
+                            <Text className="text-xs uppercase text-white/70 font-ezra-semibold">Delivery preferences</Text>
+                            <Text className="text-white text-xl font-ezra-bold">Map pins & silent drop-offs</Text>
+                            <Text className="body-medium text-white/80">
+                                Update your default address and we brief every courier automatically.
+                            </Text>
+                            <TouchableOpacity
+                                className="self-start px-4 py-2 rounded-full bg-white/10"
+                                onPress={handleManageAddressesPress}
+                            >
+                                <Text className="paragraph-semibold text-white">Update default</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <TrackingIllustration width={110} height={110} />
                     </View>
 
                     <View className="secondary-card gap-3">
@@ -214,7 +248,7 @@ const Profile = () => {
             <Modal transparent animationType="fade" visible={isEditingProfile} onRequestClose={() => setIsEditingProfile(false)}>
                 <View className="flex-1 bg-black/40 justify-center px-5">
                     <View className="bg-white rounded-3xl p-5 gap-4">
-                        <Text className="text-xl font-quicksand-bold text-dark-100">{t("profile.header.edit")}</Text>
+                        <Text className="text-xl font-ezra-bold text-dark-100">{t("profile.header.edit")}</Text>
                         <View className="gap-2">
                             <Text className="paragraph-semibold text-dark-80">Name</Text>
                             <TextInput
@@ -256,7 +290,7 @@ const Profile = () => {
                 <Modal animationType="slide" transparent visible onRequestClose={closeModal}>
                     <View className="flex-1 bg-black/40 justify-center px-6">
                         <View className="bg-white rounded-3xl p-5 gap-4">
-                            <Text className="text-xl font-quicksand-bold text-dark-100">{t("profile.modal.title")}</Text>
+                            <Text className="text-xl font-ezra-bold text-dark-100">{t("profile.modal.title")}</Text>
                             <View className="flex-row justify-between items-center">
                                 <Text className="paragraph-semibold text-dark-60">{t("profile.modal.status")}</Text>
                                 <Badge
@@ -290,3 +324,4 @@ const Profile = () => {
 };
 
 export default Profile;
+

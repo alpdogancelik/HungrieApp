@@ -1,80 +1,119 @@
-import { View, Text, Alert } from 'react-native'
+import { SafeAreaView } from "react-native-safe-area-context";
+import { ScrollView, View, Text, Alert } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { Link, router } from "expo-router";
+import { useState } from "react";
+
 import CustomInput from "@/components/CustomInput";
 import CustomButton from "@/components/CustomButton";
-import { useState } from "react";
 import { createUser } from "@/lib/firebaseAuth";
 import useAuthStore from "@/store/auth.store";
+import GodzillaCafe from "@/assets/godzilla/VCTRLY-godzila-cafe-coffee-tea-restaurant.svg";
 
 const SignUp = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [form, setForm] = useState({ name: '', email: '', password: '' });
+    const [form, setForm] = useState({ name: "", email: "", password: "" });
     const setUser = useAuthStore((s) => s.setUser);
     const setIsAuthenticated = useAuthStore((s) => s.setIsAuthenticated);
 
     const submit = async () => {
         const { name, email, password } = form;
+        if (!name || !email || !password) return Alert.alert("Error", "Please enter valid email address & password.");
 
-        if (!name || !email || !password) return Alert.alert('Error', 'Please enter valid email address & password.');
-
-        setIsSubmitting(true)
+        setIsSubmitting(true);
 
         try {
             const profile = await createUser({ email, password, name });
-
             if (profile) {
-                setUser({ name: profile.name, email: profile.email, avatar: profile.avatar });
+                const mappedUser = {
+                    id: profile.accountId,
+                    $id: profile.accountId,
+                    accountId: profile.accountId,
+                    name: profile.name,
+                    email: profile.email,
+                    avatar: profile.avatar,
+                };
+                setUser(mappedUser);
                 setIsAuthenticated(true);
             }
-
-            router.replace('/');
+            router.replace("/");
         } catch (error: any) {
-            Alert.alert('Error', error?.message || 'Unable to sign up. Please try again.');
+            Alert.alert("Error", error?.message || "Unable to sign up. Please try again.");
         } finally {
             setIsSubmitting(false);
         }
-    }
+    };
 
     return (
-        <View className="gap-10 bg-white rounded-lg p-5 mt-5">
-            <CustomInput
-                placeholder="Enter your full name"
-                value={form.name}
-                onChangeText={(text) => setForm((prev) => ({ ...prev, name: text }))}
-                label="Full name"
-            />
-            <CustomInput
-                placeholder="Enter your email"
-                value={form.email}
-                onChangeText={(text) => setForm((prev) => ({ ...prev, email: text }))}
-                label="Email"
-                keyboardType="email-address"
-            />
-            <CustomInput
-                placeholder="Enter your password"
-                value={form.password}
-                onChangeText={(text) => setForm((prev) => ({ ...prev, password: text }))}
-                label="Password"
-                secureTextEntry={true}
-            />
+        <SafeAreaView className="flex-1 bg-[#0F172A]">
+            <ScrollView
+                className="flex-1"
+                contentContainerStyle={{ flexGrow: 1 }}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+            >
+                <LinearGradient
+                    colors={["#141E30", "#243B55"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{ paddingHorizontal: 24, paddingTop: 56, paddingBottom: 160 }}
+                >
+                    <View className="flex-row items-center">
+                        <View className="flex-1 pr-6 gap-3">
+                            <Text className="text-white/70 uppercase tracking-[8px]">join the feast club</Text>
+                            <Text className="text-white text-3xl font-ezra-bold">
+                                Create your Hungrie profile in under a minute.
+                            </Text>
+                            <Text className="text-white/80 body-medium">
+                                Godzilla routes your orders in Kalkanlı.
+                            </Text>
+                        </View>
+                        <GodzillaCafe width={140} height={140} />
+                    </View>
+                </LinearGradient>
 
-            <CustomButton
-                title="Sign Up"
-                isLoading={isSubmitting}
-                disabled={isSubmitting}
-                onPress={submit}
-            />
+                <View className="-mt-28 flex-1 px-6 pb-12">
+                    <View className="gap-6 bg-white rounded-3xl p-6 shadow-xl shadow-dark-100/10">
+                        <View>
+                            <Text className="text-3xl font-ezra-bold text-dark-100">Create account</Text>
+                            <Text className="body-medium text-dark-60">
+                                Kampüs restoranlarını favorilerine ekle, tek dokunuşla sipariş ver.
+                            </Text>
+                        </View>
+                        <CustomInput
+                            placeholder="Ada Pizza Operatörü"
+                            value={form.name}
+                            onChangeText={(text) => setForm((prev) => ({ ...prev, name: text }))}
+                            label="Full name"
+                        />
+                        <CustomInput
+                            placeholder="you@hungrie.app"
+                            value={form.email}
+                            onChangeText={(text) => setForm((prev) => ({ ...prev, email: text }))}
+                            label="Email"
+                            keyboardType="email-address"
+                        />
+                        <CustomInput
+                            placeholder="At least 8 characters"
+                            value={form.password}
+                            onChangeText={(text) => setForm((prev) => ({ ...prev, password: text }))}
+                            label="Password"
+                            secureTextEntry
+                        />
 
-            <View className="flex justify-center mt-5 flex-row gap-2">
-                <Text className="base-regular text-gray-100">
-                    Already have an account?
-                </Text>
-                <Link href="/sign-in" className="base-bold text-primary">
-                    Sign In
-                </Link>
-            </View>
-        </View>
-    )
-}
+                        <CustomButton title="Sign Up" isLoading={isSubmitting} disabled={isSubmitting} onPress={submit} />
 
-export default SignUp
+                        <View className="flex justify-center mt-1 flex-row gap-2">
+                            <Text className="base-regular text-gray-100">Already have an account?</Text>
+                            <Link href="/sign-in" className="base-bold text-primary">
+                                Sign In
+                            </Link>
+                        </View>
+                    </View>
+                </View>
+            </ScrollView>
+        </SafeAreaView>
+    );
+};
+
+export default SignUp;

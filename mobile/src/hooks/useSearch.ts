@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getMenu } from "@/lib/firebaseAuth";
+import { getRestaurants } from "@/lib/api";
 import type { MenuItem } from "@/type";
 
 export type SearchSort = "relevance" | "eta" | "price";
@@ -28,7 +29,9 @@ export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptio
     const [category, setCategory] = useState<string | undefined>(initialCategory);
     const [sort, setSort] = useState<SearchSort>("relevance");
     const [results, setResults] = useState<MenuItem[]>([]);
+    const [restaurants, setRestaurants] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [restaurantsLoading, setRestaurantsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const params = useMemo(
@@ -41,15 +44,33 @@ export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptio
 
     const fetchResults = useCallback(async () => {
         setLoading(true);
+        setRestaurantsLoading(true);
         setError(null);
         try {
-            const data = await getMenu(params);
-            const list = Array.isArray(data) ? (data as MenuItem[]) : [];
-            setResults(sortResults(list, sort));
+            const [menuResult, restaurantResult] = await Promise.allSettled([
+                getMenu(params),
+                getRestaurants(params.query ? { search: params.query } : undefined),
+            ]);
+
+            if (menuResult.status === "fulfilled") {
+                const list = Array.isArray(menuResult.value) ? (menuResult.value as MenuItem[]) : [];
+                setResults(sortResults(list, sort));
+            } else {
+                throw menuResult.reason;
+            }
+
+            if (restaurantResult.status === "fulfilled") {
+                setRestaurants(Array.isArray(restaurantResult.value) ? restaurantResult.value : []);
+            } else {
+                setRestaurants([]);
+                if (__DEV__) console.warn("[Search] restaurant lookup failed.", restaurantResult.reason);
+            }
         } catch (err: any) {
             setError(err?.message || "Unable to fetch meals. Please try again.");
+            setResults([]);
         } finally {
             setLoading(false);
+            setRestaurantsLoading(false);
         }
     }, [params, sort]);
 
@@ -67,7 +88,9 @@ export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptio
         sort,
         setSort: updateSort,
         results,
+        restaurants,
         loading,
+        restaurantsLoading,
         error,
         refetch: fetchResults,
     };

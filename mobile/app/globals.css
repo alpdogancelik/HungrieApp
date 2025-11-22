@@ -46,11 +46,11 @@
     }
 
     .label {
-        @apply text-base text-start w-full font-quicksand-medium text-gray-500 pl-2;
+        @apply text-base text-start w-full font-ezra-medium text-gray-500 pl-2;
     }
 
     .input {
-        @apply rounded-lg p-3 w-full text-base font-quicksand-semibold text-dark-100 border-b leading-5;
+        @apply rounded-lg p-3 w-full text-base font-ezra-semibold text-dark-100 border-b leading-5;
     }
 
     .filter {
@@ -70,7 +70,7 @@
     }
 
     .searchbar {
-        @apply relative flex flex-row items-center justify-start w-full bg-white shadow-lg shadow-black/5 rounded-full font-quicksand-medium text-dark-100 gap-4 px-5;
+        @apply relative flex flex-row items-center justify-start w-full bg-white shadow-lg shadow-black/5 rounded-full font-ezra-medium text-dark-100 gap-4 px-5;
     }
 
     .tab-icon {
@@ -113,47 +113,47 @@
     }
 
     .h1-bold {
-        @apply text-3xl font-quicksand-bold;
+        @apply text-3xl font-ezra-bold;
     }
 
     .h3-bold {
-        @apply text-xl font-quicksand-bold;
+        @apply text-xl font-ezra-bold;
     }
 
     .base-bold {
-        @apply text-lg font-quicksand-bold !important;
+        @apply text-lg font-ezra-bold !important;
     }
 
     .base-semibold {
-        @apply text-lg font-quicksand-semibold;
+        @apply text-lg font-ezra-semibold;
     }
 
     .base-regular {
-        @apply text-lg font-quicksand;
+        @apply text-lg font-ezra;
     }
 
     .paragraph-bold {
-        @apply text-base font-quicksand-bold;
+        @apply text-base font-ezra-bold;
     }
 
     .paragraph-semibold {
-        @apply text-base font-quicksand-semibold;
+        @apply text-base font-ezra-semibold;
     }
 
     .paragraph-medium {
-        @apply text-base font-quicksand-medium text-dark-60;
+        @apply text-base font-ezra-medium text-dark-60;
     }
 
     .body-medium {
-        @apply text-sm font-quicksand-medium text-dark-60;
+        @apply text-sm font-ezra-medium text-dark-60;
     }
 
     .body-regular {
-        @apply text-sm font-quicksand;
+        @apply text-sm font-ezra;
     }
 
     .small-bold {
-        @apply text-xs font-quicksand-bold tracking-[2px];
+        @apply text-xs font-ezra-bold tracking-[2px];
     }
 
     .hero-card {
@@ -161,7 +161,7 @@
     }
 
     .hero-cta {
-        @apply px-5 py-3 rounded-full bg-dark-100 text-white font-quicksand-semibold;
+        @apply px-5 py-3 rounded-full bg-dark-100 text-white font-ezra-semibold;
     }
 
     .chip {
@@ -169,10 +169,11 @@
     }
 
     .section-title {
-        @apply text-lg font-quicksand-bold text-dark-100;
+        @apply text-lg font-ezra-bold text-dark-100;
     }
 
     .secondary-card {
         @apply rounded-3xl p-4 bg-white shadow-lg shadow-black/5 border border-gray-100;
     }
 }
+

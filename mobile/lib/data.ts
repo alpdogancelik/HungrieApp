@@ -1,5 +1,5 @@
-// Dummy data migrated from food_ordering-main for seeding Appwrite collections.
-// This file is not imported at runtime; it's used by scripts/appwriteSeed.ts.
+// Dummy data migrated from food_ordering-main for reference Firestore/preview seeds.
+// This file is not imported at runtime; it's kept for documentation/testing helpers.
 export const dummyData = {
     categories: [
         { name: "Burgers", description: "Juicy grilled burgers" },

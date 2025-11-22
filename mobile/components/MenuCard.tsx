@@ -2,7 +2,7 @@ import { memo, useCallback, useMemo, useState } from "react";
 import { Alert, Platform, Text, ToastAndroid, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
 import { useCartStore } from "@/store/cart.store";
-import { images } from "@/constants";
+import Icon from "./Icon";
 import ReviewSheet from "@/src/features/reviews/ReviewSheet";
 import { useProductReviews } from "@/src/features/reviews/useProductReviews";
 
@@ -25,20 +25,21 @@ const MenuCard = ({ item, onPress }: MenuCardProps) => {
     const imageUrl = resolvedImage?.startsWith("http") ? resolvedImage : undefined;
     const { addItem } = useCartStore();
     const numericPrice = Number(price || 0);
-    const productId = $id || item?.id || name;
+    const fallbackProductId = $id ?? item?.id ?? name;
+    const productId = fallbackProductId ? String(fallbackProductId) : `menu-${Date.now()}`;
     const { average, count, currentUserReview, submitReview, isSubmitting } = useProductReviews(productId);
     const [sheetVisible, setSheetVisible] = useState(false);
     const averageLabel = useMemo(() => average.toFixed(1), [average]);
 
     const handleAdd = useCallback(() => {
         addItem({
-            id: $id || `menu-${Date.now()}`,
+            id: String($id || item?.id || `menu-${Date.now()}`),
             name: name || "Menu Item",
             price: numericPrice || 0,
             image_url: imageUrl || '',
             customizations: [],
         });
-    }, [$id, addItem, imageUrl, name, numericPrice]);
+    }, [$id, addItem, imageUrl, item?.id, name, numericPrice]);
 
     const handleSubmitReview = useCallback(
         async ({ rating, comment }: { rating: 1 | 2 | 3 | 4 | 5; comment?: string }) => {
@@ -72,10 +73,10 @@ const MenuCard = ({ item, onPress }: MenuCardProps) => {
             <View className="flex-row items-start justify-between gap-4">
                 <View className="flex-1 gap-2">
                     <Text className="body-medium uppercase text-dark-60 tracking-[2px]">chef's pick</Text>
-                    <Text className="text-2xl font-quicksand-bold text-dark-100" numberOfLines={2}>{name}</Text>
+                    <Text className="text-2xl font-ezra-bold text-dark-100" numberOfLines={2}>{name}</Text>
                     <Text className="paragraph-semibold text-primary-dark">TRY {numericPrice.toFixed(2)}</Text>
                     <View className="flex-row items-center gap-2">
-                        <Image source={images.star} className="size-4" contentFit="contain" tintColor="#FE8C00" />
+                        <Icon name="star" size={16} color="#FE8C00" />
                         <Text className="paragraph-semibold text-dark-100">{averageLabel}</Text>
                         <Text className="body-medium text-dark-60">({count})</Text>
                     </View>
@@ -124,3 +125,4 @@ const MenuCard = ({ item, onPress }: MenuCardProps) => {
 };
 
 export default memo(MenuCard);
+

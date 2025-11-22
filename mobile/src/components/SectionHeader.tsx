@@ -1,5 +1,5 @@
 import { Text, TouchableOpacity, View } from "react-native";
-import { useTheme } from "@/src/theme";
+import { useTheme } from "@/src/theme/themeContext";
 
 type SectionHeaderProps = {
     title: string;
@@ -24,7 +24,7 @@ export const SectionHeader = ({
         >
             <Text
                 style={{
-                    fontFamily: "QuickSand-Bold",
+                    fontFamily: "Ezra-Bold",
                     fontSize: theme.typography.h2,
                     color: theme.colors.ink,
                 }}
@@ -36,7 +36,7 @@ export const SectionHeader = ({
                     <Text
                         style={{
                             color: theme.colors.primary,
-                            fontFamily: "QuickSand-SemiBold",
+                            fontFamily: "Ezra-SemiBold",
                         }}
                     >
                         {actionLabel}
@@ -48,3 +48,4 @@ export const SectionHeader = ({
 };
 
 export default SectionHeader;
+

@@ -14,6 +14,7 @@ export type RadiusScale = {
     md: number;
     lg: number;
     xl: number;
+    "2xl": number;
 };
 
 export type SpacingScale = {
@@ -33,25 +34,25 @@ export type TypographyScale = {
 };
 
 export const lightColors: ColorRoles = {
-    primary: "#FF8C42",
-    ink: "#0F172A",
-    surface: "#FFFFFF",
-    muted: "#A0AEC0",
-    success: "#22C55E",
-    warning: "#FACC15",
-    danger: "#F87171",
-    border: "#E2E8F0",
+    primary: "#FF7A45",
+    ink: "#2B150E",
+    surface: "#FFEDD9",
+    muted: "#C48A74",
+    success: "#FFB347",
+    warning: "#FFDF99",
+    danger: "#FF8F6B",
+    border: "#F6D2BF",
 };
 
 export const darkColors: ColorRoles = {
-    primary: "#FFB66E",
-    ink: "#F5F7FB",
-    surface: "#11131A",
-    muted: "#7B879B",
-    success: "#4ADE80",
-    warning: "#FCD34D",
-    danger: "#FB7185",
-    border: "#262A38",
+    primary: "#FF9E64",
+    ink: "#FFE5D6",
+    surface: "#2B150E",
+    muted: "#F2B7A3",
+    success: "#FFC676",
+    warning: "#FFDFA5",
+    danger: "#FFAB8A",
+    border: "#3D1F15",
 };
 
 export const radius: RadiusScale = {
@@ -59,6 +60,7 @@ export const radius: RadiusScale = {
     md: 12,
     lg: 16,
     xl: 24,
+    "2xl": 32,
 };
 
 export const spacing: SpacingScale = {

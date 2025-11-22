@@ -1,7 +1,7 @@
-import { images } from "@/constants";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import { Image, TextInput, TouchableOpacity, View } from "react-native";
+import { TextInput, TouchableOpacity, View } from "react-native";
+import Icon from "./Icon";
 
 const Searchbar = () => {
     const params = useLocalSearchParams<{ query?: string | string[] }>();
@@ -42,16 +42,8 @@ const Searchbar = () => {
                 placeholderTextColor="#A0A0A0"
                 returnKeyType="search"
             />
-            <TouchableOpacity
-                className="pr-5"
-                onPress={() => updateRouteQuery(query)}
-            >
-                <Image
-                    source={images.search}
-                    className="size-6"
-                    resizeMode="contain"
-                    tintColor="#5D5F6D"
-                />
+            <TouchableOpacity className="pr-5" onPress={() => updateRouteQuery(query)}>
+                <Icon name="search" size={20} color="#5D5F6D" />
             </TouchableOpacity>
         </View>
     );

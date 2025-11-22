@@ -1,0 +1,96 @@
+{
+  "restaurants": [
+    {
+      "id": "burgerhouse",
+      "name": "Burger House",
+      "cuisine": "Burgers & Fries",
+      "description": "Campus favorites from smash burgers to loaded fries.",
+      "deliveryFee": 24.9,
+      "deliveryTime": "20-30",
+      "imageUrl": "@/assets/restaurantlogo/burgerhouselogo.jpeg",
+      "ownerId": "burgerhouse-owner-uid",
+      "isActive": true,
+      "address": "North Campus Food Court"
+    }
+  ],
+  "categories": [
+    { "id": "burgers", "name": "Burgers" },
+    { "id": "sides", "name": "Sides" },
+    { "id": "drinks", "name": "Drinks" },
+    { "id": "extras", "name": "Extras" }
+  ],
+  "menus": [
+    {
+      "id": "burger-001",
+      "name": "Classic Burger",
+      "description": "Seared beef patty, cheddar, house sauce, brioche bun.",
+      "price": 320,
+      "restaurantId": "burgerhouse",
+      "categories": ["burgers"]
+    },
+    {
+      "id": "burger-002",
+      "name": "BBQ Double",
+      "description": "Double patty, smoked cheddar, crispy onions, BBQ glaze.",
+      "price": 380,
+      "restaurantId": "burgerhouse",
+      "categories": ["burgers"]
+    },
+    {
+      "id": "burger-003",
+      "name": "Spicy Chicken",
+      "description": "Crispy chicken fillet, chili mayo, pickles, slaw.",
+      "price": 340,
+      "restaurantId": "burgerhouse",
+      "categories": ["burgers"]
+    },
+    {
+      "id": "side-001",
+      "name": "Loaded Fries",
+      "description": "Cheese sauce, jalapeno, crispy onions.",
+      "price": 140,
+      "restaurantId": "burgerhouse",
+      "categories": ["sides"]
+    },
+    {
+      "id": "side-002",
+      "name": "Onion Rings",
+      "description": "Golden fried rings with ranch dip.",
+      "price": 120,
+      "restaurantId": "burgerhouse",
+      "categories": ["sides"]
+    },
+    {
+      "id": "drink-001",
+      "name": "Cola 330ml",
+      "description": "Chilled can.",
+      "price": 40,
+      "restaurantId": "burgerhouse",
+      "categories": ["drinks"]
+    },
+    {
+      "id": "drink-002",
+      "name": "Iced Tea",
+      "description": "Lemon iced tea.",
+      "price": 45,
+      "restaurantId": "burgerhouse",
+      "categories": ["drinks"]
+    },
+    {
+      "id": "extra-001",
+      "name": "Extra Cheese",
+      "description": "Melted cheddar slice.",
+      "price": 20,
+      "restaurantId": "burgerhouse",
+      "categories": ["extras"]
+    },
+    {
+      "id": "extra-002",
+      "name": "Extra Patty",
+      "description": "Add a beef patty to any burger.",
+      "price": 90,
+      "restaurantId": "burgerhouse",
+      "categories": ["extras"]
+    }
+  ]
+}

@@ -1,58 +1,32 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-} from "react-native";
+﻿import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Alert, FlatList, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Image } from "expo-image";
 import { useCartStore } from "@/store/cart.store";
-import { images } from "@/constants";
+import { images, cookingScenes } from "@/constants/mediaCatalog";
 import { createOrder } from "@/lib/api";
-import { useAddresses } from "@/src/features/address";
+import { useAddresses } from "@/src/features/address/addressFeature";
 import type { CartItemType } from "@/type";
 import type { PaymentMethod } from "@/src/domain/types";
+import AddressSummary from "@/components/cart/AddressSummary";
+import AddressTabBar from "@/components/cart/AddressTabBar";
+import CartItemCard from "@/components/cart/CartItemCard";
+import CourierNotes from "@/components/cart/CourierNotes";
+import PaymentMethodList from "@/components/cart/PaymentMethodList";
+import SummaryCard from "@/components/cart/SummaryCard";
+import { formatCurrency, getCustomizationsTotal } from "@/lib/cart.utils";
 
-const cardShadow = {
-    shadowColor: "#0F172A",
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 5,
-};
-const ADDRESS_SKELETON_COUNT = 3;
-const ADDRESS_SKELETONS = Array.from({ length: ADDRESS_SKELETON_COUNT }, (_, index) => index);
-const ADDRESS_PILL_SKELETON_STYLE = {
-    width: 110,
-    height: 44,
-    borderRadius: 24,
-    backgroundColor: "#E2E8F0",
-    opacity: 0.6,
-};
-const ADDRESS_TAB_SKELETON_STYLE = {
-    width: 90,
-    height: 40,
-    borderRadius: 9999,
-    backgroundColor: "#E2E8F0",
-    opacity: 0.6,
-};
-const CONTAINER_PADDING = { paddingHorizontal: 24 };
+const QuietDropScene = cookingScenes.orderAccepted;
 
 const paymentOptions: { id: PaymentMethod; label: string; description: string }[] = [
     { id: "pos", label: "Card on delivery (POS)", description: "Courier brings a wireless POS" },
     { id: "cash", label: "Cash", description: "Pay cash to the courier" },
 ];
 
-const formatCurrency = (value: number) => `TRY ${value.toFixed(2)}`;
-
-const getCustomizationsTotal = (customizations?: CartItemType["customizations"]) =>
-    customizations?.reduce((sum, option) => sum + Number(option.price || 0), 0) ?? 0;
+const CONTAINER_PADDING = { paddingHorizontal: 24 };
+const MAX_NOTES = 200;
+const NOTE_SUGGESTIONS = ["Ring the bell", "Leave at door", "Call on arrival"];
 
 const getCartItemKey = (item: CartItemType) => {
     const customizationKey = (item.customizations ?? [])
@@ -62,72 +36,11 @@ const getCartItemKey = (item: CartItemType) => {
     return customizationKey ? `${item.id}-${customizationKey}` : item.id;
 };
 
-type CartItemWithRestaurant = CartItemType & { restaurantId?: number };
-
-const CartCard = ({
-    item,
-    onIncrease,
-    onDecrease,
-    onRemove,
-}: {
-    item: CartItemType;
-    onIncrease: () => void;
-    onDecrease: () => void;
-    onRemove: () => void;
-}) => {
-    const price = Number(item.price || 0);
-    const customizationTotal = getCustomizationsTotal(item.customizations);
-    const total = (price + customizationTotal) * (item.quantity || 1);
-    const chips = (item.customizations || []).map((c) => c.name).join(" / ");
-
-    return (
-        <View className="bg-white rounded-[32px] flex-row gap-4 p-4" style={cardShadow}>
-            <View className="w-24 h-24 rounded-3xl bg-[#FFF4EC] items-center justify-center overflow-hidden">
-                <Image
-                    source={item.image_url ? { uri: item.image_url } : images.burgerTwo}
-                    className="w-full h-full"
-                    contentFit="cover"
-                    transition={200}
-                />
-            </View>
-            <View className="flex-1 justify-between">
-                <View className="gap-1">
-                    <Text className="text-xl font-quicksand-bold text-dark-100" numberOfLines={1}>{item.name}</Text>
-                    {chips ? (
-                        <Text className="body-medium text-dark-60" numberOfLines={1}>{chips}</Text>
-                    ) : (
-                        <Text className="body-medium text-dark-60">Campus favorite</Text>
-                    )}
-                </View>
-                <View className="flex-row items-center gap-3">
-                    <TouchableOpacity className="size-10 rounded-full bg-[#FFE4D4] items-center justify-center" onPress={onDecrease}>
-                        <Image source={images.minus} className="size-4" contentFit="contain" />
-                    </TouchableOpacity>
-                    <Text className="paragraph-semibold text-dark-100">{item.quantity}</Text>
-                    <TouchableOpacity className="size-10 rounded-full bg-[#FF8C42] items-center justify-center" onPress={onIncrease}>
-                        <Image source={images.plus} className="size-4" contentFit="contain" />
-                    </TouchableOpacity>
-                </View>
-            </View>
-            <View className="items-end justify-between">
-                <TouchableOpacity className="size-10 rounded-full bg-[#FFE4D4] items-center justify-center" onPress={onRemove}>
-                    <Image source={images.trash} className="size-5" contentFit="contain" />
-                </TouchableOpacity>
-                <Text className="paragraph-semibold text-dark-100">{formatCurrency(total)}</Text>
-            </View>
-        </View>
-    );
-};
+type CartItemWithRestaurant = CartItemType & { restaurantId?: string };
+const DEFAULT_RESTAURANT_ID = "ada-pizza";
 
 const stringifyId = (value: string | number | null | undefined) =>
     value === null || value === undefined ? "" : String(value);
-
-const SummaryRow = ({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) => (
-    <View className="flex-row items-center justify-between py-1">
-        <Text className={highlight ? "paragraph-semibold text-dark-80" : "body-medium text-dark-60"}>{label}</Text>
-        <Text className={highlight ? "h3-bold text-dark-100" : "paragraph-semibold text-dark-100"}>{value}</Text>
-    </View>
-);
 
 const Cart = () => {
     const { items, getTotalPrice, increaseQty, decreaseQty, removeItem, clearCart } = useCartStore();
@@ -139,14 +52,15 @@ const Cart = () => {
     const total = subtotal - discount;
 
     const { addresses, isLoading: addressesLoading } = useAddresses();
+    const addressList = addresses ?? [];
     const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>("pos");
     const [notes, setNotes] = useState("");
     const [placingOrder, setPlacingOrder] = useState(false);
-    const resolvedAddressId = selectedAddress ?? addresses[0]?.id ?? null;
+    const resolvedAddressId = selectedAddress ?? addressList[0]?.id ?? null;
     const canCheckout = Boolean(!isCartEmpty && resolvedAddressId !== null && paymentMethod);
     const selectedAddressId = stringifyId(selectedAddress);
-    const hasAddresses = addresses.length > 0;
+    const handleSelectAddress = (addressId: string | number) => setSelectedAddress(String(addressId));
     const listData = useMemo(() => {
         const data: Array<{ type: "addresses" } | { type: "item"; item: CartItemType }> = [{ type: "addresses" }];
         items.forEach((item) => data.push({ type: "item", item }));
@@ -154,21 +68,28 @@ const Cart = () => {
     }, [items]);
 
     useEffect(() => {
-        if (!addresses.length) {
+        const list = addresses ?? [];
+        if (!list.length) {
             setSelectedAddress(null);
             return;
         }
         if (!selectedAddress) {
-            const defaultAddress = addresses.find((addr) => addr.isDefault);
-            setSelectedAddress((defaultAddress ?? addresses[0]).id);
+            const defaultAddress = list.find((addr) => addr.isDefault);
+            setSelectedAddress(String((defaultAddress ?? list[0]).id));
             return;
         }
-        const exists = addresses.some((addr) => stringifyId(addr.id) === stringifyId(selectedAddress));
+        const exists = list.some((addr) => stringifyId(addr.id) === stringifyId(selectedAddress));
         if (!exists) {
-            const fallback = addresses.find((addr) => addr.isDefault) ?? addresses[0];
-            setSelectedAddress(fallback.id);
+            const fallback = list.find((addr) => addr.isDefault) ?? list[0];
+            setSelectedAddress(String(fallback.id));
         }
     }, [addresses, selectedAddress]);
+
+    const handlePrefillNote = () => {
+        if (!notes) {
+            setNotes("Leave at dorm lobby, text me when outside.");
+        }
+    };
 
     const handlePlaceOrder = async () => {
         if (!items.length) {
@@ -186,7 +107,9 @@ const Cart = () => {
             return;
         }
 
-        const restaurantId = (items[0] as CartItemWithRestaurant | undefined)?.restaurantId ?? 1;
+        const restaurantId = String(
+            (items[0] as CartItemWithRestaurant | undefined)?.restaurantId ?? DEFAULT_RESTAURANT_ID,
+        );
 
         const orderData = {
             restaurantId,
@@ -244,124 +167,67 @@ const Cart = () => {
     if (isCartEmpty) {
         return (
             <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center px-5">
-                <Image source={images.emptyState} className="w-48 h-48" contentFit="contain" />
-                <Text className="h3-bold text-dark-100 mt-4">Your cart feels empty</Text>
-                <Text className="body-medium text-center mt-2">Add meals from the Home tab and they'll appear here.</Text>
+                <Image source={images.deliveryBag} className="w-60 h-60" contentFit="cover" />
+                <Text className="h3-bold text-dark-100 mt-4">Save a midnight drop</Text>
+                <Text className="body-medium text-center mt-2 text-dark-60">
+                    Add meals from Home and we'll keep the courier quiet when they arrive.
+                </Text>
+                <TouchableOpacity
+                    className="mt-4 px-6 py-3 rounded-full bg-primary"
+                    onPress={() => router.push("/")}
+                >
+                    <Text className="text-white paragraph-semibold">Browse restaurants</Text>
+                </TouchableOpacity>
             </SafeAreaView>
         );
     }
 
-    const renderHeader = () => {
-        const addressChips = hasAddresses
-            ? addresses.map((address) => {
-                  const isActive = stringifyId(address.id) === selectedAddressId;
-                  return (
-                      <TouchableOpacity
-                          key={address.id}
-                          className="px-4 py-2 rounded-2xl border"
-                          style={{
-                              borderColor: isActive ? "#FF8C42" : "#E2E8F0",
-                              backgroundColor: isActive ? "#FFF1E7" : "transparent",
-                          }}
-                          onPress={() => setSelectedAddress(address.id)}
-                      >
-                          <Text className="paragraph-semibold text-dark-80">{address.label}</Text>
-                      </TouchableOpacity>
-                  );
-              })
-            : addressesLoading
-                ? ADDRESS_SKELETONS.map((skeleton) => (
-                      <View key={`address-pill-${skeleton}`} style={ADDRESS_PILL_SKELETON_STYLE} />
-                  ))
-                : [
-                      <TouchableOpacity
-                          key="add-address-pill"
-                          className="px-4 py-2 rounded-2xl border border-dashed border-gray-300"
-                          onPress={() => router.push("/ManageAddresses")}
-                      >
-                          <Text className="paragraph-semibold text-primary">Add address</Text>
-                      </TouchableOpacity>,
-                  ];
-
-        return (
-            <View className="gap-5 pt-4" style={CONTAINER_PADDING}>
-                <View className="gap-2">
-                    <TouchableOpacity className="flex-row items-center gap-3 bg-white rounded-3xl px-4 py-3 border border-gray-100" activeOpacity={0.9}>
-                        <View className="size-10 rounded-2xl bg-primary/10 items-center justify-center">
-                            <Image source={images.location} className="size-5" contentFit="contain" tintColor="#FF8C42" />
-                        </View>
-                        <View className="flex-1">
-                            <Text className="body-medium text-dark-60">Deliver to</Text>
-                            <Text className="paragraph-semibold text-dark-100" numberOfLines={1}>
-                                {addresses.find((addr) => stringifyId(addr.id) === selectedAddressId)?.label || "Select address"}
-                            </Text>
-                        </View>
-                        <Image source={images.arrowDown} className="size-4" contentFit="contain" />
-                    </TouchableOpacity>
-                    <Text className="text-4xl font-quicksand-bold text-dark-100 mt-2">Order</Text>
-                    <Text className="body-medium text-dark-60">Campus cravings, ready in minutes.</Text>
-                </View>
-
-                <View style={{ minHeight: 52 }}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        <View className="flex-row gap-3">{addressChips}</View>
-                    </ScrollView>
-                    {!addressesLoading && (
-                        <TouchableOpacity className="mt-3 self-start" onPress={() => router.push("/ManageAddresses")}>
-                            <Text className="paragraph-semibold text-primary">Manage addresses</Text>
+    const renderHeader = () => (
+        <View className="gap-4">
+            <AddressSummary
+                addresses={addressList}
+                loading={addressesLoading}
+                selectedAddressId={selectedAddressId}
+                onSelect={handleSelectAddress}
+                onManageAddresses={() => router.push("/ManageAddresses")}
+                onAddAddress={() => router.push("/ManageAddresses")}
+            />
+            <View className="px-6">
+                <View className="bg-white rounded-[32px] border border-[#F3E4D7] flex-row items-center gap-4 px-5 py-4">
+                    <View className="flex-1 gap-2">
+                        <Text className="text-xs uppercase text-primary font-ezra-semibold">Quiet drop-offs</Text>
+                        <Text className="text-xl font-ezra-bold text-dark-100">Couriers text after 23:00.</Text>
+                        <Text className="body-medium text-dark-60">
+                            Add clear notes so they know exactly where to leave your food.
+                        </Text>
+                        <TouchableOpacity
+                            className="mt-2 self-start px-4 py-2 rounded-full bg-primary/10"
+                            onPress={handlePrefillNote}
+                        >
+                            <Text className="paragraph-semibold text-primary-dark">Prefill courier note</Text>
                         </TouchableOpacity>
-                    )}
+                    </View>
+                    <QuietDropScene width={120} height={120} />
                 </View>
             </View>
-        );
-    };
+        </View>
+    );
 
-    const renderAddressTabs = () => {
-        const tabContent = hasAddresses
-            ? addresses.map((address) => {
-                  const isActive = stringifyId(address.id) === selectedAddressId;
-                  return (
-                      <TouchableOpacity
-                          key={address.id}
-                          className="px-4 py-2 rounded-full border"
-                          style={{
-                              borderColor: isActive ? "#FF8C42" : "#CBD5F5",
-                              backgroundColor: isActive ? "#FFF6EF" : "#FFFFFF",
-                          }}
-                          onPress={() => setSelectedAddress(address.id)}
-                      >
-                          <Text className="paragraph-semibold text-dark-80">{address.label}</Text>
-                      </TouchableOpacity>
-                  );
-              })
-            : addressesLoading
-                ? ADDRESS_SKELETONS.map((skeleton) => (
-                      <View key={`address-tab-${skeleton}`} style={ADDRESS_TAB_SKELETON_STYLE} />
-                  ))
-                : [
-                      <TouchableOpacity
-                          key="address-tab-empty"
-                          className="px-4 py-2 rounded-full border border-dashed border-gray-300"
-                          onPress={() => router.push("/ManageAddresses")}
-                      >
-                          <Text className="paragraph-semibold text-primary">Add address</Text>
-                      </TouchableOpacity>,
-                  ];
-
-        return (
-            <View className="bg-[#F8F6F2] py-3" style={CONTAINER_PADDING}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-                    {tabContent}
-                </ScrollView>
-            </View>
-        );
-    };
+    const renderAddressTabs = () => (
+        <AddressTabBar
+            addresses={addressList}
+            loading={addressesLoading}
+            selectedAddressId={selectedAddressId}
+            onSelect={handleSelectAddress}
+            onAddAddress={() => router.push("/ManageAddresses")}
+        />
+    );
 
     const renderListItem = ({ item }: { item: { type: "addresses" } | { type: "item"; item: CartItemType } }) => {
         if (item.type === "addresses") return renderAddressTabs();
         const cartItem = item.item;
         return (
-            <CartCard
+            <CartItemCard
                 item={cartItem}
                 onIncrease={() => increaseQty(cartItem.id, cartItem.customizations || [])}
                 onDecrease={() => decreaseQty(cartItem.id, cartItem.customizations || [])}
@@ -371,8 +237,6 @@ const Cart = () => {
     };
 
     const handleNoteChange = (text: string) => setNotes(text.slice(0, MAX_NOTES));
-    const MAX_NOTES = 200;
-    const noteSuggestions = ["Ring the bell", "Leave at door", "Call on arrival"];
 
     const renderFooter = () => {
         const checkoutLabel = !resolvedAddressId
@@ -383,66 +247,20 @@ const Cart = () => {
 
         return (
             <View className="gap-5 pt-6" style={CONTAINER_PADDING}>
-                <View className="bg-white rounded-[32px] p-5 gap-2" style={cardShadow}>
-                    <SummaryRow label="Sub total" value={formatCurrency(subtotal)} />
-                    <SummaryRow label="Discount" value={discount ? `- ${formatCurrency(discount)}` : "TRY 0.00"} />
-                    <View className="border-t border-gray-100 my-2" />
-                    <SummaryRow label="Total" value={formatCurrency(total)} highlight />
-                </View>
+                <SummaryCard
+                    subtotal={formatCurrency(subtotal)}
+                    discount={discount ? `- ${formatCurrency(discount)}` : "TRY 0.00"}
+                    total={formatCurrency(total)}
+                />
 
-                <View className="gap-3">
-                    <Text className="section-title">Payment methods</Text>
-                    {paymentOptions.map((option) => {
-                        const isActive = paymentMethod === option.id;
-                        return (
-                            <TouchableOpacity
-                                key={option.id}
-                                className="flex-row items-center gap-3 rounded-3xl px-4 py-4 border-2"
-                                style={{
-                                    borderColor: isActive ? "#FF8C42" : "#E2E8F0",
-                                    backgroundColor: isActive ? "#FFF6EF" : "#FFFFFF",
-                                }}
-                                onPress={() => setPaymentMethod(option.id)}
-                            >
-                                <View
-                                    className="size-4 rounded-full border-2 items-center justify-center"
-                                    style={{ borderColor: isActive ? "#FF8C42" : "#CBD5F5" }}
-                                >
-                                    {isActive && <View className="size-2 rounded-full bg-primary" />}
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="paragraph-semibold text-dark-100">{option.label}</Text>
-                                    <Text className="body-medium text-dark-60">{option.description}</Text>
-                                </View>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
+                <PaymentMethodList options={paymentOptions} selected={paymentMethod} onSelect={setPaymentMethod} />
 
-                <View className="gap-2">
-                    <Text className="section-title">Notes for courier</Text>
-                    <View className="flex-row flex-wrap gap-3">
-                        {noteSuggestions.map((suggestion) => (
-                            <TouchableOpacity
-                                key={suggestion}
-                                className="px-3 py-2 rounded-2xl border border-gray-200 bg-white"
-                                onPress={() => handleNoteChange(suggestion)}
-                            >
-                                <Text className="body-medium text-dark-80">{suggestion}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                    <TextInput
-                        className="rounded-3xl bg-white border border-gray-100 px-4 py-3 text-dark-100"
-                        placeholder="Gate code, dorm details..."
-                        placeholderTextColor="#94A3B8"
-                        value={notes}
-                        onChangeText={handleNoteChange}
-                        multiline
-                        maxLength={MAX_NOTES}
-                    />
-                    <Text className="body-medium text-right text-dark-60">{notes.length}/{MAX_NOTES}</Text>
-                </View>
+                <CourierNotes
+                    value={notes}
+                    maxLength={MAX_NOTES}
+                    suggestions={NOTE_SUGGESTIONS}
+                    onChange={handleNoteChange}
+                />
 
                 <TouchableOpacity
                     className="custom-btn flex-row items-center justify-center gap-3"
@@ -487,3 +305,4 @@ const Cart = () => {
  * @returns {JSX.Element} The rendered cart screen component
  */
 export default Cart;
+

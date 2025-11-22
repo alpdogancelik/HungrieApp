@@ -1,17 +1,17 @@
 import { useMemo } from "react";
-import { ImageSourcePropType } from "react-native";
 import useAuthStore from "@/store/auth.store";
-import useAppwrite from "@/lib/useAppwrite";
+import useAsyncResource from "@/lib/useAsyncResource";
 import useServerResource from "@/lib/useServerResource";
 import { getMenu } from "@/lib/firebaseAuth";
 import { getRestaurants } from "@/lib/api";
 import type { Category } from "@/type";
-import { CATEGORIES, images } from "@/constants";
+import { CATEGORIES } from "@/constants/mediaCatalog";
+import type { IconName } from "@/components/Icon";
 
 type QuickAction = {
     id: string;
     label: string;
-    icon: ImageSourcePropType;
+    icon: IconName;
     target: string;
 };
 
@@ -30,7 +30,7 @@ type UseHomeResult = {
 export const useHome = (): UseHomeResult => {
     const { user } = useAuthStore();
     const featuredMenuParams = useMemo(() => ({ limit: 6 }), []);
-    const { data: menu, loading: menuLoading } = useAppwrite({ fn: getMenu, params: featuredMenuParams });
+    const { data: menu, loading: menuLoading } = useAsyncResource({ fn: getMenu, params: featuredMenuParams });
     const {
         data: restaurants,
         loading: restaurantsLoading,
@@ -39,16 +39,16 @@ export const useHome = (): UseHomeResult => {
     const categories = useMemo(() => CATEGORIES as unknown as Category[], []);
     const quickActions = useMemo<QuickAction[]>(
         () => [
-            { id: "orders", label: "Order history", icon: images.clock, target: "/orders" },
-            { id: "favorites", label: "Favourites", icon: images.star, target: "/search?query=popular" },
-            { id: "addresses", label: "Addresses", icon: images.location, target: "/profile" },
-            { id: "coupons", label: "Coupons", icon: images.dollar, target: "/search?query=promo" },
+            { id: "orders", label: "Order history", icon: "clock", target: "/orders" },
+            { id: "favorites", label: "Favourites", icon: "star", target: "/search?query=popular" },
+            { id: "addresses", label: "Addresses", icon: "location", target: "/profile" },
+            { id: "coupons", label: "Coupons", icon: "dollar", target: "/search?query=promo" },
         ],
         [],
     );
 
     return {
-        userName: user?.name || "Campus Dorm",
+        userName: user?.name || "Hungrie User",
         menu,
         menuLoading,
         heroLoading: menuLoading,

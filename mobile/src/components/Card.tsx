@@ -1,6 +1,6 @@
 import { View, ViewProps } from "react-native";
 import { ReactNode } from "react";
-import { useTheme, getShadow } from "@/src/theme";
+import { useTheme, getShadow } from "@/src/theme/themeContext";
 
 type CardProps = ViewProps & {
     children: ReactNode;

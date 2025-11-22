@@ -3,6 +3,7 @@ import {
     Alert,
     Animated,
     Easing,
+    Platform,
     SafeAreaView,
     Text,
     TouchableOpacity,
@@ -42,6 +43,16 @@ const radius = {
     sm: 12,
     md: 16,
     lg: 24,
+};
+
+const CANCEL_WINDOW_SECONDS = 60;
+
+const getCancelWindowRemaining = (timestamp?: string) => {
+    if (!timestamp) return CANCEL_WINDOW_SECONDS;
+    const createdAt = new Date(timestamp).getTime();
+    if (Number.isNaN(createdAt)) return CANCEL_WINDOW_SECONDS;
+    const diffSeconds = Math.floor((Date.now() - createdAt) / 1000);
+    return Math.max(CANCEL_WINDOW_SECONDS - diffSeconds, 0);
 };
 
 const formatTime = (seconds: number) => {
@@ -90,7 +101,7 @@ const StepRow = ({
                 {icon}
             </View>
             <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.text, fontFamily: "QuickSand-SemiBold", fontSize: 16 }}>{title}</Text>
+                <Text style={{ color: colors.text, fontFamily: "Ezra-SemiBold", fontSize: 16 }}>{title}</Text>
                 {subtitle ? (
                     <Text style={{ color: colors.sub, marginTop: 2, fontSize: 14 }}>{subtitle}</Text>
                 ) : null}
@@ -121,8 +132,10 @@ const OrderPendingScreen = ({
     const [cooldown, setCooldown] = useState(0);
     const [sendingNudge, setSendingNudge] = useState(false);
     const [autoCanceled, setAutoCanceled] = useState(false);
+    const [cancelWindowRemaining, setCancelWindowRemaining] = useState(CANCEL_WINDOW_SECONDS);
     const spinner = useRef(new Animated.Value(0)).current;
     const prevStatus = useRef<OrderStatus>("pending");
+    const isCancelWindowActive = orderStatus === "pending" && cancelWindowRemaining > 0 && !autoCanceled;
 
     const handleAutoCancel = useCallback(async () => {
         if (autoCanceled || !orderId) return;
@@ -130,6 +143,7 @@ const OrderPendingScreen = ({
         try {
             await changeStatus({ orderId, status: "canceled" });
             emitOrderEvent("order_auto_canceled", { id: orderId, status: "canceled" });
+            setCancelWindowRemaining(0);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => null);
             onRejected?.(orderId);
         } catch (err: any) {
@@ -182,6 +196,19 @@ const OrderPendingScreen = ({
         }, 1000);
         return () => clearInterval(timer);
     }, [cooldown]);
+
+    useEffect(() => {
+        const timestamp = order?.createdAt || order?.updatedAt;
+        setCancelWindowRemaining(getCancelWindowRemaining(timestamp));
+    }, [order?.createdAt, order?.updatedAt]);
+
+    useEffect(() => {
+        if (!isCancelWindowActive) return undefined;
+        const timer = setInterval(() => {
+            setCancelWindowRemaining((prev) => (prev <= 1 ? 0 : prev - 1));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [isCancelWindowActive]);
 
     useEffect(() => {
         if (prevStatus.current === orderStatus) return;
@@ -297,6 +324,20 @@ const OrderPendingScreen = ({
     }, [cooldown, sendingNudge, orderStatus, orderId, restaurantName]);
 
     const handleCancel = () => {
+        if (!isCancelWindowActive) {
+            Alert.alert("Cancellation unavailable", "Orders can only be canceled within the first minute.");
+            return;
+        }
+        if (Platform.OS === "web") {
+            const g = globalThis as { confirm?: (message?: string) => boolean } | undefined;
+            const confirmed = g?.confirm
+                ? g.confirm("Cancel order?\nIf you cancel now we'll start the refund automatically.")
+                : true;
+            if (confirmed) {
+                handleAutoCancel();
+            }
+            return;
+        }
         Alert.alert("Cancel order?", "If you cancel now we'll start the refund automatically.", [
             { text: "Keep waiting", style: "cancel" },
             {
@@ -327,7 +368,7 @@ const OrderPendingScreen = ({
                     >
                         <Feather name="chevron-left" size={28} color={colors.text} />
                     </TouchableOpacity>
-                    <Text style={{ color: colors.text, fontSize: 16, fontFamily: "QuickSand-SemiBold" }}>Sipariş Onayı Bekleniyor</Text>
+                    <Text style={{ color: colors.text, fontSize: 16, fontFamily: "Ezra-SemiBold" }}>Sipariş Onayı Bekleniyor</Text>
                     <TouchableOpacity
                         onPress={() => Alert.alert("Yardım", "Restoran 2 dakika içinde yanıt vermezse sipariş otomatik iptal olur.")}
                         accessibilityRole="button"
@@ -366,7 +407,7 @@ const OrderPendingScreen = ({
                             <Ionicons name="sync" size={24} color={colors.primary} />
                         </Animated.View>
                         <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontFamily: "QuickSand-Bold", fontSize: 18 }}>Restoran onayı bekleniyor…</Text>
+                            <Text style={{ color: colors.text, fontFamily: "Ezra-Bold", fontSize: 18 }}>Restoran onayı bekleniyor…</Text>
                             <Text style={{ color: colors.sub, marginTop: 4 }}>
                                 {restaurantName} siparişini aldı. Onay gelince haber vereceğiz.
                             </Text>
@@ -383,7 +424,7 @@ const OrderPendingScreen = ({
                             borderColor: `${slaColor}66`,
                         }}
                     >
-                        <Text style={{ color: slaColor, fontFamily: "QuickSand-SemiBold" }}>
+                        <Text style={{ color: slaColor, fontFamily: "Ezra-SemiBold" }}>
                             SLA: {formatTime(sla)}
                         </Text>
                     </View>
@@ -429,29 +470,47 @@ const OrderPendingScreen = ({
                                 opacity: sendingNudge || cooldown > 0 || orderStatus !== "pending" ? 0.6 : 1,
                             }}
                         >
-                            <Text style={{ color: "#0E0F12", fontFamily: "QuickSand-Bold", fontSize: 16 }}>
+                            <Text style={{ color: "#0E0F12", fontFamily: "Ezra-Bold", fontSize: 16 }}>
                                 {cooldown > 0 ? `Wait ${cooldown}s` : "Remind restaurant"}
                             </Text>
                         </LinearGradient>
                     </TouchableOpacity>
 
-                    <TouchableOpacity
-                        onPress={handleCancel}
-                        accessibilityRole="button"
-                        accessibilityLabel="Siparişi iptal et"
-                        style={{
-                            borderRadius: radius.lg,
-                            borderWidth: 1,
-                            borderColor: colors.border,
-                            paddingVertical: 14,
-                            alignItems: "center",
-                        }}
-                    >
-                        <Text style={{ color: colors.text, fontFamily: "QuickSand-SemiBold" }}>Siparişi iptal et</Text>
-                    </TouchableOpacity>
+                    {isCancelWindowActive ? (
+                        <TouchableOpacity
+                            onPress={handleCancel}
+                            accessibilityRole="button"
+                            accessibilityLabel="Siparişi iptal et"
+                            style={{
+                                borderRadius: radius.lg,
+                                borderWidth: 1,
+                                borderColor: colors.border,
+                                paddingVertical: 14,
+                                alignItems: "center",
+                            }}
+                        >
+                            <Text style={{ color: colors.text, fontFamily: "Ezra-SemiBold" }}>
+                                Cancel order ({cancelWindowRemaining}s)
+                            </Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <View
+                            style={{
+                                borderRadius: radius.lg,
+                                borderWidth: 1,
+                                borderColor: colors.border,
+                                paddingVertical: 14,
+                                alignItems: "center",
+                                opacity: 0.4,
+                            }}
+                        >
+                            <Text style={{ color: colors.sub, fontFamily: "Ezra-SemiBold" }}>Cancel window closed</Text>
+                        </View>
+                    )}
 
                     <Text style={{ color: colors.sub, fontSize: 13, lineHeight: 18 }}>
                         * Restoran {Math.ceil(etaSeconds / 60)} dakika içinde onay vermezse otomatik iptal ve iade başlatılır.
+                        {"\n"}* Customer cancellations are limited to the first 60 seconds after placing an order.
                     </Text>
                 </View>
             </View>
@@ -460,3 +519,4 @@ const OrderPendingScreen = ({
 };
 
 export default OrderPendingScreen;
+

@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import { useTheme } from "@/src/theme";
+import { useTheme } from "@/src/theme/themeContext";
 
 type ChipProps = {
     label: string;
@@ -33,7 +33,7 @@ export const Chip = ({ label, selected = false, badgeCount, onPress, icon }: Chi
             <Text
                 style={{
                     color: selected ? theme.colors.primary : theme.colors.ink,
-                    fontFamily: "QuickSand-Medium",
+                    fontFamily: "Ezra-Medium",
                 }}
             >
                 {label}
@@ -51,7 +51,7 @@ export const Chip = ({ label, selected = false, badgeCount, onPress, icon }: Chi
                         style={{
                             color: selected ? theme.colors.surface : theme.colors.ink,
                             fontSize: theme.typography.caption,
-                            fontFamily: "QuickSand-Bold",
+                            fontFamily: "Ezra-Bold",
                         }}
                     >
                         {badgeCount}
@@ -63,3 +63,4 @@ export const Chip = ({ label, selected = false, badgeCount, onPress, icon }: Chi
 };
 
 export default Chip;
+

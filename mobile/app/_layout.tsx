@@ -5,7 +5,7 @@ import Constants from "expo-constants";
 import * as Sentry from "@sentry/react-native";
 
 import useAuthStore from "@/store/auth.store";
-import { ThemeProvider } from "@/src/theme";
+import { ThemeProvider } from "@/src/theme/themeContext";
 import "./globals.css";
 
 const extra = Constants.expoConfig?.extra ?? {};
@@ -27,13 +27,20 @@ void SplashScreen.preventAutoHideAsync().catch(() => null);
 
 function RootLayoutBase() {
     const { isLoading, fetchAuthenticatedUser } = useAuthStore();
+    const ezraFiles = {
+        light: require("../assets/fonts/Ezra-Light.ttf"),
+        regular: require("../assets/fonts/Ezra-Regular.ttf"),
+        medium: require("../assets/fonts/Ezra-Medium.ttf"),
+        semiBold: require("../assets/fonts/Ezra-SemiBold.ttf"),
+        bold: require("../assets/fonts/Ezra-Bold.ttf"),
+    } as const;
 
     const [fontsLoaded, error] = useFonts({
-        "QuickSand-Bold": require("../assets/fonts/Quicksand-Bold.ttf"),
-        "QuickSand-Medium": require("../assets/fonts/Quicksand-Medium.ttf"),
-        "QuickSand-Regular": require("../assets/fonts/Quicksand-Regular.ttf"),
-        "QuickSand-SemiBold": require("../assets/fonts/Quicksand-SemiBold.ttf"),
-        "QuickSand-Light": require("../assets/fonts/Quicksand-Light.ttf"),
+        "Ezra-Light": ezraFiles.light,
+        "Ezra-Regular": ezraFiles.regular,
+        "Ezra-Medium": ezraFiles.medium,
+        "Ezra-SemiBold": ezraFiles.semiBold,
+        "Ezra-Bold": ezraFiles.bold,
     });
 
     useEffect(() => {
@@ -63,3 +70,4 @@ if (enableSentry) {
 }
 
 export default RootLayout;
+

@@ -1,6 +1,6 @@
 import { ActivityIndicator, Text, TouchableOpacity, ViewStyle } from "react-native";
 import { useMemo } from "react";
-import { useTheme } from "@/src/theme";
+import { useTheme } from "@/src/theme/themeContext";
 
 type ButtonVariant = "solid" | "outline" | "ghost";
 type ButtonSize = "sm" | "md" | "lg";
@@ -86,7 +86,7 @@ export const Button = ({
                     <Text
                         style={{
                             color: textColor,
-                            fontFamily: "QuickSand-SemiBold",
+                            fontFamily: "Ezra-SemiBold",
                             fontSize: sizeToken.fontSize,
                         }}
                     >
@@ -100,3 +100,4 @@ export const Button = ({
 };
 
 export default Button;
+

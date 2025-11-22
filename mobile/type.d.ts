@@ -1,23 +1,32 @@
-import { Models } from "react-native-appwrite";
+type BaseDocument = {
+    $id?: string;
+    id?: string | number;
+    createdAt?: string;
+    updatedAt?: string;
+};
 
-export interface MenuItem extends Models.Document {
+export interface MenuItem extends BaseDocument {
     name: string;
     price: number;
     image_url: string;
+    imageUrl?: string;
     description: string;
     calories: number;
     protein: number;
     rating: number;
     type: string;
+    cost?: number;
+    deliveryTime?: string | number;
+    eta?: string | number;
 }
 
-export interface Category extends Models.Document {
+export interface Category extends BaseDocument {
     name: string;
     description?: string;
     icon?: any;
 }
 
-export interface User extends Models.Document {
+export interface User extends BaseDocument {
     name: string;
     email: string;
     avatar: string;
@@ -133,4 +142,9 @@ declare module "*.png" { const value: any; export default value }
 declare module "*.jpg" { const value: any; export default value }
 declare module "*.jpeg" { const value: any; export default value }
 declare module "*.gif" { const value: any; export default value }
-declare module "*.svg" { const value: any; export default value }
+declare module "*.svg" {
+    import type { FC, SVGProps } from "react";
+    const content: FC<SVGProps<SVGSVGElement>>;
+    export default content;
+}
+declare module "*.json" { const value: any; export default value }

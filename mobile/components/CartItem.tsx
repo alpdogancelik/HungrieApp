@@ -2,7 +2,8 @@ import { useCartStore } from "@/store/cart.store";
 import { CartItemType } from "@/type";
 import { Text, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
-import { images } from "@/constants";
+import { images } from "@/constants/mediaCatalog";
+import Icon from "./Icon";
 
 const CartItem = ({ item }: { item: CartItemType }) => {
     const { increaseQty, decreaseQty, removeItem } = useCartStore();
@@ -30,12 +31,7 @@ const CartItem = ({ item }: { item: CartItemType }) => {
                             onPress={() => decreaseQty(item.id, item.customizations!)}
                             className="cart-item__actions"
                         >
-                            <Image
-                                source={images.minus}
-                                className="size-1/2"
-                                contentFit="contain"
-                                tintColor={"#FF9C01"}
-                            />
+                            <Icon name="minus" size={16} color="#FF9C01" />
                         </TouchableOpacity>
 
                         <Text className="base-bold text-dark-100">{item.quantity}</Text>
@@ -44,22 +40,14 @@ const CartItem = ({ item }: { item: CartItemType }) => {
                             onPress={() => increaseQty(item.id, item.customizations!)}
                             className="cart-item__actions"
                         >
-                            <Image
-                                source={images.plus}
-                                className="size-1/2"
-                                contentFit="contain"
-                                tintColor={"#FF9C01"}
-                            />
+                            <Icon name="plus" size={16} color="#FF9C01" />
                         </TouchableOpacity>
                     </View>
                 </View>
             </View>
 
-            <TouchableOpacity
-                onPress={() => removeItem(item.id, item.customizations!)}
-                className="flex-center"
-            >
-                <Image source={images.trash} className="size-5" contentFit="contain" />
+            <TouchableOpacity onPress={() => removeItem(item.id, item.customizations!)} className="flex-center">
+                <Icon name="trash" size={22} color="#FE5F55" />
             </TouchableOpacity>
         </View>
     );

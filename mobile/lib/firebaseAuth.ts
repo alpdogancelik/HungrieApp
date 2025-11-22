@@ -1,7 +1,10 @@
 import {
     createUserWithEmailAndPassword,
+    onAuthStateChanged,
     signInWithEmailAndPassword,
+    signOut as firebaseSignOut,
     updateProfile,
+    type User as FirebaseUser,
 } from "firebase/auth";
 import {
     addDoc,
@@ -21,54 +24,28 @@ import {
     auth,
     firebaseConfigured,
     firestore,
-    useMockData,
-    getRestaurantMenu as getRestaurantMenuCore,
+    getRestaurantMenu as fetchRestaurantMenu,
     createMenuItem as createMenuItemCore,
 } from "./firebase";
-import {
-    sampleCategories,
-    sampleMenu,
-    sampleOwnerRestaurants,
-    sampleRestaurantOrders,
-} from "./sampleData";
+import { filterMenuForCustomer, filterRestaurantMenuForCustomer } from "./menuVisibility";
 
-export type Profile = { name: string; email: string; avatar?: string };
+export type Profile = { name: string; email: string; avatar?: string; accountId?: string };
+export const firebaseOrdersEnabled = firebaseConfigured && Boolean(firestore);
+export const getMockOwnerAccount = async () => null;
+export const clearMockOwnerAccount = async () => undefined;
 
-const mapDoc = (snap: { id: string; data: () => any }) => ({
-    id: snap.id,
-    ...snap.data(),
-});
-
+const requireAuth = () => {
+    if (!firebaseConfigured || !auth) throw new Error("Firebase authentication is not configured.");
+    return auth;
+};
+const requireDB = () => {
+    if (!firebaseConfigured || !firestore) throw new Error("Firebase Firestore is not configured.");
+    return firestore;
+};
 const avatarUrl = (name: string) =>
     `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "Hungrie User")}&background=FF8C42&color=ffffff`;
-
-const getMockMenus = ({ query }: { query?: string }) => {
-    const all = Object.values(sampleMenu).flat();
-    if (!query) return all;
-    const term = query.toLowerCase();
-    return all.filter(
-        (item: any) =>
-            item.name?.toLowerCase().includes(term) || item.description?.toLowerCase().includes(term),
-    );
-};
-
-const getMockCategories = () => Object.values(sampleCategories).flat();
-
-const getMockRestaurants = () =>
-    sampleOwnerRestaurants.map((restaurant) => ({
-        ...restaurant,
-        id: String(restaurant.id ?? restaurant.name),
-    }));
-
-const getMockOrders = (restaurantId?: string) =>
-    sampleRestaurantOrders.map((order) => ({
-        ...order,
-        id: String(order.id ?? `${restaurantId ?? "sample"}-${order.customerName}`),
-        restaurantId: restaurantId ?? "sample",
-        courierLabel: (order as any).courierLabel ?? null,
-    }));
-
-const mapOrderDoc = (snap: { id: string; data: () => any }) => {
+const mapDoc = (snap: { id: string; data: () => any }) => ({ id: snap.id, ...snap.data() });
+const mapOrder = (snap: { id: string; data: () => any }) => {
     const data = snap.data() || {};
     return {
         id: snap.id,
@@ -79,205 +56,131 @@ const mapOrderDoc = (snap: { id: string; data: () => any }) => {
         status: data.status || "pending",
     };
 };
+const parseErr = (e: any) => (typeof e === "string" ? e : e?.message || "Unexpected error occurred.");
 
-const buildMockProfile = (overrides: Partial<Profile> = {}): Profile => ({
-    name: overrides.name || "Campus Operator",
-    email: overrides.email || "owner@hungrie.app",
-    avatar: overrides.avatar || avatarUrl(overrides.name || "Campus Operator"),
-});
+const waitForAuthUser = async (): Promise<FirebaseUser | null> => {
+    const firebaseAuth = auth;
+    if (!firebaseAuth) return null;
+    if (firebaseAuth.currentUser) return firebaseAuth.currentUser;
 
-const parseFirebaseError = (error: any) => {
-    if (typeof error === "string") return error;
-    if (error?.message) return error.message;
-    return "Unexpected error occurred.";
+    return new Promise((resolve) => {
+        const done = (u: FirebaseUser | null) => resolve(u);
+        const unsub = onAuthStateChanged(
+            firebaseAuth,
+            (u) => {
+                unsub();
+                done(u);
+            },
+            () => {
+                unsub();
+                done(null);
+            },
+        );
+        setTimeout(() => {
+            unsub();
+            done(firebaseAuth.currentUser ?? null);
+        }, 2000);
+    });
 };
 
-const shouldUseFirebase = firebaseConfigured && !useMockData;
-export const firebaseOrdersEnabled = shouldUseFirebase;
+const syncProfile = async (user: FirebaseUser, overrides: Partial<Profile> = {}) => {
+    const db = requireDB();
+    const name = overrides.name || user.displayName || user.email || "Hungrie User";
+    const base: Profile & { accountId: string } = {
+        name,
+        email: user.email || overrides.email || "operator@hungrie.app",
+        avatar: overrides.avatar || avatarUrl(name),
+        accountId: user.uid,
+    };
+    const ref = doc(db, FIREBASE_COLLECTIONS.users, user.uid);
+    const snap = await getDoc(ref).catch(() => null);
+    const now = Date.now();
+    if (!snap || !snap.exists()) {
+        await setDoc(ref, { ...base, ...overrides, createdAt: now, updatedAt: now }, { merge: true });
+        return base;
+    }
+    const stored = snap.data() as Profile & { accountId?: string };
+    const merged = { ...base, ...stored, accountId: stored.accountId || user.uid };
+    const needsUpdate =
+        stored.name !== merged.name || stored.email !== merged.email || stored.avatar !== merged.avatar || !stored.accountId;
+    if (needsUpdate) {
+        await setDoc(
+            ref,
+            { name: merged.name, email: merged.email, avatar: merged.avatar, accountId: merged.accountId, updatedAt: now },
+            { merge: true },
+        ).catch(() => null);
+    }
+    return merged;
+};
 
-const currentOwnerId = () => auth?.currentUser?.uid ?? null;
-
+// Auth
 export const signIn = async ({ email, password }: { email: string; password: string }) => {
-    if (!shouldUseFirebase) {
-        return { sessionId: `mock-session-${Date.now()}`, email };
-    }
-
-    if (!auth) throw new Error("Authentication is not ready yet.");
-
     try {
-        await signInWithEmailAndPassword(auth, email, password);
+        const credential = await signInWithEmailAndPassword(requireAuth(), email, password);
+        if (credential.user) await syncProfile(credential.user);
         return { email };
-    } catch (error) {
-        throw new Error(parseFirebaseError(error));
+    } catch (e) {
+        throw new Error(parseErr(e));
     }
 };
 
-export const createUser = async ({
-    email,
-    password,
-    name,
-}: {
-    email: string;
-    password: string;
-    name: string;
-}) => {
-    if (!shouldUseFirebase || !auth || !firestore) {
-        return buildMockProfile({ name, email });
-    }
-
+export const createUser = async ({ email, password, name }: { email: string; password: string; name: string }) => {
     try {
-        const credential = await createUserWithEmailAndPassword(auth, email, password);
+        const credential = await createUserWithEmailAndPassword(requireAuth(), email, password);
         const user = credential.user;
-        if (user && name) {
-            try {
-                await updateProfile(user, { displayName: name });
-            } catch {
-                // Ignore profile update failures; we'll still create Firestore doc.
-            }
-        }
-
-        const profile: Profile & { accountId: string } = {
-            name: name || user?.displayName || email,
-            email: user?.email || email,
-            avatar: avatarUrl(name || email),
-            accountId: user?.uid || `pending-${Date.now()}`,
-        };
-
-        await setDoc(doc(firestore, FIREBASE_COLLECTIONS.users, profile.accountId), profile, { merge: true });
-        return profile;
-    } catch (error: any) {
-        if (error?.code === "auth/email-already-in-use") {
+        if (user && name) await updateProfile(user, { displayName: name }).catch(() => null);
+        const target = user || (await waitForAuthUser());
+        if (!target) throw new Error("User session could not be established.");
+        return syncProfile(target, { name: name || target.displayName || email, email: target.email || email, avatar: avatarUrl(name || email) });
+    } catch (e: any) {
+        if (e?.code === "auth/email-already-in-use") {
             await signIn({ email, password });
             const existing = await getCurrentUser();
             if (existing) return existing;
         }
-        throw new Error(parseFirebaseError(error));
+        throw new Error(parseErr(e));
     }
 };
 
 export const getCurrentUser = async () => {
-    if (!shouldUseFirebase || !auth) {
-        return buildMockProfile();
-    }
-
-    const current = auth.currentUser;
-    if (!current) return null;
-
-    const fallback: Profile = {
-        name: current.displayName || current.email || "Hungrie User",
-        email: current.email || "operator@hungrie.app",
-        avatar: avatarUrl(current.displayName || current.email || "Hungrie User"),
-    };
-
-    if (!firestore) return fallback;
-
-    try {
-        const ref = doc(firestore, FIREBASE_COLLECTIONS.users, current.uid);
-        const snap = await getDoc(ref);
-        if (!snap.exists()) {
-            await setDoc(ref, fallback, { merge: true });
-            return fallback;
-        }
-        const profile = snap.data() as Profile;
-        return {
-            ...fallback,
-            ...profile,
-        };
-    } catch (error) {
-        if (__DEV__) console.warn("[Firebase] getCurrentUser failed, falling back.", error);
-        return fallback;
-    }
+    const current = await waitForAuthUser();
+    return current ? syncProfile(current) : null;
 };
 
+export const signOut = async () => firebaseSignOut(requireAuth());
+
+// Menu & categories
 export const getMenu = async ({ category, query, limit }: { category?: string; query?: string; limit?: number }) => {
-    const fallback = () => {
-        let list = getMockMenus({ query });
-        if (category) {
-            const normalized = category.toLowerCase();
-            list = list.filter(
-                (item: any) =>
-                    item.name?.toLowerCase().includes(normalized) ||
-                    item.description?.toLowerCase().includes(normalized),
-            );
-        }
-        if (limit) {
-            list = list.slice(0, limit);
-        }
-        return list;
-    };
-
-    if (!shouldUseFirebase || !firestore) return fallback();
-
-    try {
-        const snapshot = await getDocs(collection(firestore, FIREBASE_COLLECTIONS.menus));
-        let list = snapshot.docs.map((snap) => {
-            const data = snap.data();
-            return {
-                id: snap.id,
-                ...data,
-                price: Number(data.price ?? 0),
-            };
-        });
-
-        if (category) {
-            const normalized = category.toLowerCase();
-            list = list.filter((item: any) => {
-                const group = (item.category || item.categories || "").toString().toLowerCase();
-                return group.includes(normalized);
-            });
-        }
-
-        if (query) {
-            const term = query.toLowerCase();
-            list = list.filter(
-                (item: any) =>
-                    item.name?.toLowerCase().includes(term) || item.description?.toLowerCase().includes(term),
-            );
-        }
-
-        if (limit) {
-            list = list.slice(0, limit);
-        }
-
-        return list;
-    } catch (error) {
-        if (__DEV__) console.warn("[Firebase] getMenu failed, returning mock list.", error);
-        return fallback();
+    const snap = await getDocs(collection(requireDB(), FIREBASE_COLLECTIONS.menus));
+    let list = snap.docs.map((d) => ({ id: d.id, ...d.data(), price: Number(d.data().price ?? 0) }));
+    if (category) {
+        const term = category.toLowerCase();
+        list = list.filter((item: any) => (item.category || item.categories || "").toString().toLowerCase().includes(term));
     }
+    if (query) {
+        const term = query.toLowerCase();
+        list = list.filter(
+            (item: any) => item.name?.toLowerCase().includes(term) || item.description?.toLowerCase().includes(term),
+        );
+    }
+    if (limit) list = list.slice(0, limit);
+    return filterMenuForCustomer(list);
 };
 
 export const getCategories = async () => {
-    if (!shouldUseFirebase || !firestore) return getMockCategories();
-
-    try {
-        const snapshot = await getDocs(collection(firestore, FIREBASE_COLLECTIONS.categories));
-        if (!snapshot.empty) return snapshot.docs.map(mapDoc);
-        return getMockCategories();
-    } catch (error) {
-        if (__DEV__) console.warn("[Firebase] getCategories failed.", error);
-        return getMockCategories();
-    }
+    const snap = await getDocs(collection(requireDB(), FIREBASE_COLLECTIONS.categories));
+    return snap.empty ? [] : snap.docs.map(mapDoc);
 };
 
+// Restaurants & menus
+const ownerId = () => auth?.currentUser?.uid ?? null;
+
 export const getOwnerRestaurants = async () => {
-    const fallback = () => getMockRestaurants();
-
-    if (!shouldUseFirebase || !firestore) return fallback();
-    const ownerId = currentOwnerId();
-    if (!ownerId) return fallback();
-
-    try {
-        const q = query(
-            collection(firestore, FIREBASE_COLLECTIONS.restaurants),
-            where("ownerId", "==", ownerId),
-        );
-        const snapshot = await getDocs(q);
-        const docs = snapshot.docs.map(mapDoc);
-        return docs.length ? docs : fallback();
-    } catch (error) {
-        if (__DEV__) console.warn("[Firebase] getOwnerRestaurants failed, fallback data used.", error);
-        return fallback();
-    }
+    const owner = ownerId();
+    if (!owner) return [];
+    const q = query(collection(requireDB(), FIREBASE_COLLECTIONS.restaurants), where("ownerId", "==", owner));
+    const snap = await getDocs(q);
+    return snap.docs.map(mapDoc);
 };
 
 export const createRestaurant = async (payload: {
@@ -288,122 +191,29 @@ export const createRestaurant = async (payload: {
     deliveryTime?: string;
     imageUrl?: string;
 }) => {
-    const fallback = () => ({
-        ...payload,
-        id: `mock-restaurant-${Date.now()}`,
-    });
-
-    if (!shouldUseFirebase || !firestore) return fallback();
-
-    try {
-        const ownerId = currentOwnerId();
-        const data = {
-            ...payload,
-            ownerId,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-        };
-        const ref = await addDoc(collection(firestore, FIREBASE_COLLECTIONS.restaurants), data);
-        return { id: ref.id, ...data };
-    } catch (error) {
-        if (__DEV__) console.warn("[Firebase] createRestaurant failed.", error);
-        return fallback();
-    }
+    const owner = ownerId();
+    if (!owner) throw new Error("An owner must be signed in to create restaurants.");
+    const data = { ...payload, ownerId: owner, createdAt: Date.now(), updatedAt: Date.now() };
+    const ref = await addDoc(collection(requireDB(), FIREBASE_COLLECTIONS.restaurants), data);
+    return { id: ref.id, ...data };
 };
 
 export const getRestaurantMenu = async ({ restaurantId }: { restaurantId: string }) =>
-    getRestaurantMenuCore(restaurantId);
+    filterRestaurantMenuForCustomer(restaurantId, await fetchRestaurantMenu(restaurantId));
 
 export const createMenuItem = async (
     restaurantId: string,
-    payload: {
-        name: string;
-        price: string | number;
-        description?: string;
-        imageUrl?: string;
-    },
+    payload: { name: string; price: string | number; description?: string; imageUrl?: string },
 ) => createMenuItemCore(restaurantId, payload);
 
-export const createOrderDocument = async (
-    orderData: Record<string, any>,
-    orderItems: Record<string, any>[],
-) => {
-    const normalizedStatus = orderData.status || "pending approval";
-    if (!shouldUseFirebase || !firestore) {
-        return {
-            id: `mock-order-${Date.now()}`,
-            ...orderData,
-            orderItems,
-            status: normalizedStatus,
-            courierLabel: orderData.courierLabel ?? null,
-            createdAt: new Date().toISOString(),
-        };
-    }
-
+// Orders
+export const createOrderDocument = async (orderData: Record<string, any>, orderItems: Record<string, any>[]) => {
     const now = Date.now();
-    const restaurantId = String(
-        orderData.restaurantId ?? orderData.restaurant?.id ?? orderData.restaurantID ?? "unknown",
-    );
-    const payload = {
-        ...orderData,
-        restaurantId,
-        orderItems,
-        status: normalizedStatus,
-        courierLabel: orderData.courierLabel ?? null,
-        createdAt: now,
-        updatedAt: now,
-    };
-
-    const ref = await addDoc(collection(firestore, FIREBASE_COLLECTIONS.orders), payload);
+    const restaurantId = String(orderData.restaurantId ?? orderData.restaurant?.id ?? orderData.restaurantID ?? "unknown");
+    const payload = { ...orderData, restaurantId, orderItems, status: orderData.status || "pending approval", courierLabel: orderData.courierLabel ?? null, createdAt: now, updatedAt: now };
+    const ref = await addDoc(collection(requireDB(), FIREBASE_COLLECTIONS.orders), payload);
     await updateDoc(ref, { orderId: ref.id });
     return { id: ref.id, orderId: ref.id, ...payload };
-};
-
-type ListenOrdersParams = {
-    restaurantId?: string;
-    statuses?: string[];
-};
-
-const filterOrdersByStatus = (orders: any[], statuses?: string[]) => {
-    if (!statuses?.length) return orders;
-    const allowed = new Set(statuses.map((status) => status.toLowerCase()));
-    return orders.filter((order) => allowed.has(String(order.status || "").toLowerCase()));
-};
-
-export const listenToOrders = (
-    { restaurantId, statuses }: ListenOrdersParams,
-    onChange: (orders: any[]) => void,
-    onError?: (error: Error) => void,
-) => {
-    if (!shouldUseFirebase || !firestore) {
-        onChange(filterOrdersByStatus(getMockOrders(restaurantId), statuses));
-        return () => {};
-    }
-
-    try {
-        const constraints: any[] = [];
-        if (restaurantId) constraints.push(where("restaurantId", "==", restaurantId));
-        if (statuses?.length) constraints.push(where("status", "in", statuses));
-        constraints.push(orderBy("createdAt", "desc"));
-
-        const q = query(collection(firestore, FIREBASE_COLLECTIONS.orders), ...constraints);
-        const unsubscribe = onSnapshot(
-            q,
-            (snapshot) => {
-                onChange(snapshot.docs.map(mapOrderDoc));
-            },
-            (error) => {
-                if (__DEV__) console.warn("[Firebase] listenToOrders failed.", error);
-                onError?.(error as Error);
-            },
-        );
-        return unsubscribe;
-    } catch (error) {
-        if (__DEV__) console.warn("[Firebase] listenToOrders setup error.", error);
-        onError?.(error as Error);
-        onChange(filterOrdersByStatus(getMockOrders(restaurantId), statuses));
-        return () => {};
-    }
 };
 
 export const listenToOrder = (
@@ -411,82 +221,58 @@ export const listenToOrder = (
     onChange: (order: any | null) => void,
     onError?: (error: Error) => void,
 ) => {
-    if (!orderId) return () => {};
-
-    if (!shouldUseFirebase || !firestore) {
-        const fallback = getMockOrders().find((order) => String(order.id) === orderId) ?? null;
-        onChange(fallback);
-        return () => {};
-    }
-
-    const ref = doc(firestore, FIREBASE_COLLECTIONS.orders, orderId);
-    const unsubscribe = onSnapshot(
+    if (!orderId) return () => { };
+    const ref = doc(requireDB(), FIREBASE_COLLECTIONS.orders, orderId);
+    return onSnapshot(
         ref,
-        (snapshot) => {
-            if (!snapshot.exists()) {
-                onChange(null);
-                return;
-            }
-            onChange(mapOrderDoc(snapshot as any));
-        },
-        (error) => {
-            if (__DEV__) console.warn("[Firebase] listenToOrder failed.", error);
-            onError?.(error as Error);
+        (snap) => onChange(snap.exists() ? mapOrder(snap as any) : null),
+        (err) => {
+            if (__DEV__) console.warn("[Firebase] listenToOrder failed.", err);
+            onError?.(err as Error);
         },
     );
-    return unsubscribe;
+};
+
+export const listenToOrders = (
+    filter: { restaurantId?: string; statuses?: string[] },
+    onChange: (orders: any[]) => void,
+    onError?: (error: Error) => void,
+) => {
+    const db = requireDB();
+    const colRef = collection(db, FIREBASE_COLLECTIONS.orders);
+    const constraints: any[] = [];
+    if (filter.restaurantId) constraints.push(where("restaurantId", "==", filter.restaurantId));
+    if (filter.statuses?.length) constraints.push(where("status", "in", filter.statuses.slice(0, 10)));
+    constraints.push(orderBy("createdAt", "desc"));
+    const q = query(colRef, ...constraints);
+    return onSnapshot(
+        q,
+        (snap) => onChange(snap.docs.map(mapOrder)),
+        (err) => {
+            if (__DEV__) console.warn("[Firebase] listenToOrders failed.", err);
+            onError?.(err as Error);
+        },
+    );
 };
 
 export const assignCourier = async (orderId: string, courierLabel: string, currentStatus?: string) => {
-    if (!shouldUseFirebase || !firestore) {
-        return { id: orderId, courierLabel };
-    }
-    try {
-        const ref = doc(firestore, FIREBASE_COLLECTIONS.orders, orderId);
-        const updates: Record<string, unknown> = {
-            courierLabel,
-            updatedAt: Date.now(),
-        };
-        if (!currentStatus || currentStatus === "pending" || currentStatus === "pending approval") {
-            updates.status = "preparing";
-        }
-        await updateDoc(ref, updates);
-        return { id: orderId, courierLabel };
-    } catch (error) {
-        if (__DEV__) console.warn("[Firebase] assignCourier failed.", error);
-        throw new Error(parseFirebaseError(error));
-    }
+    const ref = doc(requireDB(), FIREBASE_COLLECTIONS.orders, orderId);
+    const updates: Record<string, unknown> = { courierLabel, updatedAt: Date.now() };
+    if (!currentStatus || currentStatus === "pending" || currentStatus === "pending approval") updates.status = "preparing";
+    await updateDoc(ref, updates);
+    return { id: orderId, courierLabel };
 };
 
 export const getRestaurantOrders = async (restaurantId: string) => {
-    const fallback = () => getMockOrders(restaurantId);
-
-    if (!restaurantId) return fallback();
-    if (!shouldUseFirebase || !firestore) return fallback();
-
-    try {
-        const q = query(
-            collection(firestore, FIREBASE_COLLECTIONS.orders),
-            where("restaurantId", "==", restaurantId),
-        );
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(mapDoc);
-    } catch (error) {
-        if (__DEV__) console.warn("[Firebase] getRestaurantOrders failed.", error);
-        return fallback();
-    }
+    if (!restaurantId) return [];
+    const q = query(collection(requireDB(), FIREBASE_COLLECTIONS.orders), where("restaurantId", "==", restaurantId));
+    const snap = await getDocs(q);
+    return snap.docs.map(mapDoc);
 };
 
 export const updateOrderStatus = async (orderId: string, status: string) => {
-    const normalizedStatus = status === "approved" ? "preparing" : status;
-    if (!shouldUseFirebase || !firestore) return { id: orderId, status: normalizedStatus };
-
-    try {
-        const ref = doc(firestore, FIREBASE_COLLECTIONS.orders, orderId);
-        await updateDoc(ref, { status: normalizedStatus, updatedAt: Date.now() });
-        return { id: orderId, status: normalizedStatus };
-    } catch (error) {
-        if (__DEV__) console.warn("[Firebase] updateOrderStatus failed.", error);
-        return { id: orderId, status: normalizedStatus };
-    }
+    const ref = doc(requireDB(), FIREBASE_COLLECTIONS.orders, orderId);
+    const normalized = status === "approved" ? "preparing" : status;
+    await updateDoc(ref, { status: normalized, updatedAt: Date.now() });
+    return { id: orderId, status: normalized };
 };

@@ -6,26 +6,45 @@ import { transitionOrderStatus, canTransition } from "../domain/orderMachine";
 import { emitOrderEvent } from "../lib/realtime";
 
 const restaurants: Restaurant[] = [
-    { id: "1", name: "Campus Burger", description: "Late night burgers", isActive: true },
+    { id: "ada-pizza", name: "Ada Pizza", description: "Ada'nın geç-gece pizzaları ve dürümleri", isActive: true },
+    { id: "alacarte-cafe", name: "Ala Carte Cafe", description: "Wrap, burger ve ızgara tabaklar", isActive: true },
 ];
 
 const menuItems: MenuItem[] = [
     {
-        id: "m-1",
-        restaurantId: "1",
-        name: "Classic Burger",
-        description: "Beef patty, cheddar",
-        price: 149.9,
-        etaMinutes: 25,
+        id: "ada-special",
+        restaurantId: "ada-pizza",
+        name: "Ada Special Pizza",
+        description: "30 cm ince hamur, şefin gizli reçetesi",
+        price: 420,
+        etaMinutes: 30,
         visible: true,
     },
     {
-        id: "m-2",
-        restaurantId: "1",
-        name: "Falafel Bowl",
-        description: "Plant-based",
-        price: 129.9,
+        id: "ada-fajita",
+        restaurantId: "ada-pizza",
+        name: "Fajita Dürüm",
+        description: "Izgara biber, tavuk, cheddar ve fajita sosu",
+        price: 300,
         etaMinutes: 20,
+        visible: true,
+    },
+    {
+        id: "alacarte-burger",
+        restaurantId: "alacarte-cafe",
+        name: "Pres Et Burger",
+        description: "Preslenmiş dana burger, isteğe göre ekstra peynir",
+        price: 370,
+        etaMinutes: 22,
+        visible: true,
+    },
+    {
+        id: "alacarte-wrap",
+        restaurantId: "alacarte-cafe",
+        name: "Popcorn Ala Carte Special",
+        description: "Özel soslu popcorn tavuk dürüm",
+        price: 300,
+        etaMinutes: 18,
         visible: true,
     },
 ];

@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DeviceEventEmitter, FlatList, Modal, Pressable, Text, TouchableOpacity, View } from "react-native";
-import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import cn from "clsx";
-import { images } from "@/constants";
 import type { Address } from "@/src/domain/types";
 import { addressStore } from "@/src/features/address/addressStore";
 import { useDefaultAddress } from "@/src/features/address/hooks";
+import Icon from "@/components/Icon";
 
 type DeliverToHeaderProps = {
     fallbackLabel?: string;
@@ -87,12 +86,12 @@ const DeliverToHeader = ({ fallbackLabel }: DeliverToHeaderProps) => {
     return (
         <>
             <Pressable className="gap-1" onPress={() => setSheetVisible(true)}>
-                <Text className="text-xs font-quicksand-bold tracking-[2px] text-primary">DELIVER TO</Text>
+                <Text className="text-xs font-ezra-bold tracking-[2px] text-primary">DELIVER TO</Text>
                 <View className="flex-row items-center gap-1">
-                    <Text className="text-2xl font-quicksand-bold text-dark-100" numberOfLines={1}>
+                    <Text className="text-2xl font-ezra-bold text-dark-100" numberOfLines={1}>
                         {currentLabel}
                     </Text>
-                    <Image source={images.arrowDown} className="size-3" contentFit="contain" />
+                    <Icon name="arrowDown" size={14} color="#0F172A" />
                 </View>
                 <Text className="body-medium text-dark-60" numberOfLines={1}>
                     {headerSubtitle}
@@ -144,3 +143,4 @@ const DeliverToHeader = ({ fallbackLabel }: DeliverToHeaderProps) => {
 };
 
 export default DeliverToHeader;
+

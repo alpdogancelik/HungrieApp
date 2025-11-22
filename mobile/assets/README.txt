@@ -1,5 +1,5 @@
 Assets placeholder. Please copy the following from food_ordering-main/assets:
-- fonts/Quicksand-*.ttf
+- fonts/Ezra-*.ttf
 - icons/*.png
 - images/*.png
 

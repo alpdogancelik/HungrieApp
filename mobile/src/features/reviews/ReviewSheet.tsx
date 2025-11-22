@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { Image } from "expo-image";
 import cn from "clsx";
-import { images } from "@/constants";
+import Icon from "@/components/Icon";
 
 type ReviewSheetProps = {
     visible: boolean;
@@ -48,12 +47,7 @@ const ReviewSheet = ({
                 const filled = value <= rating;
                 return (
                     <Pressable key={value} onPress={() => setRating(value)}>
-                        <Image
-                            source={images.star}
-                            className={cn("size-6", filled ? "" : "opacity-40")}
-                            contentFit="contain"
-                            tintColor={filled ? "#FE8C00" : "#CBD5F5"}
-                        />
+                        <Icon name="star" size={24} color={filled ? "#FE8C00" : "#CBD5F5"} />
                     </Pressable>
                 );
             }),
@@ -102,3 +96,4 @@ const ReviewSheet = ({
 };
 
 export default ReviewSheet;
+

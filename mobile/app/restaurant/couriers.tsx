@@ -180,7 +180,7 @@ const CourierControl = () => {
                                 { label: "Waiting trays", value: readyOrders.length },
                             ].map((metric) => (
                                 <View key={metric.label} className="flex-1 min-w-[45%] p-3 rounded-2xl border border-gray-100 bg-white">
-                                    <Text className="text-2xl font-quicksand-bold text-dark-100">{metric.value}</Text>
+                                    <Text className="text-2xl font-ezra-bold text-dark-100">{metric.value}</Text>
                                     <Text className="body-medium text-dark-60">{metric.label}</Text>
                                 </View>
                             ))}
@@ -343,3 +343,4 @@ const CourierControl = () => {
 };
 
 export default CourierControl;
+

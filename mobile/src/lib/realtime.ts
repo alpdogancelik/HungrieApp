@@ -12,15 +12,23 @@ type Handler = (payload: OrderEvent) => void;
 const listeners = new Map<string, Set<Handler>>();
 let feedStarted = false;
 
-const randomItem = () => {
-    const meals = ["Classic Burger", "Falafel Bowl", "Veggie Wrap", "Halloumi Wrap"];
-    return meals[Math.floor(Math.random() * meals.length)];
-};
+const menuHighlights = [
+    "Ada Special Pizza",
+    "Fajita Dürüm",
+    "Pres Et Burger",
+    "Popcorn Ala Carte Special",
+    "Karışık Izgara",
+];
+
+const restaurantNames = ["Ada Pizza", "Ala Carte Cafe"];
+
+const randomItem = () => menuHighlights[Math.floor(Math.random() * menuHighlights.length)];
+const randomRestaurant = () => restaurantNames[Math.floor(Math.random() * restaurantNames.length)];
 
 const generateMockOrder = (): OrderEvent => ({
     id: String(Date.now()),
     status: "pending",
-    restaurant: { name: "Campus Burger" },
+    restaurant: { name: randomRestaurant() },
     total: 99 + Math.round(Math.random() * 60),
     orderItems: [
         { name: randomItem(), quantity: 1 },

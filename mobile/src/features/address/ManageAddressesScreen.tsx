@@ -12,7 +12,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { useNavigation } from "@react-navigation/native";
 import type { Address } from "@/src/domain/types";
-import { images } from "@/constants";
+import { images } from "@/constants/mediaCatalog";
+import Icon from "@/components/Icon";
 import AddressCard from "./AddressCard";
 import { useAddressActions, useAddresses } from "./hooks";
 import type { ManageAddressesNavigation } from "./types";
@@ -81,7 +82,7 @@ const ManageAddressesScreen = () => {
         }
         return (
             <View className="items-center px-8 py-16 gap-4">
-                <Image source={images.emptyState} className="w-48 h-48" contentFit="contain" />
+                <Image source={images.deliveryProcess} className="w-48 h-48" contentFit="cover" />
                 <Text className="h4-bold text-dark-100 text-center">No addresses yet</Text>
                 <Text className="body-medium text-dark-60 text-center">
                     Save a campus dorm or pickup location to speed up checkout.
@@ -102,7 +103,7 @@ const ManageAddressesScreen = () => {
                     className="size-10 rounded-full bg-white items-center justify-center border border-gray-100"
                     onPress={() => navigation.goBack()}
                 >
-                    <Image source={images.arrowBack} className="size-4" contentFit="contain" />
+                    <Icon name="arrowBack" size={18} color="#0F172A" />
                 </TouchableOpacity>
                 <Text className="h4-bold text-dark-100">Manage addresses</Text>
                 <View className="size-10" />

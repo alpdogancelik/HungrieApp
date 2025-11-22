@@ -161,7 +161,7 @@ const MenuEditor = () => {
     return (
         <View className="gap-5">
             <View className="gap-1">
-                <Text className="text-2xl font-quicksand-bold text-dark-100">Menu management</Text>
+                <Text className="text-2xl font-ezra-bold text-dark-100">Menu management</Text>
                 <Text className="text-base text-dark-60">
                     Curate every restaurant menu, keep pricing accurate, and update hero images from one place.
                 </Text>
@@ -175,12 +175,12 @@ const MenuEditor = () => {
                     </View>
                 ) : restaurantsError ? (
                     <View className="rounded-3xl border border-red-100 bg-red-50 p-4">
-                        <Text className="text-base font-quicksand-semibold text-red-900">{restaurantsError}</Text>
+                        <Text className="text-base font-ezra-semibold text-red-900">{restaurantsError}</Text>
                         <TouchableOpacity
                             className="mt-2 self-start rounded-full bg-red-600 px-4 py-2"
                             onPress={loadRestaurants}
                         >
-                            <Text className="text-white text-sm font-quicksand-semibold">Retry</Text>
+                            <Text className="text-white text-sm font-ezra-semibold">Retry</Text>
                         </TouchableOpacity>
                     </View>
                 ) : (
@@ -202,7 +202,7 @@ const MenuEditor = () => {
                                     }`}
                                 >
                                     <Text
-                                        className={`text-base font-quicksand-semibold ${
+                                        className={`text-base font-ezra-semibold ${
                                             active ? "text-white" : "text-dark-80"
                                         }`}
                                     >
@@ -231,17 +231,17 @@ const MenuEditor = () => {
                     </View>
                 ) : menuError ? (
                     <View className="rounded-3xl border border-red-100 bg-red-50 p-4">
-                        <Text className="text-base font-quicksand-semibold text-red-900">{menuError}</Text>
+                        <Text className="text-base font-ezra-semibold text-red-900">{menuError}</Text>
                         <TouchableOpacity
                             className="mt-2 self-start rounded-full bg-red-600 px-4 py-2"
                             onPress={() => loadMenu(selectedRestaurantId)}
                         >
-                            <Text className="text-white text-sm font-quicksand-semibold">Retry</Text>
+                            <Text className="text-white text-sm font-ezra-semibold">Retry</Text>
                         </TouchableOpacity>
                     </View>
                 ) : menuItems.length === 0 ? (
                     <View className="rounded-3xl border border-dashed border-gray-200 bg-white/80 p-6 items-center">
-                        <Text className="text-base font-quicksand-semibold text-dark-80">No menu items yet</Text>
+                        <Text className="text-base font-ezra-semibold text-dark-80">No menu items yet</Text>
                         <Text className="mt-1 text-sm text-dark-60">
                             Start by adding signature dishes below.
                         </Text>
@@ -264,7 +264,7 @@ const MenuEditor = () => {
                                     </View>
                                 )}
                                 <View className="flex-1">
-                                    <Text className="text-base font-quicksand-semibold text-dark-100">
+                                    <Text className="text-base font-ezra-semibold text-dark-100">
                                         {item.name || "Menu item"}
                                     </Text>
                                     {item.description && (
@@ -272,7 +272,7 @@ const MenuEditor = () => {
                                             {item.description}
                                         </Text>
                                     )}
-                                    <Text className="text-sm font-quicksand-semibold text-primary-dark mt-1">
+                                    <Text className="text-sm font-ezra-semibold text-primary-dark mt-1">
                                         TRY {Number(item.price || 0).toFixed(2)}
                                     </Text>
                                 </View>
@@ -280,7 +280,7 @@ const MenuEditor = () => {
                                     onPress={() => handleEditItem(item)}
                                     className="rounded-full border border-dark-100 px-4 py-2"
                                 >
-                                    <Text className="text-sm font-quicksand-semibold text-dark-100">Edit</Text>
+                                    <Text className="text-sm font-ezra-semibold text-dark-100">Edit</Text>
                                 </TouchableOpacity>
                             </View>
                         ))}
@@ -291,7 +291,7 @@ const MenuEditor = () => {
             <View className="gap-4 rounded-3xl border border-gray-100 bg-white/95 p-5">
                 <View className="flex-row items-center justify-between">
                     <View>
-                        <Text className="text-lg font-quicksand-bold text-dark-100">
+                        <Text className="text-lg font-ezra-bold text-dark-100">
                             {editingItemId ? "Update menu item" : "Add menu item"}
                         </Text>
                         <Text className="text-sm text-dark-60">
@@ -300,7 +300,7 @@ const MenuEditor = () => {
                     </View>
                     {editingItemId && (
                         <TouchableOpacity onPress={resetForm}>
-                            <Text className="text-sm font-quicksand-semibold text-primary-dark">New item</Text>
+                            <Text className="text-sm font-ezra-semibold text-primary-dark">New item</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -357,7 +357,7 @@ const MenuEditor = () => {
                     disabled={saving}
                     className={`rounded-2xl bg-primary-dark px-4 py-3 ${saving ? "opacity-70" : "opacity-100"}`}
                 >
-                    <Text className="text-center text-base font-quicksand-semibold text-white">
+                    <Text className="text-center text-base font-ezra-semibold text-white">
                         {saving ? "Saving..." : editingItemId ? "Update item" : "Add item"}
                     </Text>
                 </TouchableOpacity>
@@ -367,3 +367,4 @@ const MenuEditor = () => {
 };
 
 export default MenuEditor;
+
