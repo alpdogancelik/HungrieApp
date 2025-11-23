@@ -188,12 +188,10 @@ export default function HomeTabScreen() {
                                 <RestaurantCard
                                     key={String(restaurant.id ?? restaurant.$id ?? index)}
                                     restaurant={restaurant}
-                                    onPress={() =>
-                                        router.push({
-                                            pathname: "/restaurants/[id]",
-                                            params: { id: String(restaurant.id ?? restaurant.$id ?? restaurant.key ?? index) },
-                                        })
-                                    }
+                                    onPress={() => {
+                                        const restaurantId = String(restaurant.id ?? restaurant.$id ?? restaurant.key ?? index);
+                                        router.push(`/restaurants/${encodeURIComponent(restaurantId)}`);
+                                    }}
                                 />
                             ))}
                         </View>
