@@ -36,12 +36,12 @@ export type TypographyScale = {
 export const lightColors: ColorRoles = {
     primary: "#FF7A45",
     ink: "#2B150E",
-    surface: "#FFEDD9",
+    surface: "#FFF4EB",
     muted: "#C48A74",
     success: "#FFB347",
     warning: "#FFDF99",
     danger: "#FF8F6B",
-    border: "#F6D2BF",
+    border: "#F8DECC",
 };
 
 export const darkColors: ColorRoles = {

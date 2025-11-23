@@ -47,7 +47,7 @@ const SearchBar = ({ value, onDebouncedChange }: { value: string; onDebouncedCha
         <View style={styles.searchBar}>
             <Icon name="search" size={20} color="#94A3B8" style={styles.searchIcon} />
             <TextInput
-                placeholder="Type a craving or ingredient, for example \"crispy taco\""
+                placeholder='Type a craving or ingredient, for example "crispy taco"'
                 placeholderTextColor="#94A3B8"
                 value={text}
                 onChangeText={setText}

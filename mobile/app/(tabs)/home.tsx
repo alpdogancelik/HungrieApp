@@ -191,7 +191,7 @@ export default function HomeTabScreen() {
                                     onPress={() =>
                                         router.push({
                                             pathname: "/restaurants/[id]",
-                                            params: { id: String(restaurant.id ?? restaurant.$id ?? index) },
+                                            params: { id: String(restaurant.id ?? restaurant.$id ?? restaurant.key ?? index) },
                                         })
                                     }
                                 />
