@@ -13,6 +13,7 @@ type QuickAction = {
     label: string;
     icon: IconName;
     target: string;
+    description: string;
 };
 
 type UseHomeResult = {
@@ -39,10 +40,34 @@ export const useHome = (): UseHomeResult => {
     const categories = useMemo(() => CATEGORIES as unknown as Category[], []);
     const quickActions = useMemo<QuickAction[]>(
         () => [
-            { id: "orders", label: "Order history", icon: "clock", target: "/orders" },
-            { id: "favorites", label: "Favourites", icon: "star", target: "/search?query=popular" },
-            { id: "addresses", label: "Addresses", icon: "location", target: "/profile" },
-            { id: "coupons", label: "Coupons", icon: "dollar", target: "/search?query=promo" },
+            {
+                id: "orders",
+                label: "Order history",
+                description: "See what you ordered before.",
+                icon: "clock",
+                target: "/orders",
+            },
+            {
+                id: "favorites",
+                label: "Favourites",
+                description: "Jump back to your go-to places.",
+                icon: "star",
+                target: "/search?query=popular",
+            },
+            {
+                id: "addresses",
+                label: "Addresses",
+                description: "Manage where your orders should arrive.",
+                icon: "location",
+                target: "/profile",
+            },
+            {
+                id: "coupons",
+                label: "Coupons",
+                description: "Check your available discounts.",
+                icon: "dollar",
+                target: "/search?query=promo",
+            },
         ],
         [],
     );

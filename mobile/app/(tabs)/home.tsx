@@ -59,14 +59,15 @@ export default function HomeTabScreen() {
     );
 
     const renderQuickAction = (action: any) => (
-        <TouchableOpacity
-            key={action.id}
-            style={styles.quickCardWrapper}
-            onPress={() => router.push(action.target as any)}
-        >
+        <TouchableOpacity key={action.id} style={styles.quickCardWrapper} onPress={() => router.push(action.target as any)}>
             <Card style={styles.quickCard}>
-                <Icon name={action.icon} size={20} color={theme.colors.primary} style={styles.quickCardIcon} />
-                <Text style={styles.quickCardLabel}>{action.label}</Text>
+                <View style={styles.quickCardIconBubble}>
+                    <Icon name={action.icon} size={20} color={theme.colors.primary} style={styles.quickCardIcon} />
+                </View>
+                <View style={{ flex: 1, gap: 4 }}>
+                    <Text style={styles.quickCardLabel}>{action.label}</Text>
+                    {action.description ? <Text style={styles.quickCardDescription}>{action.description}</Text> : null}
+                </View>
             </Card>
         </TouchableOpacity>
     );
@@ -92,13 +93,13 @@ export default function HomeTabScreen() {
                         style={styles.heroCard}
                     >
                         <View style={styles.heroTextArea}>
-                            <Text style={styles.heroEyebrow}>after-hours feast club</Text>
-                            <Text style={styles.heroTitle}>We humanise late-night meals.</Text>
+                            <Text style={styles.heroEyebrow}>Kalkanlı hunger Club</Text>
+                            <Text style={styles.heroTitle}>Good food without leaving your spot.</Text>
                             <Text style={styles.heroSubtitle}>
-                                Riders text quietly, kitchens keep portions warm, you stay in deep work flow.
+                                Order from around campus, couriers do the walking while you stay comfortable.
                             </Text>
                             <TouchableOpacity style={styles.heroCta} onPress={() => router.push("/search")}>
-                                <Text style={styles.heroCtaText}>Build my craving list</Text>
+                                <Text style={styles.heroCtaText}>Browse restaurants</Text>
                             </TouchableOpacity>
                         </View>
                         <View style={styles.heroIllustration}>
@@ -113,7 +114,7 @@ export default function HomeTabScreen() {
                     </View>
                     <View style={styles.searchShortcutText}>
                         <Text style={styles.searchShortcutTitle}>What are you craving?</Text>
-                        <Text style={styles.searchShortcutSubtitle}>Search restaurants or dishes in a tap</Text>
+                        <Text style={styles.searchShortcutSubtitle}>Search restaurants or dishes</Text>
                     </View>
                     <View style={styles.searchShortcutBadge}>
                         <Text style={styles.searchShortcutBadgeText}>Search</Text>
@@ -124,14 +125,17 @@ export default function HomeTabScreen() {
                     <View style={styles.statCard}>
                         <Text style={styles.statValue}>{restaurants?.length ?? 0}</Text>
                         <Text style={styles.statLabel}>Restaurants nearby</Text>
+                        <Text style={styles.statHelper}>Places that currently deliver to your area.</Text>
                     </View>
                     <View style={styles.statCard}>
                         <Text style={styles.statValue}>{menu?.length ?? 0}</Text>
                         <Text style={styles.statLabel}>Menu ideas ready</Text>
+                        <Text style={styles.statHelper}>Suggestions for when you are not sure what to eat.</Text>
                     </View>
                 </View>
 
                 <View style={styles.categoriesContainer}>
+                    <Text style={styles.categoryHint}>Pick a category</Text>
                     {categoriesLoading ? (
                         <View style={styles.categorySkeletonRow}>
                             {[...Array(4)].map((_, index) => (
@@ -303,11 +307,13 @@ const createStyles = (theme: ThemeDefinition) =>
         },
         statValue: { fontFamily: "Ezra-Bold", fontSize: 28, color: theme.colors.ink },
         statLabel: { color: theme.colors.muted, marginTop: theme.spacing.xs, fontFamily: "Ezra-Medium" },
+        statHelper: { color: theme.colors.muted, fontFamily: "Ezra-Medium", marginTop: 4, lineHeight: 18 },
         chipIcon: { width: 18, height: 18 },
         categoriesContainer: {
             paddingHorizontal: theme.spacing.lg,
             paddingTop: theme.spacing.lg,
         },
+        categoryHint: { fontFamily: "Ezra-Bold", color: theme.colors.ink, marginBottom: theme.spacing.sm },
         categorySkeletonRow: {
             flexDirection: "row",
             gap: theme.spacing.sm,
@@ -332,9 +338,9 @@ const createStyles = (theme: ThemeDefinition) =>
             width: "47%",
         },
         quickCard: {
+            flexDirection: "row",
             alignItems: "center",
-            justifyContent: "center",
-            gap: theme.spacing.sm,
+            gap: theme.spacing.md,
             borderRadius: theme.radius["2xl"],
             backgroundColor: theme.colors.surface,
             ...makeShadow({
@@ -345,9 +351,20 @@ const createStyles = (theme: ThemeDefinition) =>
             }),
             borderWidth: 1,
             borderColor: theme.colors.border,
+            paddingVertical: theme.spacing.md,
+            paddingHorizontal: theme.spacing.md,
+        },
+        quickCardIconBubble: {
+            width: 42,
+            height: 42,
+            borderRadius: 21,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: `${theme.colors.primary}12`,
         },
         quickCardIcon: { width: 32, height: 32 },
-        quickCardLabel: { fontFamily: "Ezra-SemiBold", color: theme.colors.ink, textAlign: "center" },
+        quickCardLabel: { fontFamily: "Ezra-SemiBold", color: theme.colors.ink },
+        quickCardDescription: { color: theme.colors.muted, fontFamily: "Ezra-Medium", lineHeight: 18 },
         gridGap: {
             gap: theme.spacing.md,
         },

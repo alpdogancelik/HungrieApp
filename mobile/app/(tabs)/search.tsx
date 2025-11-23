@@ -47,7 +47,7 @@ const SearchBar = ({ value, onDebouncedChange }: { value: string; onDebouncedCha
         <View style={styles.searchBar}>
             <Icon name="search" size={20} color="#94A3B8" style={styles.searchIcon} />
             <TextInput
-                placeholder="Type a craving or ingredient, e.g. 'crispy taco'"
+                placeholder="Type a craving or ingredient, for example \"crispy taco\""
                 placeholderTextColor="#94A3B8"
                 value={text}
                 onChangeText={setText}
@@ -224,7 +224,7 @@ const Search = () => {
                     <Image source={images.deliveryProcess} style={styles.emptyImage} contentFit="cover" />
                     <Text style={styles.emptyTitle}>Kitchen radios are quiet</Text>
                     <Text style={styles.emptyDescription}>
-                        We couldn't reach our restaurants. {error || "Pull to refresh or try again."}
+                        We could not reach our restaurants. Check your connection or app permissions and try again.
                     </Text>
                     <TouchableOpacity style={styles.retryButton} onPress={refetch}>
                         <Text style={styles.retryButtonText}>Refresh feed</Text>
@@ -236,9 +236,10 @@ const Search = () => {
             return (
                 <View style={styles.emptyState}>
                     <Image source={images.deliveryReview} style={styles.emptyImage} contentFit="cover" />
-                    <Text style={styles.emptyTitle}>No meals matched that vibe</Text>
+                    <Text style={styles.emptyTitle}>Restaurants</Text>
+                    <Text style={styles.emptyDescription}>0 matches</Text>
                     <Text style={styles.emptyDescription}>
-                        Try a feeling ("cozy soup"), a texture ("crispy"), or a favorite ingredient.
+                        No restaurants matched that search.
                     </Text>
                 </View>
             );
@@ -267,7 +268,7 @@ const Search = () => {
                             <View>
                                 <Text style={styles.headerEyebrow}>SEARCH</Text>
                                 <Text style={styles.headerTitle}>Find your favourite food</Text>
-                                <Text style={styles.headerSubtitle}>Filters update results instantly</Text>
+                                <Text style={styles.headerSubtitle}>Filters update results instantly.</Text>
                             </View>
                             <CartButton />
                         </View>
@@ -276,7 +277,7 @@ const Search = () => {
                             <View style={styles.discoveryText}>
                                 <Text style={styles.discoveryTitle}>Search like a human.</Text>
                                 <Text style={styles.discoverySubtitle}>
-                                    Describe a feeling or ingredient and we surface campus meals that match.
+                                    Describe a craving or an ingredient and we will surface campus meals that match.
                                 </Text>
                             </View>
                         </View>

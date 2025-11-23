@@ -168,9 +168,9 @@ const Cart = () => {
         return (
             <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center px-5">
                 <Image source={images.deliveryBag} className="w-60 h-60" contentFit="cover" />
-                <Text className="h3-bold text-dark-100 mt-4">Save a midnight drop</Text>
+                <Text className="h3-bold text-dark-100 mt-4">Your cart is empty</Text>
                 <Text className="body-medium text-center mt-2 text-dark-60">
-                    Add meals from Home and we'll keep the courier quiet when they arrive.
+                    Add meals from Home and we will bring everything to your door when you are ready.
                 </Text>
                 <TouchableOpacity
                     className="mt-4 px-6 py-3 rounded-full bg-primary"
