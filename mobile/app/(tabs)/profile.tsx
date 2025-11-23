@@ -4,6 +4,7 @@ import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
 import "@/src/lib/i18n";
 import useAuthStore from "@/store/auth.store";
 import useServerResource from "@/lib/useServerResource";
@@ -12,6 +13,7 @@ import { router } from "expo-router";
 import { Badge, SectionHeader } from "@/src/components/componentRegistry";
 import { useDefaultAddress, type ManageAddressesNavigation } from "@/src/features/address/addressFeature";
 import { images, illustrations } from "@/constants/mediaCatalog";
+import GodzillaFishing from "@/assets/godzilla/VCTRLY-godzila-fishing-fish-beach-enjoy.svg";
 
 const formatCurrency = (value?: number | string) => {
     const amount = Number(value ?? 0);
@@ -200,9 +202,8 @@ const Profile = () => {
                                         />
                                     </View>
                                     <Text className="body-medium text-dark-60 mt-1">
-                                        {`${formatCurrency(order.total)} - ${
-                                            order.paymentMethod === "cash" ? "Cash" : "Card"
-                                        }`}
+                                        {`${formatCurrency(order.total)} - ${order.paymentMethod === "cash" ? "Cash" : "Card"
+                                            }`}
                                     </Text>
                                 </TouchableOpacity>
                             ))
@@ -247,40 +248,62 @@ const Profile = () => {
 
             <Modal transparent animationType="fade" visible={isEditingProfile} onRequestClose={() => setIsEditingProfile(false)}>
                 <View className="flex-1 bg-black/40 justify-center px-5">
-                    <View className="bg-white rounded-3xl p-5 gap-4">
-                        <Text className="text-xl font-ezra-bold text-dark-100">{t("profile.header.edit")}</Text>
-                        <View className="gap-2">
-                            <Text className="paragraph-semibold text-dark-80">Name</Text>
-                            <TextInput
-                                value={nameDraft}
-                                onChangeText={setNameDraft}
-                                placeholder="Your name"
-                                placeholderTextColor="#94A3B8"
-                                className="rounded-2xl border border-gray-200 px-4 py-3 text-dark-100"
-                            />
-                        </View>
-                        <View className="gap-2">
-                            <Text className="paragraph-semibold text-dark-80">Email</Text>
-                            <TextInput
-                                value={emailDraft}
-                                onChangeText={setEmailDraft}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                                placeholder="you@example.com"
-                                placeholderTextColor="#94A3B8"
-                                className="rounded-2xl border border-gray-200 px-4 py-3 text-dark-100"
-                            />
-                        </View>
-                        <View className="flex-row gap-3 mt-2">
-                            <TouchableOpacity
-                                className="flex-1 rounded-full border border-gray-200 py-3 items-center"
-                                onPress={() => setIsEditingProfile(false)}
-                            >
-                                <Text className="paragraph-semibold text-dark-60">Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity className="flex-1 rounded-full bg-primary py-3 items-center" onPress={handleSaveProfile}>
-                                <Text className="paragraph-semibold text-white">Save</Text>
-                            </TouchableOpacity>
+                    <View className="bg-white rounded-3xl overflow-hidden shadow-2xl">
+                        <LinearGradient
+                            colors={["#0B1220", "#0E1A36"]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0.8 }}
+                            style={{ padding: 20, flexDirection: "row", alignItems: "center", gap: 12 }}
+                        >
+                            <View className="flex-1 gap-1">
+                                <Text className="text-white/60 tracking-[5px] uppercase text-[11px]">
+                                    {t("profile.header.edit")}
+                                </Text>
+                                <Text className="text-white text-2xl font-ezra-bold leading-7">Refresh your contact.</Text>
+                                <Text className="body-medium text-white/75">
+                                    Restaurants see this info, please keep it sharp and clear.
+                                </Text>
+                            </View>
+                            <GodzillaFishing width={120} height={120} />
+                        </LinearGradient>
+
+                        <View className="p-5 gap-4 bg-white">
+                            <View className="gap-2">
+                                <Text className="paragraph-semibold text-dark-80">Name</Text>
+                                <TextInput
+                                    value={nameDraft}
+                                    onChangeText={setNameDraft}
+                                    placeholder="Your name"
+                                    placeholderTextColor="#94A3B8"
+                                    className="rounded-2xl border border-gray-200 px-4 py-3 text-dark-100"
+                                />
+                            </View>
+                            <View className="gap-2">
+                                <Text className="paragraph-semibold text-dark-80">Email</Text>
+                                <TextInput
+                                    value={emailDraft}
+                                    onChangeText={setEmailDraft}
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
+                                    placeholder="you@example.com"
+                                    placeholderTextColor="#94A3B8"
+                                    className="rounded-2xl border border-gray-200 px-4 py-3 text-dark-100"
+                                />
+                            </View>
+                            <View className="flex-row gap-3 mt-2">
+                                <TouchableOpacity
+                                    className="flex-1 rounded-full border border-gray-200 py-3 items-center"
+                                    onPress={() => setIsEditingProfile(false)}
+                                >
+                                    <Text className="paragraph-semibold text-dark-60">Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    className="flex-1 rounded-full bg-primary py-3 items-center"
+                                    onPress={handleSaveProfile}
+                                >
+                                    <Text className="paragraph-semibold text-white">Save</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
                 </View>

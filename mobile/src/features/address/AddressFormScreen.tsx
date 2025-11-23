@@ -17,7 +17,7 @@ import { z } from "zod";
 import { useAddressActions, useAddresses } from "./hooks";
 import type { AddressFormNavigation, AddressFormScreenProps } from "./types";
 import Icon from "@/components/Icon";
-import GodzillaBlocks from "@/assets/godzilla/VCTRLY-godzila-play-toy-block-brick.svg";
+import GodzillaBlocks from "@/assets/godzilla/VCTRLY-godzila-bike-scooter-riding.svg";
 
 const schema = z.object({
     label: z.string().min(2, "Enter a helpful label."),
@@ -162,10 +162,10 @@ const AddressFormScreen = () => {
                             <View className="flex-1 gap-1.5">
                                 <Text className="text-white/60 tracking-[6px] uppercase text-[11px]">{screenTitle}</Text>
                                 <Text className="text-white text-3xl font-ezra-bold leading-9">
-                                    Nail the drop-off label.
+                                    Make it clear enough so your rider doesn’t get lost.
                                 </Text>
                                 <Text className="text-white/75 body-medium">
-                                    A crisp label and city hint help riders find you faster.
+                                    Short, clear directions help your food find you faster.
                                 </Text>
                             </View>
 
@@ -183,10 +183,10 @@ const AddressFormScreen = () => {
                             </View>
 
                             <View className="gap-5">
-                                {renderField("- Address Label", "label", "Dorm A - Room 204")}
-                                {renderField("Address line", "line1", "Campus Residences")}
-                                {renderField("Block / Building", "block", "Block A")}
-                                {renderField("Room", "room", "Room 204")}
+                                {renderField(" Address Label", "label", " Hungrie user's home?")}
+                                {renderField("Address line", "line1", "Gepaz, Uğur Apt., Darbaz, Sunset, Siesta etc.")}
+                                {renderField("Block / Building", "block", "No:12, Apt:4 etc.")}
+                                {renderField("Room", "room", " If you are living in dorm. ")}
                                 {renderField(
                                     "City",
                                     "city",
@@ -217,9 +217,8 @@ const AddressFormScreen = () => {
                 <View className="px-6 pb-8">
                     <TouchableOpacity
                         disabled={isMutating}
-                        className={`rounded-full py-4 items-center shadow-lg shadow-primary/30 ${
-                            isMutating ? "bg-gray-300" : "bg-primary"
-                        }`}
+                        className={`rounded-full py-4 items-center shadow-lg shadow-primary/30 ${isMutating ? "bg-gray-300" : "bg-primary"
+                            }`}
                         onPress={handleSubmit}
                         activeOpacity={0.9}
                     >
