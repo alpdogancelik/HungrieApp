@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { SplashScreen, Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import Constants from "expo-constants";
@@ -6,7 +6,10 @@ import * as Sentry from "@sentry/react-native";
 
 import useAuthStore from "@/store/auth.store";
 import { ThemeProvider } from "@/src/theme/themeContext";
+import "@/src/lib/i18n";
 import "./globals.css";
+import { NotificationManager } from "@/src/features/notifications/NotificationManager";
+import { registerTokenWithBackend } from "@/src/features/notifications/push";
 
 const extra = Constants.expoConfig?.extra ?? {};
 const env = (typeof process !== "undefined" ? (process as any).env : undefined) ?? {};
@@ -26,7 +29,8 @@ if (enableSentry) {
 void SplashScreen.preventAutoHideAsync().catch(() => null);
 
 function RootLayoutBase() {
-    const { isLoading, fetchAuthenticatedUser } = useAuthStore();
+    const { isLoading, isAuthenticated, user, fetchAuthenticatedUser } = useAuthStore();
+    const pushRegistrationKeyRef = useRef<string | null>(null);
     const ezraFiles = {
         light: require("../assets/fonts/Ezra-Light.ttf"),
         regular: require("../assets/fonts/Ezra-Regular.ttf"),
@@ -46,6 +50,35 @@ function RootLayoutBase() {
     useEffect(() => {
         fetchAuthenticatedUser();
     }, [fetchAuthenticatedUser]);
+
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        let cancelled = false;
+
+        const registerPush = async () => {
+            const granted = await NotificationManager.requestPermissions();
+            if (!granted || cancelled) return;
+
+            const tokenInfo = await NotificationManager.getPushToken();
+            if (!tokenInfo || cancelled) return;
+
+            const userId = user?.id ?? user?.$id ?? user?.accountId ?? null;
+            const registrationKey = `${userId || "anon"}::${tokenInfo.token}`;
+            if (pushRegistrationKeyRef.current === registrationKey) return;
+            pushRegistrationKeyRef.current = registrationKey;
+
+            try {
+                await registerTokenWithBackend(userId, tokenInfo.token, tokenInfo.platform);
+            } catch (error) {
+                console.warn("[notifications] Failed to register push token", error);
+            }
+        };
+
+        registerPush().catch((error) => console.warn("[notifications] Registration error", error));
+        return () => {
+            cancelled = true;
+        };
+    }, [isAuthenticated, user]);
 
     useEffect(() => {
         if (fontsLoaded) {

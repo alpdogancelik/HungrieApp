@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { useAddressActions, useAddresses } from "./hooks";
 import type { AddressFormNavigation, AddressFormScreenProps } from "./types";
@@ -49,6 +50,7 @@ const AddressFormScreen = () => {
     const route = useRoute<AddressFormScreenProps["route"]>();
     const { addresses } = useAddresses();
     const { createAddress, updateAddress, isMutating } = useAddressActions();
+    const { t } = useTranslation();
     const addressId = route.params?.addressId;
     const editingAddress = useMemo(() => addresses.find((address) => address.id === addressId), [addressId, addresses]);
 
@@ -81,9 +83,15 @@ const AddressFormScreen = () => {
         const parsed = schema.safeParse(form);
         if (!parsed.success) {
             const nextErrors: FormErrors = {};
+            const errorMessages: Partial<Record<keyof FormState, string>> = {
+                label: t("address.form.errors.label"),
+                line1: t("address.form.errors.line1"),
+                city: t("address.form.errors.city"),
+                country: t("address.form.errors.country"),
+            };
             parsed.error.issues.forEach((issue) => {
                 const path = issue.path[0] as keyof FormState;
-                nextErrors[path] = issue.message;
+                nextErrors[path] = errorMessages[path] || issue.message;
             });
             setErrors(nextErrors);
             return;
@@ -96,11 +104,11 @@ const AddressFormScreen = () => {
             }
             navigation.goBack();
         } catch (error: any) {
-            Alert.alert("Unable to save address", error?.message ?? "Please try again.");
+            Alert.alert(t("address.form.saveError", "Unable to save address"), error?.message ?? t("misc.manageSoon"));
         }
     };
 
-    const screenTitle = editingAddress ? "Edit address" : "Add new address";
+    const screenTitle = editingAddress ? t("address.form.titleEdit") : t("address.form.titleAdd");
 
     const renderField = (
         label: string,
@@ -154,7 +162,7 @@ const AddressFormScreen = () => {
                                 className="size-10 rounded-full bg-white/10 items-center justify-center border border-white/25"
                                 onPress={() => navigation.goBack()}
                                 accessibilityRole="button"
-                                accessibilityLabel="Go back"
+                                accessibilityLabel={t("common.goBack")}
                             >
                                 <Icon name="arrowBack" size={18} color="#FFFFFF" />
                             </TouchableOpacity>
@@ -162,11 +170,9 @@ const AddressFormScreen = () => {
                             <View className="flex-1 gap-1.5">
                                 <Text className="text-white/60 tracking-[6px] uppercase text-[11px]">{screenTitle}</Text>
                                 <Text className="text-white text-3xl font-ezra-bold leading-9">
-                                    Make it clear enough so your rider doesn’t get lost.
+                                    {t("address.form.heroTitle")}
                                 </Text>
-                                <Text className="text-white/75 body-medium">
-                                    Short, clear directions help your food find you faster.
-                                </Text>
+                                <Text className="text-white/75 body-medium">{t("address.form.heroSubtitle")}</Text>
                             </View>
 
                             <GodzillaBlocks width={132} height={132} style={{ opacity: 0.9, marginTop: -6 }} />
@@ -176,21 +182,35 @@ const AddressFormScreen = () => {
                     <View className="-mt-14 px-5 pb-4">
                         <View className="bg-white rounded-3xl p-5 gap-6 shadow-xl shadow-primary/10 border border-gray-100">
                             <View className="gap-1">
-                                <Text className="h4-bold text-dark-100">Delivery details</Text>
-                                <Text className="body-medium text-dark-60">
-                                    Keep it simple, but specific enough for your courier.
-                                </Text>
+                                <Text className="h4-bold text-dark-100">{t("address.form.sectionTitle")}</Text>
+                                <Text className="body-medium text-dark-60">{t("address.form.sectionSubtitle")}</Text>
                             </View>
 
                             <View className="gap-5">
-                                {renderField(" Address Label", "label", " Hungrie user's home?")}
-                                {renderField("Address line", "line1", "Gepaz, Uğur Apt., Darbaz, Sunset, Siesta etc.")}
-                                {renderField("Block / Building", "block", "No:12, Apt:4 etc.")}
-                                {renderField("Room", "room", " If you are living in dorm. ")}
                                 {renderField(
-                                    "City",
+                                    t("address.form.fields.label"),
+                                    "label",
+                                    t("address.form.fields.labelPlaceholder"),
+                                )}
+                                {renderField(
+                                    t("address.form.fields.line1"),
+                                    "line1",
+                                    t("address.form.fields.line1Placeholder"),
+                                )}
+                                {renderField(
+                                    t("address.form.fields.block"),
+                                    "block",
+                                    t("address.form.fields.blockPlaceholder"),
+                                )}
+                                {renderField(
+                                    t("address.form.fields.room"),
+                                    "room",
+                                    t("address.form.fields.roomPlaceholder"),
+                                )}
+                                {renderField(
+                                    t("address.form.fields.city"),
                                     "city",
-                                    "(for example, Kalkanli Guzelyurt)",
+                                    t("address.form.fields.cityPlaceholder"),
                                     "default",
                                     "#A7B0C2",
                                 )}
@@ -198,10 +218,8 @@ const AddressFormScreen = () => {
 
                             <View className="flex-row items-center justify-between bg-gray-50 rounded-2xl px-4 py-4 border border-gray-200">
                                 <View className="flex-1 pr-4">
-                                    <Text className="paragraph-semibold text-dark-100">Make default</Text>
-                                    <Text className="body-medium text-dark-60">
-                                        This address will appear first at checkout.
-                                    </Text>
+                                    <Text className="paragraph-semibold text-dark-100">{t("address.form.makeDefault")}</Text>
+                                    <Text className="body-medium text-dark-60">{t("address.form.makeDefaultHint")}</Text>
                                 </View>
                                 <Switch
                                     value={form.isDefault}
@@ -222,7 +240,9 @@ const AddressFormScreen = () => {
                         onPress={handleSubmit}
                         activeOpacity={0.9}
                     >
-                        <Text className="paragraph-semibold text-white">{isMutating ? "Saving..." : "Save address"}</Text>
+                        <Text className="paragraph-semibold text-white">
+                            {isMutating ? t("address.form.saving") : t("address.form.save")}
+                        </Text>
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>

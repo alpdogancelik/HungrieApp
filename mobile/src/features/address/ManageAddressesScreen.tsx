@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { useNavigation } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import type { Address } from "@/src/domain/types";
 import { images } from "@/constants/mediaCatalog";
 import Icon from "@/components/Icon";
@@ -22,6 +23,7 @@ const ManageAddressesScreen = () => {
     const navigation = useNavigation<ManageAddressesNavigation>();
     const { addresses, isLoading } = useAddresses();
     const { removeAddress, setDefaultAddress } = useAddressActions();
+    const { t } = useTranslation();
 
     const navigateToForm = useCallback(
         (addressId?: string) => {
@@ -33,16 +35,16 @@ const ManageAddressesScreen = () => {
     const confirmDelete = useCallback(
         (address: Address) => {
             Alert.alert(
-                "Remove address",
-                `Are you sure you want to delete "${address.label}"?`,
+                t("address.manage.confirmDeleteTitle"),
+                t("address.manage.confirmDeleteBody", { label: address.label }),
                 [
-                    { text: "Cancel", style: "cancel" },
+                    { text: t("common.cancel"), style: "cancel" },
                     {
-                        text: "Delete",
+                        text: t("common.delete"),
                         style: "destructive",
                         onPress: () => {
                             removeAddress(address.id).catch((error) => {
-                                Alert.alert("Unable to delete address", error?.message ?? "Please try again.");
+                                Alert.alert(t("address.manage.deleteError"), error?.message ?? t("misc.manageSoon"));
                             });
                         },
                     },
@@ -50,17 +52,17 @@ const ManageAddressesScreen = () => {
                 { cancelable: true },
             );
         },
-        [removeAddress],
+        [removeAddress, t],
     );
 
     const handleSetDefault = useCallback(
         (address: Address) => {
             if (address.isDefault) return;
             setDefaultAddress(address.id).catch((error) => {
-                Alert.alert("Unable to update default address", error?.message ?? "Please try again.");
+                Alert.alert(t("address.manage.updateDefaultError"), error?.message ?? t("misc.manageSoon"));
             });
         },
-        [setDefaultAddress],
+        [setDefaultAddress, t],
     );
 
     const renderAddress: ListRenderItem<Address> = ({ item }) => (
@@ -83,12 +85,10 @@ const ManageAddressesScreen = () => {
         return (
             <View className="items-center px-8 py-16 gap-4">
                 <Image source={images.deliveryProcess} className="w-48 h-48" contentFit="cover" />
-                <Text className="h4-bold text-dark-100 text-center">No addresses yet</Text>
-                <Text className="body-medium text-dark-60 text-center">
-                    Save a campus dorm or pickup location to speed up checkout.
-                </Text>
+                <Text className="h4-bold text-dark-100 text-center">{t("address.manage.emptyTitle")}</Text>
+                <Text className="body-medium text-dark-60 text-center">{t("address.manage.emptySubtitle")}</Text>
                 <TouchableOpacity className="hero-cta px-8 py-4 rounded-full" onPress={() => navigateToForm()}>
-                    <Text className="paragraph-semibold text-white">Add new address</Text>
+                    <Text className="paragraph-semibold text-white">{t("address.manage.addNew")}</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -99,13 +99,13 @@ const ManageAddressesScreen = () => {
             <View className="px-5 pt-2 pb-4 flex-row items-center justify-between">
                 <TouchableOpacity
                     accessibilityRole="button"
-                    accessibilityLabel="Go back"
+                    accessibilityLabel={t("common.goBack")}
                     className="size-10 rounded-full bg-white items-center justify-center border border-gray-100"
                     onPress={() => navigation.goBack()}
                 >
                     <Icon name="arrowBack" size={18} color="#0F172A" />
                 </TouchableOpacity>
-                <Text className="h4-bold text-dark-100">Manage addresses</Text>
+                <Text className="h4-bold text-dark-100">{t("address.manage.title")}</Text>
                 <View className="size-10" />
             </View>
 
@@ -121,7 +121,7 @@ const ManageAddressesScreen = () => {
             {addresses.length ? (
                 <View className="px-5 pb-8">
                     <TouchableOpacity className="hero-cta items-center py-4" onPress={() => navigateToForm()}>
-                        <Text className="paragraph-semibold text-white">Add new address</Text>
+                        <Text className="paragraph-semibold text-white">{t("address.manage.addNew")}</Text>
                     </TouchableOpacity>
                 </View>
             ) : null}

@@ -12,7 +12,10 @@ import {
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
+
 import CartButton from "@/components/CartButton";
+import LanguageToggle from "@/components/LanguageToggle";
 import MenuCard from "@/components/MenuCard";
 import RestaurantCard from "@/components/RestaurantCard";
 import { illustrations } from "@/constants/mediaCatalog";
@@ -39,6 +42,7 @@ export default function HomeTabScreen() {
     } = useHome();
     const [activeCategory, setActiveCategory] = useState("all");
     const router = useRouter();
+    const { t } = useTranslation();
     const { theme } = useTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);
 
@@ -79,8 +83,13 @@ export default function HomeTabScreen() {
                 contentContainerStyle={styles.scrollContent}
             >
                 <View style={styles.header}>
-                    <DeliverToHeader fallbackLabel={userName} />
-                    <CartButton />
+                    <View style={styles.deliveryWrapper}>
+                        <DeliverToHeader fallbackLabel={userName} />
+                    </View>
+                    <View style={styles.headerActions}>
+                        <LanguageToggle />
+                        <CartButton />
+                    </View>
                 </View>
 
                 {heroLoading ? (
@@ -93,13 +102,11 @@ export default function HomeTabScreen() {
                         style={styles.heroCard}
                     >
                         <View style={styles.heroTextArea}>
-                            <Text style={styles.heroEyebrow}>Kalkanlı hunger Club</Text>
-                            <Text style={styles.heroTitle}>Good food without leaving your spot.</Text>
-                            <Text style={styles.heroSubtitle}>
-                                Order from around campus, couriers do the walking while you stay comfortable.
-                            </Text>
+                            <Text style={styles.heroEyebrow}>{t("home.hero.eyebrow")}</Text>
+                            <Text style={styles.heroTitle}>{t("home.hero.title")}</Text>
+                            <Text style={styles.heroSubtitle}>{t("home.hero.subtitle")}</Text>
                             <TouchableOpacity style={styles.heroCta} onPress={() => router.push("/search")}>
-                                <Text style={styles.heroCtaText}>Browse restaurants</Text>
+                                <Text style={styles.heroCtaText}>{t("home.hero.cta")}</Text>
                             </TouchableOpacity>
                         </View>
                         <View style={styles.heroIllustration}>
@@ -113,29 +120,29 @@ export default function HomeTabScreen() {
                         <Icon name="search" size={20} color={theme.colors.primary} />
                     </View>
                     <View style={styles.searchShortcutText}>
-                        <Text style={styles.searchShortcutTitle}>What are you craving?</Text>
-                        <Text style={styles.searchShortcutSubtitle}>Search restaurants or dishes</Text>
+                        <Text style={styles.searchShortcutTitle}>{t("home.searchShortcut.title")}</Text>
+                        <Text style={styles.searchShortcutSubtitle}>{t("home.searchShortcut.subtitle")}</Text>
                     </View>
                     <View style={styles.searchShortcutBadge}>
-                        <Text style={styles.searchShortcutBadgeText}>Search</Text>
+                        <Text style={styles.searchShortcutBadgeText}>{t("home.searchShortcut.cta")}</Text>
                     </View>
                 </TouchableOpacity>
 
                 <View style={styles.statRow}>
                     <View style={styles.statCard}>
                         <Text style={styles.statValue}>{restaurants?.length ?? 0}</Text>
-                        <Text style={styles.statLabel}>Restaurants nearby</Text>
-                        <Text style={styles.statHelper}>Places that currently deliver to your area.</Text>
+                        <Text style={styles.statLabel}>{t("home.stats.restaurants.label")}</Text>
+                        <Text style={styles.statHelper}>{t("home.stats.restaurants.helper")}</Text>
                     </View>
                     <View style={styles.statCard}>
                         <Text style={styles.statValue}>{menu?.length ?? 0}</Text>
-                        <Text style={styles.statLabel}>Menu ideas ready</Text>
-                        <Text style={styles.statHelper}>Suggestions for when you are not sure what to eat.</Text>
+                        <Text style={styles.statLabel}>{t("home.stats.menu.label")}</Text>
+                        <Text style={styles.statHelper}>{t("home.stats.menu.helper")}</Text>
                     </View>
                 </View>
 
                 <View style={styles.categoriesContainer}>
-                    <Text style={styles.categoryHint}>Pick a category</Text>
+                    <Text style={styles.categoryHint}>{t("home.categoryHint")}</Text>
                     {categoriesLoading ? (
                         <View style={styles.categorySkeletonRow}>
                             {[...Array(4)].map((_, index) => (
@@ -155,14 +162,14 @@ export default function HomeTabScreen() {
                 </View>
 
                 <View style={styles.section}>
-                    <SectionHeader title="Quick actions" />
+                    <SectionHeader title={t("home.quickActionsTitle")} />
                     <View style={styles.quickGrid}>
                         {quickActions.map(renderQuickAction)}
                     </View>
                 </View>
 
                 <View style={styles.section}>
-                    <SectionHeader title="Featured picks" onActionPress={() => router.push("/search")} />
+                    <SectionHeader title={t("home.featuredTitle")} onActionPress={() => router.push("/search")} />
                     {menuLoading ? (
                         <ActivityIndicator color="#FF8C42" />
                     ) : (
@@ -178,8 +185,8 @@ export default function HomeTabScreen() {
                     )}
                 </View>
 
-                <View style={styles.section}>
-                    <SectionHeader title="Restaurants nearby" />
+                    <View style={styles.section}>
+                    <SectionHeader title={t("home.restaurantsTitle")} />
                     {restaurantsLoading ? (
                         <ActivityIndicator color="#FF8C42" />
                     ) : (
@@ -213,6 +220,8 @@ const createStyles = (theme: ThemeDefinition) =>
             paddingHorizontal: theme.spacing.lg,
             paddingTop: theme.spacing.xl,
         },
+        deliveryWrapper: { flex: 1, paddingRight: theme.spacing.md },
+        headerActions: { flexDirection: "row", alignItems: "center", gap: theme.spacing.sm },
         heroCard: {
             marginHorizontal: theme.spacing.lg,
             borderRadius: theme.radius["2xl"],

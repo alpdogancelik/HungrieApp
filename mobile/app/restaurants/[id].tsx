@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
@@ -29,19 +29,38 @@ const RestaurantDetailsScreen = () => {
     const restaurantId = useMemo(() => (id ? String(id) : ""), [id]);
     const ready = Boolean(restaurantId);
 
-    const {
-        data: restaurant,
-        loading: restaurantLoading,
-        error: restaurantError,
-    } = useServerResource<Restaurant, string | undefined>({
-        fn: async (incomingId?: string) => {
+    const restaurantParams = useMemo(() => (restaurantId ? restaurantId : undefined), [restaurantId]);
+    const menuParams = useMemo(() => (ready ? { restaurantId } : undefined), [ready, restaurantId]);
+
+    const fetchRestaurant = useCallback(
+        async (incomingId?: string) => {
             const targetId = incomingId ?? restaurantId;
             if (!targetId) {
                 throw new Error("Restaurant id is missing.");
             }
             return getRestaurant(targetId);
         },
-        params: restaurantId || undefined,
+        [restaurantId],
+    );
+
+    const fetchMenu = useCallback(
+        async (payload?: { restaurantId: string }) => {
+            const targetId = payload?.restaurantId ?? restaurantId;
+            if (!targetId) {
+                throw new Error("Restaurant id is missing.");
+            }
+            return getRestaurantMenu({ restaurantId: targetId });
+        },
+        [restaurantId],
+    );
+
+    const {
+        data: restaurant,
+        loading: restaurantLoading,
+        error: restaurantError,
+    } = useServerResource<Restaurant, string | undefined>({
+        fn: fetchRestaurant,
+        params: restaurantParams,
         immediate: ready,
         skipAlert: true,
     });
@@ -50,14 +69,8 @@ const RestaurantDetailsScreen = () => {
         data: menu,
         loading: menuLoading,
     } = useServerResource<MenuItem[], { restaurantId: string } | undefined>({
-        fn: async (payload) => {
-            const targetId = payload?.restaurantId ?? restaurantId;
-            if (!targetId) {
-                throw new Error("Restaurant id is missing.");
-            }
-            return getRestaurantMenu({ restaurantId: targetId });
-        },
-        params: ready ? { restaurantId } : undefined,
+        fn: fetchMenu,
+        params: menuParams,
         immediate: ready,
         skipAlert: true,
     });

@@ -1,12 +1,14 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Image } from "expo-image";
+import { useTranslation } from "react-i18next";
 import { useCartStore } from "@/store/cart.store";
 import { images, cookingScenes } from "@/constants/mediaCatalog";
 import { createOrder } from "@/lib/api";
 import { useAddresses } from "@/src/features/address/addressFeature";
+import useAuthStore from "@/store/auth.store";
 import type { CartItemType } from "@/type";
 import type { PaymentMethod } from "@/src/domain/types";
 import AddressSummary from "@/components/cart/AddressSummary";
@@ -16,6 +18,7 @@ import CourierNotes from "@/components/cart/CourierNotes";
 import PaymentMethodList from "@/components/cart/PaymentMethodList";
 import SummaryCard from "@/components/cart/SummaryCard";
 import { formatCurrency, getCustomizationsTotal } from "@/lib/cart.utils";
+import { registerLocalOrder } from "@/src/api/client";
 
 const QuietDropScene = cookingScenes.orderAccepted;
 
@@ -44,6 +47,8 @@ const stringifyId = (value: string | number | null | undefined) =>
 
 const Cart = () => {
     const { items, getTotalPrice, increaseQty, decreaseQty, removeItem, clearCart } = useCartStore();
+    const { user } = useAuthStore();
+    const { t } = useTranslation();
     const subtotal = useMemo(() => getTotalPrice(), [getTotalPrice, items]);
     const isCartEmpty = items.length === 0;
     const deliveryFee = 0;
@@ -93,7 +98,7 @@ const Cart = () => {
 
     const handlePlaceOrder = async () => {
         if (!items.length) {
-            Alert.alert("Cart is empty", "Add something tasty before checking out.");
+            Alert.alert(t("cart.empty.title"), t("cart.empty.subtitle"));
             return;
         }
 
@@ -140,13 +145,37 @@ const Cart = () => {
                 customizations: item.customizations?.map(({ id, name, price, type }) => ({ id, name, price, type })) ?? [],
             };
         });
+        const localOrderItems = items.map((item) => ({
+            menuItemId: String(item.id),
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price + getCustomizationsTotal(item.customizations),
+            customizations: item.customizations?.map(({ id, name, price }) => ({ id, name, price })) ?? [],
+        }));
 
         try {
             setPlacingOrder(true);
-            const created = await createOrder({ orderData, orderItems });
-            const newOrderId = String(created?.id ?? Date.now());
+            const newOrderId = String(Date.now());
             const restaurantLabel =
-                (items[0] as CartItemWithRestaurant | undefined)?.name?.split(" ")[0] || "Kampüs Mutfağı";
+                (items[0] as CartItemWithRestaurant | undefined)?.name?.split(" ")[0] || "Kampus Mutfagi";
+
+            registerLocalOrder({
+                id: newOrderId,
+                userId: user?.id ?? user?.$id ?? user?.accountId ?? "guest",
+                restaurantId,
+                items: localOrderItems,
+                status: "pending",
+                paymentMethod: paymentMethod as PaymentMethod,
+                subtotal,
+                deliveryFee,
+                serviceFee,
+                discount,
+                tip: 0,
+                total,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                etaMinutes: pendingEta / 60,
+            });
 
             clearCart();
             router.replace({
@@ -156,6 +185,11 @@ const Cart = () => {
                     restaurantName: restaurantLabel,
                     eta: String(pendingEta),
                 },
+            });
+
+            // Fire-and-forget network persistence; don't block navigation
+            createOrder({ orderData, orderItems }).catch((error: any) => {
+                console.warn("[checkout] createOrder failed", error);
             });
         } catch (error: any) {
             Alert.alert("Unable to place order", error?.message || "Please try again in a moment.");
@@ -168,15 +202,15 @@ const Cart = () => {
         return (
             <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center px-5">
                 <Image source={images.deliveryBag} className="w-60 h-60" contentFit="cover" />
-                <Text className="h3-bold text-dark-100 mt-4">Your cart is empty</Text>
+                <Text className="h3-bold text-dark-100 mt-4">{t("cart.empty.title")}</Text>
                 <Text className="body-medium text-center mt-2 text-dark-60">
-                    Add meals from Home and we will bring everything to your door when you are ready.
+                    {t("cart.empty.subtitle")}
                 </Text>
                 <TouchableOpacity
                     className="mt-4 px-6 py-3 rounded-full bg-primary"
                     onPress={() => router.push("/")}
                 >
-                    <Text className="text-white paragraph-semibold">Browse restaurants</Text>
+                    <Text className="text-white paragraph-semibold">{t("cart.empty.cta")}</Text>
                 </TouchableOpacity>
             </SafeAreaView>
         );
@@ -305,4 +339,5 @@ const Cart = () => {
  * @returns {JSX.Element} The rendered cart screen component
  */
 export default Cart;
+
 

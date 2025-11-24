@@ -94,8 +94,8 @@ const calcSubtotal = (items: CartItem[]) =>
         (sum, item) =>
             sum +
             item.quantity *
-                (item.price +
-                    (item.customizations?.reduce((cSum, c) => cSum + c.price, 0) ?? 0)),
+            (item.price +
+                (item.customizations?.reduce((cSum, c) => cSum + c.price, 0) ?? 0)),
         0,
     );
 
@@ -159,6 +159,11 @@ export const changeStatus = async (input: z.infer<typeof changeStatusSchema>): P
 
 export const getMenuByRestaurant = async (restaurantId: string): Promise<MenuItem[]> =>
     menuItems.filter((item) => item.restaurantId === restaurantId && item.visible);
+
+export const registerLocalOrder = (order: Order) => {
+    // Keep most recent first and prevent duplicates
+    orders = [order, ...orders.filter((o) => o.id !== order.id)];
+};
 
 export const __resetDevServer = () => {
     orders = [];

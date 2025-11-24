@@ -14,6 +14,7 @@ import { Badge, SectionHeader } from "@/src/components/componentRegistry";
 import { useDefaultAddress, type ManageAddressesNavigation } from "@/src/features/address/addressFeature";
 import { images, illustrations } from "@/constants/mediaCatalog";
 import GodzillaFishing from "@/assets/godzilla/VCTRLY-godzila-fishing-fish-beach-enjoy.svg";
+import { NotificationManager } from "@/src/features/notifications/NotificationManager";
 
 const formatCurrency = (value?: number | string) => {
     const amount = Number(value ?? 0);
@@ -84,6 +85,19 @@ const Profile = () => {
         setIsEditingProfile(false);
     };
 
+    const handleNotificationTest = async () => {
+        try {
+            const granted = await NotificationManager.requestPermissions();
+            if (!granted) {
+                Alert.alert(t("profileExtras.actions.notifications.label"), "Bildirim izni verilmedi.");
+                return;
+            }
+            await NotificationManager.notifyLocal(t("profileExtras.actions.notifications.label"), "Test bildirimi gönderildi.");
+        } catch (error: any) {
+            Alert.alert("Bildirim gönderilemedi", error?.message || "Lütfen tekrar deneyin.");
+        }
+    };
+
     const handleLogout = async () => {
         try {
             setSigningOut(true);
@@ -132,29 +146,29 @@ const Profile = () => {
                     <View className="secondary-card flex-row items-center gap-4 bg-white border border-[#FFE6C5]">
                         <Image source={images.deliveryReview} className="w-24 h-24 rounded-2xl" contentFit="cover" />
                         <View className="flex-1 gap-1">
-                            <Text className="text-xs uppercase text-primary font-ezra-semibold">Weekly ritual</Text>
-                            <Text className="paragraph-semibold text-dark-100">Save reviews as reminders.</Text>
-                            <Text className="body-medium text-dark-60">
-                                Tag what you loved so we ping you when it returns to campus.
+                            <Text className="text-xs uppercase text-primary font-ezra-semibold">
+                                {t("profileExtras.weekly.eyebrow")}
                             </Text>
+                            <Text className="paragraph-semibold text-dark-100">{t("profileExtras.weekly.title")}</Text>
+                            <Text className="body-medium text-dark-60">{t("profileExtras.weekly.subtitle")}</Text>
                             <TouchableOpacity className="chip self-start mt-1" onPress={() => router.push("/orders")}>
-                                <Text className="paragraph-semibold text-primary-dark">Open review log</Text>
+                                <Text className="paragraph-semibold text-primary-dark">{t("profileExtras.weekly.cta")}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
 
                     <View className="secondary-card flex-row items-center gap-4 bg-[#0F172A] border-0">
                         <View className="flex-1 gap-2">
-                            <Text className="text-xs uppercase text-white/70 font-ezra-semibold">Delivery preferences</Text>
-                            <Text className="text-white text-xl font-ezra-bold">Map pins & silent drop-offs</Text>
-                            <Text className="body-medium text-white/80">
-                                Update your default address and we brief every courier automatically.
+                            <Text className="text-xs uppercase text-white/70 font-ezra-semibold">
+                                {t("profileExtras.delivery.eyebrow")}
                             </Text>
+                            <Text className="text-white text-xl font-ezra-bold">{t("profileExtras.delivery.title")}</Text>
+                            <Text className="body-medium text-white/80">{t("profileExtras.delivery.subtitle")}</Text>
                             <TouchableOpacity
                                 className="self-start px-4 py-2 rounded-full bg-white/10"
                                 onPress={handleManageAddressesPress}
                             >
-                                <Text className="paragraph-semibold text-white">Update default</Text>
+                                <Text className="paragraph-semibold text-white">{t("profileExtras.delivery.cta")}</Text>
                             </TouchableOpacity>
                         </View>
                         <TrackingIllustration width={110} height={110} />
@@ -202,7 +216,9 @@ const Profile = () => {
                                         />
                                     </View>
                                     <Text className="body-medium text-dark-60 mt-1">
-                                        {`${formatCurrency(order.total)} - ${order.paymentMethod === "cash" ? "Cash" : "Card"
+                                        {`${formatCurrency(order.total)} - ${order.paymentMethod === "cash"
+                                            ? t("profileExtras.payment.cash")
+                                            : t("profileExtras.payment.card")
                                             }`}
                                     </Text>
                                 </TouchableOpacity>
@@ -215,17 +231,29 @@ const Profile = () => {
                     <View className="secondary-card gap-3">
                         <SectionHeader title={t("profile.accountActions")} />
                         {[
-                            { label: "Payment methods", description: "Add or remove saved cards" },
-                            { label: "Notification preferences", description: "SMS, push, and email" },
-                            { label: "Help center", description: "Chat with support" },
-                            { label: "Sipariş geçmişi", description: "Önceki siparişlerini incele", action: () => router.push("/orders") },
+                            {
+                                label: t("profileExtras.actions.payment.label"),
+                                description: t("profileExtras.actions.payment.description"),
+                            },
+                            {
+                                label: t("profileExtras.actions.notifications.label"),
+                                description: t("profileExtras.actions.notifications.description"),
+                                action: handleNotificationTest,
+                            },
+                            {
+                                label: t("profileExtras.actions.help.label"),
+                                description: t("profileExtras.actions.help.description"),
+                            },
+                            {
+                                label: t("profileExtras.actions.history.label"),
+                                description: t("profileExtras.actions.history.description"),
+                                action: () => router.push("/orders"),
+                            },
                         ].map((item) => (
                             <TouchableOpacity
                                 key={item.label}
                                 className="profile-field"
-                                onPress={
-                                    item.action || (() => Alert.alert("Çok yakında", `${item.label} sayfası üzerinde çalışıyoruz.`))
-                                }
+                                onPress={item.action || (() => Alert.alert(t("profileExtras.actions.soonTitle"), item.label))}
                             >
                                 <View className="profile-field__icon">
                                     <Text className="paragraph-semibold text-primary-dark">{item.label[0]}</Text>
@@ -259,33 +287,33 @@ const Profile = () => {
                                 <Text className="text-white/60 tracking-[5px] uppercase text-[11px]">
                                     {t("profile.header.edit")}
                                 </Text>
-                                <Text className="text-white text-2xl font-ezra-bold leading-7">Refresh your contact.</Text>
-                                <Text className="body-medium text-white/75">
-                                    Restaurants see this info, please keep it sharp and clear.
+                                <Text className="text-white text-2xl font-ezra-bold leading-7">
+                                    {t("profileExtras.editModal.title")}
                                 </Text>
+                                <Text className="body-medium text-white/75">{t("profileExtras.editModal.subtitle")}</Text>
                             </View>
                             <GodzillaFishing width={120} height={120} />
                         </LinearGradient>
 
                         <View className="p-5 gap-4 bg-white">
                             <View className="gap-2">
-                                <Text className="paragraph-semibold text-dark-80">Name</Text>
+                                <Text className="paragraph-semibold text-dark-80">{t("profileExtras.editModal.name")}</Text>
                                 <TextInput
                                     value={nameDraft}
                                     onChangeText={setNameDraft}
-                                    placeholder="Your name"
+                                    placeholder={t("profileExtras.editModal.namePlaceholder")}
                                     placeholderTextColor="#94A3B8"
                                     className="rounded-2xl border border-gray-200 px-4 py-3 text-dark-100"
                                 />
                             </View>
                             <View className="gap-2">
-                                <Text className="paragraph-semibold text-dark-80">Email</Text>
+                                <Text className="paragraph-semibold text-dark-80">{t("profileExtras.editModal.email")}</Text>
                                 <TextInput
                                     value={emailDraft}
                                     onChangeText={setEmailDraft}
                                     keyboardType="email-address"
                                     autoCapitalize="none"
-                                    placeholder="you@example.com"
+                                    placeholder={t("profileExtras.editModal.emailPlaceholder")}
                                     placeholderTextColor="#94A3B8"
                                     className="rounded-2xl border border-gray-200 px-4 py-3 text-dark-100"
                                 />
@@ -295,13 +323,13 @@ const Profile = () => {
                                     className="flex-1 rounded-full border border-gray-200 py-3 items-center"
                                     onPress={() => setIsEditingProfile(false)}
                                 >
-                                    <Text className="paragraph-semibold text-dark-60">Cancel</Text>
+                                    <Text className="paragraph-semibold text-dark-60">{t("profileExtras.editModal.cancel")}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     className="flex-1 rounded-full bg-primary py-3 items-center"
                                     onPress={handleSaveProfile}
                                 >
-                                    <Text className="paragraph-semibold text-white">Save</Text>
+                                    <Text className="paragraph-semibold text-white">{t("profileExtras.editModal.save")}</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>

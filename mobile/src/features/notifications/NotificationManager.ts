@@ -32,7 +32,7 @@ const notificationHandler: Notifications.NotificationHandler = {
     handleNotification: async () => ({
         shouldShowAlert: true,
         shouldSetBadge: false,
-        shouldPlaySound: false,
+        shouldPlaySound: true,
         shouldShowBanner: true,
         shouldShowList: true,
     }),
@@ -45,6 +45,9 @@ const ensureAndroidChannel = async () => {
     await Notifications.setNotificationChannelAsync("default", {
         name: "default",
         importance: Notifications.AndroidImportance.MAX,
+        sound: "default",
+        enableVibrate: true,
+        enableLights: true,
     });
 };
 
@@ -91,7 +94,7 @@ export const getPushToken = async (): Promise<PushTokenInfo | null> => {
     return { token: response.data, platform };
 };
 
-export const notifyLocal = async (title: string, body: string) => {
+export const notifyLocal = async (title: string, body: string, withSound = true) => {
     if (isWeb) {
         const NotificationApi = getWebNotification();
         if (NotificationApi && NotificationApi.permission === "granted") {
@@ -101,7 +104,11 @@ export const notifyLocal = async (title: string, body: string) => {
     }
     await ensureAndroidChannel();
     await Notifications.scheduleNotificationAsync({
-        content: { title, body },
+        content: {
+            title,
+            body,
+            sound: withSound ? "default" : undefined,
+        },
         trigger: null,
     });
 };

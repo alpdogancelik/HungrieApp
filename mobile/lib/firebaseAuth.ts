@@ -28,6 +28,7 @@ import {
     createMenuItem as createMenuItemCore,
 } from "./firebase";
 import { filterMenuForCustomer, filterRestaurantMenuForCustomer } from "./menuVisibility";
+import { sampleCategories, sampleMenu } from "./sampleData";
 
 export type Profile = { name: string; email: string; avatar?: string; accountId?: string };
 export const firebaseOrdersEnabled = firebaseConfigured && Boolean(firestore);
@@ -151,25 +152,52 @@ export const signOut = async () => firebaseSignOut(requireAuth());
 
 // Menu & categories
 export const getMenu = async ({ category, query, limit }: { category?: string; query?: string; limit?: number }) => {
-    const snap = await getDocs(collection(requireDB(), FIREBASE_COLLECTIONS.menus));
-    let list = snap.docs.map((d) => ({ id: d.id, ...d.data(), price: Number(d.data().price ?? 0) }));
-    if (category) {
-        const term = category.toLowerCase();
-        list = list.filter((item: any) => (item.category || item.categories || "").toString().toLowerCase().includes(term));
+    const applyFilters = (raw: any[]) => {
+        let list = raw.map((item) => ({ ...item, price: Number(item.price ?? 0) }));
+        if (category) {
+            const term = category.toLowerCase();
+            list = list.filter((item: any) => (item.category || item.categories || "").toString().toLowerCase().includes(term));
+        }
+        if (query) {
+            const term = query.toLowerCase();
+            list = list.filter(
+                (item: any) => item.name?.toLowerCase().includes(term) || item.description?.toLowerCase().includes(term),
+            );
+        }
+        if (limit) list = list.slice(0, limit);
+        return filterMenuForCustomer(list);
+    };
+
+    if (!firebaseConfigured || !firestore) {
+        const fallback = Object.values(sampleMenu).flat();
+        return applyFilters(fallback);
     }
-    if (query) {
-        const term = query.toLowerCase();
-        list = list.filter(
-            (item: any) => item.name?.toLowerCase().includes(term) || item.description?.toLowerCase().includes(term),
-        );
+
+    try {
+        const snap = await getDocs(collection(requireDB(), FIREBASE_COLLECTIONS.menus));
+        if (snap.empty) {
+            const fallback = Object.values(sampleMenu).flat();
+            return applyFilters(fallback);
+        }
+        return applyFilters(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    } catch (error) {
+        const fallback = Object.values(sampleMenu).flat();
+        return applyFilters(fallback);
     }
-    if (limit) list = list.slice(0, limit);
-    return filterMenuForCustomer(list);
 };
 
 export const getCategories = async () => {
-    const snap = await getDocs(collection(requireDB(), FIREBASE_COLLECTIONS.categories));
-    return snap.empty ? [] : snap.docs.map(mapDoc);
+    const fallbackCategories = Object.values(sampleCategories)[0] || [];
+    if (!firebaseConfigured || !firestore) {
+        return fallbackCategories;
+    }
+    try {
+        const snap = await getDocs(collection(requireDB(), FIREBASE_COLLECTIONS.categories));
+        if (snap.empty) return fallbackCategories;
+        return snap.docs.map(mapDoc);
+    } catch {
+        return fallbackCategories;
+    }
 };
 
 // Restaurants & menus
@@ -198,8 +226,23 @@ export const createRestaurant = async (payload: {
     return { id: ref.id, ...data };
 };
 
-export const getRestaurantMenu = async ({ restaurantId }: { restaurantId: string }) =>
-    filterRestaurantMenuForCustomer(restaurantId, await fetchRestaurantMenu(restaurantId));
+export const getRestaurantMenu = async ({ restaurantId }: { restaurantId: string }) => {
+    if (!firebaseConfigured || !firestore) {
+        const fallback = sampleMenu[restaurantId] || Object.values(sampleMenu).flat();
+        return filterRestaurantMenuForCustomer(restaurantId, fallback);
+    }
+    try {
+        const result = await fetchRestaurantMenu(restaurantId);
+        if (!result || !Array.isArray(result) || !result.length) {
+            const fallback = sampleMenu[restaurantId] || Object.values(sampleMenu).flat();
+            return filterRestaurantMenuForCustomer(restaurantId, fallback);
+        }
+        return filterRestaurantMenuForCustomer(restaurantId, result);
+    } catch (error) {
+        const fallback = sampleMenu[restaurantId] || Object.values(sampleMenu).flat();
+        return filterRestaurantMenuForCustomer(restaurantId, fallback);
+    }
+};
 
 export const createMenuItem = async (
     restaurantId: string,

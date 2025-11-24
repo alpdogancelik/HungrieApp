@@ -13,6 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import useOrderRealtime from "@/src/hooks/useOrderRealtime";
+import useOrderStatus from "@/src/hooks/useOrderStatus";
 import { changeStatus, nudgeRestaurant } from "@/src/api/client";
 import { emitOrderEvent } from "@/src/lib/realtime";
 import type { OrderStatus } from "@/src/domain/types";
@@ -126,7 +127,18 @@ const OrderPendingScreen = ({
     onRejected,
 }: Props) => {
     const { order } = useOrderRealtime(orderId);
-    const orderStatus = (order?.status ?? "pending") as OrderStatus;
+    const { status: pendingStatus } = useOrderStatus(orderId);
+    const orderStatus = useMemo<OrderStatus>(() => {
+        if (order?.status) return order.status as OrderStatus;
+        switch (pendingStatus) {
+            case "confirmed":
+                return "preparing";
+            case "rejected":
+                return "canceled";
+            default:
+                return "pending";
+        }
+    }, [order?.status, pendingStatus]);
     const baseEtaSeconds = useMemo(() => (order?.etaMinutes ? order.etaMinutes * 60 : etaSeconds), [order?.etaMinutes, etaSeconds]);
     const [sla, setSla] = useState(baseEtaSeconds);
     const [cooldown, setCooldown] = useState(0);

@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import CartButton from "@/components/CartButton";
 import RestaurantCard from "@/components/RestaurantCard";
 import { images } from "@/constants/mediaCatalog";
@@ -21,6 +22,7 @@ import { Chip, Stepper, Card } from "@/src/components/componentRegistry";
 import useSearch, { SearchSort } from "@/src/hooks/useSearch";
 import { useCartStore } from "@/store/cart.store";
 import Icon from "@/components/Icon";
+import "@/src/lib/i18n";
 
 const sortOptions: { id: SearchSort; label: string }[] = [
     { id: "relevance", label: "Relevance" },
@@ -133,6 +135,7 @@ const SkeletonList = () => (
 );
 
 const Search = () => {
+    const { t } = useTranslation();
     const { query: initialQuery, category: initialCategory } = useLocalSearchParams<{ query?: string; category?: string }>();
     const {
         query,
@@ -222,9 +225,9 @@ const Search = () => {
             return (
                 <View style={styles.emptyState}>
                     <Image source={images.deliveryProcess} style={styles.emptyImage} contentFit="cover" />
-                    <Text style={styles.emptyTitle}>Kitchen radios are quiet</Text>
+                    <Text style={styles.emptyTitle}>{t("search.offline.title")}</Text>
                     <Text style={styles.emptyDescription}>
-                        We could not reach our restaurants. Check your connection or app permissions and try again.
+                        {t("search.offline.body")}
                     </Text>
                     <TouchableOpacity style={styles.retryButton} onPress={refetch}>
                         <Text style={styles.retryButtonText}>Refresh feed</Text>
@@ -236,10 +239,10 @@ const Search = () => {
             return (
                 <View style={styles.emptyState}>
                     <Image source={images.deliveryReview} style={styles.emptyImage} contentFit="cover" />
-                    <Text style={styles.emptyTitle}>Restaurants</Text>
+                    <Text style={styles.emptyTitle}>{t("search.empty.title")}</Text>
                     <Text style={styles.emptyDescription}>0 matches</Text>
                     <Text style={styles.emptyDescription}>
-                        No restaurants matched that search.
+                        {t("search.empty.body")}
                     </Text>
                 </View>
             );
@@ -275,9 +278,9 @@ const Search = () => {
                         <View style={styles.discoveryCard}>
                             <Image source={images.fastDelivery} style={styles.discoveryImage} contentFit="cover" />
                             <View style={styles.discoveryText}>
-                                <Text style={styles.discoveryTitle}>Search like a human.</Text>
+                                <Text style={styles.discoveryTitle}>{t("search.discovery.title")}</Text>
                                 <Text style={styles.discoverySubtitle}>
-                                    Describe a craving or an ingredient and we will surface campus meals that match.
+                                    {t("search.discovery.subtitle")}
                                 </Text>
                             </View>
                         </View>
@@ -325,7 +328,10 @@ const Search = () => {
                                 ))}
                             </View>
                         ) : (
-                            <Text style={styles.restaurantEmpty}>No restaurants matched that search.</Text>
+                            <View style={{ gap: 4 }}>
+                                <Text style={styles.restaurantEmpty}>{t("search.empty.title")}</Text>
+                                <Text style={styles.restaurantEmpty}>{t("search.empty.body")}</Text>
+                            </View>
                         )}
                     </View>
                 }

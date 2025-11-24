@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DeviceEventEmitter, FlatList, Modal, Pressable, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import cn from "clsx";
 import type { Address } from "@/src/domain/types";
 import { addressStore } from "@/src/features/address/addressStore";
@@ -22,13 +23,14 @@ const DeliverToHeader = ({ fallbackLabel }: DeliverToHeaderProps) => {
     const [sheetVisible, setSheetVisible] = useState(false);
     const [selectedId, setSelectedId] = useState<string | null>(defaultAddress?.id ?? null);
     const router = useRouter();
+    const { t } = useTranslation();
 
     useEffect(() => {
         setSelectedId(defaultAddress?.id ?? null);
     }, [defaultAddress?.id]);
 
-    const currentLabel = defaultAddress?.label ?? fallbackLabel ?? "Add delivery address";
-    const subtitle = defaultAddress ? renderAddressLine(defaultAddress) : "Tap to choose where we should deliver";
+    const currentLabel = defaultAddress?.label ?? fallbackLabel ?? t("deliverTo.addAddress");
+    const subtitle = defaultAddress ? renderAddressLine(defaultAddress) : t("deliverTo.subtitle");
 
     const handleUseAddress = useCallback(async () => {
         if (!selectedId) return;
@@ -86,7 +88,9 @@ const DeliverToHeader = ({ fallbackLabel }: DeliverToHeaderProps) => {
     return (
         <>
             <Pressable className="gap-1" onPress={() => setSheetVisible(true)}>
-                <Text className="text-xs font-ezra-bold tracking-[2px] text-primary">DELIVER TO</Text>
+                <Text className="text-xs font-ezra-bold tracking-[2px] text-primary">
+                    {t("deliverTo.eyebrow").toUpperCase()}
+                </Text>
                 <View className="flex-row items-center gap-1">
                     <Text className="text-2xl font-ezra-bold text-dark-100" numberOfLines={1}>
                         {currentLabel}
@@ -102,7 +106,7 @@ const DeliverToHeader = ({ fallbackLabel }: DeliverToHeaderProps) => {
                 <Pressable className="flex-1 bg-black/40" onPress={() => setSheetVisible(false)} />
                 <View className="bg-white rounded-t-[32px] p-5 gap-4 max-h-[75%]">
                     <View className="h-1 w-16 bg-gray-200 rounded-full self-center" />
-                    <Text className="h4-bold text-dark-100">Choose delivery address</Text>
+                    <Text className="h4-bold text-dark-100">{t("deliverTo.modalTitle")}</Text>
                     {addresses.length ? (
                         <FlatList
                             data={addresses}
@@ -112,10 +116,8 @@ const DeliverToHeader = ({ fallbackLabel }: DeliverToHeaderProps) => {
                         />
                     ) : (
                         <View className="py-10 items-center gap-2">
-                            <Text className="paragraph-semibold text-dark-80">No saved addresses yet</Text>
-                            <Text className="body-medium text-dark-60 text-center">
-                                Add your dorm, residence hall, or pickup spot to speed up checkout.
-                            </Text>
+                            <Text className="paragraph-semibold text-dark-80">{t("deliverTo.emptyTitle")}</Text>
+                            <Text className="body-medium text-dark-60 text-center">{t("deliverTo.emptySubtitle")}</Text>
                         </View>
                     )}
                     <View className="flex-row gap-3">
@@ -123,7 +125,7 @@ const DeliverToHeader = ({ fallbackLabel }: DeliverToHeaderProps) => {
                             className="flex-1 rounded-full border border-gray-200 py-3 items-center"
                             onPress={openManageAddresses}
                         >
-                            <Text className="paragraph-semibold text-dark-80">Manage addresses</Text>
+                            <Text className="paragraph-semibold text-dark-80">{t("deliverTo.manage")}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             disabled={!selectedId}
@@ -133,7 +135,7 @@ const DeliverToHeader = ({ fallbackLabel }: DeliverToHeaderProps) => {
                             )}
                             onPress={handleUseAddress}
                         >
-                            <Text className="paragraph-semibold text-white">Use this address</Text>
+                            <Text className="paragraph-semibold text-white">{t("deliverTo.useThis")}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

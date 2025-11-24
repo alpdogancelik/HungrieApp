@@ -1,4 +1,6 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+
 import useAuthStore from "@/store/auth.store";
 import useAsyncResource from "@/lib/useAsyncResource";
 import useServerResource from "@/lib/useServerResource";
@@ -30,6 +32,7 @@ type UseHomeResult = {
 
 export const useHome = (): UseHomeResult => {
     const { user } = useAuthStore();
+    const { t, i18n } = useTranslation();
     const featuredMenuParams = useMemo(() => ({ limit: 6 }), []);
     const { data: menu, loading: menuLoading } = useAsyncResource({ fn: getMenu, params: featuredMenuParams });
     const {
@@ -42,34 +45,34 @@ export const useHome = (): UseHomeResult => {
         () => [
             {
                 id: "orders",
-                label: "Order history",
-                description: "See what you ordered before.",
+                label: t("home.quickActions.orders.label"),
+                description: t("home.quickActions.orders.description"),
                 icon: "clock",
                 target: "/orders",
             },
             {
                 id: "favorites",
-                label: "Favourites",
-                description: "Jump back to your go-to places.",
+                label: t("home.quickActions.favorites.label"),
+                description: t("home.quickActions.favorites.description"),
                 icon: "star",
                 target: "/search?query=popular",
             },
             {
                 id: "addresses",
-                label: "Addresses",
-                description: "Manage where your orders should arrive.",
+                label: t("home.quickActions.addresses.label"),
+                description: t("home.quickActions.addresses.description"),
                 icon: "location",
                 target: "/profile",
             },
             {
                 id: "coupons",
-                label: "Coupons",
-                description: "Check your available discounts.",
+                label: t("home.quickActions.coupons.label"),
+                description: t("home.quickActions.coupons.description"),
                 icon: "dollar",
                 target: "/search?query=promo",
             },
         ],
-        [],
+        [t, i18n.language],
     );
 
     return {
