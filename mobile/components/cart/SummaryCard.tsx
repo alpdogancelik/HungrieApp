@@ -3,7 +3,8 @@ import { cardShadow } from "./styles";
 
 type Props = {
     subtotal: string;
-    discount: string;
+    serviceFee?: string;
+    serviceNote?: string;
     total: string;
 };
 
@@ -14,10 +15,15 @@ const SummaryRow = ({ label, value, highlight }: { label: string; value: string;
     </View>
 );
 
-const SummaryCard = ({ subtotal, discount, total }: Props) => (
+const SummaryCard = ({ subtotal, serviceFee, serviceNote, total }: Props) => (
     <View className="bg-white rounded-[32px] p-5 gap-2" style={cardShadow}>
         <SummaryRow label="Sub total" value={subtotal} />
-        <SummaryRow label="Discount" value={discount} />
+        {serviceFee ? (
+            <View className="gap-1">
+                <SummaryRow label="Hungrie Service Fee" value={serviceFee} />
+                {serviceNote ? <Text className="caption text-dark-60">{serviceNote}</Text> : null}
+            </View>
+        ) : null}
         <View className="border-t border-gray-100 my-2" />
         <SummaryRow label="Total" value={total} highlight />
     </View>

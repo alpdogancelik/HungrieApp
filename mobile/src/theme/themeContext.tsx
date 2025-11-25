@@ -72,30 +72,12 @@ export const ThemeProvider = ({
     children: ReactNode;
     initialVariant?: ThemeVariant;
 }) => {
-    const systemPreference = Appearance.getColorScheme() === "dark" ? "dark" : "light";
-    const [variant, setVariant] = useState<ThemeVariant>(initialVariant || systemPreference);
-    const [hydrated, setHydrated] = useState(false);
-
-    useEffect(() => {
-        let mounted = true;
-        readStoredVariant().then((stored) => {
-            if (mounted && stored) {
-                setVariant(stored);
-            }
-            setHydrated(true);
-        });
-        return () => {
-            mounted = false;
-        };
-    }, []);
-
-    useEffect(() => {
-        if (!hydrated) return;
-        persistVariant(variant);
-    }, [variant, hydrated]);
+    // Force light-only experience.
+    const [variant, setVariant] = useState<ThemeVariant>("light");
+    const [hydrated, setHydrated] = useState(true);
 
     const toggleTheme = useCallback(() => {
-        setVariant((prev) => (prev === "light" ? "dark" : "light"));
+        setVariant("light");
     }, []);
 
     const theme = useMemo(() => buildTheme(variant), [variant]);

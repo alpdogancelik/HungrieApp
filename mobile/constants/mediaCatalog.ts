@@ -20,6 +20,7 @@ import EditIcon from "@/assets/iconset/edit 2.svg";
 import PhoneIcon from "@/assets/iconset/Phone.svg";
 import MailIcon from "@/assets/iconset/Mail-.svg";
 import LogoutIcon from "@/assets/iconset/Log Out 1.svg";
+import CloseIcon from "@/assets/iconset/cancel.svg";
 
 // Cooking SVG scenes
 import studyFuel from "@/assets/cooking/studyfuel.svg";
@@ -35,10 +36,18 @@ import MealOrder from "@/assets/illustrations/Meal Order.svg";
 
 // Emoji PNGs
 import beamingEmoji from "@/assets/emoji/Beaming Face with Smiling Eyes.png";
-import savoringEmoji from "@/assets/emoji/Face Savoring Food.png";
-import heartEyesEmoji from "@/assets/emoji/Smiling Face with Heart-Eyes.png";
-import nerdEmoji from "@/assets/emoji/Nerd Face.png";
+import cryingEmoji from "@/assets/emoji/Crying Face.png";
 import explodingEmoji from "@/assets/emoji/Exploding Head.png";
+import kissEmoji from "@/assets/emoji/Face Blowing a Kiss.png";
+import savoringEmoji from "@/assets/emoji/Face Savoring Food.png";
+import screamingEmoji from "@/assets/emoji/Face Screaming in Fear.png";
+import crossedEyesEmoji from "@/assets/emoji/Face with Crossed-Out Eyes.png";
+import handOverMouthEmoji from "@/assets/emoji/Face with Hand Over Mouth.png";
+import raisedEyebrowEmoji from "@/assets/emoji/Face with Raised Eyebrow.png";
+import nerdEmoji from "@/assets/emoji/Nerd Face.png";
+import pleadingEmoji from "@/assets/emoji/Pleading Face.png";
+import shushingEmoji from "@/assets/emoji/Shushing Face.png";
+import heartEyesEmoji from "@/assets/emoji/Smiling Face with Heart-Eyes.png";
 
 // Lifestyle imagery (all files currently available inside assets/images)
 import burgerImage from "@/assets/images/Burger.png";
@@ -123,6 +132,7 @@ export const iconset = {
     phone: PhoneIcon,
     envelope: MailIcon,
     logout: LogoutIcon,
+    close: CloseIcon,
 } as const;
 
 export const cookingScenes = {
@@ -141,10 +151,18 @@ export const illustrations = {
 
 export const emojiSet = {
     beaming: beamingEmoji,
+    crying: cryingEmoji,
+    kiss: kissEmoji,
     savoring: savoringEmoji,
     heartEyes: heartEyesEmoji,
     nerd: nerdEmoji,
     exploding: explodingEmoji,
+    screaming: screamingEmoji,
+    crossedEyes: crossedEyesEmoji,
+    handOverMouth: handOverMouthEmoji,
+    raisedEyebrow: raisedEyebrowEmoji,
+    pleading: pleadingEmoji,
+    shushing: shushingEmoji,
 } as const;
 
 export const images = {

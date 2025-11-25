@@ -9,7 +9,7 @@ type Props = {
 
 const CourierNotes = ({ value, maxLength, suggestions, onChange }: Props) => (
     <View className="gap-2">
-        <Text className="section-title">Notes for courier</Text>
+        <Text className="section-title">Notes for restaurant</Text>
         <View className="flex-row flex-wrap gap-3">
             {suggestions.map((suggestion) => (
                 <TouchableOpacity

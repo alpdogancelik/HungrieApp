@@ -1,5 +1,5 @@
 import { memo, useCallback, useMemo, useState } from "react";
-import { Alert, Platform, Text, ToastAndroid, TouchableOpacity, View } from "react-native";
+import { Alert, Platform, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
 import { useCartStore } from "@/store/cart.store";
 import Icon from "./Icon";
@@ -9,6 +9,7 @@ import { useProductReviews } from "@/src/features/reviews/useProductReviews";
 type MenuCardProps = {
     item: any;
     onPress?: () => void;
+    accentColor?: string;
 };
 
 const showToast = (message: string) => {
@@ -19,7 +20,9 @@ const showToast = (message: string) => {
     }
 };
 
-const MenuCard = ({ item, onPress }: MenuCardProps) => {
+const formatPrice = (value?: number | string) => `TRY ${Number(value || 0).toFixed(2)}`;
+
+const MenuCard = ({ item, onPress, accentColor = "#FE8C00" }: MenuCardProps) => {
     const { $id, image_url, imageUrl: fallbackImageUrl, name, price } = item || {};
     const resolvedImage = image_url || fallbackImageUrl;
     const imageUrl = resolvedImage?.startsWith("http") ? resolvedImage : undefined;
@@ -31,12 +34,16 @@ const MenuCard = ({ item, onPress }: MenuCardProps) => {
     const [sheetVisible, setSheetVisible] = useState(false);
     const averageLabel = useMemo(() => average.toFixed(1), [average]);
 
+    const description = item?.description || "Kampus icin sicak hazirlanir.";
+    const eta = item?.deliveryTime || "15-25 dk";
+    const cardAccent = accentColor || "#FE8C00";
+
     const handleAdd = useCallback(() => {
         addItem({
             id: String($id || item?.id || `menu-${Date.now()}`),
             name: name || "Menu Item",
             price: numericPrice || 0,
-            image_url: imageUrl || '',
+            image_url: imageUrl || "",
             customizations: [],
         });
     }, [$id, addItem, imageUrl, item?.id, name, numericPrice]);
@@ -66,49 +73,65 @@ const MenuCard = ({ item, onPress }: MenuCardProps) => {
     return (
         <TouchableOpacity
             activeOpacity={0.92}
-            onPress={onPress ?? (() => { })}
-            className="menu-card"
-            style={Platform.OS === 'android' ? { elevation: 6, shadowColor: '#0F172A' } : {}}
+            onPress={onPress ?? (() => {})}
+            style={[
+                styles.card,
+                { borderColor: `${cardAccent}18` },
+                Platform.OS === "android" ? { elevation: 3, shadowColor: "#0F172A" } : {},
+            ]}
         >
-            <View className="flex-row items-start justify-between gap-4">
-                <View className="flex-1 gap-2">
-                    <Text className="body-medium uppercase text-dark-60 tracking-[2px]">chef's pick</Text>
-                    <Text className="text-2xl font-ezra-bold text-dark-100" numberOfLines={2}>{name}</Text>
-                    <Text className="paragraph-semibold text-primary-dark">TRY {numericPrice.toFixed(2)}</Text>
-                    <View className="flex-row items-center gap-2">
-                        <Icon name="star" size={16} color="#FE8C00" />
-                        <Text className="paragraph-semibold text-dark-100">{averageLabel}</Text>
-                        <Text className="body-medium text-dark-60">({count})</Text>
+            <View style={styles.headerRow}>
+                <Text style={[styles.price, { color: cardAccent }]}>{formatPrice(numericPrice)}</Text>
+            </View>
+
+            <View style={styles.row}>
+                <View style={styles.textArea}>
+                    <Text style={styles.title} numberOfLines={2}>
+                        {name}
+                    </Text>
+                    <Text style={styles.description} numberOfLines={2}>
+                        {description}
+                    </Text>
+                    <View style={styles.ratingRow}>
+                        <Icon name="star" size={16} color={cardAccent} />
+                        <Text style={styles.ratingValue}>{averageLabel}</Text>
+                        <Text style={styles.ratingCount}>({count})</Text>
+                    </View>
+                    <View style={styles.metaRow}>
+                        <View style={[styles.metaChip, { backgroundColor: `${cardAccent}12` }]}>
+                            <Icon name="clock" size={14} color={cardAccent} />
+                            <Text style={[styles.metaText, { color: cardAccent }]}>{eta}</Text>
+                        </View>
+                        <View style={styles.metaChip}>
+                            <Icon name="dollar" size={14} color="#0F172A" />
+                            <Text style={styles.metaText}>Kampus indirimi</Text>
+                        </View>
                     </View>
                 </View>
-                {imageUrl && (
-                    <Image
-                        source={{ uri: imageUrl }}
-                        className="h-24 w-24 -mr-3 -mt-4"
-                        contentFit="cover"
-                        transition={300}
-                    />
-                )}
+                {imageUrl ? (
+                    <View style={styles.imageShell}>
+                        <Image
+                            source={{ uri: imageUrl }}
+                            style={styles.image}
+                            contentFit="cover"
+                            transition={300}
+                        />
+                    </View>
+                ) : null}
             </View>
 
-            <View className="mt-5 gap-3">
+            <View style={styles.actions}>
                 <TouchableOpacity
-                    className="self-start px-4 py-2 rounded-full border border-primary/20 bg-primary/10"
+                    style={[styles.secondaryCta, { borderColor: `${cardAccent}35`, backgroundColor: `${cardAccent}10` }]}
                     onPress={() => setSheetVisible(true)}
                 >
-                    <Text className="paragraph-semibold text-primary-dark">Share your experience</Text>
+                    <Text style={[styles.secondaryLabel, { color: cardAccent }]}>Deneyimini paylas</Text>
                 </TouchableOpacity>
-            </View>
-
-            <View className="mt-3 flex-row items-center justify-between">
-                <View className="chip bg-primary/10 border-transparent">
-                    <Text className="body-medium text-primary-dark">15-25 min</Text>
-                </View>
                 <TouchableOpacity
                     onPress={handleAdd}
-                    className="px-4 py-2 rounded-full bg-dark-100"
+                    style={[styles.primaryCta, { backgroundColor: cardAccent }]}
                 >
-                    <Text className="paragraph-semibold text-white">Add to bag</Text>
+                    <Text style={styles.primaryLabel}>Cantaya ekle</Text>
                 </TouchableOpacity>
             </View>
 
@@ -124,5 +147,113 @@ const MenuCard = ({ item, onPress }: MenuCardProps) => {
     );
 };
 
-export default memo(MenuCard);
+const styles = StyleSheet.create({
+    card: {
+        backgroundColor: "#FFFFFF",
+        borderRadius: 18,
+        padding: 16,
+        borderWidth: 1,
+        gap: 12,
+    },
+    headerRow: {
+        flexDirection: "row",
+        justifyContent: "flex-end",
+        alignItems: "center",
+    },
+    price: {
+        fontFamily: "Ezra-Bold",
+        fontSize: 20,
+    },
+    row: {
+        flexDirection: "row",
+        gap: 12,
+    },
+    textArea: {
+        flex: 1,
+        gap: 6,
+    },
+    title: {
+        fontFamily: "Ezra-Bold",
+        fontSize: 18,
+        color: "#0F172A",
+    },
+    description: {
+        fontFamily: "Ezra-Medium",
+        color: "#475569",
+        lineHeight: 18,
+    },
+    ratingRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        marginTop: 2,
+    },
+    ratingValue: {
+        fontFamily: "Ezra-SemiBold",
+        color: "#0F172A",
+    },
+    ratingCount: {
+        fontFamily: "Ezra-Medium",
+        color: "#94A3B8",
+        fontSize: 13,
+    },
+    metaRow: {
+        flexDirection: "row",
+        gap: 8,
+        flexWrap: "wrap",
+        marginTop: 6,
+    },
+    metaChip: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 999,
+        backgroundColor: "#F1F5F9",
+    },
+    metaText: {
+        fontFamily: "Ezra-SemiBold",
+        color: "#0F172A",
+        fontSize: 13,
+    },
+    imageShell: {
+        width: 100,
+        height: 100,
+        borderRadius: 18,
+        overflow: "hidden",
+        backgroundColor: "#F1F5F9",
+    },
+    image: {
+        width: "100%",
+        height: "100%",
+    },
+    actions: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 10,
+    },
+    secondaryCta: {
+        flex: 1,
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        borderRadius: 999,
+        borderWidth: 1,
+    },
+    secondaryLabel: {
+        fontFamily: "Ezra-SemiBold",
+        textAlign: "center",
+    },
+    primaryCta: {
+        paddingVertical: 12,
+        paddingHorizontal: 18,
+        borderRadius: 999,
+    },
+    primaryLabel: {
+        fontFamily: "Ezra-SemiBold",
+        color: "#FFFFFF",
+    },
+});
 
+export default memo(MenuCard);

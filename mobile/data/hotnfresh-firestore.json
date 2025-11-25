@@ -7,7 +7,7 @@
             "description": "Popcorn tavuk, gurme burger ve gece acıkmalarına özel menüler.",
             "deliveryFee": 24.9,
             "deliveryTime": "20-30",
-            "imageUrl": "@/assets/restaurantlogo/hotnfreshlogo.jpeg",
+            "imageUrl": "@/assets/restaurantlogo/hotnfreshlogo.jpg",
             "ownerId": "hot-n-fresh-owner-uid",
             "isActive": true,
             "address": "Kuzey Kampüs, Öğrenci Çarşısı"

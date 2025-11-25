@@ -643,7 +643,7 @@ const RestaurantConsole = () => {
 
                         {restaurantsLoading ? (
 
-                            <ActivityIndicator color="#FF8C42" />
+                            <ActivityIndicator color="#FE8C00" />
 
                         ) : ownerRestaurants?.length ? (
 
@@ -663,7 +663,7 @@ const RestaurantConsole = () => {
 
                                             className="flex-row items-center gap-4 rounded-3xl border p-4"
 
-                                            style={{ borderColor: isActive ? "#FF8C42" : "#F1F5F9", backgroundColor: isActive ? "#FFF6EF" : "#FFFFFF" }}
+                                            style={{ borderColor: isActive ? "#FE8C00" : "#F1F5F9", backgroundColor: isActive ? "#FFF6EF" : "#FFFFFF" }}
 
                                             onPress={() => setActiveRestaurantId(id)}
 
@@ -739,7 +739,7 @@ const RestaurantConsole = () => {
 
                         {ordersLoading ? (
 
-                            <ActivityIndicator color="#FF8C42" />
+                            <ActivityIndicator color="#FE8C00" />
 
                         ) : (restaurantOrders && restaurantOrders.length ? (
 
@@ -771,7 +771,7 @@ const RestaurantConsole = () => {
 
                         {menuLoading ? (
 
-                            <ActivityIndicator color="#FF8C42" />
+                            <ActivityIndicator color="#FE8C00" />
 
                         ) : decoratedMenuItems && decoratedMenuItems.length ? (
 
@@ -827,7 +827,7 @@ const RestaurantConsole = () => {
 
                                 {searchingImages ? (
 
-                                    <ActivityIndicator color="#FF8C42" />
+                                    <ActivityIndicator color="#FE8C00" />
 
                                 ) : (
 

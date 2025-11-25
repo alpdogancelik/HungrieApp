@@ -48,18 +48,25 @@ const stringifyId = (value: string | number | null | undefined) =>
 const Cart = () => {
     const { items, getTotalPrice, increaseQty, decreaseQty, removeItem, clearCart } = useCartStore();
     const { user } = useAuthStore();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const subtotal = useMemo(() => getTotalPrice(), [getTotalPrice, items]);
     const isCartEmpty = items.length === 0;
     const deliveryFee = 0;
-    const serviceFee = 0;
-    const discount = subtotal > 250 ? 25 : 0;
-    const total = subtotal - discount;
+    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>("pos");
+    const isTR = (i18n.language || "").toLowerCase().startsWith("tr");
+    const isCardOnDelivery = paymentMethod === "pos";
+    const serviceFee = isCardOnDelivery ? 1 : 0;
+    const discount = 0;
+    const total = subtotal + serviceFee;
+    const serviceNote = isCardOnDelivery
+        ? isTR
+            ? "(unutmamalısınız ki biz de sizler gibi öğrenciyiz, uygulamanın gelişimi ve sürekliliği için kısa bir süreliğine 1 tlnize ihtiyacımız var :)"
+            : "(You should not forget that we are students like you, we need 1 TL from you for a short time for the development and continuity of the application :)"
+        : "";
 
     const { addresses, isLoading: addressesLoading } = useAddresses();
     const addressList = addresses ?? [];
     const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
-    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>("pos");
     const [notes, setNotes] = useState("");
     const [placingOrder, setPlacingOrder] = useState(false);
     const resolvedAddressId = selectedAddress ?? addressList[0]?.id ?? null;
@@ -283,7 +290,8 @@ const Cart = () => {
             <View className="gap-5 pt-6" style={CONTAINER_PADDING}>
                 <SummaryCard
                     subtotal={formatCurrency(subtotal)}
-                    discount={discount ? `- ${formatCurrency(discount)}` : "TRY 0.00"}
+                    serviceFee={serviceFee ? formatCurrency(serviceFee) : undefined}
+                    serviceNote={serviceFee ? serviceNote : undefined}
                     total={formatCurrency(total)}
                 />
 

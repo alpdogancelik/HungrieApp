@@ -56,7 +56,7 @@ const SignIn = () => {
                 showsVerticalScrollIndicator={false}
             >
                 <LinearGradient
-                    colors={["#FF8C42", "#FE5F75"]}
+                    colors={["#FE8C00", "#FE5F75"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0.3 }}
                     style={{ paddingHorizontal: 24, paddingTop: 56, paddingBottom: 160 }}

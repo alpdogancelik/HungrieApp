@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Alert, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -12,9 +12,13 @@ import { getUserOrders, logout } from "@/lib/api";
 import { router } from "expo-router";
 import { Badge, SectionHeader } from "@/src/components/componentRegistry";
 import { useDefaultAddress, type ManageAddressesNavigation } from "@/src/features/address/addressFeature";
-import { images, illustrations } from "@/constants/mediaCatalog";
+import { images, illustrations, emojiSet } from "@/constants/mediaCatalog";
 import GodzillaFishing from "@/assets/godzilla/VCTRLY-godzila-fishing-fish-beach-enjoy.svg";
+import GodzillaCafe from "@/assets/godzilla/VCTRLY-godzila-cafe-coffee-tea-restaurant.svg";
 import { NotificationManager } from "@/src/features/notifications/NotificationManager";
+import i18n from "@/src/lib/i18n";
+
+const EMOJI_OPTIONS = Object.values(emojiSet);
 
 const formatCurrency = (value?: number | string) => {
     const amount = Number(value ?? 0);
@@ -30,25 +34,31 @@ const STATUS_VARIANT: Record<string, "success" | "warning" | "danger"> = {
 
 const Profile = () => {
     const navigation = useNavigation<ManageAddressesNavigation>();
-    const { user, setIsAuthenticated, setUser } = useAuthStore();
+    const { user, setIsAuthenticated, setUser, preferredEmoji, setPreferredEmoji } = useAuthStore();
     const { defaultAddress } = useDefaultAddress();
     const { data: orders } = useServerResource({ fn: getUserOrders, skipAlert: true });
     const [signingOut, setSigningOut] = useState(false);
+    const [supportModalVisible, setSupportModalVisible] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [nameDraft, setNameDraft] = useState(user?.name ?? "");
     const [emailDraft, setEmailDraft] = useState(user?.email ?? "");
     const { t } = useTranslation();
 
-    const initials = (user?.name || "Hungrie User")
-        .split(" ")
-        .map((part) => part[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase();
+    const initials = useMemo(
+        () =>
+            (user?.name || "Hungrie User")
+                .split(" ")
+                .map((part) => part[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase(),
+        [user?.name],
+    );
 
     const activeOrders = (orders || []).filter((order: any) => order.status !== "delivered");
     const TrackingIllustration = illustrations.tracking;
+    const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
 
     const handleManageAddressesPress = () => {
         const routeNames = navigation.getState?.()?.routeNames ?? [];
@@ -119,11 +129,23 @@ const Profile = () => {
                 <View className="px-5 pt-6 gap-6">
                     <View className="secondary-card bg-dark-80 border-0 shadow-2xl gap-4">
                         <View className="flex-row items-center gap-4">
-                            <View className="size-16 rounded-full bg-white/10 border border-white/40 items-center justify-center">
-                                <Text className="h3-bold text-white">{initials}</Text>
-                            </View>
+                            <TouchableOpacity
+                                className="size-16 rounded-full bg-white/10 border border-white/40 items-center justify-center"
+                                onPress={() => setEmojiPickerOpen(true)}
+                            >
+                                {preferredEmoji ? (
+                                    <Image source={preferredEmoji} style={{ width: 30, height: 30 }} />
+                                ) : (
+                                    <Text className="h3-bold text-white">{initials}</Text>
+                                )}
+                            </TouchableOpacity>
                             <View className="flex-1">
-                                <Text className="text-white text-2xl font-ezra-bold">{user?.name || "Hungrie Student"}</Text>
+                                <View className="flex-row items-center gap-2">
+                                    <Text className="text-white text-2xl font-ezra-bold">{user?.name || "Hungrie Student"}</Text>
+                                    {preferredEmoji ? (
+                                        <Image source={preferredEmoji} style={{ width: 22, height: 22 }} />
+                                    ) : null}
+                                </View>
                                 <Text className="body-medium text-white/70">{user?.email || "student@campus.edu"}</Text>
                             </View>
                         </View>
@@ -197,6 +219,44 @@ const Profile = () => {
                         </TouchableOpacity>
                     </View>
 
+                    <Modal transparent visible={emojiPickerOpen} animationType="fade" onRequestClose={() => setEmojiPickerOpen(false)}>
+                        <TouchableOpacity className="flex-1 bg-black/30" activeOpacity={1} onPress={() => setEmojiPickerOpen(false)} />
+                        <View className="absolute left-0 right-0 bottom-0 bg-white rounded-t-[32px] p-5 gap-4 max-h-[55%]">
+                            <View className="h-1 w-16 bg-gray-200 rounded-full self-center" />
+                            <Text className="h4-bold text-dark-100">Emoji seç</Text>
+                            <View className="max-h-[320px]">
+                                <ScrollView contentContainerStyle={{ paddingBottom: 12 }}>
+                                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+                                        {EMOJI_OPTIONS.map((emojiSrc, index) => {
+                                            const isActive = preferredEmoji === emojiSrc;
+                                            return (
+                                                <TouchableOpacity
+                                                    key={index}
+                                                    onPress={() => {
+                                                        setPreferredEmoji(emojiSrc as any);
+                                                        setEmojiPickerOpen(false);
+                                                    }}
+                                                    style={{
+                                                        borderColor: isActive ? "#FE8C00" : "#E2E8F0",
+                                                        backgroundColor: isActive ? "#FFF6EF" : "#FFFFFF",
+                                                    }}
+                                                    className="w-16 h-16 rounded-2xl border items-center justify-center"
+                                                >
+                                                    <Image
+                                                        source={emojiSrc}
+                                                        style={{ width: 36, height: 36 }}
+                                                        contentFit="contain"
+                                                        cachePolicy="memory-disk"
+                                                    />
+                                                </TouchableOpacity>
+                                            );
+                                        })}
+                                    </View>
+                                </ScrollView>
+                            </View>
+                        </View>
+                    </Modal>
+
                     <View className="secondary-card gap-3">
                         <SectionHeader title={t("profile.activeOrders")} />
                         {activeOrders.length ? (
@@ -232,10 +292,6 @@ const Profile = () => {
                         <SectionHeader title={t("profile.accountActions")} />
                         {[
                             {
-                                label: t("profileExtras.actions.payment.label"),
-                                description: t("profileExtras.actions.payment.description"),
-                            },
-                            {
                                 label: t("profileExtras.actions.notifications.label"),
                                 description: t("profileExtras.actions.notifications.description"),
                                 action: handleNotificationTest,
@@ -243,6 +299,7 @@ const Profile = () => {
                             {
                                 label: t("profileExtras.actions.help.label"),
                                 description: t("profileExtras.actions.help.description"),
+                                action: () => setSupportModalVisible(true),
                             },
                             {
                                 label: t("profileExtras.actions.history.label"),
@@ -370,6 +427,33 @@ const Profile = () => {
                     </View>
                 </Modal>
             )}
+            <Modal transparent visible={supportModalVisible} animationType="fade" onRequestClose={() => setSupportModalVisible(false)}>
+                <TouchableOpacity className="flex-1 bg-black/30" activeOpacity={1} onPress={() => setSupportModalVisible(false)} />
+                <View className="absolute left-0 right-0 bottom-0 bg-white rounded-t-[32px] p-5 gap-4">
+                    <View className="h-1 w-16 bg-gray-200 rounded-full self-center" />
+                    <View className="flex-row items-center gap-3">
+                        <GodzillaCafe width={64} height={64} />
+                        <View className="flex-1">
+                            <Text className="text-xl font-ezra-bold text-dark-100">
+                                {i18n.language.startsWith("tr") ? "Çok yakında" : "Coming soon"}
+                            </Text>
+                            <Text className="body-medium text-dark-60">
+                                {i18n.language.startsWith("tr")
+                                    ? "Destek merkezi burada açılacak. Şimdilik sohbeti kapalı tuttuk ama yakında açıyoruz."
+                                    : "Support center will open here soon. Chat is disabled for now, but we are opening it soon."}
+                            </Text>
+                        </View>
+                    </View>
+                    <TouchableOpacity
+                        className="chip bg-primary/10 self-start"
+                        onPress={() => setSupportModalVisible(false)}
+                    >
+                        <Text className="paragraph-semibold text-primary-dark">
+                            {i18n.language.startsWith("tr") ? "Kapat" : "Close"}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };

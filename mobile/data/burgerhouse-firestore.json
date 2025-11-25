@@ -1,96 +1,782 @@
 {
   "restaurants": [
     {
-      "id": "burgerhouse",
+      "id": "burger-house",
       "name": "Burger House",
-      "cuisine": "Burgers & Fries",
-      "description": "Campus favorites from smash burgers to loaded fries.",
+      "cuisine": "Burger & Wrap",
+      "description": "Atıştırmalık kutulardan wrap’lere, kampüs açlığını bastıran Burger House menüsü.",
       "deliveryFee": 24.9,
-      "deliveryTime": "20-30",
-      "imageUrl": "@/assets/restaurantlogo/burgerhouselogo.jpeg",
-      "ownerId": "burgerhouse-owner-uid",
+      "deliveryTime": "25-35",
+      "imageUrl": "@/assets/restaurantlogo/burgerhouselogo.jpg",
+      "ownerId": "burger-house-owner-uid",
       "isActive": true,
-      "address": "North Campus Food Court"
+      "address": "Kalkanlı, A2 kapısı"
     }
   ],
   "categories": [
-    { "id": "burgers", "name": "Burgers" },
-    { "id": "sides", "name": "Sides" },
-    { "id": "drinks", "name": "Drinks" },
-    { "id": "extras", "name": "Extras" }
+    {
+      "id": "snacks",
+      "name": "Atıştırmalıklar"
+    },
+    {
+      "id": "wraps",
+      "name": "Wraps"
+    },
+    {
+      "id": "burgers",
+      "name": "Burgerler (Kids Dahil)"
+    },
+    {
+      "id": "chicken-boxes",
+      "name": "Atıştırmalık & Chicken Boxes"
+    },
+    {
+      "id": "salads",
+      "name": "Salatalar"
+    },
+    {
+      "id": "cold-drinks",
+      "name": "Soğuk İçecekler"
+    },
+    {
+      "id": "ice-cream",
+      "name": "Dondurma"
+    },
+    {
+      "id": "hot-drinks",
+      "name": "Sıcak İçecekler"
+    }
   ],
   "menus": [
     {
+      "id": "snack-001",
+      "name": "A01 Soğan Halkası (6 Adet)",
+      "description": "6 adet çıtır soğan halkası.",
+      "price": 130,
+      "restaurantId": "burger-house",
+      "categories": [
+        "snacks"
+      ]
+    },
+    {
+      "id": "snack-002",
+      "name": "A02 Peynir Çubukları (3 Adet)",
+      "description": "3 adet kızarmış peynir çubuğu.",
+      "price": 125,
+      "restaurantId": "burger-house",
+      "categories": [
+        "snacks"
+      ]
+    },
+    {
+      "id": "snack-003",
+      "name": "A03 Çıtır Tavuk Parçaları (7 Adet)",
+      "description": "7 adet pane çıtır tavuk parçası.",
+      "price": 185,
+      "restaurantId": "burger-house",
+      "categories": [
+        "snacks"
+      ]
+    },
+    {
+      "id": "snack-004",
+      "name": "A04 Tavuk Kanatları (4 Adet)",
+      "description": "4 adet soslu tavuk kanadı.",
+      "price": 185,
+      "restaurantId": "burger-house",
+      "categories": [
+        "snacks"
+      ]
+    },
+    {
+      "id": "snack-005",
+      "name": "A05 Chicken Nuggets (7 Adet)",
+      "description": "7 adet klasik chicken nuggets.",
+      "price": 180,
+      "restaurantId": "burger-house",
+      "categories": [
+        "snacks"
+      ]
+    },
+    {
+      "id": "snack-006",
+      "name": "A06 Kızarmış Patates",
+      "description": "Klasik kızarmış patates.",
+      "price": 140,
+      "restaurantId": "burger-house",
+      "categories": [
+        "snacks"
+      ]
+    },
+    {
+      "id": "snack-007",
+      "name": "A07 Elma Dilim Patates",
+      "description": "Elma dilim patates kızartması.",
+      "price": 175,
+      "restaurantId": "burger-house",
+      "categories": [
+        "snacks"
+      ]
+    },
+    {
+      "id": "snack-008",
+      "name": "A08 Peynir Soslu Patates",
+      "description": "Cheddar soslu patates kızartması.",
+      "price": 240,
+      "restaurantId": "burger-house",
+      "categories": [
+        "snacks"
+      ]
+    },
+    {
+      "id": "snack-009",
+      "name": "A09 Bacon Cheese Fries",
+      "description": "Bacon ve cheddar soslu patates.",
+      "price": 280,
+      "restaurantId": "burger-house",
+      "categories": [
+        "snacks"
+      ]
+    },
+    {
+      "id": "snack-010",
+      "name": "A10 Samosa (5 Adet)",
+      "description": "5 adet kızarmış samosa.",
+      "price": 190,
+      "restaurantId": "burger-house",
+      "categories": [
+        "snacks"
+      ]
+    },
+    {
+      "id": "snack-011",
+      "name": "A11 Kıvırcık Patates",
+      "description": "Kıvırcık kesim patates.",
+      "price": 190,
+      "restaurantId": "burger-house",
+      "categories": [
+        "snacks"
+      ]
+    },
+    {
+      "id": "snack-012",
+      "name": "A12 Falafel Topları (5 Adet)",
+      "description": "5 adet falafel topu.",
+      "price": 165,
+      "restaurantId": "burger-house",
+      "categories": [
+        "snacks"
+      ]
+    },
+    {
+      "id": "wrap-001",
+      "name": "W01 Köfte Wrap",
+      "description": "Izgara köfte ile hazırlanan wrap.",
+      "price": 340,
+      "restaurantId": "burger-house",
+      "categories": [
+        "wraps"
+      ]
+    },
+    {
+      "id": "wrap-002",
+      "name": "W02 Burger House Special Wrap",
+      "description": "Burger House özel karışım wrap.",
+      "price": 380,
+      "restaurantId": "burger-house",
+      "categories": [
+        "wraps"
+      ]
+    },
+    {
+      "id": "wrap-003",
+      "name": "W03 Wrap with Meat Sauce",
+      "description": "Et soslu özel wrap.",
+      "price": 350,
+      "restaurantId": "burger-house",
+      "categories": [
+        "wraps"
+      ]
+    },
+    {
+      "id": "wrap-004",
+      "name": "W04 Çıtır Tavuk Wrap",
+      "description": "Çıtır tavuklu wrap.",
+      "price": 330,
+      "restaurantId": "burger-house",
+      "categories": [
+        "wraps"
+      ]
+    },
+    {
+      "id": "wrap-005",
+      "name": "W05 Acı Soslu Çıtır Tavuk Wrap",
+      "description": "Acı soslu çıtır tavuk wrap.",
+      "price": 340,
+      "restaurantId": "burger-house",
+      "categories": [
+        "wraps"
+      ]
+    },
+    {
+      "id": "wrap-006",
+      "name": "W06 BBQ Chicken Wrap",
+      "description": "BBQ soslu tavuk wrap.",
+      "price": 340,
+      "restaurantId": "burger-house",
+      "categories": [
+        "wraps"
+      ]
+    },
+    {
+      "id": "wrap-007",
+      "name": "W07 Honey Mustard Chicken Wrap",
+      "description": "Honey mustard soslu tavuk wrap.",
+      "price": 360,
+      "restaurantId": "burger-house",
+      "categories": [
+        "wraps"
+      ]
+    },
+    {
+      "id": "wrap-008",
+      "name": "W08 Falafel Wrap",
+      "description": "Falafelli ve sebzeli wrap.",
+      "price": 340,
+      "restaurantId": "burger-house",
+      "categories": [
+        "wraps"
+      ]
+    },
+    {
+      "id": "wrap-009",
+      "name": "W09 Smoked Beef Wrap",
+      "description": "Füme dana etli wrap.",
+      "price": 390,
+      "restaurantId": "burger-house",
+      "categories": [
+        "wraps"
+      ]
+    },
+    {
+      "id": "wrap-010",
+      "name": "W10 Smoked Chicken Wrap",
+      "description": "Füme tavuklu wrap.",
+      "price": 380,
+      "restaurantId": "burger-house",
+      "categories": [
+        "wraps"
+      ]
+    },
+    {
+      "id": "wrap-011",
+      "name": "W11 Cheezy Beef Wrap",
+      "description": "Peynirli dana etli wrap.",
+      "price": 365,
+      "restaurantId": "burger-house",
+      "categories": [
+        "wraps"
+      ]
+    },
+    {
+      "id": "wrap-012",
+      "name": "W12 Sezar Soslu Çıtır Tavuk Wrap",
+      "description": "Sezar soslu çıtır tavuk wrap.",
+      "price": 365,
+      "restaurantId": "burger-house",
+      "categories": [
+        "wraps"
+      ]
+    },
+    {
       "id": "burger-001",
-      "name": "Classic Burger",
-      "description": "Seared beef patty, cheddar, house sauce, brioche bun.",
-      "price": 320,
-      "restaurantId": "burgerhouse",
-      "categories": ["burgers"]
+      "name": "Kids Burger",
+      "description": "Çocuk boy klasik burger.",
+      "price": 330,
+      "restaurantId": "burger-house",
+      "categories": [
+        "burgers"
+      ]
     },
     {
       "id": "burger-002",
-      "name": "BBQ Double",
-      "description": "Double patty, smoked cheddar, crispy onions, BBQ glaze.",
-      "price": 380,
-      "restaurantId": "burgerhouse",
-      "categories": ["burgers"]
+      "name": "Kids Cheese Burger",
+      "description": "Çocuk boy cheeseburger.",
+      "price": 345,
+      "restaurantId": "burger-house",
+      "categories": [
+        "burgers"
+      ]
     },
     {
       "id": "burger-003",
-      "name": "Spicy Chicken",
-      "description": "Crispy chicken fillet, chili mayo, pickles, slaw.",
-      "price": 340,
-      "restaurantId": "burgerhouse",
-      "categories": ["burgers"]
+      "name": "Kids Chicken Burger",
+      "description": "Çocuk boy tavuk burger.",
+      "price": 330,
+      "restaurantId": "burger-house",
+      "categories": [
+        "burgers"
+      ]
     },
     {
-      "id": "side-001",
-      "name": "Loaded Fries",
-      "description": "Cheese sauce, jalapeno, crispy onions.",
-      "price": 140,
-      "restaurantId": "burgerhouse",
-      "categories": ["sides"]
+      "id": "burger-004",
+      "name": "Kids Chicken Cheese Burger",
+      "description": "Peynirli çocuk tavuk burger.",
+      "price": 345,
+      "restaurantId": "burger-house",
+      "categories": [
+        "burgers"
+      ]
     },
     {
-      "id": "side-002",
-      "name": "Onion Rings",
-      "description": "Golden fried rings with ranch dip.",
-      "price": 120,
-      "restaurantId": "burgerhouse",
-      "categories": ["sides"]
+      "id": "burger-005",
+      "name": "Kids Chicken Strips",
+      "description": "Çocuk menü tavuk strips.",
+      "price": 310,
+      "restaurantId": "burger-house",
+      "categories": [
+        "burgers"
+      ]
     },
     {
-      "id": "drink-001",
-      "name": "Cola 330ml",
-      "description": "Chilled can.",
-      "price": 40,
-      "restaurantId": "burgerhouse",
-      "categories": ["drinks"]
+      "id": "burger-006",
+      "name": "Kids Chicken Nuggets",
+      "description": "Çocuk menü chicken nuggets.",
+      "price": 310,
+      "restaurantId": "burger-house",
+      "categories": [
+        "burgers"
+      ]
     },
     {
-      "id": "drink-002",
-      "name": "Iced Tea",
-      "description": "Lemon iced tea.",
+      "id": "box-001",
+      "name": "A13 Alevli Poutine",
+      "description": "Acı soslu poutine tabak.",
+      "price": 300,
+      "restaurantId": "burger-house",
+      "categories": [
+        "chicken-boxes"
+      ]
+    },
+    {
+      "id": "box-002",
+      "name": "A14 Chicken Poutine",
+      "description": "Tavuklu poutine tabak.",
+      "price": 290,
+      "restaurantId": "burger-house",
+      "categories": [
+        "chicken-boxes"
+      ]
+    },
+    {
+      "id": "box-003",
+      "name": "A15 Snack Box",
+      "description": "Karışık atıştırmalık kutusu.",
+      "price": 270,
+      "restaurantId": "burger-house",
+      "categories": [
+        "chicken-boxes"
+      ]
+    },
+    {
+      "id": "box-004",
+      "name": "A16 Snack Box Plus",
+      "description": "Ekstra dolu snack kutusu.",
+      "price": 330,
+      "restaurantId": "burger-house",
+      "categories": [
+        "chicken-boxes"
+      ]
+    },
+    {
+      "id": "box-005",
+      "name": "A17 Atıştırmalık Tabağı",
+      "description": "Paylaşımlık karışık atıştırmalık tabak.",
+      "price": 480,
+      "restaurantId": "burger-house",
+      "categories": [
+        "chicken-boxes"
+      ]
+    },
+    {
+      "id": "box-006",
+      "name": "A18 Plus Box",
+      "description": "İçecekli karışık box.",
+      "price": 490,
+      "restaurantId": "burger-house",
+      "categories": [
+        "chicken-boxes"
+      ]
+    },
+    {
+      "id": "box-007",
+      "name": "A19 Mega Box",
+      "description": "Büyük boy karışık box.",
+      "price": 640,
+      "restaurantId": "burger-house",
+      "categories": [
+        "chicken-boxes"
+      ]
+    },
+    {
+      "id": "box-008",
+      "name": "A20 Çıtır Tavuk Box",
+      "description": "Çıtır tavuk kutusu.",
+      "price": 310,
+      "restaurantId": "burger-house",
+      "categories": [
+        "chicken-boxes"
+      ]
+    },
+    {
+      "id": "box-009",
+      "name": "A21 Nuggets Box",
+      "description": "Nuggets kutusu.",
+      "price": 310,
+      "restaurantId": "burger-house",
+      "categories": [
+        "chicken-boxes"
+      ]
+    },
+    {
+      "id": "box-010",
+      "name": "A22 Tavuk Kanat Box",
+      "description": "Kanat kutusu.",
+      "price": 310,
+      "restaurantId": "burger-house",
+      "categories": [
+        "chicken-boxes"
+      ]
+    },
+    {
+      "id": "box-011",
+      "name": "A23 Falafel Box",
+      "description": "Falafelli box.",
+      "price": 295,
+      "restaurantId": "burger-house",
+      "categories": [
+        "chicken-boxes"
+      ]
+    },
+    {
+      "id": "box-012",
+      "name": "A24 Mixed Box",
+      "description": "Karışık tavuk ve atıştırmalık box.",
+      "price": 500,
+      "restaurantId": "burger-house",
+      "categories": [
+        "chicken-boxes"
+      ]
+    },
+    {
+      "id": "salad-001",
+      "name": "Burger House Salatası",
+      "description": "Burger House özel karışık salata.",
+      "price": 350,
+      "restaurantId": "burger-house",
+      "categories": [
+        "salads"
+      ]
+    },
+    {
+      "id": "salad-002",
+      "name": "Hellim Salatası",
+      "description": "Izgara hellimli salata.",
+      "price": 320,
+      "restaurantId": "burger-house",
+      "categories": [
+        "salads"
+      ]
+    },
+    {
+      "id": "salad-003",
+      "name": "Izgara Tavuklu Salata",
+      "description": "Izgara tavuklu doyurucu salata.",
+      "price": 320,
+      "restaurantId": "burger-house",
+      "categories": [
+        "salads"
+      ]
+    },
+    {
+      "id": "salad-004",
+      "name": "Izgara Mozzarella Tavuk Salata",
+      "description": "Mozzarella ve ızgara tavuklu salata.",
+      "price": 330,
+      "restaurantId": "burger-house",
+      "categories": [
+        "salads"
+      ]
+    },
+    {
+      "id": "salad-005",
+      "name": "Çıtır Tavuk Salatası",
+      "description": "Çıtır tavuk parçalı salata.",
+      "price": 320,
+      "restaurantId": "burger-house",
+      "categories": [
+        "salads"
+      ]
+    },
+    {
+      "id": "salad-006",
+      "name": "Ton Balıklı Salata",
+      "description": "Ton balıklı protein salatası.",
+      "price": 320,
+      "restaurantId": "burger-house",
+      "categories": [
+        "salads"
+      ]
+    },
+    {
+      "id": "cold-001",
+      "name": "Coca-Cola 330 ml",
+      "description": "Kutu Coca-Cola.",
       "price": 45,
-      "restaurantId": "burgerhouse",
-      "categories": ["drinks"]
+      "restaurantId": "burger-house",
+      "categories": [
+        "cold-drinks"
+      ]
     },
     {
-      "id": "extra-001",
-      "name": "Extra Cheese",
-      "description": "Melted cheddar slice.",
-      "price": 20,
-      "restaurantId": "burgerhouse",
-      "categories": ["extras"]
+      "id": "cold-002",
+      "name": "Coca-Cola Zero 330 ml",
+      "description": "Kutu Coca-Cola Zero.",
+      "price": 45,
+      "restaurantId": "burger-house",
+      "categories": [
+        "cold-drinks"
+      ]
     },
     {
-      "id": "extra-002",
-      "name": "Extra Patty",
-      "description": "Add a beef patty to any burger.",
+      "id": "cold-003",
+      "name": "Fanta 330 ml",
+      "description": "Kutu Fanta.",
+      "price": 45,
+      "restaurantId": "burger-house",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "cold-004",
+      "name": "Sprite 330 ml",
+      "description": "Kutu Sprite.",
+      "price": 45,
+      "restaurantId": "burger-house",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "cold-005",
+      "name": "Ice Tea 330 ml",
+      "description": "Soğuk Ice Tea.",
+      "price": 45,
+      "restaurantId": "burger-house",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "cold-006",
+      "name": "Maden Suyu 200 ml",
+      "description": "Klasik maden suyu.",
+      "price": 30,
+      "restaurantId": "burger-house",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "cold-007",
+      "name": "Meyve Suyu 330 ml",
+      "description": "Çeşitli meyve suyu.",
+      "price": 45,
+      "restaurantId": "burger-house",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "cold-008",
+      "name": "Su 0,5 LT",
+      "description": "0,5 L su.",
+      "price": 25,
+      "restaurantId": "burger-house",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "cold-009",
+      "name": "Su 1,5 LT",
+      "description": "1,5 L su.",
+      "price": 70,
+      "restaurantId": "burger-house",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "cold-010",
+      "name": "Coca-Cola 1 LT",
+      "description": "1 L Coca-Cola.",
       "price": 90,
-      "restaurantId": "burgerhouse",
-      "categories": ["extras"]
+      "restaurantId": "burger-house",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "cold-011",
+      "name": "Coca-Cola Zero 1 LT",
+      "description": "1 L Coca-Cola Zero.",
+      "price": 90,
+      "restaurantId": "burger-house",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "cold-012",
+      "name": "Ayran",
+      "description": "Soğuk ayran.",
+      "price": 40,
+      "restaurantId": "burger-house",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "cold-013",
+      "name": "Home Made Limonata",
+      "description": "Ev yapımı limonata.",
+      "price": 90,
+      "restaurantId": "burger-house",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "cold-014",
+      "name": "Home Made Çilekli Limonata",
+      "description": "Ev yapımı çilekli limonata.",
+      "price": 90,
+      "restaurantId": "burger-house",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "cold-015",
+      "name": "Pepsi 330 ml",
+      "description": "Kutu Pepsi.",
+      "price": 45,
+      "restaurantId": "burger-house",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "cold-016",
+      "name": "Pepsi Max 330 ml",
+      "description": "Kutu Pepsi Max.",
+      "price": 45,
+      "restaurantId": "burger-house",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "cold-017",
+      "name": "Yedigün 330 ml",
+      "description": "Kutu Yedigün.",
+      "price": 45,
+      "restaurantId": "burger-house",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "ice-001",
+      "name": "Külah Dondurma",
+      "description": "Soft külah dondurma.",
+      "price": 70,
+      "restaurantId": "burger-house",
+      "categories": [
+        "ice-cream"
+      ]
+    },
+    {
+      "id": "ice-002",
+      "name": "Servis Dondurma",
+      "description": "Soft servis dondurma.",
+      "price": 100,
+      "restaurantId": "burger-house",
+      "categories": [
+        "ice-cream"
+      ]
+    },
+    {
+      "id": "hot-001",
+      "name": "Türk Kahvesi",
+      "description": "Klasik Türk kahvesi.",
+      "price": 40,
+      "restaurantId": "burger-house",
+      "categories": [
+        "hot-drinks"
+      ]
+    },
+    {
+      "id": "hot-002",
+      "name": "Çay",
+      "description": "Sıcak çay.",
+      "price": 40,
+      "restaurantId": "burger-house",
+      "categories": [
+        "hot-drinks"
+      ]
+    },
+    {
+      "id": "hot-003",
+      "name": "Nescafe",
+      "description": "Sıcak Nescafe.",
+      "price": 50,
+      "restaurantId": "burger-house",
+      "categories": [
+        "hot-drinks"
+      ]
+    },
+    {
+      "id": "hot-004",
+      "name": "Espresso",
+      "description": "Tek shot espresso.",
+      "price": 95,
+      "restaurantId": "burger-house",
+      "categories": [
+        "hot-drinks"
+      ]
+    },
+    {
+      "id": "hot-005",
+      "name": "Cafe Latte",
+      "description": "Sütlü kahve latte.",
+      "price": 120,
+      "restaurantId": "burger-house",
+      "categories": [
+        "hot-drinks"
+      ]
+    },
+    {
+      "id": "hot-006",
+      "name": "Cappuccino",
+      "description": "Köpüklü cappuccino.",
+      "price": 120,
+      "restaurantId": "burger-house",
+      "categories": [
+        "hot-drinks"
+      ]
     }
   ]
 }

@@ -32,7 +32,7 @@ const AddressSummary = ({
                       key={address.id}
                       className="px-4 py-2 rounded-2xl border"
                       style={{
-                          borderColor: isActive ? "#FF8C42" : "#E2E8F0",
+                          borderColor: isActive ? "#FE8C00" : "#E2E8F0",
                           backgroundColor: isActive ? "#FFF1E7" : "transparent",
                       }}
                       onPress={() => onSelect(address.id)}
@@ -58,7 +58,7 @@ const AddressSummary = ({
             <View className="gap-2">
                 <TouchableOpacity className="flex-row items-center gap-3 bg-white rounded-3xl px-4 py-3 border border-gray-100" activeOpacity={0.9}>
                     <View className="size-10 rounded-2xl bg-primary/10 items-center justify-center">
-                        <Icon name="location" size={18} color="#FF8C42" />
+                        <Icon name="location" size={18} color="#FE8C00" />
                     </View>
                     <View className="flex-1">
                         <Text className="body-medium text-dark-60">Deliver to</Text>

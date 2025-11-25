@@ -142,7 +142,7 @@ const CourierAssignmentScreen = () => {
 
                 {loading ? (
                     <View className="items-center justify-center py-12">
-                        <ActivityIndicator size="large" color="#FF6B00" />
+                        <ActivityIndicator size="large" color="#FE8C00" />
                         <Text className="mt-3 text-dark-60">Loading active orders…</Text>
                     </View>
                 ) : error ? (

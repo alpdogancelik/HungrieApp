@@ -206,7 +206,7 @@ const CourierControl = () => {
                     <View className="secondary-card gap-4">
                         <View className="flex-row items-center justify-between">
                             <Text className="section-title">Dispatch board</Text>
-                            {ordersLoading && <ActivityIndicator color="#FF8C42" />}
+                            {ordersLoading && <ActivityIndicator color="#FE8C00" />}
                         </View>
                         <Text className="body-medium text-dark-60">Lock in who is taking the next basket and what they must remember.</Text>
                         <View className="gap-3">

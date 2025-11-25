@@ -171,7 +171,7 @@ const MenuEditor = () => {
                 <Text className="text-xs uppercase tracking-[3px] text-dark-60">Restaurants</Text>
                 {restaurantsLoading ? (
                     <View className="rounded-3xl border border-gray-100 bg-white/90 p-4 items-center justify-center">
-                        <ActivityIndicator color="#FF6B00" />
+                        <ActivityIndicator color="#FE8C00" />
                     </View>
                 ) : restaurantsError ? (
                     <View className="rounded-3xl border border-red-100 bg-red-50 p-4">
@@ -226,7 +226,7 @@ const MenuEditor = () => {
                 </Text>
                 {menuLoading ? (
                     <View className="rounded-3xl border border-gray-100 bg-white/90 p-6 items-center justify-center">
-                        <ActivityIndicator color="#FF6B00" />
+                        <ActivityIndicator color="#FE8C00" />
                         <Text className="mt-2 text-sm text-dark-60">Loading menu items...</Text>
                     </View>
                 ) : menuError ? (

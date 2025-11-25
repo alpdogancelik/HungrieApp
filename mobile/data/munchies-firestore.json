@@ -1,0 +1,388 @@
+{
+    "restaurants": [
+        {
+            "id": "munchies",
+            "name": "Munchies",
+            "cuisine": "Burger · Wrap · Tost · Gözleme · Çıtır Lezzetler",
+            "description": "Kampüsün en hızlı burger, wrap ve çıtır lezzet noktası Munchies.",
+            "deliveryFee": 15.9,
+            "deliveryTime": "15-25",
+            "imageUrl": "@/assets/restaurantlogo/munchieslogo.jpg",
+            "ownerId": "munchies-owner-uid",
+            "isActive": true,
+            "address": "Kalkanlı, Öğrenci Çarşısı"
+        }
+    ],
+    "categories": [
+        {
+            "id": "burgers",
+            "name": "Burgerler"
+        },
+        {
+            "id": "crispy",
+            "name": "Çıtır Lezzetler"
+        },
+        {
+            "id": "drinks",
+            "name": "İçecekler"
+        },
+        {
+            "id": "wraps",
+            "name": "Wraplar"
+        },
+        {
+            "id": "toast",
+            "name": "Tost / Sandviç"
+        },
+        {
+            "id": "gozleme",
+            "name": "Gözlemeler"
+        },
+        {
+            "id": "soups",
+            "name": "Çorbalar"
+        }
+    ],
+    "menus": [
+        {
+            "id": "burger-001",
+            "name": "Munch Burger",
+            "description": "Klasik Munch lezzeti.",
+            "price": 350,
+            "restaurantId": "munchies",
+            "categories": [
+                "burgers"
+            ]
+        },
+        {
+            "id": "burger-002",
+            "name": "Double Cheeseburger",
+            "description": "Çift köfte, çift cheddar.",
+            "price": 420,
+            "restaurantId": "munchies",
+            "categories": [
+                "burgers"
+            ]
+        },
+        {
+            "id": "burger-003",
+            "name": "Cheeseburger",
+            "description": "Klasik cheddar burger.",
+            "price": 300,
+            "restaurantId": "munchies",
+            "categories": [
+                "burgers"
+            ]
+        },
+        {
+            "id": "burger-004",
+            "name": "BBQ Burger",
+            "description": "BBQ soslu burger.",
+            "price": 320,
+            "restaurantId": "munchies",
+            "categories": [
+                "burgers"
+            ]
+        },
+        {
+            "id": "burger-005",
+            "name": "Mushroom Burger",
+            "description": "Mantar soslu burger.",
+            "price": 350,
+            "restaurantId": "munchies",
+            "categories": [
+                "burgers"
+            ]
+        },
+        {
+            "id": "burger-006",
+            "name": "Classic Chicken Burger",
+            "description": "Tavuk burger klasik.",
+            "price": 280,
+            "restaurantId": "munchies",
+            "categories": [
+                "burgers"
+            ]
+        },
+        {
+            "id": "burger-007",
+            "name": "Munch Chicken Burger",
+            "description": "Özel Munch tarzı tavuk burger.",
+            "price": 340,
+            "restaurantId": "munchies",
+            "categories": [
+                "burgers"
+            ]
+        },
+        {
+            "id": "crispy-001",
+            "name": "Çıtır Tavuk",
+            "description": "Dışı çıtır içi yumuşak tavuk.",
+            "price": 380,
+            "restaurantId": "munchies",
+            "categories": [
+                "crispy"
+            ]
+        },
+        {
+            "id": "crispy-002",
+            "name": "Bira Tabağı",
+            "description": "Atıştırmalık bira tabağı.",
+            "price": 350,
+            "restaurantId": "munchies",
+            "categories": [
+                "crispy"
+            ]
+        },
+        {
+            "id": "crispy-003",
+            "name": "6'lı Soğan Halkası",
+            "description": "6 adet soğan halkası.",
+            "price": 100,
+            "restaurantId": "munchies",
+            "categories": [
+                "crispy"
+            ]
+        },
+        {
+            "id": "crispy-004",
+            "name": "12'li Soğan Halkası",
+            "description": "12 adet soğan halkası.",
+            "price": 150,
+            "restaurantId": "munchies",
+            "categories": [
+                "crispy"
+            ]
+        },
+        {
+            "id": "crispy-005",
+            "name": "Patates Cipsi",
+            "description": "Klasik patates kızartması.",
+            "price": 150,
+            "restaurantId": "munchies",
+            "categories": [
+                "crispy"
+            ]
+        },
+        {
+            "id": "drink-001",
+            "name": "Su",
+            "description": "0.5 L su.",
+            "price": 25,
+            "restaurantId": "munchies",
+            "categories": [
+                "drinks"
+            ]
+        },
+        {
+            "id": "drink-002",
+            "name": "Sade Soda",
+            "description": "Klasik soda.",
+            "price": 40,
+            "restaurantId": "munchies",
+            "categories": [
+                "drinks"
+            ]
+        },
+        {
+            "id": "drink-003",
+            "name": "Meyveli Soda",
+            "description": "Aromalı soda çeşitleri.",
+            "price": 50,
+            "restaurantId": "munchies",
+            "categories": [
+                "drinks"
+            ]
+        },
+        {
+            "id": "drink-004",
+            "name": "Ayran",
+            "description": "Soğuk ayran.",
+            "price": 40,
+            "restaurantId": "munchies",
+            "categories": [
+                "drinks"
+            ]
+        },
+        {
+            "id": "drink-005",
+            "name": "Kola",
+            "description": "Kutu kola.",
+            "price": 50,
+            "restaurantId": "munchies",
+            "categories": [
+                "drinks"
+            ]
+        },
+        {
+            "id": "drink-006",
+            "name": "Türk Kahvesi",
+            "description": "Sıcak Türk kahvesi.",
+            "price": 60,
+            "restaurantId": "munchies",
+            "categories": [
+                "drinks"
+            ]
+        },
+        {
+            "id": "wrap-001",
+            "name": "Et Wrap",
+            "description": "Etli wrap.",
+            "price": 300,
+            "restaurantId": "munchies",
+            "categories": [
+                "wraps"
+            ]
+        },
+        {
+            "id": "wrap-002",
+            "name": "Acılı Et Wrap",
+            "description": "Acı soslu et wrap.",
+            "price": 300,
+            "restaurantId": "munchies",
+            "categories": [
+                "wraps"
+            ]
+        },
+        {
+            "id": "wrap-003",
+            "name": "Tavuk Wrap",
+            "description": "Tavuklu wrap.",
+            "price": 280,
+            "restaurantId": "munchies",
+            "categories": [
+                "wraps"
+            ]
+        },
+        {
+            "id": "wrap-004",
+            "name": "Acılı Tavuk Wrap",
+            "description": "Acı soslu tavuk wrap.",
+            "price": 280,
+            "restaurantId": "munchies",
+            "categories": [
+                "wraps"
+            ]
+        },
+        {
+            "id": "toast-001",
+            "name": "Karışık Kıbrıs Tostu",
+            "description": "Kıbrıs usulü karışık tost.",
+            "price": 220,
+            "restaurantId": "munchies",
+            "categories": [
+                "toast"
+            ]
+        },
+        {
+            "id": "toast-002",
+            "name": "Çörekde Karışık Tost",
+            "description": "Çörek ekmeğinde karışık tost.",
+            "price": 270,
+            "restaurantId": "munchies",
+            "categories": [
+                "toast"
+            ]
+        },
+        {
+            "id": "toast-003",
+            "name": "Pastırmalı Tost",
+            "description": "Pastırmalı enfes tost.",
+            "price": 270,
+            "restaurantId": "munchies",
+            "categories": [
+                "toast"
+            ]
+        },
+        {
+            "id": "toast-004",
+            "name": "Karışık Sandviç",
+            "description": "Karışık malzemeli sandviç.",
+            "price": 220,
+            "restaurantId": "munchies",
+            "categories": [
+                "toast"
+            ]
+        },
+        {
+            "id": "toast-005",
+            "name": "Çörekde Karışık Sandviç",
+            "description": "Çörek ekmeğinde sandviç.",
+            "price": 270,
+            "restaurantId": "munchies",
+            "categories": [
+                "toast"
+            ]
+        },
+        {
+            "id": "gozleme-001",
+            "name": "Kıymalı / Peynirli Gözleme",
+            "description": "Kıymalı veya peynirli gözleme seçeneği.",
+            "price": 250,
+            "restaurantId": "munchies",
+            "categories": [
+                "gozleme"
+            ]
+        },
+        {
+            "id": "gozleme-002",
+            "name": "Kıymalı Gözleme",
+            "description": "Klasik kıymalı gözleme.",
+            "price": 230,
+            "restaurantId": "munchies",
+            "categories": [
+                "gozleme"
+            ]
+        },
+        {
+            "id": "gozleme-003",
+            "name": "Patatesli / Peynirli Gözleme",
+            "description": "Patatesli veya peynirli gözleme.",
+            "price": 220,
+            "restaurantId": "munchies",
+            "categories": [
+                "gozleme"
+            ]
+        },
+        {
+            "id": "gozleme-004",
+            "name": "Patatesli Gözleme",
+            "description": "Patatesli gözleme.",
+            "price": 200,
+            "restaurantId": "munchies",
+            "categories": [
+                "gozleme"
+            ]
+        },
+        {
+            "id": "gozleme-005",
+            "name": "Hellimli Gözleme",
+            "description": "Hellimli gözleme.",
+            "price": 200,
+            "restaurantId": "munchies",
+            "categories": [
+                "gozleme"
+            ]
+        },
+        {
+            "id": "gozleme-006",
+            "name": "Peynirli Gözleme",
+            "description": "Peynirli klasik gözleme.",
+            "price": 200,
+            "restaurantId": "munchies",
+            "categories": [
+                "gozleme"
+            ]
+        },
+        {
+            "id": "soup-001",
+            "name": "Günün Çorbası",
+            "description": "Her gün değişen taze çorba.",
+            "price": 120,
+            "restaurantId": "munchies",
+            "categories": [
+                "soups"
+            ]
+        }
+    ]
+}

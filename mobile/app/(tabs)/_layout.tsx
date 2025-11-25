@@ -1,10 +1,11 @@
-import { Redirect, Tabs } from "expo-router";
+﻿import { Redirect, Tabs } from "expo-router";
 import useAuthStore from "@/store/auth.store";
 import { Text, View } from "react-native";
 import Icon, { IconName } from "@/components/Icon";
 import cn from "clsx";
 import { isAuthRequired } from "@/lib/runtimeEnv";
 import { makeShadow } from "@/src/lib/shadowStyle";
+import { useTranslation } from "react-i18next";
 
 const TabBarIcon = ({ focused, icon, title }: { focused: boolean; icon: IconName; title: string }) => (
     <View className="tab-icon">
@@ -17,6 +18,11 @@ const authGuardEnabled = isAuthRequired();
 
 export default function TabLayout() {
     const { isAuthenticated } = useAuthStore();
+    const { i18n } = useTranslation();
+    const isTR = (i18n.language || "").toLowerCase().startsWith("tr");
+    const labels = isTR
+        ? { home: "Ana Sayfa", search: "Ara", cart: "Siparis", profile: "Profil" }
+        : { home: "Home", search: "Search", cart: "Order", profile: "Profile" };
 
     if (authGuardEnabled && !isAuthenticated) return <Redirect href="/sign-in" />;
 
@@ -49,31 +55,38 @@ export default function TabLayout() {
             <Tabs.Screen
                 name="home"
                 options={{
-                    title: "Home",
-                    tabBarIcon: ({ focused }) => <TabBarIcon title="Home" icon="home" focused={focused} />
+                    title: labels.home,
+                    tabBarIcon: ({ focused }) => <TabBarIcon title={labels.home} icon="home" focused={focused} />
                 }}
             />
             <Tabs.Screen
                 name="search"
                 options={{
-                    title: "Search",
-                    tabBarIcon: ({ focused }) => <TabBarIcon title="Search" icon="search" focused={focused} />
+                    title: labels.search,
+                    tabBarIcon: ({ focused }) => <TabBarIcon title={labels.search} icon="search" focused={focused} />
                 }}
             />
             <Tabs.Screen
                 name="cart"
                 options={{
-                    title: "Cart",
-                    tabBarIcon: ({ focused }) => <TabBarIcon title="Cart" icon="bag" focused={focused} />
+                    title: labels.cart,
+                    tabBarIcon: ({ focused }) => <TabBarIcon title={labels.cart} icon="bag" focused={focused} />
                 }}
             />
             <Tabs.Screen
                 name="profile"
                 options={{
-                    title: "Profile",
-                    tabBarIcon: ({ focused }) => <TabBarIcon title="Profile" icon="profile" focused={focused} />
+                    title: labels.profile,
+                    tabBarIcon: ({ focused }) => <TabBarIcon title={labels.profile} icon="profile" focused={focused} />
                 }}
             />
         </Tabs>
     );
 }
+
+
+
+
+
+
+

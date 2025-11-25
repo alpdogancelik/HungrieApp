@@ -162,7 +162,7 @@ const SuperAdminDashboard = () => {
                 </View>
                 {isUpdating && (
                     <View className="mt-3 flex-row items-center gap-2">
-                        <ActivityIndicator size="small" color="#FF6B00" />
+                        <ActivityIndicator size="small" color="#FE8C00" />
                         <Text className="text-sm text-dark-60">Saving latest status...</Text>
                     </View>
                 )}
@@ -247,7 +247,7 @@ const SuperAdminDashboard = () => {
     };
 
     const refreshControl = (
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#FF6B00" colors={["#FF6B00"]} />
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#FE8C00" colors={["#FE8C00"]} />
     );
 
     const showEmptyState = !loading && orders.length === 0 && !errorMessage;
@@ -290,7 +290,7 @@ const SuperAdminDashboard = () => {
 
                     {loading && (
                         <View className="items-center justify-center py-16">
-                            <ActivityIndicator size="large" color="#FF6B00" />
+                            <ActivityIndicator size="large" color="#FE8C00" />
                             <Text className="mt-4 text-base text-dark-60">Loading the latest orders...</Text>
                         </View>
                     )}

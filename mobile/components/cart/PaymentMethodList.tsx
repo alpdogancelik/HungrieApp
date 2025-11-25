@@ -19,14 +19,14 @@ const PaymentMethodList = ({ options, selected, onSelect }: Props) => (
                     key={option.id}
                     className="flex-row items-center gap-3 rounded-3xl px-4 py-4 border-2"
                     style={{
-                        borderColor: isActive ? "#FF8C42" : "#E2E8F0",
+                        borderColor: isActive ? "#FE8C00" : "#E2E8F0",
                         backgroundColor: isActive ? "#FFF6EF" : "#FFFFFF",
                     }}
                     onPress={() => onSelect(option.id)}
                 >
                     <View
                         className="size-4 rounded-full border-2 items-center justify-center"
-                        style={{ borderColor: isActive ? "#FF8C42" : "#CBD5F5" }}
+                        style={{ borderColor: isActive ? "#FE8C00" : "#CBD5F5" }}
                     >
                         {isActive && <View className="size-2 rounded-full bg-primary" />}
                     </View>

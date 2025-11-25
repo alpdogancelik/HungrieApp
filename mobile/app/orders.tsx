@@ -72,11 +72,11 @@ const OrderHistoryScreen = () => {
                             paddingVertical: 8,
                             borderRadius: 20,
                             borderWidth: 1,
-                            borderColor: active ? "#FF8C42" : "#E2E8F0",
+                            borderColor: active ? "#FE8C00" : "#E2E8F0",
                             backgroundColor: active ? "#FFF6EF" : "transparent",
                         }}
                     >
-                        <Text style={{ color: active ? "#FF8C42" : "#475569", fontFamily: "Ezra-SemiBold" }}>{item.label}</Text>
+                        <Text style={{ color: active ? "#FE8C00" : "#475569", fontFamily: "Ezra-SemiBold" }}>{item.label}</Text>
                     </TouchableOpacity>
                 );
             })}
@@ -130,13 +130,13 @@ const OrderHistoryScreen = () => {
                     )
                 }
                 refreshControl={
-                    <RefreshControl refreshing={loading} onRefresh={handleRefresh} tintColor="#FF8C42" />
+                    <RefreshControl refreshing={loading} onRefresh={handleRefresh} tintColor="#FE8C00" />
                 }
                 onEndReached={handleLoadMore}
                 onEndReachedThreshold={0.4}
                 ListFooterComponent={
                     visibleData.length < filtered.length ? (
-                        <ActivityIndicator color="#FF8C42" style={{ marginVertical: 16 }} />
+                        <ActivityIndicator color="#FE8C00" style={{ marginVertical: 16 }} />
                     ) : null
                 }
             />

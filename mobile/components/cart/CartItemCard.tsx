@@ -47,10 +47,10 @@ const CartItemCard = ({ item, onIncrease, onDecrease, onRemove }: Props) => {
                 </View>
                 <View className="flex-row items-center gap-3">
                     <TouchableOpacity className="size-10 rounded-full bg-[#FFE4D4] items-center justify-center" onPress={onDecrease}>
-                        <Icon name="minus" size={16} color="#FF8C42" />
+                        <Icon name="minus" size={16} color="#FE8C00" />
                     </TouchableOpacity>
                     <Text className="paragraph-semibold text-dark-100">{item.quantity}</Text>
-                    <TouchableOpacity className="size-10 rounded-full bg-[#FF8C42] items-center justify-center" onPress={onIncrease}>
+                    <TouchableOpacity className="size-10 rounded-full bg-[#FE8C00] items-center justify-center" onPress={onIncrease}>
                         <Icon name="plus" size={16} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>

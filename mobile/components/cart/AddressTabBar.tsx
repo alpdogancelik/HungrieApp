@@ -21,7 +21,7 @@ const AddressTabBar = ({ addresses, loading, selectedAddressId, onSelect, onAddA
                       key={address.id}
                       className="px-4 py-2 rounded-full border"
                       style={{
-                          borderColor: isActive ? "#FF8C42" : "#CBD5F5",
+                          borderColor: isActive ? "#FE8C00" : "#CBD5F5",
                           backgroundColor: isActive ? "#FFF6EF" : "#FFFFFF",
                       }}
                       onPress={() => onSelect(address.id)}

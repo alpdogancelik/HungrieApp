@@ -44,7 +44,7 @@ const requireDB = () => {
     return firestore;
 };
 const avatarUrl = (name: string) =>
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "Hungrie User")}&background=FF8C42&color=ffffff`;
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "Hungrie User")}&background=FE8C00&color=ffffff`;
 const mapDoc = (snap: { id: string; data: () => any }) => ({ id: snap.id, ...snap.data() });
 const mapOrder = (snap: { id: string; data: () => any }) => {
     const data = snap.data() || {};

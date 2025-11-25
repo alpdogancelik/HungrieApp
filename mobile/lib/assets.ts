@@ -1,22 +1,52 @@
 const RESTAURANT_LOGO_MAP: Record<string, number> = {
-    "@/assets/restaurantlogo/adapizzalogo.jpeg": require("@/assets/restaurantlogo/adapizzalogo.jpeg"),
-    "@/assets/restaurantlogo/alacartelogo.jpeg": require("@/assets/restaurantlogo/alacartelogo.jpeg"),
-    "@/assets/restaurantlogo/hotnfreshlogo.jpeg": require("@/assets/restaurantlogo/hotnfreshlogo.jpeg"),
-    "@/assets/restaurantlogo/lombardlogo.jpg.jpg": require("@/assets/restaurantlogo/lombardlogo.jpg.jpg"),
-    "@/assets/restaurantlogo/burgerhouselogo.jpeg": require("@/assets/restaurantlogo/burgerhouselogo.jpeg"),
+    "@/assets/restaurantlogo/adapizzalogo.jpg": require("@/assets/restaurantlogo/adapizzalogo.jpg"),
+    "@/assets/restaurantlogo/alacartelogo.jpg": require("@/assets/restaurantlogo/alacartelogo.jpg"),
+    "@/assets/restaurantlogo/hotnfreshlogo.jpg": require("@/assets/restaurantlogo/hotnfreshlogo.jpg"),
+    "@/assets/restaurantlogo/lavishlogo.jpg": require("@/assets/restaurantlogo/lavishlogo.jpg"),
+    "@/assets/restaurantlogo/munchieslogo.jpg": require("@/assets/restaurantlogo/munchieslogo.jpg"),
+    "@/assets/restaurantlogo/rootlogo.jpg": require("@/assets/restaurantlogo/rootlogo.jpg"),
+    "@/assets/restaurantlogo/lombardlogo.jpg": require("@/assets/restaurantlogo/lombardlogo.jpg"),
+    "@/assets/restaurantlogo/burgerhouselogo.jpg": require("@/assets/restaurantlogo/burgerhouselogo.jpg"),
 };
 
-const FALLBACK_RESTAURANT_IMAGE =
-    "https://images.unsplash.com/photo-1604908176997-1251882c8ef1?auto=format&fit=crop&w=1200&q=70";
+const RESTAURANT_LOGO_BY_FILE: Record<string, number> = {
+    adapizzalogo: RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/adapizzalogo.jpg"],
+    alacartelogo: RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/alacartelogo.jpg"],
+    hotnfreshlogo: RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/hotnfreshlogo.jpg"],
+    lavishlogo: RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/lavishlogo.jpg"],
+    munchieslogo: RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/munchieslogo.jpg"],
+    rootlogo: RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/rootlogo.jpg"],
+    lombardlogo: RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/lombardlogo.jpg"],
+    burgerhouselogo: RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/burgerhouselogo.jpg"],
+};
+
+const FALLBACK_RESTAURANT_IMAGE = RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/adapizzalogo.jpg"];
 
 export const resolveRestaurantImageSource = (value?: string | number | null) => {
-    if (typeof value === "number" || value === null || value === undefined) {
-        return value ?? undefined;
+    if (value && typeof value === "object") {
+        const uriLike = (value as any).uri ?? (value as any).default?.uri ?? null;
+        if (typeof uriLike === "string" && uriLike.trim().length) {
+            return uriLike;
+        }
     }
-    const trimmed = value.trim();
+    if (typeof value === "number") return value;
+    if (value === null || value === undefined) return FALLBACK_RESTAURANT_IMAGE;
+    const asString = typeof value === "string" ? value : String(value);
+    const trimmed = asString.trim();
+    if (!trimmed) return FALLBACK_RESTAURANT_IMAGE;
     const localAsset = RESTAURANT_LOGO_MAP[trimmed];
     if (localAsset) return localAsset;
+
+    const fileName = trimmed.split("/").pop()?.split(".")[0];
+    if (fileName) {
+        const byFile = RESTAURANT_LOGO_BY_FILE[fileName];
+        if (byFile) return byFile;
+    }
+
+    const containsMatch = Object.entries(RESTAURANT_LOGO_BY_FILE).find(([key]) => trimmed.includes(key));
+    if (containsMatch) return containsMatch[1];
+
     // Prevent invalid URI errors when a local asset path leaks into runtime.
     if (trimmed.startsWith("@/assets/restaurantlogo/")) return FALLBACK_RESTAURANT_IMAGE;
-    return trimmed || FALLBACK_RESTAURANT_IMAGE;
+    return FALLBACK_RESTAURANT_IMAGE;
 };

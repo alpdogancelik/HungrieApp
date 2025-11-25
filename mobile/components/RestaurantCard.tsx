@@ -71,19 +71,19 @@ const RestaurantCard = ({ restaurant, onPress }: Props) => {
                 <View className="flex-row flex-wrap gap-2">
                     {deliveryTime && (
                         <View className="info-chip">
-                            <Icon name="clock" size={14} color="#FF8C42" />
+                            <Icon name="clock" size={14} color="#FE8C00" />
                             <Text className="body-medium text-dark-80">{deliveryTime} min</Text>
                         </View>
                     )}
                     {deliveryFee && (
                         <View className="info-chip">
-                            <Icon name="dollar" size={14} color="#FF8C42" />
+                            <Icon name="dollar" size={14} color="#FE8C00" />
                             <Text className="body-medium text-dark-80">{`${formatCurrency(deliveryFee)} fee`}</Text>
                         </View>
                     )}
                     {reviewCount !== undefined && (
                         <View className="info-chip">
-                            <Icon name="profile" size={14} color="#FF8C42" />
+                            <Icon name="profile" size={14} color="#FE8C00" />
                             <Text className="body-medium text-dark-80">{reviewCount} reviews</Text>
                         </View>
                     )}

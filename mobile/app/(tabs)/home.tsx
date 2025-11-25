@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
     ActivityIndicator,
@@ -18,15 +18,22 @@ import CartButton from "@/components/CartButton";
 import LanguageToggle from "@/components/LanguageToggle";
 import MenuCard from "@/components/MenuCard";
 import RestaurantCard from "@/components/RestaurantCard";
-import { illustrations } from "@/constants/mediaCatalog";
+import { illustrations, emojiSet, cookingScenes } from "@/constants/mediaCatalog";
 import useHome from "@/src/hooks/useHome";
-import { Chip, Card, SectionHeader } from "@/src/components/componentRegistry";
+import { Card, SectionHeader } from "@/src/components/componentRegistry";
 import { useTheme, ThemeDefinition } from "@/src/theme/themeContext";
 import { DeliverToHeader } from "@/src/features/address/addressFeature";
 import Icon from "@/components/Icon";
 import { makeShadow } from "@/src/lib/shadowStyle";
+import useAuthStore from "@/store/auth.store";
+import GodzillaIceCream from "@/assets/godzilla/VCTRLY-godzila-ice-cream-food.svg";
+import GodzillaReading from "@/assets/godzilla/VCTRLY-godzila-reading-book-magazine.svg";
+import GodzillaOffice from "@/assets/godzilla/VCTRLY-godzila-work-office-business.svg";
+import GodzillaBusy from "@/assets/godzilla/VCTRLY-godzila-work-worker-busy-confused.svg";
 
 const CourierIllustration = illustrations.foodieCelebration;
+const StudyFuel = cookingScenes.studyFuel;
+const emojiImages = Object.values(emojiSet);
 
 export default function HomeTabScreen() {
     const {
@@ -36,31 +43,15 @@ export default function HomeTabScreen() {
         heroLoading,
         restaurants,
         restaurantsLoading,
-        categories,
-        categoriesLoading,
         quickActions,
     } = useHome();
-    const [activeCategory, setActiveCategory] = useState("all");
     const router = useRouter();
     const { t } = useTranslation();
     const { theme } = useTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);
-
-    const filteredMenu = useMemo(() => {
-        if (!menu) return [];
-        if (activeCategory === "all") return menu.slice(0, 4);
-        const categoryLower = activeCategory.toLowerCase();
-        return menu.filter((item: any) => item.categories?.includes(categoryLower)).slice(0, 4);
-    }, [menu, activeCategory]);
-
-    const renderCategory = ({ item }: { item: any }) => (
-        <Chip
-            label={item.name}
-            icon={item.icon ? <Image source={item.icon} style={styles.chipIcon} contentFit="contain" /> : undefined}
-            selected={activeCategory === item.id}
-            onPress={() => setActiveCategory(item.id)}
-        />
-    );
+    const { preferredEmoji } = useAuthStore();
+    const activeEmoji = preferredEmoji || emojiImages[0];
+    const displayName = (userName || "Hungrie User").trim();
 
     const renderQuickAction = (action: any) => (
         <TouchableOpacity key={action.id} style={styles.quickCardWrapper} onPress={() => router.push(action.target as any)}>
@@ -82,9 +73,35 @@ export default function HomeTabScreen() {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
+                <View pointerEvents="none" style={styles.bgLayer}>
+                    <View style={styles.bgTopLeft}>
+                        <GodzillaIceCream width={90} height={90} />
+                    </View>
+                    <View style={styles.bgMidRight}>
+                        <GodzillaReading width={110} height={110} />
+                    </View>
+                    <View style={styles.bgCenter}>
+                        <GodzillaOffice width={140} height={140} />
+                    </View>
+                    <View style={styles.bgBottomLeft}>
+                        <GodzillaBusy width={120} height={120} />
+                    </View>
+                    <View style={styles.bgMidLeft}>
+                        <GodzillaReading width={90} height={90} />
+                    </View>
+                    <View style={styles.bgBottomRight}>
+                        <GodzillaIceCream width={110} height={110} />
+                    </View>
+                </View>
+
                 <View style={styles.header}>
                     <View style={styles.deliveryWrapper}>
-                        <DeliverToHeader fallbackLabel={userName} />
+                        <View style={styles.deliveryRow}>
+                            <DeliverToHeader fallbackLabel={userName} />
+                            {activeEmoji ? (
+                                <Image source={activeEmoji} style={styles.nameEmoji} contentFit="contain" />
+                            ) : null}
+                        </View>
                     </View>
                     <View style={styles.headerActions}>
                         <LanguageToggle />
@@ -119,12 +136,27 @@ export default function HomeTabScreen() {
                     <View style={styles.searchShortcutIcon}>
                         <Icon name="search" size={20} color={theme.colors.primary} />
                     </View>
-                    <View style={styles.searchShortcutText}>
-                        <Text style={styles.searchShortcutTitle}>{t("home.searchShortcut.title")}</Text>
+                        <View style={styles.searchShortcutText}>
+                            <View style={styles.titleRow}>
+                                <Text style={styles.searchShortcutTitle}>
+                                    {`${t("home.searchShortcut.title")} ${displayName}`}
+                                </Text>
+                                {activeEmoji ? (
+                                    <Image
+                                        source={activeEmoji}
+                                        style={styles.emoji}
+                                        contentFit="contain"
+                                    transition={300}
+                                />
+                            ) : null}
+                        </View>
                         <Text style={styles.searchShortcutSubtitle}>{t("home.searchShortcut.subtitle")}</Text>
                     </View>
                     <View style={styles.searchShortcutBadge}>
                         <Text style={styles.searchShortcutBadgeText}>{t("home.searchShortcut.cta")}</Text>
+                    </View>
+                    <View style={styles.searchArtwork}>
+                        <StudyFuel width={82} height={82} />
                     </View>
                 </TouchableOpacity>
 
@@ -141,26 +173,6 @@ export default function HomeTabScreen() {
                     </View>
                 </View>
 
-                <View style={styles.categoriesContainer}>
-                    <Text style={styles.categoryHint}>{t("home.categoryHint")}</Text>
-                    {categoriesLoading ? (
-                        <View style={styles.categorySkeletonRow}>
-                            {[...Array(4)].map((_, index) => (
-                                <View key={index} style={styles.categorySkeleton} />
-                            ))}
-                        </View>
-                    ) : (
-                        <FlatList
-                            data={categories}
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={styles.categoryListContent}
-                            renderItem={renderCategory}
-                            keyExtractor={(item, index) => String(item.id ?? index)}
-                        />
-                    )}
-                </View>
-
                 <View style={styles.section}>
                     <SectionHeader title={t("home.quickActionsTitle")} />
                     <View style={styles.quickGrid}>
@@ -169,26 +181,9 @@ export default function HomeTabScreen() {
                 </View>
 
                 <View style={styles.section}>
-                    <SectionHeader title={t("home.featuredTitle")} onActionPress={() => router.push("/search")} />
-                    {menuLoading ? (
-                        <ActivityIndicator color="#FF8C42" />
-                    ) : (
-                        <View style={styles.gridGap}>
-                            {filteredMenu.map((item: any, index: number) => (
-                                <MenuCard
-                                    key={item.$id || item.id || `${item.name}-${index}`}
-                                    item={item}
-                                    onPress={() => router.push({ pathname: "/search", params: { query: item.name } })}
-                                />
-                            ))}
-                        </View>
-                    )}
-                </View>
-
-                    <View style={styles.section}>
                     <SectionHeader title={t("home.restaurantsTitle")} />
                     {restaurantsLoading ? (
-                        <ActivityIndicator color="#FF8C42" />
+                        <ActivityIndicator color="#FE8C00" />
                     ) : (
                         <View style={styles.gridGap}>
                             {(restaurants || []).map((restaurant: any, index: number) => (
@@ -220,7 +215,16 @@ const createStyles = (theme: ThemeDefinition) =>
             paddingHorizontal: theme.spacing.lg,
             paddingTop: theme.spacing.xl,
         },
+        bgLayer: { position: "absolute", inset: 0 },
+        bgTopLeft: { position: "absolute", top: 40, left: -20, opacity: 0.08 },
+        bgMidRight: { position: "absolute", top: 220, right: -10, opacity: 0.08 },
+        bgCenter: { position: "absolute", top: 420, left: "25%", opacity: 0.06 },
+        bgBottomLeft: { position: "absolute", top: 700, left: -10, opacity: 0.07 },
+        bgMidLeft: { position: "absolute", top: 520, left: -30, opacity: 0.06, transform: [{ rotate: "-12deg" }] },
+        bgBottomRight: { position: "absolute", top: 880, right: -30, opacity: 0.07, transform: [{ rotate: "10deg" }] },
         deliveryWrapper: { flex: 1, paddingRight: theme.spacing.md },
+        deliveryRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing.sm },
+        nameEmoji: { width: 24, height: 24 },
         headerActions: { flexDirection: "row", alignItems: "center", gap: theme.spacing.sm },
         heroCard: {
             marginHorizontal: theme.spacing.lg,
@@ -299,6 +303,13 @@ const createStyles = (theme: ThemeDefinition) =>
             paddingVertical: theme.spacing.xs,
         },
         searchShortcutBadgeText: { color: theme.colors.surface, fontFamily: "Ezra-SemiBold" },
+        searchArtwork: {
+            position: "absolute",
+            right: 74,
+            bottom: -2,
+        },
+        emoji: { width: 20, height: 20, marginLeft: 6 },
+        titleRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing.xs },
         statRow: {
             flexDirection: "row",
             gap: theme.spacing.md,

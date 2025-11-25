@@ -7,7 +7,7 @@
       "description": "Dürümlerden ızgaraya uzanan geniş kampüs menüsü.",
       "deliveryFee": 19.9,
       "deliveryTime": "20-30",
-      "imageUrl": "@/assets/restaurantlogo/alacartelogo.jpeg",
+      "imageUrl": "@/assets/restaurantlogo/alacartelogo.jpg",
       "ownerId": "alacarte-owner-uid",
       "isActive": true,
       "address": "Merkez Kampüs, Sosyal Alan"

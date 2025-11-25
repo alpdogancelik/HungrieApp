@@ -300,7 +300,7 @@ const RestaurantConsoleScreen = () => {
                         </TouchableOpacity>
                     </View>
                     {loading ? (
-                        <ActivityIndicator color="#FF8C42" />
+                        <ActivityIndicator color="#FE8C00" />
                     ) : error ? (
                         <Text className="body-medium text-red-500">{error}</Text>
                     ) : (

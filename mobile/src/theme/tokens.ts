@@ -34,25 +34,26 @@ export type TypographyScale = {
 };
 
 export const lightColors: ColorRoles = {
-    primary: "#FF7A45",
-    ink: "#2B150E",
-    surface: "#FFF4EB",
-    muted: "#C48A74",
-    success: "#FFB347",
-    warning: "#FFDF99",
-    danger: "#FF8F6B",
-    border: "#F8DECC",
+    primary: "#FE8C00",
+    ink: "#0F172A",
+    surface: "#FFFFFF",
+    muted: "#94A3B8",
+    success: "#22C55E",
+    warning: "#FACC15",
+    danger: "#F87171",
+    border: "#E2E8F0",
 };
 
 export const darkColors: ColorRoles = {
-    primary: "#FF9E64",
-    ink: "#FFE5D6",
-    surface: "#2B150E",
-    muted: "#F2B7A3",
-    success: "#FFC676",
-    warning: "#FFDFA5",
-    danger: "#FFAB8A",
-    border: "#3D1F15",
+    // Lock dark theme to match light palette since we now ship light-only UI.
+    primary: "#FE8C00",
+    ink: "#0F172A",
+    surface: "#FFFFFF",
+    muted: "#94A3B8",
+    success: "#22C55E",
+    warning: "#FACC15",
+    danger: "#F87171",
+    border: "#E2E8F0",
 };
 
 export const radius: RadiusScale = {

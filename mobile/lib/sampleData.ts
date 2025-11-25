@@ -1,8 +1,11 @@
-﻿const ADA_LOGO = require("@/assets/restaurantlogo/adapizzalogo.jpeg");
-const ALA_LOGO = require("@/assets/restaurantlogo/alacartelogo.jpeg");
-const HNF_LOGO = require("@/assets/restaurantlogo/hotnfreshlogo.jpeg");
-const LOMBARD_LOGO = require("@/assets/restaurantlogo/lombardlogo.jpg.jpg");
-const BURGER_LOGO = require("@/assets/restaurantlogo/burgerhouselogo.jpeg");
+const ADA_LOGO = require("@/assets/restaurantlogo/adapizzalogo.jpg");
+const ALA_LOGO = require("@/assets/restaurantlogo/alacartelogo.jpg");
+const HNF_LOGO = require("@/assets/restaurantlogo/hotnfreshlogo.jpg");
+const LAVISH_LOGO = require("@/assets/restaurantlogo/lavishlogo.jpg");
+const MUNCHIES_LOGO = require("@/assets/restaurantlogo/munchieslogo.jpg");
+const ROOT_LOGO = require("@/assets/restaurantlogo/rootlogo.jpg");
+const LOMBARD_LOGO = require("@/assets/restaurantlogo/lombardlogo.jpg");
+const BURGER_LOGO = require("@/assets/restaurantlogo/burgerhouselogo.jpg");
 
 type RestaurantSeedFile = {
     restaurants?: Array<{
@@ -38,21 +41,39 @@ type SeedBundle = {
     reviewCount: number;
 };
 
-const MENU_PHOTOS = [
-    "https://images.unsplash.com/photo-1548365328-49f67499b4fb?auto=format&fit=crop&w=800&q=60",
-    "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=60",
-    "https://images.unsplash.com/photo-1608039829574-7d0174b8cd48?auto=format&fit=crop&w=800&q=60",
-    "https://images.unsplash.com/photo-1529042410759-befb1204b468?auto=format&fit=crop&w=800&q=60",
-    "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=60",
-    "https://images.unsplash.com/photo-1541592106381-b31e1d25224a?auto=format&fit=crop&w=800&q=60",
-    "https://images.unsplash.com/photo-1473093226795-af9932fe5856?auto=format&fit=crop&w=800&q=60",
-    "https://images.unsplash.com/photo-1529042410759-befb1204b468?auto=format&fit=crop&w=800&q=60",
-];
+// Menu items intentionally left without photos; only restaurant logos are shown in UI.
+const MENU_PHOTOS: string[] = [];
+
+const TURKISH_CHAR_MAP: Record<string, string> = {
+    "\u00e7": "c",
+    "\u00c7": "C",
+    "\u011f": "g",
+    "\u011e": "G",
+    "\u0131": "i",
+    "\u0130": "I",
+    "\u00f6": "o",
+    "\u00d6": "O",
+    "\u015f": "s",
+    "\u015e": "S",
+    "\u00fc": "u",
+    "\u00dc": "U",
+};
+
+const normalizeToAscii = (value: string) =>
+    value
+        .replace(/[\u00e7\u00c7\u011f\u011e\u0131\u0130\u00f6\u00d6\u015f\u015e\u00fc\u00dc]/g, (char) => TURKISH_CHAR_MAP[char] ?? char)
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^\x20-\x7E]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+
 
 const cleanText = (value: string | undefined, fallback: string) => {
     const raw = value?.toString().trim();
     if (!raw) return fallback;
-    const sanitized = raw.replace(/[^\x20-\x7E]+/g, " ").replace(/\s+/g, " ").trim();
+    const sanitized = normalizeToAscii(raw);
     return sanitized || fallback;
 };
 
@@ -73,7 +94,8 @@ const resolveAssetUri = (asset: any, fallback: string) => {
 };
 
 const resolveImageUrl = (raw: string | undefined, asset: any, fallback: string) => {
-    if (raw && !raw.startsWith("@/")) return raw;
+    // Always prefer bundled assets for restaurant logos; ignore external URLs.
+    if (asset) return asset;
     return resolveAssetUri(asset, fallback);
 };
 
@@ -81,6 +103,9 @@ const resolveImageUrl = (raw: string | undefined, asset: any, fallback: string) 
 const adaSeedJson = require("@/data/ada-pizza-firestore.json") as RestaurantSeedFile;
 const alacarteSeedJson = require("@/data/alacarte-cafe-firestore.json") as RestaurantSeedFile;
 const hotnfreshSeedJson = require("@/data/hotnfresh-firestore.json") as RestaurantSeedFile;
+const lavishSeedJson = require("@/data/lavish-firestore.json") as RestaurantSeedFile;
+const munchiesSeedJson = require("@/data/munchies-firestore.json") as RestaurantSeedFile;
+const rootSeedJson = require("@/data/root-firestore.json") as RestaurantSeedFile;
 const lombardSeedJson = require("@/data/lombard-firestore.json") as RestaurantSeedFile;
 const burgerhouseSeedJson = require("@/data/burgerhouse-firestore.json") as RestaurantSeedFile;
 
@@ -89,7 +114,7 @@ const seedBundles: SeedBundle[] = [
         key: "ada-pizza",
         seed: adaSeedJson as RestaurantSeedFile,
         logoAsset: ADA_LOGO,
-        fallbackImage: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=60",
+        fallbackImage: "",
         rating: 4.9,
         reviewCount: 218,
     },
@@ -97,7 +122,7 @@ const seedBundles: SeedBundle[] = [
         key: "alacarte-cafe",
         seed: alacarteSeedJson as RestaurantSeedFile,
         logoAsset: ALA_LOGO,
-        fallbackImage: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=800&q=60",
+        fallbackImage: "",
         rating: 4.7,
         reviewCount: 162,
     },
@@ -105,15 +130,39 @@ const seedBundles: SeedBundle[] = [
         key: "hot-n-fresh",
         seed: hotnfreshSeedJson as RestaurantSeedFile,
         logoAsset: HNF_LOGO,
-        fallbackImage: "https://images.unsplash.com/photo-1606756790138-261c234c83cd?auto=format&fit=crop&w=800&q=60",
+        fallbackImage: "",
         rating: 4.8,
         reviewCount: 184,
+    },
+    {
+        key: "lavish",
+        seed: lavishSeedJson as RestaurantSeedFile,
+        logoAsset: LAVISH_LOGO,
+        fallbackImage: "",
+        rating: 4.6,
+        reviewCount: 132,
+    },
+    {
+        key: "munchies",
+        seed: munchiesSeedJson as RestaurantSeedFile,
+        logoAsset: MUNCHIES_LOGO,
+        fallbackImage: "",
+        rating: 4.5,
+        reviewCount: 118,
+    },
+    {
+        key: "root-kitchen-coffee",
+        seed: rootSeedJson as RestaurantSeedFile,
+        logoAsset: ROOT_LOGO,
+        fallbackImage: "",
+        rating: 4.7,
+        reviewCount: 164,
     },
     {
         key: "lombard-kitchen",
         seed: lombardSeedJson as RestaurantSeedFile,
         logoAsset: LOMBARD_LOGO,
-        fallbackImage: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=60",
+        fallbackImage: "",
         rating: 4.6,
         reviewCount: 140,
     },
@@ -121,7 +170,7 @@ const seedBundles: SeedBundle[] = [
         key: "burgerhouse",
         seed: burgerhouseSeedJson as RestaurantSeedFile,
         logoAsset: BURGER_LOGO,
-        fallbackImage: "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=800&q=60",
+        fallbackImage: "",
         rating: 4.5,
         reviewCount: 96,
     },
@@ -168,7 +217,7 @@ const normalizeSeed = (bundle: SeedBundle): NormalizedSeed | null => {
         price: Number(item.price ?? 0),
         restaurantId: id,
         categories: ensureCategories(item.categories),
-        imageUrl: item.imageUrl || MENU_PHOTOS[index % MENU_PHOTOS.length],
+        imageUrl: "", // menu images disabled; use logo-only experience
     }));
 
     const restaurantCard = {
@@ -289,3 +338,12 @@ export const sampleAddresses = [
         createdAt: new Date(Date.now() - 7200_000).toISOString(),
     },
 ];
+
+
+
+
+
+
+
+
+

@@ -7,7 +7,7 @@
       "description": "Dürümlerden pizzalara kadar kampüsün en sevilen geç-gece menüsü.",
       "deliveryFee": 24.9,
       "deliveryTime": "25-35",
-      "imageUrl": "@/assets/restaurantlogo/adapizzalogo.jpeg",
+      "imageUrl": "@/assets/restaurantlogo/adapizzalogo.jpg",
       "ownerId": "ada-pizza-owner-uid",
       "isActive": true,
       "address": "Kuzey Kampüs, Öğrenci Çarşısı"
