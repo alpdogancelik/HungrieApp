@@ -31,6 +31,7 @@ const sortOptions: { id: SearchSort; label: string }[] = [
 ];
 
 const RECENT_SEARCHES_KEY = "hungrie_search_recents";
+const WINE_RED = "#7F021F";
 
 const parsePriceValue = (value?: number | string) => {
     const numeric =
@@ -478,15 +479,15 @@ const Search = () => {
                         <View
                             style={[
                                 styles.discoveryCard,
-                                { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
+                                { borderColor: `${WINE_RED}30`, backgroundColor: WINE_RED },
                             ]}
                         >
                             <Image source={images.fastDelivery} style={styles.discoveryImage} contentFit="cover" />
                             <View style={styles.discoveryText}>
-                                <Text style={[styles.discoveryTitle, { color: theme.colors.ink }]}>
+                                <Text style={[styles.discoveryTitle, { color: theme.colors.surface }]}>
                                     {t("search.discovery.title")}
                                 </Text>
-                                <Text style={[styles.discoverySubtitle, { color: theme.colors.muted }]}>
+                                <Text style={[styles.discoverySubtitle, { color: `${theme.colors.surface}DD` }]}>
                                     {t("search.discovery.subtitle")}
                                 </Text>
                             </View>

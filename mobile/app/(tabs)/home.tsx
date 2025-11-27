@@ -9,7 +9,6 @@ import {
     FlatList,
     StyleSheet,
 } from "react-native";
-import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -18,14 +17,13 @@ import CartButton from "@/components/CartButton";
 import LanguageToggle from "@/components/LanguageToggle";
 import MenuCard from "@/components/MenuCard";
 import RestaurantCard from "@/components/RestaurantCard";
-import { illustrations, emojiSet, cookingScenes } from "@/constants/mediaCatalog";
+import { illustrations, cookingScenes } from "@/constants/mediaCatalog";
 import useHome from "@/src/hooks/useHome";
 import { Card, SectionHeader } from "@/src/components/componentRegistry";
 import { useTheme, ThemeDefinition } from "@/src/theme/themeContext";
 import { DeliverToHeader } from "@/src/features/address/addressFeature";
 import Icon from "@/components/Icon";
 import { makeShadow } from "@/src/lib/shadowStyle";
-import useAuthStore from "@/store/auth.store";
 import GodzillaIceCream from "@/assets/godzilla/VCTRLY-godzila-ice-cream-food.svg";
 import GodzillaReading from "@/assets/godzilla/VCTRLY-godzila-reading-book-magazine.svg";
 import GodzillaOffice from "@/assets/godzilla/VCTRLY-godzila-work-office-business.svg";
@@ -33,7 +31,7 @@ import GodzillaBusy from "@/assets/godzilla/VCTRLY-godzila-work-worker-busy-conf
 
 const CourierIllustration = illustrations.foodieCelebration;
 const StudyFuel = cookingScenes.studyFuel;
-const emojiImages = Object.values(emojiSet);
+const WINE_RED = "#7F021F";
 
 export default function HomeTabScreen() {
     const {
@@ -49,8 +47,6 @@ export default function HomeTabScreen() {
     const { t } = useTranslation();
     const { theme } = useTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);
-    const { preferredEmoji } = useAuthStore();
-    const activeEmoji = preferredEmoji || emojiImages[0];
     const displayName = (userName || "Hungrie User").trim();
 
     const renderQuickAction = (action: any) => (
@@ -98,9 +94,6 @@ export default function HomeTabScreen() {
                     <View style={styles.deliveryWrapper}>
                         <View style={styles.deliveryRow}>
                             <DeliverToHeader fallbackLabel={userName} />
-                            {activeEmoji ? (
-                                <Image source={activeEmoji} style={styles.nameEmoji} contentFit="contain" />
-                            ) : null}
                         </View>
                     </View>
                     <View style={styles.headerActions}>
@@ -113,7 +106,7 @@ export default function HomeTabScreen() {
                     <View style={styles.heroSkeleton} />
                 ) : (
                     <LinearGradient
-                        colors={[theme.colors.primary, `${theme.colors.primary}D9`]}
+                        colors={[WINE_RED, `${theme.colors.primary}E6`]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={styles.heroCard}
@@ -141,15 +134,7 @@ export default function HomeTabScreen() {
                                 <Text style={styles.searchShortcutTitle}>
                                     {`${t("home.searchShortcut.title")} ${displayName}`}
                                 </Text>
-                                {activeEmoji ? (
-                                    <Image
-                                        source={activeEmoji}
-                                        style={styles.emoji}
-                                        contentFit="contain"
-                                    transition={300}
-                                />
-                            ) : null}
-                        </View>
+                            </View>
                         <Text style={styles.searchShortcutSubtitle}>{t("home.searchShortcut.subtitle")}</Text>
                     </View>
                     <View style={styles.searchShortcutBadge}>
@@ -224,7 +209,6 @@ const createStyles = (theme: ThemeDefinition) =>
         bgBottomRight: { position: "absolute", top: 880, right: -30, opacity: 0.07, transform: [{ rotate: "10deg" }] },
         deliveryWrapper: { flex: 1, paddingRight: theme.spacing.md },
         deliveryRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing.sm },
-        nameEmoji: { width: 24, height: 24 },
         headerActions: { flexDirection: "row", alignItems: "center", gap: theme.spacing.sm },
         heroCard: {
             marginHorizontal: theme.spacing.lg,
@@ -308,7 +292,6 @@ const createStyles = (theme: ThemeDefinition) =>
             right: 74,
             bottom: -2,
         },
-        emoji: { width: 20, height: 20, marginLeft: 6 },
         titleRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing.xs },
         statRow: {
             flexDirection: "row",

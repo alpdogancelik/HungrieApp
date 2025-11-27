@@ -3,8 +3,16 @@ import { Text, TouchableOpacity, View } from "react-native";
 import { images } from "@/constants/mediaCatalog";
 import Icon from "@/components/Icon";
 import type { CartItemType } from "@/type";
-import { cardShadow } from "./styles";
+import { makeShadow } from "@/src/lib/shadowStyle";
 import { formatCurrency, getCustomizationsTotal } from "@/lib/cart.utils";
+
+const cardShadow = makeShadow({
+    color: "#0F172A",
+    offsetY: 12,
+    blurRadius: 20,
+    opacity: 0.08,
+    elevation: 5,
+});
 
 type Props = {
     item: CartItemType;

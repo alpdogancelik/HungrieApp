@@ -17,7 +17,7 @@ export type SearchResult = MenuItem & {
 export type SearchCategory = { id: string; name: string; count: number };
 
 const parsePrice = (item: Partial<MenuItem>) => {
-    const raw = item.price ?? item.cost ?? 0;
+    const raw: unknown = (item as any).price ?? (item as any).cost ?? 0;
     const numeric = typeof raw === "string" ? Number(raw.replace(/[^\d.,-]/g, "").replace(",", ".")) : Number(raw);
     return Number.isFinite(numeric) ? numeric : 0;
 };

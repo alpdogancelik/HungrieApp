@@ -19,6 +19,7 @@ import { NotificationManager } from "@/src/features/notifications/NotificationMa
 import i18n from "@/src/lib/i18n";
 
 const EMOJI_OPTIONS = Object.values(emojiSet);
+const WINE_RED = "#7F021F";
 
 const formatCurrency = (value?: number | string) => {
     const amount = Number(value ?? 0);
@@ -127,7 +128,7 @@ const Profile = () => {
         <SafeAreaView className="flex-1 bg-gray-50">
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 160 }}>
                 <View className="px-5 pt-6 gap-6">
-                    <View className="secondary-card bg-dark-80 border-0 shadow-2xl gap-4">
+                    <View className="secondary-card border-0 shadow-2xl gap-4" style={{ backgroundColor: WINE_RED }}>
                         <View className="flex-row items-center gap-4">
                             <TouchableOpacity
                                 className="size-16 rounded-full bg-white/10 border border-white/40 items-center justify-center"
@@ -179,7 +180,7 @@ const Profile = () => {
                         </View>
                     </View>
 
-                    <View className="secondary-card flex-row items-center gap-4 bg-[#0F172A] border-0">
+                    <View className="secondary-card flex-row items-center gap-4 border-0" style={{ backgroundColor: WINE_RED }}>
                         <View className="flex-1 gap-2">
                             <Text className="text-xs uppercase text-white/70 font-ezra-semibold">
                                 {t("profileExtras.delivery.eyebrow")}

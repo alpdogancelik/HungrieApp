@@ -1,7 +1,17 @@
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import type { Address } from "@/src/domain/types";
-import { ADDRESS_PILL_SKELETON_STYLE, ADDRESS_SKELETONS } from "./addressConstants";
 import Icon from "@/components/Icon";
+
+const ADDRESS_SKELETON_COUNT = 3;
+const ADDRESS_SKELETONS = Array.from({ length: ADDRESS_SKELETON_COUNT }, (_, index) => index);
+
+const ADDRESS_PILL_SKELETON_STYLE = {
+    width: 110,
+    height: 44,
+    borderRadius: 24,
+    backgroundColor: "#E2E8F0",
+    opacity: 0.6,
+};
 
 type Props = {
     addresses?: Address[];

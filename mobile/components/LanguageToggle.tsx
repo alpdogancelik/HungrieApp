@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from "react-i18next";
 
@@ -49,26 +49,37 @@ const LanguageToggle = () => {
         }
     };
 
+    const helperText =
+        current?.startsWith("tr") ? "Tercih ettiğiniz dili seçiniz" : "Select your language preference";
+
     return (
         <TouchableOpacity
             onPress={toggleLanguage}
             disabled={!hydrated}
             accessibilityRole="button"
             accessibilityLabel="Toggle language"
-            style={[styles.button, { opacity: hydrated ? 1 : 0.6 }]}
+            style={[styles.container, { opacity: hydrated ? 1 : 0.6 }]}
         >
-            {!hydrated ? (
-                <ActivityIndicator size="small" color={theme.colors.ink} />
-            ) : (
-                <Text style={styles.label}>{current.toUpperCase()}</Text>
-            )}
+            <Text style={styles.helper}>{helperText}</Text>
+            <View style={styles.badge}>
+                {!hydrated ? (
+                    <ActivityIndicator size="small" color={theme.colors.ink} />
+                ) : (
+                    <Text style={styles.label}>{current.toUpperCase()}</Text>
+                )}
+            </View>
         </TouchableOpacity>
     );
 };
 
 const createStyles = (theme: ThemeDefinition) =>
     StyleSheet.create({
-        button: {
+        container: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: theme.spacing.sm,
+        },
+        badge: {
             paddingHorizontal: theme.spacing.md,
             paddingVertical: theme.spacing.xs,
             borderRadius: 999,
@@ -79,10 +90,16 @@ const createStyles = (theme: ThemeDefinition) =>
             justifyContent: "center",
             minWidth: 52,
         },
+        helper: {
+            color: theme.colors.muted,
+            fontFamily: "Ezra-Medium",
+            fontSize: 11,
+        },
         label: {
             fontFamily: "Ezra-Bold",
             color: theme.colors.ink,
-            letterSpacing: 1,
+            letterSpacing: 0.5,
+            fontSize: 12,
         },
     });
 

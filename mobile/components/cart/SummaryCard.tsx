@@ -1,5 +1,13 @@
 import { Text, View } from "react-native";
-import { cardShadow } from "./styles";
+import { makeShadow } from "@/src/lib/shadowStyle";
+
+const cardShadow = makeShadow({
+    color: "#0F172A",
+    offsetY: 12,
+    blurRadius: 20,
+    opacity: 0.08,
+    elevation: 5,
+});
 
 type Props = {
     subtotal: string;

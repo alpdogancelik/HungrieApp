@@ -1,7 +1,5 @@
 import { create } from "zustand";
-
-export interface CartCustomization { id: string; name: string; price: number; type: string }
-export interface CartItemType { id: string; name: string; price: number; image_url: string; quantity: number; customizations?: CartCustomization[] }
+import type { CartCustomization, CartItemType } from "@/src/domain/types";
 export interface CartStore {
     items: CartItemType[];
     addItem: (item: Omit<CartItemType, "quantity">) => void;

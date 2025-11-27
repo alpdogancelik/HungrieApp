@@ -1,3 +1,10 @@
+export type BaseDocument = {
+    $id?: string;
+    id?: string | number;
+    createdAt?: string;
+    updatedAt?: string;
+};
+
 export type PaymentMethod = "cash" | "pos";
 
 export type OrderStatus =
@@ -20,22 +27,53 @@ export type Address = {
     createdAt: string;
 };
 
-export type Restaurant = {
+export type Category = BaseDocument & {
+    name: string;
+    description?: string;
+    icon?: any;
+};
+
+export type User = BaseDocument & {
+    name: string;
+    email: string;
+    avatar?: string;
+};
+
+export type CartCustomization = {
+    id: string;
+    name: string;
+    price: number;
+    type?: string;
+};
+
+export type Restaurant = BaseDocument & {
     id: string;
     name: string;
     description?: string;
     imageUrl?: string;
+    image_url?: string;
     isActive: boolean;
 };
 
-export type MenuItem = {
+export type MenuItem = BaseDocument & {
     id: string;
-    restaurantId: string;
+    restaurantId?: string;
     name: string;
     description?: string;
     price: number;
-    etaMinutes?: number;
-    visible: boolean;
+    etaMinutes?: number | string;
+    deliveryTime?: string | number;
+    eta?: string | number;
+    cost?: number;
+    imageUrl?: string;
+    image_url?: string;
+    calories?: number;
+    protein?: number;
+    rating?: number;
+    type?: string;
+    category_name?: string;
+    visible?: boolean;
+    customizations?: CartCustomization[];
 };
 
 export type CartItem = {
@@ -44,6 +82,16 @@ export type CartItem = {
     quantity: number;
     price: number;
     customizations?: { id: string; name: string; price: number }[];
+};
+
+export type CartItemType = {
+    id: string;
+    name: string;
+    price: number;
+    image_url: string;
+    quantity: number;
+    restaurantId?: string;
+    customizations?: CartCustomization[];
 };
 
 export type Order = {
@@ -62,6 +110,21 @@ export type Order = {
     etaMinutes?: number;
     createdAt: string;
     updatedAt: string;
+};
+
+export type RestaurantOrder = BaseDocument & {
+    restaurantId?: string | number;
+    restaurant?: {
+        id?: string | number;
+        name?: string;
+        imageUrl?: string;
+    };
+    customerName?: string;
+    address?: string;
+    total?: string | number;
+    status?: OrderStatus | string;
+    paymentMethod?: string;
+    orderItems?: { name?: string; quantity?: number }[];
 };
 
 export type Review = {
