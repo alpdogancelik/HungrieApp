@@ -134,7 +134,7 @@ export const ThemeButton = ({
                 style={{
                     color: theme.colors.surface,
                     fontSize: theme.typography.body,
-                    fontFamily: "Ezra-Bold",
+                    fontFamily: "ChairoSans",
                 }}
             >
                 {label}
@@ -169,7 +169,7 @@ export const ThemeCard = ({
                 style={{
                     color: theme.colors.ink,
                     fontSize: theme.typography.h2,
-                    fontFamily: "Ezra-Bold",
+                    fontFamily: "ChairoSans",
                 }}
             >
                 {title}
@@ -178,7 +178,7 @@ export const ThemeCard = ({
                 style={{
                     color: theme.colors.muted,
                     fontSize: theme.typography.body,
-                    fontFamily: "Ezra-Medium",
+                    fontFamily: "ChairoSans",
                 }}
             >
                 {description}
@@ -187,4 +187,5 @@ export const ThemeCard = ({
         </View>
     );
 };
+
 

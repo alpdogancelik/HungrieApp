@@ -33,6 +33,12 @@ import DeliveryGuy from "@/assets/illustrations/Delivery Guy.svg";
 import DeliveryLocation from "@/assets/illustrations/Delivery Location.svg";
 import FoodDeliveryHero from "@/assets/illustrations/Food Delivery.svg";
 import MealOrder from "@/assets/illustrations/Meal Order.svg";
+import DroneDelivery from "@/assets/illustrations/Drone Delivery.svg";
+import EatingNoodles from "@/assets/illustrations/Eating Noodles.svg";
+import MakingPizza from "@/assets/illustrations/Making Pizza.svg";
+import MenuBoard from "@/assets/illustrations/Menu Board.svg";
+import Rider from "@/assets/illustrations/Rider.svg";
+import TastingFood from "@/assets/illustrations/Tasting Food.svg";
 
 // Emoji PNGs
 import beamingEmoji from "@/assets/emoji/Beaming Face with Smiling Eyes.png";
@@ -147,6 +153,13 @@ export const illustrations = {
     tracking: DeliveryLocation,
     foodieCelebration: FoodDeliveryHero,
     mealPrep: MealOrder,
+    droneDelivery: DroneDelivery,
+    eatingNoodles: EatingNoodles,
+    makingPizza: MakingPizza,
+    mealOrder: MealOrder,
+    menuBoard: MenuBoard,
+    rider: Rider,
+    tastingFood: TastingFood,
 } as const;
 
 export const emojiSet = {

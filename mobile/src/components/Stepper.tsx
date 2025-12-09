@@ -51,7 +51,7 @@ export const Stepper = ({
             </TouchableOpacity>
             <Text
                 style={{
-                    fontFamily: "Ezra-Bold",
+                    fontFamily: "ChairoSans",
                     fontSize: theme.typography.h2,
                     color: theme.colors.ink,
                 }}
@@ -77,4 +77,5 @@ export const Stepper = ({
 };
 
 export default Stepper;
+
 

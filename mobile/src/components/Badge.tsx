@@ -25,7 +25,7 @@ export const Badge = ({ label, status = "info" }: { label: string; status?: Badg
             <Text
                 style={{
                     color: palette.text,
-                    fontFamily: "Ezra-SemiBold",
+                    fontFamily: "ChairoSans",
                     fontSize: theme.typography.caption,
                 }}
             >
@@ -36,4 +36,5 @@ export const Badge = ({ label, status = "info" }: { label: string; status?: Badg
 };
 
 export default Badge;
+
 

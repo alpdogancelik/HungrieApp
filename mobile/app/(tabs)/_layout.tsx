@@ -21,7 +21,7 @@ export default function TabLayout() {
     const { i18n } = useTranslation();
     const isTR = (i18n.language || "").toLowerCase().startsWith("tr");
     const labels = isTR
-        ? { home: "Ana Sayfa", search: "Ara", cart: "Siparis", profile: "Profil" }
+        ? { home: "Ana Sayfa", search: "Ara", cart: "Sipariş", profile: "Profil" }
         : { home: "Home", search: "Search", cart: "Order", profile: "Profile" };
 
     if (authGuardEnabled && !isAuthenticated) return <Redirect href="/sign-in" />;

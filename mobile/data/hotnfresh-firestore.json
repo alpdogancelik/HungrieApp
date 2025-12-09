@@ -13,27 +13,12 @@
             "address": "Kuzey Kampüs, Öğrenci Çarşısı"
         }
     ],
-    "categories": [
-        {
-            "id": "wraps",
-            "name": "Dürümler"
-        },
-        {
-            "id": "mains",
-            "name": "Menüler & Tabaklar"
-        },
-        {
-            "id": "burgers",
-            "name": "Burgerler"
-        },
-        {
-            "id": "cigkofte",
-            "name": "Çiğköfte"
-        },
-        {
-            "id": "cold-drinks",
-            "name": "Soğuk İçecekler"
-        }
+        "categories": [
+        { "id": "wraps", "name": "Durumler" },
+        { "id": "mains", "name": "Menuler ve Tabaklar" },
+        { "id": "burgers", "name": "Burgerler" },
+        { "id": "cigkofte", "name": "Cigkofte" },
+        { "id": "cold-drinks", "name": "Soguk Icecekler" }
     ],
     "menus": [
         {

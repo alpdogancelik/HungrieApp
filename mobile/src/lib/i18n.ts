@@ -42,10 +42,11 @@ const resources = {
                 saving: "Saving...",
             },
             home: {
+                languageHint: "Select your language preference",
                 hero: {
-                    eyebrow: "Kalkanlı Hunger Club",
-                    title: "Good food without leaving your spot.",
-                    subtitle: "Order from around campus, couriers do the walking while you stay comfortable.",
+                    eyebrow: "Hungrie",
+                    title: "All your food orders are in one app!",
+                    subtitle: "Order from around campus, have a courier deliver it, and enjoy! :)",
                     cta: "Browse restaurants",
                 },
                 searchShortcut: {
@@ -73,6 +74,17 @@ const resources = {
                     addresses: { label: "Addresses", description: "Manage where your orders should arrive." },
                     coupons: { label: "Coupons", description: "Check your available discounts." },
                 },
+                orderStatus: {
+                    waitingTitle: "Waiting for restaurant response",
+                    waitingSubtitle: "We sent your order to the kitchen. Hang tight!",
+                    waitingTag: "Waiting",
+                    confirmedTitle: "Restaurant accepted your order",
+                    confirmedSubtitle: "They are preparing it now.",
+                    confirmedTag: "Accepted",
+                    rejectedTitle: "Restaurant rejected this order",
+                    rejectedSubtitle: "No charge applied. Please try another restaurant.",
+                    rejectedTag: "Rejected",
+                },
             },
             deliverTo: {
                 eyebrow: "Deliver to",
@@ -98,7 +110,7 @@ const resources = {
                 form: {
                     titleAdd: "Add new address",
                     titleEdit: "Edit address",
-                    heroTitle: "Make it clear enough so your rider doesn’t get lost.",
+                    heroTitle: "Make it clear enough so your rider doesn't get lost.",
                     heroSubtitle: "Short, clear directions help your food find you faster.",
                     sectionTitle: "Delivery details",
                     sectionSubtitle: "Keep it simple, but specific enough for your courier.",
@@ -112,7 +124,7 @@ const resources = {
                         room: "Room",
                         roomPlaceholder: "If you are living in dorm.",
                         city: "City",
-                        cityPlaceholder: "(for example, Kalkanlı Guzelyurt)",
+                        cityPlaceholder: "(for example, Kalkanlı Güzelyurt)",
                     },
                     makeDefault: "Make default",
                     makeDefaultHint: "This address will appear first at checkout.",
@@ -133,20 +145,95 @@ const resources = {
                     subtitle: "Add meals from Home and we will bring everything to your door when you are ready.",
                     cta: "Browse restaurants",
                 },
+                screen: {
+                    orderTitle: "Order",
+                    orderSubtitle: "We can't wait to deliver your order to the restaurant :)",
+                    quiet: {
+                        hint: "Delivery preference",
+                        subtitle: "Leave clear notes so the courier knows exactly where to drop without calling.",
+                        suggestions: ["Ring the bell", "Leave at door", "Call on arrival",],
+                        prefillDefault: "Leave at dorm lobby, text me when outside.",
+                    },
+                    payment: {
+                        title: "Payment methods",
+                        pos: {
+                            label: "Card on delivery (POS)",
+                            description: "Courier brings a wireless POS",
+                            badge: "Recommended",
+                            hint: "Tap to confirm when POS arrives",
+                        },
+                        cash: {
+                            label: "Cash",
+                            description: "Pay cash to the courier",
+                            hint: "Please prepare exact change if possible",
+                        },
+                    },
+                    item: {
+                        unitPrice: "{{price}} each",
+                        noCustomizations: "All Total",
+                        accessibility: {
+                            decrease: "Decrease quantity",
+                            increase: "Increase quantity",
+                            remove: "Remove item",
+                        },
+                    },
+                    notesTitle: "Notes for restaurant",
+                    notesPlaceholder: "Gate code, dorm details...",
+                    checkout: {
+                        minimumLabel: "Minimum order {{amount}}",
+                        checkoutLabel: "Checkout - {{amount}}",
+                        placing: "Placing order..",
+                        placingShort: "Placing...",
+                        total: "Total",
+                        addMore: "Add a bit more to place order",
+                        serviceFeeApplied: "Service fee applied",
+                    },
+                    alerts: {
+                        addAddressTitle: "Add a delivery address",
+                        addAddressBody: "Please select or save a delivery address before checking out.",
+                        paymentTitle: "Select a payment method",
+                        paymentBody: "Please choose how you'd like to pay before proceeding.",
+                        minimumTitle: "Minimum order required",
+                        minimumBody: "Please add items worth {{amount}} or more.",
+                        placeErrorTitle: "Unable to place order",
+                        placeErrorBody: "Please try again in a moment.",
+                    },
+                    serviceNote: {
+                        pos: "For a short time, we request your 1 TL for the development of the app. Hungrie is an app for all of us, and your support will be used for the right purposes.",
+                    },
+                    summary: {
+                        subtotal: "Sub total",
+                        delivery: "Delivery",
+                        serviceFee: "Hungrie Service Fee",
+                        discount: "Discount",
+                        total: "Total",
+                        footnote: "You will pay total amount shown above.",
+                    },
+                },
             },
             search: {
                 discovery: {
                     title: "Smart search, campus style.",
-                    subtitle: "Type a dish, a place or an ingredient and we'll show you the best options around you.",
+                    subtitle: "Type a dish, venue, or ingredient; we'll show the best options nearby.",
                 },
+                menuBoardTitle: "Brochure picks",
+                menuBoardSubtitle: "Tap the campus classics, filters preloaded.",
+                recentLabel: "Recent searches",
+                clearFilters: "Clear filters",
+                refresh: "Refresh feed",
                 empty: {
-                    title: "We couldn't find a match.",
-                    body: "Try a simpler word, another dish, or clear the filters to see more places.",
+                    title: "No matches found.",
+                    body: "Try a simpler word, another dish, or clear your filters.",
                 },
                 offline: {
-                    title: "Kitchens are offline right now.",
-                    body: "We couldn't reach our restaurant list. Check your connection or permissions, then refresh the feed.",
+                    title: "Kitchens are currently offline.",
+                    body: "We couldn't load restaurants. Check your connection or permissions and try refreshing.",
                 },
+            },
+            restaurantUi: {
+                menu: "Menu",
+                addToCart: "Add to cart",
+                cart: "Cart ({{count}})",
             },
             profileExtras: {
                 weekly: {
@@ -157,7 +244,7 @@ const resources = {
                 },
                 delivery: {
                     eyebrow: "Delivery preferences",
-                    title: "Map pins & silent drop-offs",
+                    title: "",
                     subtitle: "Update your default address and we brief every courier automatically.",
                     cta: "Update default",
                 },
@@ -215,8 +302,8 @@ const resources = {
                 canceled: "İptal edildi",
             },
             misc: {
-                manageSoon: "Adres yönetimi çok yakında.",
-                editSoon: "Profil düzenleme yakında.",
+                manageSoon: "",
+                editSoon: "",
             },
             common: {
                 cancel: "İptal",
@@ -225,10 +312,11 @@ const resources = {
                 saving: "Kaydediliyor...",
             },
             home: {
+                languageHint: "Tercih ettiginiz dili seciniz",
                 hero: {
-                    eyebrow: "Kalkanlı Hunger Club",
-                    title: "Yerinden kalkmadan iyi yemek.",
-                    subtitle: "Kampüs çevresinden sipariş ver, kurye yürüsün sen rahat kal.",
+                    eyebrow: "Hungrie",
+                    title: "Artık yemek siparişleri tek bir uygulamada!",
+                    subtitle: "Kampüs çevresinden sipariş ver, kurye getirsin sen keyfine bak :)",
                     cta: "Restoranlara göz at",
                 },
                 searchShortcut: {
@@ -256,6 +344,17 @@ const resources = {
                     addresses: { label: "Adresler", description: "Siparişlerin nereye gelsin yönet." },
                     coupons: { label: "Kuponlar", description: "Kullanılabilir indirimlerini kontrol et." },
                 },
+                orderStatus: {
+                    waitingTitle: "Restoran yanıtı bekleniyor",
+                    waitingSubtitle: "Siparişin restorana ulaştı, onay bekleniyor.",
+                    waitingTag: "Beklemede",
+                    confirmedTitle: "Restoran siparişi onayladı",
+                    confirmedSubtitle: "Hazırlanmaya başlanıyor.",
+                    confirmedTag: "Onaylandı",
+                    rejectedTitle: "Restoran siparişi reddetti",
+                    rejectedSubtitle: "Ücret yansımadı, başka bir restoran dene.",
+                    rejectedTag: "Reddedildi",
+                },
             },
             deliverTo: {
                 eyebrow: "Teslimat",
@@ -263,7 +362,7 @@ const resources = {
                 subtitle: "Teslim etmemizi istediğin yeri seçmek için dokun",
                 modalTitle: "Teslimat adresi seç",
                 emptyTitle: "Henüz kayıtlı adres yok",
-                emptySubtitle: "Yurt, ev ya da teslimat noktasını ekle, ödeme daha hızlı olsun.",
+                emptySubtitle: "Yurt, ev ya da teslimat noktasını ekle, işlemlerin daha hızlı olsun.",
                 manage: "Adresleri yönet",
                 useThis: "Bu adresi kullan",
             },
@@ -271,7 +370,7 @@ const resources = {
                 manage: {
                     title: "Adresleri yönet",
                     emptyTitle: "Adres yok",
-                    emptySubtitle: "Yurt ya da teslimat noktası ekle, ödemeyi hızlandır.",
+                    emptySubtitle: "Yurt ya da teslimat noktası ekle, işlemlerin daha hızlı olsun.",
                     addNew: "Yeni adres ekle",
                     confirmDeleteTitle: "Adresi sil",
                     confirmDeleteBody: '"{{label}}" adresini silmek istediğine emin misin?',
@@ -313,8 +412,73 @@ const resources = {
             cart: {
                 empty: {
                     title: "Sepetin boş",
-                    subtitle: "Eve sekmesinden yemek ekle, hazır olduğunda kapına getirelim.",
+                    subtitle: "Ana Sayfa'dan yemek ekle, siparişini hızlıca getirelim :)",
                     cta: "Restoranlara göz at",
+                },
+                screen: {
+                    orderTitle: "Sipariş",
+                    orderSubtitle: "Siparişini restorana ulaştırmak için sabırsızlanıyoruz :)",
+                    quiet: {
+                        hint: "Teslimat tercihi",
+                        subtitle: "Kurye aramak zorunda kalmadan nereye bırakacağını bilsin diye net notlar bırak.",
+                        suggestions: ["Zili çal", "Kapıya bırak", "Varınca ara"],
+                        prefillDefault: "Yurt girişine bırak, dışarıdayken mesaj at.",
+                    },
+                    payment: {
+                        title: "Ödeme yöntemleri",
+                        pos: {
+                            label: "Kapıda kart (POS)",
+                            description: "Kurye kablosuz POS getirir",
+                            badge: "Önerilen",
+                            hint: "POS gelince ödemeyi gerçekleştirebilirsiniz.",
+                        },
+                        cash: {
+                            label: "Nakit",
+                            description: "Kuryeye nakit öde",
+                            hint: "Mümkünse parayı tam hazırlayın, bozmak biraz uğraştırıcı olabilir, Olmazsa canınız sağolsun :)",
+                        },
+                    },
+                    item: {
+                        unitPrice: "{{price}} adet",
+                        noCustomizations: "Toplam",
+                        accessibility: {
+                            decrease: "Adedi azalt",
+                            increase: "Adedi artır",
+                            remove: "Ürünü sil",
+                        },
+                    },
+                    notesTitle: "Restoran için notlar",
+                    notesPlaceholder: "Kapı kodu, yurt detayı...",
+                    checkout: {
+                        minimumLabel: "Minimum sipariş {{amount}}",
+                        checkoutLabel: "Ödeme - {{amount}}",
+                        placing: "Sipariş veriliyor...",
+                        placingShort: "Gönderiliyor...",
+                        total: "Toplam",
+                        addMore: "Sipariş vermek için biraz daha ekle",
+                        serviceFeeApplied: "Hizmet ücreti eklendi",
+                    },
+                    alerts: {
+                        addAddressTitle: "Teslimat adresi ekle",
+                        addAddressBody: "Ödeme öncesi lütfen bir teslimat adresi seç veya kaydet.",
+                        paymentTitle: "Ödeme yöntemi seç",
+                        paymentBody: "Devam etmeden önce nasıl ödeyeceğini seçmelisin.",
+                        minimumTitle: "Minimum sipariş gerekli",
+                        minimumBody: "Lütfen en az {{amount}} tutarında ürün ekle.",
+                        placeErrorTitle: "Sipariş tamamlanamadı",
+                        placeErrorBody: "Lütfen birazdan yeniden dene.",
+                    },
+                    serviceNote: {
+                        pos: "Kısa bir süreliğine uygulamanın geliştirilmesi için sizden 1 TL ücret talep edeceğiz. Hungrie hepimizin uygulamasıdır ve desteğiniz doğru amaçlar için kullanılacaktır.",
+                    },
+                    summary: {
+                        subtotal: "Ara toplam",
+                        delivery: "Teslimat",
+                        serviceFee: "Hungrie Hizmet Ücreti",
+                        discount: "İndirim",
+                        total: "Toplam",
+                        footnote: "Yukarıdaki tutarı ödeyeceksin.",
+                    },
                 },
             },
             search: {
@@ -322,26 +486,37 @@ const resources = {
                     title: "Akıllı arama, kampüs usulü.",
                     subtitle: "Bir yemek, mekan veya malzeme yaz; çevrendeki en iyi seçenekleri gösterelim.",
                 },
+                menuBoardTitle: "Broşür seçkisi",
+                menuBoardSubtitle: "Kampüs klasiğine dokun, filtreler hazır gelsin.",
+                recentLabel: "Son aramalar",
+                clearFilters: "Filtreleri temizle",
+                refresh: "Yayını yenile",
                 empty: {
                     title: "Eşleşme bulamadık.",
                     body: "Daha basit bir kelime dene, farklı bir yemek yaz ya da filtreleri temizle.",
                 },
                 offline: {
                     title: "Mutfaklar şu anda çevrimdışı.",
-                    body: "Restoran listesine ulaşamadık. Bağlantını veya izinlerini kontrol edip akışı yenilemeyi dene.",
+                    body: "Restoran listesine ulaşamadık. Bağlantını veya izinlerini kontrol edip yayını yenilemeyi dene.",
                 },
+            },
+            restaurantUi: {
+                menu: "Menü",
+                addToCart: "Sepete ekle",
+                cart: "Sepet ({{count}})",
             },
             profileExtras: {
                 weekly: {
                     eyebrow: "Haftalık ritüel",
                     title: "Yorumlarını not olarak sakla.",
-                    subtitle: "Sevdiklerini etiketle, kampüse dönünce haber verelim.",
+                    subtitle:
+                        "Restoran şeflerimizi dalgaya almayacaksan lütfen yemeklere inceleme ekle. Feedback bazen bir şeyler değiştirebilir :)",
                     cta: "Yorum kayıtlarını aç",
                 },
                 delivery: {
                     eyebrow: "Teslimat tercihleri",
-                    title: "Harita pinleri ve sessiz bırakma",
-                    subtitle: "Varsayılan adresini güncelle, her kurye için otomatik bilgi geçelim.",
+                    title: "Adres Tercihi",
+                    subtitle: "Varsayılan adresini güncelle, otomatik güncelleyelim",
                     cta: "Varsayılanı güncelle",
                 },
                 payment: {

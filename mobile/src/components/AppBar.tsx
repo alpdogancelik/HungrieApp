@@ -20,7 +20,7 @@ const renderAction = (action: ActionConfig | undefined, themeColors: ReturnType<
     const content = action.icon ? (
         action.icon
     ) : (
-        <Text style={{ color: themeColors.primary, fontFamily: "Ezra-SemiBold" }}>{action.label}</Text>
+        <Text style={{ color: themeColors.primary, fontFamily: "ChairoSans" }}>{action.label}</Text>
     );
     return (
         <TouchableOpacity
@@ -56,7 +56,7 @@ export const AppBar = ({ title, leftAction, rightAction }: AppBarProps) => {
             {renderAction(leftAction, theme.colors)}
             <Text
                 style={{
-                    fontFamily: "Ezra-Bold",
+                    fontFamily: "ChairoSans",
                     fontSize: theme.typography.h1,
                     color: theme.colors.ink,
                 }}
@@ -69,4 +69,5 @@ export const AppBar = ({ title, leftAction, rightAction }: AppBarProps) => {
 };
 
 export default AppBar;
+
 

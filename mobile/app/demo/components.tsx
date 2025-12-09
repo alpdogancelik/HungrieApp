@@ -36,10 +36,10 @@ const DemoContent = () => {
 
                 <SectionHeader title="Card + Stepper" />
                 <Card elevation={2}>
-                    <Text style={{ color: theme.colors.ink, fontFamily: "Ezra-Bold", fontSize: theme.typography.h2 }}>
+                    <Text style={{ color: theme.colors.ink, fontFamily: "ChairoSans", fontSize: theme.typography.h2 }}>
                         Kampüs Burger Menü
                     </Text>
-                    <Text style={{ color: theme.colors.muted, fontFamily: "Ezra-Medium" }}>
+                    <Text style={{ color: theme.colors.muted, fontFamily: "ChairoSans" }}>
                         Gece yarısı promosyonu devam ediyor.
                     </Text>
                     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: theme.spacing.md }}>
@@ -59,4 +59,5 @@ const DesignSystemDemo = () => (
 );
 
 export default DesignSystemDemo;
+
 

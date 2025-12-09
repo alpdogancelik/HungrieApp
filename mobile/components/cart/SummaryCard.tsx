@@ -13,7 +13,17 @@ type Props = {
     subtotal: string;
     serviceFee?: string;
     serviceNote?: string;
+    deliveryFee?: string;
+    discount?: string;
     total: string;
+    labels?: {
+        subtotal: string;
+        delivery: string;
+        serviceFee: string;
+        discount: string;
+        total: string;
+        footnote: string;
+    };
 };
 
 const SummaryRow = ({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) => (
@@ -23,18 +33,35 @@ const SummaryRow = ({ label, value, highlight }: { label: string; value: string;
     </View>
 );
 
-const SummaryCard = ({ subtotal, serviceFee, serviceNote, total }: Props) => (
-    <View className="bg-white rounded-[32px] p-5 gap-2" style={cardShadow}>
-        <SummaryRow label="Sub total" value={subtotal} />
-        {serviceFee ? (
-            <View className="gap-1">
-                <SummaryRow label="Hungrie Service Fee" value={serviceFee} />
-                {serviceNote ? <Text className="caption text-dark-60">{serviceNote}</Text> : null}
-            </View>
-        ) : null}
-        <View className="border-t border-gray-100 my-2" />
-        <SummaryRow label="Total" value={total} highlight />
-    </View>
-);
+const SummaryCard = ({ subtotal, serviceFee, serviceNote, deliveryFee, discount, total, labels }: Props) => {
+    const summaryLabels = labels ?? {
+        subtotal: "Sub total",
+        delivery: "Delivery",
+        serviceFee: "Hungrie Service Fee",
+        discount: "Discount",
+        total: "Total",
+        footnote: "You will pay total amount shown above.",
+    };
+    const hasFees = Boolean(serviceFee || deliveryFee || discount);
+
+    return (
+        <View className="bg-white rounded-[32px] p-5 gap-2" style={cardShadow}>
+            <SummaryRow label={summaryLabels.subtotal} value={subtotal} />
+            {deliveryFee ? <SummaryRow label={summaryLabels.delivery} value={deliveryFee} /> : null}
+            {serviceFee ? (
+                <View className="gap-1">
+                    <SummaryRow label={summaryLabels.serviceFee} value={serviceFee} />
+                    {serviceNote ? <Text className="caption text-dark-60">{serviceNote}</Text> : null}
+                </View>
+            ) : null}
+            {discount ? <SummaryRow label={summaryLabels.discount} value={`-${discount}`} /> : null}
+            <View className="border-t border-gray-100 my-2" />
+            <SummaryRow label={summaryLabels.total} value={total} highlight />
+            {hasFees ? (
+                <Text className="caption text-dark-60">{summaryLabels.footnote}</Text>
+            ) : null}
+        </View>
+    );
+};
 
 export default SummaryCard;

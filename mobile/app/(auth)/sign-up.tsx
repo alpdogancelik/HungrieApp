@@ -8,7 +8,7 @@ import CustomInput from "@/components/CustomInput";
 import CustomButton from "@/components/CustomButton";
 import { createUser } from "@/lib/firebaseAuth";
 import useAuthStore from "@/store/auth.store";
-import GodzillaCafe from "@/assets/godzilla/VCTRLY-godzila-cafe-coffee-tea-restaurant.svg";
+import OrderFood from "@/assets/illustrations/Order Food.svg";
 
 const SignUp = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,22 +53,22 @@ const SignUp = () => {
                 showsVerticalScrollIndicator={false}
             >
                 <LinearGradient
-                    colors={["#141E30", "#243B55"]}
+                    colors={["#FF512F", "#F09819"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={{ paddingHorizontal: 24, paddingTop: 56, paddingBottom: 160 }}
                 >
                     <View className="flex-row items-center">
                         <View className="flex-1 pr-6 gap-3">
-                            <Text className="text-white/70 uppercase tracking-[8px]">join the feast club</Text>
+                            <Text className="text-white/70 uppercase tracking-[8px]">Hungrie</Text>
                             <Text className="text-white text-3xl font-ezra-bold">
-                                Create your Hungrie profile in under a minute.
+                                Join Hungrie under a minute.
                             </Text>
                             <Text className="text-white/80 body-medium">
-                                Godzilla routes your orders in Kalkanlı.
+                                All orders in single tap!
                             </Text>
                         </View>
-                        <GodzillaCafe width={140} height={140} />
+                        <OrderFood width={150} height={150} />
                     </View>
                 </LinearGradient>
 
@@ -77,17 +77,17 @@ const SignUp = () => {
                         <View>
                             <Text className="text-3xl font-ezra-bold text-dark-100">Create account</Text>
                             <Text className="body-medium text-dark-60">
-                                Kampüs restoranlarını favorilerine ekle, tek dokunuşla sipariş ver.
+                                Create your account and start ordering in seconds!
                             </Text>
                         </View>
                         <CustomInput
-                            placeholder="Ada Pizza Operatörü"
+                            placeholder="Ahmet Çetin "
                             value={form.name}
                             onChangeText={(text) => setForm((prev) => ({ ...prev, name: text }))}
                             label="Full name"
                         />
                         <CustomInput
-                            placeholder="you@hungrie.app"
+                            placeholder="ahmet@metu.edu.tr / ahmet@gmail.com / e232231@metu.edu.tr"
                             value={form.email}
                             onChangeText={(text) => setForm((prev) => ({ ...prev, email: text }))}
                             label="Email"

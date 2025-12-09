@@ -3,6 +3,7 @@ import { SplashScreen, Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import Constants from "expo-constants";
 import * as Sentry from "@sentry/react-native";
+import { Text, TextInput } from "react-native";
 
 import useAuthStore from "@/store/auth.store";
 import { ThemeProvider } from "@/src/theme/themeContext";
@@ -31,20 +32,20 @@ void SplashScreen.preventAutoHideAsync().catch(() => null);
 function RootLayoutBase() {
     const { isLoading, isAuthenticated, user, fetchAuthenticatedUser } = useAuthStore();
     const pushRegistrationKeyRef = useRef<string | null>(null);
-    const ezraFiles = {
-        light: require("../assets/fonts/Ezra-Light.ttf"),
-        regular: require("../assets/fonts/Ezra-Regular.ttf"),
-        medium: require("../assets/fonts/Ezra-Medium.ttf"),
-        semiBold: require("../assets/fonts/Ezra-SemiBold.ttf"),
-        bold: require("../assets/fonts/Ezra-Bold.ttf"),
-    } as const;
+    const chairoRegular = require("../assets/fonts/ChairoSansRegular-Regular.ttf");
+    const applyDefaultFont = (component: { defaultProps?: { style?: any } }) => {
+        const existingStyle = component.defaultProps?.style;
+        const styleArray = Array.isArray(existingStyle) ? existingStyle : existingStyle ? [existingStyle] : [];
+        const hasChairo = styleArray.some((style) => style?.fontFamily === "ChairoSans");
+        const mergedStyle = hasChairo ? styleArray : [{ fontFamily: "ChairoSans" }, ...styleArray];
 
+        component.defaultProps = {
+            ...(component.defaultProps || {}),
+            style: mergedStyle,
+        };
+    };
     const [fontsLoaded, error] = useFonts({
-        "Ezra-Light": ezraFiles.light,
-        "Ezra-Regular": ezraFiles.regular,
-        "Ezra-Medium": ezraFiles.medium,
-        "Ezra-SemiBold": ezraFiles.semiBold,
-        "Ezra-Bold": ezraFiles.bold,
+        ChairoSans: chairoRegular,
     });
 
     useEffect(() => {
@@ -81,9 +82,11 @@ function RootLayoutBase() {
     }, [isAuthenticated, user]);
 
     useEffect(() => {
-        if (fontsLoaded) {
-            SplashScreen.hideAsync().catch(() => null);
-        }
+        if (!fontsLoaded) return;
+
+        applyDefaultFont(Text);
+        applyDefaultFont(TextInput);
+        SplashScreen.hideAsync().catch(() => null);
     }, [fontsLoaded]);
 
     if (error) throw error;

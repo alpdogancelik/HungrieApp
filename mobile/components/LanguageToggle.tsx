@@ -92,11 +92,11 @@ const createStyles = (theme: ThemeDefinition) =>
         },
         helper: {
             color: theme.colors.muted,
-            fontFamily: "Ezra-Medium",
+            fontFamily: "ChairoSans",
             fontSize: 11,
         },
         label: {
-            fontFamily: "Ezra-Bold",
+            fontFamily: "ChairoSans",
             color: theme.colors.ink,
             letterSpacing: 0.5,
             fontSize: 12,
@@ -104,3 +104,4 @@ const createStyles = (theme: ThemeDefinition) =>
     });
 
 export default LanguageToggle;
+

@@ -9,8 +9,17 @@ import CustomInput from "@/components/CustomInput";
 import CustomButton from "@/components/CustomButton";
 import { signIn, getCurrentUser } from "@/lib/firebaseAuth";
 import useAuthStore from "@/store/auth.store";
-import GodzillaBurger from "@/assets/godzilla/VCTRLY-godzila-burger-junk-food-eat.svg";
+import MobileDelivery from "@/assets/illustrations/Mobile Delivery.svg";
 
+// Apply ChairoSans-Regular as the default font for all Text components
+// (Assumes the font has been loaded elsewhere in the app)
+(Text as any).defaultProps = {
+    ...(Text as any).defaultProps || {},
+    style: {
+        ...(((Text as any).defaultProps || {}).style || {}),
+        fontFamily: "ChairoSans-Regular",
+    },
+};
 
 const SignIn = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,36 +72,35 @@ const SignIn = () => {
                 >
                     <View className="flex-row items-center">
                         <View className="flex-1 pr-6 gap-3">
-                            <Text className="text-white/70 uppercase tracking-[8px]">hungrie nights</Text>
-                            <Text className="text-white text-3xl font-ezra-bold">
-                                Godzilla guards your midnight cravings.
+                            <Text className="text-white/70 uppercase tracking-[8px]">Hungrie</Text>
+                            <Text className="text-white text-3xl font-ezra-bold">Log in to become even Hungrier!
                             </Text>
                             <Text className="text-white/80 body-medium">
-                                Kalkanlı gonna fire up their ovens as soon as you log in.
+                                We look forward to you placing your order and getting the couriers riding!
                             </Text>
                         </View>
-                        <GodzillaBurger width={140} height={140} />
+                        <MobileDelivery width={150} height={150} />
                     </View>
                 </LinearGradient>
 
                 <View className="-mt-28 flex-1 px-6 pb-12">
                     <View className="gap-6 bg-white rounded-3xl p-6 shadow-xl shadow-primary/10">
                         <View>
-                            <Text className="text-3xl font-ezra-bold text-dark-100">Hoş geldin!</Text>
+                            <Text className="text-3xl font-ezra-bold text-dark-100">Welcome the Hungrie App!</Text>
                             <Text className="body-medium text-dark-60">
-                                Hesabına giriş yap, siparişlerini kaldığın yerden devam ettir.
+                                Sign in to order from Hungrie and get your food delivered fast.
                             </Text>
                         </View>
 
                         <CustomInput
-                            placeholder="ada.pizza@partners.hungrie"
+                            placeholder="ahmet@metumail.edu.tr / ahmet@gmail.com / e232231@metu.edu.tr"
                             value={form.email}
                             onChangeText={(text) => setForm((prev) => ({ ...prev, email: text }))}
                             label="Email"
                             keyboardType="email-address"
                         />
                         <CustomInput
-                            placeholder="••••••••"
+                            placeholder="********"
                             value={form.password}
                             onChangeText={(text) => setForm((prev) => ({ ...prev, password: text }))}
                             label="Password"
@@ -101,7 +109,7 @@ const SignIn = () => {
 
                         <View className="flex-row items-center justify-between">
                             <Text className="small-semibold text-primary">
-                                Godzilla tip: giriş yaptıktan sonra siparişini takip edebilirsin.
+                                Stay signed in :)
                             </Text>
                         </View>
 

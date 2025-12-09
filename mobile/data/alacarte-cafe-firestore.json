@@ -13,56 +13,125 @@
       "address": "Merkez Kampüs, Sosyal Alan"
     }
   ],
-  "categories": [
-    {
-      "id": "wraps",
-      "name": "Dürümler"
-    },
-    {
-      "id": "burgers",
-      "name": "Burgerler"
-    },
-    {
-      "id": "extras",
-      "name": "Ekstralar"
-    },
-    {
-      "id": "grills",
-      "name": "Izgara Çeşitleri"
-    },
-    {
-      "id": "pasta",
-      "name": "Makarnalar"
-    },
-    {
-      "id": "salads",
-      "name": "Salatalar"
-    },
-    {
-      "id": "pan",
-      "name": "Tava Yemekleri"
-    },
-    {
-      "id": "fastfood",
-      "name": "Fast Food Menüler"
-    },
-    {
-      "id": "diet",
-      "name": "Diyet Menüler"
-    },
-    {
-      "id": "drinks",
-      "name": "İçecekler"
-    }
+    "categories": [
+    { "id": "fast-food", "name": "Fast Food Menuleri", "icon": "@/assets/images/fastfood.png" },
+    { "id": "diet", "name": "Diyet Menuler", "icon": "@/assets/images/diet.png" },
+    { "id": "durumler", "name": "Durumler", "icon": "@/assets/images/durum.png" },
+    { "id": "burgers", "name": "Burgerler", "icon": "@/assets/images/Burger.png" },
+    { "id": "burger-extras", "name": "Burger Ekstralar", "icon": "@/assets/images/Fries.png" },
+    { "id": "grills", "name": "Izgara Cesitleri", "icon": "@/assets/images/grills.png" },
+    { "id": "pasta", "name": "Makarnalar", "icon": "@/assets/images/pasta.png" },
+    { "id": "salads", "name": "Salatalar", "icon": "@/assets/images/salads.png" },
+    { "id": "pan", "name": "Tava Yemekleri", "icon": "@/assets/images/tava.png" },
+    { "id": "drinks", "name": "Icecekler", "icon": "@/assets/images/drinks.png" }
   ],
   "menus": [
+    {
+      "id": "alacarte-fast-001",
+      "name": "Tavuk Dolma",
+      "price": 420,
+      "restaurantId": "alacarte-cafe",
+      "categories": [
+        "fast-food"
+      ]
+    },
+    {
+      "id": "alacarte-fast-002",
+      "name": "Tenders",
+      "price": 410,
+      "restaurantId": "alacarte-cafe",
+      "categories": [
+        "fast-food"
+      ]
+    },
+    {
+      "id": "alacarte-fast-003",
+      "name": "Şinitzel",
+      "price": 410,
+      "restaurantId": "alacarte-cafe",
+      "categories": [
+        "fast-food"
+      ]
+    },
+    {
+      "id": "alacarte-fast-004",
+      "name": "Kentucky",
+      "price": 410,
+      "restaurantId": "alacarte-cafe",
+      "categories": [
+        "fast-food"
+      ]
+    },
+    {
+      "id": "alacarte-fast-005",
+      "name": "Gujon",
+      "price": 410,
+      "restaurantId": "alacarte-cafe",
+      "categories": [
+        "fast-food"
+      ]
+    },
+    {
+      "id": "alacarte-fast-006",
+      "name": "Karışık Tavuk",
+      "price": 550,
+      "restaurantId": "alacarte-cafe",
+      "categories": [
+        "fast-food"
+      ]
+    },
+    {
+      "id": "alacarte-fast-007",
+      "name": "Prenses",
+      "price": 420,
+      "restaurantId": "alacarte-cafe",
+      "categories": [
+        "fast-food"
+      ]
+    },
+    {
+      "id": "alacarte-fast-008",
+      "name": "Çıtır Tavuk",
+      "price": 410,
+      "restaurantId": "alacarte-cafe",
+      "categories": [
+        "fast-food"
+      ]
+    },
+    {
+      "id": "alacarte-fast-009",
+      "name": "Tavuklu Krep",
+      "price": 410,
+      "restaurantId": "alacarte-cafe",
+      "categories": [
+        "fast-food"
+      ]
+    },
+    {
+      "id": "alacarte-diet-001",
+      "name": "Tavuk Bonfile",
+      "price": 410,
+      "restaurantId": "alacarte-cafe",
+      "categories": [
+        "diet"
+      ]
+    },
+    {
+      "id": "alacarte-diet-002",
+      "name": "Izgara Tavuk Göğsü",
+      "price": 410,
+      "restaurantId": "alacarte-cafe",
+      "categories": [
+        "diet"
+      ]
+    },
     {
       "id": "alacarte-wrap-001",
       "name": "Popcorn Ala Carte Special",
       "price": 300,
       "restaurantId": "alacarte-cafe",
       "categories": [
-        "wraps"
+        "durumler"
       ]
     },
     {
@@ -71,7 +140,7 @@
       "price": 280,
       "restaurantId": "alacarte-cafe",
       "categories": [
-        "wraps"
+        "durumler"
       ]
     },
     {
@@ -80,7 +149,7 @@
       "price": 280,
       "restaurantId": "alacarte-cafe",
       "categories": [
-        "wraps"
+        "durumler"
       ]
     },
     {
@@ -89,7 +158,7 @@
       "price": 280,
       "restaurantId": "alacarte-cafe",
       "categories": [
-        "wraps"
+        "durumler"
       ]
     },
     {
@@ -98,7 +167,7 @@
       "price": 280,
       "restaurantId": "alacarte-cafe",
       "categories": [
-        "wraps"
+        "durumler"
       ]
     },
     {
@@ -107,7 +176,7 @@
       "price": 300,
       "restaurantId": "alacarte-cafe",
       "categories": [
-        "wraps"
+        "durumler"
       ]
     },
     {
@@ -116,7 +185,7 @@
       "price": 280,
       "restaurantId": "alacarte-cafe",
       "categories": [
-        "wraps"
+        "durumler"
       ]
     },
     {
@@ -125,7 +194,7 @@
       "price": 300,
       "restaurantId": "alacarte-cafe",
       "categories": [
-        "wraps"
+        "durumler"
       ]
     },
     {
@@ -134,7 +203,7 @@
       "price": 30,
       "restaurantId": "alacarte-cafe",
       "categories": [
-        "wraps"
+        "durumler"
       ]
     },
     {
@@ -176,7 +245,7 @@
     {
       "id": "alacarte-burger-005",
       "name": "Tavuk Izgara Burger",
-      "price": 370,
+      "price": 320,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "burgers"
@@ -192,21 +261,12 @@
       ]
     },
     {
-      "id": "alacarte-burger-007",
-      "name": "Duble Grill Chicken Burger",
-      "price": 400,
-      "restaurantId": "alacarte-cafe",
-      "categories": [
-        "burgers"
-      ]
-    },
-    {
       "id": "alacarte-extra-001",
       "name": "Patates Kızartması (Küçük)",
       "price": 110,
       "restaurantId": "alacarte-cafe",
       "categories": [
-        "extras"
+        "burger-extras"
       ]
     },
     {
@@ -215,7 +275,7 @@
       "price": 175,
       "restaurantId": "alacarte-cafe",
       "categories": [
-        "extras"
+        "burger-extras"
       ]
     },
     {
@@ -224,16 +284,16 @@
       "price": 40,
       "restaurantId": "alacarte-cafe",
       "categories": [
-        "extras"
+        "burger-extras"
       ]
     },
     {
       "id": "alacarte-extra-004",
-      "name": "BBQ Sos / Acı Sos / Ballı Hardal Sos",
+      "name": "BBQ / Acı / Ballı Hardal Sos",
       "price": 30,
       "restaurantId": "alacarte-cafe",
       "categories": [
-        "extras"
+        "burger-extras"
       ]
     },
     {
@@ -329,7 +389,7 @@
     {
       "id": "alacarte-salad-004",
       "name": "Ton Balıklı Salata",
-      "price": 320,
+      "price": 340,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "salads"
@@ -462,105 +522,6 @@
       ]
     },
     {
-      "id": "alacarte-fast-001",
-      "name": "Tavuk Dolma",
-      "price": 420,
-      "restaurantId": "alacarte-cafe",
-      "categories": [
-        "fastfood"
-      ]
-    },
-    {
-      "id": "alacarte-fast-002",
-      "name": "Tenders",
-      "price": 410,
-      "restaurantId": "alacarte-cafe",
-      "categories": [
-        "fastfood"
-      ]
-    },
-    {
-      "id": "alacarte-fast-003",
-      "name": "Schnitzel",
-      "price": 410,
-      "restaurantId": "alacarte-cafe",
-      "categories": [
-        "fastfood"
-      ]
-    },
-    {
-      "id": "alacarte-fast-004",
-      "name": "Kentucky",
-      "price": 410,
-      "restaurantId": "alacarte-cafe",
-      "categories": [
-        "fastfood"
-      ]
-    },
-    {
-      "id": "alacarte-fast-005",
-      "name": "Gujon",
-      "price": 410,
-      "restaurantId": "alacarte-cafe",
-      "categories": [
-        "fastfood"
-      ]
-    },
-    {
-      "id": "alacarte-fast-006",
-      "name": "Karışık Tavuk",
-      "price": 550,
-      "restaurantId": "alacarte-cafe",
-      "categories": [
-        "fastfood"
-      ]
-    },
-    {
-      "id": "alacarte-fast-007",
-      "name": "Prenses",
-      "price": 420,
-      "restaurantId": "alacarte-cafe",
-      "categories": [
-        "fastfood"
-      ]
-    },
-    {
-      "id": "alacarte-fast-008",
-      "name": "Çıtır Tavuk",
-      "price": 410,
-      "restaurantId": "alacarte-cafe",
-      "categories": [
-        "fastfood"
-      ]
-    },
-    {
-      "id": "alacarte-fast-009",
-      "name": "Tavuklu Krep",
-      "price": 410,
-      "restaurantId": "alacarte-cafe",
-      "categories": [
-        "fastfood"
-      ]
-    },
-    {
-      "id": "alacarte-diet-001",
-      "name": "Tavuk Bonfile",
-      "price": 410,
-      "restaurantId": "alacarte-cafe",
-      "categories": [
-        "diet"
-      ]
-    },
-    {
-      "id": "alacarte-diet-002",
-      "name": "Izgara Tavuk Göğsü",
-      "price": 410,
-      "restaurantId": "alacarte-cafe",
-      "categories": [
-        "diet"
-      ]
-    },
-    {
       "id": "alacarte-drink-001",
       "name": "Kola",
       "price": 40,
@@ -652,3 +613,4 @@
     }
   ]
 }
+

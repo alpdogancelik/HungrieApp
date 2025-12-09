@@ -18,7 +18,7 @@ import { z } from "zod";
 import { useAddressActions, useAddresses } from "./hooks";
 import type { AddressFormNavigation, AddressFormScreenProps } from "./types";
 import Icon from "@/components/Icon";
-import GodzillaBlocks from "@/assets/godzilla/VCTRLY-godzila-bike-scooter-riding.svg";
+import OnlineLocation from "@/assets/illustrations/Online Location.svg";
 
 const schema = z.object({
     label: z.string().min(2, "Enter a helpful label."),
@@ -167,17 +167,17 @@ const AddressFormScreen = () => {
                                 <Icon name="arrowBack" size={18} color="#FFFFFF" />
                             </TouchableOpacity>
 
-                            <View className="flex-1 gap-1.5">
-                                <Text className="text-white/60 tracking-[6px] uppercase text-[11px]">{screenTitle}</Text>
-                                <Text className="text-white text-3xl font-ezra-bold leading-9">
-                                    {t("address.form.heroTitle")}
-                                </Text>
-                                <Text className="text-white/75 body-medium">{t("address.form.heroSubtitle")}</Text>
-                            </View>
+                    <View className="flex-1 gap-1.5">
+                        <Text className="text-white/60 tracking-[6px] uppercase text-[11px]">{screenTitle}</Text>
+                        <Text className="text-white text-3xl font-ezra-bold leading-9">
+                            {t("address.form.heroTitle")}
+                        </Text>
+                        <Text className="text-white/75 body-medium">{t("address.form.heroSubtitle")}</Text>
+                    </View>
 
-                            <GodzillaBlocks width={132} height={132} style={{ opacity: 0.9, marginTop: -6 }} />
-                        </View>
-                    </LinearGradient>
+                    <OnlineLocation width={140} height={140} style={{ opacity: 0.95, marginTop: -10 }} />
+                </View>
+            </LinearGradient>
 
                     <View className="-mt-14 px-5 pb-4">
                         <View className="bg-white rounded-3xl p-5 gap-6 shadow-xl shadow-primary/10 border border-gray-100">

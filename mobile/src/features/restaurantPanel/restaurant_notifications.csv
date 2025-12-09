@@ -1,0 +1,8 @@
+collection,field,type,description,example
+restaurant_notifications,id,string,Notification document ID,notif_rest_001
+restaurant_notifications,restaurantId,string,Restaurant ID,rest_ada_pizza
+restaurant_notifications,orderId,string,Related order ID,abc123
+restaurant_notifications,type,string,Notification type,"NEW_ORDER / ORDER_DELIVERED"
+restaurant_notifications,message,string,Message to show to restaurant,New order waiting for your approval
+restaurant_notifications,createdAt,timestamp,Creation time,2025-12-09T02:30:10Z
+restaurant_notifications,read,boolean,Has restaurant read this notification,false

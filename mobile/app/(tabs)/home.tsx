@@ -1,43 +1,50 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-    ActivityIndicator,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
-    FlatList,
-    StyleSheet,
-} from "react-native";
+import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import CartButton from "@/components/CartButton";
 import LanguageToggle from "@/components/LanguageToggle";
-import MenuCard from "@/components/MenuCard";
-import RestaurantCard from "@/components/RestaurantCard";
-import { illustrations, cookingScenes } from "@/constants/mediaCatalog";
+import { illustrations } from "@/constants/mediaCatalog";
 import useHome from "@/src/hooks/useHome";
 import { Card, SectionHeader } from "@/src/components/componentRegistry";
 import { useTheme, ThemeDefinition } from "@/src/theme/themeContext";
 import { DeliverToHeader } from "@/src/features/address/addressFeature";
 import Icon from "@/components/Icon";
 import { makeShadow } from "@/src/lib/shadowStyle";
+import { resolveRestaurantImageSource } from "@/lib/assets";
+import useAuthStore from "@/store/auth.store";
+import type { Order } from "@/src/domain/types";
+import useOrderStatus, { type PendingOrderStatus } from "@/src/hooks/useOrderStatus";
+import { subscribeUserOrders } from "@/src/services/firebaseOrders";
 import GodzillaIceCream from "@/assets/godzilla/VCTRLY-godzila-ice-cream-food.svg";
 import GodzillaReading from "@/assets/godzilla/VCTRLY-godzila-reading-book-magazine.svg";
 import GodzillaOffice from "@/assets/godzilla/VCTRLY-godzila-work-office-business.svg";
 import GodzillaBusy from "@/assets/godzilla/VCTRLY-godzila-work-worker-busy-confused.svg";
+import menu from "../restaurantpanel/menu";
 
 const CourierIllustration = illustrations.foodieCelebration;
-const StudyFuel = cookingScenes.studyFuel;
 const WINE_RED = "#7F021F";
+const languageHintKey = "home.languageHint";
+const RESTAURANT_SLUG_MAP: Record<string, string> = {
+    "ada-pizza": "adapizza",
+    "alacarte-cafe": "alacarte",
+    "hot-n-fresh": "hotnfresh",
+    lavish: "lavish",
+    "lombard-kitchen": "lombard",
+    "burger-house": "burgerhouse",
+    "burger house": "burgerhouse",
+    burgerhouse: "burgerhouse",
+    munchies: "munchies",
+    "root-kitchen-coffee": "root",
+};
 
 export default function HomeTabScreen() {
     const {
         userName,
-        menu,
-        menuLoading,
         heroLoading,
         restaurants,
         restaurantsLoading,
@@ -93,13 +100,14 @@ export default function HomeTabScreen() {
                 <View style={styles.header}>
                     <View style={styles.deliveryWrapper}>
                         <View style={styles.deliveryRow}>
-                            <DeliverToHeader fallbackLabel={userName} />
+                            <DeliverToHeader />
                         </View>
                     </View>
-                    <View style={styles.headerActions}>
+                    <View style={styles.headerActionsColumn}>
+                        <Text style={styles.languageLabel}>{t(languageHintKey)}</Text>
                         <LanguageToggle />
-                        <CartButton />
                     </View>
+                    <CartButton />
                 </View>
 
                 {heroLoading ? (
@@ -115,6 +123,7 @@ export default function HomeTabScreen() {
                             <Text style={styles.heroEyebrow}>{t("home.hero.eyebrow")}</Text>
                             <Text style={styles.heroTitle}>{t("home.hero.title")}</Text>
                             <Text style={styles.heroSubtitle}>{t("home.hero.subtitle")}</Text>
+
                             <TouchableOpacity style={styles.heroCta} onPress={() => router.push("/search")}>
                                 <Text style={styles.heroCtaText}>{t("home.hero.cta")}</Text>
                             </TouchableOpacity>
@@ -129,41 +138,20 @@ export default function HomeTabScreen() {
                     <View style={styles.searchShortcutIcon}>
                         <Icon name="search" size={20} color={theme.colors.primary} />
                     </View>
-                        <View style={styles.searchShortcutText}>
-                            <View style={styles.titleRow}>
-                                <Text style={styles.searchShortcutTitle}>
-                                    {`${t("home.searchShortcut.title")} ${displayName}`}
-                                </Text>
-                            </View>
+                    <View style={styles.searchShortcutText}>
+                        <View style={styles.titleRow}>
+                            <Text style={styles.searchShortcutTitle}>
+                                {`${t("home.searchShortcut.title")} ${displayName}`}
+                            </Text>
+                        </View>
                         <Text style={styles.searchShortcutSubtitle}>{t("home.searchShortcut.subtitle")}</Text>
                     </View>
                     <View style={styles.searchShortcutBadge}>
                         <Text style={styles.searchShortcutBadgeText}>{t("home.searchShortcut.cta")}</Text>
                     </View>
-                    <View style={styles.searchArtwork}>
-                        <StudyFuel width={82} height={82} />
-                    </View>
                 </TouchableOpacity>
 
-                <View style={styles.statRow}>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statValue}>{restaurants?.length ?? 0}</Text>
-                        <Text style={styles.statLabel}>{t("home.stats.restaurants.label")}</Text>
-                        <Text style={styles.statHelper}>{t("home.stats.restaurants.helper")}</Text>
-                    </View>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statValue}>{menu?.length ?? 0}</Text>
-                        <Text style={styles.statLabel}>{t("home.stats.menu.label")}</Text>
-                        <Text style={styles.statHelper}>{t("home.stats.menu.helper")}</Text>
-                    </View>
-                </View>
-
-                <View style={styles.section}>
-                    <SectionHeader title={t("home.quickActionsTitle")} />
-                    <View style={styles.quickGrid}>
-                        {quickActions.map(renderQuickAction)}
-                    </View>
-                </View>
+                <IllustrationGallery />
 
                 <View style={styles.section}>
                     <SectionHeader title={t("home.restaurantsTitle")} />
@@ -171,23 +159,256 @@ export default function HomeTabScreen() {
                         <ActivityIndicator color="#FE8C00" />
                     ) : (
                         <View style={styles.gridGap}>
-                            {(restaurants || []).map((restaurant: any, index: number) => (
-                                <RestaurantCard
-                                    key={String(restaurant.id ?? restaurant.$id ?? index)}
-                                    restaurant={restaurant}
-                                    onPress={() => {
-                                        const restaurantId = String(restaurant.id ?? restaurant.$id ?? restaurant.key ?? index);
-                                        router.push(`/restaurants/${encodeURIComponent(restaurantId)}`);
-                                    }}
-                                />
-                            ))}
+                            {(restaurants || []).map((restaurant: any, index: number) => {
+                                const restaurantId = String(restaurant.id ?? restaurant.$id ?? restaurant.key ?? index);
+                                const normalizedId = restaurantId.toLowerCase().replace(/[^a-z0-9-]+/g, "-");
+                                const slug = RESTAURANT_SLUG_MAP[normalizedId] || RESTAURANT_SLUG_MAP[restaurant.name?.toLowerCase()] || normalizedId;
+                                return (
+                                    <RestaurantGridTile
+                                        key={restaurantId}
+                                        restaurant={restaurant}
+                                        onPress={() => router.push(`/restaurants/${encodeURIComponent(slug)}`)}
+                                    />
+                                );
+                            })}
                         </View>
                     )}
+                </View>
+
+                <View style={styles.section}>
+                    <OrderStatusStrip />
+                </View>
+
+                <View style={styles.section}>
+                    <SectionHeader title={t("home.quickActionsTitle")} />
+                    <View style={styles.quickGrid}>
+                        {quickActions
+                            .filter((action: any) => action.id === "orders")
+                            .map(renderQuickAction)}
+                    </View>
+                </View>
+
+                <View style={styles.footer}>
+                    <Text style={styles.footerText}>2026 ©HungrieApp Inc.</Text>
                 </View>
             </ScrollView>
         </SafeAreaView>
     );
 }
+
+const illustrationSet = [
+    illustrations.droneDelivery,
+    illustrations.eatingNoodles,
+    illustrations.makingPizza,
+    illustrations.mealOrder,
+    illustrations.menuBoard,
+    illustrations.rider,
+    illustrations.tastingFood,
+];
+
+const IllustrationGallery = () => {
+    const { theme } = useTheme();
+    return (
+        <View style={{ paddingHorizontal: theme.spacing.lg }}>
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: theme.spacing.md, paddingVertical: theme.spacing.sm }}
+            >
+                {illustrationSet.map((Art, idx) => (
+                    <View
+                        key={idx}
+                        style={{
+                            width: 160,
+                            height: 120,
+                            borderRadius: theme.radius["2xl"],
+                            backgroundColor: `${theme.colors.primary}10`,
+                            padding: theme.spacing.md,
+                            justifyContent: "center",
+                            alignItems: "center",
+                            ...makeShadow({
+                                color: theme.colors.ink,
+                                offsetY: 8,
+                                blurRadius: 18,
+                                opacity: 0.06,
+                                elevation: 5,
+                            }),
+                        }}
+                    >
+                        <Art width={120} height={120} />
+                    </View>
+                ))}
+            </ScrollView>
+        </View>
+    );
+};
+
+const OrderStatusStrip = () => {
+    const { theme } = useTheme();
+    const { t } = useTranslation();
+    const { user } = useAuthStore();
+    const userId = useMemo(
+        () => user?.id ?? user?.$id ?? user?.accountId ?? "guest",
+        [user?.$id, user?.accountId, user?.id],
+    );
+    const [latestOrder, setLatestOrder] = useState<Order | null>(null);
+    const orderId = latestOrder?.id ?? "";
+    const { status: pendingStatus } = useOrderStatus(orderId);
+
+    useEffect(() => {
+        if (!userId) return;
+        return subscribeUserOrders(userId, (orders) => {
+            const pendingOrder = orders.find((order) => order.status === "pending");
+            setLatestOrder(pendingOrder ?? null);
+        });
+    }, [userId]);
+
+    const statusKey: PendingOrderStatus | null = orderId ? pendingStatus : null;
+    if (!latestOrder || !statusKey) return null;
+
+    const palette: Record<
+        PendingOrderStatus,
+        { icon: string; color: string; title: string; subtitle: string; badge: string }
+    > = {
+        awaiting_confirmation: {
+            icon: "clock",
+            color: theme.colors.primary,
+            title: t("home.orderStatus.waitingTitle"),
+            subtitle: t("home.orderStatus.waitingSubtitle"),
+            badge: t("home.orderStatus.waitingTag"),
+        },
+        confirmed: {
+            icon: "check",
+            color: "#16A34A",
+            title: t("home.orderStatus.confirmedTitle"),
+            subtitle: t("home.orderStatus.confirmedSubtitle"),
+            badge: t("home.orderStatus.confirmedTag"),
+        },
+        rejected: {
+            icon: "close",
+            color: "#DC2626",
+            title: t("home.orderStatus.rejectedTitle"),
+            subtitle: t("home.orderStatus.rejectedSubtitle"),
+            badge: t("home.orderStatus.rejectedTag"),
+        },
+    };
+
+    const state = palette[statusKey];
+
+    return (
+        <Card
+            style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: theme.spacing.md,
+                borderRadius: theme.radius["2xl"],
+                paddingVertical: theme.spacing.md,
+                paddingHorizontal: theme.spacing.md,
+                backgroundColor: `${state.color}0D`,
+                borderWidth: 1,
+                borderColor: `${state.color}26`,
+            }}
+        >
+            <View
+                style={{
+                    width: 46,
+                    height: 46,
+                    borderRadius: 23,
+                    borderWidth: 2,
+                    borderColor: state.color,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: `${state.color}12`,
+                }}
+            >
+                <Icon name={state.icon as any} size={20} color={state.color} />
+            </View>
+            <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: "ChairoSans", color: theme.colors.ink, fontSize: 16 }}>{state.title}</Text>
+                <Text style={{ color: theme.colors.muted, marginTop: 4, fontFamily: "ChairoSans" }}>{state.subtitle}</Text>
+            </View>
+            <View
+                style={{
+                    paddingHorizontal: theme.spacing.md,
+                    paddingVertical: theme.spacing.xs,
+                    borderRadius: 999,
+                    backgroundColor: `${state.color}16`,
+                }}
+            >
+                <Text style={{ color: state.color, fontFamily: "ChairoSans" }}>{state.badge}</Text>
+            </View>
+        </Card>
+    );
+};
+
+const RestaurantGridTile = ({ restaurant, onPress }: { restaurant: any; onPress: () => void }) => {
+    const { theme } = useTheme();
+    const { name, imageUrl } = restaurant || {};
+    const fallbackName = name || "Restaurant";
+    return (
+        <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={onPress}
+            style={{
+                width: "48%",
+                aspectRatio: 1,
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: theme.spacing.sm,
+                padding: theme.spacing.md,
+                borderRadius: theme.radius["2xl"],
+                borderWidth: 1,
+                borderColor: theme.colors.border,
+                backgroundColor: theme.colors.surface,
+                ...makeShadow({
+                    color: theme.colors.ink,
+                    offsetY: 6,
+                    blurRadius: 14,
+                    opacity: 0.06,
+                    elevation: 4,
+                }),
+            }}
+        >
+            <View
+                style={{
+                    width: 90,
+                    height: 90,
+                    borderRadius: theme.radius.xl,
+                    overflow: "hidden",
+                    backgroundColor: `${theme.colors.primary}12`,
+                }}
+            >
+                <Icon name="home" size={32} color={theme.colors.primary} style={{ position: "absolute", top: 26, left: 26 }} />
+                <RestaurantImage imageUrl={imageUrl} />
+            </View>
+            <Text
+                style={{
+                    fontFamily: "ChairoSans",
+                    fontSize: 18,
+                    color: theme.colors.ink,
+                }}
+                numberOfLines={1}
+            >
+                {fallbackName}
+            </Text>
+        </TouchableOpacity>
+    );
+};
+
+const RestaurantImage = ({ imageUrl }: { imageUrl: any }) => {
+    const resolvedImage = resolveRestaurantImageSource(imageUrl);
+    const source = typeof resolvedImage === "number" ? resolvedImage : resolvedImage ? { uri: resolvedImage } : undefined;
+    if (!source) return null;
+    return (
+        <Image
+            source={source}
+            style={{ width: "100%", height: "100%" }}
+            contentFit="cover"
+            transition={300}
+        />
+    );
+};
 
 const createStyles = (theme: ThemeDefinition) =>
     StyleSheet.create({
@@ -196,9 +417,10 @@ const createStyles = (theme: ThemeDefinition) =>
         header: {
             flexDirection: "row",
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: "flex-start",
             paddingHorizontal: theme.spacing.lg,
             paddingTop: theme.spacing.xl,
+            gap: theme.spacing.md,
         },
         bgLayer: { position: "absolute", inset: 0 },
         bgTopLeft: { position: "absolute", top: 40, left: -20, opacity: 0.08 },
@@ -209,7 +431,8 @@ const createStyles = (theme: ThemeDefinition) =>
         bgBottomRight: { position: "absolute", top: 880, right: -30, opacity: 0.07, transform: [{ rotate: "10deg" }] },
         deliveryWrapper: { flex: 1, paddingRight: theme.spacing.md },
         deliveryRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing.sm },
-        headerActions: { flexDirection: "row", alignItems: "center", gap: theme.spacing.sm },
+        headerActionsColumn: { alignItems: "flex-end", gap: 4, marginTop: 2 },
+        languageLabel: { fontFamily: "ChairoSans", color: theme.colors.muted, fontSize: 12, paddingRight: theme.spacing.sm, textAlign: "right" },
         heroCard: {
             marginHorizontal: theme.spacing.lg,
             borderRadius: theme.radius["2xl"],
@@ -235,15 +458,15 @@ const createStyles = (theme: ThemeDefinition) =>
         heroTextArea: { flex: 1, gap: theme.spacing.sm },
         heroEyebrow: {
             color: theme.colors.surface,
-            fontFamily: "Ezra-SemiBold",
+            fontFamily: "ChairoSans",
             textTransform: "uppercase",
             fontSize: 12,
             opacity: 0.8,
         },
-        heroTitle: { color: theme.colors.surface, fontFamily: "Ezra-Bold", fontSize: 26, lineHeight: 32 },
+        heroTitle: { color: theme.colors.surface, fontFamily: "ChairoSans", fontSize: 26, lineHeight: 32 },
         heroSubtitle: {
             color: theme.colors.surface,
-            fontFamily: "Ezra-Medium",
+            fontFamily: "ChairoSans",
             fontSize: 14,
             opacity: 0.9,
             lineHeight: 20,
@@ -255,7 +478,7 @@ const createStyles = (theme: ThemeDefinition) =>
             paddingHorizontal: theme.spacing.lg,
             alignSelf: "flex-start",
         },
-        heroCtaText: { color: theme.colors.ink, fontFamily: "Ezra-SemiBold" },
+        heroCtaText: { color: theme.colors.ink, fontFamily: "ChairoSans" },
         heroIllustration: { width: 130, height: 130, alignItems: "center", justifyContent: "center" },
         searchShortcut: {
             marginHorizontal: theme.spacing.lg,
@@ -278,15 +501,15 @@ const createStyles = (theme: ThemeDefinition) =>
             justifyContent: "center",
         },
         searchShortcutText: { flex: 1 },
-        searchShortcutTitle: { fontFamily: "Ezra-Bold", fontSize: 18, color: theme.colors.ink },
-        searchShortcutSubtitle: { color: theme.colors.muted, marginTop: 4, fontFamily: "Ezra-Medium" },
+        searchShortcutTitle: { fontFamily: "ChairoSans", fontSize: 18, color: theme.colors.ink },
+        searchShortcutSubtitle: { color: theme.colors.muted, marginTop: 4, fontFamily: "ChairoSans" },
         searchShortcutBadge: {
             borderRadius: 999,
             backgroundColor: theme.colors.primary,
             paddingHorizontal: theme.spacing.md,
             paddingVertical: theme.spacing.xs,
         },
-        searchShortcutBadgeText: { color: theme.colors.surface, fontFamily: "Ezra-SemiBold" },
+        searchShortcutBadgeText: { color: theme.colors.surface, fontFamily: "ChairoSans" },
         searchArtwork: {
             position: "absolute",
             right: 74,
@@ -306,15 +529,15 @@ const createStyles = (theme: ThemeDefinition) =>
             borderWidth: 1,
             borderColor: theme.colors.border,
         },
-        statValue: { fontFamily: "Ezra-Bold", fontSize: 28, color: theme.colors.ink },
-        statLabel: { color: theme.colors.muted, marginTop: theme.spacing.xs, fontFamily: "Ezra-Medium" },
-        statHelper: { color: theme.colors.muted, fontFamily: "Ezra-Medium", marginTop: 4, lineHeight: 18 },
+        statValue: { fontFamily: "ChairoSans", fontSize: 28, color: theme.colors.ink },
+        statLabel: { color: theme.colors.muted, marginTop: theme.spacing.xs, fontFamily: "ChairoSans" },
+        statHelper: { color: theme.colors.muted, fontFamily: "ChairoSans", marginTop: 4, lineHeight: 18 },
         chipIcon: { width: 18, height: 18 },
         categoriesContainer: {
             paddingHorizontal: theme.spacing.lg,
             paddingTop: theme.spacing.lg,
         },
-        categoryHint: { fontFamily: "Ezra-Bold", color: theme.colors.ink, marginBottom: theme.spacing.sm },
+        categoryHint: { fontFamily: "ChairoSans", color: theme.colors.ink, marginBottom: theme.spacing.sm },
         categorySkeletonRow: {
             flexDirection: "row",
             gap: theme.spacing.sm,
@@ -364,10 +587,21 @@ const createStyles = (theme: ThemeDefinition) =>
             backgroundColor: `${theme.colors.primary}12`,
         },
         quickCardIcon: { width: 32, height: 32 },
-        quickCardLabel: { fontFamily: "Ezra-SemiBold", color: theme.colors.ink },
-        quickCardDescription: { color: theme.colors.muted, fontFamily: "Ezra-Medium", lineHeight: 18 },
+        quickCardLabel: { fontFamily: "ChairoSans", color: theme.colors.ink },
+        quickCardDescription: { color: theme.colors.muted, fontFamily: "ChairoSans", lineHeight: 18 },
         gridGap: {
             gap: theme.spacing.md,
+            flexDirection: "row",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
         },
+        studyFuelBadge: {
+            position: "absolute",
+            right: -8,
+            bottom: -8,
+        },
+        footer: { alignItems: "center", paddingVertical: theme.spacing.lg },
+        footerText: { fontFamily: "ChairoSans", color: theme.colors.muted },
     });
+
 

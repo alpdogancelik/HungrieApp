@@ -24,7 +24,7 @@ export const SectionHeader = ({
         >
             <Text
                 style={{
-                    fontFamily: "Ezra-Bold",
+                    fontFamily: "ChairoSans",
                     fontSize: theme.typography.h2,
                     color: theme.colors.ink,
                 }}
@@ -36,7 +36,7 @@ export const SectionHeader = ({
                     <Text
                         style={{
                             color: theme.colors.primary,
-                            fontFamily: "Ezra-SemiBold",
+                            fontFamily: "ChairoSans",
                         }}
                     >
                         {actionLabel}
@@ -48,4 +48,5 @@ export const SectionHeader = ({
 };
 
 export default SectionHeader;
+
 

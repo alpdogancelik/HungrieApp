@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { getRestaurantOrders, listenToOrders, updateOrderStatus } from "@/lib/firebaseAuth";
+import { useEffect, useState } from "react";
+import { subscribeRestaurantOrders, transitionOrder } from "@/src/services/firebaseOrders";
 import type { RestaurantOrder } from "@/type";
 
 export const useRestaurantOrders = (restaurantId?: string) => {
@@ -7,53 +7,28 @@ export const useRestaurantOrders = (restaurantId?: string) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchOrders = useCallback(async () => {
+    useEffect(() => {
         if (!restaurantId) return;
         setLoading(true);
         setError(null);
-        try {
-            const data = await getRestaurantOrders(restaurantId);
-            setOrders(Array.isArray(data) ? data : []);
-        } catch (err: any) {
-            setError(err?.message || "Unable to fetch orders");
-        } finally {
+        return subscribeRestaurantOrders(restaurantId, (incoming) => {
+            const normalized = (Array.isArray(incoming) ? incoming : []).map((order: any) => {
+                const items = Array.isArray(order.items) ? order.items : [];
+                return {
+                    ...order,
+                    orderItems: order.orderItems ?? items.map((i: any) => ({ name: i.name, quantity: i.quantity })),
+                };
+            }) as RestaurantOrder[];
+            setOrders(normalized);
             setLoading(false);
-        }
+        });
     }, [restaurantId]);
-
-    useEffect(() => {
-        fetchOrders();
-    }, [fetchOrders]);
-
-    useEffect(() => {
-        if (!restaurantId) return undefined;
-        const unsubscribe = listenToOrders(
-            { restaurantId },
-            (incoming) => {
-                setOrders(Array.isArray(incoming) ? (incoming as RestaurantOrder[]) : []);
-            },
-            (err) => {
-                setError(err?.message || "Unable to fetch orders");
-            },
-        );
-        return unsubscribe;
-    }, [restaurantId]);
-
-    const optimisticUpdate = (orderId: string, status: string) => {
-        setOrders((prev) =>
-            prev.map((order) =>
-                String(order.id ?? order.$id) === orderId ? { ...order, status } : order,
-            ),
-        );
-    };
 
     const mutateStatus = async (orderId: string, status: string) => {
-        optimisticUpdate(orderId, status);
         try {
-            await updateOrderStatus(orderId, status);
+            await transitionOrder(orderId, status as any);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to update order");
-            fetchOrders();
         }
     };
 
@@ -61,7 +36,7 @@ export const useRestaurantOrders = (restaurantId?: string) => {
         orders,
         loading,
         error,
-        refetch: fetchOrders,
+        refetch: async () => undefined,
         setOrders,
         mutateStatus,
     };

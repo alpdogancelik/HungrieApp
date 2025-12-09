@@ -1,6 +1,6 @@
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import type { Address } from "@/src/domain/types";
-import Icon from "@/components/Icon";
 
 const ADDRESS_SKELETON_COUNT = 3;
 const ADDRESS_SKELETONS = Array.from({ length: ADDRESS_SKELETON_COUNT }, (_, index) => index);
@@ -30,9 +30,9 @@ const AddressSummary = ({
     onManageAddresses,
     onAddAddress,
 }: Props) => {
+    const { t } = useTranslation();
     const list = addresses ?? [];
     const hasAddresses = list.length > 0;
-    const activeLabel = list.find((addr) => String(addr.id) === selectedAddressId)?.label || "Select address";
 
     const addressChips = hasAddresses
         ? list.map((address) => {
@@ -66,20 +66,8 @@ const AddressSummary = ({
     return (
         <View className="gap-5 pt-4" style={{ paddingHorizontal: 24 }}>
             <View className="gap-2">
-                <TouchableOpacity className="flex-row items-center gap-3 bg-white rounded-3xl px-4 py-3 border border-gray-100" activeOpacity={0.9}>
-                    <View className="size-10 rounded-2xl bg-primary/10 items-center justify-center">
-                        <Icon name="location" size={18} color="#FE8C00" />
-                    </View>
-                    <View className="flex-1">
-                        <Text className="body-medium text-dark-60">Deliver to</Text>
-                        <Text className="paragraph-semibold text-dark-100" numberOfLines={1}>
-                            {activeLabel}
-                        </Text>
-                    </View>
-                    <Icon name="arrowDown" size={16} color="#0F172A" />
-                </TouchableOpacity>
-                <Text className="text-4xl font-ezra-bold text-dark-100 mt-2">Order</Text>
-                <Text className="body-medium text-dark-60">Campus cravings, ready in minutes.</Text>
+                <Text className="text-4xl font-ezra-bold text-dark-100 mt-2">{t("cart.screen.orderTitle")}</Text>
+                <Text className="body-medium text-dark-60">{t("cart.screen.orderSubtitle")}</Text>
             </View>
 
             <View style={{ minHeight: 52 }}>
@@ -88,7 +76,7 @@ const AddressSummary = ({
                 </ScrollView>
                 {!loading && (
                     <TouchableOpacity className="mt-3 self-start" onPress={onManageAddresses}>
-                        <Text className="paragraph-semibold text-primary">Manage addresses</Text>
+                        <Text className="paragraph-semibold text-primary">{t("deliverTo.manage")}</Text>
                     </TouchableOpacity>
                 )}
             </View>

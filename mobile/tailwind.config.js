@@ -3,6 +3,9 @@ module.exports = {
     content: ["./app/**/*.{js,jsx,ts,tsx}", "./components/**/*.{js,jsx,ts,tsx}"],
     presets: [require("nativewind/preset")],
     theme: {
+        fontFamily: {
+            sans: ["ChairoSans", "sans-serif"],
+        },
         extend: {
             colors: {
                 primary: "#FE8C00",
@@ -23,11 +26,16 @@ module.exports = {
                 success: "#22C55E",
             },
             fontFamily: {
-                ezra: ["Ezra-Regular", "sans-serif"],
-                "ezra-bold": ["Ezra-Bold", "sans-serif"],
-                "ezra-semibold": ["Ezra-SemiBold", "sans-serif"],
-                "ezra-light": ["Ezra-Light", "sans-serif"],
-                "ezra-medium": ["Ezra-Medium", "sans-serif"],
+                ezra: ["ChairoSans", "sans-serif"],
+                "ezra-bold": ["ChairoSans", "sans-serif"],
+                "ezra-semibold": ["ChairoSans", "sans-serif"],
+                "ezra-light": ["ChairoSans", "sans-serif"],
+                "ezra-medium": ["ChairoSans", "sans-serif"],
+                nothern: ["ChairoSans", "sans-serif"],
+                "nothern-italic": ["ChairoSans", "sans-serif"],
+                clust: ["ChairoSans", "sans-serif"],
+                chairo: ["ChairoSans", "sans-serif"],
+                "chairo-italic": ["ChairoSans", "sans-serif"],
             },
         },
     },

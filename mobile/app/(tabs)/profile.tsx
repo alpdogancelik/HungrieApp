@@ -440,8 +440,8 @@ const Profile = () => {
                             </Text>
                             <Text className="body-medium text-dark-60">
                                 {i18n.language.startsWith("tr")
-                                    ? "Destek merkezi burada açılacak. Şimdilik sohbeti kapalı tuttuk ama yakında açıyoruz."
-                                    : "Support center will open here soon. Chat is disabled for now, but we are opening it soon."}
+                                    ? "Destek merkezi burada açılacak. Şimdilik sohbeti kapalı tuttuk ama yakında açacağız :)"
+                                    : "Support center will open here soon. Chat is disabled for now, but we are going to open it soon."}
                             </Text>
                         </View>
                     </View>

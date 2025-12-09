@@ -4,52 +4,25 @@
       "id": "ada-pizza",
       "name": "Ada Pizza",
       "cuisine": "Pizza & Dünya Mutfağı",
-      "description": "Dürümlerden pizzalara kadar kampüsün en sevilen geç-gece menüsü.",
+      "description": "Dürümlerden pizzalara kadar kampüsün en sevilen menüleri.",
       "deliveryFee": 24.9,
       "deliveryTime": "25-35",
       "imageUrl": "@/assets/restaurantlogo/adapizzalogo.jpg",
       "ownerId": "ada-pizza-owner-uid",
       "isActive": true,
-      "address": "Kuzey Kampüs, Öğrenci Çarşısı"
+      "address": "Kalkanlı"
     }
   ],
-  "categories": [
-    {
-      "id": "wraps",
-      "name": "Dürümler"
-    },
-    {
-      "id": "burgers",
-      "name": "Burgerler"
-    },
-    {
-      "id": "chips",
-      "name": "Chips"
-    },
-    {
-      "id": "sauces",
-      "name": "Soslar"
-    },
-    {
-      "id": "pizzas",
-      "name": "Pizzalar"
-    },
-    {
-      "id": "mains",
-      "name": "Ana Yemekler"
-    },
-    {
-      "id": "pan",
-      "name": "Tava Yemekleri"
-    },
-    {
-      "id": "cold-drinks",
-      "name": "Soğuk İçecekler"
-    },
-    {
-      "id": "hot-drinks",
-      "name": "Sıcak İçecekler"
-    }
+    "categories": [
+    { "id": "wraps", "name": "Durumler" },
+    { "id": "burgers", "name": "Burgerler" },
+    { "id": "chips", "name": "Chips" },
+    { "id": "sauces", "name": "Soslar" },
+    { "id": "pizzas", "name": "Pizzalar" },
+    { "id": "mains", "name": "Ana Yemekler" },
+    { "id": "pan", "name": "Tava Yemekleri" },
+    { "id": "cold-drinks", "name": "Soguk Icecekler" },
+    { "id": "hot-drinks", "name": "Sicak Icecekler" }
   ],
   "menus": [
     {

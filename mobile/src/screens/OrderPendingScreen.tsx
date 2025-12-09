@@ -14,8 +14,9 @@ import * as Haptics from "expo-haptics";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import useOrderRealtime from "@/src/hooks/useOrderRealtime";
 import useOrderStatus from "@/src/hooks/useOrderStatus";
-import { changeStatus, nudgeRestaurant } from "@/src/api/client";
-import { emitOrderEvent } from "@/src/lib/realtime";
+import { transitionOrder } from "@/src/services/firebaseOrders";
+import { nudgeRestaurant } from "@/src/api/client";
+import OrderRider from "@/assets/illustrations/Order Rider.svg";
 import type { OrderStatus } from "@/src/domain/types";
 
 type Props = {
@@ -102,7 +103,7 @@ const StepRow = ({
                 {icon}
             </View>
             <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.text, fontFamily: "Ezra-SemiBold", fontSize: 16 }}>{title}</Text>
+                <Text style={{ color: colors.text, fontFamily: "ChairoSans", fontSize: 16 }}>{title}</Text>
                 {subtitle ? (
                     <Text style={{ color: colors.sub, marginTop: 2, fontSize: 14 }}>{subtitle}</Text>
                 ) : null}
@@ -153,8 +154,7 @@ const OrderPendingScreen = ({
         if (autoCanceled || !orderId) return;
         setAutoCanceled(true);
         try {
-            await changeStatus({ orderId, status: "canceled" });
-            emitOrderEvent("order_auto_canceled", { id: orderId, status: "canceled" });
+            await transitionOrder(orderId, "canceled");
             setCancelWindowRemaining(0);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => null);
             onRejected?.(orderId);
@@ -380,7 +380,7 @@ const OrderPendingScreen = ({
                     >
                         <Feather name="chevron-left" size={28} color={colors.text} />
                     </TouchableOpacity>
-                    <Text style={{ color: colors.text, fontSize: 16, fontFamily: "Ezra-SemiBold" }}>Sipariş Onayı Bekleniyor</Text>
+                    <Text style={{ color: colors.text, fontSize: 16, fontFamily: "ChairoSans" }}>Sipariş Onayı Bekleniyor</Text>
                     <TouchableOpacity
                         onPress={() => Alert.alert("Yardım", "Restoran 2 dakika içinde yanıt vermezse sipariş otomatik iptal olur.")}
                         accessibilityRole="button"
@@ -419,11 +419,12 @@ const OrderPendingScreen = ({
                             <Ionicons name="sync" size={24} color={colors.primary} />
                         </Animated.View>
                         <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontFamily: "Ezra-Bold", fontSize: 18 }}>Restoran onayı bekleniyor…</Text>
+                            <Text style={{ color: colors.text, fontFamily: "ChairoSans", fontSize: 18 }}>Restoran onayı bekleniyor…</Text>
                             <Text style={{ color: colors.sub, marginTop: 4 }}>
                                 {restaurantName} siparişini aldı. Onay gelince haber vereceğiz.
                             </Text>
                         </View>
+                        <OrderRider width={110} height={110} />
                     </View>
                     <View
                         style={{
@@ -436,7 +437,7 @@ const OrderPendingScreen = ({
                             borderColor: `${slaColor}66`,
                         }}
                     >
-                        <Text style={{ color: slaColor, fontFamily: "Ezra-SemiBold" }}>
+                        <Text style={{ color: slaColor, fontFamily: "ChairoSans" }}>
                             SLA: {formatTime(sla)}
                         </Text>
                     </View>
@@ -482,7 +483,7 @@ const OrderPendingScreen = ({
                                 opacity: sendingNudge || cooldown > 0 || orderStatus !== "pending" ? 0.6 : 1,
                             }}
                         >
-                            <Text style={{ color: "#0E0F12", fontFamily: "Ezra-Bold", fontSize: 16 }}>
+                            <Text style={{ color: "#0E0F12", fontFamily: "ChairoSans", fontSize: 16 }}>
                                 {cooldown > 0 ? `Wait ${cooldown}s` : "Remind restaurant"}
                             </Text>
                         </LinearGradient>
@@ -501,7 +502,7 @@ const OrderPendingScreen = ({
                                 alignItems: "center",
                             }}
                         >
-                            <Text style={{ color: colors.text, fontFamily: "Ezra-SemiBold" }}>
+                            <Text style={{ color: colors.text, fontFamily: "ChairoSans" }}>
                                 Cancel order ({cancelWindowRemaining}s)
                             </Text>
                         </TouchableOpacity>
@@ -516,7 +517,7 @@ const OrderPendingScreen = ({
                                 opacity: 0.4,
                             }}
                         >
-                            <Text style={{ color: colors.sub, fontFamily: "Ezra-SemiBold" }}>Cancel window closed</Text>
+                            <Text style={{ color: colors.sub, fontFamily: "ChairoSans" }}>Cancel window closed</Text>
                         </View>
                     )}
 
@@ -531,4 +532,5 @@ const OrderPendingScreen = ({
 };
 
 export default OrderPendingScreen;
+
 

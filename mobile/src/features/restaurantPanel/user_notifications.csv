@@ -1,0 +1,9 @@
+collection,field,type,description,example
+user_notifications,id,string,Notification document ID,notif_user_001
+user_notifications,userId,string,User ID,uid_123
+user_notifications,orderId,string,Related order ID,abc123
+user_notifications,restaurantId,string,Restaurant ID,rest_ada_pizza
+user_notifications,type,string,Notification type,"ORDER_ACCEPTED / ORDER_REJECTED"
+user_notifications,message,string,Message to show to user,Your order was accepted by the restaurant
+user_notifications,createdAt,timestamp,Creation time,2025-12-09T02:31:00Z
+user_notifications,read,boolean,Has user seen this notification,false

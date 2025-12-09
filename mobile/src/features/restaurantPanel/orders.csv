@@ -1,0 +1,12 @@
+collection,field,type,description,example
+orders,orderId,string,Order document ID (also used as document id),abc123
+orders,userId,string,User ID of the customer,uid_123
+orders,restaurantId,string,Restaurant ID,rest_ada_pizza
+orders,courierId,string,Courier ID (can be empty at first),courier_45
+orders,items,array,List of item objects as an array,"item1|item2|item3"
+orders,total,number,Total amount in TRY,400
+orders,status,string,Order status,"PENDING_RESTAURANT / ACCEPTED / REJECTED / DELIVERED"
+orders,restaurantNote,string,Optional note from restaurant,No onions please
+orders,createdAt,timestamp,Creation time of the order,2025-12-09T02:30:00Z
+orders,updatedAt,timestamp,Last update time,2025-12-09T02:31:00Z
+orders,deliveredAt,timestamp,Delivery time when order is delivered,2025-12-09T03:00:00Z

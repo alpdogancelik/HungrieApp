@@ -76,7 +76,7 @@ const OrderHistoryScreen = () => {
                             backgroundColor: active ? "#FFF6EF" : "transparent",
                         }}
                     >
-                        <Text style={{ color: active ? "#FE8C00" : "#475569", fontFamily: "Ezra-SemiBold" }}>{item.label}</Text>
+                        <Text style={{ color: active ? "#FE8C00" : "#475569", fontFamily: "ChairoSans" }}>{item.label}</Text>
                     </TouchableOpacity>
                 );
             })}
@@ -86,9 +86,9 @@ const OrderHistoryScreen = () => {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
             <View style={{ paddingHorizontal: 20, paddingVertical: 16, gap: 12 }}>
-                <Text style={{ fontSize: 28, fontFamily: "Ezra-Bold", color: "#0F172A" }}>Sipariş Geçmişi</Text>
+                <Text style={{ fontSize: 28, fontFamily: "ChairoSans", color: "#0F172A" }}>Sipariş Geçmişi</Text>
                 {params.highlight ? (
-                    <Text style={{ color: "#059669", fontFamily: "Ezra-SemiBold" }}>
+                    <Text style={{ color: "#059669", fontFamily: "ChairoSans" }}>
                         #{params.highlight} numaralı sipariş onaylandı!
                     </Text>
                 ) : null}
@@ -107,7 +107,7 @@ const OrderHistoryScreen = () => {
                         paddingVertical: 12,
                         borderWidth: 1,
                         borderColor: "#E2E8F0",
-                        fontFamily: "Ezra-Medium",
+                        fontFamily: "ChairoSans",
                     }}
                 />
                 {renderFilter()}
@@ -123,7 +123,7 @@ const OrderHistoryScreen = () => {
                 ListEmptyComponent={() =>
                     loading ? null : (
                         <View style={{ padding: 32, alignItems: "center" }}>
-                            <Text style={{ color: "#475569", fontFamily: "Ezra-Medium" }}>
+                            <Text style={{ color: "#475569", fontFamily: "ChairoSans" }}>
                                 Gösterilecek sipariş bulunamadı.
                             </Text>
                         </View>
@@ -145,4 +145,5 @@ const OrderHistoryScreen = () => {
 };
 
 export default OrderHistoryScreen;
+
 

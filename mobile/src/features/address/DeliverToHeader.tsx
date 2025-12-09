@@ -6,11 +6,6 @@ import cn from "clsx";
 import type { Address } from "@/src/domain/types";
 import { addressStore } from "@/src/features/address/addressStore";
 import { useDefaultAddress } from "@/src/features/address/hooks";
-import Icon from "@/components/Icon";
-
-type DeliverToHeaderProps = {
-    fallbackLabel?: string;
-};
 
 const renderAddressLine = (address: Address) =>
     [address.line1, address.block].filter(Boolean).join(", ") ||
@@ -18,7 +13,7 @@ const renderAddressLine = (address: Address) =>
 
 const renderAddressDetail = (address: Address) => [address.room, address.city, address.country].filter(Boolean).join(", ");
 
-const DeliverToHeader = ({ fallbackLabel }: DeliverToHeaderProps) => {
+const DeliverToHeader = () => {
     const { defaultAddress, addresses } = useDefaultAddress();
     const [sheetVisible, setSheetVisible] = useState(false);
     const [selectedId, setSelectedId] = useState<string | null>(defaultAddress?.id ?? null);
@@ -29,7 +24,6 @@ const DeliverToHeader = ({ fallbackLabel }: DeliverToHeaderProps) => {
         setSelectedId(defaultAddress?.id ?? null);
     }, [defaultAddress?.id]);
 
-    const currentLabel = defaultAddress?.label ?? fallbackLabel ?? t("deliverTo.addAddress");
     const subtitle = defaultAddress ? renderAddressLine(defaultAddress) : t("deliverTo.subtitle");
 
     const handleUseAddress = useCallback(async () => {
@@ -91,12 +85,6 @@ const DeliverToHeader = ({ fallbackLabel }: DeliverToHeaderProps) => {
                 <Text className="text-xs font-ezra-bold tracking-[2px] text-primary">
                     {t("deliverTo.eyebrow").toUpperCase()}
                 </Text>
-                <View className="flex-row items-center gap-1">
-                    <Text className="text-2xl font-ezra-bold text-dark-100" numberOfLines={1}>
-                        {currentLabel}
-                    </Text>
-                    <Icon name="arrowDown" size={14} color="#0F172A" />
-                </View>
                 <Text className="body-medium text-dark-60" numberOfLines={1}>
                     {headerSubtitle}
                 </Text>

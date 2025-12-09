@@ -86,7 +86,7 @@ export const Button = ({
                     <Text
                         style={{
                             color: textColor,
-                            fontFamily: "Ezra-SemiBold",
+                            fontFamily: "ChairoSans",
                             fontSize: sizeToken.fontSize,
                         }}
                     >
@@ -100,4 +100,5 @@ export const Button = ({
 };
 
 export default Button;
+
 

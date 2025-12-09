@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     price: {
-        fontFamily: "Ezra-Bold",
+        fontFamily: "ChairoSans",
         fontSize: 20,
     },
     row: {
@@ -173,12 +173,12 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     title: {
-        fontFamily: "Ezra-Bold",
+        fontFamily: "ChairoSans",
         fontSize: 18,
         color: "#0F172A",
     },
     description: {
-        fontFamily: "Ezra-Medium",
+        fontFamily: "ChairoSans",
         color: "#475569",
         lineHeight: 18,
     },
@@ -189,11 +189,11 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     ratingValue: {
-        fontFamily: "Ezra-SemiBold",
+        fontFamily: "ChairoSans",
         color: "#0F172A",
     },
     ratingCount: {
-        fontFamily: "Ezra-Medium",
+        fontFamily: "ChairoSans",
         color: "#94A3B8",
         fontSize: 13,
     },
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#F1F5F9",
     },
     metaText: {
-        fontFamily: "Ezra-SemiBold",
+        fontFamily: "ChairoSans",
         color: "#0F172A",
         fontSize: 13,
     },
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
     },
     secondaryLabel: {
-        fontFamily: "Ezra-SemiBold",
+        fontFamily: "ChairoSans",
         textAlign: "center",
     },
     primaryCta: {
@@ -251,9 +251,10 @@ const styles = StyleSheet.create({
         borderRadius: 999,
     },
     primaryLabel: {
-        fontFamily: "Ezra-SemiBold",
+        fontFamily: "ChairoSans",
         color: "#FFFFFF",
     },
 });
 
 export default memo(MenuCard);
+

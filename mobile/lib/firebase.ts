@@ -7,12 +7,14 @@ import {
     addDoc,
     collection,
     doc,
+    getDoc,
     getDocs,
     getFirestore,
     query,
     updateDoc,
     where,
 } from "firebase/firestore";
+import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
 const extra: Record<string, string | undefined> = Constants.expoConfig?.extra || {};
 const env = (name: string) =>
@@ -23,6 +25,7 @@ const appCheckDebugToken = env("EXPO_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN");
 if (appCheckDebugToken && typeof globalThis !== "undefined") {
     (globalThis as any).FIREBASE_APPCHECK_DEBUG_TOKEN = appCheckDebugToken;
 }
+const appCheckSiteKey = env("EXPO_PUBLIC_FIREBASE_APPCHECK_SITE_KEY");
 
 const defaultFirebaseConfig = {
     apiKey: "AIzaSyAqR--zHc7u-JF0EkJ5boTYjqew1HG3Kvs",
@@ -56,6 +59,17 @@ let firebaseApp: FirebaseApp | undefined;
 
 if (firebaseConfigured) {
     firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    // Enable App Check (reCAPTCHA v3) when a site key is provided.
+    if (appCheckSiteKey && typeof window !== "undefined") {
+        try {
+            initializeAppCheck(firebaseApp, {
+                provider: new ReCaptchaV3Provider(appCheckSiteKey),
+                isTokenAutoRefreshEnabled: true,
+            });
+        } catch (error) {
+            console.warn("[Firebase] Failed to initialize App Check", error);
+        }
+    }
 } else if (firebaseDisabledForDemo && __DEV__) {
     console.info("[Firebase] Disabled via EXPO_PUBLIC_DISABLE_FIREBASE flag.");
 } else if (__DEV__) {
@@ -108,6 +122,7 @@ export const getRestaurantMenu = async (restaurantId: string) => {
         return {
             ...mapSnapshot(snap),
             price: Number(data.price ?? 0),
+            visible: data.visible !== false,
         };
     });
 };
@@ -122,6 +137,7 @@ export const createMenuItem = async (restaurantId: string, payload: MenuPayload)
         price: Number(payload.price),
         createdAt: Date.now(),
         updatedAt: Date.now(),
+        visible: true,
     };
 
     const ref = await addDoc(collection(db, FIREBASE_COLLECTIONS.menus), data);
@@ -143,6 +159,46 @@ export const updateMenuItem = async (itemId: string, updates: Partial<MenuPayloa
 
     await updateDoc(ref, sanitized);
     return response;
+};
+
+// --- Restaurant panel helpers ---
+
+export const fetchMenuItems = async (restaurantId: string) => {
+    return getRestaurantMenu(restaurantId);
+};
+
+export const addMenuItem = async (payload: { restaurantId: string; name: string; price: number; description?: string }) =>
+    createMenuItem(payload.restaurantId, payload);
+
+export const toggleMenuVisibility = async (menuId: string, visible: boolean) => {
+    const db = ensureFirestore();
+    const ref = doc(db, FIREBASE_COLLECTIONS.menus, menuId);
+    await updateDoc(ref, { visible, updatedAt: Date.now() });
+};
+
+export const updateRestaurantHours = async (restaurantId: string, hours: Record<string, string>) => {
+    const db = ensureFirestore();
+    const ref = doc(db, FIREBASE_COLLECTIONS.restaurants, restaurantId);
+    await updateDoc(ref, { deliveryHours: hours, updatedAt: Date.now() });
+};
+
+export const updateRestaurantSettings = async (
+    restaurantId: string,
+    payload: { minOrderAmount?: number; serviceFee?: number },
+) => {
+    const db = ensureFirestore();
+    const ref = doc(db, FIREBASE_COLLECTIONS.restaurants, restaurantId);
+    const sanitized: Record<string, any> = { updatedAt: Date.now() };
+    if (payload.minOrderAmount !== undefined) sanitized.minOrderAmount = Number(payload.minOrderAmount);
+    if (payload.serviceFee !== undefined) sanitized.serviceFee = Number(payload.serviceFee);
+    await updateDoc(ref, sanitized);
+};
+
+export const getRestaurantById = async (restaurantId: string) => {
+    const db = ensureFirestore();
+    const ref = doc(db, FIREBASE_COLLECTIONS.restaurants, restaurantId);
+    const snap = await getDoc(ref);
+    return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 };
 
 export { firebaseConfig, firebaseConfigured, firebaseApp, auth, firestore, FIREBASE_COLLECTIONS };

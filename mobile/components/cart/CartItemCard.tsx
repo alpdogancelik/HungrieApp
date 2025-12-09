@@ -1,5 +1,6 @@
 import { Image } from "expo-image";
 import { Text, TouchableOpacity, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { images } from "@/constants/mediaCatalog";
 import Icon from "@/components/Icon";
 import type { CartItemType } from "@/type";
@@ -24,15 +25,17 @@ type Props = {
 const CartItemCard = ({ item, onIncrease, onDecrease, onRemove }: Props) => {
     if (!item) return null;
 
+    const { t } = useTranslation();
     const price = Number(item.price ?? 0);
     const quantity = Number(item.quantity ?? 1);
     const customizationTotal = getCustomizationsTotal(item.customizations);
     const total = (price + customizationTotal) * quantity;
     const chips = (item.customizations || []).map((c) => c.name).join(" / ");
+    const unitLabel = formatCurrency(price + customizationTotal);
 
     return (
-        <View className="bg-white rounded-[32px] flex-row gap-4 p-4" style={cardShadow}>
-            <View className="w-24 h-24 rounded-3xl bg-[#FFF4EC] items-center justify-center overflow-hidden">
+        <View className="bg-white rounded-[28px] flex-row gap-4 p-4 items-center" style={cardShadow}>
+            <View className="w-20 h-20 rounded-3xl bg-[#FFF4EC] items-center justify-center overflow-hidden">
                 <Image
                     source={item.image_url ? { uri: item.image_url } : images.burgerTwo}
                     className="w-full h-full"
@@ -40,38 +43,55 @@ const CartItemCard = ({ item, onIncrease, onDecrease, onRemove }: Props) => {
                     transition={200}
                 />
             </View>
-            <View className="flex-1 justify-between">
-                <View className="gap-1">
-                    <Text className="text-xl font-ezra-bold text-dark-100" numberOfLines={1}>
+            <View className="flex-1 justify-between gap-3">
+                <View className="gap-1 pr-2">
+                    <Text className="text-lg font-ezra-bold text-dark-100" numberOfLines={1}>
                         {item.name}
+                    </Text>
+                    <Text className="caption text-dark-40">
+                        {t("cart.screen.item.unitPrice", { price: unitLabel })}
                     </Text>
                     {chips ? (
                         <Text className="body-medium text-dark-60" numberOfLines={1}>
                             {chips}
                         </Text>
                     ) : (
-                        <Text className="body-medium text-dark-60">Campus favorite</Text>
+                        <Text className="body-medium text-dark-60">{t("cart.screen.item.noCustomizations")}</Text>
                     )}
                 </View>
                 <View className="flex-row items-center gap-3">
-                    <TouchableOpacity className="size-10 rounded-full bg-[#FFE4D4] items-center justify-center" onPress={onDecrease}>
+                    <TouchableOpacity
+                        className="size-10 rounded-full bg-[#FFE4D4] items-center justify-center"
+                        onPress={onDecrease}
+                        hitSlop={8}
+                        accessibilityLabel={t("cart.screen.item.accessibility.decrease")}
+                    >
                         <Icon name="minus" size={16} color="#FE8C00" />
                     </TouchableOpacity>
                     <Text className="paragraph-semibold text-dark-100">{item.quantity}</Text>
-                    <TouchableOpacity className="size-10 rounded-full bg-[#FE8C00] items-center justify-center" onPress={onIncrease}>
+                    <TouchableOpacity
+                        className="size-10 rounded-full bg-[#FE8C00] items-center justify-center"
+                        onPress={onIncrease}
+                        hitSlop={8}
+                        accessibilityLabel={t("cart.screen.item.accessibility.increase")}
+                    >
                         <Icon name="plus" size={16} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>
             </View>
-            <View className="items-end justify-between">
-                <TouchableOpacity className="size-10 rounded-full bg-[#FFE4D4] items-center justify-center" onPress={onRemove}>
+            <View className="items-end justify-between self-stretch py-1">
+                <TouchableOpacity
+                    className="size-10 rounded-full bg-[#FFE4D4] items-center justify-center"
+                    onPress={onRemove}
+                    hitSlop={8}
+                    accessibilityLabel={t("cart.screen.item.accessibility.remove")}
+                >
                     <Icon name="trash" size={18} color="#FF5C5C" />
                 </TouchableOpacity>
-                <Text className="paragraph-semibold text-dark-100">{formatCurrency(total)}</Text>
+                <Text className="h4-bold text-dark-100">{formatCurrency(total)}</Text>
             </View>
         </View>
     );
 };
 
 export default CartItemCard;
-

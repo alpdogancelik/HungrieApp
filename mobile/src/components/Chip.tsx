@@ -33,7 +33,7 @@ export const Chip = ({ label, selected = false, badgeCount, onPress, icon }: Chi
             <Text
                 style={{
                     color: selected ? theme.colors.primary : theme.colors.ink,
-                    fontFamily: "Ezra-Medium",
+                    fontFamily: "ChairoSans",
                 }}
             >
                 {label}
@@ -51,7 +51,7 @@ export const Chip = ({ label, selected = false, badgeCount, onPress, icon }: Chi
                         style={{
                             color: selected ? theme.colors.surface : theme.colors.ink,
                             fontSize: theme.typography.caption,
-                            fontFamily: "Ezra-Bold",
+                            fontFamily: "ChairoSans",
                         }}
                     >
                         {badgeCount}
@@ -63,4 +63,5 @@ export const Chip = ({ label, selected = false, badgeCount, onPress, icon }: Chi
 };
 
 export default Chip;
+
 

@@ -5,11 +5,13 @@ type Props = {
     maxLength: number;
     suggestions: string[];
     onChange: (text: string) => void;
+    title: string;
+    placeholder: string;
 };
 
-const CourierNotes = ({ value, maxLength, suggestions, onChange }: Props) => (
+const CourierNotes = ({ value, maxLength, suggestions, onChange, title, placeholder }: Props) => (
     <View className="gap-2">
-        <Text className="section-title">Notes for restaurant</Text>
+        <Text className="section-title">{title}</Text>
         <View className="flex-row flex-wrap gap-3">
             {suggestions.map((suggestion) => (
                 <TouchableOpacity
@@ -23,7 +25,7 @@ const CourierNotes = ({ value, maxLength, suggestions, onChange }: Props) => (
         </View>
         <TextInput
             className="rounded-3xl bg-white border border-gray-100 px-4 py-3 text-dark-100"
-            placeholder="Gate code, dorm details..."
+            placeholder={placeholder}
             placeholderTextColor="#94A3B8"
             value={value}
             onChangeText={onChange}

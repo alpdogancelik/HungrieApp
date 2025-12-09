@@ -13,35 +13,14 @@
             "address": "Kuzey Kampüs, Öğrenci Çarşısı"
         }
     ],
-    "categories": [
-        {
-            "id": "pizzas",
-            "name": "Pizzalar"
-        },
-        {
-            "id": "salads",
-            "name": "Salatalar"
-        },
-        {
-            "id": "snacks",
-            "name": "Atıştırmalıklar"
-        },
-        {
-            "id": "mains",
-            "name": "Ana Yemekler"
-        },
-        {
-            "id": "wraps",
-            "name": "Dürümler"
-        },
-        {
-            "id": "burgers",
-            "name": "Hamburgerler"
-        },
-        {
-            "id": "pastas",
-            "name": "Makarnalar"
-        }
+        "categories": [
+        { "id": "pizzas", "name": "Pizzalar" },
+        { "id": "salads", "name": "Salatalar" },
+        { "id": "snacks", "name": "Atistirmaliklar" },
+        { "id": "mains", "name": "Ana Yemekler" },
+        { "id": "wraps", "name": "Durumler" },
+        { "id": "burgers", "name": "Hamburgerler" },
+        { "id": "pastas", "name": "Makarnalar" }
     ],
     "menus": [
         {

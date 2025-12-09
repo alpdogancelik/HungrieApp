@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
         opacity: 0.95,
     },
     heroLabel: {
-        fontFamily: "Ezra-Medium",
+        fontFamily: "ChairoSans",
         letterSpacing: 0.4,
         color: "#FFF",
     },
@@ -338,12 +338,12 @@ const styles = StyleSheet.create({
         borderRadius: 999,
     },
     title: {
-        fontFamily: "Ezra-Bold",
+        fontFamily: "ChairoSans",
         fontSize: 30,
     },
     subtitle: {
         color: "rgba(255,255,255,0.9)",
-        fontFamily: "Ezra-Medium",
+        fontFamily: "ChairoSans",
     },
     metaBadgeRow: {
         flexDirection: "row",
@@ -368,11 +368,11 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
     metaBadgeValue: {
-        fontFamily: "Ezra-Bold",
+        fontFamily: "ChairoSans",
         fontSize: 18,
     },
     metaBadgeLabel: {
-        fontFamily: "Ezra-Medium",
+        fontFamily: "ChairoSans",
         fontSize: 12,
         color: "#475569",
     },
@@ -400,14 +400,14 @@ const styles = StyleSheet.create({
         }),
     },
     sectionEyebrow: {
-        fontFamily: "Ezra-SemiBold",
+        fontFamily: "ChairoSans",
         letterSpacing: 1,
         textTransform: "uppercase",
         fontSize: 12,
     },
     description: {
         color: "#1E293B",
-        fontFamily: "Ezra-Regular",
+        fontFamily: "ChairoSans",
         lineHeight: 20,
     },
     tagRow: {
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
         borderRadius: 999,
     },
     tagText: {
-        fontFamily: "Ezra-SemiBold",
+        fontFamily: "ChairoSans",
         fontSize: 13,
     },
     sectionHeaderRow: {
@@ -430,12 +430,12 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
     },
     sectionTitle: {
-        fontFamily: "Ezra-Bold",
+        fontFamily: "ChairoSans",
         fontSize: 22,
         color: "#0F172A",
     },
     sectionHint: {
-        fontFamily: "Ezra-SemiBold",
+        fontFamily: "ChairoSans",
         fontSize: 13,
         color: "#64748B",
     },
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     emptyTitle: {
-        fontFamily: "Ezra-Bold",
+        fontFamily: "ChairoSans",
         fontSize: 18,
         color: "#0F172A",
     },
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
     },
     retryLabel: {
         color: "#fff",
-        fontFamily: "Ezra-SemiBold",
+        fontFamily: "ChairoSans",
     },
 });
 

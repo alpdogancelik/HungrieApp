@@ -177,7 +177,7 @@ const describeSlot = (slot?: DaySchedule) => {
 };
 
 const RestaurantConsoleScreen = () => {
-    const restaurantId = "1";
+    const restaurantId = "ada-pizza";
     const { orders, loading, error, mutateStatus, refetch } = useRestaurantOrders(restaurantId);
     const { value: autoAccept, setValue: setAutoAccept, hydrated } = useAutoAccept();
     const [menuItems, setMenuItems] = useState(menuSeed);
@@ -398,11 +398,12 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         paddingHorizontal: 10,
         paddingVertical: 6,
-        fontFamily: "Ezra-SemiBold",
+        fontFamily: "ChairoSans",
         color: "#0F172A",
         textAlign: "center",
     },
 });
 
 export default RestaurantConsoleScreen;
+
 

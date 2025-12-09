@@ -3,6 +3,8 @@
   "compilerOptions": {
     "baseUrl": ".",
     "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
     "allowArbitraryExtensions": true,
     "paths": {
       "@/*": [
@@ -11,10 +13,25 @@
     }
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "lib/**/*.ts",
+    "lib/**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "store/**/*.ts",
+    "store/**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
-    "nativewind-env.d.ts"
+    "nativewind-env.d.ts",
+    "type.d.ts",
+    "images.d.ts",
+    "**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "package-lock.json"
   ]
 }
