@@ -8,12 +8,23 @@ import {
     updateDoc,
     where,
 } from "firebase/firestore";
-import { firestore } from "@/lib/firebase";
+import { signInAnonymously } from "firebase/auth";
+import { auth, firestore } from "@/lib/firebase";
 import type { CartItem, OrderStatus, PaymentMethod } from "@/src/domain/types";
 
 const ensureDb = () => {
     if (!firestore) throw new Error("Firebase is not configured");
     return firestore;
+};
+
+const ensureAuthSession = async () => {
+    if (!auth) return;
+    if (auth.currentUser) return;
+    try {
+        await signInAnonymously(auth);
+    } catch (error) {
+        console.warn("[Firebase] Anonymous sign-in failed", error);
+    }
 };
 
 const ordersCol = () => collection(ensureDb(), "orders");
@@ -33,6 +44,8 @@ export const placeOrder = async ({
     fees?: { deliveryFee?: number; serviceFee?: number; discount?: number; tip?: number };
     etaMinutes?: number;
 }) => {
+    await ensureAuthSession();
+
     const subtotal = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
     const { deliveryFee = 0, serviceFee = 0, discount = 0, tip = 0 } = fees;
     const total = subtotal + deliveryFee + serviceFee + tip - discount;

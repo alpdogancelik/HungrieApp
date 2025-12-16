@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 
 import { useTheme, ThemeDefinition } from "@/src/theme/themeContext";
 
-const STORAGE_KEY = "munchies.language";
+const STORAGE_KEY = "hungrie.language";
 
 const LanguageToggle = () => {
     const { theme } = useTheme();
@@ -50,7 +50,7 @@ const LanguageToggle = () => {
     };
 
     const helperText =
-        current?.startsWith("tr") ? "Tercih ettiğiniz dili seçiniz" : "Select your language preference";
+        current?.startsWith;
 
     return (
         <TouchableOpacity
@@ -60,7 +60,7 @@ const LanguageToggle = () => {
             accessibilityLabel="Toggle language"
             style={[styles.container, { opacity: hydrated ? 1 : 0.6 }]}
         >
-            <Text style={styles.helper}>{helperText}</Text>
+            <Text style={styles.helper}>{ }</Text>
             <View style={styles.badge}>
                 {!hydrated ? (
                     <ActivityIndicator size="small" color={theme.colors.ink} />

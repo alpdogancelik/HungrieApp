@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { nanoid } from "nanoid/non-secure";
 
-import { sampleMenu, sampleRestaurants } from "@/lib/sampleData";
 import { registerLocalOrder, getOrdersByUser } from "@/src/api/client";
 import type { CartItem, Order, PaymentMethod, Restaurant } from "@/src/domain/types";
 import { getOrderStatus, notifyRestaurant, subscribeOrderStatus, type PendingOrderStatus } from "@/src/services/order";
@@ -40,8 +39,11 @@ const useMockBackend = (userId?: string): UseMockBackendResult => {
     const [loading, setLoading] = useState(false);
     const [statusMap, setStatusMap] = useState<Record<string, PendingOrderStatus>>({});
 
-    const restaurants = useMemo(() => sampleRestaurants as Restaurant[], []);
-    const getMenu = useCallback((restaurantId: string) => sampleMenu[String(restaurantId)] ?? [], []);
+    const restaurants = useMemo<Restaurant[]>(() => [], []);
+    const getMenu = useCallback((restaurantId: string) => {
+        void restaurantId;
+        return [];
+    }, []);
 
     const refreshOrders = useCallback(async () => {
         if (!userId) return;
@@ -59,7 +61,7 @@ const useMockBackend = (userId?: string): UseMockBackendResult => {
     }, [refreshOrders]);
 
     useEffect(() => {
-        return subscribeOrderStatus(({ orderId, status }) => {
+        const unsubscribe = subscribeOrderStatus(({ orderId, status }) => {
             setStatusMap((prev) => ({ ...prev, [orderId]: status }));
             setOrders((prev) =>
                 prev.map((order) =>
@@ -67,6 +69,9 @@ const useMockBackend = (userId?: string): UseMockBackendResult => {
                 ),
             );
         });
+        return () => {
+            unsubscribe();
+        };
     }, []);
 
     const placeOrder = useCallback(

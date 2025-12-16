@@ -35,14 +35,17 @@ const CartItemCard = ({ item, onIncrease, onDecrease, onRemove }: Props) => {
 
     return (
         <View className="bg-white rounded-[28px] flex-row gap-4 p-4 items-center" style={cardShadow}>
-            <View className="w-20 h-20 rounded-3xl bg-[#FFF4EC] items-center justify-center overflow-hidden">
-                <Image
-                    source={item.image_url ? { uri: item.image_url } : images.burgerTwo}
-                    className="w-full h-full"
-                    contentFit="cover"
-                    transition={200}
-                />
-            </View>
+            {/* Image hidden per request */}
+            {false && (
+                <View className="w-20 h-20 rounded-3xl bg-[#FFF4EC] items-center justify-center overflow-hidden">
+                    <Image
+                        source={item.image_url ? { uri: item.image_url } : images.burgerTwo}
+                        className="w-full h-full"
+                        contentFit="cover"
+                        transition={200}
+                    />
+                </View>
+            )}
             <View className="flex-1 justify-between gap-3">
                 <View className="gap-1 pr-2">
                     <Text className="text-lg font-ezra-bold text-dark-100" numberOfLines={1}>

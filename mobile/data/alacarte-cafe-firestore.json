@@ -16,14 +16,14 @@
     "categories": [
     { "id": "fast-food", "name": "Fast Food Menuleri", "icon": "@/assets/images/fastfood.png" },
     { "id": "diet", "name": "Diyet Menuler", "icon": "@/assets/images/diet.png" },
-    { "id": "durumler", "name": "Durumler", "icon": "@/assets/images/durum.png" },
+    { "id": "durumler", "name": "Dürümler", "icon": "@/assets/images/durum.png" },
     { "id": "burgers", "name": "Burgerler", "icon": "@/assets/images/Burger.png" },
     { "id": "burger-extras", "name": "Burger Ekstralar", "icon": "@/assets/images/Fries.png" },
     { "id": "grills", "name": "Izgara Cesitleri", "icon": "@/assets/images/grills.png" },
     { "id": "pasta", "name": "Makarnalar", "icon": "@/assets/images/pasta.png" },
     { "id": "salads", "name": "Salatalar", "icon": "@/assets/images/salads.png" },
     { "id": "pan", "name": "Tava Yemekleri", "icon": "@/assets/images/tava.png" },
-    { "id": "drinks", "name": "Icecekler", "icon": "@/assets/images/drinks.png" }
+    { "id": "drinks", "name": "İçecekler", "icon": "@/assets/images/drinks.png" }
   ],
   "menus": [
     {

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
     FlatList,
@@ -12,27 +12,53 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import OrderCard from "@/components/OrderCard";
 import type { RestaurantOrder } from "@/type";
-import useServerResource from "@/lib/useServerResource";
-import { getUserOrders } from "@/lib/api";
+import { subscribeUserOrders } from "@/src/services/firebaseOrders";
+import useAuthStore from "@/store/auth.store";
+import { illustrations } from "@/constants/mediaCatalog";
+import { useTranslation } from "react-i18next";
+import { t } from "i18next";
 
 const FILTERS = [
-    { id: "all", label: "Tümü" },
-    { id: "preparing", label: "Hazırlanıyor" },
-    { id: "ready", label: "Hazır" },
-    { id: "delivered", label: "Teslim edildi" },
-    { id: "canceled", label: "İptal" },
+    { id: "all", label: "ordersAll" },
+    { id: "preparing", label: "status.preparing" },
+    { id: "ready", label: "status.ready" },
+    { id: "delivered", label: "status.delivered" },
+    { id: "canceled", label: "status.canceled" },
 ];
 
 const PAGE_SIZE = 4;
 
 const OrderHistoryScreen = () => {
-    const params = useLocalSearchParams<{ highlight?: string }>();
-    const { data, loading, refetch } = useServerResource({ fn: getUserOrders, skipAlert: true });
+    const params = useLocalSearchParams<{
+        lang: string; highlight?: string 
+}>();
+    const { user } = useAuthStore();
+    const { t } = useTranslation();
+    const [orders, setOrders] = useState<RestaurantOrder[]>([]);
+    const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("all");
     const [search, setSearch] = useState("");
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-    const orders = (data as RestaurantOrder[]) || [];
+    useEffect(() => {
+        const userId = user?.id ?? user?.$id ?? user?.accountId ?? null;
+        if (!userId) {
+            setOrders([]);
+            setLoading(false);
+            return;
+        }
+        const unsub = subscribeUserOrders(userId, (list) => {
+            setOrders((list as RestaurantOrder[]) || []);
+            setLoading(false);
+        });
+        return () => {
+            try {
+                unsub && unsub();
+            } catch {
+                /* noop */
+            }
+        };
+    }, [user?.id, user?.$id, user?.accountId]);
 
     const filtered = useMemo(() => {
         return orders.filter((order) => {
@@ -53,13 +79,13 @@ const OrderHistoryScreen = () => {
 
     const handleRefresh = async () => {
         setVisibleCount(PAGE_SIZE);
-        await refetch();
     };
 
     const renderFilter = () => (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
             {FILTERS.map((item) => {
                 const active = filter === item.id;
+                const label = item.id === "all" ? t("cart.screen.ordersAll") : t(item.label as any);
                 return (
                     <TouchableOpacity
                         key={item.id}
@@ -76,7 +102,7 @@ const OrderHistoryScreen = () => {
                             backgroundColor: active ? "#FFF6EF" : "transparent",
                         }}
                     >
-                        <Text style={{ color: active ? "#FE8C00" : "#475569", fontFamily: "ChairoSans" }}>{item.label}</Text>
+                        <Text style={{ color: active ? "#FE8C00" : "#475569", fontFamily: "ChairoSans" }}>{label}</Text>
                     </TouchableOpacity>
                 );
             })}
@@ -86,14 +112,24 @@ const OrderHistoryScreen = () => {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
             <View style={{ paddingHorizontal: 20, paddingVertical: 16, gap: 12 }}>
-                <Text style={{ fontSize: 28, fontFamily: "ChairoSans", color: "#0F172A" }}>Sipariş Geçmişi</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                    <View>
+                        <Text style={{ fontSize: 28, fontFamily: "ChairoSans", color: "#0F172A" }}>
+                            {t("cart.screen.ordersHistoryTitle")}
+                        </Text>
+                        <Text style={{ color: "#475569", fontFamily: "ChairoSans", marginTop: 4 }}>
+                            {t("cart.screen.ordersSearchSubtitle")}
+                        </Text>
+                    </View>
+                    <illustrations.courierHero width={64} height={64} />
+                </View>
                 {params.highlight ? (
                     <Text style={{ color: "#059669", fontFamily: "ChairoSans" }}>
                         #{params.highlight} numaralı sipariş onaylandı!
                     </Text>
                 ) : null}
                 <TextInput
-                    placeholder="Restoran adıyla ara"
+                    placeholder={t("cart.screen.ordersSearchPlaceholder")}
                     placeholderTextColor="#94A3B8"
                     value={search}
                     onChangeText={(text) => {

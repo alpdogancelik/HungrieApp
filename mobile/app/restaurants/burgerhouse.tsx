@@ -12,6 +12,8 @@ import { getCategoryLabel as translateCategoryLabel } from "@/src/lib/categoryLa
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 import burgerHouseData from "@/data/burgerhouse-firestore.json";
 
+const RESTAURANT_ID = String(burgerHouseData?.restaurants?.[0]?.id || "burger-house");
+
 const CATEGORY_ORDER = ["burgers", "wraps", "snacks", "chicken-boxes", "salads", "cold-drinks", "ice-cream", "hot-drinks"];
 
 const CATEGORY_TITLES: Record<string, string> = {
@@ -66,20 +68,21 @@ const MenuList = ({ items, addLabel }: { items: MenuEntry[]; addLabel: string })
                     </View>
                     <View style={styles.menuRight}>
                         <Text style={styles.menuPrice}>{formatPrice(item.price)}</Text>
-                    <TouchableOpacity
-                        style={styles.addButton}
-                        onPress={() =>
-                            addItem({
-                                id: String(item.id),
-                                name: item.name,
-                                price: Number(item.price || 0),
-                                image_url: "",
-                                customizations: [],
-                            })
-                        }
-                    >
-                        <Text style={styles.addButtonText}>{addLabel}</Text>
-                    </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.addButton}
+                            onPress={() =>
+                                addItem({
+                                    id: String(item.id),
+                                    name: item.name,
+                                    price: Number(item.price || 0),
+                                    image_url: "",
+                                    restaurantId: RESTAURANT_ID,
+                                    customizations: [],
+                                })
+                            }
+                        >
+                            <Text style={styles.addButtonText}>{addLabel}</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
             ))}
@@ -111,7 +114,7 @@ const BurgerHousePage = () => {
                     <View style={styles.heroInner}>
                         <Image source={require("@/assets/restaurantlogo/burgerhouselogo.jpg")} style={styles.heroLogo} contentFit="cover" />
                         <View style={styles.heroMeta}>
-                            <Text style={styles.heroBadge}>Best Burger in Town                                                (+90 539 113 92 00 - +90 533 886 03 04)</Text>
+                            <Text style={styles.heroBadge}>Burger House                                                                             (+90 539 113 92 00 - +90 533 886 03 04)</Text>
                             <Text style={styles.heroTitle}>{restaurant.name || "Burger House"}</Text>
                             <Text style={styles.heroSubtitle}>Burger · Wrap · Chicken · Ice Cream</Text>
                             <View style={styles.heroChips}>

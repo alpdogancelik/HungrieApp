@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getMenu } from "@/lib/firebaseAuth";
 import { getRestaurants } from "@/lib/api";
 import { filterMenuForCustomer } from "@/lib/menuVisibility";
-import { sampleMenu, sampleRestaurants } from "@/lib/sampleData";
 import type { MenuItem } from "@/type";
 
 export type SearchSort = "relevance" | "eta" | "price";
@@ -23,14 +22,34 @@ type UseSearchOptions = {
     initialCategory?: string;
 };
 
-const normalize = (value: unknown) =>
-    String(value ?? "")
-        .toLowerCase()
+const TURKISH_FOLD: Record<string, string> = {
+    ç: "c",
+    Ç: "c",
+    ğ: "g",
+    Ğ: "g",
+    ı: "i",
+    İ: "i",
+    ö: "o",
+    Ö: "o",
+    ş: "s",
+    Ş: "s",
+    ü: "u",
+    Ü: "u",
+};
+
+const normalize = (value: unknown) => {
+    const lower = String(value ?? "").toLowerCase();
+    const folded = lower.replace(/[çğıöşü]/gi, (ch) => TURKISH_FOLD[ch] || ch);
+
+    return folded
         .normalize("NFKD")
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-z0-9\s]/g, " ")
         .replace(/\s+/g, " ")
         .trim();
+};
+
+const tokenize = (value: unknown) => normalize(value).split(" ").filter(Boolean);
 
 const parsePrice = (item: Partial<MenuItem>) => {
     const raw: unknown = (item as any).price ?? (item as any).cost ?? 0;
@@ -71,9 +90,11 @@ const hydrateResults = (items: MenuItem[], restaurants: any[]): SearchResult[] =
         const restaurant = restaurantId ? restaurantMap.get(restaurantId) : undefined;
         const categoriesRaw = (item as any).categories ?? (item as any).category;
         const categories = Array.isArray(categoriesRaw)
-            ? categoriesRaw.map((entry: any) => normalize(entry || "")).filter(Boolean)
+            ? categoriesRaw
+                .map((entry: any) => String(entry || "").trim())
+                .filter(Boolean)
             : categoriesRaw
-                ? [normalize(categoriesRaw)]
+                ? [String(categoriesRaw).trim()]
                 : [];
 
         return {
@@ -106,17 +127,90 @@ const buildCategories = (list: SearchResult[]): SearchCategory[] => {
         .sort((a, b) => (b.count !== a.count ? b.count - a.count : a.name.localeCompare(b.name)));
 };
 
-const scoreItem = (item: SearchResult, tokens: string[]) => {
-    if (!tokens.length) return 0;
-    const haystack = `${normalize(item.name)} ${normalize(item.description)} ${normalize(item.restaurantName)} ${(item.categories || []).join(" ")}`;
+type IndexedResult = {
+    item: SearchResult;
+    nameTokens: string[];
+    restaurantTokens: string[];
+    categoryTokens: string[];
+    tokens: string[];
+};
+
+const buildIndex = (items: SearchResult[]): IndexedResult[] =>
+    items.map((item) => {
+        const nameTokens = tokenize(item.name);
+        const descriptionTokens = tokenize(item.description);
+        const restaurantTokens = tokenize(item.restaurantName);
+        const categoryTokens = (item.categories || []).flatMap((cat) => tokenize(cat));
+        const tokens = Array.from(new Set([...nameTokens, ...descriptionTokens, ...restaurantTokens, ...categoryTokens]));
+        return { item, nameTokens, restaurantTokens, categoryTokens, tokens };
+    });
+
+const isNearMatch = (token: string, candidate: string) => {
+    if (!token || !candidate) return false;
+    if (token === candidate) return true;
+    if (Math.abs(token.length - candidate.length) > 1) return false;
+
+    let i = 0;
+    let j = 0;
+    let mismatches = 0;
+
+    while (i < token.length && j < candidate.length) {
+        if (token[i] === candidate[j]) {
+            i += 1;
+            j += 1;
+            continue;
+        }
+        mismatches += 1;
+        if (mismatches > 1) return false;
+        if (token.length > candidate.length) {
+            i += 1;
+        } else if (candidate.length > token.length) {
+            j += 1;
+        } else {
+            i += 1;
+            j += 1;
+        }
+    }
+
+    return true;
+};
+
+const scoreToken = (token: string, candidates: string[]) => {
     let score = 0;
-    tokens.forEach((token) => {
-        if (!token) return;
-        if (normalize(item.name).startsWith(token)) score += 6;
-        if (normalize(item.name).includes(token)) score += 4;
-        if (haystack.includes(token)) score += 2;
+    candidates.forEach((candidate) => {
+        if (!candidate) return;
+        if (candidate === token) {
+            score = Math.max(score, 5);
+        } else if (candidate.startsWith(token) || token.startsWith(candidate)) {
+            score = Math.max(score, 4);
+        } else if (candidate.includes(token)) {
+            score = Math.max(score, 3);
+        } else if (token.length >= 3 && candidate.length >= 3 && isNearMatch(token, candidate)) {
+            score = Math.max(score, 2);
+        }
     });
     return score;
+};
+
+const scoreIndexedResult = (entry: IndexedResult, tokens: string[], categoryToken: string) => {
+    const matchesCategory = categoryToken ? entry.categoryTokens.some((cat) => cat.includes(categoryToken)) : true;
+    if (!matchesCategory) return { match: false, score: 0 };
+    if (!tokens.length) return { match: true, score: 1 };
+
+    let matchedAll = true;
+    let score = 0;
+
+    tokens.forEach((token) => {
+        const nameHit = scoreToken(token, entry.nameTokens);
+        const restaurantHit = scoreToken(token, entry.restaurantTokens);
+        const categoryHit = scoreToken(token, entry.categoryTokens);
+        const genericHit = scoreToken(token, entry.tokens);
+        const best = Math.max(nameHit * 3, restaurantHit * 2, categoryHit * 1.5, genericHit);
+        if (!best) matchedAll = false;
+        score += best;
+    });
+
+    return { match: matchedAll, score: score + tokens.length * 0.4 };
 };
 
 export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptions = {}) => {
@@ -140,10 +234,6 @@ export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptio
             setRestaurantsLoading(true);
             setError(null);
 
-            const fallbackMenusRaw = Object.values(sampleMenu || {}).flat() as MenuItem[];
-            const fallbackMenus = await filterMenuForCustomer(fallbackMenusRaw);
-            const fallbackRestaurants = Array.isArray(sampleRestaurants) ? sampleRestaurants : [];
-
             try {
                 const [menuResult, restaurantResult] = await Promise.allSettled([
                     getMenu({ query: term || undefined }),
@@ -159,22 +249,24 @@ export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptio
                         ? restaurantResult.value
                         : [];
 
-                const mergedRestaurants = mergeById([...apiRestaurants, ...fallbackRestaurants], (item) =>
+                const mergedRestaurants = mergeById(apiRestaurants, (item) =>
                     String((item as any).id ?? (item as any).$id ?? (item as any).name ?? ""),
                 );
 
                 const mergedMenus = mergeById(
-                    [...apiMenus, ...fallbackMenus],
+                    apiMenus,
                     (item) => String((item as any).id ?? (item as any).$id ?? (item as any).name ?? ""),
                 );
 
+                const visibleMenus = await filterMenuForCustomer(mergedMenus);
+
                 setRestaurants(mergedRestaurants);
-                setAllResults(hydrateResults(mergedMenus, mergedRestaurants));
+                setAllResults(hydrateResults(visibleMenus, mergedRestaurants));
             } catch (err: any) {
                 if (requestRef.current !== requestId) return;
                 setError(err?.message || "Unable to fetch meals. Please try again.");
-                setRestaurants(fallbackRestaurants);
-                setAllResults(hydrateResults(fallbackMenus, fallbackRestaurants));
+                setRestaurants([]);
+                setAllResults([]);
             } finally {
                 if (requestRef.current === requestId) {
                     setLoading(false);
@@ -190,34 +282,34 @@ export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptio
         return () => clearTimeout(timer);
     }, [debouncedQuery, fetchResults]);
 
+    const indexedResults = useMemo(() => buildIndex(allResults), [allResults]);
+
     const results = useMemo(() => {
-        const tokens = normalize(query).split(" ").filter(Boolean);
+        const tokens = tokenize(query);
         const categoryToken = category ? normalize(category) : "";
 
-        const filtered = allResults.filter((item) => {
-            const haystack = `${normalize(item.name)} ${normalize(item.description)} ${normalize(item.restaurantName)} ${(item.categories || []).join(" ")}`;
-            const matchesCategory = categoryToken
-                ? (item.categories || []).some((cat) => normalize(cat).includes(categoryToken))
-                : true;
-            const matchesQuery = !tokens.length || tokens.every((token) => haystack.includes(token));
-            return matchesCategory && matchesQuery;
-        });
+        const scored = indexedResults
+            .map((entry) => ({ entry, ...scoreIndexedResult(entry, tokens, categoryToken) }))
+            .filter((row) => row.match);
 
         if (sort === "price") {
-            return [...filtered].sort((a, b) => parsePrice(a) - parsePrice(b));
+            return scored
+                .sort((a, b) => parsePrice(a.entry.item) - parsePrice(b.entry.item))
+                .map((row) => row.entry.item);
         }
         if (sort === "eta") {
-            return [...filtered].sort((a, b) => parseEta(a) - parseEta(b));
+            return scored
+                .sort((a, b) => parseEta(a.entry.item) - parseEta(b.entry.item))
+                .map((row) => row.entry.item);
         }
 
-        return [...filtered]
-            .map((item) => ({ item, score: scoreItem(item, tokens) }))
+        return scored
             .sort((a, b) => {
                 if (a.score !== b.score) return b.score - a.score;
-                return parseEta(a.item) - parseEta(b.item);
+                return parseEta(a.entry.item) - parseEta(b.entry.item);
             })
-            .map((entry) => entry.item);
-    }, [allResults, category, query, sort]);
+            .map((row) => row.entry.item);
+    }, [category, indexedResults, query, sort]);
 
     const categories = useMemo(() => buildCategories(allResults), [allResults]);
 

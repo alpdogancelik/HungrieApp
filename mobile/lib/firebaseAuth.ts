@@ -28,7 +28,7 @@ import {
     createMenuItem as createMenuItemCore,
 } from "./firebase";
 import { filterMenuForCustomer, filterRestaurantMenuForCustomer } from "./menuVisibility";
-import { sampleCategories, sampleMenu } from "./sampleData";
+import { seedMenusAll, seedMenuByRestaurantId, seedCategoriesByRestaurantId } from "./restaurantSeeds";
 
 export type Profile = { name: string; email: string; avatar?: string; accountId?: string };
 export const firebaseOrdersEnabled = firebaseConfigured && Boolean(firestore);
@@ -169,34 +169,32 @@ export const getMenu = async ({ category, query, limit }: { category?: string; q
     };
 
     if (!firebaseConfigured || !firestore) {
-        const fallback = Object.values(sampleMenu).flat();
-        return applyFilters(fallback);
+        return applyFilters(seedMenusAll);
     }
 
     try {
         const snap = await getDocs(collection(requireDB(), FIREBASE_COLLECTIONS.menus));
         if (snap.empty) {
-            const fallback = Object.values(sampleMenu).flat();
-            return applyFilters(fallback);
+            return applyFilters(seedMenusAll);
         }
         return applyFilters(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     } catch (error) {
-        const fallback = Object.values(sampleMenu).flat();
-        return applyFilters(fallback);
+        return applyFilters(seedMenusAll);
     }
 };
 
 export const getCategories = async () => {
-    const fallbackCategories = Object.values(sampleCategories)[0] || [];
     if (!firebaseConfigured || !firestore) {
-        return fallbackCategories;
+        const defaultRestaurantId = seedMenusAll[0]?.restaurantId;
+        if (!defaultRestaurantId) return [];
+        return seedCategoriesByRestaurantId(defaultRestaurantId);
     }
     try {
         const snap = await getDocs(collection(requireDB(), FIREBASE_COLLECTIONS.categories));
-        if (snap.empty) return fallbackCategories;
+        if (snap.empty) return [];
         return snap.docs.map(mapDoc);
     } catch {
-        return fallbackCategories;
+        return [];
     }
 };
 
@@ -228,19 +226,16 @@ export const createRestaurant = async (payload: {
 
 export const getRestaurantMenu = async ({ restaurantId }: { restaurantId: string }) => {
     if (!firebaseConfigured || !firestore) {
-        const fallback = sampleMenu[restaurantId] || Object.values(sampleMenu).flat();
-        return filterRestaurantMenuForCustomer(restaurantId, fallback);
+        return filterRestaurantMenuForCustomer(restaurantId, seedMenuByRestaurantId(restaurantId));
     }
     try {
         const result = await fetchRestaurantMenu(restaurantId);
         if (!result || !Array.isArray(result) || !result.length) {
-            const fallback = sampleMenu[restaurantId] || Object.values(sampleMenu).flat();
-            return filterRestaurantMenuForCustomer(restaurantId, fallback);
+            return filterRestaurantMenuForCustomer(restaurantId, seedMenuByRestaurantId(restaurantId));
         }
         return filterRestaurantMenuForCustomer(restaurantId, result);
     } catch (error) {
-        const fallback = sampleMenu[restaurantId] || Object.values(sampleMenu).flat();
-        return filterRestaurantMenuForCustomer(restaurantId, fallback);
+        return filterRestaurantMenuForCustomer(restaurantId, seedMenuByRestaurantId(restaurantId));
     }
 };
 

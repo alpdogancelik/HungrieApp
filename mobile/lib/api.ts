@@ -1,15 +1,5 @@
 import Constants from 'expo-constants';
 import {
-    sampleAddresses,
-    sampleCategories,
-    sampleCourierList,
-    sampleMenu,
-    sampleOrders,
-    sampleOwnerRestaurants,
-    sampleRestaurantOrders,
-    sampleRestaurants,
-} from "./sampleData";
-import {
     createOrderDocument,
     firebaseOrdersEnabled,
     clearMockOwnerAccount,
@@ -17,6 +7,7 @@ import {
     signOut as firebaseSignOut,
 } from "./firebaseAuth";
 import { filterRestaurantMenuForCustomer } from "./menuVisibility";
+import { seedRestaurants, seedMenuByRestaurantId, seedCategoriesByRestaurantId } from "./restaurantSeeds";
 
 const extra: any = Constants.expoConfig?.extra || {};
 const env = (name: string) => (typeof process !== 'undefined' ? (process as any).env?.[name] : undefined) || extra[name];
@@ -138,19 +129,22 @@ export const getRestaurants = async (filters?: { search?: string; category?: str
     return withFallback(
         () => jsonFetch(`/api/restaurants${query}`),
         () => {
-            const list = sampleRestaurants;
+            const list = seedRestaurants;
             if (!filters?.search) return list;
             const term = filters.search.toLowerCase();
-            return list.filter((r) => r.name.toLowerCase().includes(term) || r.cuisine?.toLowerCase().includes(term));
+            return list.filter(
+                (r) =>
+                    r.name.toLowerCase().includes(term) ||
+                    (r.cuisine ? r.cuisine.toLowerCase().includes(term) : false),
+            );
         },
     );
 };
 
 export const getRestaurant = async (restaurantId: string | number) => {
-    const fallback = () => sampleRestaurants.find((r) => String(r.id) === String(restaurantId)) || sampleRestaurants[0];
     return withFallback(
         () => jsonFetch(`/api/restaurants/${restaurantId}`),
-        fallback,
+        () => seedRestaurants.find((r) => String(r.id) === String(restaurantId)) ?? null,
     );
 };
 
@@ -194,22 +188,18 @@ export const getMenu = async ({ category, query, limit }: { category?: string; q
     }));
 };
 
-const DEFAULT_RESTAURANT_ID = sampleRestaurants[0]?.id ?? "ada-pizza";
-
 export const getRestaurantCategories = async (restaurantId: string | number) => {
-    const fallbackId = String(restaurantId || DEFAULT_RESTAURANT_ID);
     return withFallback(
         () => jsonFetch(`/api/restaurants/${restaurantId}/categories`),
-        () => sampleCategories[fallbackId] || sampleCategories[DEFAULT_RESTAURANT_ID] || [],
+        () => seedCategoriesByRestaurantId(String(restaurantId)),
     );
 };
 
 export const getRestaurantMenu = async ({ restaurantId, categoryId }: { restaurantId: string | number; categoryId?: number; }) => {
     const query = categoryId ? `?categoryId=${categoryId}` : '';
-    const fallbackId = String(restaurantId || DEFAULT_RESTAURANT_ID);
     const items = await withFallback(
         () => jsonFetch(`/api/restaurants/${restaurantId}/menu${query}`),
-        () => sampleMenu[fallbackId] || sampleMenu[DEFAULT_RESTAURANT_ID] || [],
+        () => seedMenuByRestaurantId(String(restaurantId)),
     );
     const normalized = (Array.isArray(items) ? items : []).map((item: any) => ({
         ...item,
@@ -249,14 +239,14 @@ export const submitReview = async ({ restaurantId, rating, comment }: { restaura
 export const getAddresses = async () => {
     return withFallback(
         () => jsonFetch('/api/addresses'),
-        () => sampleAddresses,
+        () => [],
     );
 };
 
 export const getUserOrders = async () => {
     return withFallback(
         () => jsonFetch('/api/orders/user/me'),
-        () => sampleOrders,
+        () => [],
     );
 };
 
@@ -281,17 +271,9 @@ export const createOrder = async ({ orderData, orderItems }: { orderData: Record
 };
 
 export const getOwnerRestaurants = async () => {
-    const fallback = () => {
-        const ownerContext = getMockOwnerAccount() as any;
-        if (ownerContext) {
-            const allowed = new Set((ownerContext.restaurantIds || []).map((id: any) => String(id)));
-            return sampleOwnerRestaurants.filter((restaurant) => allowed.has(String(restaurant.id)));
-        }
-        return sampleOwnerRestaurants;
-    };
     return withFallback(
         () => jsonFetch('/api/restaurants/owner/me'),
-        fallback,
+        () => [],
     );
 };
 export const updateRestaurant = async (restaurantId: string | number, payload: Record<string, any>) => {
@@ -315,13 +297,9 @@ export const createRestaurant = async (payload: Record<string, any>) => {
 
 export const getRestaurantOrders = async (restaurantId: string | number, status?: string) => {
     const query = buildQuery(status ? { status } : undefined);
-    const fallbackId = String(restaurantId || DEFAULT_RESTAURANT_ID);
     return withFallback(
         () => jsonFetch(`/api/restaurants/${restaurantId}/orders${query}`),
-        () => {
-            const scoped = sampleRestaurantOrders.filter((order) => order.restaurantId === fallbackId);
-            return scoped.length ? scoped : sampleRestaurantOrders;
-        },
+        () => [],
     );
 };
 
@@ -345,4 +323,4 @@ export const createMenuItem = async (restaurantId: string | number, payload: Rec
     );
 };
 
-export const getCourierRoster = async () => sampleCourierList;
+export const getCourierRoster = async () => [];

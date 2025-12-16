@@ -1,5 +1,5 @@
 {
-  "name": "munchiesorder",
+  "name": "hungrieapp",
   "private": true,
   "workspaces": [
     "mobile"
@@ -13,7 +13,7 @@
     "test": "npm --prefix mobile run test"
   },
   "devDependencies": {
-    "@types/react": "~19.1.10",
+    "@types/react": "~18.2.0",
     "typescript": "~5.9.2"
   }
 }

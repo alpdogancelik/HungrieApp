@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "mobile",
-    "slug": "hungrie",
+    "slug": "hungrieapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icons/bag.png",
@@ -59,7 +59,7 @@
       "EXPO_PUBLIC_SENTRY_DSN": "",
       "router": {},
       "eas": {
-        "projectId": "3ee4ceb3-3eaf-400e-9012-ca7323c1bf74"
+        "projectId": "be624db8-7de1-4b8b-bd86-605431679967"
       }
     },
     "owner": "alpdogancelik1"

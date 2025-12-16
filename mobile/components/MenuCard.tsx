@@ -44,9 +44,10 @@ const MenuCard = ({ item, onPress, accentColor = "#FE8C00" }: MenuCardProps) => 
             name: name || "Menu Item",
             price: numericPrice || 0,
             image_url: imageUrl || "",
+            restaurantId: (item as any).restaurantId || (item as any).restaurant_id,
             customizations: [],
         });
-    }, [$id, addItem, imageUrl, item?.id, name, numericPrice]);
+    }, [$id, addItem, imageUrl, item?.id, name, numericPrice, item?.restaurantId]);
 
     const handleSubmitReview = useCallback(
         async ({ rating, comment }: { rating: 1 | 2 | 3 | 4 | 5; comment?: string }) => {

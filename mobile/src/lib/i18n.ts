@@ -14,7 +14,7 @@ const resources = {
                 manageAddresses: "Manage addresses",
                 noAddress: "No address on file yet.",
                 activeOrders: "Active orders",
-                noActiveOrders: "No ongoing deliveries. Hungry?",
+                noActiveOrders: "No ongoing deliveries. Hungrie?",
                 accountActions: "Account actions",
                 restaurantConsole: "Open Restaurant Console",
                 courierConsole: "Courier Dispatch Center",
@@ -30,6 +30,11 @@ const resources = {
                 preparing: "Preparing",
                 ready: "Ready",
                 canceled: "Canceled",
+                delivered: "Delivered",
+                out_for_delivery: "On the way",
+            },
+            orders: {
+                all: "All",
             },
             misc: {
                 manageSoon: "Address management will launch soon.",
@@ -54,6 +59,7 @@ const resources = {
                     subtitle: "Search restaurants or dishes",
                     cta: "Search",
                 },
+                campusOnlyTag: "Only on campus",
                 stats: {
                     restaurants: {
                         label: "Restaurants nearby",
@@ -148,6 +154,28 @@ const resources = {
                 screen: {
                     orderTitle: "Order",
                     orderSubtitle: "We can't wait to deliver your order to the restaurant :)",
+                    drinkSuggestTitle: "{{restaurant}} drink picks",
+                    drinkSuggestSubtitle: "Optional add-ons from this restaurant.",
+                    drinkSuggestAdd: "Add",
+                    cartLockTitle: "Cart locked",
+                    cartLockBody: "You already have items from another restaurant. Clear the cart first, then add again.",
+                    cartLockOk: "Okay",
+                    ordersAll: "All",
+                    ordersSearchPlaceholder: "Search by restaurant name",
+                    ordersHistoryTitle: "Order history",
+                    ordersSearchSubtitle: "Scan, filter, and review your recent orders.",
+                    notifications: {
+                        title: "Notification preferences",
+                        subtitle: "Turn on the alerts you need. We'll ask permission if required.",
+                        announcements: "Announcements",
+                        orderStatus: "Order status changes",
+                        messages: "New messages",
+                        reviewReplies: "New review replies",
+                        save: "Save",
+                        saving: "Saving...",
+                        permissionNeeded: "Allow notifications to get these alerts.",
+                        permissionDenied: "Notifications are blocked. Enable permissions in system settings.",
+                    },
                     quiet: {
                         hint: "Delivery preference",
                         subtitle: "Leave clear notes so the courier knows exactly where to drop without calling.",
@@ -186,7 +214,7 @@ const resources = {
                         placingShort: "Placing...",
                         total: "Total",
                         addMore: "Add a bit more to place order",
-                        serviceFeeApplied: "Service fee applied",
+                        serviceFeeApplied: "",
                     },
                     alerts: {
                         addAddressTitle: "Add a delivery address",
@@ -300,6 +328,11 @@ const resources = {
                 preparing: "Hazırlanıyor",
                 ready: "Hazır",
                 canceled: "İptal edildi",
+                delivered: "Teslim edildi",
+                out_for_delivery: "Yolda",
+            },
+            orders: {
+                all: "Tümü",
             },
             misc: {
                 manageSoon: "",
@@ -312,7 +345,7 @@ const resources = {
                 saving: "Kaydediliyor...",
             },
             home: {
-                languageHint: "Tercih ettiginiz dili seciniz",
+                languageHint: "Tercih ettiğiniz dili seçiniz",
                 hero: {
                     eyebrow: "Hungrie",
                     title: "Artık yemek siparişleri tek bir uygulamada!",
@@ -324,6 +357,7 @@ const resources = {
                     subtitle: "Restoran veya yemek ara",
                     cta: "Ara",
                 },
+                campusOnlyTag: "Sadece kampus içi",
                 stats: {
                     restaurants: {
                         label: "Yakındaki restoranlar",
@@ -418,6 +452,28 @@ const resources = {
                 screen: {
                     orderTitle: "Sipariş",
                     orderSubtitle: "Siparişini restorana ulaştırmak için sabırsızlanıyoruz :)",
+                    drinkSuggestTitle: "{{restaurant}} içecek önerileri",
+                    drinkSuggestSubtitle: "İsteğe bağlı; sepete ekleyebilirsin.",
+                    drinkSuggestAdd: "Ekle",
+                    cartLockTitle: "Sepet kilitli",
+                    cartLockBody: "Sepette başka bir restoranın ürünü var. Önce sepeti temizle, sonra ekleyebilirsin.",
+                    cartLockOk: "Tamam",
+                    ordersAll: "Hepsi",
+                    ordersSearchPlaceholder: "Restoran adıyla ara",
+                    ordersHistoryTitle: "Sipariş Geçmişi",
+                    ordersSearchSubtitle: "Son siparişlerini tara, filtrele, incele.",
+                    notifications: {
+                        title: "Bildirim tercihleri",
+                        subtitle: "Gerekli uyarıları aç. İzin gerekiyorsa soracağız.",
+                        announcements: "Duyurular",
+                        orderStatus: "Sipariş durum değişikliği",
+                        messages: "Yeni mesaj",
+                        reviewReplies: "Yeni yorum yanıtı",
+                        save: "Kaydet",
+                        saving: "Kaydediliyor...",
+                        permissionNeeded: "Bu uyarılar için bildirim izni ver.",
+                        permissionDenied: "Bildirimler engelli. Sistem ayarlarından açmalısın.",
+                    },
                     quiet: {
                         hint: "Teslimat tercihi",
                         subtitle: "Kurye aramak zorunda kalmadan nereye bırakacağını bilsin diye net notlar bırak.",
@@ -456,7 +512,7 @@ const resources = {
                         placingShort: "Gönderiliyor...",
                         total: "Toplam",
                         addMore: "Sipariş vermek için biraz daha ekle",
-                        serviceFeeApplied: "Hizmet ücreti eklendi",
+                        serviceFeeApplied: "",
                     },
                     alerts: {
                         addAddressTitle: "Teslimat adresi ekle",
@@ -558,3 +614,4 @@ if (!i18n.isInitialized) {
 }
 
 export default i18n;
+

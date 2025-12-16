@@ -17,7 +17,7 @@
         { "id": "pide", "name": "Pideler" },
         { "id": "grill", "name": "Izgaralar" },
         { "id": "tantuni", "name": "Tantuniler" },
-        { "id": "drinks", "name": "Icecekler" },
+        { "id": "drinks", "name": "İçecekler" },
         { "id": "pizza", "name": "Pizzalar" }
     ],
     "menus": [

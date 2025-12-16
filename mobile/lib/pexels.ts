@@ -1,5 +1,4 @@
 import Constants from "expo-constants";
-import { sampleMenu } from "./sampleData";
 
 const extra: any = Constants.expoConfig?.extra || {};
 const env = (name: string) => (typeof process !== "undefined" ? (process as any).env?.[name] : undefined) || extra[name];
@@ -13,16 +12,7 @@ export type PexelsImage = {
     alt: string;
 };
 
-const fallbackImages: PexelsImage[] = Object.values(sampleMenu)
-    .flat()
-    .slice(0, 8)
-    .map((item: any, index: number) => ({
-        id: String(item.id ?? `sample-${index}`),
-        thumb: item.imageUrl,
-        full: item.imageUrl,
-        alt: item.name,
-    }))
-    .filter((item) => Boolean(item.thumb));
+const fallbackImages: PexelsImage[] = [];
 
 export const searchFoodImages = async (query: string): Promise<PexelsImage[]> => {
     const safeQuery = query?.trim() || "food";

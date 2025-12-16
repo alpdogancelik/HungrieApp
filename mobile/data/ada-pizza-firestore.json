@@ -14,15 +14,15 @@
     }
   ],
     "categories": [
-    { "id": "wraps", "name": "Durumler" },
+    { "id": "wraps", "name": "Dürümler" },
     { "id": "burgers", "name": "Burgerler" },
     { "id": "chips", "name": "Chips" },
     { "id": "sauces", "name": "Soslar" },
     { "id": "pizzas", "name": "Pizzalar" },
     { "id": "mains", "name": "Ana Yemekler" },
     { "id": "pan", "name": "Tava Yemekleri" },
-    { "id": "cold-drinks", "name": "Soguk Icecekler" },
-    { "id": "hot-drinks", "name": "Sicak Icecekler" }
+    { "id": "cold-drinks", "name": "Soğuk İçecekler" },
+    { "id": "hot-drinks", "name": "Sıcak İçecekler" }
   ],
   "menus": [
     {

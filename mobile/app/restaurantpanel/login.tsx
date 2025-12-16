@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+
 import { useTheme } from "@/src/theme/themeContext";
 import { usePanelSession } from "@/src/features/restaurantPanel/panelSession";
 
@@ -17,7 +18,7 @@ export default function RestaurantPanelLogin() {
         if (!email || !password) return;
         setLoading(true);
         login(email.trim(), password.trim())
-            .then(() => router.replace("/(restaurantpanel)/index"))
+            .then(() => router.replace("/restaurant"))
             .catch((err: any) => {
                 Alert.alert("Giriş başarısız", err?.message || "E-posta veya şifre hatalı.");
             })
@@ -26,7 +27,7 @@ export default function RestaurantPanelLogin() {
 
     useEffect(() => {
         if (session) {
-            router.replace("/(restaurantpanel)/index");
+            router.replace("/restaurant");
         }
     }, [session, router]);
 

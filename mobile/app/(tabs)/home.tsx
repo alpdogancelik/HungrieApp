@@ -5,7 +5,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-
 import CartButton from "@/components/CartButton";
 import LanguageToggle from "@/components/LanguageToggle";
 import { illustrations } from "@/constants/mediaCatalog";
@@ -15,7 +14,7 @@ import { useTheme, ThemeDefinition } from "@/src/theme/themeContext";
 import { DeliverToHeader } from "@/src/features/address/addressFeature";
 import Icon from "@/components/Icon";
 import { makeShadow } from "@/src/lib/shadowStyle";
-import { resolveRestaurantImageSource } from "@/lib/assets";
+import { getRestaurantImageSource } from "@/lib/assets";
 import useAuthStore from "@/store/auth.store";
 import type { Order } from "@/src/domain/types";
 import useOrderStatus, { type PendingOrderStatus } from "@/src/hooks/useOrderStatus";
@@ -24,7 +23,6 @@ import GodzillaIceCream from "@/assets/godzilla/VCTRLY-godzila-ice-cream-food.sv
 import GodzillaReading from "@/assets/godzilla/VCTRLY-godzila-reading-book-magazine.svg";
 import GodzillaOffice from "@/assets/godzilla/VCTRLY-godzila-work-office-business.svg";
 import GodzillaBusy from "@/assets/godzilla/VCTRLY-godzila-work-worker-busy-confused.svg";
-import menu from "../restaurantpanel/menu";
 
 const CourierIllustration = illustrations.foodieCelebration;
 const WINE_RED = "#7F021F";
@@ -43,32 +41,12 @@ const RESTAURANT_SLUG_MAP: Record<string, string> = {
 };
 
 export default function HomeTabScreen() {
-    const {
-        userName,
-        heroLoading,
-        restaurants,
-        restaurantsLoading,
-        quickActions,
-    } = useHome();
+    const { userName, heroLoading, restaurants, restaurantsLoading } = useHome();
     const router = useRouter();
     const { t } = useTranslation();
     const { theme } = useTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);
     const displayName = (userName || "Hungrie User").trim();
-
-    const renderQuickAction = (action: any) => (
-        <TouchableOpacity key={action.id} style={styles.quickCardWrapper} onPress={() => router.push(action.target as any)}>
-            <Card style={styles.quickCard}>
-                <View style={styles.quickCardIconBubble}>
-                    <Icon name={action.icon} size={20} color={theme.colors.primary} style={styles.quickCardIcon} />
-                </View>
-                <View style={{ flex: 1, gap: 4 }}>
-                    <Text style={styles.quickCardLabel}>{action.label}</Text>
-                    {action.description ? <Text style={styles.quickCardDescription}>{action.description}</Text> : null}
-                </View>
-            </Card>
-        </TouchableOpacity>
-    );
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -102,6 +80,7 @@ export default function HomeTabScreen() {
                         <View style={styles.deliveryRow}>
                             <DeliverToHeader />
                         </View>
+                        <Text style={styles.deliveryName}>{displayName}</Text>
                     </View>
                     <View style={styles.headerActionsColumn}>
                         <Text style={styles.languageLabel}>{t(languageHintKey)}</Text>
@@ -151,8 +130,6 @@ export default function HomeTabScreen() {
                     </View>
                 </TouchableOpacity>
 
-                <IllustrationGallery />
-
                 <View style={styles.section}>
                     <SectionHeader title={t("home.restaurantsTitle")} />
                     {restaurantsLoading ? (
@@ -167,6 +144,7 @@ export default function HomeTabScreen() {
                                     <RestaurantGridTile
                                         key={restaurantId}
                                         restaurant={restaurant}
+                                        campusOnly={slug === "root"}
                                         onPress={() => router.push(`/restaurants/${encodeURIComponent(slug)}`)}
                                     />
                                 );
@@ -179,15 +157,6 @@ export default function HomeTabScreen() {
                     <OrderStatusStrip />
                 </View>
 
-                <View style={styles.section}>
-                    <SectionHeader title={t("home.quickActionsTitle")} />
-                    <View style={styles.quickGrid}>
-                        {quickActions
-                            .filter((action: any) => action.id === "orders")
-                            .map(renderQuickAction)}
-                    </View>
-                </View>
-
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>2026 ©HungrieApp Inc.</Text>
                 </View>
@@ -195,53 +164,6 @@ export default function HomeTabScreen() {
         </SafeAreaView>
     );
 }
-
-const illustrationSet = [
-    illustrations.droneDelivery,
-    illustrations.eatingNoodles,
-    illustrations.makingPizza,
-    illustrations.mealOrder,
-    illustrations.menuBoard,
-    illustrations.rider,
-    illustrations.tastingFood,
-];
-
-const IllustrationGallery = () => {
-    const { theme } = useTheme();
-    return (
-        <View style={{ paddingHorizontal: theme.spacing.lg }}>
-            <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: theme.spacing.md, paddingVertical: theme.spacing.sm }}
-            >
-                {illustrationSet.map((Art, idx) => (
-                    <View
-                        key={idx}
-                        style={{
-                            width: 160,
-                            height: 120,
-                            borderRadius: theme.radius["2xl"],
-                            backgroundColor: `${theme.colors.primary}10`,
-                            padding: theme.spacing.md,
-                            justifyContent: "center",
-                            alignItems: "center",
-                            ...makeShadow({
-                                color: theme.colors.ink,
-                                offsetY: 8,
-                                blurRadius: 18,
-                                opacity: 0.06,
-                                elevation: 5,
-                            }),
-                        }}
-                    >
-                        <Art width={120} height={120} />
-                    </View>
-                ))}
-            </ScrollView>
-        </View>
-    );
-};
 
 const OrderStatusStrip = () => {
     const { theme } = useTheme();
@@ -341,10 +263,20 @@ const OrderStatusStrip = () => {
     );
 };
 
-const RestaurantGridTile = ({ restaurant, onPress }: { restaurant: any; onPress: () => void }) => {
+const RestaurantGridTile = ({
+    restaurant,
+    onPress,
+    campusOnly = false,
+}: {
+    restaurant: any;
+    onPress: () => void;
+    campusOnly?: boolean;
+}) => {
     const { theme } = useTheme();
+    const { t } = useTranslation();
     const { name, imageUrl } = restaurant || {};
     const fallbackName = name || "Restaurant";
+    const campusLabel = campusOnly ? t("home.campusOnlyTag") : null;
     return (
         <TouchableOpacity
             activeOpacity={0.9}
@@ -392,22 +324,25 @@ const RestaurantGridTile = ({ restaurant, onPress }: { restaurant: any; onPress:
             >
                 {fallbackName}
             </Text>
+            {campusLabel ? (
+                <Text
+                    style={{
+                        fontFamily: "ChairoSans",
+                        fontSize: 12,
+                        color: theme.colors.muted,
+                    }}
+                    numberOfLines={1}
+                >
+                    {campusLabel}
+                </Text>
+            ) : null}
         </TouchableOpacity>
     );
 };
 
 const RestaurantImage = ({ imageUrl }: { imageUrl: any }) => {
-    const resolvedImage = resolveRestaurantImageSource(imageUrl);
-    const source = typeof resolvedImage === "number" ? resolvedImage : resolvedImage ? { uri: resolvedImage } : undefined;
-    if (!source) return null;
-    return (
-        <Image
-            source={source}
-            style={{ width: "100%", height: "100%" }}
-            contentFit="cover"
-            transition={300}
-        />
-    );
+    const source = getRestaurantImageSource(imageUrl);
+    return <Image source={source} style={{ width: "100%", height: "100%" }} contentFit="cover" transition={300} />;
 };
 
 const createStyles = (theme: ThemeDefinition) =>
@@ -433,6 +368,13 @@ const createStyles = (theme: ThemeDefinition) =>
         deliveryRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing.sm },
         headerActionsColumn: { alignItems: "flex-end", gap: 4, marginTop: 2 },
         languageLabel: { fontFamily: "ChairoSans", color: theme.colors.muted, fontSize: 12, paddingRight: theme.spacing.sm, textAlign: "right" },
+        //Added missing deliveryName style to avoid TS error when referenced in JSX
+        deliveryName: {
+            fontFamily: "ChairoSans",
+            fontSize: 18,
+            color: theme.colors.ink,
+            marginTop: 4,
+        },
         heroCard: {
             marginHorizontal: theme.spacing.lg,
             borderRadius: theme.radius["2xl"],
@@ -553,42 +495,6 @@ const createStyles = (theme: ThemeDefinition) =>
             paddingRight: theme.spacing.lg,
         },
         section: { paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md },
-        quickGrid: {
-            flexDirection: "row",
-            flexWrap: "wrap",
-            gap: theme.spacing.md,
-        },
-        quickCardWrapper: {
-            width: "47%",
-        },
-        quickCard: {
-            flexDirection: "row",
-            alignItems: "center",
-            gap: theme.spacing.md,
-            borderRadius: theme.radius["2xl"],
-            backgroundColor: theme.colors.surface,
-            ...makeShadow({
-                color: theme.colors.ink,
-                offsetY: 4,
-                blurRadius: 10,
-                opacity: 0.05,
-            }),
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            paddingVertical: theme.spacing.md,
-            paddingHorizontal: theme.spacing.md,
-        },
-        quickCardIconBubble: {
-            width: 42,
-            height: 42,
-            borderRadius: 21,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: `${theme.colors.primary}12`,
-        },
-        quickCardIcon: { width: 32, height: 32 },
-        quickCardLabel: { fontFamily: "ChairoSans", color: theme.colors.ink },
-        quickCardDescription: { color: theme.colors.muted, fontFamily: "ChairoSans", lineHeight: 18 },
         gridGap: {
             gap: theme.spacing.md,
             flexDirection: "row",
@@ -603,5 +509,6 @@ const createStyles = (theme: ThemeDefinition) =>
         footer: { alignItems: "center", paddingVertical: theme.spacing.lg },
         footerText: { fontFamily: "ChairoSans", color: theme.colors.muted },
     });
+
 
 

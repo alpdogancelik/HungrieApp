@@ -22,6 +22,8 @@ const RESTAURANT_LOGO_BY_FILE: Record<string, number> = {
 
 const FALLBACK_RESTAURANT_IMAGE = RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/adapizzalogo.jpg"];
 
+type ExpoImageSource = number | { uri: string };
+
 export const resolveRestaurantImageSource = (value?: string | number | null) => {
     if (value && typeof value === "object") {
         const uriLike = (value as any).uri ?? (value as any).default?.uri ?? null;
@@ -34,6 +36,16 @@ export const resolveRestaurantImageSource = (value?: string | number | null) => 
     const asString = typeof value === "string" ? value : String(value);
     const trimmed = asString.trim();
     if (!trimmed) return FALLBACK_RESTAURANT_IMAGE;
+    const lowered = trimmed.toLowerCase();
+    if (
+        trimmed.startsWith("http://") ||
+        trimmed.startsWith("https://") ||
+        trimmed.startsWith("data:") ||
+        trimmed.startsWith("file://") ||
+        lowered.startsWith("//")
+    ) {
+        return trimmed;
+    }
     const localAsset = RESTAURANT_LOGO_MAP[trimmed];
     if (localAsset) return localAsset;
 
@@ -49,4 +61,16 @@ export const resolveRestaurantImageSource = (value?: string | number | null) => 
     // Prevent invalid URI errors when a local asset path leaks into runtime.
     if (trimmed.startsWith("@/assets/restaurantlogo/")) return FALLBACK_RESTAURANT_IMAGE;
     return FALLBACK_RESTAURANT_IMAGE;
+};
+
+export const getRestaurantImageSource = (
+    value?: string | number | { uri?: string } | null,
+    fallback: ExpoImageSource = FALLBACK_RESTAURANT_IMAGE,
+): ExpoImageSource => {
+    const resolved = resolveRestaurantImageSource(value as any);
+    if (typeof resolved === "number") return resolved;
+    if (typeof resolved === "string" && resolved.trim()) {
+        return { uri: resolved.trim() };
+    }
+    return fallback;
 };

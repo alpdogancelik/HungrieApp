@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Alert, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -7,8 +7,7 @@ import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import "@/src/lib/i18n";
 import useAuthStore from "@/store/auth.store";
-import useServerResource from "@/lib/useServerResource";
-import { getUserOrders, logout } from "@/lib/api";
+import { logout } from "@/lib/api";
 import { router } from "expo-router";
 import { Badge, SectionHeader } from "@/src/components/componentRegistry";
 import { useDefaultAddress, type ManageAddressesNavigation } from "@/src/features/address/addressFeature";
@@ -17,6 +16,11 @@ import GodzillaFishing from "@/assets/godzilla/VCTRLY-godzila-fishing-fish-beach
 import GodzillaCafe from "@/assets/godzilla/VCTRLY-godzila-cafe-coffee-tea-restaurant.svg";
 import { NotificationManager } from "@/src/features/notifications/NotificationManager";
 import i18n from "@/src/lib/i18n";
+import { subscribeUserOrders } from "@/src/services/firebaseOrders";
+import { storage } from "@/src/lib/storage";
+import { useTheme } from "@/src/theme/themeContext";
+import { OrderStatus } from "@/type";
+import { makeShadow } from "@/src/lib/shadowStyle";
 
 const EMOJI_OPTIONS = Object.values(emojiSet);
 const WINE_RED = "#7F021F";
@@ -37,10 +41,11 @@ const Profile = () => {
     const navigation = useNavigation<ManageAddressesNavigation>();
     const { user, setIsAuthenticated, setUser, preferredEmoji, setPreferredEmoji } = useAuthStore();
     const { defaultAddress } = useDefaultAddress();
-    const { data: orders } = useServerResource({ fn: getUserOrders, skipAlert: true });
+    const [orders, setOrders] = useState<any[]>([]);
     const [signingOut, setSigningOut] = useState(false);
     const [supportModalVisible, setSupportModalVisible] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+    const [notifModalVisible, setNotifModalVisible] = useState(false);
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [nameDraft, setNameDraft] = useState(user?.name ?? "");
     const [emailDraft, setEmailDraft] = useState(user?.email ?? "");
@@ -57,8 +62,10 @@ const Profile = () => {
         [user?.name],
     );
 
-    const activeOrders = (orders || []).filter((order: any) => order.status !== "delivered");
+    const activeOrders = (orders || []).filter((order: any) => order.status !== "delivered" && order.status !== "canceled");
     const TrackingIllustration = illustrations.tracking;
+    const HistoryIllustration = illustrations.foodieCelebration;
+    const ActiveIllustration = illustrations.courierHero;
     const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
 
     const handleManageAddressesPress = () => {
@@ -80,6 +87,20 @@ const Profile = () => {
         setNameDraft(user?.name ?? "");
         setEmailDraft(user?.email ?? "");
     }, [user?.name, user?.email]);
+
+    useEffect(() => {
+        const userId = user?.id ?? user?.$id ?? user?.accountId ?? null;
+        if (!userId) return;
+        // Firestore realtime orders; if firebase config missing, backend teammate will wire credentials.
+        const unsubscribe = subscribeUserOrders(userId, (list) => setOrders(list || []));
+        return () => {
+            try {
+                unsubscribe && unsubscribe();
+            } catch {
+                /* noop */
+            }
+        };
+    }, [user?.id, user?.$id, user?.accountId]);
 
     const handleSaveProfile = () => {
         const trimmedName = nameDraft.trim();
@@ -258,36 +279,47 @@ const Profile = () => {
                         </View>
                     </Modal>
 
-                    <View className="secondary-card gap-3">
-                        <SectionHeader title={t("profile.activeOrders")} />
+                    <View className="secondary-card gap-4">
+                        <View className="flex-row justify-between items-center">
+                            <SectionHeader title={t("profile.activeOrders")} />
+                            <ActiveIllustration width={56} height={56} />
+                        </View>
                         {activeOrders.length ? (
-                            activeOrders.map((order: any) => (
-                                <TouchableOpacity
-                                    key={order.id}
-                                    className="p-3 rounded-2xl border border-gray-100 mb-2"
-                                    onPress={() => setSelectedOrder(order)}
-                                >
-                                    <View className="flex-row items-center justify-between">
-                                        <Text className="paragraph-semibold text-dark-100">
-                                            {order.restaurant?.name || `Order #${order.id}`}
-                                        </Text>
-                                        <Badge
-                                            label={t(`status.${order.status}` as const)}
-                                            status={STATUS_VARIANT[order.status] || "warning"}
-                                        />
-                                    </View>
-                                    <Text className="body-medium text-dark-60 mt-1">
-                                        {`${formatCurrency(order.total)} - ${order.paymentMethod === "cash"
-                                            ? t("profileExtras.payment.cash")
-                                            : t("profileExtras.payment.card")
-                                            }`}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))
+                            <View className="gap-3">
+                                {activeOrders.map((order: any) => (
+                                    <TouchableOpacity
+                                        key={order.id}
+                                        className="p-4 rounded-3xl border border-[#F1F5F9] bg-white"
+                                        onPress={() => setSelectedOrder(order)}
+                                        style={makeShadow({ color: "#0F172A", offsetY: 6, blurRadius: 12, opacity: 0.04, elevation: 2 })}
+                                    >
+                                        <View className="flex-row items-center justify-between">
+                                            <View>
+                                                <Text className="paragraph-semibold text-dark-100">
+                                                    {order.restaurant?.name || `Order #${order.id}`}
+                                                </Text>
+                                                <Text className="body-medium text-dark-60 mt-1">
+                                                    {`${formatCurrency(order.total)} - ${order.paymentMethod === "cash"
+                                                        ? t("profileExtras.payment.cash")
+                                                        : t("profileExtras.payment.card")
+                                                        }`}
+                                                </Text>
+                                            </View>
+                                            <View className="px-3 py-1 rounded-full bg-[#FFF4D5]">
+                                                <Text className="paragraph-semibold text-[#E7A700]">
+                                                    {t(`status.${order.status}` as const)}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
                         ) : (
                             <Text className="body-medium text-dark-60">{t("profile.noActiveOrders")}</Text>
                         )}
                     </View>
+
+                    <OrderHistorySection orders={orders} />
 
                     <View className="secondary-card gap-3">
                         <SectionHeader title={t("profile.accountActions")} />
@@ -295,7 +327,7 @@ const Profile = () => {
                             {
                                 label: t("profileExtras.actions.notifications.label"),
                                 description: t("profileExtras.actions.notifications.description"),
-                                action: handleNotificationTest,
+                                action: () => setNotifModalVisible(true),
                             },
                             {
                                 label: t("profileExtras.actions.help.label"),
@@ -322,12 +354,6 @@ const Profile = () => {
                                 </View>
                             </TouchableOpacity>
                         ))}
-                        <TouchableOpacity className="hero-cta mt-2 items-center" onPress={() => router.push("/restaurant/console")}>
-                            <Text className="text-white">{t("profile.restaurantConsole")}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity className="chip mt-2 bg-white border-primary" onPress={() => router.push("/restaurant/couriers")}>
-                            <Text className="paragraph-semibold text-primary-dark">{t("profile.courierConsole")}</Text>
-                        </TouchableOpacity>
                     </View>
                 </View>
             </ScrollView>
@@ -455,7 +481,260 @@ const Profile = () => {
                     </TouchableOpacity>
                 </View>
             </Modal>
+
+            <NotificationPreferencesModal
+                visible={notifModalVisible}
+                onClose={() => setNotifModalVisible(false)}
+            />
         </SafeAreaView>
+    );
+};
+
+type NotificationPrefs = {
+    announcements: boolean;
+    orderStatus: boolean;
+    messages: boolean;
+    reviewReplies: boolean;
+};
+
+const NOTIF_PREFS_KEY = "hungrie_notification_prefs_v1";
+const defaultPrefs: NotificationPrefs = {
+    announcements: true,
+    orderStatus: true,
+    messages: true,
+    reviewReplies: true,
+};
+
+const NotificationPreferencesModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
+    const { t } = useTranslation();
+    const { theme } = useTheme();
+    const [prefs, setPrefs] = useState<NotificationPrefs>(defaultPrefs);
+    const [loading, setLoading] = useState(false);
+    const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        if (!visible) return;
+        const loadPrefs = async () => {
+            const saved = await storage.getItem(NOTIF_PREFS_KEY);
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved) as NotificationPrefs;
+                    setPrefs({ ...defaultPrefs, ...parsed });
+                } catch {
+                    setPrefs(defaultPrefs);
+                }
+            } else {
+                setPrefs(defaultPrefs);
+            }
+        };
+        void loadPrefs();
+    }, [visible]);
+
+    useEffect(() => {
+        if (!visible) return;
+        const request = async () => {
+            const granted = await NotificationManager.requestPermissions();
+            setPermissionGranted(granted);
+        };
+        void request();
+    }, [visible]);
+
+    const toggle = (key: keyof NotificationPrefs) => {
+        setPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const handleSave = async () => {
+        setLoading(true);
+        await storage.setItem(NOTIF_PREFS_KEY, JSON.stringify(prefs));
+        setLoading(false);
+        onClose();
+    };
+
+    const rows: Array<{ key: keyof NotificationPrefs; label: string }> = [
+        { key: "announcements", label: t("cart.screen.notifications.announcements") },
+        { key: "orderStatus", label: t("cart.screen.notifications.orderStatus") },
+        { key: "messages", label: t("cart.screen.notifications.messages") },
+        { key: "reviewReplies", label: t("cart.screen.notifications.reviewReplies") },
+    ];
+
+    return (
+        <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+            <TouchableOpacity className="flex-1 bg-black/30" activeOpacity={1} onPress={onClose} />
+            <View className="absolute left-0 right-0 bottom-0 bg-white rounded-t-[32px] p-5 gap-5">
+                <View className="h-1 w-16 bg-gray-200 rounded-full self-center" />
+                <View className="flex-row items-center gap-3">
+                    <Image source={images.deliveryReview} className="w-14 h-14 rounded-2xl" contentFit="cover" />
+                    <View style={{ flex: 1 }}>
+                        <Text className="text-xl font-ezra-bold text-dark-100">
+                            {t("cart.screen.notifications.title")}
+                        </Text>
+                        <Text className="body-medium text-dark-60">{t("cart.screen.notifications.subtitle")}</Text>
+                        {permissionGranted === false ? (
+                            <Text className="caption text-red-500 mt-1">
+                                {t("cart.screen.notifications.permissionDenied")}
+                            </Text>
+                        ) : null}
+                        {permissionGranted === null ? (
+                            <Text className="caption text-dark-40 mt-1">
+                                {t("cart.screen.notifications.permissionNeeded")}
+                            </Text>
+                        ) : null}
+                    </View>
+                </View>
+
+                <View className="gap-2">
+                    {rows.map((row) => (
+                        <TouchableOpacity
+                            key={row.key}
+                            className="flex-row items-center justify-between bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3"
+                            onPress={() => toggle(row.key)}
+                        >
+                            <Text className="paragraph-semibold text-dark-100">{row.label}</Text>
+                            <View
+                                style={{
+                                    width: 50,
+                                    height: 30,
+                                    borderRadius: 999,
+                                    backgroundColor: prefs[row.key] ? theme.colors.primary : "#E2E8F0",
+                                    alignItems: prefs[row.key] ? "flex-end" : "flex-start",
+                                    padding: 4,
+                                }}
+                            >
+                                <View
+                                    style={{
+                                        width: 22,
+                                        height: 22,
+                                        borderRadius: 11,
+                                        backgroundColor: "#FFFFFF",
+                                    }}
+                                />
+                            </View>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                <TouchableOpacity
+                    className="custom-btn flex-row items-center justify-center"
+                    disabled={loading}
+                    style={{ opacity: loading ? 0.7 : 1 }}
+                    onPress={handleSave}
+                >
+                    <Text className="paragraph-semibold text-white">
+                        {loading ? t("cart.screen.notifications.saving") : t("cart.screen.notifications.save")}
+                    </Text>
+                </TouchableOpacity>
+            </View>
+        </Modal>
+    );
+};
+
+const OrderHistorySection = ({ orders }: { orders: any[] }) => {
+    const { t } = useTranslation();
+    const HistoryIllustration = illustrations.foodieCelebration;
+    const [query, setQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus | "canceled">("all");
+    const filtered = useMemo(() => {
+        return orders
+            .filter((order) => {
+                const name = (order.restaurant?.name || "").toLowerCase();
+                const matchesQuery = name.includes(query.toLowerCase());
+                const matchesStatus = statusFilter === "all" ? true : order.status === statusFilter;
+                return matchesQuery && matchesStatus;
+            })
+            .sort((a, b) => {
+                const da = new Date(a.updatedAt || a.createdAt || 0).getTime();
+                const db = new Date(b.updatedAt || b.createdAt || 0).getTime();
+                return db - da;
+            });
+    }, [orders, query, statusFilter]);
+
+    const pills: Array<{ id: "all" | OrderStatus | "canceled"; label: string }> = [
+        { id: "all", label: t("orders.all", "All") },
+        { id: "preparing", label: t("status.preparing") },
+        { id: "ready", label: t("status.ready") },
+        { id: "out_for_delivery", label: t("status.out_for_delivery", t("status.ready")) },
+        { id: "delivered", label: t("status.delivered") },
+        { id: "canceled", label: t("status.canceled") },
+    ];
+
+    return (
+        <View className="secondary-card gap-4">
+            <View className="flex-row items-center justify-between">
+                <SectionHeader title={t("orders.historyTitle", "Sipariş Geçmişi")} />
+                <HistoryIllustration width={52} height={52} />
+            </View>
+            <View className="rounded-full border border-gray-200 px-4 py-2 bg-white">
+                <TextInput
+                    placeholder={t("orders.searchPlaceholder", "Restoran adıyla ara")}
+                    placeholderTextColor="#94A3B8"
+                    value={query}
+                    onChangeText={setQuery}
+                    className="body-medium text-dark-100"
+                />
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                {pills.map((pill) => {
+                    const active = statusFilter === pill.id;
+                    return (
+                        <TouchableOpacity
+                            key={pill.id}
+                            onPress={() => setStatusFilter(pill.id)}
+                            style={{
+                                paddingHorizontal: 14,
+                                paddingVertical: 8,
+                                borderRadius: 999,
+                                borderWidth: 1,
+                                borderColor: active ? "#FE8C00" : "#E2E8F0",
+                                backgroundColor: active ? "#FFF5E9" : "#FFFFFF",
+                            }}
+                        >
+                            <Text className="paragraph-semibold" style={{ color: active ? "#FE8C00" : "#475569" }}>
+                                {pill.label}
+                            </Text>
+                        </TouchableOpacity>
+                    );
+                })}
+            </ScrollView>
+
+            <View className="gap-3">
+                {filtered.map((order) => (
+                    <View
+                        key={order.id}
+                        className="bg-white rounded-3xl border border-gray-100 p-4"
+                        style={makeShadow({ color: "#0F172A", offsetY: 6, blurRadius: 12, opacity: 0.05, elevation: 3 })}
+                    >
+                        <View className="flex-row justify-between">
+                            <Text className="paragraph-semibold text-dark-100">{order.restaurant?.name || "-"}</Text>
+                            <View className="px-3 py-1 rounded-full bg-[#FFF4D5]">
+                                <Text className="paragraph-semibold text-[#E7A700]">
+                                    {t(`status.${order.status}` as const)}
+                                </Text>
+                            </View>
+                        </View>
+                        <Text className="caption text-dark-40 mt-1">
+                            {order.updatedAt || order.createdAt || ""}
+                        </Text>
+                        <Text className="body-medium text-dark-80 mt-2">
+                            {order.orderItems?.[0]?.name ? `1x ${order.orderItems[0].name}` : ""}
+                        </Text>
+                        <View className="flex-row items-center justify-between mt-3">
+                            <View>
+                                <Text className="caption text-dark-40">{t("cart.screen.summary.total")}</Text>
+                                <Text className="h3-bold text-dark-100">{formatCurrency(order.total)}</Text>
+                            </View>
+                            <Text className="paragraph-semibold text-primary">
+                                {t(`status.${order.status}` as const)}
+                            </Text>
+                        </View>
+                    </View>
+                ))}
+                {!filtered.length ? (
+                    <Text className="body-medium text-dark-60">
+                        {t("orders.emptyHistory", "Hiç sipariş bulunamadı.")}
+                    </Text>
+                ) : null}
+            </View>
+        </View>
     );
 };
 

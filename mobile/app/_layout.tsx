@@ -4,6 +4,7 @@ import { useFonts } from "expo-font";
 import Constants from "expo-constants";
 import * as Sentry from "@sentry/react-native";
 import { Text, TextInput } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import useAuthStore from "@/store/auth.store";
 import { ThemeProvider } from "@/src/theme/themeContext";
@@ -11,6 +12,7 @@ import "@/src/lib/i18n";
 import "./globals.css";
 import { NotificationManager } from "@/src/features/notifications/NotificationManager";
 import { registerTokenWithBackend } from "@/src/features/notifications/push";
+import CartLockNotice from "@/components/CartLockNotice";
 
 const extra = Constants.expoConfig?.extra ?? {};
 const env = (typeof process !== "undefined" ? (process as any).env : undefined) ?? {};
@@ -33,10 +35,10 @@ function RootLayoutBase() {
     const { isLoading, isAuthenticated, user, fetchAuthenticatedUser } = useAuthStore();
     const pushRegistrationKeyRef = useRef<string | null>(null);
     const chairoRegular = require("../assets/fonts/ChairoSansRegular-Regular.ttf");
-    const applyDefaultFont = (component: { defaultProps?: { style?: any } }) => {
-        const existingStyle = component.defaultProps?.style;
+    const applyDefaultFont = (component: any) => {
+        const existingStyle = component?.defaultProps?.style;
         const styleArray = Array.isArray(existingStyle) ? existingStyle : existingStyle ? [existingStyle] : [];
-        const hasChairo = styleArray.some((style) => style?.fontFamily === "ChairoSans");
+        const hasChairo = styleArray.some((style: any) => style?.fontFamily === "ChairoSans");
         const mergedStyle = hasChairo ? styleArray : [{ fontFamily: "ChairoSans" }, ...styleArray];
 
         component.defaultProps = {
@@ -93,9 +95,12 @@ function RootLayoutBase() {
     if (!fontsLoaded || isLoading) return null;
 
     return (
-        <ThemeProvider>
-            <Stack screenOptions={{ headerShown: false }} />
-        </ThemeProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <ThemeProvider>
+                <CartLockNotice />
+                <Stack screenOptions={{ headerShown: false }} />
+            </ThemeProvider>
+        </GestureHandlerRootView>
     );
 }
 
@@ -106,4 +111,3 @@ if (enableSentry) {
 }
 
 export default RootLayout;
-

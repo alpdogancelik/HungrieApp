@@ -13,19 +13,44 @@
             "address": "Kuzey Kampüs, Öğrenci Çarşısı"
         }
     ],
-        "categories": [
-        { "id": "wraps", "name": "Durumler" },
-        { "id": "mains", "name": "Menuler ve Tabaklar" },
-        { "id": "burgers", "name": "Burgerler" },
-        { "id": "cigkofte", "name": "Cigkofte" },
-        { "id": "cold-drinks", "name": "Soguk Icecekler" }
+    "categories": [
+        {
+            "id": "wraps",
+            "name": "Dürümler"
+        },
+        {
+            "id": "mains",
+            "name": "Menuler ve Tabaklar"
+        },
+        {
+            "id": "burgers",
+            "name": "Burgerler"
+        },
+        {
+            "id": "cigkofte",
+            "name": "Cigkofte"
+        },
+        {
+            "id": "cold-drinks",
+            "name": "Soğuk İçecekler"
+        }
     ],
     "menus": [
         {
             "id": "wrap-hnf-d1",
             "name": "D1 - Cero's Popcorn Dürüm",
-            "description": "Popcorn tavuk parçacıkları, cips, mayonez, ketçap, marul, beyaz lahana. Fiyat seçime göre 300–320 TL.",
+            "description": "Popcorn tavuk parçacıkları, cips, mayonez, ketçap, marul, beyaz lahana. Fiyat 300 TL.",
             "price": 300,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "wraps"
+            ]
+        },
+        {
+            "id": "wrap-hnf-d1-1",
+            "name": "D1.1 - Cero's Popcorn Dürüm",
+            "description": "Popcorn tavuk parçacıkları, cips, mayonez, ketçap, marul, beyaz lahana. Fiyat 320 TL.",
+            "price": 320,
             "restaurantId": "hot-n-fresh",
             "categories": [
                 "wraps"
@@ -34,8 +59,18 @@
         {
             "id": "wrap-hnf-d2",
             "name": "D2 - Cero's Special Dürüm",
-            "description": "Cero's özel soslu tavuk parçacıkları, cips, mayonez, ketçap, marul, beyaz lahana. Fiyat seçime göre 300–320 TL.",
+            "description": "Cero's özel soslu tavuk parçacıkları, cips, mayonez, ketçap, marul, beyaz lahana. Fiyat 300 TL.",
             "price": 300,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "wraps"
+            ]
+        },
+        {
+            "id": "wrap-hnf-d2-1",
+            "name": "D2.1 - Cero's Special Dürüm",
+            "description": "Cero's özel soslu tavuk parçacıkları, cips, mayonez, ketçap, marul, beyaz lahana. Fiyat 320 TL.",
+            "price": 320,
             "restaurantId": "hot-n-fresh",
             "categories": [
                 "wraps"
@@ -44,8 +79,18 @@
         {
             "id": "wrap-hnf-d3",
             "name": "D3 - Cero's Special & Onion Dürüm",
-            "description": "Özel soslu tavuk parçacıkları, soğan halkası, cips, marul, beyaz lahana, mayonez, ketçap. Fiyat seçime göre 300–320 TL.",
+            "description": "Özel soslu tavuk parçacıkları, soğan halkası, cips, marul, beyaz lahana, mayonez, ketçap. Fiyat 300 TL.",
             "price": 300,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "wraps"
+            ]
+        },
+        {
+            "id": "wrap-hnf-d3-1",
+            "name": "D3.1- Cero's Special & Onion Dürüm",
+            "description": "Özel soslu tavuk parçacıkları, soğan halkası, cips, marul, beyaz lahana, mayonez, ketçap. Fiyat 320 TL.",
+            "price": 320,
             "restaurantId": "hot-n-fresh",
             "categories": [
                 "wraps"

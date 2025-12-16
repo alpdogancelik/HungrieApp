@@ -1,16 +1,25 @@
 // app/(restaurants)/lombard.tsx
-import { useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { Platform, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+
 import { useCartStore } from "@/store/cart.store";
 import Icon from "@/components/Icon";
 import { getCategoryLabel as translateCategoryLabel } from "@/src/lib/categoryLabels";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 import lombardData from "../../data/lombard-firestore.json";
+
+const RESTAURANT_ID = String(lombardData?.restaurants?.[0]?.id || "lombard-kitchen");
+const RESTAURANT_PHONE = "(+90 533 876 22 66)";
+const HERO_KICKER = "Lombard Kitchen & Pub";
+const HERO_SUBTITLE = "Pizza · Salata · Piliç · Atıştırmalık";
 
 type MenuEntry = {
     id: string;
@@ -44,10 +53,11 @@ const BASE_CATEGORY_ORDER = [
     "pasta",
     "salads",
     "snacks",
+    "drinks",
 ];
 
-const sortCategories = (keys: string[]) => {
-    return [...keys].sort((a, b) => {
+const sortCategories = (keys: string[]) =>
+    [...keys].sort((a, b) => {
         const ia = BASE_CATEGORY_ORDER.indexOf(a);
         const ib = BASE_CATEGORY_ORDER.indexOf(b);
         if (ia === -1 && ib === -1) return a.localeCompare(b);
@@ -55,7 +65,63 @@ const sortCategories = (keys: string[]) => {
         if (ib === -1) return -1;
         return ia - ib;
     });
+
+/** Lombard theme: deep green + warm beige/gold (premium pub vibe, not dark) */
+const THEME = {
+    bgTop: "#F7F2E7",
+    bgMid: "#EFE8D8",
+    bgBottom: "#FDFBF7",
+
+    green: "#22473E",
+    green2: "#2F5D52",
+    greenSoft: "rgba(34,71,62,0.10)",
+    greenSoft2: "rgba(34,71,62,0.16)",
+
+    sand: "#E7D6BC",
+    sandSoft: "rgba(231,214,188,0.30)",
+
+    gold: "#D7B37B",
+    goldSoft: "rgba(215,179,123,0.24)",
+
+    surface: "rgba(255,255,255,0.86)",
+    surface2: "rgba(255,253,248,0.92)",
+
+    ink: "#14211D",
+    muted: "rgba(20,33,29,0.60)",
+
+    line: "rgba(20,33,29,0.10)",
+    lineSoft: "rgba(20,33,29,0.06)",
 };
+
+const shadow = {
+    shadowColor: "#000",
+    shadowOpacity: Platform.OS === "ios" ? 0.09 : 0.12,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 3,
+};
+
+const CardPress = ({
+    children,
+    onPress,
+    style,
+}: {
+    children: ReactNode;
+    onPress?: () => void;
+    style?: any;
+}) => (
+    <Pressable
+        onPress={onPress}
+        disabled={!onPress}
+        style={({ pressed }) => [
+            styles.card,
+            style,
+            pressed && onPress ? { transform: [{ scale: 0.992 }], opacity: 0.985 } : null,
+        ]}
+    >
+        {children}
+    </Pressable>
+);
 
 const MenuList = ({ items, addLabel }: { items: MenuEntry[]; addLabel: string }) => {
     const { addItem } = useCartStore();
@@ -64,238 +130,443 @@ const MenuList = ({ items, addLabel }: { items: MenuEntry[]; addLabel: string })
     return (
         <View style={styles.cardGrid}>
             {items.map((item) => (
-                <View key={item.id} style={styles.menuCard}>
+                <CardPress key={String(item.id)} style={styles.menuCard}>
+                    <LinearGradient
+                        colors={["rgba(34,71,62,0.55)", "rgba(34,71,62,0.10)"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 0, y: 1 }}
+                        style={styles.menuAccent}
+                    />
                     <View style={{ flex: 1, gap: 6 }}>
-                        <Text style={styles.menuTitle}>{item.name}</Text>
+                        <Text style={styles.menuTitle} numberOfLines={1}>
+                            {item.name}
+                        </Text>
                         {item.description ? (
                             <Text style={styles.menuDesc} numberOfLines={2}>
                                 {item.description}
                             </Text>
                         ) : null}
                     </View>
+
                     <View style={styles.menuRight}>
                         <Text style={styles.menuPrice}>{formatPrice(item.price)}</Text>
-                    <TouchableOpacity
-                        style={styles.addButton}
-                        onPress={() =>
-                            addItem({
-                                id: String(item.id),
+                        <Pressable
+                            onPress={() =>
+                                addItem({
+                                    id: String(item.id),
                                     name: item.name,
                                     price: Number(item.price || 0),
                                     image_url: "",
+                                    restaurantId: RESTAURANT_ID,
                                     customizations: [],
-                            })
-                        }
-                    >
-                        <Text style={styles.addButtonText}>{addLabel}</Text>
-                    </TouchableOpacity>
+                                })
+                            }
+                            style={({ pressed }) => [
+                                styles.addButton,
+                                pressed ? { transform: [{ scale: 0.985 }], opacity: 0.98 } : null,
+                            ]}
+                        >
+                            <Text style={styles.addButtonText}>{addLabel}</Text>
+                        </Pressable>
                     </View>
-                </View>
+                </CardPress>
             ))}
         </View>
     );
 };
 
-const LombardPage = () => {
+export default function LombardPage() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const { t, i18n } = useTranslation();
+
     const locale = i18n.language?.startsWith("tr") ? "tr" : "en";
     const restaurant = lombardData?.restaurants?.[0] ?? {};
     const menuItems: MenuEntry[] = Array.isArray(lombardData?.menus) ? lombardData.menus : [];
 
     const grouped = useMemo(() => groupByCategory(menuItems), [menuItems]);
     const categoryKeys = useMemo(() => sortCategories(Object.keys(grouped)), [grouped]);
+
     const [activeCategory, setActiveCategory] = useState<string>(() => categoryKeys[0] || "");
+
+    useEffect(() => {
+        if (!categoryKeys.length) return;
+        if (!activeCategory || !categoryKeys.includes(activeCategory)) setActiveCategory(categoryKeys[0]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [categoryKeys.join("|")]);
+
     const activeItems = activeCategory ? grouped[activeCategory] || [] : menuItems;
 
-    const cartItems = useCartStore((state) => state.items);
-    const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+    const cartItems = useCartStore((s) => s.items);
+    const cartCount = cartItems.reduce((acc, it) => acc + it.quantity, 0);
+
+    const scrollRef = useRef<ScrollView>(null);
+
+    const activeIndex = useMemo(() => {
+        const i = categoryKeys.indexOf(activeCategory);
+        return i >= 0 ? i : 0;
+    }, [categoryKeys, activeCategory]);
+
+    const goToIndex = (idx: number) => {
+        if (!categoryKeys.length) return;
+        const clamped = Math.max(0, Math.min(idx, categoryKeys.length - 1));
+        const nextKey = categoryKeys[clamped];
+        if (!nextKey || nextKey === activeCategory) return;
+
+        setActiveCategory(nextKey);
+        requestAnimationFrame(() => {
+            scrollRef.current?.scrollTo({ y: 0, animated: true });
+        });
+    };
+
+    const panToSwitchCategory = useMemo(() => {
+        return Gesture.Pan()
+            .activeOffsetX([-22, 22])
+            .failOffsetY([-14, 14])
+            .onEnd((e) => {
+                const THRESHOLD = 60;
+                if (Math.abs(e.translationX) < THRESHOLD) return;
+                if (e.translationX < 0) goToIndex(activeIndex + 1);
+                else goToIndex(activeIndex - 1);
+            });
+    }, [activeIndex, categoryKeys.join("|"), activeCategory]);
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <View style={styles.hero}>
-                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                        <Icon name="arrowBack" size={18} color="#3A1C00" />
-                    </TouchableOpacity>
-                    <View style={styles.heroGlow} />
-                    <View style={styles.heroInner}>
-                        <Image
-                            source={require("@/assets/restaurantlogo/lombardlogo.jpg")}
-                            style={styles.heroLogo}
-                            contentFit="cover"
-                        />
-                        <View style={styles.heroMeta}>
-                            <Text style={styles.heroBadge}>Lombard Kitchen                                                  (+90 533 876 22 66)</Text>
-                            <Text style={styles.heroTitle}>{restaurant.name || "Lombard Kitchen"}</Text>
-                            <Text style={styles.heroSubtitle}>Pizza · Salata · Piliç · Atıştırmalık</Text>
-                            <View style={styles.heroChips}>
-                                <View style={[styles.heroChip, { backgroundColor: "#F6C45322", borderColor: "#F6C453" }]}>
-                                    <Text style={[styles.heroChipText, { color: "#F6C453" }]}>Kalkanlı</Text>
+            <LinearGradient colors={[THEME.bgTop, THEME.bgMid, THEME.bgBottom]} style={{ flex: 1 }}>
+                <ScrollView
+                    ref={scrollRef}
+                    contentContainerStyle={{ paddingBottom: 120 + insets.bottom }}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* HERO */}
+                    <View style={styles.heroWrap}>
+                        {/* Back: her zaman görünür */}
+                        <Pressable
+                            onPress={() => router.back()}
+                            hitSlop={12}
+                            style={({ pressed }) => [
+                                styles.floatingBack,
+                                pressed ? { transform: [{ scale: 0.96 }], opacity: 0.98 } : null,
+                            ]}
+                        >
+                            <View style={styles.floatingBackInner}>
+                                <Icon name="arrowBack" size={20} color={THEME.ink} />
+                            </View>
+                        </Pressable>
+
+                        {/* Decor */}
+                        <View style={styles.decorGreen} pointerEvents="none" />
+                        <View style={styles.decorGold} pointerEvents="none" />
+                        <View style={styles.decorSand} pointerEvents="none" />
+
+                        <CardPress style={styles.heroCard}>
+                            <LinearGradient
+                                colors={["rgba(34,71,62,0.10)", "rgba(255,255,255,0)"]}
+                                start={{ x: 0.1, y: 0 }}
+                                end={{ x: 0.9, y: 1 }}
+                                style={styles.heroWash}
+                                pointerEvents="none"
+                            />
+
+                            <View style={styles.heroRow}>
+                                <View style={styles.logoShell}>
+                                    <Image
+                                        source={require("@/assets/restaurantlogo/lombardlogo.jpg")}
+                                        style={styles.logoImg}
+                                        contentFit="cover"
+                                    />
+                                </View>
+
+                                <View style={{ flex: 1, gap: 6 }}>
+                                    <View style={styles.heroTopLine}>
+                                        <Text style={styles.heroKicker}>{HERO_KICKER}</Text>
+                                        <Text style={styles.heroPhone}>{RESTAURANT_PHONE}</Text>
+                                    </View>
+
+                                    <Text style={styles.heroTitle}>{restaurant.name || "Lombard Kitchen"}</Text>
+                                    <Text style={styles.heroSubtitle}>{HERO_SUBTITLE}</Text>
+
+                                    <View style={styles.heroChipRow}>
+                                        <View style={styles.heroChip}>
+                                            <Text style={styles.heroChipText}>Kalkanlı</Text>
+                                        </View>
+                                    </View>
                                 </View>
                             </View>
-                        </View>
+                        </CardPress>
                     </View>
-                </View>
 
-                <View style={styles.sheet}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabRow}>
-                        {categoryKeys.map((key) => {
-                            const selected = activeCategory === key;
-                            const label = translateCategoryLabel(key, locale as any);
-                            return (
-                                <TouchableOpacity
-                                    key={key}
-                                    style={[styles.tabChip, selected && styles.tabChipActive]}
-                                    onPress={() => setActiveCategory(key)}
-                                >
-                                    <Text style={[styles.tabChipText, selected && styles.tabChipTextActive]}>
-                                        {label}
-                                    </Text>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </ScrollView>
+                    {/* SHEET */}
+                    <View style={styles.sheetWrap}>
+                        <CardPress style={styles.sheetCard}>
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.tabRow}
+                                keyboardShouldPersistTaps="handled"
+                            >
+                                {categoryKeys.map((key) => {
+                                    const selected = activeCategory === key;
+                                    const label = translateCategoryLabel(key, locale as any) ?? key;
 
-                    <MenuList items={activeItems} addLabel={t("restaurantUi.addToCart")} />
-                </View>
-            </ScrollView>
+                                    return (
+                                        <Pressable
+                                            key={key}
+                                            onPress={() => setActiveCategory(key)}
+                                            style={({ pressed }) => [
+                                                styles.tabChip,
+                                                selected ? styles.tabChipActive : null,
+                                                pressed ? { transform: [{ scale: 0.985 }] } : null,
+                                            ]}
+                                        >
+                                            <Text style={[styles.tabChipText, selected ? styles.tabChipTextActive : null]}>{label}</Text>
+                                        </Pressable>
+                                    );
+                                })}
+                            </ScrollView>
 
-            <TouchableOpacity style={styles.cartFab} onPress={() => router.push("/(tabs)/cart")}>
-                <Icon name="cart" size={18} color="#3A1C00" />
-                <Text style={styles.cartFabText}>{t("restaurantUi.cart", { count: cartCount })}</Text>
-            </TouchableOpacity>
+                            <GestureDetector gesture={panToSwitchCategory}>
+                                <View style={{ paddingTop: 10 }}>
+                                    <MenuList items={activeItems} addLabel={t("restaurantUi.addToCart")} />
+                                </View>
+                            </GestureDetector>
+                        </CardPress>
+                    </View>
+                </ScrollView>
+
+                {/* CART FAB */}
+                <Pressable
+                    onPress={() => router.push("/(tabs)/cart")}
+                    style={({ pressed }) => [
+                        styles.cartFab,
+                        { bottom: 18 + insets.bottom, right: 18 },
+                        pressed ? { transform: [{ scale: 0.985 }], opacity: 0.99 } : null,
+                    ]}
+                >
+                    <LinearGradient
+                        colors={[THEME.green2, THEME.green]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.cartFabInner}
+                    >
+                        <View style={styles.cartIconBubble}>
+                            <Icon name="cart" size={18} color="#FFFFFF" />
+                        </View>
+                        <Text style={styles.cartFabText}>{t("restaurantUi.cart", { count: cartCount })}</Text>
+                    </LinearGradient>
+                </Pressable>
+            </LinearGradient>
         </SafeAreaView>
     );
-};
+}
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: "#FFF7EB" },
-    scrollContent: { paddingBottom: 120 },
-    hero: { marginHorizontal: 16, marginTop: 14, marginBottom: 10 },
-    backButton: {
+    safeArea: { flex: 1, backgroundColor: THEME.bgTop },
+
+    card: {
+        borderRadius: 26,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: THEME.lineSoft,
+        backgroundColor: THEME.surface,
+        ...shadow,
+    },
+
+    heroWrap: { paddingHorizontal: 16, paddingTop: 14, position: "relative" },
+
+    floatingBack: {
         position: "absolute",
         top: 10,
         left: 10,
-        zIndex: 2,
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: "#FFD8A9",
+        zIndex: 999,
+        elevation: 30,
+    },
+    floatingBackInner: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: "rgba(255,255,255,0.92)",
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: THEME.line,
         alignItems: "center",
         justifyContent: "center",
-        borderWidth: 1,
-        borderColor: "#F6C453",
-        shadowColor: "#000",
-        shadowOpacity: 0.15,
-        shadowOffset: { width: 0, height: 4 },
-        shadowRadius: 8,
+        ...shadow,
     },
-    heroGlow: {
+
+    decorGreen: {
         position: "absolute",
-        inset: 0,
-        borderRadius: 32,
-        backgroundColor: "#FEE7C3",
+        top: -34,
+        right: -92,
+        width: 270,
+        height: 270,
+        borderRadius: 135,
+        backgroundColor: THEME.greenSoft2,
+        opacity: 0.85,
+    },
+    decorGold: {
+        position: "absolute",
+        top: 150,
+        left: -100,
+        width: 230,
+        height: 230,
+        borderRadius: 115,
+        backgroundColor: THEME.goldSoft,
         opacity: 0.9,
     },
-    heroInner: {
-        flexDirection: "row",
-        gap: 16,
-        padding: 16,
-        borderRadius: 32,
-        borderWidth: 1,
-        borderColor: "#F6C453",
-        overflow: "hidden",
-        backgroundColor: "#FFD8A9",
+    decorSand: {
+        position: "absolute",
+        top: 86,
+        right: 26,
+        width: 150,
+        height: 150,
+        borderRadius: 75,
+        backgroundColor: THEME.sandSoft,
+        opacity: 0.8,
     },
-    heroLogo: { width: 110, height: 110, borderRadius: 24, borderWidth: 1, borderColor: "#F6C45355" },
-    heroMeta: { flex: 1, gap: 8, justifyContent: "center" },
-    heroBadge: { color: "#BF360C", fontSize: 12, letterSpacing: 1, fontWeight: "600" },
-    heroTitle: { color: "#3A1C00", fontSize: 26, fontWeight: "700" },
-    heroSubtitle: { color: "#6B3A00", fontSize: 14, lineHeight: 18 },
-    heroChips: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+
+    heroCard: { padding: 16, overflow: "hidden" },
+    heroWash: { position: "absolute", inset: 0 },
+
+    heroRow: { flexDirection: "row", gap: 14, paddingTop: 10 },
+
+    logoShell: {
+        width: 86,
+        height: 86,
+        borderRadius: 22,
+        backgroundColor: THEME.surface2,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: THEME.lineSoft,
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "hidden",
+    },
+    logoImg: { width: 86, height: 86 },
+
+    heroTopLine: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
+    heroKicker: {
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        color: THEME.green,
+        letterSpacing: 0.5,
+    },
+    heroPhone: {
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        color: THEME.muted,
+    },
+
+    heroTitle: {
+        fontFamily: "ChairoSans",
+        fontSize: 28,
+        color: THEME.ink,
+        letterSpacing: -0.2,
+    },
+    heroSubtitle: {
+        fontFamily: "ChairoSans",
+        fontSize: 13,
+        color: THEME.muted,
+        lineHeight: 18,
+    },
+
+    heroChipRow: { flexDirection: "row", gap: 8, marginTop: 4 },
     heroChip: {
         paddingHorizontal: 12,
         paddingVertical: 7,
-        borderRadius: 16,
-        backgroundColor: "#FFF1DA",
-        borderWidth: 1,
-        borderColor: "#F6C453",
+        borderRadius: 999,
+        backgroundColor: THEME.greenSoft,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: "rgba(34,71,62,0.18)",
     },
-    heroChipText: { color: "#BF360C", fontSize: 12, fontWeight: "600" },
-    sheet: {
-        marginHorizontal: 12,
-        marginBottom: 16,
-        padding: 14,
-        backgroundColor: "#FFF0DB",
-        borderRadius: 24,
-        borderWidth: 1,
-        borderColor: "#F6C453",
-        gap: 12,
+    heroChipText: {
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        color: THEME.green2,
     },
-    tabRow: { gap: 8, paddingVertical: 4 },
+
+    sheetWrap: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 22 },
+    sheetCard: {
+        padding: 12,
+        backgroundColor: "rgba(255,255,255,0.78)",
+        borderRadius: 26,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: THEME.lineSoft,
+        ...shadow,
+    },
+
+    tabRow: { gap: 10, paddingVertical: 6, paddingHorizontal: 2 },
     tabChip: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: "#F6C453",
-        backgroundColor: "#FFE9C9",
+        height: 40,
+        paddingHorizontal: 14,
+        borderRadius: 999,
+        backgroundColor: "rgba(255,255,255,0.86)",
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: THEME.lineSoft,
+        alignItems: "center",
+        justifyContent: "center",
     },
     tabChipActive: {
-        borderColor: "#BF360C",
-        backgroundColor: "#FFD8A9",
+        backgroundColor: "rgba(215,179,123,0.30)",
+        borderColor: "rgba(215,179,123,0.45)",
     },
-    tabChipText: { color: "#6B3A00", fontSize: 13, fontWeight: "500" },
-    tabChipTextActive: { color: "#3A1C00", fontSize: 13, fontWeight: "700" },
+    tabChipText: {
+        fontFamily: "ChairoSans",
+        fontSize: 13,
+        color: "rgba(20,33,29,0.68)",
+    },
+    tabChipTextActive: { color: THEME.ink },
+
     cardGrid: { gap: 12 },
+
     menuCard: {
         flexDirection: "row",
         alignItems: "flex-start",
         gap: 12,
-        borderWidth: 1,
-        borderRadius: 18,
         padding: 14,
-        backgroundColor: "#FFF7EB",
-        borderColor: "#F6C453",
-        shadowColor: "#000",
-        shadowOpacity: 0.2,
-        shadowOffset: { width: 0, height: 10 },
-        shadowRadius: 14,
-        elevation: 6,
+        borderRadius: 22,
+        backgroundColor: "rgba(255,253,248,0.92)",
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: THEME.lineSoft,
+        ...shadow,
     },
-    menuTitle: { fontSize: 16, color: "#3A1C00", fontWeight: "700" },
-    menuDesc: { fontSize: 13, color: "#7B4A12" },
-    menuRight: { alignItems: "flex-end", gap: 8 },
-    menuPrice: { fontSize: 16, color: "#BF360C", fontWeight: "700" },
+    menuAccent: { width: 3, alignSelf: "stretch", borderRadius: 2, marginRight: 2 },
+
+    menuTitle: { fontFamily: "ChairoSans", fontSize: 16, color: THEME.ink },
+    menuDesc: { fontFamily: "ChairoSans", fontSize: 13, color: "rgba(20,33,29,0.58)", lineHeight: 17 },
+
+    menuRight: { alignItems: "flex-end", gap: 10, paddingLeft: 10 },
+    menuPrice: { fontFamily: "ChairoSans", fontSize: 14, color: THEME.green2, letterSpacing: 0.2 },
+
     addButton: {
-        backgroundColor: "#FFB703",
-        paddingHorizontal: 12,
-        paddingVertical: 7,
-        borderRadius: 12,
-    },
-    addButtonText: { color: "#3A1C00", fontSize: 12, fontWeight: "700" },
-    cartFab: {
-        position: "absolute",
-        bottom: 20,
-        right: 20,
-        backgroundColor: "#FFB703",
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 9,
         borderRadius: 999,
-        borderWidth: 1,
-        borderColor: "#BF360C",
+        backgroundColor: "rgba(215,179,123,0.22)",
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: "rgba(215,179,123,0.55)",
+    },
+    addButtonText: { fontFamily: "ChairoSans", fontSize: 13, color: THEME.ink },
+
+    cartFab: { position: "absolute" },
+    cartFabInner: {
+        borderRadius: 999,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
         flexDirection: "row",
         alignItems: "center",
-        gap: 8,
-        shadowColor: "#000",
-        shadowOpacity: 0.2,
-        shadowOffset: { width: 0, height: 8 },
-        shadowRadius: 12,
-        elevation: 8,
+        gap: 10,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: "rgba(255,255,255,0.20)",
+        ...shadow,
     },
-    cartFabText: { color: "#3A1C00", fontSize: 14, fontWeight: "700" },
+    cartIconBubble: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: "rgba(255,255,255,0.18)",
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: "rgba(255,255,255,0.22)",
+    },
+    cartFabText: { fontFamily: "ChairoSans", fontSize: 14, color: "#FFFFFF" },
 });
-
-export default LombardPage;
-
