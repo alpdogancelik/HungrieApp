@@ -12,18 +12,20 @@ import OrderFood from "@/assets/illustrations/Order Food.svg";
 
 const SignUp = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [form, setForm] = useState({ name: "", email: "", password: "" });
+    const [form, setForm] = useState({ name: "", email: "", password: "", whatsappNumber: "" });
     const setUser = useAuthStore((s) => s.setUser);
     const setIsAuthenticated = useAuthStore((s) => s.setIsAuthenticated);
 
     const submit = async () => {
-        const { name, email, password } = form;
-        if (!name || !email || !password) return Alert.alert("Error", "Please enter valid email address & password.");
+        const { name, email, password, whatsappNumber } = form;
+        if (!name || !email || !password || !whatsappNumber) {
+            return Alert.alert("Error", "Please fill in all fields, including your WhatsApp number.");
+        }
 
         setIsSubmitting(true);
 
         try {
-            const profile = await createUser({ email, password, name });
+            const profile = await createUser({ email, password, name, whatsappNumber });
             if (profile) {
                 const mappedUser = {
                     id: profile.accountId,
@@ -32,6 +34,7 @@ const SignUp = () => {
                     name: profile.name,
                     email: profile.email,
                     avatar: profile.avatar,
+                    whatsappNumber: profile.whatsappNumber,
                 };
                 setUser(mappedUser);
                 setIsAuthenticated(true);
@@ -87,10 +90,17 @@ const SignUp = () => {
                             label="Full name"
                         />
                         <CustomInput
+                            placeholder="+90 5xx xxx xx xx"
+                            value={form.whatsappNumber}
+                            onChangeText={(text) => setForm((prev) => ({ ...prev, whatsappNumber: text }))}
+                            label="WhatsApp number"
+                            keyboardType="phone-pad"
+                        />
+                        <CustomInput
                             placeholder="ahmet@metu.edu.tr / ahmet@gmail.com / e232231@metu.edu.tr"
                             value={form.email}
                             onChangeText={(text) => setForm((prev) => ({ ...prev, email: text }))}
-                            label="Email"
+                            label="Email (If you could, please use your METU email, that would be great!)"
                             keyboardType="email-address"
                         />
                         <CustomInput

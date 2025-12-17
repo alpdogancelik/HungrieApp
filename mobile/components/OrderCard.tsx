@@ -56,6 +56,8 @@ const OrderCard = ({ order, variant = "restaurant", onAdvance, disableActions = 
     const headerTitle = variant === "restaurant" ? order.customerName || "Walk-in guest" : order.restaurant?.name || "Hungrie";
     const headerSubtitle =
         variant === "restaurant" ? order.address || "Campus pickup" : formatTimestamp(order.updatedAt);
+    const contactWhatsapp = order.customerWhatsapp || order.customer?.whatsappNumber || (order as any)?.customer?.whatsapp;
+    const contactEmail = order.customerEmail || order.customer?.email;
 
     return (
         <View className="bg-white rounded-3xl border border-gray-100 p-4 gap-3 shadow-md shadow-black/5">
@@ -63,6 +65,16 @@ const OrderCard = ({ order, variant = "restaurant", onAdvance, disableActions = 
                 <View className="gap-1 flex-1 mr-3">
                     <Text className="paragraph-semibold text-dark-100">{headerTitle}</Text>
                     <Text className="body-medium text-dark-60" numberOfLines={2}>{headerSubtitle}</Text>
+                    {variant === "restaurant" && (
+                        <>
+                            {contactWhatsapp ? (
+                                <Text className="caption text-dark-60" numberOfLines={1}>WhatsApp: {contactWhatsapp}</Text>
+                            ) : null}
+                            {contactEmail ? (
+                                <Text className="caption text-dark-60" numberOfLines={1}>{contactEmail}</Text>
+                            ) : null}
+                        </>
+                    )}
                 </View>
                 <View
                     className="px-3 py-1 rounded-full flex-row items-center gap-2"

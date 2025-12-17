@@ -43,6 +43,7 @@ const SignIn = () => {
                     name: user.name,
                     email: user.email,
                     avatar: user.avatar,
+                    whatsappNumber: user.whatsappNumber,
                 };
                 setUser(mappedUser);
                 setIsAuthenticated(true);
@@ -96,7 +97,7 @@ const SignIn = () => {
                             placeholder="ahmet@metumail.edu.tr / ahmet@gmail.com / e232231@metu.edu.tr"
                             value={form.email}
                             onChangeText={(text) => setForm((prev) => ({ ...prev, email: text }))}
-                            label="Email"
+                            label="Email (If you could, please use your METU email, that would be great!)"
                             keyboardType="email-address"
                         />
                         <CustomInput

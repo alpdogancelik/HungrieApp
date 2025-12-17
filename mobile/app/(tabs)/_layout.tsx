@@ -69,7 +69,7 @@ function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
                 if (route.name === "home") {
                     iconNode = <Icon name="home" size={24} color={color} />;
                 } else if (route.name === "search") {
-                    iconNode = <Icon name="search" size={24} color={color} />;
+                    iconNode = <Icon name="searchTab" size={24} color={color} />;
                 } else if (route.name === "cart") {
                     iconNode = <Icon name="bag" size={24} color={color} />;
                 } else {
@@ -127,7 +127,6 @@ const styles = StyleSheet.create({
         backgroundColor: "rgba(254,140,0,0.16)",
     },
 });
-
 
 
 

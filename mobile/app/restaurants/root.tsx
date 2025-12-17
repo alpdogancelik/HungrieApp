@@ -95,6 +95,7 @@ const THEME = {
 
     coffee: "#C9A27A",
     coffeeSoft: "rgba(201,162,122,0.16)",
+    coffeeSoft2: "rgba(201,162,122,0.24)",
 
     charcoal: "#2A2A2A",
     charcoalSoft: "rgba(42,42,42,0.12)",
@@ -135,43 +136,57 @@ const MenuList = ({ items, addLabel }: { items: MenuEntry[]; addLabel: string })
     if (!items.length) return null;
 
     return (
-        <View style={styles.cardGrid}>
+        <View style={styles.menuList}>
             {items.map((item) => (
-                <CardPress key={String(item.id)} style={styles.menuCard}>
-                    <View style={styles.menuAccent} />
-                    <View style={{ flex: 1, gap: 6 }}>
-                        <Text style={styles.menuTitle} numberOfLines={1}>
-                            {item.name}
-                        </Text>
+                <View key={String(item.id)} style={styles.menuCard}>
+                    <LinearGradient
+                        colors={["rgba(201,162,122,0.55)", "rgba(201,162,122,0.10)"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 0, y: 1 }}
+                        style={styles.menuAccent}
+                    />
+
+                    <View style={{ flex: 1, paddingRight: 10 }}>
+                        <View style={styles.menuTopRow}>
+                            <Text style={styles.menuTitle} numberOfLines={1}>
+                                {item.name}
+                            </Text>
+                            <Text style={styles.menuPrice}>{formatPrice(item.price)}</Text>
+                        </View>
+
                         {item.description ? (
                             <Text style={styles.menuDesc} numberOfLines={2}>
                                 {item.description}
                             </Text>
-                        ) : null}
-                    </View>
+                        ) : (
+                            <Text style={styles.menuDesc} numberOfLines={1}>
+                                {" "}
+                            </Text>
+                        )}
 
-                    <View style={styles.menuRight}>
-                        <Text style={styles.menuPrice}>{formatPrice(item.price)}</Text>
-                        <Pressable
-                            onPress={() =>
-                                addItem({
-                                    id: String(item.id),
-                                    name: item.name,
-                                    price: Number(item.price || 0),
-                                    image_url: "",
-                                    restaurantId: RESTAURANT_ID,
-                                    customizations: [],
-                                })
-                            }
-                            style={({ pressed }) => [
-                                styles.addButton,
-                                pressed ? { transform: [{ scale: 0.985 }], opacity: 0.98 } : null,
-                            ]}
-                        >
-                            <Text style={styles.addButtonText}>{addLabel}</Text>
-                        </Pressable>
+                        <View style={styles.menuBottomRow}>
+                            <View style={{ flex: 1 }} />
+                            <Pressable
+                                onPress={() =>
+                                    addItem({
+                                        id: String(item.id),
+                                        name: item.name,
+                                        price: Number(item.price || 0),
+                                        image_url: "",
+                                        restaurantId: RESTAURANT_ID,
+                                        customizations: [],
+                                    })
+                                }
+                                style={({ pressed }) => [
+                                    styles.addPill,
+                                    pressed ? { transform: [{ scale: 0.985 }], opacity: 0.98 } : null,
+                                ]}
+                            >
+                                <Text style={styles.addPillText}>{addLabel}</Text>
+                            </Pressable>
+                        </View>
                     </View>
-                </CardPress>
+                </View>
             ))}
         </View>
     );
@@ -188,6 +203,7 @@ export default function RootKitchenPage() {
 
     const grouped = useMemo(() => groupByCategory(menuItems), [menuItems]);
     const categoryKeys = useMemo(() => sortCategories(Object.keys(grouped)), [grouped]);
+
     const [activeCategory, setActiveCategory] = useState<string>(() => categoryKeys[0] || "");
 
     useEffect(() => {
@@ -220,6 +236,13 @@ export default function RootKitchenPage() {
         });
     };
 
+    const onSelectCategory = (key: string) => {
+        setActiveCategory(key);
+        requestAnimationFrame(() => {
+            scrollRef.current?.scrollTo({ y: 0, animated: true });
+        });
+    };
+
     const panToSwitchCategory = useMemo(() => {
         return Gesture.Pan()
             .activeOffsetX([-22, 22])
@@ -242,6 +265,7 @@ export default function RootKitchenPage() {
                     ref={scrollRef}
                     contentContainerStyle={{ paddingBottom: 120 + insets.bottom }}
                     showsVerticalScrollIndicator={false}
+                    overScrollMode="never"
                 >
                     {/* HERO */}
                     <View style={styles.heroWrap}>
@@ -286,7 +310,15 @@ export default function RootKitchenPage() {
                                         <View style={styles.heroChip}>
                                             <Text style={styles.heroChipText}>Kalkanlı</Text>
                                         </View>
-                                        <View style={[styles.heroChip, { backgroundColor: "rgba(42,42,42,0.10)", borderColor: "rgba(42,42,42,0.14)" }]}>
+                                        <View
+                                            style={[
+                                                styles.heroChip,
+                                                {
+                                                    backgroundColor: "rgba(42,42,42,0.10)",
+                                                    borderColor: "rgba(42,42,42,0.14)",
+                                                },
+                                            ]}
+                                        >
                                             <Text style={[styles.heroChipText, { color: THEME.charcoal }]}>
                                                 {t("home.campusOnlyTag")}
                                             </Text>
@@ -300,34 +332,43 @@ export default function RootKitchenPage() {
                     {/* SHEET */}
                     <View style={styles.sheetWrap}>
                         <CardPress style={styles.sheetCard}>
-                            <ScrollView
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                contentContainerStyle={styles.tabRow}
-                                keyboardShouldPersistTaps="handled"
-                            >
-                                {categoryKeys.map((key) => {
-                                    const selected = activeCategory === key;
-                                    const label = translateCategoryLabel(key, locale as any) ?? key;
+                            {/* ✅ ÇERÇEVELİ TAB RAIL + DOT PILL */}
+                            <View style={styles.tabRail}>
+                                <ScrollView
+                                    horizontal
+                                    showsHorizontalScrollIndicator={false}
+                                    contentContainerStyle={styles.tabRow}
+                                    keyboardShouldPersistTaps="handled"
+                                >
+                                    {categoryKeys.map((key) => {
+                                        const selected = activeCategory === key;
+                                        const label = translateCategoryLabel(key, locale as any) ?? key;
 
-                                    return (
-                                        <Pressable
-                                            key={key}
-                                            onPress={() => setActiveCategory(key)}
-                                            style={({ pressed }) => [
-                                                styles.tabChip,
-                                                selected ? styles.tabChipActive : null,
-                                                pressed ? { transform: [{ scale: 0.985 }] } : null,
-                                            ]}
-                                        >
-                                            <Text style={[styles.tabChipText, selected ? styles.tabChipTextActive : null]}>{label}</Text>
-                                        </Pressable>
-                                    );
-                                })}
-                            </ScrollView>
+                                        return (
+                                            <Pressable
+                                                key={key}
+                                                onPress={() => onSelectCategory(key)}
+                                                style={({ pressed }) => [
+                                                    styles.tabPill,
+                                                    selected ? styles.tabPillActive : null,
+                                                    pressed ? { transform: [{ scale: 0.985 }] } : null,
+                                                ]}
+                                            >
+                                                <View style={[styles.tabDot, selected ? styles.tabDotActive : null]} />
+                                                <Text
+                                                    style={[styles.tabText, selected ? styles.tabTextActive : null]}
+                                                    numberOfLines={1}
+                                                >
+                                                    {label}
+                                                </Text>
+                                            </Pressable>
+                                        );
+                                    })}
+                                </ScrollView>
+                            </View>
 
                             <GestureDetector gesture={panToSwitchCategory}>
-                                <View style={{ paddingTop: 10 }}>
+                                <View style={{ paddingTop: 14 }}>
                                     <MenuList items={activeItems} addLabel={t("restaurantUi.addToCart")} />
                                 </View>
                             </GestureDetector>
@@ -374,13 +415,7 @@ const styles = StyleSheet.create({
 
     heroWrap: { paddingHorizontal: 16, paddingTop: 14, position: "relative" },
 
-    floatingBack: {
-        position: "absolute",
-        top: 10,
-        left: 10,
-        zIndex: 999,
-        elevation: 30,
-    },
+    floatingBack: { position: "absolute", top: 10, left: 10, zIndex: 999, elevation: 30 },
     floatingBackInner: {
         width: 44,
         height: 44,
@@ -400,7 +435,7 @@ const styles = StyleSheet.create({
         width: 260,
         height: 260,
         borderRadius: 130,
-        backgroundColor: THEME.coffeeSoft,
+        backgroundColor: THEME.coffeeSoft2,
         opacity: 0.9,
     },
     decorCharcoal: {
@@ -431,30 +466,11 @@ const styles = StyleSheet.create({
     logoImg: { width: 86, height: 86 },
 
     heroTopLine: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
-    heroKicker: {
-        fontFamily: "ChairoSans",
-        fontSize: 12,
-        color: THEME.charcoal,
-        letterSpacing: 0.6,
-    },
-    heroPhone: {
-        fontFamily: "ChairoSans",
-        fontSize: 12,
-        color: THEME.muted,
-    },
+    heroKicker: { fontFamily: "ChairoSans", fontSize: 12, color: THEME.charcoal, letterSpacing: 0.6 },
+    heroPhone: { fontFamily: "ChairoSans", fontSize: 12, color: THEME.muted },
 
-    heroTitle: {
-        fontFamily: "ChairoSans",
-        fontSize: 28,
-        color: THEME.ink,
-        letterSpacing: -0.2,
-    },
-    heroSubtitle: {
-        fontFamily: "ChairoSans",
-        fontSize: 13,
-        color: THEME.muted,
-        lineHeight: 18,
-    },
+    heroTitle: { fontFamily: "ChairoSans", fontSize: 28, color: THEME.ink, letterSpacing: -0.2 },
+    heroSubtitle: { fontFamily: "ChairoSans", fontSize: 13, color: THEME.muted, lineHeight: 18 },
 
     heroChipRow: { flexDirection: "row", gap: 8, marginTop: 4, flexWrap: "wrap" },
     heroChip: {
@@ -465,11 +481,7 @@ const styles = StyleSheet.create({
         borderWidth: StyleSheet.hairlineWidth,
         borderColor: "rgba(201,162,122,0.30)",
     },
-    heroChipText: {
-        fontFamily: "ChairoSans",
-        fontSize: 12,
-        color: THEME.ink,
-    },
+    heroChipText: { fontFamily: "ChairoSans", fontSize: 12, color: THEME.ink },
 
     sheetWrap: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 22 },
     sheetCard: {
@@ -481,65 +493,69 @@ const styles = StyleSheet.create({
         ...shadow,
     },
 
-    tabRow: { gap: 10, paddingVertical: 6, paddingHorizontal: 2 },
-    tabChip: {
-        height: 40,
-        paddingHorizontal: 14,
+    // ✅ Tab Rail
+    tabRail: {
         borderRadius: 999,
-        backgroundColor: "rgba(255,255,255,0.86)",
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: THEME.lineSoft,
-        alignItems: "center",
-        justifyContent: "center",
+        backgroundColor: "rgba(255,255,255,0.60)",
+        borderWidth: 1.2,
+        borderColor: "rgba(16,16,16,0.12)",
+        padding: 6,
     },
-    tabChipActive: {
-        backgroundColor: "rgba(201,162,122,0.22)",
-        borderColor: "rgba(201,162,122,0.42)",
-    },
-    tabChipText: {
-        fontFamily: "ChairoSans",
-        fontSize: 13,
-        color: "rgba(16,16,16,0.68)",
-    },
-    tabChipTextActive: { color: THEME.ink },
+    tabRow: { gap: 10, paddingHorizontal: 6, paddingVertical: 2 },
 
-    cardGrid: { gap: 12 },
+    tabPill: {
+        height: 44,
+        paddingHorizontal: 16,
+        borderRadius: 999,
+        backgroundColor: "rgba(255,255,255,0.92)",
+        borderWidth: 1.2,
+        borderColor: "rgba(16,16,16,0.12)",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+    },
+    tabPillActive: {
+        backgroundColor: THEME.coffeeSoft2,
+        borderColor: "rgba(201,162,122,0.40)",
+    },
+    tabDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: "rgba(16,16,16,0.18)" },
+    tabDotActive: { backgroundColor: THEME.charcoal },
+    tabText: { fontFamily: "ChairoSans", fontSize: 14, color: "rgba(16,16,16,0.70)" },
+    tabTextActive: { color: THEME.ink },
+
+    // ✅ Menu
+    menuList: { gap: 14 },
 
     menuCard: {
         flexDirection: "row",
-        alignItems: "flex-start",
-        gap: 12,
-        padding: 14,
-        borderRadius: 22,
+        borderRadius: 26,
         backgroundColor: "rgba(255,255,255,0.92)",
         borderWidth: StyleSheet.hairlineWidth,
         borderColor: THEME.lineSoft,
+        padding: 14,
+        overflow: "hidden",
         ...shadow,
     },
-    menuAccent: {
-        width: 3,
-        alignSelf: "stretch",
-        borderRadius: 2,
-        backgroundColor: "rgba(16,16,16,0.35)",
-        marginRight: 2,
-    },
+    menuAccent: { width: 4, borderRadius: 3, marginRight: 12 },
 
-    menuTitle: { fontFamily: "ChairoSans", fontSize: 16, color: THEME.ink },
-    menuDesc: { fontFamily: "ChairoSans", fontSize: 13, color: "rgba(16,16,16,0.58)", lineHeight: 17 },
+    menuTopRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
+    menuTitle: { fontFamily: "ChairoSans", fontSize: 18, color: THEME.ink, flex: 1 },
+    menuPrice: { fontFamily: "ChairoSans", fontSize: 16, color: THEME.charcoal, letterSpacing: 0.2 },
 
-    menuRight: { alignItems: "flex-end", gap: 10, paddingLeft: 10 },
-    menuPrice: { fontFamily: "ChairoSans", fontSize: 14, color: THEME.charcoal, letterSpacing: 0.2 },
+    menuDesc: { marginTop: 6, fontFamily: "ChairoSans", fontSize: 13, color: "rgba(16,16,16,0.58)", lineHeight: 18 },
+    menuBottomRow: { marginTop: 12, flexDirection: "row", alignItems: "center" },
 
-    addButton: {
-        paddingHorizontal: 14,
-        paddingVertical: 9,
+    addPill: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
         borderRadius: 999,
-        backgroundColor: THEME.coffeeSoft,
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: "rgba(201,162,122,0.55)",
+        backgroundColor: THEME.coffeeSoft2,
+        borderWidth: 1.2,
+        borderColor: "rgba(201,162,122,0.42)",
     },
-    addButtonText: { fontFamily: "ChairoSans", fontSize: 13, color: THEME.ink },
+    addPillText: { fontFamily: "ChairoSans", fontSize: 13, color: THEME.ink, letterSpacing: 0.2 },
 
+    // Cart FAB
     cartFab: { position: "absolute" },
     cartFabInner: {
         borderRadius: 999,

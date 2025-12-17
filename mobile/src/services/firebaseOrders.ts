@@ -36,6 +36,7 @@ export const placeOrder = async ({
     paymentMethod = "pos",
     fees = {},
     etaMinutes = 25,
+    customer,
 }: {
     userId: string;
     restaurantId: string;
@@ -43,12 +44,16 @@ export const placeOrder = async ({
     paymentMethod?: PaymentMethod;
     fees?: { deliveryFee?: number; serviceFee?: number; discount?: number; tip?: number };
     etaMinutes?: number;
+    customer?: { name?: string | null; email?: string | null; whatsappNumber?: string | null };
 }) => {
     await ensureAuthSession();
 
     const subtotal = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
     const { deliveryFee = 0, serviceFee = 0, discount = 0, tip = 0 } = fees;
     const total = subtotal + deliveryFee + serviceFee + tip - discount;
+    const contactName = customer?.name || "Hungrie User";
+    const contactEmail = customer?.email || undefined;
+    const contactWhatsapp = customer?.whatsappNumber || undefined;
 
     const ref = await addDoc(ordersCol(), {
         userId,
@@ -56,6 +61,14 @@ export const placeOrder = async ({
         items,
         paymentMethod,
         status: "pending",
+        customerName: contactName,
+        customerEmail: contactEmail,
+        customerWhatsapp: contactWhatsapp,
+        customer: {
+            name: contactName,
+            email: contactEmail,
+            whatsappNumber: contactWhatsapp,
+        },
         subtotal,
         deliveryFee,
         serviceFee,

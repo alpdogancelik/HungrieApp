@@ -6,10 +6,9 @@ const authGuardEnabled = isAuthRequired();
 
 export default function RootRoute() {
     const { isAuthenticated } = useAuthStore();
-    if (authGuardEnabled) {
-        const target = isAuthenticated ? "/home" : "/sign-in";
-        return <Redirect href={target} />;
-    }
-    return <Redirect href="/home" />;
+    if (authGuardEnabled && isAuthenticated) return <Redirect href="/home" />;
+    if (authGuardEnabled && !isAuthenticated) return <Redirect href="/welcome" />;
+
+    return <Redirect href={isAuthenticated ? "/home" : "/welcome"} />;
 }
 

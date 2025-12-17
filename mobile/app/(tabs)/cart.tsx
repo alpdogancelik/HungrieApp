@@ -200,6 +200,11 @@ const Cart = () => {
                 paymentMethod: paymentMethod as PaymentMethod,
                 fees: { deliveryFee, serviceFee, discount, tip: 0 },
                 etaMinutes: pendingEta / 60,
+                customer: {
+                    name: user?.name ?? undefined,
+                    email: user?.email ?? undefined,
+                    whatsappNumber: user?.whatsappNumber ?? undefined,
+                },
             });
             const restaurantLabel =
                 (items[0] as CartItemWithRestaurant | undefined)?.name?.split(" ")[0] || "Kalkanli Mutfagi";

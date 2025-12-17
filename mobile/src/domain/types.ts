@@ -37,6 +37,7 @@ export type User = BaseDocument & {
     name: string;
     email: string;
     avatar?: string;
+    whatsappNumber?: string;
 };
 
 export type CartCustomization = {
@@ -110,6 +111,14 @@ export type Order = {
     etaMinutes?: number;
     createdAt: string;
     updatedAt: string;
+    customerName?: string;
+    customerEmail?: string;
+    customerWhatsapp?: string;
+    customer?: {
+        name?: string;
+        email?: string;
+        whatsappNumber?: string;
+    };
 };
 
 export type RestaurantOrder = BaseDocument & {
@@ -120,6 +129,13 @@ export type RestaurantOrder = BaseDocument & {
         imageUrl?: string;
     };
     customerName?: string;
+    customerEmail?: string;
+    customerWhatsapp?: string;
+    customer?: {
+        name?: string;
+        email?: string;
+        whatsappNumber?: string;
+    };
     address?: string;
     total?: string | number;
     status?: OrderStatus | string;

@@ -1,19 +1,12 @@
 // app/(restaurants)/alacarte.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Platform, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import {
-    Directions,
-    Gesture,
-    GestureDetector,
-    GestureHandlerRootView,
-    Pressable,
-} from "react-native-gesture-handler";
 
 import { useCartStore } from "@/store/cart.store";
 import Icon from "@/components/Icon";
@@ -40,7 +33,8 @@ const formatPrice = (value?: number) => `TRY ${Number(value ?? 0).toFixed(2)}`;
 const groupByCategory = (items: MenuEntry[]) => {
     const bucket: Record<string, MenuEntry[]> = {};
     items.forEach((item) => {
-        const categories = Array.isArray(item.categories) && item.categories.length ? item.categories : ["diger"];
+        const categories =
+            Array.isArray(item.categories) && item.categories.length ? item.categories : ["diger"];
         categories.forEach((cat) => {
             const key = String(cat);
             if (!bucket[key]) bucket[key] = [];
@@ -88,9 +82,9 @@ const THEME = {
     bgMid: "#FFEDE8",
     bgBottom: "#FFFFFF",
 
-    surface: "rgba(255,255,255,0.88)",
+    surface: "rgba(255,255,255,0.90)",
     surface2: "rgba(255,255,255,0.94)",
-    sheet: "rgba(255,255,255,0.78)",
+    sheet: "rgba(255,255,255,0.80)",
 
     ink: "#1E0E10",
     muted: "rgba(30,14,16,0.62)",
@@ -123,9 +117,9 @@ const CardPress = ({
 }) => (
     <Pressable
         onPress={onPress}
-        enabled={!!onPress}
+        disabled={!onPress}
         style={({ pressed }) => [
-            styles.card,
+            styles.cardBase,
             style,
             pressed && onPress ? { transform: [{ scale: 0.992 }], opacity: 0.985 } : null,
         ]}
@@ -139,14 +133,19 @@ const MenuList = ({ items, addLabel }: { items: MenuEntry[]; addLabel: string })
     if (!items.length) return null;
 
     return (
-        <View style={styles.cardGrid}>
+        <View style={styles.menuList}>
             {items.map((item) => (
-                <CardPress key={String(item.id)} style={styles.menuCard}>
-                    <View style={styles.menuAccent} />
-                    <View style={{ flex: 1, gap: 6 }}>
-                        <Text style={styles.menuTitle} numberOfLines={1}>
-                            {item.name}
-                        </Text>
+                <View key={String(item.id)} style={styles.menuCard}>
+                    <View style={styles.menuAccentRail} />
+
+                    <View style={{ flex: 1, paddingRight: 8 }}>
+                        <View style={styles.menuTopRow}>
+                            <Text style={styles.menuTitle} numberOfLines={1}>
+                                {item.name}
+                            </Text>
+                            <Text style={styles.menuPrice}>{formatPrice(item.price)}</Text>
+                        </View>
+
                         {item.description ? (
                             <Text style={styles.menuDesc} numberOfLines={2}>
                                 {item.description}
@@ -156,31 +155,27 @@ const MenuList = ({ items, addLabel }: { items: MenuEntry[]; addLabel: string })
                                 {" "}
                             </Text>
                         )}
-                    </View>
 
-                    <View style={styles.menuRight}>
-                        <Text style={styles.menuPrice}>{formatPrice(item.price)}</Text>
-
-                        <Pressable
-                            onPress={() =>
-                                addItem({
-                                    id: String(item.id),
-                                    name: item.name,
-                                    price: Number(item.price || 0),
-                                    image_url: "",
-                                    restaurantId: RESTAURANT_ID,
-                                    customizations: [],
-                                })
-                            }
-                            style={({ pressed }) => [
-                                styles.addButton,
-                                pressed ? { transform: [{ scale: 0.98 }], opacity: 0.98 } : null,
-                            ]}
-                        >
-                            <Text style={styles.addButtonText}>{addLabel}</Text>
-                        </Pressable>
+                        <View style={styles.menuBottomRow}>
+                            <View style={{ flex: 1 }} />
+                            <Pressable
+                                onPress={() =>
+                                    addItem({
+                                        id: String(item.id),
+                                        name: item.name,
+                                        price: Number(item.price || 0),
+                                        image_url: "",
+                                        restaurantId: RESTAURANT_ID,
+                                        customizations: [],
+                                    })
+                                }
+                                style={({ pressed }) => [styles.addPill, pressed ? styles.addPillPressed : null]}
+                            >
+                                <Text style={styles.addPillText}>{addLabel}</Text>
+                            </Pressable>
+                        </View>
                     </View>
-                </CardPress>
+                </View>
             ))}
         </View>
     );
@@ -213,126 +208,79 @@ export default function AlacartePage() {
 
     const scrollRef = useRef<ScrollView>(null);
 
-    const activeIndex = useMemo(() => {
-        const i = categoryKeys.indexOf(activeCategory);
-        return i >= 0 ? i : 0;
-    }, [categoryKeys, activeCategory]);
-
-    const goToIndex = (idx: number) => {
-        if (!categoryKeys.length) return;
-        const clamped = Math.max(0, Math.min(idx, categoryKeys.length - 1));
-        const nextKey = categoryKeys[clamped];
-        if (!nextKey || nextKey === activeCategory) return;
-
-        setActiveCategory(nextKey);
+    const onSelectCategory = (key: string) => {
+        setActiveCategory(key);
         requestAnimationFrame(() => {
             scrollRef.current?.scrollTo({ y: 0, animated: true });
         });
     };
 
-    // swipe lock (aynı anda 2 gesture tetiklenmesin)
-    const swipeLockRef = useRef(0);
-    const fireSwipe = (dir: 1 | -1) => {
-        const now = Date.now();
-        if (now - swipeLockRef.current < 260) return;
-        swipeLockRef.current = now;
-        goToIndex(activeIndex + dir);
-    };
-
-    const swipeGesture = useMemo(() => {
-        const flingLeft = Gesture.Fling()
-            .runOnJS(true)
-            .direction(Directions.LEFT)
-            .onEnd(() => fireSwipe(1));
-
-        const flingRight = Gesture.Fling()
-            .runOnJS(true)
-            .direction(Directions.RIGHT)
-            .onEnd(() => fireSwipe(-1));
-
-        const pan = Gesture.Pan()
-            .runOnJS(true)
-            .minDistance(12)
-            .activeOffsetX([-18, 18])
-            .failOffsetY([-12, 12])
-            .onEnd((e) => {
-                const TH = 90;
-                if (Math.abs(e.translationX) < TH) return;
-                if (e.translationX < 0) fireSwipe(1);
-                else fireSwipe(-1);
-            });
-
-        return Gesture.Race(flingLeft, flingRight, pan);
-    }, [activeIndex, categoryKeys.join("|"), activeCategory]);
-
     return (
-        <GestureHandlerRootView style={{ flex: 1 }}>
-            <SafeAreaView style={styles.safeArea}>
-                <LinearGradient colors={[THEME.bgTop, THEME.bgMid, THEME.bgBottom]} style={{ flex: 1 }}>
-                    <ScrollView
-                        ref={scrollRef}
-                        contentContainerStyle={{ paddingBottom: 120 + insets.bottom }}
-                        showsVerticalScrollIndicator={false}
-                        directionalLockEnabled
-                        alwaysBounceHorizontal={false}
-                        overScrollMode="never"
-                    >
-                        {/* HERO */}
-                        <View style={styles.heroWrap}>
-                            <Pressable
-                                onPress={() => router.back()}
-                                hitSlop={12}
-                                style={({ pressed }) => [
-                                    styles.floatingBack,
-                                    pressed ? { transform: [{ scale: 0.96 }], opacity: 0.98 } : null,
-                                ]}
+        <SafeAreaView style={styles.safeArea}>
+            <LinearGradient colors={[THEME.bgTop, THEME.bgMid, THEME.bgBottom]} style={{ flex: 1 }}>
+                <ScrollView
+                    ref={scrollRef}
+                    contentContainerStyle={{ paddingBottom: 120 + insets.bottom }}
+                    showsVerticalScrollIndicator={false}
+                    overScrollMode="never"
+                >
+                    {/* HERO */}
+                    <View style={styles.heroWrap}>
+                        <Pressable
+                            onPress={() => router.back()}
+                            hitSlop={12}
+                            style={({ pressed }) => [
+                                styles.floatingBack,
+                                pressed ? { transform: [{ scale: 0.96 }], opacity: 0.98 } : null,
+                            ]}
+                        >
+                            <LinearGradient
+                                colors={["rgba(255,255,255,0.96)", "rgba(255,255,255,0.82)"]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={styles.floatingBackInner}
                             >
-                                <LinearGradient
-                                    colors={["rgba(255,255,255,0.96)", "rgba(255,255,255,0.82)"]}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
-                                    style={styles.floatingBackInner}
-                                >
-                                    <Icon name="arrowBack" size={20} color={THEME.ink} />
-                                </LinearGradient>
-                            </Pressable>
+                                <Icon name="arrowBack" size={20} color={THEME.ink} />
+                            </LinearGradient>
+                        </Pressable>
 
-                            <View style={styles.decorA} pointerEvents="none" />
-                            <View style={styles.decorB} pointerEvents="none" />
+                        <View style={styles.decorA} pointerEvents="none" />
+                        <View style={styles.decorB} pointerEvents="none" />
 
-                            <CardPress style={styles.heroCard}>
-                                <View style={styles.heroRow}>
-                                    <View style={styles.logoShell}>
-                                        <Image
-                                            source={require("@/assets/restaurantlogo/alacartelogo.jpg")}
-                                            style={styles.logoImg}
-                                            contentFit="cover"
-                                        />
+                        <CardPress style={styles.heroCard}>
+                            <View style={styles.heroRow}>
+                                <View style={styles.logoShell}>
+                                    <Image
+                                        source={require("@/assets/restaurantlogo/alacartelogo.jpg")}
+                                        style={styles.logoImg}
+                                        contentFit="cover"
+                                    />
+                                </View>
+
+                                <View style={{ flex: 1, gap: 6 }}>
+                                    <View style={styles.heroTopLine}>
+                                        <Text style={styles.heroKicker}>{HERO_KICKER}</Text>
+                                        <Text style={styles.heroPhone}>{RESTAURANT_PHONE}</Text>
                                     </View>
 
-                                    <View style={{ flex: 1, gap: 6 }}>
-                                        <View style={styles.heroTopLine}>
-                                            <Text style={styles.heroKicker}>{HERO_KICKER}</Text>
-                                            <Text style={styles.heroPhone}>{RESTAURANT_PHONE}</Text>
-                                        </View>
+                                    <Text style={styles.heroTitle}>{restaurant.name || "Alacarte Cafe"}</Text>
+                                    <Text style={styles.heroSubtitle}>{HERO_SUBTITLE}</Text>
 
-                                        <Text style={styles.heroTitle}>{restaurant.name || "Alacarte Cafe"}</Text>
-                                        <Text style={styles.heroSubtitle}>{HERO_SUBTITLE}</Text>
-
-                                        <View style={styles.heroChipRow}>
-                                            <View style={styles.heroChip}>
-                                                <Text style={styles.heroChipText}>Kalkanlı</Text>
-                                            </View>
+                                    <View style={styles.heroChipRow}>
+                                        <View style={styles.heroChip}>
+                                            <Text style={styles.heroChipText}>Kalkanlı</Text>
                                         </View>
                                     </View>
                                 </View>
-                            </CardPress>
-                        </View>
+                            </View>
+                        </CardPress>
+                    </View>
 
-                        {/* SHEET */}
-                        <View style={styles.sheetWrap}>
-                            <CardPress style={styles.sheetCard}>
-                                {/* Tabs */}
+                    {/* SHEET */}
+                    <View style={styles.sheetWrap}>
+                        <View style={styles.sheetCard}>
+                            {/* Tabs rail (swipe yok, sadece tap) */}
+                            <View style={styles.tabRail}>
                                 <ScrollView
                                     horizontal
                                     showsHorizontalScrollIndicator={false}
@@ -342,59 +290,61 @@ export default function AlacartePage() {
                                     {categoryKeys.map((key) => {
                                         const selected = activeCategory === key;
                                         const label = translateCategoryLabel(key, locale as any) ?? key;
+
                                         return (
                                             <Pressable
                                                 key={key}
-                                                onPress={() => setActiveCategory(key)}
+                                                onPress={() => onSelectCategory(key)}
                                                 style={({ pressed }) => [
-                                                    styles.tabChip,
-                                                    selected ? styles.tabChipActive : null,
+                                                    styles.tabPill,
+                                                    selected ? styles.tabPillActive : null,
                                                     pressed ? { transform: [{ scale: 0.985 }] } : null,
                                                 ]}
                                             >
                                                 <View style={[styles.tabDot, selected ? styles.tabDotActive : null]} />
-                                                <Text style={[styles.tabText, selected ? styles.tabTextActive : null]} numberOfLines={1}>
+                                                <Text
+                                                    style={[styles.tabText, selected ? styles.tabTextActive : null]}
+                                                    numberOfLines={1}
+                                                >
                                                     {label}
                                                 </Text>
                                             </Pressable>
                                         );
                                     })}
                                 </ScrollView>
-
-                                {/* Menu (swipe here) */}
-                                <GestureDetector gesture={swipeGesture}>
-                                    <View style={{ paddingTop: 10 }}>
-                                        <MenuList items={activeItems} addLabel={t("restaurantUi.addToCart")} />
-                                    </View>
-                                </GestureDetector>
-                            </CardPress>
-                        </View>
-                    </ScrollView>
-
-                    {/* CART FAB */}
-                    <Pressable
-                        onPress={() => router.push("/(tabs)/cart")}
-                        style={({ pressed }) => [
-                            styles.cartFab,
-                            { bottom: 18 + insets.bottom, right: 18 },
-                            pressed ? { transform: [{ scale: 0.985 }], opacity: 0.99 } : null,
-                        ]}
-                    >
-                        <LinearGradient
-                            colors={[THEME.accent, THEME.rose]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={styles.cartFabInner}
-                        >
-                            <View style={styles.cartIconBubble}>
-                                <Icon name="cart" size={18} color="#FFFFFF" />
                             </View>
-                            <Text style={styles.cartFabText}>{t("restaurantUi.cart", { count: cartCount })}</Text>
-                        </LinearGradient>
-                    </Pressable>
-                </LinearGradient>
-            </SafeAreaView>
-        </GestureHandlerRootView>
+
+                            {/* Menu */}
+                            <View style={{ paddingTop: 14 }}>
+                                <MenuList items={activeItems} addLabel={t("restaurantUi.addToCart")} />
+                            </View>
+                        </View>
+                    </View>
+                </ScrollView>
+
+                {/* CART FAB */}
+                <Pressable
+                    onPress={() => router.push("/(tabs)/cart")}
+                    style={({ pressed }) => [
+                        styles.cartFab,
+                        { bottom: 18 + insets.bottom, right: 18 },
+                        pressed ? { transform: [{ scale: 0.985 }], opacity: 0.99 } : null,
+                    ]}
+                >
+                    <LinearGradient
+                        colors={[THEME.accent, THEME.rose]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.cartFabInner}
+                    >
+                        <View style={styles.cartIconBubble}>
+                            <Icon name="cart" size={18} color="#FFFFFF" />
+                        </View>
+                        <Text style={styles.cartFabText}>{t("restaurantUi.cart", { count: cartCount })}</Text>
+                    </LinearGradient>
+                </Pressable>
+            </LinearGradient>
+        </SafeAreaView>
     );
 }
 
@@ -436,7 +386,7 @@ const styles = StyleSheet.create({
         opacity: 0.85,
     },
 
-    card: {
+    cardBase: {
         borderRadius: 26,
         borderWidth: StyleSheet.hairlineWidth,
         borderColor: THEME.lineSoft,
@@ -488,66 +438,85 @@ const styles = StyleSheet.create({
         ...shadow,
     },
 
-    // Tabs (chip + dot)
-    tabRow: { gap: 10, paddingVertical: 6, paddingHorizontal: 2 },
-    tabChip: {
-        height: 40,
-        paddingHorizontal: 14,
+    tabRail: {
         borderRadius: 999,
-        backgroundColor: "rgba(255,255,255,0.86)",
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: THEME.lineSoft,
-        alignItems: "center",
-        justifyContent: "center",
+        backgroundColor: "rgba(255,255,255,0.62)",
+        borderWidth: 1.2,
+        borderColor: "rgba(30,14,16,0.18)",
+        padding: 8,
+    },
+    tabRow: { gap: 10, paddingHorizontal: 6, paddingVertical: 2 },
+
+    tabPill: {
+        height: 44,
+        paddingHorizontal: 16,
+        borderRadius: 999,
+        backgroundColor: "rgba(255,255,255,0.96)",
+        borderWidth: 1.35,
+        borderColor: "rgba(30,14,16,0.22)",
         flexDirection: "row",
-        gap: 8,
+        alignItems: "center",
+        gap: 10,
     },
-    tabChipActive: {
+    tabPillActive: {
         backgroundColor: "rgba(177,29,46,0.12)",
-        borderColor: "rgba(177,29,46,0.28)",
+        borderColor: "rgba(177,29,46,0.62)",
+        borderWidth: 1.8,
     },
-    tabDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "rgba(30,14,16,0.22)" },
+
+    tabDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: "rgba(30,14,16,0.22)" },
     tabDotActive: { backgroundColor: THEME.accent },
-    tabText: { fontFamily: "ChairoSans", fontSize: 13, color: "rgba(30,14,16,0.70)" },
+    tabText: { fontFamily: "ChairoSans", fontSize: 14, color: "rgba(30,14,16,0.72)" },
     tabTextActive: { color: THEME.ink },
 
-    // Menu cards
-    cardGrid: { gap: 12 },
+    menuList: { gap: 14 },
 
     menuCard: {
         flexDirection: "row",
-        alignItems: "flex-start",
-        gap: 12,
-        padding: 14,
-        borderRadius: 22,
-        backgroundColor: "rgba(255,255,255,0.92)",
+        borderRadius: 26,
+        backgroundColor: "rgba(255,255,255,0.90)",
         borderWidth: StyleSheet.hairlineWidth,
-        borderColor: THEME.lineSoft,
+        borderColor: "rgba(30,14,16,0.08)",
+        padding: 14,
         ...shadow,
     },
-    menuAccent: {
-        width: 3,
-        alignSelf: "stretch",
-        borderRadius: 2,
-        backgroundColor: "rgba(177,29,46,0.55)",
-        marginRight: 2,
+
+    menuAccentRail: {
+        width: 5,
+        borderRadius: 3,
+        backgroundColor: "rgba(177,29,46,0.33)",
+        marginRight: 12,
     },
 
-    menuTitle: { fontFamily: "ChairoSans", fontSize: 16, color: THEME.ink },
-    menuDesc: { fontFamily: "ChairoSans", fontSize: 13, color: THEME.muted, lineHeight: 17 },
+    menuTopRow: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        justifyContent: "space-between",
+        gap: 12,
+    },
+    menuTitle: { fontFamily: "ChairoSans", fontSize: 18, color: THEME.ink, flex: 1 },
+    menuPrice: { fontFamily: "ChairoSans", fontSize: 16, color: THEME.accent, letterSpacing: 0.2 },
 
-    menuRight: { alignItems: "flex-end", gap: 10, paddingLeft: 10 },
-    menuPrice: { fontFamily: "ChairoSans", fontSize: 14, color: THEME.accent, letterSpacing: 0.2 },
+    menuDesc: {
+        marginTop: 6,
+        fontFamily: "ChairoSans",
+        fontSize: 13,
+        color: THEME.muted,
+        lineHeight: 18,
+    },
 
-    addButton: {
-        paddingHorizontal: 14,
-        paddingVertical: 9,
+    menuBottomRow: { marginTop: 12, flexDirection: "row", alignItems: "center" },
+
+    addPill: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
         borderRadius: 999,
         backgroundColor: "rgba(177,29,46,0.10)",
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: "rgba(177,29,46,0.26)",
+        borderWidth: 1.2,
+        borderColor: "rgba(177,29,46,0.22)",
     },
-    addButtonText: { fontFamily: "ChairoSans", fontSize: 13, color: THEME.ink },
+    addPillPressed: { transform: [{ scale: 0.985 }], opacity: 0.98, borderColor: "rgba(177,29,46,0.38)" },
+    addPillText: { fontFamily: "ChairoSans", fontSize: 13, color: THEME.ink, letterSpacing: 0.2 },
 
     // Cart FAB
     cartFab: { position: "absolute" },

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { getCurrentUser } from '@/lib/firebaseAuth';
 
-type User = { id?: string; $id?: string; accountId?: string; name: string; email: string; avatar?: string } | null;
+type User = { id?: string; $id?: string; accountId?: string; name: string; email: string; avatar?: string; whatsappNumber?: string } | null;
 
 type AuthState = {
     isAuthenticated: boolean;
@@ -42,6 +42,7 @@ const useAuthStore = create<AuthState>((set) => ({
                     name: user.name,
                     email: user.email,
                     avatar: user.avatar,
+                    whatsappNumber: user.whatsappNumber,
                 };
                 set({ isAuthenticated: true, user: mappedUser });
             } else {

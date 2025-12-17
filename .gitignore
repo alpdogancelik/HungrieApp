@@ -17,6 +17,7 @@ node_modules/
 # Expo / Metro caches
 .expo/
 .expo-shared/
+**/.expo/
 .metro-health-check*
 dist/
 web-build/

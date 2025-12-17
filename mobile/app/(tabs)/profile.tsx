@@ -113,6 +113,7 @@ const Profile = () => {
             ...(user || { avatar: undefined }),
             name: trimmedName,
             email: trimmedEmail,
+            whatsappNumber: user?.whatsappNumber,
         });
         setIsEditingProfile(false);
     };

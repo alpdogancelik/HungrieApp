@@ -4,11 +4,12 @@
     "slug": "hungrieapp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icons/bag.png",
+    "icon": "./assets/app-icon/app-icon-1024.png",
     "scheme": "fastfood",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
+      "icon": "./assets/app-icon/app-icon-1024.png",
       "supportsTablet": true,
       "bundleIdentifier": "com.hungrie.app",
       "infoPlist": {
@@ -17,7 +18,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/app-icon/app-icon-1024.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.hungrie.app",
@@ -26,7 +27,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/icons/bag.png"
+      "favicon": "./assets/app-icon/app-icon-512.png"
     },
     "plugins": [
       "expo-router",

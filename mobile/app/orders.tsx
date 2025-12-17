@@ -15,7 +15,6 @@ import type { RestaurantOrder } from "@/type";
 import { subscribeUserOrders } from "@/src/services/firebaseOrders";
 import useAuthStore from "@/store/auth.store";
 import { illustrations } from "@/constants/mediaCatalog";
-import { useTranslation } from "react-i18next";
 import { t } from "i18next";
 
 const FILTERS = [
@@ -30,10 +29,9 @@ const PAGE_SIZE = 4;
 
 const OrderHistoryScreen = () => {
     const params = useLocalSearchParams<{
-        lang: string; highlight?: string 
-}>();
+        lang: string; highlight?: string
+    }>();
     const { user } = useAuthStore();
-    const { t } = useTranslation();
     const [orders, setOrders] = useState<RestaurantOrder[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("all");
@@ -114,11 +112,9 @@ const OrderHistoryScreen = () => {
             <View style={{ paddingHorizontal: 20, paddingVertical: 16, gap: 12 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                     <View>
-                        <Text style={{ fontSize: 28, fontFamily: "ChairoSans", color: "#0F172A" }}>
-                            {t("cart.screen.ordersHistoryTitle")}
-                        </Text>
+                        <Text style={{ fontSize: 28, fontFamily: "ChairoSans", color: "#0F172A" }}>Sipariş Geçmişi</Text>
                         <Text style={{ color: "#475569", fontFamily: "ChairoSans", marginTop: 4 }}>
-                            {t("cart.screen.ordersSearchSubtitle")}
+                            Son siparişlerini tara, filtrele, incele.
                         </Text>
                     </View>
                     <illustrations.courierHero width={64} height={64} />
@@ -129,7 +125,7 @@ const OrderHistoryScreen = () => {
                     </Text>
                 ) : null}
                 <TextInput
-                    placeholder={t("cart.screen.ordersSearchPlaceholder")}
+                    placeholder="Restoran adıyla ara"
                     placeholderTextColor="#94A3B8"
                     value={search}
                     onChangeText={(text) => {

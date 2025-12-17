@@ -16,6 +16,7 @@ import StarIcon from "@/assets/iconset/Star 1.svg";
 import ClockIcon from "@/assets/iconset/Clock.svg";
 import DollarIcon from "@/assets/iconset/currency-dollar-cricle.svg";
 import CheckIcon from "@/assets/iconset/check.svg";
+import MenuIcon from "@/assets/iconset/menu 2.svg";
 import EditIcon from "@/assets/iconset/edit 2.svg";
 import PhoneIcon from "@/assets/iconset/Phone.svg";
 import MailIcon from "@/assets/iconset/Mail-.svg";
@@ -122,6 +123,7 @@ export const iconset = {
     arrowBack: ArrowBackIcon,
     arrowDown: ArrowDownIcon,
     search: SearchIcon,
+    searchTab: MenuIcon,
     bag: BagIcon,
     cart: ShopIcon,
     home: HomeIcon,

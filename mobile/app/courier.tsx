@@ -70,6 +70,7 @@ const CourierAssignmentScreen = () => {
     const renderOrderCard = (order: any) => {
         const orderId = String(order.id ?? order.orderId ?? Date.now());
         const customerName = order.customerName || order.customer?.name || "Customer";
+        const customerWhatsapp = order.customerWhatsapp || order.customer?.whatsappNumber || order.customer?.whatsapp;
         const assignedLabel = order.courierLabel;
 
         return (
@@ -82,6 +83,9 @@ const CourierAssignmentScreen = () => {
                     <View className="items-end">
                         <Text className="text-xs uppercase tracking-[3px] text-dark-60">Customer</Text>
                         <Text className="text-base font-ezra-semibold text-dark-100">{customerName}</Text>
+                        {customerWhatsapp ? (
+                            <Text className="text-sm text-dark-60">WhatsApp: {customerWhatsapp}</Text>
+                        ) : null}
                     </View>
                 </View>
 

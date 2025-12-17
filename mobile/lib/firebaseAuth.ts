@@ -30,7 +30,7 @@ import {
 import { filterMenuForCustomer, filterRestaurantMenuForCustomer } from "./menuVisibility";
 import { seedMenusAll, seedMenuByRestaurantId, seedCategoriesByRestaurantId } from "./restaurantSeeds";
 
-export type Profile = { name: string; email: string; avatar?: string; accountId?: string };
+export type Profile = { name: string; email: string; avatar?: string; accountId?: string; whatsappNumber?: string };
 export const firebaseOrdersEnabled = firebaseConfigured && Boolean(firestore);
 export const getMockOwnerAccount = async () => null;
 export const clearMockOwnerAccount = async () => undefined;
@@ -92,6 +92,7 @@ const syncProfile = async (user: FirebaseUser, overrides: Partial<Profile> = {})
         email: user.email || overrides.email || "operator@hungrie.app",
         avatar: overrides.avatar || avatarUrl(name),
         accountId: user.uid,
+        whatsappNumber: overrides.whatsappNumber || (user as any)?.phoneNumber || undefined,
     };
     const ref = doc(db, FIREBASE_COLLECTIONS.users, user.uid);
     const snap = await getDoc(ref).catch(() => null);
@@ -101,13 +102,29 @@ const syncProfile = async (user: FirebaseUser, overrides: Partial<Profile> = {})
         return base;
     }
     const stored = snap.data() as Profile & { accountId?: string };
-    const merged = { ...base, ...stored, accountId: stored.accountId || user.uid };
+    const merged = {
+        ...base,
+        ...stored,
+        accountId: stored.accountId || user.uid,
+        whatsappNumber: overrides.whatsappNumber ?? stored.whatsappNumber ?? base.whatsappNumber,
+    };
     const needsUpdate =
-        stored.name !== merged.name || stored.email !== merged.email || stored.avatar !== merged.avatar || !stored.accountId;
+        stored.name !== merged.name ||
+        stored.email !== merged.email ||
+        stored.avatar !== merged.avatar ||
+        stored.whatsappNumber !== merged.whatsappNumber ||
+        !stored.accountId;
     if (needsUpdate) {
         await setDoc(
             ref,
-            { name: merged.name, email: merged.email, avatar: merged.avatar, accountId: merged.accountId, updatedAt: now },
+            {
+                name: merged.name,
+                email: merged.email,
+                avatar: merged.avatar,
+                accountId: merged.accountId,
+                whatsappNumber: merged.whatsappNumber,
+                updatedAt: now,
+            },
             { merge: true },
         ).catch(() => null);
     }
@@ -125,14 +142,24 @@ export const signIn = async ({ email, password }: { email: string; password: str
     }
 };
 
-export const createUser = async ({ email, password, name }: { email: string; password: string; name: string }) => {
+export const createUser = async ({
+    email,
+    password,
+    name,
+    whatsappNumber,
+}: { email: string; password: string; name: string; whatsappNumber?: string }) => {
     try {
         const credential = await createUserWithEmailAndPassword(requireAuth(), email, password);
         const user = credential.user;
         if (user && name) await updateProfile(user, { displayName: name }).catch(() => null);
         const target = user || (await waitForAuthUser());
         if (!target) throw new Error("User session could not be established.");
-        return syncProfile(target, { name: name || target.displayName || email, email: target.email || email, avatar: avatarUrl(name || email) });
+        return syncProfile(target, {
+            name: name || target.displayName || email,
+            email: target.email || email,
+            avatar: avatarUrl(name || email),
+            whatsappNumber,
+        });
     } catch (e: any) {
         if (e?.code === "auth/email-already-in-use") {
             await signIn({ email, password });
@@ -248,7 +275,28 @@ export const createMenuItem = async (
 export const createOrderDocument = async (orderData: Record<string, any>, orderItems: Record<string, any>[]) => {
     const now = Date.now();
     const restaurantId = String(orderData.restaurantId ?? orderData.restaurant?.id ?? orderData.restaurantID ?? "unknown");
-    const payload = { ...orderData, restaurantId, orderItems, status: orderData.status || "pending approval", courierLabel: orderData.courierLabel ?? null, createdAt: now, updatedAt: now };
+    const customer = (orderData as any).customer || {};
+    const contactName = orderData.customerName ?? customer.name ?? orderData.name ?? customer.fullName;
+    const contactEmail = orderData.customerEmail ?? customer.email ?? orderData.email;
+    const contactWhatsapp =
+        orderData.customerWhatsapp ??
+        customer.whatsappNumber ??
+        customer.whatsapp ??
+        orderData.whatsappNumber ??
+        null;
+    const payload = {
+        ...orderData,
+        restaurantId,
+        orderItems,
+        customerName: contactName,
+        customerEmail: contactEmail,
+        customerWhatsapp: contactWhatsapp,
+        customer: { ...customer, name: contactName, email: contactEmail, whatsappNumber: contactWhatsapp ?? customer.whatsappNumber },
+        status: orderData.status || "pending approval",
+        courierLabel: orderData.courierLabel ?? null,
+        createdAt: now,
+        updatedAt: now,
+    };
     const ref = await addDoc(collection(requireDB(), FIREBASE_COLLECTIONS.orders), payload);
     await updateDoc(ref, { orderId: ref.id });
     return { id: ref.id, orderId: ref.id, ...payload };

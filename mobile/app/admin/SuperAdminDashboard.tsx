@@ -16,6 +16,7 @@ type AdminOrder = {
     id: string;
     customerName: string;
     customerEmail?: string;
+    customerWhatsapp?: string | null;
     restaurantName?: string;
     totalPrice: number;
     status: string;
@@ -65,6 +66,7 @@ const mapAdminOrder = (order: any): AdminOrder => {
         id: String(order.id ?? order.orderId ?? order.$id ?? Date.now()),
         customerName: order.customerName || customer.name || "Walk-in customer",
         customerEmail: order.customerEmail || customer.email,
+        customerWhatsapp: order.customerWhatsapp || customer.whatsappNumber || customer.whatsapp || order.whatsappNumber || null,
         restaurantName: order.restaurantName || restaurant.name,
         totalPrice: Number.isNaN(Number(totalRaw)) ? 0 : Number(totalRaw),
         status,
@@ -204,6 +206,9 @@ const SuperAdminDashboard = () => {
                         <Text className="text-base font-ezra-semibold text-dark-100">{order.customerName}</Text>
                         {!!order.customerEmail && (
                             <Text className="text-sm text-dark-60">{order.customerEmail}</Text>
+                        )}
+                        {!!order.customerWhatsapp && (
+                            <Text className="text-sm text-dark-60">WhatsApp: {order.customerWhatsapp}</Text>
                         )}
                     </View>
                     {order.restaurantName && (

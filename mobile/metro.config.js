@@ -8,7 +8,7 @@ const sharedPath = path.resolve(projectRoot, "..", "shared");
 
 const baseConfig = getDefaultConfig(projectRoot);
 
-// Preserve monorepo watchFolders only when the shared folder exists
+
 if (fs.existsSync(sharedPath)) {
     baseConfig.watchFolders = [...(baseConfig.watchFolders || []), sharedPath];
 }

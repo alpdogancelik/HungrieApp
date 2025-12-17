@@ -25,7 +25,7 @@ import type { SearchResult } from "@/src/hooks/useSearch";
 
 import { useSearchScreenV3 } from "./_hooks/useSearchScreenV2";
 
-// ✅ restaurant logos (assets/restaurantlogo)
+//restaurant logos (assets/restaurantlogo)
 import AdaPizzaLogo from "@/assets/restaurantlogo/adapizzalogo.jpg";
 import AlaCarteLogo from "@/assets/restaurantlogo/alacartelogo.jpg";
 import HotnFreshLogo from "@/assets/restaurantlogo/hotnfreshlogo.jpg";
@@ -54,7 +54,7 @@ const R = { xl: 28, lg: 22, md: 18, sm: 14 };
 const S = { xl: 24, lg: 18, md: 14, sm: 10, xs: 6 };
 
 const COPY = {
-    tagline: "hungrie.app",
+
     title: "Ara",
     placeholder: "Restoran veya yemek ara",
     recent: "Son aramalar",
@@ -64,7 +64,7 @@ const COPY = {
     emptyDesc: "Yazımı kontrol et veya farklı bir kelime dene.",
 };
 
-// ✅ logos
+//  logos
 const RESTAURANT_LOGOS = {
     adapizza: AdaPizzaLogo,
     alacarte: AlaCarteLogo,
@@ -88,7 +88,9 @@ const RESTAURANT_KEY_MAP: Record<string, RestaurantKey> = {
     lavish: "lavish",
     munchies: "munchies",
     root: "root",
+    rootkitchencoffee: "root",
     lombard: "lombard",
+    lombardkitchen: "lombard",
     burgerhouse: "burgerhouse",
 };
 
@@ -217,7 +219,7 @@ const SegmentButtons = ({
                             {label}
                         </Text>
                         <Text style={[styles.segmentSub, active ? { color: "rgba(255,255,255,0.82)" } : { color: BRAND.muted }]}>
-                            {active ? "Aktif görünüm" : "Geçiş yap"}
+
                         </Text>
                     </LinearGradient>
                 </Pressable>
@@ -292,7 +294,7 @@ const MealCard = ({
                     {item.name}
                 </Text>
                 <Text style={styles.mealSub} numberOfLines={1}>
-                    {item.restaurantName || "Hungrie mutfağı"}
+                    {item.restaurantName || ""}
                 </Text>
 
                 <View style={styles.rowBottom}>
@@ -406,7 +408,6 @@ export default function Search() {
                 <View style={styles.header}>
                     <View style={styles.topRow}>
                         <View>
-                            <Text style={styles.topTag}>{COPY.tagline}</Text>
                             <Text style={styles.topTitle}>{COPY.title}</Text>
                         </View>
                         <CartButton />

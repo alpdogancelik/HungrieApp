@@ -7,13 +7,11 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
 
 import { useCartStore } from "@/store/cart.store";
 import Icon from "@/components/Icon";
 import { getCategoryLabel as translateCategoryLabel } from "@/src/lib/categoryLabels";
 
-// Local Munchies data
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const munchiesData = require("../../data/munchies-firestore.json");
 
@@ -37,7 +35,8 @@ const formatPrice = (value?: number) => `TRY ${Number(value ?? 0).toFixed(2)}`;
 const groupByCategory = (items: MenuEntry[]) => {
     const bucket: Record<string, MenuEntry[]> = {};
     items.forEach((item) => {
-        const categories = Array.isArray(item.categories) && item.categories.length ? item.categories : ["diger"];
+        const categories =
+            Array.isArray(item.categories) && item.categories.length ? item.categories : ["diger"];
         categories.forEach((cat) => {
             const key = String(cat);
             if (!bucket[key]) bucket[key] = [];
@@ -53,8 +52,9 @@ const THEME = {
     bgMid: "#F6E6D7",
     bgBottom: "#FFFDFB",
 
-    surface: "rgba(255,255,255,0.86)",
+    surface: "rgba(255,255,255,0.90)",
     surface2: "rgba(255,252,248,0.92)",
+    sheet: "rgba(255,255,255,0.80)",
 
     ink: "#1B0E0A",
     muted: "rgba(27,14,10,0.62)",
@@ -92,7 +92,7 @@ const CardPress = ({
         onPress={onPress}
         disabled={!onPress}
         style={({ pressed }) => [
-            styles.card,
+            styles.cardBase,
             style,
             pressed && onPress ? { transform: [{ scale: 0.992 }], opacity: 0.985 } : null,
         ]}
@@ -106,48 +106,55 @@ const MenuList = ({ items, addLabel }: { items: MenuEntry[]; addLabel: string })
     if (!items.length) return null;
 
     return (
-        <View style={styles.cardGrid}>
+        <View style={styles.menuList}>
             {items.map((item) => (
-                <CardPress key={String(item.id)} style={styles.menuCard}>
+                <Pressable
+                    key={String(item.id)}
+                    onPress={() =>
+                        addItem({
+                            id: String(item.id),
+                            name: item.name,
+                            price: Number(item.price || 0),
+                            image_url: "",
+                            restaurantId: RESTAURANT_ID,
+                            customizations: [],
+                        })
+                    }
+                    style={({ pressed }) => [styles.menuCard, pressed ? styles.menuCardPressed : null]}
+                >
                     <LinearGradient
-                        colors={["rgba(123,43,37,0.55)", "rgba(123,43,37,0.16)"]}
+                        colors={["rgba(123,43,37,0.55)", "rgba(123,43,37,0.14)"]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 0, y: 1 }}
-                        style={styles.menuAccent}
+                        style={styles.menuAccentRail}
                     />
-                    <View style={{ flex: 1, gap: 6 }}>
-                        <Text style={styles.menuTitle} numberOfLines={1}>
-                            {item.name}
-                        </Text>
+
+                    <View style={{ flex: 1, paddingRight: 10 }}>
+                        <View style={styles.menuTopRow}>
+                            <Text style={styles.menuTitle} numberOfLines={1}>
+                                {item.name}
+                            </Text>
+                            <Text style={styles.menuPrice}>{formatPrice(item.price)}</Text>
+                        </View>
+
                         {item.description ? (
                             <Text style={styles.menuDesc} numberOfLines={2}>
                                 {item.description}
                             </Text>
-                        ) : null}
-                    </View>
+                        ) : (
+                            <Text style={styles.menuDesc} numberOfLines={1}>
+                                {" "}
+                            </Text>
+                        )}
 
-                    <View style={styles.menuRight}>
-                        <Text style={styles.menuPrice}>{formatPrice(item.price)}</Text>
-                        <Pressable
-                            onPress={() =>
-                                addItem({
-                                    id: String(item.id),
-                                    name: item.name,
-                                    price: Number(item.price || 0),
-                                    image_url: "",
-                                    restaurantId: RESTAURANT_ID,
-                                    customizations: [],
-                                })
-                            }
-                            style={({ pressed }) => [
-                                styles.addButton,
-                                pressed ? { transform: [{ scale: 0.985 }], opacity: 0.98 } : null,
-                            ]}
-                        >
-                            <Text style={styles.addButtonText}>{addLabel}</Text>
-                        </Pressable>
+                        <View style={styles.menuBottomRow}>
+                            <View style={{ flex: 1 }} />
+                            <View style={styles.addPill}>
+                                <Text style={styles.addPillText}>{addLabel}</Text>
+                            </View>
+                        </View>
                     </View>
-                </CardPress>
+                </Pressable>
             ))}
         </View>
     );
@@ -187,34 +194,12 @@ export default function MunchiesPage() {
 
     const scrollRef = useRef<ScrollView>(null);
 
-    const activeIndex = useMemo(() => {
-        const i = categoryKeys.indexOf(activeCategory);
-        return i >= 0 ? i : 0;
-    }, [categoryKeys, activeCategory]);
-
-    const goToIndex = (idx: number) => {
-        if (!categoryKeys.length) return;
-        const clamped = Math.max(0, Math.min(idx, categoryKeys.length - 1));
-        const nextKey = categoryKeys[clamped];
-        if (!nextKey || nextKey === activeCategory) return;
-
-        setActiveCategory(nextKey);
+    const onSelectCategory = (key: string) => {
+        setActiveCategory(key);
         requestAnimationFrame(() => {
             scrollRef.current?.scrollTo({ y: 0, animated: true });
         });
     };
-
-    const panToSwitchCategory = useMemo(() => {
-        return Gesture.Pan()
-            .activeOffsetX([-22, 22])
-            .failOffsetY([-14, 14])
-            .onEnd((e) => {
-                const THRESHOLD = 60;
-                if (Math.abs(e.translationX) < THRESHOLD) return;
-                if (e.translationX < 0) goToIndex(activeIndex + 1);
-                else goToIndex(activeIndex - 1);
-            });
-    }, [activeIndex, categoryKeys.join("|"), activeCategory]);
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -223,10 +208,10 @@ export default function MunchiesPage() {
                     ref={scrollRef}
                     contentContainerStyle={{ paddingBottom: 120 + insets.bottom }}
                     showsVerticalScrollIndicator={false}
+                    overScrollMode="never"
                 >
                     {/* HERO */}
                     <View style={styles.heroWrap}>
-                        {/* Back: karttan bağımsız, kaybolmaz */}
                         <Pressable
                             onPress={() => router.back()}
                             hitSlop={12}
@@ -235,12 +220,17 @@ export default function MunchiesPage() {
                                 pressed ? { transform: [{ scale: 0.96 }], opacity: 0.98 } : null,
                             ]}
                         >
-                            <View style={styles.floatingBackInner}>
+                            <LinearGradient
+                                colors={["rgba(255,255,255,0.96)", "rgba(255,255,255,0.82)"]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={styles.floatingBackInner}
+                            >
                                 <Icon name="arrowBack" size={20} color={THEME.ink} />
-                            </View>
+                            </LinearGradient>
                         </Pressable>
 
-                        {/* Soft decor */}
+                        {/* decor */}
                         <View style={styles.decorBrick} pointerEvents="none" />
                         <View style={styles.decorGold} pointerEvents="none" />
                         <View style={styles.decorCream} pointerEvents="none" />
@@ -284,39 +274,43 @@ export default function MunchiesPage() {
 
                     {/* SHEET */}
                     <View style={styles.sheetWrap}>
-                        <CardPress style={styles.sheetCard}>
-                            <ScrollView
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                contentContainerStyle={styles.tabRow}
-                                keyboardShouldPersistTaps="handled"
-                            >
-                                {categoryKeys.map((key) => {
-                                    const selected = activeCategory === key;
-                                    const label = translateCategoryLabel(key, locale as any) ?? key;
+                        <View style={styles.sheetCard}>
+                            {/* ✅ çerçeveli tab rail */}
+                            <View style={styles.tabRail}>
+                                <ScrollView
+                                    horizontal
+                                    showsHorizontalScrollIndicator={false}
+                                    contentContainerStyle={styles.tabRow}
+                                    keyboardShouldPersistTaps="handled"
+                                >
+                                    {categoryKeys.map((key) => {
+                                        const selected = activeCategory === key;
+                                        const label = translateCategoryLabel(key, locale as any) ?? key;
 
-                                    return (
-                                        <Pressable
-                                            key={key}
-                                            onPress={() => setActiveCategory(key)}
-                                            style={({ pressed }) => [
-                                                styles.tabChip,
-                                                selected ? styles.tabChipActive : null,
-                                                pressed ? { transform: [{ scale: 0.985 }] } : null,
-                                            ]}
-                                        >
-                                            <Text style={[styles.tabChipText, selected ? styles.tabChipTextActive : null]}>{label}</Text>
-                                        </Pressable>
-                                    );
-                                })}
-                            </ScrollView>
+                                        return (
+                                            <Pressable
+                                                key={key}
+                                                onPress={() => onSelectCategory(key)}
+                                                style={({ pressed }) => [
+                                                    styles.tabPill,
+                                                    selected ? styles.tabPillActive : null,
+                                                    pressed ? { transform: [{ scale: 0.985 }] } : null,
+                                                ]}
+                                            >
+                                                <View style={[styles.tabDot, selected ? styles.tabDotActive : null]} />
+                                                <Text style={[styles.tabText, selected ? styles.tabTextActive : null]} numberOfLines={1}>
+                                                    {label}
+                                                </Text>
+                                            </Pressable>
+                                        );
+                                    })}
+                                </ScrollView>
+                            </View>
 
-                            <GestureDetector gesture={panToSwitchCategory}>
-                                <View style={{ paddingTop: 10 }}>
-                                    <MenuList items={activeItems} addLabel={t("restaurantUi.addToCart")} />
-                                </View>
-                            </GestureDetector>
-                        </CardPress>
+                            <View style={{ paddingTop: 14 }}>
+                                <MenuList items={activeItems} addLabel={t("restaurantUi.addToCart")} />
+                            </View>
+                        </View>
                     </View>
                 </ScrollView>
 
@@ -349,7 +343,7 @@ export default function MunchiesPage() {
 const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: THEME.bgTop },
 
-    card: {
+    cardBase: {
         borderRadius: 26,
         borderWidth: StyleSheet.hairlineWidth,
         borderColor: THEME.lineSoft,
@@ -359,22 +353,15 @@ const styles = StyleSheet.create({
 
     heroWrap: { paddingHorizontal: 16, paddingTop: 14, position: "relative" },
 
-    floatingBack: {
-        position: "absolute",
-        top: 10,
-        left: 10,
-        zIndex: 999,
-        elevation: 30,
-    },
+    floatingBack: { position: "absolute", top: 10, left: 10, zIndex: 999, elevation: 30 },
     floatingBackInner: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: "rgba(255,255,255,0.92)",
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: THEME.line,
         alignItems: "center",
         justifyContent: "center",
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: THEME.line,
         ...shadow,
     },
 
@@ -428,30 +415,11 @@ const styles = StyleSheet.create({
     logoImg: { width: 86, height: 86 },
 
     heroTopLine: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
-    heroKicker: {
-        fontFamily: "ChairoSans",
-        fontSize: 12,
-        color: THEME.brick,
-        letterSpacing: 0.5,
-    },
-    heroPhone: {
-        fontFamily: "ChairoSans",
-        fontSize: 12,
-        color: THEME.muted,
-    },
+    heroKicker: { fontFamily: "ChairoSans", fontSize: 12, color: THEME.brick, letterSpacing: 0.5 },
+    heroPhone: { fontFamily: "ChairoSans", fontSize: 12, color: THEME.muted },
 
-    heroTitle: {
-        fontFamily: "ChairoSans",
-        fontSize: 28,
-        color: THEME.ink,
-        letterSpacing: -0.2,
-    },
-    heroSubtitle: {
-        fontFamily: "ChairoSans",
-        fontSize: 13,
-        color: THEME.muted,
-        lineHeight: 18,
-    },
+    heroTitle: { fontFamily: "ChairoSans", fontSize: 28, color: THEME.ink, letterSpacing: -0.2 },
+    heroSubtitle: { fontFamily: "ChairoSans", fontSize: 13, color: THEME.muted, lineHeight: 18 },
 
     heroChipRow: { flexDirection: "row", gap: 8, marginTop: 4 },
     heroChip: {
@@ -462,99 +430,81 @@ const styles = StyleSheet.create({
         borderWidth: StyleSheet.hairlineWidth,
         borderColor: "rgba(123,43,37,0.22)",
     },
-    heroChipText: {
-        fontFamily: "ChairoSans",
-        fontSize: 12,
-        color: THEME.brick,
-    },
+    heroChipText: { fontFamily: "ChairoSans", fontSize: 12, color: THEME.brick },
 
     sheetWrap: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 22 },
     sheetCard: {
         padding: 12,
-        backgroundColor: "rgba(255,255,255,0.78)",
+        backgroundColor: THEME.sheet,
         borderRadius: 26,
         borderWidth: StyleSheet.hairlineWidth,
         borderColor: THEME.lineSoft,
         ...shadow,
     },
 
-    tabRow: { gap: 10, paddingVertical: 6, paddingHorizontal: 2 },
-    tabChip: {
-        height: 40,
-        paddingHorizontal: 14,
+    tabRail: {
         borderRadius: 999,
-        backgroundColor: "rgba(255,255,255,0.86)",
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: THEME.lineSoft,
-        alignItems: "center",
-        justifyContent: "center",
+        backgroundColor: "rgba(255,255,255,0.62)",
+        borderWidth: 1.2,
+        borderColor: "rgba(27,14,10,0.18)",
+        padding: 8,
     },
-    tabChipActive: {
-        backgroundColor: THEME.goldSoft2,
-        borderColor: "rgba(214,176,90,0.40)",
-    },
-    tabChipText: {
-        fontFamily: "ChairoSans",
-        fontSize: 13,
-        color: "rgba(27,14,10,0.68)",
-    },
-    tabChipTextActive: {
-        color: THEME.ink,
-    },
+    tabRow: { gap: 10, paddingHorizontal: 6, paddingVertical: 2 },
 
-    cardGrid: { gap: 12 },
+    tabPill: {
+        height: 44,
+        paddingHorizontal: 16,
+        borderRadius: 999,
+        backgroundColor: "rgba(255,255,255,0.96)",
+        borderWidth: 1.35,
+        borderColor: "rgba(27,14,10,0.22)",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        maxWidth: 220,
+    },
+    tabPillActive: {
+        backgroundColor: THEME.goldSoft2,
+        borderColor: "rgba(214,176,90,0.62)",
+        borderWidth: 1.8,
+    },
+    tabDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: "rgba(27,14,10,0.22)" },
+    tabDotActive: { backgroundColor: THEME.brick },
+    tabText: { fontFamily: "ChairoSans", fontSize: 14, color: "rgba(27,14,10,0.72)" },
+    tabTextActive: { color: THEME.ink },
+
+    menuList: { gap: 14 },
 
     menuCard: {
         flexDirection: "row",
-        alignItems: "flex-start",
-        gap: 12,
-        padding: 14,
-        borderRadius: 22,
-        backgroundColor: "rgba(255,252,248,0.92)",
+        borderRadius: 26,
+        backgroundColor: THEME.surface2,
         borderWidth: StyleSheet.hairlineWidth,
-        borderColor: THEME.lineSoft,
+        borderColor: "rgba(27,14,10,0.08)",
+        padding: 14,
+        overflow: "hidden",
         ...shadow,
     },
-    menuAccent: {
-        width: 3,
-        alignSelf: "stretch",
-        borderRadius: 2,
-        marginRight: 2,
-    },
+    menuCardPressed: { transform: [{ scale: 0.992 }], opacity: 0.99 },
 
-    menuTitle: {
-        fontFamily: "ChairoSans",
-        fontSize: 16,
-        color: THEME.ink,
-    },
-    menuDesc: {
-        fontFamily: "ChairoSans",
-        fontSize: 13,
-        color: "rgba(27,14,10,0.58)",
-        lineHeight: 17,
-    },
+    menuAccentRail: { width: 5, borderRadius: 3, marginRight: 12 },
 
-    menuRight: { alignItems: "flex-end", gap: 10, paddingLeft: 10 },
-    menuPrice: {
-        fontFamily: "ChairoSans",
-        fontSize: 14,
-        color: THEME.brick,
-        letterSpacing: 0.2,
-    },
+    menuTopRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
+    menuTitle: { fontFamily: "ChairoSans", fontSize: 18, color: THEME.ink, flex: 1 },
+    menuPrice: { fontFamily: "ChairoSans", fontSize: 16, color: THEME.brick, letterSpacing: 0.2 },
 
-    addButton: {
-        paddingHorizontal: 14,
-        paddingVertical: 9,
+    menuDesc: { marginTop: 6, fontFamily: "ChairoSans", fontSize: 13, color: THEME.muted, lineHeight: 18 },
+    menuBottomRow: { marginTop: 12, flexDirection: "row", alignItems: "center" },
+
+    addPill: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
         borderRadius: 999,
         backgroundColor: THEME.goldSoft,
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: "rgba(214,176,90,0.55)",
+        borderWidth: 1.2,
+        borderColor: "rgba(214,176,90,0.40)",
     },
-    addButtonText: {
-        fontFamily: "ChairoSans",
-        fontSize: 13,
-        color: THEME.ink,
-    },
+    addPillText: { fontFamily: "ChairoSans", fontSize: 13, color: THEME.ink, letterSpacing: 0.2 },
 
     cartFab: { position: "absolute" },
     cartFabInner: {
@@ -572,15 +522,11 @@ const styles = StyleSheet.create({
         width: 34,
         height: 34,
         borderRadius: 17,
-        backgroundColor: "rgba(255,255,255,0.18)",
+        backgroundColor: "rgba(10,8,10,0.88)",
         alignItems: "center",
         justifyContent: "center",
         borderWidth: StyleSheet.hairlineWidth,
-        borderColor: "rgba(255,255,255,0.22)",
+        borderColor: "rgba(255,255,255,0.18)",
     },
-    cartFabText: {
-        fontFamily: "ChairoSans",
-        fontSize: 14,
-        color: "#FFFFFF",
-    },
+    cartFabText: { fontFamily: "ChairoSans", fontSize: 14, color: "#FFFFFF" },
 });
