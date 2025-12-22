@@ -141,6 +141,7 @@ const Profile = () => {
             setSigningOut(false);
             setUser(null);
             setIsAuthenticated(false);
+            router.replace("/sign-in");
         }
     };
 
@@ -634,6 +635,20 @@ const OrderHistorySection = ({ orders }: { orders: any[] }) => {
     const HistoryIllustration = illustrations.foodieCelebration;
     const [query, setQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus | "canceled">("all");
+
+    const formatTimestamp = (value: any) => {
+        if (!value) return "";
+        if (typeof value === "string" || typeof value === "number") {
+            const d = new Date(value);
+            return isNaN(d.getTime()) ? String(value) : d.toLocaleString();
+        }
+        if (typeof value === "object" && "seconds" in value) {
+            const millis = value.seconds * 1000 + (value.nanoseconds || 0) / 1_000_000;
+            return new Date(millis).toLocaleString();
+        }
+        return "";
+    };
+
     const filtered = useMemo(() => {
         return orders
             .filter((order) => {
@@ -713,7 +728,7 @@ const OrderHistorySection = ({ orders }: { orders: any[] }) => {
                             </View>
                         </View>
                         <Text className="caption text-dark-40 mt-1">
-                            {order.updatedAt || order.createdAt || ""}
+                            {formatTimestamp(order.updatedAt || order.createdAt)}
                         </Text>
                         <Text className="body-medium text-dark-80 mt-2">
                             {order.orderItems?.[0]?.name ? `1x ${order.orderItems[0].name}` : ""}
@@ -740,4 +755,3 @@ const OrderHistorySection = ({ orders }: { orders: any[] }) => {
 };
 
 export default Profile;
-

@@ -23,7 +23,7 @@ import Icon from "@/components/Icon";
 import { Chip, Stepper } from "@/src/components/componentRegistry";
 import type { SearchResult } from "@/src/hooks/useSearch";
 
-import { useSearchScreenV3 } from "./_hooks/useSearchScreenV2";
+import { useSearchScreenV3 } from "@/src/hooks/useSearchScreenV3";
 
 //restaurant logos (assets/restaurantlogo)
 import AdaPizzaLogo from "@/assets/restaurantlogo/adapizzalogo.jpg";
@@ -389,17 +389,14 @@ export default function Search() {
 
     const padBottom = tabBarHeight + insets.bottom + 18;
 
-    const goRestaurant = (restaurant: any, index: number) => {
-        const key = resolveRestaurantKey(restaurant);
-        if (key) {
-            router.push(`/restaurants/${encodeURIComponent(key)}`);
-            return;
-        }
-        router.push({
-            pathname: "/restaurants/[id]",
-            params: { id: String(restaurant.id ?? restaurant.$id ?? index) },
-        });
-    };
+const goRestaurant = (restaurant: any, index: number) => {
+    const primary = restaurant?.id ?? restaurant?.$id;
+    const target = primary ? String(primary) : resolveRestaurantKey(restaurant) ?? String(index);
+    router.push({
+        pathname: "/restaurants/[id]",
+        params: { id: target },
+    });
+};
 
     return (
         <SafeAreaView style={styles.safeArea}>

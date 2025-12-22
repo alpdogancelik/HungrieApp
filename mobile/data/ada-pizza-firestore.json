@@ -29,7 +29,7 @@
       "id": "wrap-001",
       "name": "Tavuk Şiş Dürüm",
       "description": "Marineli tavuk şiş, köz sebze, özel lavaş.",
-      "price": 280,
+      "price": 12,
       "restaurantId": "ada-pizza",
       "categories": [
         "wraps"

@@ -6,8 +6,9 @@ import {
     getMockOwnerAccount,
     signOut as firebaseSignOut,
 } from "./firebaseAuth";
+import { firebaseConfigured, firestore, FIREBASE_COLLECTIONS } from "./firebase";
 import { filterRestaurantMenuForCustomer } from "./menuVisibility";
-import { seedRestaurants, seedMenuByRestaurantId, seedCategoriesByRestaurantId } from "./restaurantSeeds";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 
 const extra: any = Constants.expoConfig?.extra || {};
 const env = (name: string) => (typeof process !== 'undefined' ? (process as any).env?.[name] : undefined) || extra[name];
@@ -125,33 +126,36 @@ export const getCurrentUser = async () => {
 };
 
 export const getRestaurants = async (filters?: { search?: string; category?: string }) => {
-    const query = buildQuery(filters);
-    return withFallback(
-        () => jsonFetch(`/api/restaurants${query}`),
-        () => {
-            const list = seedRestaurants;
-            if (!filters?.search) return list;
-            const term = filters.search.toLowerCase();
-            return list.filter(
-                (r) =>
-                    r.name.toLowerCase().includes(term) ||
-                    (r.cuisine ? r.cuisine.toLowerCase().includes(term) : false),
-            );
-        },
-    );
+    if (!firebaseConfigured || !firestore) return [];
+
+    const restaurantsRef = collection(firestore, FIREBASE_COLLECTIONS.restaurants);
+    let snap;
+
+    // For now, fetch all and filter client-side; Firestore has limited text search without an index.
+    snap = await getDocs(restaurantsRef);
+    const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    if (!filters?.search) return list;
+    const term = filters.search.toLowerCase();
+    return list.filter((r: any) => {
+        const name = String(r.name || "").toLowerCase();
+        const cuisine = String(r.cuisine || "").toLowerCase();
+        return name.includes(term) || cuisine.includes(term);
+    });
 };
 
 export const getRestaurant = async (restaurantId: string | number) => {
-    return withFallback(
-        () => jsonFetch(`/api/restaurants/${restaurantId}`),
-        () => seedRestaurants.find((r) => String(r.id) === String(restaurantId)) ?? null,
-    );
+    if (!firebaseConfigured || !firestore) return null;
+    const ref = doc(firestore, FIREBASE_COLLECTIONS.restaurants, String(restaurantId));
+    const snap = await getDoc(ref).catch(() => null);
+    if (!snap || !snap.exists()) return null;
+    return { id: snap.id, ...snap.data() };
 };
 
 async function getDefaultRestaurantId(): Promise<number | null> {
     try {
         const list = await getRestaurants();
-        return (Array.isArray(list) && list.length > 0) ? list[0].id : null;
+        return (Array.isArray(list) && list.length > 0) ? (list[0].id as any) : null;
     } catch { return null; }
 }
 
@@ -165,7 +169,7 @@ export const getMenu = async ({ category, query, limit }: { category?: string; q
     const restId = await getDefaultRestaurantId();
     if (!restId) return [];
 
-    let categoryId: number | undefined = undefined;
+    let categoryId: string | number | undefined = undefined;
     if (category) {
         try {
             const categories = await getRestaurantCategories(restId);
@@ -189,23 +193,38 @@ export const getMenu = async ({ category, query, limit }: { category?: string; q
 };
 
 export const getRestaurantCategories = async (restaurantId: string | number) => {
-    return withFallback(
-        () => jsonFetch(`/api/restaurants/${restaurantId}/categories`),
-        () => seedCategoriesByRestaurantId(String(restaurantId)),
-    );
+    if (!firebaseConfigured || !firestore) return [];
+    const categoriesRef = collection(firestore, FIREBASE_COLLECTIONS.categories);
+    const snap = await getDocs(query(categoriesRef, where("restaurantId", "==", String(restaurantId))));
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 };
 
-export const getRestaurantMenu = async ({ restaurantId, categoryId }: { restaurantId: string | number; categoryId?: number; }) => {
-    const query = categoryId ? `?categoryId=${categoryId}` : '';
-    const items = await withFallback(
-        () => jsonFetch(`/api/restaurants/${restaurantId}/menu${query}`),
-        () => seedMenuByRestaurantId(String(restaurantId)),
-    );
+export const getRestaurantMenu = async ({
+    restaurantId,
+    categoryId,
+}: {
+    restaurantId: string | number;
+    categoryId?: string | number;
+}) => {
+    if (!firebaseConfigured || !firestore) return [];
+    const menusRef = collection(firestore, FIREBASE_COLLECTIONS.menus);
+    const snap = await getDocs(query(menusRef, where("restaurantId", "==", String(restaurantId))));
+    let items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    if (categoryId !== undefined && categoryId !== null) {
+        const categoryKey = String(categoryId);
+        items = items.filter((item: any) => {
+            const cat = item.categoryId ?? item.category ?? item.categorySlug;
+            if (Array.isArray(cat)) return cat.map(String).includes(categoryKey);
+            return cat !== undefined && String(cat) === categoryKey;
+        });
+    }
+
     const normalized = (Array.isArray(items) ? items : []).map((item: any) => ({
         ...item,
         $id: item.id ?? `menu-${item.restaurantId}-${item.name}`,
         price: Number(item.price),
-        image_url: item.imageUrl || item.image_url || '',
+        image_url: item.imageUrl || item.image_url || "",
     }));
     return filterRestaurantMenuForCustomer(String(restaurantId), normalized);
 };

@@ -16,7 +16,7 @@ import { getCategoryLabel } from "@/src/lib/categoryLabels";
 import adaPizzaData from "@/data/ada-pizza-firestore.json";
 
 const RESTAURANT_ID = String(adaPizzaData?.restaurants?.[0]?.id || "ada-pizza");
-const RESTAURANT_PHONE = "(+90 533 882 78 79)";
+const RESTAURANT_PHONE = "(+90 533 882 78 79123123)";
 
 type MenuEntry = {
     id: string;
@@ -248,11 +248,11 @@ export default function AdaPizzaPage() {
 
                                 <View style={{ flex: 1, gap: 6 }}>
                                     <View style={styles.heroTopLine}>
-                                        <Text style={styles.heroKicker}>{restaurant.name || "Ada Pizza"}</Text>
+                                        <Text style={styles.heroKicker}>{restaurant.name || "Ada PizzaA"}</Text>
                                         <Text style={styles.heroPhone}>{RESTAURANT_PHONE}</Text>
                                     </View>
 
-                                    <Text style={styles.heroTitle}>{restaurant.name || "Ada Pizza"}</Text>
+                                    <Text style={styles.heroTitle}>{restaurant.name || "Ada PizzaS"}</Text>
                                     <Text style={styles.heroSubtitle}>Pizza · Dürüm · Burger · Ana Yemekler</Text>
 
                                     <View style={styles.heroChipRow}>

@@ -32,9 +32,8 @@ export const resolveRestaurantImageSource = (value?: string | number | null) => 
         }
     }
     if (typeof value === "number") return value;
-    if (value === null || value === undefined) return FALLBACK_RESTAURANT_IMAGE;
-    const asString = typeof value === "string" ? value : String(value);
-    const trimmed = asString.trim();
+    if (typeof value !== "string") return FALLBACK_RESTAURANT_IMAGE;
+    const trimmed = value.trim();
     if (!trimmed) return FALLBACK_RESTAURANT_IMAGE;
     const lowered = trimmed.toLowerCase();
     if (

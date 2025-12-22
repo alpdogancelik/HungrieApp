@@ -6,6 +6,7 @@
     "skipLibCheck": true,
     "noEmit": true,
     "allowArbitraryExtensions": true,
+    "jsx": "react-native",
     "paths": {
       "@/*": [
         "./*"

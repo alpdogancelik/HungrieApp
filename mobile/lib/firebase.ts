@@ -7,14 +7,12 @@ import {
     addDoc,
     collection,
     doc,
-    getDoc,
     getDocs,
     getFirestore,
     query,
     updateDoc,
     where,
 } from "firebase/firestore";
-import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
 const extra: Record<string, string | undefined> = Constants.expoConfig?.extra || {};
 const env = (name: string) =>
@@ -25,17 +23,16 @@ const appCheckDebugToken = env("EXPO_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN");
 if (appCheckDebugToken && typeof globalThis !== "undefined") {
     (globalThis as any).FIREBASE_APPCHECK_DEBUG_TOKEN = appCheckDebugToken;
 }
-const appCheckSiteKey = env("EXPO_PUBLIC_FIREBASE_APPCHECK_SITE_KEY");
 
 const defaultFirebaseConfig = {
-    apiKey: "AIzaSyAqR--zHc7u-JF0EkJ5boTYjqew1HG3Kvs",
-    authDomain: "hungrie-b5458.firebaseapp.com",
-    projectId: "hungrie-b5458",
-    storageBucket: "hungrie-b5458.firebasestorage.app",
-    messagingSenderId: "115590895272",
-    appId: "1:115590895272:web:0b89fe4164a8d7cba8549d",
-    measurementId: "G-NC9CL8HT4C",
-    databaseURL: "https://hungrie-b5458-default-rtdb.firebaseio.com",
+    apiKey: "AIzaSyCOCAEeBf5IgKP50zSyqFJKBcygwXUuqUA",
+    authDomain: "hungrieapp-a2288.firebaseapp.com",
+    projectId: "hungrieapp-a2288",
+    storageBucket: "hungrieapp-a2288.firebasestorage.app",
+    messagingSenderId: "405094874808",
+    appId: "1:405094874808:web:a0f159c959938a7ba6fe4d",
+    measurementId: "G-DSD4PT8W96",
+    databaseURL: "",
 };
 
 const firebaseConfig = {
@@ -50,7 +47,7 @@ const firebaseConfig = {
 };
 
 // Allow Firebase by default; can be disabled by setting EXPO_PUBLIC_DISABLE_FIREBASE.
-const firebaseDisabledForDemo = env("EXPO_PUBLIC_DISABLE_FIREBASE") === "true";
+const firebaseDisabledForDemo = env("EXPO_PUBLIC_DISABLE_FIREBASE") === "false";
 
 const firebaseConfigured =
     !firebaseDisabledForDemo && Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId);
@@ -59,17 +56,6 @@ let firebaseApp: FirebaseApp | undefined;
 
 if (firebaseConfigured) {
     firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
-    // Enable App Check (reCAPTCHA v3) when a site key is provided.
-    if (appCheckSiteKey && typeof window !== "undefined") {
-        try {
-            initializeAppCheck(firebaseApp, {
-                provider: new ReCaptchaV3Provider(appCheckSiteKey),
-                isTokenAutoRefreshEnabled: true,
-            });
-        } catch (error) {
-            console.warn("[Firebase] Failed to initialize App Check", error);
-        }
-    }
 } else if (firebaseDisabledForDemo && __DEV__) {
     console.info("[Firebase] Disabled via EXPO_PUBLIC_DISABLE_FIREBASE flag.");
 } else if (__DEV__) {
@@ -103,6 +89,7 @@ const ensureFirestore = () => {
     if (!firebaseConfigured || !firestore) {
         throw new Error("Firebase is not configured yet.");
     }
+    console.log("CALISIYO");
     return firestore;
 };
 
@@ -113,6 +100,7 @@ export const getRestaurants = async () => {
 };
 
 export const getRestaurantMenu = async (restaurantId: string) => {
+    console.log("HSHSHSH");
     if (!restaurantId) return [];
     const db = ensureFirestore();
     const q = query(collection(db, FIREBASE_COLLECTIONS.menus), where("restaurantId", "==", restaurantId));
@@ -122,7 +110,6 @@ export const getRestaurantMenu = async (restaurantId: string) => {
         return {
             ...mapSnapshot(snap),
             price: Number(data.price ?? 0),
-            visible: data.visible !== false,
         };
     });
 };
@@ -137,7 +124,6 @@ export const createMenuItem = async (restaurantId: string, payload: MenuPayload)
         price: Number(payload.price),
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        visible: true,
     };
 
     const ref = await addDoc(collection(db, FIREBASE_COLLECTIONS.menus), data);
@@ -159,46 +145,6 @@ export const updateMenuItem = async (itemId: string, updates: Partial<MenuPayloa
 
     await updateDoc(ref, sanitized);
     return response;
-};
-
-// --- Restaurant panel helpers ---
-
-export const fetchMenuItems = async (restaurantId: string) => {
-    return getRestaurantMenu(restaurantId);
-};
-
-export const addMenuItem = async (payload: { restaurantId: string; name: string; price: number; description?: string }) =>
-    createMenuItem(payload.restaurantId, payload);
-
-export const toggleMenuVisibility = async (menuId: string, visible: boolean) => {
-    const db = ensureFirestore();
-    const ref = doc(db, FIREBASE_COLLECTIONS.menus, menuId);
-    await updateDoc(ref, { visible, updatedAt: Date.now() });
-};
-
-export const updateRestaurantHours = async (restaurantId: string, hours: Record<string, string>) => {
-    const db = ensureFirestore();
-    const ref = doc(db, FIREBASE_COLLECTIONS.restaurants, restaurantId);
-    await updateDoc(ref, { deliveryHours: hours, updatedAt: Date.now() });
-};
-
-export const updateRestaurantSettings = async (
-    restaurantId: string,
-    payload: { minOrderAmount?: number; serviceFee?: number },
-) => {
-    const db = ensureFirestore();
-    const ref = doc(db, FIREBASE_COLLECTIONS.restaurants, restaurantId);
-    const sanitized: Record<string, any> = { updatedAt: Date.now() };
-    if (payload.minOrderAmount !== undefined) sanitized.minOrderAmount = Number(payload.minOrderAmount);
-    if (payload.serviceFee !== undefined) sanitized.serviceFee = Number(payload.serviceFee);
-    await updateDoc(ref, sanitized);
-};
-
-export const getRestaurantById = async (restaurantId: string) => {
-    const db = ensureFirestore();
-    const ref = doc(db, FIREBASE_COLLECTIONS.restaurants, restaurantId);
-    const snap = await getDoc(ref);
-    return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 };
 
 export { firebaseConfig, firebaseConfigured, firebaseApp, auth, firestore, FIREBASE_COLLECTIONS };

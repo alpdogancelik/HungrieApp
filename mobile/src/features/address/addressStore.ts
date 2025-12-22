@@ -1,5 +1,15 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { nanoid } from "nanoid/non-secure";
+import {
+    addDoc,
+    collection,
+    deleteDoc,
+    doc,
+    getDocs,
+    setDoc,
+} from "firebase/firestore";
+import useAuthStore from "@/store/auth.store";
+import { firestore } from "@/lib/firebase";
 import type { Address } from "@/src/domain/types";
 
 const STORAGE_KEY = "@hungrie/addresses";
@@ -24,32 +34,6 @@ const notify = (addresses: Address[]) => {
     });
 };
 
-const readFromStorage = async (): Promise<Address[]> => {
-    if (cache) {
-        return cache;
-    }
-    const raw = await AsyncStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-        cache = [];
-        return cache;
-    }
-    try {
-        const parsed = JSON.parse(raw);
-        cache = Array.isArray(parsed) ? parsed : [];
-    } catch {
-        cache = [];
-    }
-    cache = sortAddresses(cache);
-    return cache;
-};
-
-const persist = async (addresses: Address[]) => {
-    const sorted = sortAddresses(addresses);
-    cache = sorted;
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(sorted));
-    notify(sorted);
-};
-
 const sanitize = (input: AddressInput): AddressInput => ({
     ...input,
     label: input.label.trim(),
@@ -72,31 +56,105 @@ const nextDefaultIfMissing = (addresses: Address[], preferNotId?: string) => {
     }));
 };
 
+const canUseFirestore = () => Boolean(firestore && useAuthStore.getState().user?.accountId);
+const userAddressesCollection = () => {
+    const uid = useAuthStore.getState().user?.accountId;
+    if (!uid || !firestore) return null;
+    return collection(firestore, "users", uid, "addresses");
+};
+
+const readFromStorage = async (): Promise<Address[]> => {
+    if (cache) {
+        return cache;
+    }
+    const raw = await AsyncStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+        cache = [];
+        return cache;
+    }
+    try {
+        const parsed = JSON.parse(raw);
+        cache = Array.isArray(parsed) ? parsed : [];
+    } catch {
+        cache = [];
+    }
+    cache = sortAddresses(cache);
+    return cache;
+};
+
+const persistToStorage = async (addresses: Address[]) => {
+    const sorted = sortAddresses(addresses);
+    cache = sorted;
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(sorted));
+    notify(sorted);
+};
+
+const persistToFirestore = async (addresses: Address[]) => {
+    const col = userAddressesCollection();
+    if (!col) return;
+    // Write each address; in this simple approach we overwrite.
+    await Promise.all(
+        addresses.map((address) => {
+            const ref = doc(col, address.id);
+            return setDoc(ref, address, { merge: true });
+        }),
+    );
+};
+
+const readFromFirestore = async (): Promise<Address[] | null> => {
+    const col = userAddressesCollection();
+    if (!col) return null;
+    const snap = await getDocs(col);
+    const list: Address[] = snap.docs.map((docSnap) => docSnap.data() as Address);
+    return sortAddresses(list);
+};
+
+const persistAll = async (addresses: Address[]) => {
+    const sorted = sortAddresses(addresses);
+    cache = sorted;
+    if (canUseFirestore()) {
+        await persistToFirestore(sorted).catch(() => null);
+    }
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(sorted)).catch(() => null);
+    notify(sorted);
+};
+
 export const list = async () => {
+    if (canUseFirestore()) {
+        const remote = await readFromFirestore().catch(() => null);
+        if (remote) {
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(remote)).catch(() => null);
+            cache = remote;
+            notify(remote);
+            return remote;
+        }
+    }
     const addresses = await readFromStorage();
     return sortAddresses(addresses);
 };
 
 export const create = async (payload: AddressInput): Promise<Address> => {
-    const addresses = await readFromStorage();
+    const addresses = await list();
     const sanitized = sanitize(payload);
     const requestedDefault = sanitized.isDefault ?? false;
     const shouldBeDefault = addresses.length === 0 ? true : requestedDefault;
 
     const base = shouldBeDefault ? addresses.map((address) => ({ ...address, isDefault: false })) : [...addresses];
+    const id = payload.id ?? nanoid();
     const newAddress: Address = {
         ...sanitized,
-        id: payload.id ?? nanoid(),
+        id,
         isDefault: !!shouldBeDefault,
         createdAt: new Date().toISOString(),
     };
 
-    await persist([...base, newAddress]);
+    const nextList = [...base, newAddress];
+    await persistAll(nextList);
     return newAddress;
 };
 
 export const update = async (payload: Address): Promise<Address> => {
-    const addresses = await readFromStorage();
+    const addresses = await list();
     const index = addresses.findIndex((address) => address.id === payload.id);
     if (index === -1) {
         throw new Error("Address not found");
@@ -119,32 +177,45 @@ export const update = async (payload: Address): Promise<Address> => {
         updatedList = nextDefaultIfMissing(updatedList, payload.id);
     }
 
-    await persist(updatedList);
+    await persistAll(updatedList);
     return updatedList[index];
 };
 
 export const remove = async (id: string) => {
-    const addresses = await readFromStorage();
+    const addresses = await list();
     const filtered = addresses.filter((address) => address.id !== id);
-    await persist(nextDefaultIfMissing(filtered, id));
+    const next = nextDefaultIfMissing(filtered, id);
+
+    if (canUseFirestore()) {
+        const col = userAddressesCollection();
+        if (col) {
+            await deleteDoc(doc(col, id)).catch(() => null);
+        }
+    }
+
+    await persistAll(next);
 };
 
 export const setDefault = async (id: string) => {
-    const addresses = await readFromStorage();
+    const addresses = await list();
     if (!addresses.some((address) => address.id === id)) return;
     const next = addresses.map((address) => ({
         ...address,
         isDefault: address.id === id,
     }));
-    await persist(next);
+    await persistAll(next);
 };
 
 export const syncUp = async () => {
-    // Placeholder for future server sync
+    const addresses = await readFromStorage();
+    await persistToFirestore(addresses).catch(() => null);
 };
 
 export const syncDown = async () => {
-    // Placeholder for future server sync
+    const remote = await readFromFirestore().catch(() => null);
+    if (remote) {
+        await persistAll(remote);
+    }
 };
 
 export const subscribe = (listener: Listener) => {

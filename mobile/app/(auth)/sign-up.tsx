@@ -13,8 +13,7 @@ import OrderFood from "@/assets/illustrations/Order Food.svg";
 const SignUp = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [form, setForm] = useState({ name: "", email: "", password: "", whatsappNumber: "" });
-    const setUser = useAuthStore((s) => s.setUser);
-    const setIsAuthenticated = useAuthStore((s) => s.setIsAuthenticated);
+
 
     const submit = async () => {
         const { name, email, password, whatsappNumber } = form;
@@ -25,23 +24,26 @@ const SignUp = () => {
         setIsSubmitting(true);
 
         try {
-            const profile = await createUser({ email, password, name, whatsappNumber });
-            if (profile) {
-                const mappedUser = {
-                    id: profile.accountId,
-                    $id: profile.accountId,
-                    accountId: profile.accountId,
-                    name: profile.name,
-                    email: profile.email,
-                    avatar: profile.avatar,
-                    whatsappNumber: profile.whatsappNumber,
-                };
-                setUser(mappedUser);
-                setIsAuthenticated(true);
-            }
-            router.replace("/");
+            await createUser({ email, password, name, whatsappNumber });
+            Alert.alert(
+                "Verify your email",
+                "We sent you a verification link. Please verify your email, then sign in.",
+                [{ text: "OK", onPress: () => router.replace("/sign-in") }],
+            );
+            // Ensure we leave the auth flow until verification is completed.
+            setIsSubmitting(false);
+            return;
         } catch (error: any) {
-            Alert.alert("Error", error?.message || "Unable to sign up. Please try again.");
+            const message = error?.message || "";
+            if (message.toLowerCase().includes("verify your email")) {
+                Alert.alert(
+                    "Verify your email",
+                    "We sent you a verification link. Please verify your email, then sign in.",
+                    [{ text: "OK", onPress: () => router.replace("/sign-in") }],
+                );
+            } else {
+                Alert.alert("Error", message || "Unable to sign up. Please try again.");
+            }
         } finally {
             setIsSubmitting(false);
         }

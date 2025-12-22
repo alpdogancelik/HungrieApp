@@ -24,8 +24,11 @@ const formatPrice = (value?: number | string) => `TRY ${Number(value || 0).toFix
 
 const MenuCard = ({ item, onPress, accentColor = "#FE8C00" }: MenuCardProps) => {
     const { $id, image_url, imageUrl: fallbackImageUrl, name, price } = item || {};
-    const resolvedImage = image_url || fallbackImageUrl;
-    const imageUrl = resolvedImage?.startsWith("http") ? resolvedImage : undefined;
+    const resolvedImage = image_url ?? fallbackImageUrl;
+    const imageUrl =
+        typeof resolvedImage === "string" && resolvedImage.trim().toLowerCase().startsWith("http")
+            ? resolvedImage.trim()
+            : undefined;
     const { addItem } = useCartStore();
     const numericPrice = Number(price || 0);
     const fallbackProductId = $id ?? item?.id ?? name;
@@ -258,4 +261,3 @@ const styles = StyleSheet.create({
 });
 
 export default memo(MenuCard);
-

@@ -1,115 +1,200 @@
-import { useCallback, useMemo } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Platform, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { useTranslation } from "react-i18next";
 
-import MenuCard from "@/components/MenuCard";
+import { useCartStore } from "@/store/cart.store";
 import Icon from "@/components/Icon";
 import useServerResource from "@/lib/useServerResource";
-import { getRestaurant, getRestaurantMenu } from "@/lib/api";
-import { resolveRestaurantImageSource } from "@/lib/assets";
-import type { MenuItem } from "@/type";
-import { makeShadow } from "@/src/lib/shadowStyle";
+import { getRestaurant, getRestaurantMenu, getRestaurantCategories } from "@/lib/api";
+import { getRestaurantImageSource } from "@/lib/assets";
+import { getCategoryLabel } from "@/src/lib/categoryLabels";
+
+type MenuEntry = {
+    id: string;
+    name: string;
+    description?: string;
+    price: number;
+    categories?: string[] | string;
+    restaurantId?: string;
+};
 
 type Restaurant = {
+    id?: string;
     name?: string;
-    description?: string;
+    phone?: string;
     cuisine?: string;
-    rating?: number;
-    reviewCount?: number;
-    deliveryTime?: string;
-    deliveryFee?: string | number;
-    address?: string;
-    imageUrl?: string;
-    image_url?: string;
+    imageUrl?: string | number;
+    image_url?: string | number;
 };
 
-type Palette = {
-    primary: string;
-    secondary: string;
-    accent: string;
+type Category = {
+    id?: string;
+    name?: string;
+    slug?: string;
 };
 
-const paletteMap: Record<string, Palette> = {
-    "ada-pizza": { primary: "#FF7A00", secondary: "#FFD29D", accent: "#0F172A" },
-    "alacarte-cafe": { primary: "#D7263D", secondary: "#F9C6D0", accent: "#1B202C" },
-    "hot-n-fresh": { primary: "#FF4D67", secondary: "#FFC4D6", accent: "#0E111B" },
-    lavish: { primary: "#845EC2", secondary: "#D4C2FF", accent: "#0A0F1E" },
-    munchies: { primary: "#D96704", secondary: "#FFD9B0", accent: "#0F1628" },
-    "root-kitchen-coffee": { primary: "#0E7C7B", secondary: "#B6F3E2", accent: "#04101A" },
-    "lombard-kitchen": { primary: "#0A3F2F", secondary: "#C3E7DD", accent: "#041212" },
-    burgerhouse: { primary: "#FF9F1C", secondary: "#FFE8C7", accent: "#0F172A" },
-    default: { primary: "#0F75F3", secondary: "#CDE3FF", accent: "#0A1123" },
+const formatPrice = (value?: number | string) => `TRY ${Number(value ?? 0).toFixed(2)}`;
+
+const groupByCategory = (items: MenuEntry[]) => {
+    const bucket: Record<string, MenuEntry[]> = {};
+    items.forEach((item) => {
+        const rawCats = item.categories;
+        const categories = Array.isArray(rawCats)
+            ? rawCats
+            : rawCats
+                ? [rawCats]
+                : [typeof (item as any).category === "string" ? (item as any).category : "diger"];
+        categories.forEach((cat) => {
+            const key = String(cat || "diger").toLowerCase();
+            if (!bucket[key]) bucket[key] = [];
+            bucket[key].push(item);
+        });
+    });
+    return bucket;
 };
 
-const normalizeId = (value?: string) => (value || "default").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+const BASE_CATEGORY_ORDER = [
+    "pizza",
+    "pizzas",
+    "wraps",
+    "durumler",
+    "burgers",
+    "mains",
+    "grill",
+    "chicken",
+    "pasta",
+    "salads",
+    "snacks",
+    "crispy",
+    "chips",
+    "sides",
+    "sauces",
+    "drinks_cold",
+    "drinks_hot",
+    "drinks",
+];
 
-const formatCurrency = (value?: string | number) => {
-    const amount = Number(value ?? 0);
-    if (Number.isNaN(amount)) return "TRY 0.00";
-    return `TRY ${amount.toFixed(2)}`;
+const sortCategories = (keys: string[]) =>
+    [...keys].sort((a, b) => {
+        const ia = BASE_CATEGORY_ORDER.indexOf(a);
+        const ib = BASE_CATEGORY_ORDER.indexOf(b);
+        if (ia === -1 && ib === -1) return a.localeCompare(b);
+        if (ia === -1) return 1;
+        if (ib === -1) return -1;
+        return ia - ib;
+    });
+
+// Shared theme (adapted from Ada Pizza)
+const THEME = {
+    bgTop: "#FFF6EC",
+    bgMid: "#FFEFE1",
+    bgBottom: "#FFFDFB",
+    surface: "rgba(255,255,255,0.90)",
+    surface2: "rgba(255,251,246,0.94)",
+    ink: "#24140E",
+    muted: "rgba(36,20,14,0.62)",
+    line: "rgba(36,20,14,0.10)",
+    lineSoft: "rgba(36,20,14,0.06)",
+    accent: "#D94F23",
+    accentSoft: "rgba(217,79,35,0.12)",
+    amber: "#F6B93B",
+    amberSoft: "rgba(246,185,59,0.22)",
 };
 
-const withDefaultDescription = (description?: string, name?: string) =>
-    description || `${name || "Bu mutfak"} kampüsü doyuruyor.`;
+const shadow = {
+    shadowColor: "#000",
+    shadowOpacity: Platform.OS === "ios" ? 0.08 : 0.13,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 3,
+};
 
-const MetaBadge = ({
-    icon,
-    label,
-    value,
-    palette,
-}: {
-    icon: "clock" | "star" | "dollar" | "location";
-    label: string;
-    value: string;
-    palette: Palette;
-}) => (
-    <View style={[styles.metaBadge, { borderColor: `${palette.primary}30`, backgroundColor: "#fff" }]}>
-        <View style={[styles.metaIcon, { backgroundColor: `${palette.primary}12` }]}>
-            <Icon name={icon} size={16} color={palette.primary} />
-        </View>
-        <View style={{ gap: 2 }}>
-            <Text style={[styles.metaBadgeValue, { color: palette.accent }]}>{value}</Text>
-            <Text style={styles.metaBadgeLabel}>{label}</Text>
-        </View>
-    </View>
+const CardPress = ({ children, onPress, style }: { children: ReactNode; onPress?: () => void; style?: any }) => (
+    <Pressable
+        onPress={onPress}
+        disabled={!onPress}
+        style={({ pressed }) => [
+            styles.cardBase,
+            style,
+            pressed && onPress ? { transform: [{ scale: 0.992 }], opacity: 0.985 } : null,
+        ]}
+    >
+        {children}
+    </Pressable>
 );
 
-const Tag = ({ label, palette }: { label: string; palette: Palette }) => (
-    <View style={[styles.tag, { backgroundColor: `${palette.secondary}50` }]}>
-        <Text style={[styles.tagText, { color: palette.accent }]}>{label}</Text>
-    </View>
-);
+const MenuList = ({ items, addLabel, restaurantId }: { items: MenuEntry[]; addLabel: string; restaurantId: string }) => {
+    const { addItem } = useCartStore();
+    if (!items.length) return null;
 
-const RestaurantDetailsScreen = () => {
+    return (
+        <View style={styles.menuList}>
+            {items.map((item) => (
+                <Pressable
+                    key={String(item.id)}
+                    onPress={() =>
+                        addItem({
+                            id: String(item.id),
+                            name: item.name,
+                            price: Number(item.price || 0),
+                            image_url: "",
+                            restaurantId: restaurantId || item.restaurantId,
+                            customizations: [],
+                        })
+                    }
+                    style={({ pressed }) => [styles.menuCard, pressed ? styles.menuCardPressed : null]}
+                >
+                    <View style={styles.menuAccentRail} />
+
+                    <View style={{ flex: 1, paddingRight: 10 }}>
+                        <View style={styles.menuTopRow}>
+                            <Text style={styles.menuTitle} numberOfLines={1}>
+                                {item.name}
+                            </Text>
+                            <Text style={styles.menuPrice}>{formatPrice(item.price)}</Text>
+                        </View>
+
+                        {item.description ? (
+                            <Text style={styles.menuDesc} numberOfLines={2}>
+                                {item.description}
+                            </Text>
+                        ) : null}
+
+                        <View style={styles.menuBottomRow}>
+                            <View style={{ flex: 1 }} />
+                            <View style={styles.addPill}>
+                                <Text style={styles.addPillText}>{addLabel}</Text>
+                            </View>
+                        </View>
+                    </View>
+                </Pressable>
+            ))}
+        </View>
+    );
+};
+
+export default function RestaurantDetailsScreen({ initialId }: { initialId?: string } = {}) {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
+    const { t, i18n } = useTranslation();
     const { id } = useLocalSearchParams<{ id?: string }>();
-    const restaurantId = useMemo(() => (id ? String(id) : ""), [id]);
-    const ready = Boolean(restaurantId);
+    const routeId = id ? String(id) : undefined;
+    const restaurantId = useMemo(() => routeId || initialId || "", [routeId, initialId]);
+    const locale = i18n.language?.startsWith("tr") ? "tr" : "en";
 
     const restaurantParams = useMemo(() => (restaurantId ? restaurantId : undefined), [restaurantId]);
-    const menuParams = useMemo(() => (ready ? { restaurantId } : undefined), [ready, restaurantId]);
-    const palette = paletteMap[normalizeId(restaurantId)] || paletteMap.default;
+    const menuParams = useMemo(() => (restaurantId ? { restaurantId } : undefined), [restaurantId]);
 
     const fetchRestaurant = useCallback(
-        async (incomingId?: string) => {
-            const targetId = incomingId ?? restaurantId;
-            if (!targetId) {
-                throw new Error("Restaurant id is missing.");
-            }
-            return getRestaurant(targetId);
-        },
-        [restaurantId],
-    );
-
-    const fetchMenu = useCallback(
-        async (payload?: { restaurantId: string }) => {
-            const targetId = payload?.restaurantId ?? restaurantId;
-            if (!targetId) {
-                throw new Error("Restaurant id is missing.");
-            }
-            return getRestaurantMenu({ restaurantId: targetId });
+        async (targetId?: string) => {
+            const finalId = targetId ?? restaurantId;
+            if (!finalId) throw new Error("Restaurant id is missing.");
+            const data = await getRestaurant(finalId);
+            return (data as Restaurant) || ({ id: finalId, name: finalId } as Restaurant);
         },
         [restaurantId],
     );
@@ -121,134 +206,204 @@ const RestaurantDetailsScreen = () => {
     } = useServerResource<Restaurant, string | undefined>({
         fn: fetchRestaurant,
         params: restaurantParams,
-        immediate: ready,
+        immediate: true,
         skipAlert: true,
     });
+
+    const fetchMenu = useCallback(
+        async (payload?: { restaurantId: string }) => {
+            const targetId = payload?.restaurantId ?? restaurantId;
+            if (!targetId) throw new Error("Restaurant id is missing.");
+            return getRestaurantMenu({ restaurantId: targetId });
+        },
+        [restaurantId],
+    );
 
     const {
         data: menu,
         loading: menuLoading,
-    } = useServerResource<MenuItem[], { restaurantId: string } | undefined>({
+    } = useServerResource<MenuEntry[], { restaurantId: string } | undefined>({
         fn: fetchMenu,
         params: menuParams,
-        immediate: ready,
+        immediate: true,
         skipAlert: true,
     });
 
-    const heroSource = useMemo(() => {
-        const candidate = resolveRestaurantImageSource(restaurant?.imageUrl || restaurant?.image_url);
-        if (!candidate) return null;
-        return typeof candidate === "number" ? candidate : { uri: candidate };
-    }, [restaurant]);
+    const fetchCategories = useCallback(
+        async (payload?: { restaurantId: string }) => {
+            const targetId = payload?.restaurantId ?? restaurantId;
+            if (!targetId) throw new Error("Restaurant id is missing.");
+            return getRestaurantCategories(targetId);
+        },
+        [restaurantId],
+    );
 
-    const vibeTags = useMemo(() => {
-        const tags = new Set<string>();
-        if (restaurant?.cuisine) tags.add(restaurant.cuisine);
-        if ((restaurant?.rating || 0) >= 4.6) tags.add("Kampüs favorisi");
-        if (restaurant?.deliveryTime) tags.add(`${restaurant.deliveryTime} dk`);
-        tags.add("Günün menüsü");
-        return Array.from(tags).slice(0, 4);
-    }, [restaurant]);
+    const { data: categories } = useServerResource<Category[], string | { restaurantId: string }>({
+        fn: async (payload?: string | { restaurantId: string }) => {
+            const targetId =
+                typeof payload === "string" ? payload : payload?.restaurantId ?? restaurantId;
+            if (!targetId) throw new Error("Restaurant id is missing.");
+            return fetchCategories({ restaurantId: targetId });
+        },
+        params: restaurantId ? { restaurantId } : undefined,
+        immediate: true,
+        skipAlert: true,
+    });
 
-    const renderMenu = () => {
-        if (menuLoading) {
-            return <ActivityIndicator color={palette.primary} style={styles.loading} />;
-        }
-        if (!menu?.length) {
-            return (
-                <View style={styles.emptyState}>
-                    <Text style={styles.emptyTitle}>No menu items yet</Text>
-                    <Text style={styles.emptyCopy}>This restaurant has not published its menu.</Text>
-                </View>
-            );
-        }
-        return menu.map((item, index) => (
-            <MenuCard key={item.$id || item.id || `${item.name}-${index}`} item={item} accentColor={palette.primary} />
-        ));
+    const menuItems = Array.isArray(menu) ? menu : [];
+    const grouped = useMemo(() => groupByCategory(menuItems), [menuItems]);
+
+    const categoryKeys = useMemo(() => {
+        const fromMenu = Object.keys(grouped);
+        const fromCategories =
+            Array.isArray(categories) && categories.length
+                ? categories
+                      .map((c) => String(c.slug || c.id || c.name || "").toLowerCase())
+                      .filter(Boolean)
+                : [];
+        const merged = Array.from(new Set([...fromCategories, ...fromMenu]));
+        return sortCategories(merged);
+    }, [categories, grouped]);
+    const [activeCategory, setActiveCategory] = useState<string>(() => categoryKeys[0] || "");
+
+    useEffect(() => {
+        if (!categoryKeys.length) return;
+        if (!activeCategory || !categoryKeys.includes(activeCategory)) setActiveCategory(categoryKeys[0]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [categoryKeys.join("|")]);
+
+    const activeItems = activeCategory ? grouped[activeCategory] || [] : menuItems;
+
+    const cartItems = useCartStore((s) => s.items);
+    const cartCount = cartItems.reduce((acc, it) => acc + it.quantity, 0);
+
+    const scrollRef = useRef<ScrollView>(null);
+
+    const onSelectCategory = (key: string) => {
+        setActiveCategory(key);
+        requestAnimationFrame(() => {
+            scrollRef.current?.scrollTo({ y: 0, animated: true });
+        });
     };
 
-    const renderBody = () => {
-        if (restaurantLoading) {
-            return <ActivityIndicator color={palette.primary} style={styles.loading} />;
-        }
-        if (restaurantError || !restaurant) {
+    const heroSource = getRestaurantImageSource(restaurant?.imageUrl || restaurant?.image_url);
+    const phoneLabel = restaurant?.phone || "(+90) 000 000 00 00";
+    const heroSubtitle = restaurant?.cuisine || "World Kitchen";
+    const displayName = restaurant?.name || restaurantId || "Restaurant";
+
+    const renderContent = () => {
+        if (restaurantLoading || menuLoading) {
             return (
-                <View style={styles.emptyState}>
-                    <Text style={styles.emptyTitle}>Restaurant not found</Text>
-                    <Text style={styles.emptyCopy}>{restaurantError || "Please try again later."}</Text>
-                    <TouchableOpacity style={[styles.retryButton, { backgroundColor: palette.primary }]} onPress={() => router.back()}>
-                        <Text style={styles.retryLabel}>Go back</Text>
-                    </TouchableOpacity>
+                <View style={[styles.sheetWrap, { paddingTop: 40 }]}>
+                    <Text style={styles.heroTitle}>Loading...</Text>
                 </View>
             );
         }
 
-        const description = withDefaultDescription(restaurant.description, restaurant.name);
+        const missingRestaurant = restaurantError || !restaurant;
+        if (missingRestaurant && !menuItems.length) {
+            return (
+                <View style={[styles.sheetWrap, { paddingTop: 40 }]}>
+                    <Text style={styles.heroTitle}>Restaurant not found</Text>
+                    <Pressable onPress={() => router.back()} style={styles.tabPill}>
+                        <Text style={styles.tabText}>Go back</Text>
+                    </Pressable>
+                </View>
+            );
+        }
 
         return (
             <>
-                <View style={styles.heroWrapper}>
-                    {heroSource ? <Image source={heroSource} style={styles.heroImage} contentFit="cover" /> : null}
-                    <View style={styles.heroOverlay} />
-                    <View style={styles.heroTop}>
-                        <TouchableOpacity onPress={() => router.back()} style={[styles.roundButton, { backgroundColor: "#FFFFFF" }]}>
-                            <Icon name="arrowBack" size={18} color={palette.accent} />
-                        </TouchableOpacity>
-                        <View style={[styles.roundButton, { backgroundColor: "#FFFFFF" }]}>
-                            <Icon name="bag" size={18} color={palette.accent} />
+                {/* HERO */}
+                <View style={styles.heroWrap}>
+                    <Pressable
+                        onPress={() => router.back()}
+                        hitSlop={12}
+                        style={({ pressed }) => [
+                            styles.floatingBack,
+                            pressed ? { transform: [{ scale: 0.96 }], opacity: 0.98 } : null,
+                        ]}
+                    >
+                        <LinearGradient
+                            colors={["rgba(255,255,255,0.96)", "rgba(255,255,255,0.82)"]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.floatingBackInner}
+                        >
+                            <Icon name="arrowBack" size={20} color={THEME.ink} />
+                        </LinearGradient>
+                    </Pressable>
+
+                    <View style={styles.heroDecorA} pointerEvents="none" />
+                    <View style={styles.heroDecorB} pointerEvents="none" />
+
+                    <CardPress style={styles.heroCard}>
+                        <View style={styles.heroRow}>
+                            <View style={styles.logoShell}>
+                                <Image source={heroSource} style={styles.logoImg} contentFit="cover" />
+                            </View>
+
+                            <View style={{ flex: 1, gap: 6 }}>
+                                <View style={styles.heroTopLine}>
+                                    <Text style={styles.heroKicker}>{displayName}</Text>
+                                    <Text style={styles.heroPhone}>{phoneLabel}</Text>
+                                </View>
+
+                                <Text style={styles.heroTitle}>{displayName}</Text>
+                                <Text style={styles.heroSubtitle}>{heroSubtitle}</Text>
+
+                                <View style={styles.heroChipRow}>
+                                    <View style={styles.heroChip}>
+                                        <Text style={styles.heroChipText}>Kalkanlı</Text>
+                                    </View>
+                                </View>
+                            </View>
                         </View>
-                    </View>
-                    <View style={styles.heroContent}>
-                        <View style={styles.heroLabelRow}>
-                            <Text style={[styles.heroLabel, { color: "#fff" }]}>Günün önerisi</Text>
-                            <View style={[styles.heroDot, { backgroundColor: "#fff" }]} />
-                            <Text style={[styles.heroLabel, { color: "#fff" }]}>Sıcak & taze</Text>
+                    </CardPress>
+                </View>
+
+                {/* SHEET */}
+                <View style={styles.sheetWrap}>
+                    <View style={styles.sheetCard}>
+                        {/* Tabs rail */}
+                        <View style={styles.tabRail}>
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.tabRow}
+                                keyboardShouldPersistTaps="handled"
+                            >
+                                {categoryKeys.map((key) => {
+                                    const selected = activeCategory === key;
+                                    const label = getCategoryLabel(key, locale as any);
+
+                                    return (
+                                        <Pressable
+                                            key={key}
+                                            onPress={() => onSelectCategory(key)}
+                                            style={({ pressed }) => [
+                                                styles.tabPill,
+                                                selected ? styles.tabPillActive : null,
+                                                pressed ? { transform: [{ scale: 0.985 }] } : null,
+                                            ]}
+                                        >
+                                            <View style={[styles.tabDot, selected ? styles.tabDotActive : null]} />
+                                            <Text style={[styles.tabText, selected ? styles.tabTextActive : null]}>{label}</Text>
+                                        </Pressable>
+                                    );
+                                })}
+                            </ScrollView>
                         </View>
-                        <Text style={[styles.title, { color: "#FFFFFF" }]} numberOfLines={2}>
-                            {restaurant.name}
-                        </Text>
-                        {restaurant.cuisine ? (
-                            <Text style={styles.subtitle} numberOfLines={1}>
-                                {restaurant.cuisine}
-                            </Text>
-                        ) : null}
-                        <View style={styles.metaBadgeRow}>
-                            {restaurant.rating ? (
-                                <MetaBadge
-                                    icon="star"
-                                    label={`${restaurant.reviewCount ?? 0} yorum`}
-                                    value={restaurant.rating.toFixed(1)}
-                                    palette={palette}
-                                />
-                            ) : null}
-                            {restaurant.deliveryTime ? (
-                                <MetaBadge icon="clock" label="Teslimat" value={`${restaurant.deliveryTime} dk`} palette={palette} />
-                            ) : null}
-                            <MetaBadge
-                                icon="dollar"
-                                label="Ücret"
-                                value={formatCurrency(restaurant.deliveryFee)}
-                                palette={palette}
+
+                        {/* Menu */}
+                        <View style={{ paddingTop: 14 }}>
+                            <MenuList
+                                items={activeItems}
+                                addLabel={t("restaurantUi.addToCart")}
+                                restaurantId={restaurantId}
                             />
                         </View>
                     </View>
-                </View>
-
-                <View style={styles.sheet}>
-                    <View style={[styles.infoCard, { borderColor: `${palette.primary}25` }]}>
-                        <Text style={[styles.sectionEyebrow, { color: palette.primary }]}>Masa Arkası</Text>
-                        <Text style={styles.description}>{description}</Text>
-                        <View style={styles.tagRow}>
-                            {vibeTags.map((tag) => (
-                                <Tag key={tag} label={tag} palette={palette} />
-                            ))}
-                        </View>
-                    </View>
-
-                    <View style={styles.sectionHeaderRow}>
-                        <Text style={styles.sectionTitle}>Menü</Text>
-                    </View>
-                    {renderMenu()}
                 </View>
             </>
         );
@@ -256,213 +411,233 @@ const RestaurantDetailsScreen = () => {
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <ScrollView contentContainerStyle={styles.content}>{renderBody()}</ScrollView>
+            <LinearGradient colors={[THEME.bgTop, THEME.bgMid, THEME.bgBottom]} style={{ flex: 1 }}>
+                <ScrollView
+                    ref={scrollRef}
+                    contentContainerStyle={{ paddingBottom: 120 + insets.bottom }}
+                    showsVerticalScrollIndicator={false}
+                    overScrollMode="never"
+                >
+                    {renderContent()}
+                </ScrollView>
+
+                {/* CART FAB */}
+                <Pressable
+                    onPress={() => router.push("/(tabs)/cart")}
+                    style={({ pressed }) => [
+                        styles.cartFab,
+                        { bottom: 18 + insets.bottom, right: 18 },
+                        pressed ? { transform: [{ scale: 0.985 }], opacity: 0.99 } : null,
+                    ]}
+                >
+                    <LinearGradient
+                        colors={[THEME.amber, "#FFD36A"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.cartFabInner}
+                    >
+                        <View style={styles.cartIconBubble}>
+                            <Icon name="cart" size={18} color="#FFFFFF" />
+                        </View>
+                        <Text style={styles.cartFabText}>{t("restaurantUi.cart", { count: cartCount })}</Text>
+                    </LinearGradient>
+                </Pressable>
+            </LinearGradient>
         </SafeAreaView>
     );
-};
+}
 
 const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: "#F7F8FC",
-    },
-    content: {
-        paddingBottom: 48,
-    },
-    loading: {
-        marginTop: 40,
-    },
-    heroWrapper: {
-        position: "relative",
-        marginHorizontal: 16,
-        marginTop: 12,
-        borderRadius: 32,
-        overflow: "hidden",
-        minHeight: 240,
-        ...makeShadow({
-            color: "#0A0F1E",
-            offsetY: 10,
-            blurRadius: 20,
-            opacity: 0.18,
-            elevation: 10,
-        }),
-    },
-    heroImage: {
-        position: "absolute",
-        inset: 0,
-        width: "100%",
-        height: "100%",
-    },
-    heroOverlay: {
-        position: "absolute",
-        inset: 0,
-        backgroundColor: "rgba(0,0,0,0.15)",
-    },
-    heroTop: {
-        position: "absolute",
-        top: 16,
-        left: 16,
-        right: 16,
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        zIndex: 2,
-    },
-    roundButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    heroContent: {
-        paddingHorizontal: 20,
-        paddingBottom: 20,
-        paddingTop: 120,
-        gap: 10,
-    },
-    heroLabelRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 8,
-        opacity: 0.95,
-    },
-    heroLabel: {
-        fontFamily: "ChairoSans",
-        letterSpacing: 0.4,
-        color: "#FFF",
-    },
-    heroDot: {
-        width: 6,
-        height: 6,
-        borderRadius: 999,
-    },
-    title: {
-        fontFamily: "ChairoSans",
-        fontSize: 30,
-    },
-    subtitle: {
-        color: "rgba(255,255,255,0.9)",
-        fontFamily: "ChairoSans",
-    },
-    metaBadgeRow: {
-        flexDirection: "row",
-        gap: 10,
-        flexWrap: "wrap",
-        marginTop: 4,
-    },
-    metaBadge: {
-        flexDirection: "row",
-        gap: 10,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        borderRadius: 16,
-        borderWidth: 1,
-        backgroundColor: "#fff",
-    },
-    metaIcon: {
-        width: 32,
-        height: 32,
-        borderRadius: 12,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    metaBadgeValue: {
-        fontFamily: "ChairoSans",
-        fontSize: 18,
-    },
-    metaBadgeLabel: {
-        fontFamily: "ChairoSans",
-        fontSize: 12,
-        color: "#475569",
-    },
-    sheet: {
-        marginTop: -26,
-        paddingTop: 32,
-        paddingHorizontal: 16,
-        backgroundColor: "#F7F8FC",
-        borderTopLeftRadius: 32,
-        borderTopRightRadius: 32,
-        gap: 20,
-    },
-    infoCard: {
-        backgroundColor: "#FFFFFF",
-        padding: 18,
-        borderRadius: 20,
-        borderWidth: 1,
-        gap: 10,
-        ...makeShadow({
-            color: "#0A0F1E",
-            offsetY: 6,
-            blurRadius: 12,
-            opacity: 0.06,
-            elevation: 6,
-        }),
-    },
-    sectionEyebrow: {
-        fontFamily: "ChairoSans",
-        letterSpacing: 1,
-        textTransform: "uppercase",
-        fontSize: 12,
-    },
-    description: {
-        color: "#1E293B",
-        fontFamily: "ChairoSans",
-        lineHeight: 20,
-    },
-    tagRow: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        gap: 8,
-    },
-    tag: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 999,
-    },
-    tagText: {
-        fontFamily: "ChairoSans",
-        fontSize: 13,
-    },
-    sectionHeaderRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-    },
-    sectionTitle: {
-        fontFamily: "ChairoSans",
-        fontSize: 22,
-        color: "#0F172A",
-    },
-    sectionHint: {
-        fontFamily: "ChairoSans",
-        fontSize: 13,
-        color: "#64748B",
-    },
-    emptyState: {
-        paddingHorizontal: 20,
-        alignItems: "center",
-        gap: 8,
-    },
-    emptyTitle: {
-        fontFamily: "ChairoSans",
-        fontSize: 18,
-        color: "#0F172A",
-    },
-    emptyCopy: {
-        color: "#64748B",
-        textAlign: "center",
-    },
-    retryButton: {
-        marginTop: 8,
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 999,
-    },
-    retryLabel: {
-        color: "#fff",
-        fontFamily: "ChairoSans",
-    },
-});
+    safeArea: { flex: 1, backgroundColor: THEME.bgTop },
 
-export default RestaurantDetailsScreen;
+    heroWrap: { paddingHorizontal: 16, paddingTop: 14, position: "relative" },
+
+    heroDecorA: {
+        position: "absolute",
+        top: 0,
+        right: -70,
+        width: 220,
+        height: 220,
+        borderRadius: 110,
+        backgroundColor: THEME.accentSoft,
+        opacity: 0.9,
+    },
+    heroDecorB: {
+        position: "absolute",
+        top: 130,
+        left: -90,
+        width: 200,
+        height: 200,
+        borderRadius: 100,
+        backgroundColor: THEME.amberSoft,
+        opacity: 0.75,
+    },
+
+    cardBase: {
+        borderRadius: 26,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: THEME.lineSoft,
+        backgroundColor: THEME.surface,
+        ...shadow,
+    },
+
+    heroCard: { padding: 16, overflow: "hidden", zIndex: 1 },
+
+    floatingBack: { position: "absolute", top: 10, left: 10, zIndex: 999, elevation: 30 },
+    floatingBackInner: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: THEME.line,
+        ...shadow,
+    },
+
+    heroRow: { flexDirection: "row", gap: 14, paddingTop: 10 },
+
+    logoShell: {
+        width: 86,
+        height: 86,
+        borderRadius: 22,
+        backgroundColor: THEME.surface2,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: THEME.lineSoft,
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "hidden",
+    },
+    logoImg: { width: 86, height: 86 },
+
+    heroTopLine: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    heroKicker: { fontFamily: "ChairoSans", fontSize: 12, color: THEME.accent, letterSpacing: 0.6 },
+    heroPhone: { fontFamily: "ChairoSans", fontSize: 12, color: THEME.muted },
+
+    heroTitle: { fontFamily: "ChairoSans", fontSize: 28, color: THEME.ink, letterSpacing: -0.2 },
+    heroSubtitle: { fontFamily: "ChairoSans", fontSize: 13, color: THEME.muted, lineHeight: 18 },
+
+    heroChipRow: { flexDirection: "row", gap: 8, marginTop: 4 },
+    heroChip: {
+        paddingHorizontal: 12,
+        paddingVertical: 7,
+        borderRadius: 999,
+        backgroundColor: THEME.accentSoft,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: "rgba(217,79,35,0.18)",
+    },
+    heroChipText: { fontFamily: "ChairoSans", fontSize: 12, color: THEME.accent },
+
+    sheetWrap: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 22 },
+    sheetCard: {
+        borderRadius: 26,
+        backgroundColor: "rgba(255,255,255,0.82)",
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: "rgba(36,20,14,0.08)",
+        padding: 12,
+        ...shadow,
+    },
+
+    tabRail: {
+        borderRadius: 999,
+        backgroundColor: "rgba(255,255,255,0.62)",
+        borderWidth: 1.2,
+        borderColor: "rgba(36,20,14,0.20)",
+        padding: 8,
+    },
+    tabRow: { gap: 10, paddingHorizontal: 6, paddingVertical: 2 },
+
+    tabPill: {
+        height: 44,
+        paddingHorizontal: 16,
+        borderRadius: 999,
+        backgroundColor: "rgba(255,255,255,0.96)",
+        borderWidth: 1.35,
+        borderColor: "rgba(36,20,14,0.26)",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+    },
+    tabPillActive: {
+        backgroundColor: "rgba(217,79,35,0.12)",
+        borderColor: "rgba(217,79,35,0.62)",
+        borderWidth: 1.8,
+    },
+
+    tabDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: "rgba(36,20,14,0.22)" },
+    tabDotActive: { backgroundColor: THEME.accent },
+    tabText: { fontFamily: "ChairoSans", fontSize: 14, color: "rgba(36,20,14,0.74)" },
+    tabTextActive: { color: THEME.ink },
+
+    menuList: { gap: 14 },
+    menuCard: {
+        flexDirection: "row",
+        borderRadius: 26,
+        backgroundColor: "rgba(255,255,255,0.88)",
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: "rgba(36,20,14,0.08)",
+        padding: 14,
+        ...shadow,
+    },
+    menuCardPressed: { transform: [{ scale: 0.992 }], opacity: 0.99 },
+
+    menuAccentRail: {
+        width: 5,
+        borderRadius: 3,
+        backgroundColor: "rgba(217,79,35,0.35)",
+        marginRight: 12,
+    },
+
+    menuTopRow: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        justifyContent: "space-between",
+        gap: 12,
+    },
+    menuTitle: { fontFamily: "ChairoSans", fontSize: 18, color: THEME.ink, flex: 1 },
+    menuPrice: { fontFamily: "ChairoSans", fontSize: 16, color: THEME.accent, letterSpacing: 0.2 },
+
+    menuDesc: {
+        marginTop: 6,
+        fontFamily: "ChairoSans",
+        fontSize: 13,
+        color: "rgba(36,20,14,0.56)",
+        lineHeight: 18,
+    },
+
+    menuBottomRow: { marginTop: 12, flexDirection: "row", alignItems: "center" },
+
+    addPill: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 999,
+        backgroundColor: "rgba(217,79,35,0.10)",
+        borderWidth: 1.2,
+        borderColor: "rgba(217,79,35,0.22)",
+    },
+    addPillText: { fontFamily: "ChairoSans", fontSize: 13, color: THEME.ink, letterSpacing: 0.2 },
+
+    cartFab: { position: "absolute" },
+    cartFabInner: {
+        borderRadius: 999,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: "rgba(36,20,14,0.14)",
+        ...shadow,
+    },
+    cartIconBubble: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: "rgba(36,20,14,0.92)",
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: "rgba(255,255,255,0.22)",
+    },
+    cartFabText: { fontFamily: "ChairoSans", fontSize: 14, color: THEME.ink },
+});

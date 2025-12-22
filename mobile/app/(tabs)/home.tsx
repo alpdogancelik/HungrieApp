@@ -27,17 +27,18 @@ import GodzillaBusy from "@/assets/godzilla/VCTRLY-godzila-work-worker-busy-conf
 const CourierIllustration = illustrations.foodieCelebration;
 const WINE_RED = "#7F021F";
 const languageHintKey = "home.languageHint";
-const RESTAURANT_SLUG_MAP: Record<string, string> = {
-    "ada-pizza": "adapizza",
-    "alacarte-cafe": "alacarte",
-    "hot-n-fresh": "hotnfresh",
-    lavish: "lavish",
-    "lombard-kitchen": "lombard",
-    "burger-house": "burgerhouse",
-    "burger house": "burgerhouse",
-    burgerhouse: "burgerhouse",
-    munchies: "munchies",
-    "root-kitchen-coffee": "root",
+const normalizeRestaurantId = (restaurant: any, fallback: string) => {
+    const raw =
+        restaurant?.id ||
+        restaurant?.$id ||
+        restaurant?.slug ||
+        restaurant?.code ||
+        restaurant?.handle ||
+        restaurant?.name ||
+        fallback;
+    return String(raw)
+        .toLowerCase()
+        .replace(/[^a-z0-9-]+/g, "-");
 };
 
 export default function HomeTabScreen() {
@@ -137,15 +138,18 @@ export default function HomeTabScreen() {
                     ) : (
                         <View style={styles.gridGap}>
                             {(restaurants || []).map((restaurant: any, index: number) => {
-                                const restaurantId = String(restaurant.id ?? restaurant.$id ?? restaurant.key ?? index);
-                                const normalizedId = restaurantId.toLowerCase().replace(/[^a-z0-9-]+/g, "-");
-                                const slug = RESTAURANT_SLUG_MAP[normalizedId] || RESTAURANT_SLUG_MAP[restaurant.name?.toLowerCase()] || normalizedId;
+                                const restaurantId = normalizeRestaurantId(restaurant, String(index));
                                 return (
                                     <RestaurantGridTile
                                         key={restaurantId}
                                         restaurant={restaurant}
-                                        campusOnly={slug === "root"}
-                                        onPress={() => router.push(`/restaurants/${encodeURIComponent(slug)}`)}
+                                        campusOnly={restaurantId === "root" || restaurantId === "root-kitchen-coffee"}
+                                        onPress={() =>
+                                            router.push({
+                                                pathname: "/restaurants/[id]",
+                                                params: { id: restaurantId },
+                                            })
+                                        }
                                     />
                                 );
                             })}
@@ -509,6 +513,3 @@ const createStyles = (theme: ThemeDefinition) =>
         footer: { alignItems: "center", paddingVertical: theme.spacing.lg },
         footerText: { fontFamily: "ChairoSans", color: theme.colors.muted },
     });
-
-
-
