@@ -20,7 +20,9 @@ import { subscribeUserOrders } from "@/src/services/firebaseOrders";
 import { storage } from "@/src/lib/storage";
 import { useTheme } from "@/src/theme/themeContext";
 import { OrderStatus } from "@/type";
+import { ORDER_STATUS_COLORS, ORDER_STATUS_LABELS } from "@/components/OrderCard";
 import { makeShadow } from "@/src/lib/shadowStyle";
+import { updateUserProfile } from "@/lib/firebaseAuth";
 
 const EMOJI_OPTIONS = Object.values(emojiSet);
 const WINE_RED = "#7F021F";
@@ -37,19 +39,32 @@ const STATUS_VARIANT: Record<string, "success" | "warning" | "danger"> = {
     canceled: "danger",
 };
 
+const normalizeStatus = (status?: string): OrderStatus => {
+    if (!status) return "pending";
+    if (status === "accepted") return "preparing";
+    if (status === "rejected") return "canceled";
+    if (["pending", "preparing", "ready", "out_for_delivery", "delivered", "canceled"].includes(status)) {
+        return status as OrderStatus;
+    }
+    return "pending";
+};
+
 const Profile = () => {
     const navigation = useNavigation<ManageAddressesNavigation>();
     const { user, setIsAuthenticated, setUser, preferredEmoji, setPreferredEmoji } = useAuthStore();
     const { defaultAddress } = useDefaultAddress();
     const [orders, setOrders] = useState<any[]>([]);
     const [signingOut, setSigningOut] = useState(false);
+    const [savingProfile, setSavingProfile] = useState(false);
     const [supportModalVisible, setSupportModalVisible] = useState(false);
-    const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
     const [notifModalVisible, setNotifModalVisible] = useState(false);
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [nameDraft, setNameDraft] = useState(user?.name ?? "");
     const [emailDraft, setEmailDraft] = useState(user?.email ?? "");
+    const [whatsappDraft, setWhatsappDraft] = useState(user?.whatsappNumber ?? "");
     const { t } = useTranslation();
+    // Kept for backward compatibility; modal not triggered now that active orders deep link to tracking.
+    const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
 
     const initials = useMemo(
         () =>
@@ -67,6 +82,7 @@ const Profile = () => {
     const HistoryIllustration = illustrations.foodieCelebration;
     const ActiveIllustration = illustrations.courierHero;
     const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+
 
     const handleManageAddressesPress = () => {
         const routeNames = navigation.getState?.()?.routeNames ?? [];
@@ -86,7 +102,8 @@ const Profile = () => {
     useEffect(() => {
         setNameDraft(user?.name ?? "");
         setEmailDraft(user?.email ?? "");
-    }, [user?.name, user?.email]);
+        setWhatsappDraft(user?.whatsappNumber ?? "");
+    }, [user?.name, user?.email, user?.whatsappNumber]);
 
     useEffect(() => {
         const userId = user?.id ?? user?.$id ?? user?.accountId ?? null;
@@ -102,20 +119,28 @@ const Profile = () => {
         };
     }, [user?.id, user?.$id, user?.accountId]);
 
-    const handleSaveProfile = () => {
+    const handleSaveProfile = async () => {
         const trimmedName = nameDraft.trim();
-        const trimmedEmail = emailDraft.trim();
-        if (!trimmedName || !trimmedEmail) {
-            Alert.alert(t("profile.header.edit"), "Name and email are required.");
+        const trimmedWhatsapp = whatsappDraft.trim();
+        if (!trimmedName) {
+            Alert.alert(t("profile.header.edit"), "Name is required.");
             return;
         }
-        setUser({
-            ...(user || { avatar: undefined }),
-            name: trimmedName,
-            email: trimmedEmail,
-            whatsappNumber: user?.whatsappNumber,
-        });
-        setIsEditingProfile(false);
+        try {
+            setSavingProfile(true);
+            const synced = await updateUserProfile({ name: trimmedName, whatsappNumber: trimmedWhatsapp || undefined });
+            setUser({
+                ...(user || { avatar: undefined }),
+                name: synced?.name ?? trimmedName,
+                email: synced?.email ?? user?.email,
+                whatsappNumber: (synced?.whatsappNumber ?? trimmedWhatsapp) || undefined,
+            });
+            setIsEditingProfile(false);
+        } catch (error: any) {
+            Alert.alert(t("profile.header.edit"), error?.message || "Unable to update profile right now.");
+        } finally {
+            setSavingProfile(false);
+        }
     };
 
     const handleNotificationTest = async () => {
@@ -292,26 +317,49 @@ const Profile = () => {
                                     <TouchableOpacity
                                         key={order.id}
                                         className="p-4 rounded-3xl border border-[#F1F5F9] bg-white"
-                                        onPress={() => setSelectedOrder(order)}
+                                        onPress={() =>
+                                            router.push({
+                                                pathname: "/order/pending",
+                                                params: {
+                                                    orderId: order.id,
+                                                    restaurantName: order.restaurant?.name || "Hungrie Order",
+                                                    eta: String(order.eta || order.etaMinutes || 120),
+                                                },
+                                            })
+                                        }
                                         style={makeShadow({ color: "#0F172A", offsetY: 6, blurRadius: 12, opacity: 0.04, elevation: 2 })}
                                     >
                                         <View className="flex-row items-center justify-between">
-                                            <View>
-                                                <Text className="paragraph-semibold text-dark-100">
-                                                    {order.restaurant?.name || `Order #${order.id}`}
-                                                </Text>
-                                                <Text className="body-medium text-dark-60 mt-1">
-                                                    {`${formatCurrency(order.total)} - ${order.paymentMethod === "cash"
-                                                        ? t("profileExtras.payment.cash")
-                                                        : t("profileExtras.payment.card")
-                                                        }`}
-                                                </Text>
-                                            </View>
-                                            <View className="px-3 py-1 rounded-full bg-[#FFF4D5]">
-                                                <Text className="paragraph-semibold text-[#E7A700]">
-                                                    {t(`status.${order.status}` as const)}
-                                                </Text>
-                                            </View>
+                                            {(() => {
+                                                const normStatus = normalizeStatus(order.status);
+                                                const badge = ORDER_STATUS_COLORS[normStatus];
+                                                const label = ORDER_STATUS_LABELS[normStatus] || t(`status.${normStatus}` as const);
+                                                return (
+                                                    <>
+                                                        <View>
+                                                            <Text className="paragraph-semibold text-dark-100">
+                                                                {order.restaurant?.name || `Order #${order.id}`}
+                                                            </Text>
+                                                            <Text className="body-medium text-dark-60 mt-1">
+                                                                {`${formatCurrency(order.total)} - ${
+                                                                    order.paymentMethod === "cash"
+                                                                        ? t("profileExtras.payment.cash")
+                                                                        : t("profileExtras.payment.card")
+                                                                }`}
+                                                            </Text>
+                                                        </View>
+                                                        <View
+                                                            className="px-3 py-1 rounded-full flex-row items-center gap-2"
+                                                            style={{ backgroundColor: badge.bg }}
+                                                        >
+                                                            <View className="size-2 rounded-full" style={{ backgroundColor: badge.dot }} />
+                                                            <Text className="paragraph-semibold" style={{ color: badge.text }}>
+                                                                {label}
+                                                            </Text>
+                                                        </View>
+                                                    </>
+                                                );
+                                            })()}
                                         </View>
                                     </TouchableOpacity>
                                 ))}
@@ -396,10 +444,23 @@ const Profile = () => {
                                 <Text className="paragraph-semibold text-dark-80">{t("profileExtras.editModal.email")}</Text>
                                 <TextInput
                                     value={emailDraft}
-                                    onChangeText={setEmailDraft}
+                                    editable={false}
                                     keyboardType="email-address"
                                     autoCapitalize="none"
                                     placeholder={t("profileExtras.editModal.emailPlaceholder")}
+                                    placeholderTextColor="#94A3B8"
+                                    className="rounded-2xl border border-gray-200 px-4 py-3 text-dark-100"
+                                />
+                            </View>
+                            <View className="gap-2">
+                                <Text className="paragraph-semibold text-dark-80">
+                                    {t("profileExtras.editModal.whatsapp", "WhatsApp")}
+                                </Text>
+                                <TextInput
+                                    value={whatsappDraft}
+                                    onChangeText={setWhatsappDraft}
+                                    keyboardType="phone-pad"
+                                    placeholder={t("profileExtras.editModal.whatsappPlaceholder", "Enter WhatsApp number")}
                                     placeholderTextColor="#94A3B8"
                                     className="rounded-2xl border border-gray-200 px-4 py-3 text-dark-100"
                                 />
@@ -414,8 +475,11 @@ const Profile = () => {
                                 <TouchableOpacity
                                     className="flex-1 rounded-full bg-primary py-3 items-center"
                                     onPress={handleSaveProfile}
+                                    disabled={savingProfile}
                                 >
-                                    <Text className="paragraph-semibold text-white">{t("profileExtras.editModal.save")}</Text>
+                                    <Text className="paragraph-semibold text-white">
+                                        {savingProfile ? t("profile.header.saving", "Saving...") : t("profileExtras.editModal.save")}
+                                    </Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -648,6 +712,15 @@ const OrderHistorySection = ({ orders }: { orders: any[] }) => {
         }
         return "";
     };
+    const getMillis = (value: any) => {
+        if (!value) return 0;
+        if (typeof value === "object" && "seconds" in value) {
+            return value.seconds * 1000 + (value.nanoseconds || 0) / 1_000_000;
+        }
+        const asDate = new Date(value);
+        const ms = asDate.getTime();
+        return Number.isNaN(ms) ? 0 : ms;
+    };
 
     const filtered = useMemo(() => {
         return orders
@@ -658,11 +731,18 @@ const OrderHistorySection = ({ orders }: { orders: any[] }) => {
                 return matchesQuery && matchesStatus;
             })
             .sort((a, b) => {
-                const da = new Date(a.updatedAt || a.createdAt || 0).getTime();
-                const db = new Date(b.updatedAt || b.createdAt || 0).getTime();
+                const da = getMillis(a.updatedAt || a.createdAt || 0);
+                const db = getMillis(b.updatedAt || b.createdAt || 0);
                 return db - da;
             });
     }, [orders, query, statusFilter]);
+    const resolveItems = (order: any) => {
+        const rawItems = Array.isArray(order?.orderItems) ? order.orderItems : Array.isArray(order?.items) ? order.items : [];
+        return rawItems.map((item: any) => ({
+            name: item?.name ?? "-",
+            quantity: Number(item?.quantity ?? 1),
+        }));
+    };
 
     const pills: Array<{ id: "all" | OrderStatus | "canceled"; label: string }> = [
         { id: "all", label: t("orders.all", "All") },
@@ -719,28 +799,48 @@ const OrderHistorySection = ({ orders }: { orders: any[] }) => {
                         className="bg-white rounded-3xl border border-gray-100 p-4"
                         style={makeShadow({ color: "#0F172A", offsetY: 6, blurRadius: 12, opacity: 0.05, elevation: 3 })}
                     >
-                        <View className="flex-row justify-between">
-                            <Text className="paragraph-semibold text-dark-100">{order.restaurant?.name || "-"}</Text>
-                            <View className="px-3 py-1 rounded-full bg-[#FFF4D5]">
-                                <Text className="paragraph-semibold text-[#E7A700]">
-                                    {t(`status.${order.status}` as const)}
-                                </Text>
-                            </View>
+                        <View className="flex-row justify-between items-center">
+                            <Text className="paragraph-semibold text-dark-100">
+                                {order.restaurant?.name || t("orders.unknownRestaurant", "Hungrie Order")}
+                            </Text>
+                            {(() => {
+                                const normStatus = normalizeStatus(order.status);
+                                const badge = ORDER_STATUS_COLORS[normStatus];
+                                const label = ORDER_STATUS_LABELS[normStatus] || t(`status.${normStatus}` as const);
+                                return (
+                                    <View className="px-3 py-1 rounded-full flex-row items-center gap-2" style={{ backgroundColor: badge.bg }}>
+                                        <View className="size-2 rounded-full" style={{ backgroundColor: badge.dot }} />
+                                        <Text className="paragraph-semibold" style={{ color: badge.text }}>
+                                            {label}
+                                        </Text>
+                                    </View>
+                                );
+                            })()}
                         </View>
                         <Text className="caption text-dark-40 mt-1">
                             {formatTimestamp(order.updatedAt || order.createdAt)}
                         </Text>
-                        <Text className="body-medium text-dark-80 mt-2">
-                            {order.orderItems?.[0]?.name ? `1x ${order.orderItems[0].name}` : ""}
-                        </Text>
+                        {(() => {
+                            const items = resolveItems(order);
+                            if (!items.length) return null;
+                            const summary = items.map((it: any) => `${it.quantity}x ${it.name}`).join(" • ");
+                            return <Text className="body-medium text-dark-80 mt-2">{summary}</Text>;
+                        })()}
                         <View className="flex-row items-center justify-between mt-3">
                             <View>
                                 <Text className="caption text-dark-40">{t("cart.screen.summary.total")}</Text>
                                 <Text className="h3-bold text-dark-100">{formatCurrency(order.total)}</Text>
                             </View>
-                            <Text className="paragraph-semibold text-primary">
-                                {t(`status.${order.status}` as const)}
-                            </Text>
+                            {(() => {
+                                const normStatus = normalizeStatus(order.status);
+                                const badge = ORDER_STATUS_COLORS[normStatus];
+                                const label = ORDER_STATUS_LABELS[normStatus] || t(`status.${normStatus}` as const);
+                                return (
+                                    <Text className="paragraph-semibold" style={{ color: badge.text }}>
+                                        {label}
+                                    </Text>
+                                );
+                            })()}
                         </View>
                     </View>
                 ))}

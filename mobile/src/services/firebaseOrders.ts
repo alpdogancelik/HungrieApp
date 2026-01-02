@@ -10,7 +10,7 @@ import {
 } from "firebase/firestore";
 import { signInAnonymously } from "firebase/auth";
 import { auth, firestore } from "@/lib/firebase";
-import type { CartItem, OrderStatus, PaymentMethod } from "@/src/domain/types";
+import type { Address, CartItem, OrderStatus, PaymentMethod } from "@/src/domain/types";
 
 const ensureDb = () => {
     if (!firestore) throw new Error("Firebase is not configured");
@@ -37,6 +37,8 @@ export const placeOrder = async ({
     fees = {},
     etaMinutes = 25,
     customer,
+    deliveryAddress,
+    notes,
 }: {
     userId: string;
     restaurantId: string;
@@ -45,6 +47,8 @@ export const placeOrder = async ({
     fees?: { deliveryFee?: number; serviceFee?: number; discount?: number; tip?: number };
     etaMinutes?: number;
     customer?: { name?: string | null; email?: string | null; whatsappNumber?: string | null };
+    deliveryAddress?: Partial<Address> | null;
+    notes?: string | null;
 }) => {
     await ensureAuthSession();
 
@@ -54,6 +58,18 @@ export const placeOrder = async ({
     const contactName = customer?.name || "Hungrie User";
     const contactEmail = customer?.email || undefined;
     const contactWhatsapp = customer?.whatsappNumber || undefined;
+    const deliveryAddressText = deliveryAddress
+        ? [
+              deliveryAddress.label,
+              deliveryAddress.line1,
+              deliveryAddress.block,
+              deliveryAddress.room,
+              deliveryAddress.city,
+              deliveryAddress.country,
+          ]
+              .filter(Boolean)
+              .join(", ")
+        : undefined;
 
     const ref = await addDoc(ordersCol(), {
         userId,
@@ -76,6 +92,9 @@ export const placeOrder = async ({
         tip,
         total,
         etaMinutes,
+        deliveryAddress: deliveryAddress ? { ...deliveryAddress } : undefined,
+        deliveryAddressText,
+        notes: typeof notes === "string" ? notes.trim() : "",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
     });
@@ -93,14 +112,23 @@ export const subscribeUserOrders = (userId: string, cb: (orders: any[]) => void)
         cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
     );
 
-export const subscribeRestaurantOrders = (restaurantId: string, cb: (orders: any[]) => void) => {
+export const subscribeRestaurantOrders = (
+    restaurantId: string,
+    statuses: string[] = ["pending", "accepted"],
+    cb?: (orders: any[]) => void,
+) => {
+    const q = query(ordersCol(), where("restaurantId", "==", restaurantId), where("status", "in", statuses));
+    return onSnapshot(q, (snap) => (cb ? cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))) : undefined));
+};
+
+export const subscribeRestaurantPastOrders = (restaurantId: string, cb: (orders: any[]) => void) => {
     const q = query(
         ordersCol(),
         where("restaurantId", "==", restaurantId),
-        where("status", "in", ["pending", "preparing", "ready", "out_for_delivery"]),
+        where("status", "in", ["rejected", "delivered", "canceled"]),
     );
     return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
 };
 
-export const transitionOrder = async (orderId: string, status: OrderStatus) =>
+export const transitionOrder = async (orderId: string, status: OrderStatus | string) =>
     updateDoc(doc(ensureDb(), "orders", orderId), { status, updatedAt: serverTimestamp() });

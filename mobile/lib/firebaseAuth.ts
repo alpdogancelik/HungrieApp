@@ -189,6 +189,52 @@ export const getCurrentUser = async () => {
 
 export const signOut = async () => firebaseSignOut(requireAuth());
 
+export const getOwnedRestaurantId = async () => {
+    if (!firebaseConfigured || !firestore) return null;
+    const owner = auth?.currentUser?.uid;
+    if (!owner) return null;
+    const q = query(
+        collection(requireDB(), FIREBASE_COLLECTIONS.restaurants),
+        where("ownerId", "==", owner),
+        where("isActive", "==", true),
+    );
+    const snap = await getDocs(q).catch(() => null);
+    if (!snap || snap.empty) return null;
+    return snap.docs[0].id;
+};
+
+export const updateUserProfile = async ({
+    name,
+    whatsappNumber,
+}: {
+    name?: string;
+    whatsappNumber?: string;
+}) => {
+    const authUser = await waitForAuthUser();
+    if (!authUser) throw new Error("User is not signed in.");
+    const db = requireDB();
+    const updates: Partial<Profile> = {};
+    if (name) updates.name = name;
+    if (whatsappNumber !== undefined) updates.whatsappNumber = whatsappNumber;
+
+    await updateProfile(authUser, {
+        displayName: name ?? authUser.displayName ?? undefined,
+        photoURL: whatsappNumber ? `wa:${whatsappNumber}` : authUser.photoURL ?? undefined,
+    }).catch(() => null);
+
+    await setDoc(
+        doc(db, FIREBASE_COLLECTIONS.users, authUser.uid),
+        {
+            ...(name ? { name } : {}),
+            ...(whatsappNumber !== undefined ? { whatsappNumber } : {}),
+            updatedAt: Date.now(),
+        },
+        { merge: true },
+    ).catch(() => null);
+
+    return syncProfile(authUser, updates);
+};
+
 // ---- Stubbed data helpers to avoid Firestore access ----
 export const getMenu = async ({ category, query, limit }: { category?: string; query?: string; limit?: number }) => {
     console.log("GET MENU DATA");

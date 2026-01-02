@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { ActivityIndicator, Alert, FlatList, Text, TouchableOpacity, View, ScrollView } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -20,6 +21,7 @@ import PaymentMethodList from "@/components/cart/PaymentMethodList";
 import SummaryCard from "@/components/cart/SummaryCard";
 import { formatCurrency, getCustomizationsTotal } from "@/lib/cart.utils";
 import { makeShadow } from "@/src/lib/shadowStyle";
+import { getRestaurantMenu } from "@/lib/firebase";
 
 const OrderIllustration = illustrations.foodieCelebration;
 
@@ -43,6 +45,123 @@ const DEFAULT_RESTAURANT_ID = "ada-pizza";
 
 const stringifyId = (value: string | number | null | undefined) =>
     value === null || value === undefined ? "" : String(value);
+
+const isDrinkCategory = (cat?: string) => {
+    if (!cat) return false;
+    const lower = cat.toLowerCase();
+    return lower.includes("drink") || lower.includes("içecek") || lower.includes("icecek");
+};
+
+type DrinkSuggestion = {
+    id: string;
+    name: string;
+    price: number;
+    description?: string;
+    categories?: string[];
+    restaurantId?: string;
+    imageUrl?: string;
+};
+
+type PaymentOption = { id: PaymentMethod; label: string; description: string; badge?: string; hint?: string };
+
+type SummaryLabels = {
+    subtotal: string;
+    delivery: string;
+    serviceFee: string;
+    discount: string;
+    total: string;
+    footnote: string;
+};
+
+type CartFooterProps = {
+    disabled: boolean;
+    ctaLabel: string;
+    placingLabel: string;
+    paymentTitle: string;
+    notesTitle: string;
+    notesPlaceholder: string;
+    summaryLabels: SummaryLabels;
+    subtotal: string;
+    deliveryFee?: string;
+    serviceFee?: string;
+    serviceNote?: string;
+    total: string;
+    paymentOptions: PaymentOption[];
+    paymentMethod: PaymentMethod | null;
+    onSelectPayment: (method: PaymentMethod) => void;
+    notes: string;
+    maxNotes: number;
+    noteSuggestions: string[];
+    onChangeNotes: (text: string) => void;
+    placingOrder: boolean;
+    onPlaceOrder: () => void;
+    drinkSuggestions: ReactNode;
+};
+
+const CartFooter = ({
+    disabled,
+    ctaLabel,
+    placingLabel,
+    paymentTitle,
+    notesTitle,
+    notesPlaceholder,
+    summaryLabels,
+    subtotal,
+    deliveryFee,
+    serviceFee,
+    serviceNote,
+    total,
+    paymentOptions,
+    paymentMethod,
+    onSelectPayment,
+    notes,
+    maxNotes,
+    noteSuggestions,
+    onChangeNotes,
+    placingOrder,
+    onPlaceOrder,
+    drinkSuggestions,
+}: CartFooterProps) => (
+    <View className="gap-5 pt-6 pb-10" style={CONTAINER_PADDING}>
+        {drinkSuggestions}
+        <SummaryCard
+            subtotal={subtotal}
+            deliveryFee={deliveryFee}
+            serviceFee={serviceFee}
+            serviceNote={serviceNote}
+            total={total}
+            labels={summaryLabels}
+        />
+
+        <PaymentMethodList
+            title={paymentTitle}
+            options={paymentOptions}
+            selected={paymentMethod}
+            onSelect={onSelectPayment}
+        />
+
+        <CourierNotes
+            title={notesTitle}
+            placeholder={notesPlaceholder}
+            value={notes}
+            maxLength={maxNotes}
+            suggestions={noteSuggestions}
+            onChange={onChangeNotes}
+        />
+
+        <TouchableOpacity
+            className="custom-btn flex-row items-center justify-center gap-3"
+            style={{ opacity: disabled ? 0.6 : 1 }}
+            disabled={disabled}
+            onPress={onPlaceOrder}
+        >
+            {placingOrder && <ActivityIndicator color="#fff" />}
+            <Text className="paragraph-semibold text-white">
+                {placingOrder ? placingLabel : ctaLabel}
+            </Text>
+        </TouchableOpacity>
+    </View>
+);
 
 const MENU_ID_TO_RESTAURANT: Record<string, string> = seedMenusAll.reduce((acc, entry) => {
     acc[String(entry.id)] = entry.restaurantId;
@@ -80,13 +199,36 @@ const normalizeRestaurantKey = (value?: string | null) => {
     return compact;
 };
 
+const isDrinkName = (value?: string | null) => {
+    if (!value) return false;
+    const lower = value.toLowerCase();
+    return lower.includes("drink") || lower.includes("içecek") || lower.includes("icecek") || lower.includes("cola");
+};
+
+const extractDrinkItems = (list: any[], restaurantId?: string | null): DrinkSuggestion[] =>
+    list
+        .filter((entry) => {
+            const categories: string[] = Array.isArray(entry?.categories) ? entry.categories : [];
+            if (categories.some((c) => isDrinkCategory(String(c)))) return true;
+            return isDrinkName(entry?.name);
+        })
+        .map((entry) => ({
+            id: stringifyId(entry.id),
+            name: entry.name,
+            price: Number(entry.price || 0),
+            description: entry.description,
+            categories: Array.isArray(entry?.categories) ? entry.categories : undefined,
+            restaurantId: stringifyId(entry.restaurantId || restaurantId || ""),
+            imageUrl: entry.imageUrl || entry.image_url || "",
+        }));
+
 const Cart = () => {
     const insets = useSafeAreaInsets();
     const { items, getTotalPrice, increaseQty, decreaseQty, removeItem, clearCart, addItem } = useCartStore();
     const { user } = useAuthStore();
     const { t } = useTranslation();
     const noteSuggestions: string[] = [];
-    const paymentOptions: { id: PaymentMethod; label: string; description: string; badge?: string; hint?: string }[] = [
+    const paymentOptions: PaymentOption[] = [
         {
             id: "pos",
             label: t("cart.screen.payment.pos.label"),
@@ -124,16 +266,45 @@ const Cart = () => {
     const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
     const [notes, setNotes] = useState("");
     const [placingOrder, setPlacingOrder] = useState(false);
+    const [drinkItems, setDrinkItems] = useState<DrinkSuggestion[]>([]);
+    const [drinkRestaurantId, setDrinkRestaurantId] = useState<string | null>(null);
+    const [drinkRestaurantName, setDrinkRestaurantName] = useState<string | null>(null);
+    const [drinkLoading, setDrinkLoading] = useState(false);
     const resolvedAddressId = selectedAddress ?? addressList[0]?.id ?? null;
     const isBelowMinimum = subtotal < MINIMUM_ORDER_TOTAL;
     const canCheckout = Boolean(!isCartEmpty && resolvedAddressId !== null && paymentMethod && !isBelowMinimum);
     const selectedAddressId = stringifyId(selectedAddress);
     const handleSelectAddress = (addressId: string | number) => setSelectedAddress(String(addressId));
+    const resolveRestaurantFromCart = useCallback(() => {
+        const explicit = items.find((item) => (item as CartItemWithRestaurant).restaurantId)?.restaurantId;
+        if (explicit) {
+            const normalized = normalizeRestaurantKey(String(explicit));
+            if (normalized) return normalized;
+        }
+
+        const inferred = items
+            .map((item) => normalizeRestaurantKey(MENU_ID_TO_RESTAURANT[String(item.id)] || null))
+            .find((id): id is string => Boolean(id));
+
+        return inferred || null;
+    }, [items]);
     const listData = useMemo(() => {
         const data: Array<{ type: "addresses" } | { type: "item"; item: CartItemType }> = [{ type: "addresses" }];
         items.forEach((item) => data.push({ type: "item", item }));
         return data;
     }, [items]);
+    const cartHasDrink = useMemo(() => {
+        const restaurantId = resolveRestaurantFromCart();
+        const catalog = restaurantId ? seedMenuByRestaurantId(restaurantId) || [] : [];
+
+        return items.some((item) => {
+            const match = catalog.find((entry: any) => stringifyId(entry.id) === stringifyId(item.id));
+            if (match && Array.isArray(match.categories) && match.categories.some((c: any) => isDrinkCategory(String(c)))) {
+                return true;
+            }
+            return isDrinkName(item.name);
+        });
+    }, [items, resolveRestaurantFromCart]);
 
     useEffect(() => {
         const list = addresses ?? [];
@@ -152,6 +323,50 @@ const Cart = () => {
             setSelectedAddress(String(fallback.id));
         }
     }, [addresses, selectedAddress]);
+
+    useEffect(() => {
+        const restaurantId = resolveRestaurantFromCart();
+        if (!restaurantId || cartHasDrink) {
+            setDrinkRestaurantId(restaurantId ?? null);
+            setDrinkRestaurantName(
+                restaurantId
+                    ? seedRestaurants.find((r) => stringifyId(r.id) === stringifyId(restaurantId))?.name || null
+                    : null,
+            );
+            setDrinkItems([]);
+            return;
+        }
+
+        let active = true;
+        const fetchDrinks = async () => {
+            setDrinkLoading(true);
+            setDrinkRestaurantId(restaurantId);
+            setDrinkRestaurantName(
+                seedRestaurants.find((r) => stringifyId(r.id) === stringifyId(restaurantId))?.name || null,
+            );
+            const seedFallback = extractDrinkItems(seedMenuByRestaurantId(restaurantId) || [], restaurantId);
+            try {
+                const menu = await getRestaurantMenu(restaurantId);
+                const drinksFromDb = extractDrinkItems(menu, restaurantId);
+                if (active) {
+                    setDrinkItems(drinksFromDb.length ? drinksFromDb : seedFallback);
+                }
+            } catch (error) {
+                if (active) {
+                    setDrinkItems(seedFallback);
+                }
+            } finally {
+                if (active) {
+                    setDrinkLoading(false);
+                }
+            }
+        };
+
+        fetchDrinks();
+        return () => {
+            active = false;
+        };
+    }, [items, cartHasDrink, resolveRestaurantFromCart]);
 
     const handlePlaceOrder = async () => {
         if (placingOrder) return;
@@ -181,6 +396,7 @@ const Cart = () => {
         const restaurantId = String(
             (items[0] as CartItemWithRestaurant | undefined)?.restaurantId ?? DEFAULT_RESTAURANT_ID,
         );
+        const addressData = addressList.find((addr) => stringifyId(addr.id) === stringifyId(resolvedAddressId));
 
         const pendingEta = 120;
         const localOrderItems = items.map((item) => ({
@@ -205,6 +421,20 @@ const Cart = () => {
                     email: user?.email ?? undefined,
                     whatsappNumber: user?.whatsappNumber ?? undefined,
                 },
+                deliveryAddress: addressData
+                    ? {
+                          id: addressData.id,
+                          label: addressData.label,
+                          line1: addressData.line1,
+                          block: addressData.block,
+                          room: addressData.room,
+                          city: addressData.city,
+                          country: addressData.country,
+                          isDefault: addressData.isDefault,
+                          createdAt: addressData.createdAt,
+                      }
+                    : undefined,
+                notes: notes ?? "",
             });
             const restaurantLabel =
                 (items[0] as CartItemWithRestaurant | undefined)?.name?.split(" ")[0] || "Kalkanli Mutfagi";
@@ -289,55 +519,30 @@ const Cart = () => {
 
     const handleNoteChange = (text: string) => setNotes(text.slice(0, MAX_NOTES));
 
-    const resolveRestaurantFromCart = () => {
-        const explicit = items.find((item) => (item as CartItemWithRestaurant).restaurantId)?.restaurantId;
-        if (explicit) {
-            const normalized = normalizeRestaurantKey(String(explicit));
-            if (normalized) return normalized;
+    const renderDrinkSuggestions = () => {
+        if (!items.length || !drinkRestaurantId) return null;
+        if (cartHasDrink) return null;
+        if (drinkLoading && !drinkItems.length) {
+            return (
+                <View className="rounded-[24px] overflow-hidden border border-[#F3E4D7] bg-white px-5 py-4 items-center">
+                    <ActivityIndicator color="#FE8C00" />
+                    <Text className="body-medium text-dark-60 mt-2">{t("cart.screen.drinkSuggestSubtitle")}</Text>
+                </View>
+            );
         }
 
-        const inferred = items
-            .map((item) => normalizeRestaurantKey(MENU_ID_TO_RESTAURANT[String(item.id)] || null))
-            .find((id): id is string => Boolean(id));
+        if (!drinkItems.length) return null;
 
-        return inferred || null;
-    };
+        const restaurantName = drinkRestaurantName || "Restoran";
 
-    const renderDrinkSuggestions = () => {
-        if (!items.length) return null;
-        const restaurantId = resolveRestaurantFromCart();
-        if (!restaurantId) return null;
-        const catalog = seedMenuByRestaurantId(restaurantId) || [];
-        const restaurantName = seedRestaurants.find((r) => String(r.id) === restaurantId)?.name || "Restoran";
-
-        const isDrinkCategory = (cat?: string) => {
-            if (!cat) return false;
-            const lower = cat.toLowerCase();
-            return lower.includes("drink") || lower.includes("içecek") || lower.includes("icecek");
-        };
-
-        const cartHasDrink = items.some((cartItem) => {
-            const match = catalog.find((entry: any) => String(entry.id) === String(cartItem.id));
-            if (match && Array.isArray(match.categories) && match.categories.some((c: any) => isDrinkCategory(String(c)))) {
-                return true;
-            }
-            const name = (cartItem.name || "").toLowerCase();
-            return name.includes("içecek") || name.includes("icecek") || name.includes("drink");
-        });
-        if (cartHasDrink) return null;
-
-        const drinks = catalog.filter(
-            (entry: any) =>
-                Array.isArray(entry.categories) && entry.categories.some((c: any) => isDrinkCategory(String(c))),
-        );
-        if (!drinks.length) return null;
-
-        const handleAddDrink = (drink: any) => {
+        const handleAddDrink = (drink: DrinkSuggestion) => {
+            const restaurantId = drink.restaurantId || drinkRestaurantId;
+            if (!restaurantId) return;
             addItem({
                 id: String(drink.id),
                 name: drink.name,
                 price: Number(drink.price || 0),
-                image_url: "",
+                image_url: drink.imageUrl || "",
                 restaurantId,
                 customizations: [],
             });
@@ -358,7 +563,7 @@ const Cart = () => {
                 </View>
                 <View className="gap-[1px] bg-[#F3E4D7]">
                     <ScrollView style={{ maxHeight: 260 }} showsVerticalScrollIndicator={false}>
-                        {drinks.map((drink: any) => (
+                        {drinkItems.map((drink) => (
                             <View
                                 key={String(drink.id)}
                                 className="flex-row items-center justify-between bg-white px-5 py-4"
@@ -390,54 +595,41 @@ const Cart = () => {
         );
     };
 
-    const renderFooter = () => {
-        const disabled = !canCheckout || placingOrder;
-        const label = isBelowMinimum
-            ? t("cart.screen.checkout.minimumLabel", { amount: formatCurrency(MINIMUM_ORDER_TOTAL) })
-            : t("cart.screen.checkout.checkoutLabel", { amount: formatCurrency(total) });
-
-        return (
-            <View className="gap-5 pt-6 pb-10" style={CONTAINER_PADDING}>
-                {renderDrinkSuggestions()}
-                <SummaryCard
-                    subtotal={formatCurrency(subtotal)}
-                    deliveryFee={deliveryFee ? formatCurrency(deliveryFee) : undefined}
-                    serviceFee={serviceFee ? formatCurrency(serviceFee) : undefined}
-                    serviceNote={serviceFee ? serviceNote : undefined}
-                    total={formatCurrency(total)}
-                    labels={summaryLabels}
-                />
-
-                <PaymentMethodList
-                    title={t("cart.screen.payment.title")}
-                    options={paymentOptions}
-                    selected={paymentMethod}
-                    onSelect={setPaymentMethod}
-                />
-
-                <CourierNotes
-                    title={t("cart.screen.notesTitle")}
-                    placeholder={t("cart.screen.notesPlaceholder")}
-                    value={notes}
-                    maxLength={MAX_NOTES}
-                    suggestions={noteSuggestions}
-                    onChange={handleNoteChange}
-                />
-
-                <TouchableOpacity
-                    className="custom-btn flex-row items-center justify-center gap-3"
-                    style={{ opacity: disabled ? 0.6 : 1 }}
-                    disabled={disabled}
-                    onPress={handlePlaceOrder}
-                >
-                    {placingOrder && <ActivityIndicator color="#fff" />}
-                    <Text className="paragraph-semibold text-white">
-                        {placingOrder ? t("cart.screen.checkout.placing") : label}
-                    </Text>
-                </TouchableOpacity>
-            </View>
-        );
-    };
+    const drinkSuggestionsSection = renderDrinkSuggestions();
+    const disabled = !canCheckout || placingOrder;
+    const ctaLabel = isBelowMinimum
+        ? t("cart.screen.checkout.minimumLabel", { amount: formatCurrency(MINIMUM_ORDER_TOTAL) })
+        : t("cart.screen.checkout.checkoutLabel", { amount: formatCurrency(total) });
+    const placingLabel = t("cart.screen.checkout.placing");
+    const paymentTitle = t("cart.screen.payment.title");
+    const notesTitle = `${t("cart.screen.notesTitle")} (${t("common.optional", "optional")})`;
+    const notesPlaceholder = t("cart.screen.notesPlaceholder");
+    const footerComponent = (
+        <CartFooter
+            disabled={disabled}
+            ctaLabel={ctaLabel}
+            placingLabel={placingLabel}
+            paymentTitle={paymentTitle}
+            notesTitle={notesTitle}
+            notesPlaceholder={notesPlaceholder}
+            summaryLabels={summaryLabels}
+            subtotal={formatCurrency(subtotal)}
+            deliveryFee={deliveryFee ? formatCurrency(deliveryFee) : undefined}
+            serviceFee={serviceFee ? formatCurrency(serviceFee) : undefined}
+            serviceNote={serviceFee ? serviceNote : undefined}
+            total={formatCurrency(total)}
+            paymentOptions={paymentOptions}
+            paymentMethod={paymentMethod}
+            onSelectPayment={setPaymentMethod}
+            notes={notes}
+            maxNotes={MAX_NOTES}
+            noteSuggestions={noteSuggestions}
+            onChangeNotes={handleNoteChange}
+            placingOrder={placingOrder}
+            onPlaceOrder={handlePlaceOrder}
+            drinkSuggestions={drinkSuggestionsSection}
+        />
+    );
 
     const contentBottomPadding = insets.bottom + TAB_BAR_HEIGHT + TAB_BAR_BOTTOM_OFFSET + EXTRA_BOTTOM_SPACE;
 
@@ -448,9 +640,11 @@ const Cart = () => {
                 keyExtractor={(entry) => (entry.type === "addresses" ? "address-tabs" : getCartItemKey(entry.item))}
                 contentContainerStyle={{ paddingBottom: contentBottomPadding }}
                 showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="always"
+                keyboardDismissMode="interactive"
                 stickyHeaderIndices={listData.length ? [1] : []}
                 ListHeaderComponent={renderHeader}
-                ListFooterComponent={renderFooter}
+                ListFooterComponent={footerComponent}
                 ItemSeparatorComponent={() => <View className="h-4" />}
                 renderItem={renderListItem}
             />

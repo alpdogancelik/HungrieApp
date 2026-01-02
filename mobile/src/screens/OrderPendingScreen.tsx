@@ -130,6 +130,8 @@ const OrderPendingScreen = ({
     const { order } = useOrderRealtime(orderId);
     const { status: pendingStatus } = useOrderStatus(orderId);
     const orderStatus = useMemo<OrderStatus>(() => {
+        if (order?.status === "accepted") return "preparing";
+        if (order?.status === "rejected") return "canceled";
         if (order?.status) return order.status as OrderStatus;
         switch (pendingStatus) {
             case "confirmed":
@@ -180,7 +182,7 @@ const OrderPendingScreen = ({
     }, [spinner]);
 
     useEffect(() => {
-        if (orderStatus === "delivered" || orderStatus === "canceled") return;
+        if (orderStatus !== "pending") return;
         const timer = setInterval(() => {
             setSla((prev) => {
                 if (prev <= 1) {
@@ -195,11 +197,12 @@ const OrderPendingScreen = ({
     }, [orderStatus, handleAutoCancel]);
 
     useEffect(() => {
+        if (orderStatus !== "pending") return;
         const ticker = setInterval(() => {
             setSla((prev) => (prev > 0 ? prev - 1 : 0));
         }, 1000);
         return () => clearInterval(ticker);
-    }, []);
+    }, [orderStatus]);
 
     useEffect(() => {
         if (!cooldown) return undefined;
@@ -380,7 +383,19 @@ const OrderPendingScreen = ({
                     >
                         <Feather name="chevron-left" size={28} color={colors.text} />
                     </TouchableOpacity>
-                    <Text style={{ color: colors.text, fontSize: 16, fontFamily: "ChairoSans" }}>Sipariş Onayı Bekleniyor</Text>
+                    <Text style={{ color: colors.text, fontSize: 16, fontFamily: "ChairoSans" }}>
+                        {orderStatus === "pending"
+                            ? "Sipariş Onayı Bekleniyor"
+                            : orderStatus === "preparing"
+                            ? "Restoran Siparişi Onayladı"
+                            : orderStatus === "ready"
+                            ? "Sipariş Teslime Hazır"
+                            : orderStatus === "out_for_delivery"
+                            ? "Sipariş Yolda"
+                            : orderStatus === "delivered"
+                            ? "Teslim Edildi"
+                            : "Sipariş İptal Edildi"}
+                    </Text>
                     <TouchableOpacity
                         onPress={() => Alert.alert("Yardım", "Restoran 2 dakika içinde yanıt vermezse sipariş otomatik iptal olur.")}
                         accessibilityRole="button"
@@ -419,9 +434,31 @@ const OrderPendingScreen = ({
                             <Ionicons name="sync" size={24} color={colors.primary} />
                         </Animated.View>
                         <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontFamily: "ChairoSans", fontSize: 18 }}>Restoran onayı bekleniyor…</Text>
+                            <Text style={{ color: colors.text, fontFamily: "ChairoSans", fontSize: 18 }}>
+                                {orderStatus === "pending"
+                                    ? "Restoran onayı bekleniyor…"
+                                    : orderStatus === "preparing"
+                                    ? "Restoran siparişi onayladı."
+                                    : orderStatus === "ready"
+                                    ? "Sipariş teslime hazır."
+                                    : orderStatus === "out_for_delivery"
+                                    ? "Kurye siparişi teslim alıyor."
+                                    : orderStatus === "delivered"
+                                    ? "Teslim edildi. Afiyet olsun!"
+                                    : "Sipariş iptal edildi."}
+                            </Text>
                             <Text style={{ color: colors.sub, marginTop: 4 }}>
-                                {restaurantName} siparişini aldı. Onay gelince haber vereceğiz.
+                                {orderStatus === "pending"
+                                    ? `${restaurantName} siparişini aldı. Onay gelince haber vereceğiz.`
+                                    : orderStatus === "preparing"
+                                    ? `${restaurantName} siparişi hazırlıyor.`
+                                    : orderStatus === "ready"
+                                    ? "Kurye teslim almak üzere yönlendirildi."
+                                    : orderStatus === "out_for_delivery"
+                                    ? "Kurye yolda, kısa süre içinde yanında olacak."
+                                    : orderStatus === "delivered"
+                                    ? "Sipariş tamamlandı."
+                                    : "Bu sipariş iptal edildi."}
                             </Text>
                         </View>
                         <OrderRider width={110} height={110} />
@@ -532,5 +569,3 @@ const OrderPendingScreen = ({
 };
 
 export default OrderPendingScreen;
-
-

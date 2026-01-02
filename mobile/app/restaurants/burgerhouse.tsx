@@ -19,6 +19,7 @@ const RESTAURANT_ID = String(burgerHouseData?.restaurants?.[0]?.id || "burger-ho
 const RESTAURANT_PHONE = "(+90 539 113 92 00 · +90 533 886 03 04)";
 const HERO_KICKER = "Burger House";
 const HERO_SUBTITLE = "Burger · Wrap · Chicken · Ice Cream";
+const OPENING_HOURS = "09:00 - 23:00";
 
 const CATEGORY_ORDER = ["burgers", "wraps", "snacks", "chicken-boxes", "salads", "cold-drinks", "ice-cream", "hot-drinks"];
 
@@ -249,6 +250,7 @@ export default function BurgerHousePage() {
 
                                     <Text style={styles.heroTitle}>{restaurant.name || "Burger House"}</Text>
                                     <Text style={styles.heroSubtitle}>{HERO_SUBTITLE}</Text>
+                                    <Text style={styles.heroSubtitle}>{OPENING_HOURS}</Text>
 
                                     <View style={styles.heroChipRow}>
                                         <View style={styles.heroChip}>

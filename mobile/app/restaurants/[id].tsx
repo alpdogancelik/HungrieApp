@@ -29,6 +29,8 @@ type Restaurant = {
     cuisine?: string;
     imageUrl?: string | number;
     image_url?: string | number;
+    openingTime?: string;
+    closingTime?: string;
 };
 
 type Category = {
@@ -134,20 +136,7 @@ const MenuList = ({ items, addLabel, restaurantId }: { items: MenuEntry[]; addLa
     return (
         <View style={styles.menuList}>
             {items.map((item) => (
-                <Pressable
-                    key={String(item.id)}
-                    onPress={() =>
-                        addItem({
-                            id: String(item.id),
-                            name: item.name,
-                            price: Number(item.price || 0),
-                            image_url: "",
-                            restaurantId: restaurantId || item.restaurantId,
-                            customizations: [],
-                        })
-                    }
-                    style={({ pressed }) => [styles.menuCard, pressed ? styles.menuCardPressed : null]}
-                >
+                <View key={String(item.id)} style={styles.menuCard}>
                     <View style={styles.menuAccentRail} />
 
                     <View style={{ flex: 1, paddingRight: 10 }}>
@@ -166,12 +155,27 @@ const MenuList = ({ items, addLabel, restaurantId }: { items: MenuEntry[]; addLa
 
                         <View style={styles.menuBottomRow}>
                             <View style={{ flex: 1 }} />
-                            <View style={styles.addPill}>
+                            <Pressable
+                                onPress={() =>
+                                    addItem({
+                                        id: String(item.id),
+                                        name: item.name,
+                                        price: Number(item.price || 0),
+                                        image_url: "",
+                                        restaurantId: restaurantId || item.restaurantId,
+                                        customizations: [],
+                                    })
+                                }
+                                style={({ pressed }) => [
+                                    styles.addPill,
+                                    pressed ? { transform: [{ scale: 0.985 }], opacity: 0.96 } : null,
+                                ]}
+                            >
                                 <Text style={styles.addPillText}>{addLabel}</Text>
-                            </View>
+                            </Pressable>
                         </View>
                     </View>
-                </Pressable>
+                </View>
             ))}
         </View>
     );
@@ -209,6 +213,12 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
         immediate: true,
         skipAlert: true,
     });
+    const openingHours = useMemo(() => {
+        const open = restaurant?.openingTime || (restaurant as any)?.opening_time;
+        const close = restaurant?.closingTime || (restaurant as any)?.closing_time;
+        if (!open || !close) return null;
+        return `${open} - ${close}`;
+    }, [restaurant]);
 
     const fetchMenu = useCallback(
         async (payload?: { restaurantId: string }) => {
@@ -254,14 +264,14 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
     const grouped = useMemo(() => groupByCategory(menuItems), [menuItems]);
 
     const categoryKeys = useMemo(() => {
-        const fromMenu = Object.keys(grouped);
+        const withItems = Object.keys(grouped).filter((key) => (grouped[key] || []).length > 0);
         const fromCategories =
             Array.isArray(categories) && categories.length
                 ? categories
                       .map((c) => String(c.slug || c.id || c.name || "").toLowerCase())
-                      .filter(Boolean)
+                      .filter((slug) => slug && (grouped[slug] || []).length > 0)
                 : [];
-        const merged = Array.from(new Set([...fromCategories, ...fromMenu]));
+        const merged = Array.from(new Set([...fromCategories, ...withItems]));
         return sortCategories(merged);
     }, [categories, grouped]);
     const [activeCategory, setActiveCategory] = useState<string>(() => categoryKeys[0] || "");
@@ -356,6 +366,13 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
                                     <View style={styles.heroChip}>
                                         <Text style={styles.heroChipText}>Kalkanlı</Text>
                                     </View>
+                                    {openingHours ? (
+                                        <View style={[styles.heroChip, { backgroundColor: THEME.accentSoft }]}>
+                                            <Text style={[styles.heroChipText, { color: THEME.accent }]}>
+                                                {openingHours}
+                                            </Text>
+                                        </View>
+                                    ) : null}
                                 </View>
                             </View>
                         </View>

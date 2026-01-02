@@ -129,11 +129,10 @@ export const getRestaurants = async (filters?: { search?: string; category?: str
     if (!firebaseConfigured || !firestore) return [];
 
     const restaurantsRef = collection(firestore, FIREBASE_COLLECTIONS.restaurants);
-    let snap;
-
-    // For now, fetch all and filter client-side; Firestore has limited text search without an index.
-    snap = await getDocs(restaurantsRef);
-    const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const snap = await getDocs(query(restaurantsRef, where("isActive", "==", true)));
+    const list = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((r: any) => r.isActive !== false); // safety if field missing
 
     if (!filters?.search) return list;
     const term = filters.search.toLowerCase();
@@ -210,6 +209,9 @@ export const getRestaurantMenu = async ({
     const menusRef = collection(firestore, FIREBASE_COLLECTIONS.menus);
     const snap = await getDocs(query(menusRef, where("restaurantId", "==", String(restaurantId))));
     let items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    // Hide items explicitly marked invisible
+    items = items.filter((item: any) => item.visible !== false);
 
     if (categoryId !== undefined && categoryId !== null) {
         const categoryKey = String(categoryId);

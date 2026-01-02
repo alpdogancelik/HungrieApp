@@ -136,6 +136,7 @@ export type RestaurantOrder = BaseDocument & {
         email?: string;
         whatsappNumber?: string;
     };
+    notes?: string;
     address?: string;
     total?: string | number;
     status?: OrderStatus | string;

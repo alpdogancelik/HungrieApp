@@ -7,7 +7,7 @@ import * as Sentry from "@sentry/react-native";
 
 import CustomInput from "@/components/CustomInput";
 import CustomButton from "@/components/CustomButton";
-import { signIn, getCurrentUser } from "@/lib/firebaseAuth";
+import { signIn, getCurrentUser, getOwnedRestaurantId } from "@/lib/firebaseAuth";
 import useAuthStore from "@/store/auth.store";
 import MobileDelivery from "@/assets/illustrations/Mobile Delivery.svg";
 
@@ -47,6 +47,12 @@ const SignIn = () => {
                 };
                 setUser(mappedUser);
                 setIsAuthenticated(true);
+
+                const ownedRestaurantId = await getOwnedRestaurantId();
+                if (ownedRestaurantId) {
+                    router.replace("/restaurantpanel");
+                    return;
+                }
             }
             router.replace("/");
         } catch (error: any) {

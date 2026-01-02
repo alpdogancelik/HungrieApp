@@ -27,9 +27,15 @@ const CourierNotes = ({ value, maxLength, suggestions, onChange, title, placehol
             className="rounded-3xl bg-white border border-gray-100 px-4 py-3 text-dark-100"
             placeholder={placeholder}
             placeholderTextColor="#94A3B8"
+            nativeID="courier-notes"
             value={value}
             onChangeText={onChange}
             multiline
+            blurOnSubmit={false}
+            textAlignVertical="top"
+            autoCorrect
+            autoCapitalize="sentences"
+            returnKeyType="done"
             maxLength={maxLength}
         />
         <Text className="body-medium text-right text-dark-60">
