@@ -1,0 +1,43 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.code-workspace
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependency directories
+node_modules/
+**/node_modules/
+
+# Expo / Metro caches
+.expo/
+.expo-shared/
+**/.expo/
+.metro-health-check*
+dist/
+web-build/
+*.tsbuildinfo
+expo-env.d.ts
+
+# Native builds & secrets
+ios/
+android/
+*.jks
+*.keystore
+*.p8
+*.p12
+*.mobileprovision
+.gradle/
+
+# Env files
+.env
+.env.*
+*.local
+
+# Misc
+*.orig.*

@@ -1,0 +1,76 @@
+{
+  "expo": {
+    "name": "hungrie.app",
+    "slug": "hungrieapp",
+    "version": "1.0.0",
+    "description": "Hungrie — kampüsteki favori restoranlar tek listede. Keşfet, seç, devam et.",
+    "orientation": "portrait",
+    "icon": "./assets/app-icon/app-icon-1024.png",
+    "scheme": "fastfood",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "icon": "./assets/app-icon/app-icon-1024.png",
+      "supportsTablet": true,
+      "buildNumber": "1",
+      "bundleIdentifier": "com.hungrie.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/app-icon/app-icon-1024.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.hungrie.app",
+      "versionCode": 1,
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/app-icon/app-icon-512.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/hungrie-mark.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#fff7ef",
+          "dark": {
+            "image": "./assets/images/hungrie-mark.png",
+            "backgroundColor": "#160604"
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyCOCAEeBf5IgKP50zSyqFJKBcygwXUuqUA",
+      "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "hungrieapp-a2288.firebaseapp.com",
+      "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "hungrieapp-a2288",
+      "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "hungrieapp-a2288.firebasestorage.app",
+      "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "405094874808",
+      "EXPO_PUBLIC_FIREBASE_APP_ID": "1:405094874808:web:a0f159c959938a7ba6fe4d",
+      "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-DSD4PT8W96",
+      "EXPO_PUBLIC_FIREBASE_DATABASE_URL": "",
+      "EXPO_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN": "",
+      "EXPO_PUBLIC_USE_MOCK_DATA": "false",
+      "EXPO_PUBLIC_REQUIRE_AUTH": "false",
+      "EXPO_PUBLIC_API_BASE_URL": "",
+      "EXPO_PUBLIC_PEXELS_API_KEY": "",
+      "EXPO_PUBLIC_SENTRY_DSN": "",
+      "router": {},
+      "eas": {
+        "projectId": "be624db8-7de1-4b8b-bd86-605431679967"
+      }
+    },
+    "owner": "alpdogancelik1"
+  }
+}

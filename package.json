@@ -1,0 +1,24 @@
+{
+  "name": "hungrieapp",
+  "private": true,
+  "workspaces": [
+    "mobile"
+  ],
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5"
+  },
+  "scripts": {
+    "start": "npm --prefix mobile run start",
+    "android": "npm --prefix mobile run android",
+    "ios": "npm --prefix mobile run ios",
+    "web": "npm --prefix mobile run web",
+    "lint": "npm --prefix mobile run lint",
+    "test": "npm --prefix mobile run test"
+  },
+  "devDependencies": {
+    "@types/react": "~18.2.0",
+    "typescript": "~5.9.2"
+  }
+}

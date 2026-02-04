@@ -1,0 +1,117 @@
+/** @type {import('tailwindcss').Config} */
+const plugin = require("tailwindcss/plugin");
+
+module.exports = {
+    content: [
+        "./app/**/*.{js,jsx,ts,tsx}",
+        "./components/**/*.{js,jsx,ts,tsx}",
+        "./src/**/*.{js,jsx,ts,tsx}",
+        "./store/**/*.{js,jsx,ts,tsx}",
+        "./lib/**/*.{js,jsx,ts,tsx}",
+        "./constants/**/*.{js,jsx,ts,tsx}",
+    ],
+    presets: [require("nativewind/preset")],
+    theme: {
+        fontFamily: {
+            sans: ["ChairoSans", "sans-serif"],
+        },
+        extend: {
+            colors: {
+                primary: "#FE8C00",
+                "primary-dark": "#E56E00",
+                secondary: "#FFD36B",
+                accent: "#12B886",
+                dark: {
+                    100: "#0F172A",
+                    80: "#1E293B",
+                    60: "#334155",
+                },
+                gray: {
+                    50: "#F8FAFC",
+                    100: "#E2E8F0",
+                    200: "#CBD5F5",
+                },
+                error: "#F87171",
+                success: "#22C55E",
+            },
+            fontFamily: {
+                ezra: ["ChairoSans", "sans-serif"],
+                "ezra-bold": ["ChairoSans", "sans-serif"],
+                "ezra-semibold": ["ChairoSans", "sans-serif"],
+                "ezra-light": ["ChairoSans", "sans-serif"],
+                "ezra-medium": ["ChairoSans", "sans-serif"],
+                nothern: ["ChairoSans", "sans-serif"],
+                "nothern-italic": ["ChairoSans", "sans-serif"],
+                clust: ["ChairoSans", "sans-serif"],
+                chairo: ["ChairoSans", "sans-serif"],
+                "chairo-italic": ["ChairoSans", "sans-serif"],
+            },
+        },
+    },
+    plugins: [
+        plugin(({ addComponents, addUtilities }) => {
+            addUtilities({
+                ".flex-center": { "@apply flex items-center justify-center": {} },
+                ".flex-between": { "@apply flex items-center justify-between": {} },
+                ".flex-start": { "@apply flex items-start justify-center": {} },
+            });
+
+            addComponents({
+                ".cart-btn": { "@apply flex items-center justify-center size-11 rounded-full bg-dark-100": {} },
+                ".cart-badge": {
+                    "@apply absolute -top-2 -right-1 flex items-center justify-center size-5 bg-primary rounded-full": {},
+                },
+                ".cart-item": {
+                    "@apply flex flex-row items-start justify-between mb-4 bg-white rounded-3xl p-4 shadow-lg shadow-black/5 border border-gray-100": {},
+                },
+                ".cart-item__image": {
+                    "@apply size-20 bg-primary/10 rounded-2xl flex items-center justify-center": {},
+                },
+                ".cart-item__actions": {
+                    "@apply flex flex-row items-center justify-center size-6 rounded-full bg-gray-50 border border-gray-100": {},
+                },
+                ".custom-btn": { "@apply bg-primary rounded-full p-4 w-full flex flex-row justify-center": {} },
+                ".custom-header": { "@apply w-full flex flex-row items-center justify-between mb-10": {} },
+                ".label": { "@apply text-base text-start w-full font-ezra-medium text-gray-500 pl-2": {} },
+                ".input": { "@apply rounded-lg p-3 w-full text-base font-ezra-semibold text-dark-100 border-b leading-5": {} },
+                ".filter": { "@apply px-5 py-2 rounded-full mr-2 bg-white border border-gray-100 shadow-sm shadow-black/5": {} },
+                ".menu-card": { "@apply relative flex-1 rounded-3xl bg-white p-5 shadow-lg shadow-black/5 border border-gray-50": {} },
+                ".profile-field": {
+                    "@apply flex flex-row items-center justify-between mb-4 rounded-2xl bg-white px-4 py-3 border border-gray-100": {},
+                },
+                ".profile-field__icon": {
+                    "@apply size-12 rounded-2xl bg-primary/10 flex items-center justify-center mr-3": {},
+                },
+                ".searchbar": {
+                    "@apply relative flex flex-row items-center justify-start w-full bg-white shadow-lg shadow-black/5 rounded-full font-ezra-medium text-dark-100 gap-4 px-5": {},
+                },
+                ".tab-icon": { "@apply flex min-w-20 items-center justify-center min-h-full gap-1 mt-12": {} },
+                ".offer-card": { "@apply w-full h-48 my-3 rounded-3xl overflow-hidden shadow-xl flex items-center gap-5": {} },
+                ".offer-card__info": { "@apply flex-1 h-full flex flex-col justify-center items-start gap-4": {} },
+                ".profile-avatar": { "@apply relative size-28 border-white border-4 rounded-full shadow-lg shadow-black/10": {} },
+                ".profile-edit": { "@apply flex items-center justify-center absolute bottom-2 right-0 bg-primary border-4 border-white size-9 rounded-full": {} },
+                ".restaurant-card": { "@apply flex flex-row gap-4 bg-white p-4 rounded-3xl border border-gray-100 shadow-lg shadow-black/5": {} },
+                ".rating-pill": { "@apply flex flex-row items-center rounded-full bg-white/90 px-3 py-1 border border-gray-100": {} },
+                ".info-chip": { "@apply flex flex-row items-center gap-1 px-3 py-1 rounded-full bg-gray-50 border border-gray-100": {} },
+                ".restaurant-hero": { "@apply rounded-[40px] bg-dark-80 p-6 flex flex-col gap-5": {} },
+                ".hero-metric": { "@apply flex-1 bg-white/10 rounded-2xl px-4 py-3 items-start": {} },
+                ".h1-bold": { "@apply text-3xl font-ezra-bold": {} },
+                ".h3-bold": { "@apply text-xl font-ezra-bold": {} },
+                ".base-bold": { "@apply text-lg font-ezra-bold": {} },
+                ".base-semibold": { "@apply text-lg font-ezra-semibold": {} },
+                ".base-regular": { "@apply text-lg font-ezra": {} },
+                ".paragraph-bold": { "@apply text-base font-ezra-bold": {} },
+                ".paragraph-semibold": { "@apply text-base font-ezra-semibold": {} },
+                ".paragraph-medium": { "@apply text-base font-ezra-medium text-dark-60": {} },
+                ".body-medium": { "@apply text-sm font-ezra-medium text-dark-60": {} },
+                ".body-regular": { "@apply text-sm font-ezra": {} },
+                ".small-bold": { "@apply text-xs font-ezra-bold tracking-[2px]": {} },
+                ".hero-card": { "@apply bg-primary rounded-[32px] p-6 flex-row items-center gap-5 shadow-xl shadow-primary/30 relative overflow-hidden": {} },
+                ".hero-cta": { "@apply px-5 py-3 rounded-full bg-dark-100 text-white font-ezra-semibold": {} },
+                ".chip": { "@apply px-4 py-2 rounded-full bg-white border border-gray-100 flex-row items-center gap-2": {} },
+                ".section-title": { "@apply text-lg font-ezra-bold text-dark-100": {} },
+                ".secondary-card": { "@apply rounded-3xl p-4 bg-white shadow-lg shadow-black/5 border border-gray-100": {} },
+            });
+        }),
+    ],
+};
