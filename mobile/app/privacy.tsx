@@ -1,200 +1,168 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
 import Icon from "@/components/Icon";
 
-type PolicySection = {
+export const PRIVACY_CONTACT_EMAIL = "ahungrie@gmail.com";
+
+const EFFECTIVE_DATE = "January 1, 2026";
+
+type Section = {
     title: string;
-    body?: string[];
+    body: string[];
     bullets?: string[];
 };
 
-type PolicyContent = {
-    title: string;
-    header: string;
-    meta: string[];
-    sections: PolicySection[];
-};
+const SECTIONS: Section[] = [
+    {
+        title: "Overview",
+        body: [
+            "This Privacy Policy explains how Hungrie collects, uses, and protects your information when you use the app and related services.",
+            "By using Hungrie, you agree to the practices described in this policy.",
+        ],
+    },
+    {
+        title: "Data we collect",
+        body: ["Depending on how you use the app, we may collect:"],
+        bullets: [
+            "Account data: name, email address, and identifiers (e.g., Firebase UID).",
+            "Delivery data: delivery addresses you save in the app.",
+            "Order data: items in your cart, order totals, payment method (e.g., cash/POS on delivery), and order status/history.",
+            "Notifications data: push notification token (to deliver updates you request).",
+            "Diagnostics data: app crash reports and performance diagnostics (e.g., via Sentry), where enabled.",
+        ],
+    },
+    {
+        title: "How we use",
+        body: ["We use your information to:"],
+        bullets: [
+            "Provide core features (account, orders, delivery coordination).",
+            "Send service-related notifications (e.g., order updates) when enabled.",
+            "Provide customer support and respond to requests.",
+            "Improve app reliability and security, including debugging and abuse prevention.",
+        ],
+    },
+    {
+        title: "Sharing",
+        body: ["We may share limited information with:"],
+        bullets: [
+            "Restaurants: order details and necessary delivery/contact information to fulfill your order.",
+            "Couriers/delivery staff: necessary delivery/contact information to complete delivery.",
+            "Service providers: infrastructure providers (auth, database, push notifications) and diagnostics providers (e.g., Sentry) acting on our behalf.",
+        ],
+    },
+    {
+        title: "Security",
+        body: [
+            "We use reasonable technical and organizational measures designed to protect your information (for example, encrypted transport where supported and access controls).",
+            "No method of transmission or storage is 100% secure, but we work to protect your data and limit access.",
+        ],
+    },
+    {
+        title: "Retention",
+        body: [
+            "We retain information as long as needed to provide the service, comply with legal obligations, resolve disputes, and enforce our agreements.",
+            "When information is no longer needed, we delete it, anonymize it, or restrict access according to our internal policies.",
+        ],
+    },
+    {
+        title: "Your rights",
+        body: [
+            "Depending on your location, you may have rights to access, correct, or delete your information, and to object to or restrict certain processing.",
+            "To make a request, contact us using the email below.",
+        ],
+    },
+    {
+        title: "Contact",
+        body: ["For privacy questions or requests, contact us at:"],
+        bullets: [PRIVACY_CONTACT_EMAIL],
+    },
+];
 
-const POLICY_TR: PolicyContent = {
-    title: "Gizlilik Politikası",
-    header: "GİZLİLİK POLİTİKASI  Hungrie",
-    meta: [
-        "Yürürlük Tarihi: [01.01.2026]",
-        "Veri Sorumlusu: [şirket/şahıs ünvanı: HungrieApp]  [Adres- Metu Ncc]",
-        "İletişim: [ahungrie@gmail.com]  Veri Talepleri/Silme: [ahungrie@gmail.com]",
-    ],
-    sections: [
-        {
-            title: "1. Hangi verileri topluyoruz?",
-            bullets: [
-                "Hesap Bilgileri: ad-soyad, e-posta, telefon/WhatsApp, kullanıcı kimliği (Firebase UID)",
-                "Teslimat Bilgileri: teslimat adres(ler)i (Firestore'da saklanır)",
-                "Sipariş Bilgileri: sepet içeriği, tutar, ödeme yöntemi (kapıda nakit/POS), sipariş durumu ve sipariş geçmişi",
-                "Bildirim Bilgileri: push token (backend'de saklanır) ve bildirim gönderim kayıtları",
-                "Teknik Tanımlama: crash/hata kayıtları, performans/diagnostics verileri (Sentry)",
-                "Toplamadıklarımız: hassas konum, rehber, fotoğraf/mikrofon, kart/banka bilgisi.",
-            ],
-        },
-        {
-            title: "2. Hangi amaçlarla kullanıyoruz?",
-            bullets: [
-                "Siparişin oluşturulması, restorana iletilmesi ve teslimat koordinasyonu",
-                "Hesap ve oturum yönetimi",
-                "Müşteri destek süreleri",
-                "Güvenlik ve suistimal önleme",
-                "Uygulama stabilitesi: hata ayıklama ve performans iyileştirme (Sentry)",
-            ],
-        },
-        {
-            title: "3. Verileri kiminle paylaşıyoruz?",
-            bullets: [
-                "Restoranlar: sipariş içeriği + teslimat için gerekli iletişim/adres bilgileri",
-                "Kuryeler/teslimat görevlileri: teslimat adresi + iletişim için gerekli bilgiler",
-                "Hizmet sağlayıcıları: altyapı sağlayıcıları (Auth/DB/push) ve hata izleme (Sentry)",
-            ],
-        },
-        {
-            title: "4. Saklama süresi",
-            body: [
-                "Veriler; hizmetin yürütülmesi, güvenlik ve mevzuat yükümlülükleri için gerekli süre boyunca saklanır; süre sonunda silinir/anonimleştirilir veya erişimi kısıtlanır.",
-            ],
-        },
-        {
-            title: "5. Güvenlik",
-            body: [
-                "Verilerin aktarımı sırasında şifreli iletişim (TLS/HTTPS) ve erişim kontrolü gibi makul teknik/idari tedbirler uygulanır.",
-            ],
-        },
-        {
-            title: "6. Haklar ve silme talebi",
-            body: [
-                "Kullanıcı; verilerine erişim, düzeltme, silme ve işlemeye itiraz taleplerini iletebilir.",
-                "Silme talebi kanalı: [privacy@hungrie.app] ve/veya [https://hungrie.app/privacy-choices]",
-            ],
-        },
-        {
-            title: "7. Değişiklikler",
-            body: ["Gizlilik politikası güncellenebilir; güncel sürüm ilgili URL'de yayımlanır."],
-        },
-    ],
-};
-
-const POLICY_EN: PolicyContent = {
-    title: "Privacy Policy",
-    header: "PRIVACY POLICY  - Hungrie",
-    meta: [
-        "Effective Date: [01.01.2026]",
-        "Data Controller: [Company/Person Name: HungrieApp]  [Address- Metu Ncc]",
-        "Contact: [ahungrie@gmail.com]  Data Requests/Deletion: [ahungrie@gmail.com                                                ]",
-    ],
-    sections: [
-        {
-            title: "1. What data do we collect?",
-            bullets: [
-                "Account Info: full name, email, phone/WhatsApp, user ID (Firebase UID)",
-                "Delivery Info: delivery address(es) (stored in Firestore)",
-                "Order Info: cart contents, total, payment method (cash/POS on delivery), order status and history",
-                "Notification Info: push token (stored in backend) and notification logs",
-                "Technical Diagnostics: crash/error logs, performance/diagnostics data (Sentry)",
-                "Not collected: precise location, contacts, photo/microphone, card/bank details.",
-            ],
-        },
-        {
-            title: "2. What do we use it for?",
-            bullets: [
-                "Creating orders, sending to restaurants, and coordinating delivery",
-                "Account and session management",
-                "Customer support processes",
-                "Security and abuse prevention",
-                "App stability: debugging and performance improvements (Sentry)",
-            ],
-        },
-        {
-            title: "3. Who do we share data with?",
-            bullets: [
-                "Restaurants: order contents + necessary contact/address details for delivery",
-                "Couriers/delivery staff: delivery address + necessary contact details",
-                "Service providers: infrastructure (Auth/DB/push) and error monitoring (Sentry)",
-            ],
-        },
-        {
-            title: "4. Retention period",
-            body: [
-                "Data is stored as long as required for service delivery, security, and legal obligations; after that it is deleted/anonymized or access is restricted.",
-            ],
-        },
-        {
-            title: "5. Security",
-            body: [
-                "We apply reasonable technical/administrative measures such as encrypted transfer (TLS/HTTPS) and access control.",
-            ],
-        },
-        {
-            title: "6. Rights and deletion request",
-            body: [
-                "Users can request access, correction, deletion, and object to processing.",
-                "Deletion channel: [privacy@hungrie.app] and/or [https://hungrie.app/privacy-choices]",
-            ],
-        },
-        {
-            title: "7. Changes",
-            body: ["The privacy policy may be updated; the latest version is published at the relevant URL."],
-        },
-    ],
-};
-
-const SectionBlock = ({ section }: { section: PolicySection }) => (
-    <View className="gap-2">
-        <Text className="text-lg font-ezra-bold text-dark-100">{section.title}</Text>
-        {section.body?.map((line, index) => (
-            <Text key={`${section.title}-body-${index}`} className="body-medium text-dark-60">
-                {line}
-            </Text>
-        ))}
-        {section.bullets?.map((line, index) => (
-            <Text key={`${section.title}-bullet-${index}`} className="body-medium text-dark-60">
-                {`- ${line}`}
-            </Text>
-        ))}
-    </View>
-);
-
-const PrivacyScreen = () => {
-    const { i18n } = useTranslation();
-    const content = i18n.language.startsWith("tr") ? POLICY_TR : POLICY_EN;
-
+const PolicySection = ({ section }: { section: Section }) => {
     return (
-        <SafeAreaView className="flex-1 bg-gray-50">
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 120 }}>
-                <View className="flex-row items-center gap-3 mb-4">
-                    <Pressable
-                        onPress={() => router.back()}
-                        className="h-10 w-10 rounded-full bg-white border border-gray-200 items-center justify-center"
-                    >
-                        <Icon name="arrowBack" size={20} color="#0F172A" />
-                    </Pressable>
-                    <Text className="text-2xl font-ezra-bold text-dark-100">{content.title}</Text>
-                </View>
-
-                <View className="gap-2 mb-6">
-                    <Text className="text-xs uppercase tracking-[3px] text-dark-60">{content.header}</Text>
-                    {content.meta.map((line, index) => (
-                        <Text key={`meta-${index}`} className="body-medium text-dark-60">
-                            {line}
+        <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{section.title}</Text>
+            {section.body.map((p, idx) => (
+                <Text key={`${section.title}-p-${idx}`} style={styles.paragraph}>
+                    {p}
+                </Text>
+            ))}
+            {section.bullets?.length ? (
+                <View style={styles.bullets}>
+                    {section.bullets.map((b, idx) => (
+                        <Text key={`${section.title}-b-${idx}`} style={styles.bullet}>
+                            {"\u2022"} {b}
                         </Text>
                     ))}
                 </View>
+            ) : null}
+        </View>
+    );
+};
 
-                <View className="gap-6">
-                    {content.sections.map((section) => (
-                        <SectionBlock key={section.title} section={section} />
+export default function PrivacyPolicyScreen() {
+    const handleBack = () => {
+        if (router.canGoBack()) router.back();
+        else router.replace("/");
+    };
+
+    return (
+        <SafeAreaView style={styles.safe}>
+            <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+                <View style={styles.header}>
+                    <Pressable onPress={handleBack} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
+                        <Icon name="arrowBack" size={20} color="#0F172A" />
+                    </Pressable>
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.title}>Privacy Policy</Text>
+                        <Text style={styles.effective}>Effective date: {EFFECTIVE_DATE}</Text>
+                    </View>
+                </View>
+
+                <View style={styles.card}>
+                    {SECTIONS.map((section) => (
+                        <PolicySection key={section.title} section={section} />
                     ))}
+
+                    <Pressable
+                        onPress={() => Linking.openURL(`mailto:${PRIVACY_CONTACT_EMAIL}`)}
+                        accessibilityRole="link"
+                        style={styles.emailRow}
+                    >
+                        <Text style={styles.emailLabel}>Email:</Text>
+                        <Text style={styles.emailValue}>{PRIVACY_CONTACT_EMAIL}</Text>
+                    </Pressable>
                 </View>
             </ScrollView>
         </SafeAreaView>
     );
-};
+}
 
-export default PrivacyScreen;
+const styles = StyleSheet.create({
+    safe: { flex: 1, backgroundColor: "#F8FAFC" },
+    container: { padding: 20, paddingBottom: 120 },
+    header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 999,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#E2E8F0",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    title: { fontSize: 24, fontWeight: "700", color: "#0F172A" },
+    effective: { marginTop: 2, fontSize: 12, color: "#475569" },
+    card: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 16, padding: 16, gap: 14 },
+    section: { gap: 8 },
+    sectionTitle: { fontSize: 16, fontWeight: "700", color: "#0F172A" },
+    paragraph: { fontSize: 14, lineHeight: 20, color: "#334155" },
+    bullets: { gap: 6 },
+    bullet: { fontSize: 14, lineHeight: 20, color: "#334155" },
+    emailRow: { marginTop: 10, flexDirection: "row", gap: 8, alignItems: "center" },
+    emailLabel: { fontSize: 14, fontWeight: "700", color: "#0F172A" },
+    emailValue: { fontSize: 14, color: "#2563EB" },
+});
+
