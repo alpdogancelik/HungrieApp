@@ -13,6 +13,7 @@ import "./globals.css";
 import { NotificationManager } from "@/src/features/notifications/NotificationManager";
 import { registerTokenWithBackend } from "@/src/features/notifications/push";
 import CartLockNotice from "@/components/CartLockNotice";
+import VercelSpeedInsights from "@/components/VercelSpeedInsights";
 
 const extra = Constants.expoConfig?.extra ?? {};
 const env = (typeof process !== "undefined" ? (process as any).env : undefined) ?? {};
@@ -110,6 +111,7 @@ function RootLayoutBase() {
                     }
                 >
                     <Stack screenOptions={{ headerShown: false }} />
+                    <VercelSpeedInsights />
                 </View>
             </ThemeProvider>
         </GestureHandlerRootView>
