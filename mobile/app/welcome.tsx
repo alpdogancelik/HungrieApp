@@ -303,6 +303,15 @@ export default function WelcomeScreen() {
         if (isAuthenticated) router.replace("/home");
     }, [isAuthenticated, isLoading, router]);
 
+    if (isLoading || isAuthenticated) {
+        return (
+            <LinearGradient colors={["#FFF7EF", "#FFEBDD", "#FFDCC4"]} style={styles.bg}>
+                <StatusBar style="dark" />
+                <SafeAreaView style={styles.safe} />
+            </LinearGradient>
+        );
+    }
+
     const goTo = (i: number) => {
         const clamped = Math.max(0, Math.min(i, slides.length - 1));
         listRef.current?.scrollToOffset({ offset: clamped * contentWidth, animated: true });

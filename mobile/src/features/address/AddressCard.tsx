@@ -1,5 +1,5 @@
 import { memo, useMemo, useState } from "react";
-import { Modal, Pressable, Text, TouchableOpacity, View } from "react-native";
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { Address } from "@/src/domain/types";
 
 type Props = {
@@ -40,48 +40,48 @@ const AddressCard = ({ address, onEdit, onDelete, onSetDefault }: Props) => {
     };
 
     return (
-        <View className="bg-white border border-gray-100 rounded-3xl px-4 py-4 gap-3 shadow-sm shadow-black/5">
-            <View className="flex-row items-start justify-between gap-3">
-                <View className="flex-1 gap-1">
-                    <View className="flex-row items-center gap-2">
-                        <Text className="paragraph-semibold text-dark-100 flex-shrink">{address.label}</Text>
+        <View style={styles.card}>
+            <View style={styles.cardHeader}>
+                <View style={styles.addressContent}>
+                    <View style={styles.labelRow}>
+                        <Text style={styles.labelText}>{address.label}</Text>
                         {address.isDefault ? (
-                            <View className="bg-primary/10 rounded-full px-3 py-1">
-                                <Text className="caption text-primary">Default</Text>
+                            <View style={styles.defaultBadge}>
+                                <Text style={styles.defaultBadgeText}>Default</Text>
                             </View>
                         ) : null}
                     </View>
-                    <Text className="body-medium text-dark-60" numberOfLines={1}>
+                    <Text style={styles.addressLine} numberOfLines={1}>
                         {buildingLine}
                     </Text>
-                    <Text className="body-medium text-dark-60" numberOfLines={1}>
+                    <Text style={styles.addressLine} numberOfLines={1}>
                         {detailLine}
                     </Text>
                 </View>
                 <TouchableOpacity
                     accessibilityLabel="Open address actions"
-                    className="size-10 rounded-full bg-gray-50 items-center justify-center border border-gray-100"
+                    style={styles.menuButton}
                     onPress={toggleMenu}
                 >
-                    <Text className="text-xl text-dark-40">⋮</Text>
+                    <Text style={styles.menuButtonText}>⋮</Text>
                 </TouchableOpacity>
             </View>
 
             <Modal transparent visible={menuVisible} animationType="fade" onRequestClose={closeMenu}>
-                <View className="flex-1 justify-end bg-black/40">
-                    <Pressable className="flex-1" onPress={closeMenu} />
-                    <View className="bg-white rounded-t-3xl p-5 gap-2 shadow-2xl">
-                        <Text className="h4-bold text-dark-100 mb-2">Address actions</Text>
-                        <TouchableOpacity className="py-3" onPress={handleEdit}>
-                            <Text className="paragraph-semibold text-dark-100">Edit</Text>
+                <View style={styles.sheetBackdrop}>
+                    <Pressable style={styles.sheetDismissArea} onPress={closeMenu} />
+                    <View style={styles.sheet}>
+                        <Text style={styles.sheetTitle}>Address actions</Text>
+                        <TouchableOpacity style={styles.sheetAction} onPress={handleEdit}>
+                            <Text style={styles.sheetActionText}>Edit</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity className="py-3" disabled={address.isDefault} onPress={handleSetDefault}>
-                            <Text className={`paragraph-semibold ${address.isDefault ? "text-dark-40" : "text-dark-80"}`}>
+                        <TouchableOpacity style={styles.sheetAction} disabled={address.isDefault} onPress={handleSetDefault}>
+                            <Text style={address.isDefault ? styles.sheetActionDisabledText : styles.sheetActionSecondaryText}>
                                 {address.isDefault ? "Already default" : "Set as default"}
                             </Text>
                         </TouchableOpacity>
-                        <TouchableOpacity className="py-3" onPress={handleDelete}>
-                            <Text className="paragraph-semibold text-red-500">Delete</Text>
+                        <TouchableOpacity style={styles.sheetAction} onPress={handleDelete}>
+                            <Text style={styles.sheetActionDeleteText}>Delete</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -89,5 +89,128 @@ const AddressCard = ({ address, onEdit, onDelete, onSetDefault }: Props) => {
         </View>
     );
 };
+
+const styles = StyleSheet.create({
+    card: {
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#E5E7EB",
+        borderRadius: 24,
+        paddingHorizontal: 16,
+        paddingVertical: 16,
+        rowGap: 12,
+        shadowColor: "#000000",
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 1,
+    },
+    cardHeader: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        justifyContent: "space-between",
+        columnGap: 12,
+    },
+    addressContent: {
+        flex: 1,
+        rowGap: 4,
+    },
+    labelRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        columnGap: 8,
+    },
+    labelText: {
+        flexShrink: 1,
+        fontSize: 16,
+        lineHeight: 22,
+        fontWeight: "700",
+        color: "#111827",
+    },
+    defaultBadge: {
+        backgroundColor: "#FE8C001A",
+        borderRadius: 999,
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+    },
+    defaultBadgeText: {
+        fontSize: 12,
+        lineHeight: 16,
+        fontWeight: "500",
+        color: "#FE8C00",
+    },
+    addressLine: {
+        fontSize: 14,
+        lineHeight: 20,
+        fontWeight: "500",
+        color: "#6B7280",
+    },
+    menuButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: "#F9FAFB",
+        borderWidth: 1,
+        borderColor: "#E5E7EB",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    menuButtonText: {
+        fontSize: 20,
+        lineHeight: 24,
+        color: "#9CA3AF",
+    },
+    sheetBackdrop: {
+        flex: 1,
+        justifyContent: "flex-end",
+        backgroundColor: "rgba(0, 0, 0, 0.4)",
+    },
+    sheetDismissArea: {
+        flex: 1,
+    },
+    sheet: {
+        backgroundColor: "#FFFFFF",
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        paddingHorizontal: 20,
+        paddingTop: 20,
+        paddingBottom: 28,
+        rowGap: 8,
+    },
+    sheetTitle: {
+        marginBottom: 8,
+        fontSize: 20,
+        lineHeight: 24,
+        fontWeight: "700",
+        color: "#111827",
+    },
+    sheetAction: {
+        paddingVertical: 12,
+    },
+    sheetActionText: {
+        fontSize: 16,
+        lineHeight: 22,
+        fontWeight: "700",
+        color: "#111827",
+    },
+    sheetActionSecondaryText: {
+        fontSize: 16,
+        lineHeight: 22,
+        fontWeight: "700",
+        color: "#374151",
+    },
+    sheetActionDisabledText: {
+        fontSize: 16,
+        lineHeight: 22,
+        fontWeight: "700",
+        color: "#9CA3AF",
+    },
+    sheetActionDeleteText: {
+        fontSize: 16,
+        lineHeight: 22,
+        fontWeight: "700",
+        color: "#EF4444",
+    },
+});
 
 export default memo(AddressCard);

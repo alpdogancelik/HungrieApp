@@ -1,5 +1,4 @@
 import { Platform } from "react-native";
-import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import Constants from "expo-constants";
 
@@ -11,6 +10,15 @@ export type PushTokenInfo = {
 };
 
 const isWeb = Platform.OS === "web";
+const isExpoGo = Constants.appOwnership === "expo";
+
+export const isRemotePushSupported = (): boolean => !isWeb && Device.isDevice && !isExpoGo;
+type NotificationsModule = typeof import("expo-notifications");
+
+const getNotificationsModule = (): NotificationsModule | null => {
+    if (isWeb || isExpoGo) return null;
+    return require("expo-notifications") as NotificationsModule;
+};
 
 type NotificationPermissionLike = "default" | "granted" | "denied";
 type WebNotificationCtor = {
@@ -28,7 +36,7 @@ const getWebNotification = (): WebNotificationCtor | null => {
     return globalObj.Notification;
 };
 
-const notificationHandler: Notifications.NotificationHandler = {
+const notificationHandler = {
     handleNotification: async () => ({
         shouldShowAlert: true,
         shouldSetBadge: false,
@@ -38,10 +46,16 @@ const notificationHandler: Notifications.NotificationHandler = {
     }),
 };
 
-Notifications.setNotificationHandler(notificationHandler);
+const notificationsModule = getNotificationsModule();
+if (notificationsModule) {
+    notificationsModule.setNotificationHandler(notificationHandler);
+}
 
 const ensureAndroidChannel = async () => {
     if (Platform.OS !== "android") return;
+    const Notifications = getNotificationsModule();
+    if (!Notifications) return;
+
     await Notifications.setNotificationChannelAsync("default", {
         name: "default",
         importance: Notifications.AndroidImportance.MAX,
@@ -59,6 +73,8 @@ export const requestPermissions = async (): Promise<boolean> => {
         return result === "granted";
     }
 
+    const Notifications = getNotificationsModule();
+    if (!Notifications) return false;
     if (!Device.isDevice) return false;
 
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -83,7 +99,9 @@ const resolveProjectId = () => {
 };
 
 export const getPushToken = async (): Promise<PushTokenInfo | null> => {
-    if (isWeb || !Device.isDevice) return null;
+    if (!isRemotePushSupported()) return null;
+    const Notifications = getNotificationsModule();
+    if (!Notifications) return null;
     const permissions = await Notifications.getPermissionsAsync();
     if (permissions.status !== "granted") return null;
     const projectId = resolveProjectId();
@@ -102,6 +120,8 @@ export const notifyLocal = async (title: string, body: string, withSound = true)
         }
         return;
     }
+    const Notifications = getNotificationsModule();
+    if (!Notifications) return;
     await ensureAndroidChannel();
     await Notifications.scheduleNotificationAsync({
         content: {

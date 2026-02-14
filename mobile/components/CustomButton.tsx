@@ -1,6 +1,45 @@
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native'
-import React from 'react'
-import cn from "clsx";
+import React from "react";
+import {
+    ActivityIndicator,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    type ReactNode,
+    type StyleProp,
+    type TextStyle,
+    type ViewStyle,
+} from "react-native";
+
+type Props = {
+    onPress?: () => void;
+    title?: string;
+    style?: StyleProp<ViewStyle>;
+    textStyle?: StyleProp<TextStyle>;
+    leftIcon?: ReactNode;
+    isLoading?: boolean;
+    disabled?: boolean;
+};
+
+const styles = StyleSheet.create({
+    button: {
+        width: "100%",
+        minHeight: 52,
+        borderRadius: 999,
+        backgroundColor: "#FE8C00",
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 16,
+    },
+    busy: { opacity: 0.6 },
+    iconWrap: { marginRight: 8 },
+    text: {
+        color: "#FFFFFF",
+        fontSize: 16,
+        fontFamily: "ChairoSans",
+    },
+});
 
 const CustomButton = ({
     onPress,
@@ -10,31 +49,15 @@ const CustomButton = ({
     leftIcon,
     isLoading = false,
     disabled = false,
-}: {
-    onPress?: () => void;
-    title?: string;
-    style?: string;
-    textStyle?: string;
-    leftIcon?: React.ReactNode;
-    isLoading?: boolean;
-    disabled?: boolean;
-}) => {
+}: Props) => {
     const isBusy = isLoading || disabled;
 
     return (
-        <TouchableOpacity
-            className={cn("bg-primary rounded-full p-4 w-full flex-row items-center justify-center", style, isBusy && "opacity-60")}
-            disabled={isBusy}
-            onPress={onPress}
-        >
-            {leftIcon ? <View className="mr-2">{leftIcon}</View> : null}
-
-            {isLoading ? (
-                <ActivityIndicator size="small" color="white" />
-            ) : (
-                <Text className={cn("text-white text-base font-ezra-semibold", textStyle)}>{title}</Text>
-            )}
+        <TouchableOpacity style={[styles.button, isBusy && styles.busy, style]} disabled={isBusy} onPress={onPress}>
+            {leftIcon ? <View style={styles.iconWrap}>{leftIcon}</View> : null}
+            {isLoading ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Text style={[styles.text, textStyle]}>{title}</Text>}
         </TouchableOpacity>
-    )
-}
-export default CustomButton
+    );
+};
+
+export default CustomButton;

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Alert, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -9,13 +9,12 @@ import "@/src/lib/i18n";
 
 import useAuthStore from "@/store/auth.store";
 import { logout } from "@/lib/api";
-import { router } from "expo-router";
+import { router, useRouter } from "expo-router";
 
 import { SectionHeader } from "@/src/components/componentRegistry";
 import { useDefaultAddress, type ManageAddressesNavigation } from "@/src/features/address/addressFeature";
 
 import { images, illustrations, emojiSet } from "@/constants/mediaCatalog";
-import GodzillaFishing from "@/assets/godzilla/VCTRLY-godzila-fishing-fish-beach-enjoy.svg";
 
 import { subscribeUserOrders } from "@/src/services/firebaseOrders";
 import { storage } from "@/src/lib/storage";
@@ -26,10 +25,266 @@ import { ORDER_STATUS_COLORS, ORDER_STATUS_LABELS } from "@/components/OrderCard
 import { makeShadow } from "@/src/lib/shadowStyle";
 import { updateUserProfile } from "@/lib/firebaseAuth";
 import { NotificationManager } from "@/src/features/notifications/NotificationManager";
+import { seedRestaurants } from "@/lib/restaurantSeeds";
 
 const EMOJI_OPTIONS = Object.values(emojiSet);
 const WINE_RED = "#7F021F";
 const ORANGE = "#FE8C00";
+const normalizeId = (value: unknown) => (value === null || value === undefined ? "" : String(value));
+const restaurantNamesById = seedRestaurants.reduce<Record<string, string>>((acc, restaurant: any) => {
+    const id = normalizeId(restaurant?.id);
+    if (!id) return acc;
+    acc[id] = restaurant?.name || id;
+    return acc;
+}, {});
+const resolveRestaurantName = (order: any) =>
+    order?.restaurant?.name ||
+    order?.restaurantName ||
+    restaurantNamesById[normalizeId(order?.restaurantId)] ||
+    "Restaurant";
+const ui = StyleSheet.create({
+    pageContent: {
+        paddingHorizontal: 20,
+        rowGap: 24,
+    },
+    card: {
+        borderRadius: 24,
+        padding: 16,
+    },
+    heroRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        columnGap: 16,
+    },
+    avatarButton: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.4)",
+        backgroundColor: "rgba(255,255,255,0.1)",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    nameRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        columnGap: 8,
+    },
+    userName: {
+        color: "#FFFFFF",
+        fontSize: 30,
+        fontFamily: "ChairoSans",
+    },
+    userEmail: {
+        color: "rgba(255,255,255,0.7)",
+        fontSize: 14,
+        marginTop: 2,
+        fontFamily: "ChairoSans",
+    },
+    heroActions: {
+        flexDirection: "row",
+        columnGap: 12,
+    },
+    primaryCta: {
+        flex: 1,
+        borderRadius: 999,
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        backgroundColor: "#0F172A",
+        alignItems: "center",
+    },
+    secondaryCta: {
+        flex: 1,
+        borderRadius: 999,
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.3)",
+        backgroundColor: "rgba(255,255,255,0.1)",
+        alignItems: "center",
+    },
+    ctaText: {
+        color: "#FFFFFF",
+        fontSize: 16,
+        fontFamily: "ChairoSans",
+    },
+    addressTitle: {
+        color: "#FFFFFF",
+        fontSize: 30,
+        fontFamily: "ChairoSans",
+        lineHeight: 34,
+    },
+    addressText: {
+        color: "rgba(255,255,255,0.82)",
+        fontSize: 16,
+        fontFamily: "ChairoSans",
+    },
+    addressMeta: {
+        color: "rgba(255,255,255,0.82)",
+        fontSize: 14,
+        fontFamily: "ChairoSans",
+    },
+    manageAddressBtn: {
+        alignSelf: "flex-start",
+        borderRadius: 999,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        backgroundColor: "rgba(255,255,255,0.15)",
+    },
+    actionsCard: {
+        borderRadius: 24,
+        padding: 16,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#E2E8F0",
+    },
+    sectionCard: {
+        borderRadius: 24,
+        padding: 16,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#E2E8F0",
+    },
+    orderItemCard: {
+        borderRadius: 18,
+        padding: 14,
+        borderWidth: 1,
+        borderColor: "#F1F5F9",
+        backgroundColor: "#FFFFFF",
+    },
+    rowBetween: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+    },
+    accountRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: "#E2E8F0",
+        backgroundColor: "#FFFFFF",
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        marginTop: 8,
+        columnGap: 10,
+    },
+    accountIcon: {
+        width: 38,
+        height: 38,
+        borderRadius: 12,
+        backgroundColor: "#FFF1E7",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    accountLabel: {
+        fontFamily: "ChairoSans",
+        fontSize: 16,
+        color: "#0F172A",
+    },
+    accountDesc: {
+        fontFamily: "ChairoSans",
+        fontSize: 14,
+        color: "#334155",
+        marginTop: 2,
+    },
+    accountInitial: {
+        fontFamily: "ChairoSans",
+        fontSize: 18,
+        color: "#E56E00",
+    },
+    editModalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.4)",
+        justifyContent: "center",
+        paddingHorizontal: 20,
+    },
+    editModalCard: {
+        backgroundColor: "#FFFFFF",
+        borderRadius: 24,
+        overflow: "hidden",
+    },
+    editModalBody: {
+        padding: 20,
+        rowGap: 16,
+        backgroundColor: "#FFFFFF",
+    },
+    editFieldLabel: {
+        fontFamily: "ChairoSans",
+        fontSize: 16,
+        color: "#1E293B",
+    },
+    editFieldInput: {
+        borderWidth: 1,
+        borderColor: "#E2E8F0",
+        borderRadius: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        color: "#0F172A",
+        fontFamily: "ChairoSans",
+        fontSize: 16,
+        backgroundColor: "#FFFFFF",
+    },
+    editActionsRow: {
+        flexDirection: "row",
+        columnGap: 12,
+        marginTop: 8,
+    },
+    editCancelBtn: {
+        flex: 1,
+        borderWidth: 1,
+        borderColor: "#E2E8F0",
+        borderRadius: 999,
+        alignItems: "center",
+        justifyContent: "center",
+        paddingVertical: 12,
+        backgroundColor: "#FFFFFF",
+    },
+    editSaveBtn: {
+        flex: 1,
+        borderRadius: 999,
+        alignItems: "center",
+        justifyContent: "center",
+        paddingVertical: 12,
+        backgroundColor: "#FE8C00",
+    },
+    editCancelText: {
+        fontFamily: "ChairoSans",
+        fontSize: 16,
+        color: "#334155",
+    },
+    editSaveText: {
+        fontFamily: "ChairoSans",
+        fontSize: 16,
+        color: "#FFFFFF",
+    },
+    editHeaderKicker: {
+        color: "rgba(255,255,255,0.65)",
+        letterSpacing: 5,
+        textTransform: "uppercase",
+        fontSize: 11,
+        fontFamily: "ChairoSans",
+    },
+    editHeaderTitle: {
+        color: "#FFFFFF",
+        fontSize: 22,
+        lineHeight: 28,
+        fontFamily: "ChairoSans",
+    },
+    editHeaderSubtitle: {
+        color: "rgba(255,255,255,0.8)",
+        fontSize: 14,
+        lineHeight: 20,
+        fontFamily: "ChairoSans",
+    },
+    editHeaderImageWrap: {
+        width: 110,
+        height: 110,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+});
 
 const formatCurrency = (value?: number | string) => {
     const amount = Number(value ?? 0);
@@ -74,6 +329,7 @@ const Profile = () => {
     const [whatsappDraft, setWhatsappDraft] = useState(user?.whatsappNumber ?? "");
 
     const TrackingIllustration = illustrations.tracking;
+    const EditHeaderIllustration = illustrations.courierHero || illustrations.foodieCelebration || illustrations.tracking;
 
     const initials = useMemo(
         () =>
@@ -176,12 +432,13 @@ const Profile = () => {
     return (
         <SafeAreaView className="flex-1 bg-gray-50" edges={["left", "right", "bottom"]}>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 160, paddingTop: safeTop }}>
-                <View className="px-5 gap-6">
+                <View className="px-5 gap-6" style={ui.pageContent}>
                     {/* HERO */}
-                    <View className="secondary-card border-0 shadow-2xl gap-4" style={{ backgroundColor: WINE_RED }}>
-                        <View className="flex-row items-center gap-4">
+                    <View className="secondary-card border-0 shadow-2xl gap-4" style={[ui.card, { backgroundColor: WINE_RED, rowGap: 16 }]}>
+                        <View className="flex-row items-center gap-4" style={ui.heroRow}>
                             <TouchableOpacity
                                 className="size-16 rounded-full bg-white/10 border border-white/40 items-center justify-center"
+                                style={ui.avatarButton}
                                 onPress={() => setEmojiPickerOpen(true)}
                             >
                                 {preferredEmoji ? (
@@ -192,25 +449,26 @@ const Profile = () => {
                             </TouchableOpacity>
 
                             <View className="flex-1">
-                                <View className="flex-row items-center gap-2">
-                                    <Text className="text-white text-2xl font-ezra-bold">{user?.name || "Hungrie Student"}</Text>
+                                <View className="flex-row items-center gap-2" style={ui.nameRow}>
+                                    <Text className="text-white text-2xl font-ezra-bold" style={ui.userName}>{user?.name || "Hungrie Student"}</Text>
                                     {preferredEmoji ? <Image source={preferredEmoji} style={{ width: 22, height: 22 }} /> : null}
                                 </View>
-                                <Text className="body-medium text-white/70">{user?.email || "student@campus.edu"}</Text>
+                                <Text className="body-medium text-white/70" style={ui.userEmail}>{user?.email || "student@campus.edu"}</Text>
                             </View>
                         </View>
 
-                        <View className="flex-row gap-3">
-                            <TouchableOpacity className="hero-cta flex-1 items-center" onPress={() => setIsEditingProfile(true)}>
-                                <Text className="text-white">{t("profile.header.edit")}</Text>
+                        <View className="flex-row gap-3" style={ui.heroActions}>
+                            <TouchableOpacity style={ui.primaryCta} onPress={() => setIsEditingProfile(true)}>
+                                <Text className="text-white" style={ui.ctaText}>{t("profile.header.edit")}</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity
                                 className="flex-1 px-5 py-3 rounded-full bg-white/10 border border-white/30 items-center"
+                                style={ui.secondaryCta}
                                 disabled={signingOut}
                                 onPress={handleLogout}
                             >
-                                <Text className="paragraph-semibold text-white">
+                                <Text className="paragraph-semibold text-white" style={ui.ctaText}>
                                     {signingOut ? t("profile.header.signingOut") : t("profile.header.signOut")}
                                 </Text>
                             </TouchableOpacity>
@@ -218,25 +476,26 @@ const Profile = () => {
                     </View>
 
                     {/* ADDRESS — design (orange) + database defaultAddress */}
-                    <View className="secondary-card gap-3" style={{ backgroundColor: ORANGE }}>
+                    <View className="secondary-card gap-3" style={[ui.card, { backgroundColor: ORANGE, rowGap: 12 }]}>
                         <View className="flex-row items-start gap-4">
                             <View className="flex-1 gap-3">
-                                <Text className="text-white text-2xl font-ezra-bold">{t("profile.defaultAddress")}</Text>
+                                <Text className="text-white text-2xl font-ezra-bold" style={ui.addressTitle}>{t("profile.defaultAddress")}</Text>
                                 {defaultAddress ? (
                                     <View className="gap-1">
-                                        <Text className="paragraph-semibold text-white">{defaultAddress.label}</Text>
-                                        {addressLineOne ? <Text className="body-medium text-white/80">{addressLineOne}</Text> : null}
-                                        {addressLineTwo ? <Text className="body-medium text-white/80">{addressLineTwo}</Text> : null}
+                                        <Text className="paragraph-semibold text-white" style={ui.addressText}>{defaultAddress.label}</Text>
+                                        {addressLineOne ? <Text className="body-medium text-white/80" style={ui.addressMeta}>{addressLineOne}</Text> : null}
+                                        {addressLineTwo ? <Text className="body-medium text-white/80" style={ui.addressMeta}>{addressLineTwo}</Text> : null}
                                     </View>
                                 ) : (
-                                    <Text className="body-medium text-white/80">{t("profile.noAddress")}</Text>
+                                    <Text className="body-medium text-white/80" style={ui.addressMeta}>{t("profile.noAddress")}</Text>
                                 )}
 
                                 <TouchableOpacity
                                     className="self-start px-4 py-2 rounded-full bg-white/15"
+                                    style={ui.manageAddressBtn}
                                     onPress={handleManageAddressesPress}
                                 >
-                                    <Text className="paragraph-semibold text-white">{t("profile.manageAddresses")}</Text>
+                                    <Text className="paragraph-semibold text-white" style={ui.ctaText}>{t("profile.manageAddresses")}</Text>
                                 </TouchableOpacity>
                             </View>
 
@@ -245,8 +504,8 @@ const Profile = () => {
                     </View>
 
                     {/* ACTIVE ORDERS — keep database behaviour, keep clean UI */}
-                    <View className="secondary-card gap-4">
-                        <View className="flex-row items-center justify-between">
+                    <View className="secondary-card gap-4" style={ui.sectionCard}>
+                        <View className="flex-row items-center justify-between" style={ui.rowBetween}>
                             <SectionHeader title={t("profile.activeOrders")} />
                             {illustrations.courierHero ? <illustrations.courierHero width={56} height={56} /> : null}
                         </View>
@@ -267,20 +526,23 @@ const Profile = () => {
                                                     pathname: "/order/pending",
                                                     params: {
                                                         orderId: order.id,
-                                                        restaurantName: order.restaurant?.name || "Hungrie Order",
+                                                        restaurantName: resolveRestaurantName(order),
                                                         eta: String(order.eta || order.etaMinutes || 120),
                                                     },
                                                 })
                                             }
-                                            style={makeShadow({
-                                                color: "#0F172A",
-                                                offsetY: 6,
-                                                blurRadius: 12,
-                                                opacity: 0.04,
-                                                elevation: 2,
-                                            })}
+                                            style={[
+                                                ui.orderItemCard,
+                                                makeShadow({
+                                                    color: "#0F172A",
+                                                    offsetY: 6,
+                                                    blurRadius: 12,
+                                                    opacity: 0.04,
+                                                    elevation: 2,
+                                                }),
+                                            ]}
                                         >
-                                            <View className="flex-row items-center justify-between">
+                                            <View className="flex-row items-center justify-between" style={ui.rowBetween}>
                                                 <View>
                                                     <Text className="paragraph-semibold text-dark-100">
                                                         {order.restaurant?.name || `Order #${order.id}`}
@@ -312,7 +574,7 @@ const Profile = () => {
                     <OrderHistorySection orders={orders} />
 
                     {/* ACTIONS — design version */}
-                    <View className="secondary-card gap-3">
+                    <View className="secondary-card gap-3" style={ui.actionsCard}>
                         <SectionHeader title={t("profile.accountActions")} />
                         {[
                             {
@@ -336,13 +598,13 @@ const Profile = () => {
                                 action: () => router.push("/orders"),
                             },
                         ].map((item) => (
-                            <TouchableOpacity key={item.label} className="profile-field" onPress={item.action}>
-                                <View className="profile-field__icon">
-                                    <Text className="paragraph-semibold text-primary-dark">{item.label[0]}</Text>
+                            <TouchableOpacity key={item.label} className="profile-field" style={ui.accountRow} onPress={item.action}>
+                                <View className="profile-field__icon" style={ui.accountIcon}>
+                                    <Text className="paragraph-semibold text-primary-dark" style={ui.accountInitial}>{item.label[0]}</Text>
                                 </View>
                                 <View className="flex-1">
-                                    <Text className="paragraph-semibold text-dark-100">{item.label}</Text>
-                                    <Text className="body-medium text-dark-60">{item.description}</Text>
+                                    <Text className="paragraph-semibold text-dark-100" style={ui.accountLabel}>{item.label}</Text>
+                                    <Text className="body-medium text-dark-60" style={ui.accountDesc}>{item.description}</Text>
                                 </View>
                             </TouchableOpacity>
                         ))}
@@ -387,8 +649,8 @@ const Profile = () => {
 
             {/* EDIT PROFILE — database (updateUserProfile + whatsapp), design modal */}
             <Modal transparent animationType="fade" visible={isEditingProfile} onRequestClose={() => setIsEditingProfile(false)}>
-                <View className="flex-1 bg-black/40 justify-center px-5">
-                    <View className="bg-white rounded-3xl overflow-hidden shadow-2xl">
+                <View className="flex-1 bg-black/40 justify-center px-5" style={ui.editModalOverlay}>
+                    <View className="bg-white rounded-3xl overflow-hidden shadow-2xl" style={ui.editModalCard}>
                         <LinearGradient
                             colors={["#0B1220", "#0E1A36"]}
                             start={{ x: 0, y: 0 }}
@@ -396,27 +658,38 @@ const Profile = () => {
                             style={{ padding: 20, flexDirection: "row", alignItems: "center", gap: 12 }}
                         >
                             <View className="flex-1 gap-1">
-                                <Text className="text-white/60 tracking-[5px] uppercase text-[11px]">{t("profile.header.edit")}</Text>
-                                <Text className="text-white text-2xl font-ezra-bold leading-7">{t("profileExtras.editModal.title")}</Text>
-                                <Text className="body-medium text-white/75">{t("profileExtras.editModal.subtitle")}</Text>
+                                <Text className="text-white/60 tracking-[5px] uppercase text-[11px]" style={ui.editHeaderKicker}>
+                                    {t("profile.header.edit")}
+                                </Text>
+                                <Text className="text-white text-2xl font-ezra-bold leading-7" style={ui.editHeaderTitle}>
+                                    {t("profileExtras.editModal.title")}
+                                </Text>
+                                <Text className="body-medium text-white/75" style={ui.editHeaderSubtitle}>
+                                    {t("profileExtras.editModal.subtitle")}
+                                </Text>
                             </View>
-                            <GodzillaFishing width={120} height={120} />
+                            {EditHeaderIllustration ? (
+                                <View style={ui.editHeaderImageWrap}>
+                                    <EditHeaderIllustration width={96} height={96} />
+                                </View>
+                            ) : null}
                         </LinearGradient>
 
-                        <View className="p-5 gap-4 bg-white">
+                        <View className="p-5 gap-4 bg-white" style={ui.editModalBody}>
                             <View className="gap-2">
-                                <Text className="paragraph-semibold text-dark-80">{t("profileExtras.editModal.name")}</Text>
+                                <Text className="paragraph-semibold text-dark-80" style={ui.editFieldLabel}>{t("profileExtras.editModal.name")}</Text>
                                 <TextInput
                                     value={nameDraft}
                                     onChangeText={setNameDraft}
                                     placeholder={t("profileExtras.editModal.namePlaceholder")}
                                     placeholderTextColor="#94A3B8"
                                     className="rounded-2xl border border-gray-200 px-4 py-3 text-dark-100"
+                                    style={ui.editFieldInput}
                                 />
                             </View>
 
                             <View className="gap-2">
-                                <Text className="paragraph-semibold text-dark-80">{t("profileExtras.editModal.email")}</Text>
+                                <Text className="paragraph-semibold text-dark-80" style={ui.editFieldLabel}>{t("profileExtras.editModal.email")}</Text>
                                 <TextInput
                                     value={emailDraft}
                                     editable={false}
@@ -425,11 +698,14 @@ const Profile = () => {
                                     placeholder={t("profileExtras.editModal.emailPlaceholder")}
                                     placeholderTextColor="#94A3B8"
                                     className="rounded-2xl border border-gray-200 px-4 py-3 text-dark-100"
+                                    style={[ui.editFieldInput, { backgroundColor: "#F8FAFC" }]}
                                 />
                             </View>
 
                             <View className="gap-2">
-                                <Text className="paragraph-semibold text-dark-80">{t("profileExtras.editModal.whatsapp", "WhatsApp")}</Text>
+                                <Text className="paragraph-semibold text-dark-80" style={ui.editFieldLabel}>
+                                    {t("profileExtras.editModal.whatsapp", "WhatsApp")}
+                                </Text>
                                 <TextInput
                                     value={whatsappDraft}
                                     onChangeText={setWhatsappDraft}
@@ -437,24 +713,26 @@ const Profile = () => {
                                     placeholder={t("profileExtras.editModal.whatsappPlaceholder", "Enter WhatsApp number")}
                                     placeholderTextColor="#94A3B8"
                                     className="rounded-2xl border border-gray-200 px-4 py-3 text-dark-100"
+                                    style={ui.editFieldInput}
                                 />
                             </View>
 
-                            <View className="flex-row gap-3 mt-2">
+                            <View className="flex-row gap-3 mt-2" style={ui.editActionsRow}>
                                 <TouchableOpacity
-                                    className="flex-1 rounded-full border border-gray-200 py-3 items-center"
+                                    style={ui.editCancelBtn}
                                     onPress={() => setIsEditingProfile(false)}
                                 >
-                                    <Text className="paragraph-semibold text-dark-60">{t("profileExtras.editModal.cancel")}</Text>
+                                    <Text className="paragraph-semibold text-dark-60" style={ui.editCancelText}>
+                                        {t("profileExtras.editModal.cancel")}
+                                    </Text>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
-                                    className="flex-1 rounded-full bg-primary py-3 items-center"
+                                    style={[ui.editSaveBtn, { opacity: savingProfile ? 0.7 : 1 }]}
                                     onPress={handleSaveProfile}
                                     disabled={savingProfile}
-                                    style={{ opacity: savingProfile ? 0.7 : 1 }}
                                 >
-                                    <Text className="paragraph-semibold text-white">
+                                    <Text className="paragraph-semibold text-white" style={ui.editSaveText}>
                                         {savingProfile ? t("profile.header.saving", "Saving...") : t("profileExtras.editModal.save")}
                                     </Text>
                                 </TouchableOpacity>
@@ -487,6 +765,118 @@ const defaultPrefs: NotificationPrefs = {
     messages: true,
     reviewReplies: true,
 };
+const notificationUi = StyleSheet.create({
+    backdrop: {
+        flex: 1,
+        backgroundColor: "rgba(0, 0, 0, 0.3)",
+        justifyContent: "flex-end",
+    },
+    dismissArea: {
+        flex: 1,
+    },
+    sheet: {
+        backgroundColor: "#FFFFFF",
+        borderTopLeftRadius: 32,
+        borderTopRightRadius: 32,
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        paddingBottom: 24,
+        rowGap: 20,
+    },
+    dragHandle: {
+        height: 4,
+        width: 64,
+        borderRadius: 999,
+        backgroundColor: "#E5E7EB",
+        alignSelf: "center",
+    },
+    heroRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        columnGap: 12,
+    },
+    heroImage: {
+        width: 56,
+        height: 56,
+        borderRadius: 16,
+    },
+    title: {
+        fontSize: 22,
+        lineHeight: 28,
+        color: "#111827",
+        fontFamily: "ChairoSans-Bold",
+    },
+    subtitle: {
+        marginTop: 2,
+        fontSize: 14,
+        lineHeight: 20,
+        color: "#6B7280",
+        fontFamily: "ChairoSans",
+    },
+    permissionError: {
+        marginTop: 4,
+        fontSize: 12,
+        lineHeight: 16,
+        color: "#EF4444",
+        fontFamily: "ChairoSans",
+    },
+    permissionHint: {
+        marginTop: 4,
+        fontSize: 12,
+        lineHeight: 16,
+        color: "#94A3B8",
+        fontFamily: "ChairoSans",
+    },
+    rows: {
+        rowGap: 8,
+    },
+    rowButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        backgroundColor: "#F8FAFC",
+        borderWidth: 1,
+        borderColor: "#E5E7EB",
+        borderRadius: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+    },
+    rowLabel: {
+        flex: 1,
+        paddingRight: 12,
+        fontSize: 16,
+        lineHeight: 22,
+        color: "#111827",
+        fontFamily: "ChairoSans-SemiBold",
+    },
+    toggleTrack: {
+        width: 50,
+        height: 30,
+        borderRadius: 999,
+        padding: 4,
+        justifyContent: "center",
+    },
+    toggleThumb: {
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        backgroundColor: "#FFFFFF",
+    },
+    saveButton: {
+        borderRadius: 999,
+        backgroundColor: "#FE8C00",
+        minHeight: 52,
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 16,
+    },
+    saveButtonText: {
+        color: "#FFFFFF",
+        fontSize: 16,
+        lineHeight: 22,
+        fontFamily: "ChairoSans-SemiBold",
+    },
+});
 
 const NotificationPreferencesModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
     const { t } = useTranslation();
@@ -542,60 +932,56 @@ const NotificationPreferencesModal = ({ visible, onClose }: { visible: boolean; 
 
     return (
         <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
-            <TouchableOpacity className="flex-1 bg-black/30" activeOpacity={1} onPress={onClose} />
-            <View className="absolute left-0 right-0 bottom-0 bg-white rounded-t-[32px] p-5 gap-5">
-                <View className="h-1 w-16 bg-gray-200 rounded-full self-center" />
+            <View style={notificationUi.backdrop}>
+                <Pressable style={notificationUi.dismissArea} onPress={onClose} />
+                <View style={notificationUi.sheet}>
+                    <View style={notificationUi.dragHandle} />
 
-                <View className="flex-row items-center gap-3">
-                    <Image source={images.deliveryReview} className="w-14 h-14 rounded-2xl" contentFit="cover" />
+                    <View style={notificationUi.heroRow}>
+                        <Image source={images.deliveryReview} style={notificationUi.heroImage} contentFit="cover" />
                     <View style={{ flex: 1 }}>
-                        <Text className="text-xl font-ezra-bold text-dark-100">{t("cart.screen.notifications.title")}</Text>
-                        <Text className="body-medium text-dark-60">{t("cart.screen.notifications.subtitle")}</Text>
+                            <Text style={notificationUi.title}>{t("cart.screen.notifications.title")}</Text>
+                            <Text style={notificationUi.subtitle}>{t("cart.screen.notifications.subtitle")}</Text>
 
-                        {permissionGranted === false ? (
-                            <Text className="caption text-red-500 mt-1">{t("cart.screen.notifications.permissionDenied")}</Text>
-                        ) : null}
-                        {permissionGranted === null ? (
-                            <Text className="caption text-dark-40 mt-1">{t("cart.screen.notifications.permissionNeeded")}</Text>
-                        ) : null}
+                            {permissionGranted === false ? (
+                                <Text style={notificationUi.permissionError}>{t("cart.screen.notifications.permissionDenied")}</Text>
+                            ) : null}
+                            {permissionGranted === null ? (
+                                <Text style={notificationUi.permissionHint}>{t("cart.screen.notifications.permissionNeeded")}</Text>
+                            ) : null}
+                        </View>
                     </View>
+
+                    <View style={notificationUi.rows}>
+                        {rows.map((row) => (
+                            <TouchableOpacity key={row.key} style={notificationUi.rowButton} onPress={() => toggle(row.key)}>
+                                <Text style={notificationUi.rowLabel}>{row.label}</Text>
+
+                                <View
+                                    style={[
+                                        notificationUi.toggleTrack,
+                                        {
+                                            backgroundColor: prefs[row.key] ? theme.colors.primary : "#E2E8F0",
+                                            alignItems: prefs[row.key] ? "flex-end" : "flex-start",
+                                        },
+                                    ]}
+                                >
+                                    <View style={notificationUi.toggleThumb} />
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+
+                    <TouchableOpacity
+                        style={[notificationUi.saveButton, { opacity: loading ? 0.7 : 1 }]}
+                        disabled={loading}
+                        onPress={handleSave}
+                    >
+                        <Text style={notificationUi.saveButtonText}>
+                            {loading ? t("cart.screen.notifications.saving") : t("cart.screen.notifications.save")}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
-
-                <View className="gap-2">
-                    {rows.map((row) => (
-                        <TouchableOpacity
-                            key={row.key}
-                            className="flex-row items-center justify-between bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3"
-                            onPress={() => toggle(row.key)}
-                        >
-                            <Text className="paragraph-semibold text-dark-100">{row.label}</Text>
-
-                            <View
-                                style={{
-                                    width: 50,
-                                    height: 30,
-                                    borderRadius: 999,
-                                    backgroundColor: prefs[row.key] ? theme.colors.primary : "#E2E8F0",
-                                    alignItems: prefs[row.key] ? "flex-end" : "flex-start",
-                                    padding: 4,
-                                }}
-                            >
-                                <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: "#FFFFFF" }} />
-                            </View>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-
-                <TouchableOpacity
-                    className="custom-btn flex-row items-center justify-center"
-                    disabled={loading}
-                    style={{ opacity: loading ? 0.7 : 1 }}
-                    onPress={handleSave}
-                >
-                    <Text className="paragraph-semibold text-white">
-                        {loading ? t("cart.screen.notifications.saving") : t("cart.screen.notifications.save")}
-                    </Text>
-                </TouchableOpacity>
             </View>
         </Modal>
     );
@@ -607,10 +993,8 @@ const NotificationPreferencesModal = ({ visible, onClose }: { visible: boolean; 
 
 const OrderHistorySection = ({ orders }: { orders: any[] }) => {
     const { t } = useTranslation();
+    const router = useRouter();
     const HistoryIllustration = illustrations.foodieCelebration;
-
-    const [query, setQuery] = useState("");
-    const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
 
     const formatTimestamp = (value: any) => {
         if (!value) return "";
@@ -643,76 +1027,29 @@ const OrderHistorySection = ({ orders }: { orders: any[] }) => {
         }));
     };
 
-    const filtered = useMemo(() => {
+    const sortedOrders = useMemo(() => {
         return (orders || [])
-            .filter((order) => {
-                const name = (order.restaurant?.name || "").toLowerCase();
-                const matchesQuery = name.includes(query.toLowerCase());
-                const matchesStatus = statusFilter === "all" ? true : normalizeStatus(order.status) === statusFilter;
-                return matchesQuery && matchesStatus;
-            })
             .sort((a, b) => {
                 const da = getMillis(a.updatedAt || a.createdAt || 0);
                 const db = getMillis(b.updatedAt || b.createdAt || 0);
                 return db - da;
             });
-    }, [orders, query, statusFilter]);
-
-    const pills: Array<{ id: "all" | OrderStatus; label: string }> = [
-        { id: "all", label: t("orders.all", "All") },
-        { id: "preparing", label: t("status.preparing") },
-        { id: "ready", label: t("status.ready") },
-        { id: "out_for_delivery", label: t("status.out_for_delivery", t("status.ready")) },
-        { id: "delivered", label: t("status.delivered") },
-        { id: "canceled", label: t("status.canceled") },
-    ];
+    }, [orders]);
+    const recentOrders = useMemo(() => sortedOrders.slice(0, 2), [sortedOrders]);
 
     return (
-        <View className="secondary-card gap-4">
-            <View className="flex-row items-center justify-between">
+        <View className="secondary-card gap-4" style={ui.sectionCard}>
+            <View className="flex-row items-center justify-between" style={ui.rowBetween}>
                 <SectionHeader title={t("orders.historyTitle", "Sipariş Geçmişi")} />
                 <HistoryIllustration width={52} height={52} />
             </View>
 
-            <View className="rounded-full border border-gray-200 px-4 py-2 bg-white">
-                <TextInput
-                    placeholder={t("orders.searchPlaceholder", "Restoran adıyla ara")}
-                    placeholderTextColor="#94A3B8"
-                    value={query}
-                    onChangeText={setQuery}
-                    className="body-medium text-dark-100"
-                />
-            </View>
-
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                {pills.map((pill) => {
-                    const active = statusFilter === pill.id;
-                    return (
-                        <TouchableOpacity
-                            key={pill.id}
-                            onPress={() => setStatusFilter(pill.id)}
-                            style={{
-                                paddingHorizontal: 14,
-                                paddingVertical: 8,
-                                borderRadius: 999,
-                                borderWidth: 1,
-                                borderColor: active ? ORANGE : "#E2E8F0",
-                                backgroundColor: active ? "#FFF5E9" : "#FFFFFF",
-                            }}
-                        >
-                            <Text className="paragraph-semibold" style={{ color: active ? ORANGE : "#475569" }}>
-                                {pill.label}
-                            </Text>
-                        </TouchableOpacity>
-                    );
-                })}
-            </ScrollView>
-
             <View className="gap-3">
-                {filtered.map((order) => {
+                {recentOrders.map((order) => {
                     const normStatus = normalizeStatus(order.status);
                     const badge = ORDER_STATUS_COLORS[normStatus];
                     const label = ORDER_STATUS_LABELS[normStatus] || t(`status.${normStatus}` as const);
+                    const orderIdText = `#${String(order.id ?? "-")}`;
 
                     const items = resolveItems(order);
                     const summary = items.length ? items.map((it) => `${it.quantity}x ${it.name}`).join(" • ") : null;
@@ -721,12 +1058,18 @@ const OrderHistorySection = ({ orders }: { orders: any[] }) => {
                         <View
                             key={order.id}
                             className="bg-white rounded-3xl border border-gray-100 p-4"
-                            style={makeShadow({ color: "#0F172A", offsetY: 6, blurRadius: 12, opacity: 0.05, elevation: 3 })}
+                            style={[
+                                ui.orderItemCard,
+                                makeShadow({ color: "#0F172A", offsetY: 6, blurRadius: 12, opacity: 0.05, elevation: 3 }),
+                            ]}
                         >
-                            <View className="flex-row justify-between items-center">
-                                <Text className="paragraph-semibold text-dark-100">
-                                    {order.restaurant?.name || t("orders.unknownRestaurant", "Hungrie Order")}
-                                </Text>
+                            <View className="flex-row justify-between items-center" style={ui.rowBetween}>
+                                <View style={{ flex: 1, paddingRight: 10 }}>
+                                    <Text className="paragraph-semibold text-dark-100">
+                                        {resolveRestaurantName(order) || t("orders.unknownRestaurant", "Restaurant")}
+                                    </Text>
+                                    <Text className="caption text-dark-40 mt-1">Order ID: {orderIdText}</Text>
+                                </View>
 
                                 <View className="px-3 py-1 rounded-full flex-row items-center gap-2" style={{ backgroundColor: badge.bg }}>
                                     <View className="size-2 rounded-full" style={{ backgroundColor: badge.dot }} />
@@ -754,8 +1097,27 @@ const OrderHistorySection = ({ orders }: { orders: any[] }) => {
                     );
                 })}
 
-                {!filtered.length ? (
+                {!sortedOrders.length ? (
                     <Text className="body-medium text-dark-60">{t("orders.emptyHistory", "Hiç sipariş bulunamadı.")}</Text>
+                ) : null}
+                {sortedOrders.length > 2 ? (
+                    <TouchableOpacity
+                        onPress={() => router.push("/orders")}
+                        style={{
+                            marginTop: 4,
+                            alignSelf: "center",
+                            paddingHorizontal: 16,
+                            paddingVertical: 10,
+                            borderRadius: 999,
+                            borderWidth: 1,
+                            borderColor: "#E2E8F0",
+                            backgroundColor: "#FFFFFF",
+                        }}
+                    >
+                        <Text className="paragraph-semibold text-primary">
+                            {t("orders.viewAll", "Tüm siparişleri gör")}
+                        </Text>
+                    </TouchableOpacity>
                 ) : null}
             </View>
         </View>

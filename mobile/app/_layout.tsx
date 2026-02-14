@@ -10,7 +10,7 @@ import useAuthStore from "@/store/auth.store";
 import { ThemeProvider } from "@/src/theme/themeContext";
 import "@/src/lib/i18n";
 import "./globals.css";
-import { NotificationManager } from "@/src/features/notifications/NotificationManager";
+import { isRemotePushSupported, NotificationManager } from "@/src/features/notifications/NotificationManager";
 import { registerTokenWithBackend } from "@/src/features/notifications/push";
 import CartLockNotice from "@/components/CartLockNotice";
 
@@ -60,6 +60,7 @@ function RootLayoutBase() {
 
     useEffect(() => {
         if (!isAuthenticated) return;
+        if (!isRemotePushSupported()) return;
         let cancelled = false;
 
         const registerPush = async () => {
@@ -88,12 +89,12 @@ function RootLayoutBase() {
     }, [isAuthenticated, user]);
 
     useEffect(() => {
-        if (!fontsLoaded) return;
+        if (!fontsLoaded || isLoading) return;
 
         applyDefaultFont(Text);
         applyDefaultFont(TextInput);
         SplashScreen.hideAsync().catch(() => null);
-    }, [fontsLoaded]);
+    }, [fontsLoaded, isLoading]);
 
     if (error) throw error;
     if (!fontsLoaded || isLoading) return null;

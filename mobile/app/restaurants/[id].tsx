@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Platform, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
+import { Animated, Platform, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -129,8 +129,34 @@ const CardPress = ({ children, onPress, style }: { children: ReactNode; onPress?
     </Pressable>
 );
 
-const MenuList = ({ items, addLabel, restaurantId }: { items: MenuEntry[]; addLabel: string; restaurantId: string }) => {
+const MenuList = ({
+    items,
+    addLabel,
+    restaurantId,
+    onAdded,
+}: {
+    items: MenuEntry[];
+    addLabel: string;
+    restaurantId: string;
+    onAdded?: (itemName: string) => void;
+}) => {
     const { addItem } = useCartStore();
+    const handleAddToCart = (item: MenuEntry) => {
+        const before = useCartStore.getState().getTotalItems();
+        addItem({
+            id: String(item.id),
+            name: item.name,
+            price: Number(item.price || 0),
+            image_url: "",
+            restaurantId: restaurantId || item.restaurantId,
+            customizations: [],
+        });
+        const after = useCartStore.getState().getTotalItems();
+        if (after > before) {
+            onAdded?.(item.name);
+        }
+    };
+
     if (!items.length) return null;
 
     return (
@@ -156,16 +182,7 @@ const MenuList = ({ items, addLabel, restaurantId }: { items: MenuEntry[]; addLa
                         <View style={styles.menuBottomRow}>
                             <View style={{ flex: 1 }} />
                             <Pressable
-                                onPress={() =>
-                                    addItem({
-                                        id: String(item.id),
-                                        name: item.name,
-                                        price: Number(item.price || 0),
-                                        image_url: "",
-                                        restaurantId: restaurantId || item.restaurantId,
-                                        customizations: [],
-                                    })
-                                }
+                                onPress={() => handleAddToCart(item)}
                                 style={({ pressed }) => [
                                     styles.addPill,
                                     pressed ? { transform: [{ scale: 0.985 }], opacity: 0.96 } : null,
@@ -288,6 +305,11 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
     const cartCount = cartItems.reduce((acc, it) => acc + it.quantity, 0);
 
     const scrollRef = useRef<ScrollView>(null);
+    const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [addedToastVisible, setAddedToastVisible] = useState(false);
+    const [addedToastText, setAddedToastText] = useState("");
+    const toastOpacity = useRef(new Animated.Value(0)).current;
+    const toastScale = useRef(new Animated.Value(0.98)).current;
 
     const onSelectCategory = (key: string) => {
         setActiveCategory(key);
@@ -295,6 +317,28 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
             scrollRef.current?.scrollTo({ y: 0, animated: true });
         });
     };
+    const showAddedToast = (itemName: string) => {
+        setAddedToastText(itemName);
+        setAddedToastVisible(true);
+        Animated.parallel([
+            Animated.timing(toastOpacity, { toValue: 1, duration: 170, useNativeDriver: true }),
+            Animated.timing(toastScale, { toValue: 1, duration: 170, useNativeDriver: true }),
+        ]).start();
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+        toastTimerRef.current = setTimeout(() => {
+            Animated.parallel([
+                Animated.timing(toastOpacity, { toValue: 0, duration: 220, useNativeDriver: true }),
+                Animated.timing(toastScale, { toValue: 0.98, duration: 220, useNativeDriver: true }),
+            ]).start(() => setAddedToastVisible(false));
+        }, 1100);
+    };
+
+    useEffect(
+        () => () => {
+            if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+        },
+        [],
+    );
 
     const heroSource = getRestaurantImageSource(restaurant?.imageUrl || restaurant?.image_url);
     const phoneLabel = restaurant?.phone || "(+90) 000 000 00 00";
@@ -418,6 +462,7 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
                                 items={activeItems}
                                 addLabel={t("restaurantUi.addToCart")}
                                 restaurantId={restaurantId}
+                                onAdded={showAddedToast}
                             />
                         </View>
                     </View>
@@ -459,6 +504,20 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
                         <Text style={styles.cartFabText}>{t("restaurantUi.cart", { count: cartCount })}</Text>
                     </LinearGradient>
                 </Pressable>
+
+                {addedToastVisible ? (
+                    <View pointerEvents="none" style={styles.toastOverlay}>
+                        <Animated.View style={[styles.toastCard, { opacity: toastOpacity, transform: [{ scale: toastScale }] }]}>
+                            <View style={styles.toastIconWrap}>
+                                <Icon name="check" size={16} color="#FFFFFF" />
+                            </View>
+                            <Text style={styles.toastTitle}>Added to cart</Text>
+                            <Text style={styles.toastBody} numberOfLines={1}>
+                                {addedToastText}
+                            </Text>
+                        </Animated.View>
+                    </View>
+                ) : null}
             </LinearGradient>
         </SafeAreaView>
     );
@@ -657,4 +716,45 @@ const styles = StyleSheet.create({
         borderColor: "rgba(255,255,255,0.22)",
     },
     cartFabText: { fontFamily: "ChairoSans", fontSize: 14, color: THEME.ink },
+    toastOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    toastCard: {
+        minWidth: 220,
+        maxWidth: "78%",
+        borderRadius: 18,
+        backgroundColor: "rgba(255,255,255,0.92)",
+        borderWidth: 1,
+        borderColor: "rgba(36,20,14,0.12)",
+        alignItems: "center",
+        paddingHorizontal: 18,
+        paddingVertical: 16,
+        shadowColor: "#000",
+        shadowOpacity: 0.14,
+        shadowOffset: { width: 0, height: 8 },
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    toastIconWrap: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        backgroundColor: "#16A34A",
+        alignItems: "center",
+        justifyContent: "center",
+        marginBottom: 8,
+    },
+    toastTitle: {
+        fontFamily: "ChairoSans",
+        fontSize: 16,
+        color: THEME.ink,
+    },
+    toastBody: {
+        marginTop: 2,
+        fontFamily: "ChairoSans",
+        fontSize: 13,
+        color: THEME.muted,
+    },
 });

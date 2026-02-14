@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import {
     Alert,
+    Keyboard,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    StyleSheet,
     Switch,
     Text,
     TextInput,
@@ -11,6 +13,7 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "react-i18next";
@@ -46,6 +49,7 @@ const buildInitialState = (options: { editing?: Partial<FormState>; defaultIsDef
 });
 
 const AddressFormScreen = () => {
+    const insets = useSafeAreaInsets();
     const navigation = useNavigation<AddressFormNavigation>();
     const route = useRoute<AddressFormScreenProps["route"]>();
     const { addresses } = useAddresses();
@@ -61,6 +65,7 @@ const AddressFormScreen = () => {
         }),
     );
     const [errors, setErrors] = useState<FormErrors>({});
+    const [keyboardVisible, setKeyboardVisible] = useState(false);
 
     useEffect(() => {
         setForm(
@@ -70,6 +75,17 @@ const AddressFormScreen = () => {
             }),
         );
     }, [editingAddress, addresses.length]);
+
+    useEffect(() => {
+        const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+        const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+        const showSub = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
+        const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
+        return () => {
+            showSub.remove();
+            hideSub.remove();
+        };
+    }, []);
 
     const handleChange = (field: keyof FormState, value: string | boolean) => {
         setForm((prev) => ({
@@ -117,31 +133,31 @@ const AddressFormScreen = () => {
         keyboardType: "default" | "numeric" | "email-address" = "default",
         placeholderColor = "#94A3B8",
     ) => (
-        <View className="gap-2">
-            <Text className="paragraph-semibold text-dark-100">{label}</Text>
+        <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>{label}</Text>
             <TextInput
                 value={form[field] as string}
                 onChangeText={(text) => handleChange(field, text)}
                 placeholder={placeholder}
                 keyboardType={keyboardType}
-                className="bg-gray-50 rounded-2xl px-4 py-3.5 border border-gray-200 text-dark-100"
+                style={styles.fieldInput}
                 placeholderTextColor={placeholderColor}
                 autoCapitalize="words"
             />
-            {errors[field] ? <Text className="caption text-red-500">{errors[field]}</Text> : null}
+            {errors[field] ? <Text style={styles.fieldError}>{errors[field]}</Text> : null}
         </View>
     );
 
     return (
-        <SafeAreaView className="flex-1 bg-[#0B1220]">
+        <SafeAreaView style={styles.screen}>
             <KeyboardAvoidingView
-                className="flex-1"
+                style={styles.flex1}
                 behavior={Platform.select({ ios: "padding", android: undefined })}
-                keyboardVerticalOffset={80}
+                keyboardVerticalOffset={0}
             >
                 <ScrollView
-                    className="flex-1"
-                    contentContainerStyle={{ paddingBottom: 72 }}
+                    style={styles.flex1}
+                    contentContainerStyle={{ paddingBottom: 24 }}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
@@ -149,17 +165,11 @@ const AddressFormScreen = () => {
                         colors={["#0B1220", "#0E1A36"]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0.6 }}
-                        style={{
-                            paddingHorizontal: 20,
-                            paddingTop: 24,
-                            paddingBottom: 120,
-                            borderBottomLeftRadius: 32,
-                            borderBottomRightRadius: 32,
-                        }}
+                        style={styles.hero}
                     >
-                        <View className="flex-row items-start gap-4">
+                        <View style={styles.heroRow}>
                             <TouchableOpacity
-                                className="size-10 rounded-full bg-white/10 items-center justify-center border border-white/25"
+                                style={styles.backButton}
                                 onPress={() => navigation.goBack()}
                                 accessibilityRole="button"
                                 accessibilityLabel={t("common.goBack")}
@@ -167,26 +177,24 @@ const AddressFormScreen = () => {
                                 <Icon name="arrowBack" size={18} color="#FFFFFF" />
                             </TouchableOpacity>
 
-                    <View className="flex-1 gap-1.5">
-                        <Text className="text-white/60 tracking-[6px] uppercase text-[11px]">{screenTitle}</Text>
-                        <Text className="text-white text-3xl font-ezra-bold leading-9">
-                            {t("address.form.heroTitle")}
-                        </Text>
-                        <Text className="text-white/75 body-medium">{t("address.form.heroSubtitle")}</Text>
-                    </View>
-
-                    <OnlineLocation width={140} height={140} style={{ opacity: 0.95, marginTop: -10 }} />
-                </View>
-            </LinearGradient>
-
-                    <View className="-mt-14 px-5 pb-4">
-                        <View className="bg-white rounded-3xl p-5 gap-6 shadow-xl shadow-primary/10 border border-gray-100">
-                            <View className="gap-1">
-                                <Text className="h4-bold text-dark-100">{t("address.form.sectionTitle")}</Text>
-                                <Text className="body-medium text-dark-60">{t("address.form.sectionSubtitle")}</Text>
+                            <View style={styles.heroContent}>
+                                <Text style={styles.heroEyebrow}>{screenTitle}</Text>
+                                <Text style={styles.heroTitle}>{t("address.form.heroTitle")}</Text>
+                                <Text style={styles.heroSubtitle}>{t("address.form.heroSubtitle")}</Text>
                             </View>
 
-                            <View className="gap-5">
+                            <OnlineLocation width={140} height={140} style={styles.heroImage} />
+                        </View>
+                    </LinearGradient>
+
+                    <View style={styles.formContainer}>
+                        <View style={styles.formCard}>
+                            <View style={styles.formHeading}>
+                                <Text style={styles.formTitle}>{t("address.form.sectionTitle")}</Text>
+                                <Text style={styles.formSubtitle}>{t("address.form.sectionSubtitle")}</Text>
+                            </View>
+
+                            <View style={styles.fieldsStack}>
                                 {renderField(
                                     t("address.form.fields.label"),
                                     "label",
@@ -216,10 +224,10 @@ const AddressFormScreen = () => {
                                 )}
                             </View>
 
-                            <View className="flex-row items-center justify-between bg-gray-50 rounded-2xl px-4 py-4 border border-gray-200">
-                                <View className="flex-1 pr-4">
-                                    <Text className="paragraph-semibold text-dark-100">{t("address.form.makeDefault")}</Text>
-                                    <Text className="body-medium text-dark-60">{t("address.form.makeDefaultHint")}</Text>
+                            <View style={styles.defaultCard}>
+                                <View style={styles.defaultContent}>
+                                    <Text style={styles.defaultTitle}>{t("address.form.makeDefault")}</Text>
+                                    <Text style={styles.defaultHint}>{t("address.form.makeDefaultHint")}</Text>
                                 </View>
                                 <Switch
                                     value={form.isDefault}
@@ -232,15 +240,19 @@ const AddressFormScreen = () => {
                     </View>
                 </ScrollView>
 
-                <View className="px-6 pb-8">
+                <View
+                    style={[
+                        styles.footer,
+                        { paddingBottom: keyboardVisible ? 8 : Math.max(insets.bottom + 8, 16) },
+                    ]}
+                >
                     <TouchableOpacity
                         disabled={isMutating}
-                        className={`rounded-full py-4 items-center shadow-lg shadow-primary/30 ${isMutating ? "bg-gray-300" : "bg-primary"
-                            }`}
+                        style={[styles.saveButton, isMutating ? styles.saveButtonDisabled : styles.saveButtonEnabled]}
                         onPress={handleSubmit}
                         activeOpacity={0.9}
                     >
-                        <Text className="paragraph-semibold text-white">
+                        <Text style={styles.saveButtonText}>
                             {isMutating ? t("address.form.saving") : t("address.form.save")}
                         </Text>
                     </TouchableOpacity>
@@ -249,5 +261,183 @@ const AddressFormScreen = () => {
         </SafeAreaView>
     );
 };
+
+const styles = StyleSheet.create({
+    screen: {
+        flex: 1,
+        backgroundColor: "#0B1220",
+    },
+    flex1: {
+        flex: 1,
+    },
+    hero: {
+        paddingHorizontal: 20,
+        paddingTop: 18,
+        paddingBottom: 86,
+        borderBottomLeftRadius: 28,
+        borderBottomRightRadius: 28,
+    },
+    heroRow: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        columnGap: 16,
+    },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: "rgba(255, 255, 255, 0.1)",
+        borderWidth: 1,
+        borderColor: "rgba(255, 255, 255, 0.25)",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    heroContent: {
+        flex: 1,
+        rowGap: 6,
+    },
+    heroEyebrow: {
+        color: "rgba(255, 255, 255, 0.6)",
+        letterSpacing: 3.5,
+        textTransform: "uppercase",
+        fontSize: 11,
+        lineHeight: 14,
+        fontFamily: "ChairoSans-SemiBold",
+    },
+    heroTitle: {
+        color: "#FFFFFF",
+        fontSize: 30,
+        lineHeight: 36,
+        fontFamily: "ChairoSans-Bold",
+    },
+    heroSubtitle: {
+        color: "rgba(255, 255, 255, 0.75)",
+        fontSize: 15,
+        lineHeight: 22,
+        fontFamily: "ChairoSans",
+    },
+    heroImage: {
+        opacity: 0.95,
+        marginTop: -10,
+    },
+    formContainer: {
+        marginTop: -40,
+        paddingHorizontal: 20,
+        paddingBottom: 16,
+    },
+    formCard: {
+        backgroundColor: "#FFFFFF",
+        borderRadius: 24,
+        padding: 20,
+        borderWidth: 1,
+        borderColor: "#E5E7EB",
+        rowGap: 24,
+        shadowColor: "#FE8C00",
+        shadowOpacity: 0.1,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 6 },
+        elevation: 3,
+    },
+    formHeading: {
+        rowGap: 4,
+    },
+    formTitle: {
+        fontSize: 22,
+        lineHeight: 28,
+        color: "#111827",
+        fontFamily: "ChairoSans-Bold",
+    },
+    formSubtitle: {
+        fontSize: 15,
+        lineHeight: 22,
+        color: "#6B7280",
+        fontFamily: "ChairoSans",
+    },
+    fieldsStack: {
+        rowGap: 20,
+    },
+    fieldGroup: {
+        rowGap: 8,
+    },
+    fieldLabel: {
+        fontSize: 16,
+        lineHeight: 22,
+        color: "#111827",
+        fontFamily: "ChairoSans-SemiBold",
+    },
+    fieldInput: {
+        backgroundColor: "#F8FAFC",
+        borderRadius: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        borderWidth: 1,
+        borderColor: "#E5E7EB",
+        color: "#111827",
+        fontSize: 16,
+        lineHeight: 22,
+        fontFamily: "ChairoSans",
+    },
+    fieldError: {
+        fontSize: 12,
+        lineHeight: 16,
+        color: "#EF4444",
+        fontFamily: "ChairoSans",
+    },
+    defaultCard: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        backgroundColor: "#F8FAFC",
+        borderRadius: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 16,
+        borderWidth: 1,
+        borderColor: "#E5E7EB",
+    },
+    defaultContent: {
+        flex: 1,
+        paddingRight: 16,
+    },
+    defaultTitle: {
+        fontSize: 16,
+        lineHeight: 22,
+        color: "#111827",
+        fontFamily: "ChairoSans-SemiBold",
+    },
+    defaultHint: {
+        marginTop: 2,
+        fontSize: 14,
+        lineHeight: 20,
+        color: "#6B7280",
+        fontFamily: "ChairoSans",
+    },
+    footer: {
+        paddingHorizontal: 24,
+        paddingTop: 8,
+    },
+    saveButton: {
+        borderRadius: 999,
+        paddingVertical: 16,
+        alignItems: "center",
+        justifyContent: "center",
+        shadowColor: "#FE8C00",
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 4,
+    },
+    saveButtonEnabled: {
+        backgroundColor: "#FE8C00",
+    },
+    saveButtonDisabled: {
+        backgroundColor: "#D1D5DB",
+    },
+    saveButtonText: {
+        color: "#FFFFFF",
+        fontSize: 16,
+        lineHeight: 22,
+        fontFamily: "ChairoSans-SemiBold",
+    },
+});
 
 export default AddressFormScreen;

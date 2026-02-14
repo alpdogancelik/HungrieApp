@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { DeviceEventEmitter, FlatList, Modal, Pressable, Text, TouchableOpacity, View } from "react-native";
+import { DeviceEventEmitter, FlatList, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import cn from "clsx";
 import type { Address } from "@/src/domain/types";
 import { addressStore } from "@/src/features/address/addressStore";
 import { useDefaultAddress } from "@/src/features/address/hooks";
@@ -45,29 +44,20 @@ const DeliverToHeader = () => {
         ({ item }: { item: Address }) => {
             const isSelected = item.id === selectedId;
             return (
-                <Pressable
-                    onPress={() => setSelectedId(item.id)}
-                    className={cn(
-                        "flex-row items-center gap-3 px-4 py-3 rounded-3xl border mb-3",
-                        isSelected ? "border-primary bg-primary/5" : "border-gray-100 bg-white",
-                    )}
-                >
-                    <View className="flex-1">
-                        <Text className="paragraph-semibold text-dark-100">{item.label}</Text>
-                        <Text className="body-medium text-dark-60" numberOfLines={1}>
+                <Pressable onPress={() => setSelectedId(item.id)} style={[styles.addressItem, isSelected ? styles.addressItemSelected : styles.addressItemIdle]}>
+                    <View style={styles.addressItemContent}>
+                        <Text style={styles.addressLabel}>{item.label}</Text>
+                        <Text style={styles.addressLine} numberOfLines={1}>
                             {renderAddressLine(item)}
                         </Text>
                         {renderAddressDetail(item) ? (
-                            <Text className="caption text-dark-40" numberOfLines={1}>
+                            <Text style={styles.addressDetail} numberOfLines={1}>
                                 {renderAddressDetail(item)}
                             </Text>
                         ) : null}
                     </View>
-                    <View
-                        className="size-5 rounded-full border-2 items-center justify-center"
-                        style={{ borderColor: isSelected ? "#FE8C00" : "#CBD5F5" }}
-                    >
-                        {isSelected ? <View className="size-3 rounded-full bg-primary" /> : null}
+                    <View style={[styles.radioOuter, { borderColor: isSelected ? "#FE8C00" : "#CBD5E1" }]}>
+                        {isSelected ? <View style={styles.radioInner} /> : null}
                     </View>
                 </Pressable>
             );
@@ -81,20 +71,21 @@ const DeliverToHeader = () => {
 
     return (
         <>
-            <Pressable className="gap-1" onPress={() => setSheetVisible(true)}>
-                <Text className="text-xs font-ezra-bold tracking-[2px] text-primary">
+            <Pressable style={styles.headerTrigger} onPress={() => setSheetVisible(true)}>
+                <Text style={styles.headerEyebrow}>
                     {t("deliverTo.eyebrow").toUpperCase()}
                 </Text>
-                <Text className="body-medium text-dark-60" numberOfLines={1}>
+                <Text style={styles.headerSubtitle} numberOfLines={1}>
                     {headerSubtitle}
                 </Text>
             </Pressable>
 
             <Modal visible={sheetVisible} transparent animationType="slide" onRequestClose={() => setSheetVisible(false)}>
-                <Pressable className="flex-1 bg-black/40" onPress={() => setSheetVisible(false)} />
-                <View className="bg-white rounded-t-[32px] p-5 gap-4 max-h-[75%]">
-                    <View className="h-1 w-16 bg-gray-200 rounded-full self-center" />
-                    <Text className="h4-bold text-dark-100">{t("deliverTo.modalTitle")}</Text>
+                <View style={styles.modalBackdrop}>
+                    <Pressable style={styles.modalDismissArea} onPress={() => setSheetVisible(false)} />
+                    <View style={styles.modalSheet}>
+                        <View style={styles.modalHandle} />
+                        <Text style={styles.modalTitle}>{t("deliverTo.modalTitle")}</Text>
                     {addresses.length ? (
                         <FlatList
                             data={addresses}
@@ -103,34 +94,188 @@ const DeliverToHeader = () => {
                             contentContainerStyle={{ paddingBottom: 16 }}
                         />
                     ) : (
-                        <View className="py-10 items-center gap-2">
-                            <Text className="paragraph-semibold text-dark-80">{t("deliverTo.emptyTitle")}</Text>
-                            <Text className="body-medium text-dark-60 text-center">{t("deliverTo.emptySubtitle")}</Text>
+                        <View style={styles.emptyState}>
+                            <Text style={styles.emptyTitle}>{t("deliverTo.emptyTitle")}</Text>
+                            <Text style={styles.emptySubtitle}>{t("deliverTo.emptySubtitle")}</Text>
                         </View>
                     )}
-                    <View className="flex-row gap-3">
+                    <View style={styles.actionsRow}>
                         <TouchableOpacity
-                            className="flex-1 rounded-full border border-gray-200 py-3 items-center"
+                            style={styles.manageButton}
                             onPress={openManageAddresses}
                         >
-                            <Text className="paragraph-semibold text-dark-80">{t("deliverTo.manage")}</Text>
+                            <Text style={styles.manageButtonText}>{t("deliverTo.manage")}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             disabled={!selectedId}
-                            className={cn(
-                                "flex-1 rounded-full py-3 items-center",
-                                selectedId ? "bg-primary" : "bg-gray-200",
-                            )}
+                            style={[styles.useButton, selectedId ? styles.useButtonEnabled : styles.useButtonDisabled]}
                             onPress={handleUseAddress}
                         >
-                            <Text className="paragraph-semibold text-white">{t("deliverTo.useThis")}</Text>
+                            <Text style={styles.useButtonText}>{t("deliverTo.useThis")}</Text>
                         </TouchableOpacity>
                     </View>
+                </View>
                 </View>
             </Modal>
         </>
     );
 };
 
-export default DeliverToHeader;
+const styles = StyleSheet.create({
+    headerTrigger: {
+        rowGap: 4,
+    },
+    headerEyebrow: {
+        fontSize: 12,
+        lineHeight: 16,
+        letterSpacing: 2,
+        color: "#FE8C00",
+        fontFamily: "ChairoSans-Bold",
+    },
+    headerSubtitle: {
+        fontSize: 14,
+        lineHeight: 20,
+        color: "#475569",
+        fontFamily: "ChairoSans",
+    },
+    modalBackdrop: {
+        flex: 1,
+        backgroundColor: "rgba(0, 0, 0, 0.4)",
+        justifyContent: "flex-end",
+    },
+    modalDismissArea: {
+        flex: 1,
+    },
+    modalSheet: {
+        maxHeight: "75%",
+        backgroundColor: "#FFFFFF",
+        borderTopLeftRadius: 32,
+        borderTopRightRadius: 32,
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        paddingBottom: 20,
+        rowGap: 16,
+    },
+    modalHandle: {
+        height: 4,
+        width: 64,
+        borderRadius: 999,
+        backgroundColor: "#E5E7EB",
+        alignSelf: "center",
+    },
+    modalTitle: {
+        fontSize: 20,
+        lineHeight: 24,
+        color: "#111827",
+        fontFamily: "ChairoSans-Bold",
+    },
+    addressItem: {
+        flexDirection: "row",
+        alignItems: "center",
+        columnGap: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderRadius: 24,
+        borderWidth: 1,
+        marginBottom: 12,
+    },
+    addressItemSelected: {
+        borderColor: "#FE8C00",
+        backgroundColor: "rgba(254, 140, 0, 0.05)",
+    },
+    addressItemIdle: {
+        borderColor: "#E5E7EB",
+        backgroundColor: "#FFFFFF",
+    },
+    addressItemContent: {
+        flex: 1,
+    },
+    addressLabel: {
+        fontSize: 16,
+        lineHeight: 22,
+        color: "#111827",
+        fontFamily: "ChairoSans-SemiBold",
+    },
+    addressLine: {
+        fontSize: 14,
+        lineHeight: 20,
+        color: "#4B5563",
+        fontFamily: "ChairoSans",
+    },
+    addressDetail: {
+        fontSize: 12,
+        lineHeight: 16,
+        color: "#94A3B8",
+        fontFamily: "ChairoSans",
+    },
+    radioOuter: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        borderWidth: 2,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    radioInner: {
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: "#FE8C00",
+    },
+    emptyState: {
+        paddingVertical: 40,
+        alignItems: "center",
+        rowGap: 8,
+    },
+    emptyTitle: {
+        fontSize: 16,
+        lineHeight: 22,
+        color: "#1F2937",
+        fontFamily: "ChairoSans-SemiBold",
+    },
+    emptySubtitle: {
+        fontSize: 14,
+        lineHeight: 20,
+        color: "#475569",
+        textAlign: "center",
+        fontFamily: "ChairoSans",
+    },
+    actionsRow: {
+        flexDirection: "row",
+        columnGap: 12,
+    },
+    manageButton: {
+        flex: 1,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: "#E5E7EB",
+        paddingVertical: 12,
+        alignItems: "center",
+    },
+    manageButtonText: {
+        fontSize: 16,
+        lineHeight: 22,
+        color: "#1F2937",
+        fontFamily: "ChairoSans-SemiBold",
+    },
+    useButton: {
+        flex: 1,
+        borderRadius: 999,
+        paddingVertical: 12,
+        alignItems: "center",
+    },
+    useButtonEnabled: {
+        backgroundColor: "#FE8C00",
+    },
+    useButtonDisabled: {
+        backgroundColor: "#E5E7EB",
+    },
+    useButtonText: {
+        fontSize: 16,
+        lineHeight: 22,
+        color: "#FFFFFF",
+        fontFamily: "ChairoSans-SemiBold",
+    },
+});
 
+export default DeliverToHeader;

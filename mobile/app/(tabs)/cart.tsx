@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { ActivityIndicator, Alert, FlatList, Text, TouchableOpacity, View, ScrollView } from "react-native";
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View, ScrollView } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "react-i18next";
 import { useCartStore } from "@/store/cart.store";
 import { images, illustrations } from "@/constants/mediaCatalog";
@@ -32,6 +33,89 @@ const MINIMUM_ORDER_TOTAL = 30;
 const TAB_BAR_HEIGHT = 80;
 const TAB_BAR_BOTTOM_OFFSET = 40;
 const EXTRA_BOTTOM_SPACE = 8;
+const styles = StyleSheet.create({
+    footer: { paddingLeft: 24, paddingRight: 14, paddingTop: 24, paddingBottom: 40, rowGap: 20 },
+    checkoutBtn: {
+        width: "100%",
+        borderRadius: 999,
+        backgroundColor: "#FE8C00",
+        minHeight: 54,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        columnGap: 12,
+        paddingHorizontal: 16,
+    },
+    checkoutText: { color: "#FFFFFF", fontSize: 16, fontFamily: "ChairoSans" },
+    restaurantName: { color: "#0F172A", fontSize: 18, fontFamily: "ChairoSans" },
+    emptyRoot: { flex: 1, backgroundColor: "#F8FAFC", alignItems: "center", justifyContent: "center", paddingHorizontal: 20 },
+    emptyTitle: { marginTop: 16, fontSize: 28, color: "#0F172A", fontFamily: "ChairoSans" },
+    emptySubtitle: { marginTop: 8, textAlign: "center", fontSize: 14, color: "#475569", fontFamily: "ChairoSans" },
+    emptyCta: { marginTop: 16, borderRadius: 999, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: "#FE8C00" },
+    heroCard: {
+        backgroundColor: "#FFFFFF",
+        borderRadius: 32,
+        borderWidth: 1,
+        borderColor: "#F3E4D7",
+        flexDirection: "row",
+        alignItems: "center",
+        columnGap: 16,
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+    },
+    headerRoot: { rowGap: 16 },
+    headerTop: { paddingLeft: 24, paddingRight: 14, paddingTop: 8, rowGap: 12 },
+    backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", alignItems: "center", justifyContent: "center" },
+    title: { fontSize: 40, color: "#0F172A", fontFamily: "ChairoSans" },
+    subtitle: { fontSize: 14, color: "#475569", fontFamily: "ChairoSans" },
+    listSeparator: { height: 16 },
+    screenBg: { flex: 1, backgroundColor: "#F8F6F2" },
+    drinkCard: {
+        borderRadius: 24,
+        overflow: "hidden",
+        borderWidth: 1,
+        borderColor: "#F3E4D7",
+        backgroundColor: "#FFFFFF",
+    },
+    drinkHeader: {
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: "#F3E4D7",
+    },
+    drinkHeaderTitle: { color: "#0F172A", fontSize: 18, fontFamily: "ChairoSans" },
+    drinkHeaderSubtitle: { color: "#475569", fontSize: 14, marginTop: 4, fontFamily: "ChairoSans" },
+    drinkLoadingWrap: {
+        borderRadius: 24,
+        overflow: "hidden",
+        borderWidth: 1,
+        borderColor: "#F3E4D7",
+        backgroundColor: "#FFFFFF",
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        alignItems: "center",
+    },
+    drinkListWrap: { backgroundColor: "#F3E4D7" },
+    drinkRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        backgroundColor: "#FFFFFF",
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+    },
+    drinkRowInfo: { flex: 1, rowGap: 4, paddingRight: 12 },
+    drinkName: { color: "#0F172A", fontSize: 16, fontFamily: "ChairoSans" },
+    drinkDesc: { color: "#475569", fontSize: 12, fontFamily: "ChairoSans" },
+    drinkPrice: { color: "#FE8C00", fontSize: 16, fontFamily: "ChairoSans" },
+    drinkAddBtn: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 999,
+        backgroundColor: "#FE8C00",
+    },
+    drinkAddBtnText: { color: "#FFFFFF", fontSize: 14, fontFamily: "ChairoSans" },
+});
 
 const getCartItemKey = (item: CartItemType) => {
     const customizationKey = (item.customizations ?? [])
@@ -123,7 +207,7 @@ const CartFooter = ({
     onPlaceOrder,
     drinkSuggestions,
 }: CartFooterProps) => (
-    <View className="gap-5 pt-6 pb-10" style={CONTAINER_PADDING}>
+    <View className="gap-5 pt-6 pb-10" style={styles.footer}>
         {drinkSuggestions}
         <SummaryCard
             subtotal={subtotal}
@@ -152,12 +236,12 @@ const CartFooter = ({
 
         <TouchableOpacity
             className="custom-btn flex-row items-center justify-center gap-3"
-            style={{ opacity: disabled ? 0.6 : 1 }}
+            style={[styles.checkoutBtn, { opacity: disabled ? 0.6 : 1 }]}
             disabled={disabled}
             onPress={onPlaceOrder}
         >
             {placingOrder && <ActivityIndicator color="#fff" />}
-            <Text className="paragraph-semibold text-white">
+            <Text className="paragraph-semibold text-white" style={styles.checkoutText}>
                 {placingOrder ? placingLabel : ctaLabel}
             </Text>
         </TouchableOpacity>
@@ -294,19 +378,6 @@ const Cart = () => {
         items.forEach((item) => data.push({ type: "item", item }));
         return data;
     }, [items]);
-    const cartHasDrink = useMemo(() => {
-        const restaurantId = resolveRestaurantFromCart();
-        const catalog = restaurantId ? seedMenuByRestaurantId(restaurantId) || [] : [];
-
-        return items.some((item) => {
-            const match = catalog.find((entry: any) => stringifyId(entry.id) === stringifyId(item.id));
-            if (match && Array.isArray(match.categories) && match.categories.some((c: any) => isDrinkCategory(String(c)))) {
-                return true;
-            }
-            return isDrinkName(item.name);
-        });
-    }, [items, resolveRestaurantFromCart]);
-
     useEffect(() => {
         const list = addresses ?? [];
         if (!list.length) {
@@ -327,7 +398,7 @@ const Cart = () => {
 
     useEffect(() => {
         const restaurantId = resolveRestaurantFromCart();
-        if (!restaurantId || cartHasDrink) {
+        if (!restaurantId) {
             setDrinkRestaurantId(restaurantId ?? null);
             setDrinkRestaurantName(
                 restaurantId
@@ -367,7 +438,7 @@ const Cart = () => {
         return () => {
             active = false;
         };
-    }, [items, cartHasDrink, resolveRestaurantFromCart]);
+    }, [items, resolveRestaurantFromCart]);
 
     const handlePlaceOrder = async () => {
         if (placingOrder) return;
@@ -458,12 +529,12 @@ const Cart = () => {
 
     if (isCartEmpty) {
         return (
-            <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center px-5">
+            <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center px-5" style={styles.emptyRoot}>
                 <Image source={images.deliveryBag} className="w-60 h-60" contentFit="cover" />
-                <Text className="h3-bold text-dark-100 mt-4">{t("cart.empty.title")}</Text>
-                <Text className="body-medium text-center mt-2 text-dark-60">{t("cart.empty.subtitle")}</Text>
-                <TouchableOpacity className="mt-4 px-6 py-3 rounded-full bg-primary" onPress={() => router.push("/")}>
-                    <Text className="text-white paragraph-semibold">{t("cart.empty.cta")}</Text>
+                <Text className="h3-bold text-dark-100 mt-4" style={styles.emptyTitle}>{t("cart.empty.title")}</Text>
+                <Text className="body-medium text-center mt-2 text-dark-60" style={styles.emptySubtitle}>{t("cart.empty.subtitle")}</Text>
+                <TouchableOpacity className="mt-4 px-6 py-3 rounded-full bg-primary" style={styles.emptyCta} onPress={() => router.push("/")}>
+                    <Text className="text-white paragraph-semibold" style={styles.checkoutText}>{t("cart.empty.cta")}</Text>
                 </TouchableOpacity>
             </SafeAreaView>
         );
@@ -483,10 +554,10 @@ const Cart = () => {
 
     const renderOrderHero = () => (
         <View style={{ paddingLeft: 24, paddingRight: 14 }}>
-            <View className="bg-white rounded-[32px] border border-[#F3E4D7] flex-row items-center gap-4 px-5 py-4">
+            <View className="bg-white rounded-[32px] border border-[#F3E4D7] flex-row items-center gap-4 px-5 py-4" style={styles.heroCard}>
                 <View className="flex-1">
                     {restaurantNameForCart ? (
-                        <Text className="text-lg font-ezra-bold text-dark-100">{restaurantNameForCart}</Text>
+                        <Text className="text-lg font-ezra-bold text-dark-100" style={styles.restaurantName}>{restaurantNameForCart}</Text>
                     ) : null}
                 </View>
                 <OrderIllustration width={120} height={120} />
@@ -495,18 +566,19 @@ const Cart = () => {
     );
 
     const renderHeader = () => (
-        <View className="gap-4">
-            <View className="pt-2 gap-3" style={{ paddingLeft: 24, paddingRight: 14 }}>
+        <View className="gap-4" style={styles.headerRoot}>
+            <View className="pt-2 gap-3" style={styles.headerTop}>
                 <TouchableOpacity
                     onPress={handleBackToRestaurant}
                     hitSlop={10}
                     className="h-10 w-10 rounded-full bg-white border border-gray-200 items-center justify-center"
+                    style={styles.backBtn}
                 >
                     <Icon name="arrowBack" size={20} color="#0F172A" />
                 </TouchableOpacity>
                 <View className="gap-2">
-                    <Text className="text-4xl font-ezra-bold text-dark-100">{t("cart.screen.orderTitle")}</Text>
-                    <Text className="body-medium text-dark-60">{t("cart.screen.orderSubtitle")}</Text>
+                    <Text className="text-4xl font-ezra-bold text-dark-100" style={styles.title}>{t("cart.screen.orderTitle")}</Text>
+                    <Text className="body-medium text-dark-60" style={styles.subtitle}>{t("cart.screen.orderSubtitle")}</Text>
                 </View>
             </View>
             <AddressSummary
@@ -548,12 +620,11 @@ const Cart = () => {
 
     const renderDrinkSuggestions = () => {
         if (!items.length || !drinkRestaurantId) return null;
-        if (cartHasDrink) return null;
         if (drinkLoading && !drinkItems.length) {
             return (
-                <View className="rounded-[24px] overflow-hidden border border-[#F3E4D7] bg-white px-5 py-4 items-center">
+                <View style={styles.drinkLoadingWrap}>
                     <ActivityIndicator color="#FE8C00" />
-                    <Text className="body-medium text-dark-60 mt-2">{t("cart.screen.drinkSuggestSubtitle")}</Text>
+                    <Text style={styles.drinkHeaderSubtitle}>{t("cart.screen.drinkSuggestSubtitle")}</Text>
                 </View>
             );
         }
@@ -577,40 +648,41 @@ const Cart = () => {
 
         return (
             <View
-                className="rounded-[24px] overflow-hidden border border-[#F3E4D7]"
-                style={makeShadow({ color: "#0F172A", offsetY: 10, blurRadius: 24, opacity: 0.08, elevation: 4 })}
+                style={[
+                    styles.drinkCard,
+                    makeShadow({ color: "#0F172A", offsetY: 10, blurRadius: 24, opacity: 0.08, elevation: 4 }),
+                ]}
             >
-                <View className="px-5 py-4 bg-gradient-to-r from-[#FFF7EC] to-[#FFEFD9] border-b border-[#F3E4D7]">
-                    <Text className="text-lg font-ezra-bold text-dark-100">
+                <LinearGradient
+                    colors={["#FFF7EC", "#FFEFD9"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.drinkHeader}
+                >
+                    <Text style={styles.drinkHeaderTitle}>
                         {t("cart.screen.drinkSuggestTitle", { restaurant: restaurantName })}
                     </Text>
-                    <Text className="body-medium text-dark-60 mt-1">
+                    <Text style={styles.drinkHeaderSubtitle}>
                         {t("cart.screen.drinkSuggestSubtitle")}
                     </Text>
-                </View>
-                <View className="gap-[1px] bg-[#F3E4D7]">
+                </LinearGradient>
+                <View style={styles.drinkListWrap}>
                     <ScrollView style={{ maxHeight: 260 }} showsVerticalScrollIndicator={false}>
                         {drinkItems.map((drink) => (
-                            <View
-                                key={String(drink.id)}
-                                className="flex-row items-center justify-between bg-white px-5 py-4"
-                            >
-                                <View style={{ flex: 1, gap: 4, paddingRight: 12 }}>
-                                    <Text className="paragraph-semibold text-dark-100" numberOfLines={1}>
+                            <View key={String(drink.id)} style={styles.drinkRow}>
+                                <View style={styles.drinkRowInfo}>
+                                    <Text style={styles.drinkName} numberOfLines={1}>
                                         {drink.name}
                                     </Text>
                                     {drink.description ? (
-                                        <Text className="caption text-dark-60" numberOfLines={1}>
+                                        <Text style={styles.drinkDesc} numberOfLines={1}>
                                             {drink.description}
                                         </Text>
                                     ) : null}
-                                    <Text className="paragraph-semibold text-primary">{formatCurrency(drink.price)}</Text>
+                                    <Text style={styles.drinkPrice}>{formatCurrency(drink.price)}</Text>
                                 </View>
-                                <TouchableOpacity
-                                    className="px-4 py-2 rounded-full bg-primary"
-                                    onPress={() => handleAddDrink(drink)}
-                                >
-                                    <Text className="paragraph-semibold text-white">
+                                <TouchableOpacity style={styles.drinkAddBtn} onPress={() => handleAddDrink(drink)}>
+                                    <Text style={styles.drinkAddBtnText}>
                                         {t("cart.screen.drinkSuggestAdd")}
                                     </Text>
                                 </TouchableOpacity>
@@ -661,7 +733,7 @@ const Cart = () => {
     const contentBottomPadding = insets.bottom + TAB_BAR_HEIGHT + TAB_BAR_BOTTOM_OFFSET + EXTRA_BOTTOM_SPACE;
 
     return (
-        <SafeAreaView className="flex-1 bg-[#F8F6F2]">
+        <SafeAreaView className="flex-1 bg-[#F8F6F2]" style={styles.screenBg}>
             <FlatList
                 data={listData}
                 keyExtractor={(entry) => (entry.type === "addresses" ? "address-tabs" : getCartItemKey(entry.item))}
@@ -672,7 +744,7 @@ const Cart = () => {
                 stickyHeaderIndices={listData.length ? [1] : []}
                 ListHeaderComponent={renderHeader}
                 ListFooterComponent={footerComponent}
-                ItemSeparatorComponent={() => <View className="h-4" />}
+                ItemSeparatorComponent={() => <View className="h-4" style={styles.listSeparator} />}
                 renderItem={renderListItem}
             />
         </SafeAreaView>

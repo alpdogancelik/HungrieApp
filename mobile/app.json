@@ -35,6 +35,12 @@
     "plugins": [
       "expo-router",
       [
+         "expo-av",
+        {
+          "microphonePermission": false
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/hungrie-mark.png",
@@ -62,7 +68,7 @@
       "EXPO_PUBLIC_FIREBASE_DATABASE_URL": "",
       "EXPO_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN": "",
       "EXPO_PUBLIC_USE_MOCK_DATA": "false",
-      "EXPO_PUBLIC_REQUIRE_AUTH": "false",
+      "EXPO_PUBLIC_REQUIRE_AUTH": "true",
       "EXPO_PUBLIC_API_BASE_URL": "",
       "EXPO_PUBLIC_PEXELS_API_KEY": "",
       "EXPO_PUBLIC_SENTRY_DSN": "",

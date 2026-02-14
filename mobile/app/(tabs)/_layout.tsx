@@ -8,8 +8,7 @@ import Icon from "@/components/Icon";
 import { isAuthRequired } from "@/lib/runtimeEnv";
 import { makeShadow } from "@/src/lib/shadowStyle";
 
-// Temporary bypass during testing; restore `isAuthRequired()` when auth is re-enabled.
-const authGuardEnabled = false && isAuthRequired();
+const authGuardEnabled = isAuthRequired();
 const WEB_MAX_WIDTH = 960;
 const BAR_HEIGHT = 74;
 const ACTIVE_ICON_COLOR = "#F28C28";

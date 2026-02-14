@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+    Alert,
     ActivityIndicator,
+    Clipboard,
     FlatList,
     Pressable,
     RefreshControl,
@@ -9,6 +11,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -19,6 +22,7 @@ import useAuthStore from "@/store/auth.store";
 import { illustrations } from "@/constants/mediaCatalog";
 import { ORDER_STATUS_COLORS } from "@/components/OrderCard";
 import Icon from "@/components/Icon";
+import { seedRestaurants } from "@/lib/restaurantSeeds";
 
 type FilterId = "all" | OrderStatus;
 
@@ -77,6 +81,19 @@ const resolveItems = (order: any) => {
     }));
 };
 
+const normalizeId = (value: unknown) => (value === null || value === undefined ? "" : String(value));
+const restaurantNamesById = seedRestaurants.reduce<Record<string, string>>((acc, restaurant: any) => {
+    const id = normalizeId(restaurant?.id);
+    if (!id) return acc;
+    acc[id] = restaurant?.name || id;
+    return acc;
+}, {});
+const resolveRestaurantName = (order: any) =>
+    order?.restaurant?.name ||
+    order?.restaurantName ||
+    restaurantNamesById[normalizeId(order?.restaurantId)] ||
+    "Restaurant";
+
 const OrderHistoryScreen = () => {
     const params = useLocalSearchParams<{ lang: string; highlight?: string }>();
     const router = useRouter();
@@ -121,11 +138,13 @@ const OrderHistoryScreen = () => {
     }, [user?.id, user?.$id, user?.accountId]);
 
     const filtered = useMemo(() => {
+        const normalizedSearch = search.trim().toLowerCase();
         return orders
             .filter((order) => {
                 const matchesFilter = filter === "all" || normalizeStatus(order.status) === filter;
-                const matchesSearch = order.restaurant?.name?.toLowerCase().includes(search.trim().toLowerCase());
-                return matchesFilter && (search ? matchesSearch : true);
+                const restaurantName = resolveRestaurantName(order).toLowerCase();
+                const matchesSearch = normalizedSearch ? restaurantName.includes(normalizedSearch) : true;
+                return matchesFilter && matchesSearch;
             })
             .sort((a, b) => {
                 const da = getMillis(a.updatedAt || a.createdAt || 0);
@@ -143,6 +162,11 @@ const OrderHistoryScreen = () => {
 
     const handleRefresh = async () => {
         setVisibleCount(PAGE_SIZE);
+    };
+    const handleCopyOrderId = (orderId: string) => {
+        if (!orderId || orderId === "-") return;
+        Clipboard.setString(orderId);
+        Alert.alert("Copied", "Order ID copied.");
     };
 
     const renderFilter = () => (
@@ -245,7 +269,9 @@ const OrderHistoryScreen = () => {
                     const label = t(`status.${normStatus}` as any);
                     const summaryItems = resolveItems(item);
                     const summary = summaryItems.map((it: any) => `${it.quantity}x ${it.name}`).join(" • ");
-                    const restaurantName = item.restaurant?.name || "Hungrie Order";
+                    const restaurantName = resolveRestaurantName(item);
+                    const rawOrderId = String(item.id ?? "-");
+                    const orderIdText = `#${rawOrderId}`;
 
                     return (
                         <View
@@ -258,9 +284,24 @@ const OrderHistoryScreen = () => {
                             }}
                         >
                             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                                <Text style={{ fontFamily: "ChairoSans", fontSize: 16, color: "#0F172A" }}>
-                                    {restaurantName}
-                                </Text>
+                                <View style={{ flex: 1, paddingRight: 10 }}>
+                                    <Text style={{ fontFamily: "ChairoSans", fontSize: 16, color: "#0F172A" }}>
+                                        {restaurantName}
+                                    </Text>
+                                    <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2, columnGap: 6 }}>
+                                        <Text style={{ fontFamily: "ChairoSans", fontSize: 12, color: "#64748B" }}>
+                                            Order ID: {orderIdText}
+                                        </Text>
+                                        <TouchableOpacity
+                                            onPress={() => handleCopyOrderId(rawOrderId)}
+                                            hitSlop={8}
+                                            accessibilityRole="button"
+                                            accessibilityLabel="Copy order ID"
+                                        >
+                                            <Ionicons name="copy-outline" size={14} color="#64748B" />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
                                 <View
                                     style={{
                                         paddingHorizontal: 10,

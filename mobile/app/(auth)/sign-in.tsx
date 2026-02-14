@@ -1,5 +1,5 @@
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { View, Text, Alert, ScrollView, Pressable, KeyboardAvoidingView, Platform, useWindowDimensions } from "react-native";
+import { View, Text, Alert, ScrollView, Pressable, KeyboardAvoidingView, Platform, StyleSheet, useWindowDimensions } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
@@ -10,6 +10,28 @@ import CustomButton from "@/components/CustomButton";
 import { signIn, getCurrentUser, getOwnedRestaurantId, sendPasswordReset } from "@/lib/firebaseAuth";
 import useAuthStore from "@/store/auth.store";
 import MobileDelivery from "@/assets/illustrations/Mobile Delivery.svg";
+
+const styles = StyleSheet.create({
+    root: { flex: 1, backgroundColor: "#0F172A" },
+    scroll: { flex: 1 },
+    authCardWrap: { flex: 1, paddingHorizontal: 24, paddingBottom: 48 },
+    authCard: {
+        rowGap: 24,
+        backgroundColor: "#FFFFFF",
+        borderRadius: 24,
+        padding: 24,
+    },
+    brandKicker: { color: "rgba(255,255,255,0.75)", textTransform: "uppercase", letterSpacing: 8, fontFamily: "ChairoSans" },
+    heroTitle: { color: "#FFFFFF", fontSize: 30, lineHeight: 36, fontFamily: "ChairoSans" },
+    heroBody: { color: "rgba(255,255,255,0.85)", fontSize: 14, lineHeight: 20, fontFamily: "ChairoSans" },
+    cardTitle: { color: "#0F172A", fontSize: 30, lineHeight: 36, fontFamily: "ChairoSans" },
+    cardBody: { color: "#334155", fontSize: 14, lineHeight: 20, fontFamily: "ChairoSans" },
+    rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    helperText: { fontSize: 12, color: "#FE8C00", fontFamily: "ChairoSans" },
+    footerRow: { flexDirection: "row", justifyContent: "center", columnGap: 8, marginTop: 4 },
+    footerText: { fontSize: 16, color: "#6B7280", fontFamily: "ChairoSans" },
+    footerLink: { fontSize: 16, color: "#FE8C00", fontFamily: "ChairoSans" },
+});
 
 const SignIn = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -82,10 +104,10 @@ const SignIn = () => {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-[#0F172A]" edges={["left", "right", "bottom"]}>
+        <SafeAreaView style={styles.root} edges={["left", "right", "bottom"]}>
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
                 <ScrollView
-                    className="flex-1"
+                    style={styles.scroll}
                     contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 + insets.bottom }}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
@@ -104,22 +126,13 @@ const SignIn = () => {
                                     gap: 12,
                                 }}
                             >
-                                <Text
-                                    className="text-white/70 uppercase tracking-[8px]"
-                                    style={{ textAlign: heroDirection === "column" ? "center" : "left" }}
-                                >
+                                <Text style={[styles.brandKicker, { textAlign: heroDirection === "column" ? "center" : "left" }]}>
                                     Hungrie
                                 </Text>
-                                <Text
-                                    className="text-white text-3xl font-ezra-bold"
-                                    style={{ textAlign: heroDirection === "column" ? "center" : "left" }}
-                                >
+                                <Text style={[styles.heroTitle, { textAlign: heroDirection === "column" ? "center" : "left" }]}>
                                     Log in to become even Hungrier!
                                 </Text>
-                                <Text
-                                    className="text-white/80 text-sm font-ezra-medium leading-5"
-                                    style={{ textAlign: heroDirection === "column" ? "center" : "left" }}
-                                >
+                                <Text style={[styles.heroBody, { textAlign: heroDirection === "column" ? "center" : "left" }]}>
                                     We look forward to you placing your order and getting the couriers riding!
                                 </Text>
                             </View>
@@ -129,11 +142,11 @@ const SignIn = () => {
                         </View>
                     </LinearGradient>
 
-                    <View style={{ marginTop: -cardOverlap }} className="flex-1 px-6 pb-12">
-                        <View className="gap-6 bg-white rounded-3xl p-6 shadow-xl shadow-primary/10">
+                    <View style={[styles.authCardWrap, { marginTop: -cardOverlap }]}>
+                        <View style={styles.authCard}>
                             <View>
-                                <Text className="text-3xl font-ezra-bold text-dark-100">Welcome the Hungrie App!</Text>
-                                <Text className="text-sm text-dark-60 font-ezra-medium leading-5">
+                                <Text style={styles.cardTitle}>Welcome the Hungrie App!</Text>
+                                <Text style={styles.cardBody}>
                                     Sign in to order from Hungrie and get your food delivered fast.
                                 </Text>
                             </View>
@@ -153,13 +166,10 @@ const SignIn = () => {
                                 secureTextEntry
                             />
 
-                            <View className="flex-row items-center justify-between">
-                                <Text className="text-xs font-ezra-semibold text-primary">Stay signed in :)</Text>
+                            <View style={styles.rowBetween}>
+                                <Text style={styles.helperText}>Stay signed in :)</Text>
                                 <Pressable onPress={handleForgotPassword} disabled={isResetting || isSubmitting} hitSlop={8}>
-                                    <Text
-                                        className="text-xs font-ezra-semibold text-primary"
-                                        style={{ opacity: isResetting || isSubmitting ? 0.6 : 1 }}
-                                    >
+                                    <Text style={[styles.helperText, { opacity: isResetting || isSubmitting ? 0.6 : 1 }]}>
                                         Sifremi unuttum
                                     </Text>
                                 </Pressable>
@@ -167,10 +177,10 @@ const SignIn = () => {
 
                             <CustomButton title="Sign In" isLoading={isSubmitting} disabled={isSubmitting} onPress={submit} />
 
-                            <View className="flex justify-center mt-1 flex-row gap-2">
-                                <Text className="text-base text-gray-500 font-ezra">Don't have an account?</Text>
+                            <View style={styles.footerRow}>
+                                <Text style={styles.footerText}>Don't have an account?</Text>
                                 <Pressable onPress={() => router.push("/sign-up")} hitSlop={6}>
-                                    <Text className="text-base text-primary font-ezra-semibold">Sign Up</Text>
+                                    <Text style={styles.footerLink}>Sign Up</Text>
                                 </Pressable>
                             </View>
                         </View>

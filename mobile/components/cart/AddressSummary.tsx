@@ -1,4 +1,4 @@
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { Address } from "@/src/domain/types";
 
@@ -12,6 +12,14 @@ const ADDRESS_PILL_SKELETON_STYLE = {
     backgroundColor: "#E2E8F0",
     opacity: 0.6,
 };
+const styles = StyleSheet.create({
+    root: { paddingLeft: 24, paddingRight: 14, paddingTop: 8, rowGap: 16 },
+    chipsRow: { flexDirection: "row", columnGap: 12 },
+    chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 16, borderWidth: 1 },
+    chipText: { fontFamily: "ChairoSans", fontSize: 15, color: "#1E293B" },
+    manageBtn: { marginTop: 12, alignSelf: "flex-start" },
+    manageText: { fontFamily: "ChairoSans", fontSize: 15, color: "#FE8C00" },
+});
 
 type Props = {
     addresses?: Address[];
@@ -41,13 +49,16 @@ const AddressSummary = ({
                   <TouchableOpacity
                       key={address.id}
                       className="px-4 py-2 rounded-2xl border"
-                      style={{
-                          borderColor: isActive ? "#FE8C00" : "#E2E8F0",
-                          backgroundColor: isActive ? "#FFF1E7" : "transparent",
-                      }}
+                      style={[
+                          styles.chip,
+                          {
+                              borderColor: isActive ? "#FE8C00" : "#E2E8F0",
+                              backgroundColor: isActive ? "#FFF1E7" : "transparent",
+                          },
+                      ]}
                       onPress={() => onSelect(address.id)}
                   >
-                      <Text className="paragraph-semibold text-dark-80">{address.label}</Text>
+                      <Text className="paragraph-semibold text-dark-80" style={styles.chipText}>{address.label}</Text>
                   </TouchableOpacity>
               );
           })
@@ -57,21 +68,22 @@ const AddressSummary = ({
                   <TouchableOpacity
                       key="add-address-pill"
                       className="px-4 py-2 rounded-2xl border border-dashed border-gray-300"
+                      style={styles.chip}
                       onPress={onAddAddress}
                   >
-                      <Text className="paragraph-semibold text-primary">Add address</Text>
+                      <Text className="paragraph-semibold text-primary" style={styles.manageText}>Add address</Text>
                   </TouchableOpacity>,
               ];
 
     return (
-        <View className="gap-4 pt-2" style={{ paddingLeft: 24, paddingRight: 14 }}>
+        <View className="gap-4 pt-2" style={styles.root}>
             <View style={{ minHeight: 52 }}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    <View className="flex-row gap-3">{addressChips}</View>
+                    <View className="flex-row gap-3" style={styles.chipsRow}>{addressChips}</View>
                 </ScrollView>
                 {!loading && (
-                    <TouchableOpacity className="mt-3 self-start" onPress={onManageAddresses}>
-                        <Text className="paragraph-semibold text-primary">{t("deliverTo.manage")}</Text>
+                    <TouchableOpacity className="mt-3 self-start" style={styles.manageBtn} onPress={onManageAddresses}>
+                        <Text className="paragraph-semibold text-primary" style={styles.manageText}>{t("deliverTo.manage")}</Text>
                     </TouchableOpacity>
                 )}
             </View>

@@ -36,7 +36,7 @@ export default function RootRoute() {
     if (checking) return null;
 
     if (authGuardEnabled && isAuthenticated) return <Redirect href={hasRestaurant ? "/restaurantpanel" : "/home"} />;
-    if (authGuardEnabled && !isAuthenticated) return <Redirect href="/splash" />;
+    if (authGuardEnabled && !isAuthenticated) return <Redirect href="/sign-in" />;
 
     return <Redirect href={isAuthenticated ? (hasRestaurant ? "/restaurantpanel" : "/home") : "/splash"} />;
 }

@@ -6,7 +6,6 @@ module.exports = function (api) {
     return {
         presets: [
             ["babel-preset-expo", { jsxImportSource: "nativewind" }],
-            // `nativewind/babel` is a preset in NativeWind v4+ (it returns `{ plugins: [...] }`).
             "nativewind/babel",
         ],
         plugins: [

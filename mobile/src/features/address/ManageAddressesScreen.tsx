@@ -4,6 +4,7 @@ import {
     Alert,
     FlatList,
     ListRenderItem,
+    StyleSheet,
     Text,
     TouchableOpacity,
     View,
@@ -77,36 +78,36 @@ const ManageAddressesScreen = () => {
     const renderEmpty = () => {
         if (isLoading) {
             return (
-                <View className="py-20 items-center">
+                <View style={styles.loadingState}>
                     <ActivityIndicator color="#FE8C00" />
                 </View>
             );
         }
         return (
-            <View className="items-center px-8 py-16 gap-4">
-                <Image source={images.deliveryProcess} className="w-48 h-48" contentFit="cover" />
-                <Text className="h4-bold text-dark-100 text-center">{t("address.manage.emptyTitle")}</Text>
-                <Text className="body-medium text-dark-60 text-center">{t("address.manage.emptySubtitle")}</Text>
-                <TouchableOpacity className="hero-cta px-8 py-4 rounded-full" onPress={() => navigateToForm()}>
-                    <Text className="paragraph-semibold text-white">{t("address.manage.addNew")}</Text>
+            <View style={styles.emptyState}>
+                <Image source={images.deliveryProcess} style={styles.emptyImage} contentFit="cover" />
+                <Text style={styles.emptyTitle}>{t("address.manage.emptyTitle")}</Text>
+                <Text style={styles.emptySubtitle}>{t("address.manage.emptySubtitle")}</Text>
+                <TouchableOpacity style={styles.primaryButton} onPress={() => navigateToForm()}>
+                    <Text style={styles.primaryButtonText}>{t("address.manage.addNew")}</Text>
                 </TouchableOpacity>
             </View>
         );
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50">
-            <View className="px-5 pt-2 pb-4 flex-row items-center justify-between">
+        <SafeAreaView style={styles.screen}>
+            <View style={styles.header}>
                 <TouchableOpacity
                     accessibilityRole="button"
                     accessibilityLabel={t("common.goBack")}
-                    className="size-10 rounded-full bg-white items-center justify-center border border-gray-100"
+                    style={styles.backButton}
                     onPress={() => navigation.goBack()}
                 >
                     <Icon name="arrowBack" size={18} color="#0F172A" />
                 </TouchableOpacity>
-                <Text className="h4-bold text-dark-100">{t("address.manage.title")}</Text>
-                <View className="size-10" />
+                <Text style={styles.headerTitle}>{t("address.manage.title")}</Text>
+                <View style={styles.headerSpacer} />
             </View>
 
             <FlatList
@@ -114,19 +115,106 @@ const ManageAddressesScreen = () => {
                 renderItem={renderAddress}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120, flexGrow: 1 }}
-                ItemSeparatorComponent={() => <View className="h-3" />}
+                ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
                 ListEmptyComponent={renderEmpty}
             />
 
             {addresses.length ? (
-                <View className="px-5 pb-8">
-                    <TouchableOpacity className="hero-cta items-center py-4" onPress={() => navigateToForm()}>
-                        <Text className="paragraph-semibold text-white">{t("address.manage.addNew")}</Text>
+                <View style={styles.footer}>
+                    <TouchableOpacity style={[styles.primaryButton, styles.footerButton]} onPress={() => navigateToForm()}>
+                        <Text style={styles.primaryButtonText}>{t("address.manage.addNew")}</Text>
                     </TouchableOpacity>
                 </View>
             ) : null}
         </SafeAreaView>
     );
 };
+
+const styles = StyleSheet.create({
+    screen: {
+        flex: 1,
+        backgroundColor: "#F7F8FA",
+    },
+    header: {
+        paddingHorizontal: 20,
+        paddingTop: 8,
+        paddingBottom: 16,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+    },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#E5E7EB",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    headerTitle: {
+        fontSize: 20,
+        lineHeight: 24,
+        fontWeight: "700",
+        color: "#111827",
+    },
+    headerSpacer: {
+        width: 40,
+        height: 40,
+    },
+    itemSeparator: {
+        height: 12,
+    },
+    loadingState: {
+        paddingVertical: 80,
+        alignItems: "center",
+    },
+    emptyState: {
+        alignItems: "center",
+        paddingHorizontal: 32,
+        paddingVertical: 64,
+        rowGap: 16,
+    },
+    emptyImage: {
+        width: 192,
+        height: 192,
+    },
+    emptyTitle: {
+        fontSize: 20,
+        lineHeight: 24,
+        fontWeight: "700",
+        color: "#111827",
+        textAlign: "center",
+    },
+    emptySubtitle: {
+        fontSize: 15,
+        lineHeight: 22,
+        fontWeight: "500",
+        color: "#6B7280",
+        textAlign: "center",
+    },
+    primaryButton: {
+        backgroundColor: "#FE8C00",
+        paddingHorizontal: 32,
+        paddingVertical: 14,
+        borderRadius: 999,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    footer: {
+        paddingHorizontal: 20,
+        paddingBottom: 32,
+    },
+    footerButton: {
+        paddingVertical: 16,
+    },
+    primaryButtonText: {
+        fontSize: 16,
+        lineHeight: 22,
+        fontWeight: "700",
+        color: "#FFFFFF",
+    },
+});
 
 export default ManageAddressesScreen;
