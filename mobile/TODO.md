@@ -121,6 +121,7 @@ Dosya: `eas.json`
 
 - [ ] Firestore rules prod için kilitli (public write yok)
 - [ ] Indexes deploy edildi (Firestore index uyarısı kalmıyor)
+- [ ] Firestore rules deploy edildi (firebase deploy --only firestore:rules --project hungrie-b5458)
 - [ ] Auth provider’lar net (email/password, OTP, vs.)
 - [ ] Test kullanıcıları + demo restoran verisi hazır
 - [ ] Offline/mock mod sadece dev amaçlı ve prod’da kapalı

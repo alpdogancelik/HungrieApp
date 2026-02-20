@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Address } from "@/src/domain/types";
 import { addressStore } from "./addressStore";
+import useAuthStore from "@/store/auth.store";
 
 export const useAddresses = () => {
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const accountId = useAuthStore((state) => state.user?.accountId ?? null);
 
     useEffect(() => {
         let mounted = true;
@@ -13,6 +15,10 @@ export const useAddresses = () => {
                 const list = await addressStore.list();
                 if (mounted) {
                     setAddresses(list);
+                }
+            } catch {
+                if (mounted) {
+                    setAddresses([]);
                 }
             } finally {
                 if (mounted) {
@@ -30,7 +36,7 @@ export const useAddresses = () => {
             mounted = false;
             unsubscribe();
         };
-    }, []);
+    }, [accountId]);
 
     const refresh = useCallback(async () => {
         setIsLoading(true);
@@ -95,4 +101,3 @@ export const useDefaultAddress = () => {
     );
     return { defaultAddress, addresses, isLoading, refresh };
 };
-

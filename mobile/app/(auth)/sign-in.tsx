@@ -9,6 +9,7 @@ import CustomInput from "@/components/CustomInput";
 import CustomButton from "@/components/CustomButton";
 import { signIn, getCurrentUser, getOwnedRestaurantId, sendPasswordReset } from "@/lib/firebaseAuth";
 import useAuthStore from "@/store/auth.store";
+import { addressStore } from "@/src/features/address/addressStore";
 import MobileDelivery from "@/assets/illustrations/Mobile Delivery.svg";
 
 const styles = StyleSheet.create({
@@ -69,6 +70,7 @@ const SignIn = () => {
                 };
                 setUser(mappedUser);
                 setIsAuthenticated(true);
+                await addressStore.list().catch(() => null);
 
                 const ownedRestaurantId = await getOwnedRestaurantId();
                 if (ownedRestaurantId) {

@@ -1,7 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { nanoid } from "nanoid/non-secure";
 import {
-    addDoc,
     collection,
     deleteDoc,
     doc,
@@ -12,12 +11,14 @@ import useAuthStore from "@/store/auth.store";
 import { firestore } from "@/lib/firebase";
 import type { Address } from "@/src/domain/types";
 
-const STORAGE_KEY = "@hungrie/addresses";
+const LEGACY_STORAGE_KEY = "@hungrie/addresses";
+const LEGACY_CLAIM_KEY = "@hungrie/addresses/legacy-claimed-by";
 
 export type AddressInput = Omit<Address, "id" | "createdAt"> & { id?: string; isDefault?: boolean };
 type Listener = (addresses: Address[]) => void;
 
 let cache: Address[] | null = null;
+let cacheOwnerId: string | null = null;
 const listeners = new Set<Listener>();
 
 const sortAddresses = (addresses: Address[]) =>
@@ -32,6 +33,56 @@ const notify = (addresses: Address[]) => {
     listeners.forEach((cb) => {
         cb(addresses);
     });
+};
+const debugWarn = (message: string, error?: unknown) => {
+    if (!__DEV__) return;
+    if (error) {
+        console.warn(`[AddressStore] ${message}`, error);
+        return;
+    }
+    console.warn(`[AddressStore] ${message}`);
+};
+const notSignedInError = () => new Error("Please sign in to manage addresses.");
+const getCurrentUserId = () => useAuthStore.getState().user?.accountId ?? null;
+
+const resetCacheIfUserChanged = (nextUserId: string | null) => {
+    if (cacheOwnerId === nextUserId) return;
+    cacheOwnerId = nextUserId;
+    cache = nextUserId ? null : [];
+    notify([]);
+};
+
+const setCacheForUser = (userId: string, addresses: Address[]) => {
+    const sorted = sortAddresses(addresses);
+    cacheOwnerId = userId;
+    cache = sorted;
+    notify(sorted);
+};
+const resolveDefaultAddress = (addresses: Address[]) => {
+    const sorted = sortAddresses(addresses);
+    return sorted.find((address) => address.isDefault) ?? sorted[0] ?? null;
+};
+const buildAddressText = (address: Address | null) => {
+    if (!address) return null;
+    return [address.label, address.line1, address.block, address.room, address.city, address.country]
+        .filter(Boolean)
+        .join(", ");
+};
+const syncUserAddressSummary = async (userId: string, addresses: Address[]) => {
+    if (!firestore) throw new Error("Address storage is not configured.");
+    const defaultAddress = resolveDefaultAddress(addresses);
+    const addressText = buildAddressText(defaultAddress);
+    await setDoc(
+        doc(firestore, "users", userId),
+        {
+            // Keep a simple field for quick visibility in Firestore console.
+            address: addressText,
+            defaultAddress,
+            addressesCount: addresses.length,
+            addressesUpdatedAt: Date.now(),
+        },
+        { merge: true },
+    );
 };
 
 const sanitize = (input: AddressInput): AddressInput => ({
@@ -56,43 +107,22 @@ const nextDefaultIfMissing = (addresses: Address[], preferNotId?: string) => {
     }));
 };
 
-const canUseFirestore = () => Boolean(firestore && useAuthStore.getState().user?.accountId);
-const userAddressesCollection = () => {
-    const uid = useAuthStore.getState().user?.accountId;
-    if (!uid || !firestore) return null;
-    return collection(firestore, "users", uid, "addresses");
+const userAddressesCollection = (userId: string) => {
+    if (!firestore) return null;
+    return collection(firestore, "users", userId, "addresses");
 };
 
-const readFromStorage = async (): Promise<Address[]> => {
-    if (cache) {
-        return cache;
-    }
-    const raw = await AsyncStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-        cache = [];
-        return cache;
-    }
-    try {
-        const parsed = JSON.parse(raw);
-        cache = Array.isArray(parsed) ? parsed : [];
-    } catch {
-        cache = [];
-    }
-    cache = sortAddresses(cache);
-    return cache;
+const readFromFirestore = async (userId: string): Promise<Address[]> => {
+    const col = userAddressesCollection(userId);
+    if (!col) return [];
+    const snap = await getDocs(col);
+    const list: Address[] = snap.docs.map((docSnap) => docSnap.data() as Address);
+    return sortAddresses(list);
 };
 
-const persistToStorage = async (addresses: Address[]) => {
-    const sorted = sortAddresses(addresses);
-    cache = sorted;
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(sorted));
-    notify(sorted);
-};
-
-const persistToFirestore = async (addresses: Address[]) => {
-    const col = userAddressesCollection();
-    if (!col) return;
-    // Write each address; in this simple approach we overwrite.
+const writeAllToFirestore = async (userId: string, addresses: Address[]) => {
+    const col = userAddressesCollection(userId);
+    if (!col) throw new Error("Firestore is not configured.");
     await Promise.all(
         addresses.map((address) => {
             const ref = doc(col, address.id);
@@ -101,39 +131,112 @@ const persistToFirestore = async (addresses: Address[]) => {
     );
 };
 
-const readFromFirestore = async (): Promise<Address[] | null> => {
-    const col = userAddressesCollection();
-    if (!col) return null;
-    const snap = await getDocs(col);
-    const list: Address[] = snap.docs.map((docSnap) => docSnap.data() as Address);
-    return sortAddresses(list);
+const getUserContext = () => {
+    const userId = getCurrentUserId();
+    if (!userId) throw notSignedInError();
+    if (!firestore) throw new Error("Address storage is not configured.");
+    const col = userAddressesCollection(userId);
+    if (!col) throw new Error("Address storage is not configured.");
+    return { userId, col };
 };
 
-const persistAll = async (addresses: Address[]) => {
-    const sorted = sortAddresses(addresses);
-    cache = sorted;
-    if (canUseFirestore()) {
-        await persistToFirestore(sorted).catch(() => null);
+const coerceLegacyAddress = (value: any): Address | null => {
+    if (!value || typeof value !== "object") return null;
+    const label = String(value.label ?? "").trim();
+    const line1 = String(value.line1 ?? "").trim();
+    const city = String(value.city ?? "").trim();
+    const country = String(value.country ?? "").trim();
+    if (!label || !line1 || !city || !country) return null;
+
+    return {
+        id: String(value.id ?? nanoid()),
+        label,
+        line1,
+        block: value.block ? String(value.block).trim() : undefined,
+        room: value.room ? String(value.room).trim() : undefined,
+        city,
+        country,
+        isDefault: Boolean(value.isDefault),
+        createdAt: String(value.createdAt ?? new Date().toISOString()),
+    };
+};
+
+const readLegacyAddresses = async (): Promise<Address[]> => {
+    const raw = await AsyncStorage.getItem(LEGACY_STORAGE_KEY).catch((error) => {
+        debugWarn("Failed to read legacy addresses key.", error);
+        return null;
+    });
+    if (!raw) return [];
+
+    try {
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        const normalized = parsed
+            .map((item) => coerceLegacyAddress(item))
+            .filter((item): item is Address => Boolean(item));
+        return sortAddresses(normalized);
+    } catch {
+        return [];
     }
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(sorted)).catch(() => null);
-    notify(sorted);
+};
+
+const migrateLegacyAddressesIfNeeded = async (userId: string) => {
+    const claimedBy = await AsyncStorage.getItem(LEGACY_CLAIM_KEY).catch((error) => {
+        debugWarn("Failed to read legacy migration claim key.", error);
+        return null;
+    });
+    if (claimedBy) return;
+
+    const legacyAddresses = await readLegacyAddresses();
+    if (!legacyAddresses.length) return;
+
+    const remoteAddresses = await readFromFirestore(userId);
+    if (remoteAddresses.length) return;
+
+    await writeAllToFirestore(userId, legacyAddresses);
+    await syncUserAddressSummary(userId, legacyAddresses).catch((error) => {
+        debugWarn("Failed to sync legacy address summary to user profile.", error);
+    });
+    await AsyncStorage.setItem(LEGACY_CLAIM_KEY, userId).catch((error) => {
+        debugWarn("Failed to persist legacy migration claim key.", error);
+    });
+    await AsyncStorage.removeItem(LEGACY_STORAGE_KEY).catch((error) => {
+        debugWarn("Failed to clear legacy addresses key after migration.", error);
+    });
 };
 
 export const list = async () => {
-    if (canUseFirestore()) {
-        const remote = await readFromFirestore().catch(() => null);
-        if (remote) {
-            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(remote)).catch(() => null);
-            cache = remote;
-            notify(remote);
-            return remote;
-        }
+    const userId = getCurrentUserId();
+    resetCacheIfUserChanged(userId);
+    if (!userId) return [];
+    if (!firestore) {
+        debugWarn("Firestore is not configured for address reads.");
+        setCacheForUser(userId, []);
+        return [];
     }
-    const addresses = await readFromStorage();
-    return sortAddresses(addresses);
+
+    try {
+        await migrateLegacyAddressesIfNeeded(userId);
+        const remote = await readFromFirestore(userId);
+        if (getCurrentUserId() !== userId) {
+            return [];
+        }
+        await syncUserAddressSummary(userId, remote).catch((error) => {
+            debugWarn("Failed to sync user address summary during list.", error);
+        });
+        setCacheForUser(userId, remote);
+        return remote;
+    } catch (error) {
+        debugWarn("Failed to read addresses from Firestore.", error);
+        if (getCurrentUserId() === userId) {
+            setCacheForUser(userId, []);
+        }
+        return [];
+    }
 };
 
 export const create = async (payload: AddressInput): Promise<Address> => {
+    const { userId } = getUserContext();
     const addresses = await list();
     const sanitized = sanitize(payload);
     const requestedDefault = sanitized.isDefault ?? false;
@@ -149,11 +252,20 @@ export const create = async (payload: AddressInput): Promise<Address> => {
     };
 
     const nextList = [...base, newAddress];
-    await persistAll(nextList);
+    try {
+        if (getCurrentUserId() !== userId) throw notSignedInError();
+        await writeAllToFirestore(userId, nextList);
+        await syncUserAddressSummary(userId, nextList);
+        setCacheForUser(userId, nextList);
+    } catch (error) {
+        debugWarn("Failed to create address.", error);
+        throw new Error("Unable to save address right now.");
+    }
     return newAddress;
 };
 
 export const update = async (payload: Address): Promise<Address> => {
+    const { userId } = getUserContext();
     const addresses = await list();
     const index = addresses.findIndex((address) => address.id === payload.id);
     if (index === -1) {
@@ -177,53 +289,71 @@ export const update = async (payload: Address): Promise<Address> => {
         updatedList = nextDefaultIfMissing(updatedList, payload.id);
     }
 
-    await persistAll(updatedList);
+    try {
+        if (getCurrentUserId() !== userId) throw notSignedInError();
+        await writeAllToFirestore(userId, updatedList);
+        await syncUserAddressSummary(userId, updatedList);
+        setCacheForUser(userId, updatedList);
+    } catch (error) {
+        debugWarn("Failed to update address.", error);
+        throw new Error("Unable to save address right now.");
+    }
     return updatedList[index];
 };
 
 export const remove = async (id: string) => {
+    const { userId, col } = getUserContext();
     const addresses = await list();
     const filtered = addresses.filter((address) => address.id !== id);
     const next = nextDefaultIfMissing(filtered, id);
 
-    if (canUseFirestore()) {
-        const col = userAddressesCollection();
-        if (col) {
-            await deleteDoc(doc(col, id)).catch(() => null);
-        }
+    try {
+        if (getCurrentUserId() !== userId) throw notSignedInError();
+        await deleteDoc(doc(col, id));
+        await writeAllToFirestore(userId, next);
+        await syncUserAddressSummary(userId, next);
+        setCacheForUser(userId, next);
+    } catch (error) {
+        debugWarn("Failed to remove address.", error);
+        throw new Error("Unable to delete address right now.");
     }
-
-    await persistAll(next);
 };
 
 export const setDefault = async (id: string) => {
+    const { userId } = getUserContext();
     const addresses = await list();
     if (!addresses.some((address) => address.id === id)) return;
     const next = addresses.map((address) => ({
         ...address,
         isDefault: address.id === id,
     }));
-    await persistAll(next);
+    try {
+        if (getCurrentUserId() !== userId) throw notSignedInError();
+        await writeAllToFirestore(userId, next);
+        await syncUserAddressSummary(userId, next);
+        setCacheForUser(userId, next);
+    } catch (error) {
+        debugWarn("Failed to set default address.", error);
+        throw new Error("Unable to update default address right now.");
+    }
 };
 
 export const syncUp = async () => {
-    const addresses = await readFromStorage();
-    await persistToFirestore(addresses).catch(() => null);
+    await list();
 };
 
 export const syncDown = async () => {
-    const remote = await readFromFirestore().catch(() => null);
-    if (remote) {
-        await persistAll(remote);
-    }
+    await list();
 };
 
 export const subscribe = (listener: Listener) => {
     listeners.add(listener);
-    if (cache) {
+    const userId = getCurrentUserId();
+    resetCacheIfUserChanged(userId);
+    if (cache && cacheOwnerId === userId) {
         listener(cache);
     } else {
-        void list().then(listener).catch(() => null);
+        void list().catch(() => listener([]));
     }
     return () => listeners.delete(listener);
 };
