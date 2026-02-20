@@ -1,0 +1,829 @@
+{
+  "restaurants": [
+    {
+      "id": "ada-pizza",
+      "name": "Ada Pizza",
+      "cuisine": "Pizza & Dünya Mutfağı",
+      "description": "Dürümlerden pizzalara kadar kampüsün en sevilen menüleri.",
+      "deliveryFee": 24.9,
+      "deliveryTime": "25-35",
+      "imageUrl": "@/assets/restaurantlogo/adapizzalogo.jpg",
+      "ownerId": "ada-pizza-owner-uid",
+      "isActive": true,
+      "address": "Kalkanlı"
+    }
+  ],
+    "categories": [
+    { "id": "wraps", "name": "Dürümler" },
+    { "id": "burgers", "name": "Burgerler" },
+    { "id": "chips", "name": "Chips" },
+    { "id": "sauces", "name": "Soslar" },
+    { "id": "pizzas", "name": "Pizzalar" },
+    { "id": "mains", "name": "Ana Yemekler" },
+    { "id": "pan", "name": "Tava Yemekleri" },
+    { "id": "cold-drinks", "name": "Soğuk İçecekler" },
+    { "id": "hot-drinks", "name": "Sıcak İçecekler" }
+  ],
+  "menus": [
+    {
+      "id": "wrap-001",
+      "name": "Tavuk Şiş Dürüm",
+      "description": "Marineli tavuk şiş, köz sebze, özel lavaş.",
+      "price": 12,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "wraps"
+      ]
+    },
+    {
+      "id": "wrap-002",
+      "name": "Çıtır Tavuk Dürüm",
+      "description": "Pane tavuk, çıtır lavaş, sarımsaklı sos.",
+      "price": 280,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "wraps"
+      ]
+    },
+    {
+      "id": "wrap-003",
+      "name": "Tenders Dürüm",
+      "description": "Ada tenders, ranch sos, turşu.",
+      "price": 280,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "wraps"
+      ]
+    },
+    {
+      "id": "wrap-004",
+      "name": "Et Köfte Dürüm",
+      "description": "Şef köftesi, köz biber, sumaklı soğan.",
+      "price": 290,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "wraps"
+      ]
+    },
+    {
+      "id": "wrap-005",
+      "name": "Şefin Dürümü",
+      "description": "Gizli soslu dana + tavuk karışımı.",
+      "price": 290,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "wraps"
+      ]
+    },
+    {
+      "id": "wrap-006",
+      "name": "Popcorn Dürüm",
+      "description": "Popcorn tavuk, ranch, çıtır patates.",
+      "price": 280,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "wraps"
+      ]
+    },
+    {
+      "id": "wrap-007",
+      "name": "Fajita Dürüm",
+      "description": "Izgara biber, tavuk, cheddar, fajita sos.",
+      "price": 300,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "wraps"
+      ]
+    },
+    {
+      "id": "wrap-008",
+      "name": "Ekstra Lavaş",
+      "description": "Eşlikçi ekstra lavaş.",
+      "price": 30,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "wraps"
+      ]
+    },
+    {
+      "id": "burger-001",
+      "name": "Chicken Burger + Chips",
+      "description": "Crispy tavuk burger, patates kızartması.",
+      "price": 310,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "burgers"
+      ]
+    },
+    {
+      "id": "burger-002",
+      "name": "Double Chicken Burger + Chips",
+      "description": "İki kat tavuk, cheddar, patates.",
+      "price": 390,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "burgers"
+      ]
+    },
+    {
+      "id": "burger-003",
+      "name": "Hamburger + Chips",
+      "description": "Dana burger ve çıtır patates.",
+      "price": 350,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "burgers"
+      ]
+    },
+    {
+      "id": "burger-004",
+      "name": "Double Hamburger + Chips",
+      "description": "Çift dana köfte ve patates.",
+      "price": 390,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "burgers"
+      ]
+    },
+    {
+      "id": "burger-005",
+      "name": "Cheese Eklemesi",
+      "description": "Her burger için ekstra peynir.",
+      "price": 40,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "burgers"
+      ]
+    },
+    {
+      "id": "chips-001",
+      "name": "Küçük Chips",
+      "description": "Tek kişilik taze patates.",
+      "price": 100,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "chips"
+      ]
+    },
+    {
+      "id": "chips-002",
+      "name": "Büyük Chips",
+      "description": "Paylaşımlık patates kızartması.",
+      "price": 160,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "chips"
+      ]
+    },
+    {
+      "id": "sauce-001",
+      "name": "Sarı Sos",
+      "description": "Ada'nın imza sarı sosu.",
+      "price": 30,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "sauces"
+      ]
+    },
+    {
+      "id": "sauce-002",
+      "name": "Acı Sos",
+      "description": "Acı sevenler için.",
+      "price": 30,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "sauces"
+      ]
+    },
+    {
+      "id": "sauce-003",
+      "name": "Barbekü Sos",
+      "description": "Tatlı dumanlı sos.",
+      "price": 30,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "sauces"
+      ]
+    },
+    {
+      "id": "sauce-004",
+      "name": "Ranch Sos",
+      "description": "Kremalı ranch.",
+      "price": 30,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "sauces"
+      ]
+    },
+    {
+      "id": "pizza-001",
+      "name": "İtalyan Pizza",
+      "description": "30 cm ince hamur; domates, mozarella.",
+      "price": 470,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-002",
+      "name": "Sucuklu İtalyan",
+      "description": "Kalın dilim dana sucuklu pizza 30 cm.",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-003",
+      "name": "Karışık Pizza",
+      "description": "Sucuk, salam, mantar karışımı (30 cm).",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-004",
+      "name": "Ada Special",
+      "description": "Şef seçkisi özel malzemeler (30 cm).",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-005",
+      "name": "Marios Pizza",
+      "description": "İtalyan usulü, zengin malzeme (30 cm).",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-006",
+      "name": "Vejetaryen Pizza",
+      "description": "Sebze karışımı, özel sos (30 cm).",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-007",
+      "name": "Akdeniz Pizza",
+      "description": "Zeytin, hellim, kekik ile (30 cm).",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-008",
+      "name": "Tavuklu Pizza",
+      "description": "Izgara tavuk parçaları (30 cm).",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-009",
+      "name": "Beef Pizza",
+      "description": "Dana eti, mozarella (30 cm).",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-010",
+      "name": "Chef’s Pizza",
+      "description": "Şefin gizli tarifli pizzası.",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-011",
+      "name": "Hellimli Pizza",
+      "description": "Hellim, zeytin, biber (30 cm).",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-012",
+      "name": "Köri Soslu Pizza",
+      "description": "Köri soslu tavuklu pizza (30 cm).",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-013",
+      "name": "BBQ Pizza",
+      "description": "BBQ soslu dana eti (30 cm).",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-014",
+      "name": "Margarita",
+      "description": "Klasik domates & mozarella (30 cm).",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-015",
+      "name": "Pepperoni Pizza",
+      "description": "Pepperoni dilimleri, mozarella (30 cm).",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-016",
+      "name": "Mantar Keyfi",
+      "description": "Taze kültür mantarı (30 cm).",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-017",
+      "name": "Sucuk Keyfi",
+      "description": "Bol sucuklu pizza (30 cm).",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-018",
+      "name": "Balık Etli Pizza",
+      "description": "Deniz ürünlü seçenek (30 cm).",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-019",
+      "name": "Sosisli Pizza",
+      "description": "Dana sosis, mısır (30 cm).",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-020",
+      "name": "Etine Dolgun",
+      "description": "Bol dana etli pizza (30 cm).",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-021",
+      "name": "Super Supreme",
+      "description": "Her şeyden biraz (30 cm).",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-022",
+      "name": "Barbekü Soslu Pizza",
+      "description": "BBQ soslu karışık malzeme (30 cm).",
+      "price": 430,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "pizza-023",
+      "name": "Etli Pizza",
+      "description": "Dana eti, biber, mozarella (30 cm).",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ]
+    },
+    {
+      "id": "main-001",
+      "name": "Tavuk Dolma",
+      "description": "İç pilavlı tavuk dolma.",
+      "price": 400,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "mains"
+      ]
+    },
+    {
+      "id": "main-002",
+      "name": "Tenders Tabak",
+      "description": "6 parça tenders, salata, patates.",
+      "price": 390,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "mains"
+      ]
+    },
+    {
+      "id": "main-003",
+      "name": "Gujons",
+      "description": "Köri soslu gujon tavuk.",
+      "price": 390,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "mains"
+      ]
+    },
+    {
+      "id": "main-004",
+      "name": "Schnitzel",
+      "description": "Pane tavuk, limon, garnitür.",
+      "price": 390,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "mains"
+      ]
+    },
+    {
+      "id": "main-005",
+      "name": "Kanat Pane",
+      "description": "Pane kanat, dip sos.",
+      "price": 390,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "mains"
+      ]
+    },
+    {
+      "id": "main-006",
+      "name": "Kentucky",
+      "description": "Kentucky usulü çıtır tabak.",
+      "price": 390,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "mains"
+      ]
+    },
+    {
+      "id": "main-007",
+      "name": "Tavuklu Krep",
+      "description": "Kremalı tavuklu krep sarma.",
+      "price": 390,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "mains"
+      ]
+    },
+    {
+      "id": "main-008",
+      "name": "Popcorn Servis",
+      "description": "Kova popcorn tavuk.",
+      "price": 390,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "mains"
+      ]
+    },
+    {
+      "id": "main-009",
+      "name": "Mantarlı Soslu Tavuk",
+      "description": "Kremalı mantarlı tavuk tabak.",
+      "price": 400,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "mains"
+      ]
+    },
+    {
+      "id": "main-010",
+      "name": "Karışık Tavuk",
+      "description": "Tavuk şiş + kanat karışımı.",
+      "price": 520,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "mains"
+      ]
+    },
+    {
+      "id": "main-011",
+      "name": "Karışık Izgara",
+      "description": "Dana köfte, tavuk şiş, sucuk.",
+      "price": 520,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "mains"
+      ]
+    },
+    {
+      "id": "main-012",
+      "name": "Et Köfte",
+      "description": "Izgara köfte tabağı.",
+      "price": 400,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "mains"
+      ]
+    },
+    {
+      "id": "main-013",
+      "name": "Tavuk Şiş Tabak",
+      "description": "Pilav üstü tavuk şiş.",
+      "price": 390,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "mains"
+      ]
+    },
+    {
+      "id": "main-014",
+      "name": "Tavuk Pirzola",
+      "description": "Marine pirzola, patates.",
+      "price": 390,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "mains"
+      ]
+    },
+    {
+      "id": "main-015",
+      "name": "Prenses Tabağı",
+      "description": "Püre, mantarlı soslu tavuk.",
+      "price": 390,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "mains"
+      ]
+    },
+    {
+      "id": "main-016",
+      "name": "Tavuk Kanat",
+      "description": "Izgara kanat, sos.",
+      "price": 400,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "mains"
+      ]
+    },
+    {
+      "id": "main-017",
+      "name": "Tavuk Sote",
+      "description": "Sebzeli tavuk sote.",
+      "price": 390,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "mains"
+      ]
+    },
+    {
+      "id": "main-018",
+      "name": "Dijon Tavuk",
+      "description": "Dijon hardallı tavuk.",
+      "price": 390,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "mains"
+      ]
+    },
+    {
+      "id": "main-019",
+      "name": "Diyet Tavuk",
+      "description": "Izgara tavuk + haşlanmış sebze.",
+      "price": 390,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "mains"
+      ]
+    },
+    {
+      "id": "main-020",
+      "name": "Mexican Usulü Tavuk",
+      "description": "Fasulye ve mısırla servis.",
+      "price": 390,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "mains"
+      ]
+    },
+    {
+      "id": "pan-001",
+      "name": "Hardal Soslu Tavuk",
+      "description": "Tava usulü hardallı tavuk.",
+      "price": 400,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pan"
+      ]
+    },
+    {
+      "id": "pan-002",
+      "name": "Chicken Stroganof",
+      "description": "Kremalı mantarlı stroganof.",
+      "price": 400,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pan"
+      ]
+    },
+    {
+      "id": "pan-003",
+      "name": "Körili Tavuk Sote",
+      "description": "Köri aromalı tava tavuk.",
+      "price": 400,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pan"
+      ]
+    },
+    {
+      "id": "pan-004",
+      "name": "Soya Soslu Tavuk",
+      "description": "Asya soslu hızlı sauté.",
+      "price": 400,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pan"
+      ]
+    },
+    {
+      "id": "pan-005",
+      "name": "Tavuk Güveç",
+      "description": "Sebzeli güveçte tavuk.",
+      "price": 400,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pan"
+      ]
+    },
+    {
+      "id": "pan-006",
+      "name": "Kremalı Tavuklu Fajita",
+      "description": "Kremalı soslu fajita tabak.",
+      "price": 400,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pan"
+      ]
+    },
+    {
+      "id": "pan-007",
+      "name": "Cafe de Paris",
+      "description": "Cafe de Paris soslu tavuk.",
+      "price": 400,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pan"
+      ]
+    },
+    {
+      "id": "pan-008",
+      "name": "Kekikli Tavuk",
+      "description": "Taze kekik ile marine tavuk.",
+      "price": 400,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pan"
+      ]
+    },
+    {
+      "id": "cold-001",
+      "name": "Kutu Kola 330 ml",
+      "description": "Soğuk servis.",
+      "price": 40,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "cold-002",
+      "name": "Cappy Karışık",
+      "description": "330 ml meyve suyu.",
+      "price": 50,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "cold-003",
+      "name": "Litrelik Kola 1 lt",
+      "description": "Paylaşımlık kola.",
+      "price": 60,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "cold-004",
+      "name": "Tombul Ayran",
+      "description": "Klasik tombul ayran.",
+      "price": 30,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "cold-005",
+      "name": "Sade Soda",
+      "description": "Cam şişe soda.",
+      "price": 30,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "cold-006",
+      "name": "Su 0.5 lt",
+      "description": "Yarım litre su.",
+      "price": 15,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "cold-007",
+      "name": "Su 1.5 lt",
+      "description": "Büyük boy su.",
+      "price": 30,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "cold-drinks"
+      ]
+    },
+    {
+      "id": "hot-001",
+      "name": "Nescafe",
+      "description": "Sıcak instant kahve.",
+      "price": 50,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "hot-drinks"
+      ]
+    },
+    {
+      "id": "hot-002",
+      "name": "Türk Kahvesi",
+      "description": "Klasik Türk kahvesi.",
+      "price": 50,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "hot-drinks"
+      ]
+    },
+    {
+      "id": "hot-003",
+      "name": "Bitki Çayı",
+      "description": "Karışık bitki çayı.",
+      "price": 30,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "hot-drinks"
+      ]
+    }
+  ]
+}

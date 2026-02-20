@@ -1,0 +1,28 @@
+# Keep uploads small/fast for EAS Build
+node_modules/
+.expo/
+.eas/
+dist/
+web-build/
+build/
+coverage/
+
+# logs / debug
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# native folders (generated)
+android/
+ios/
+
+# unused asset packs (not referenced in code)
+assets/treats/
+assets/fluffy/
+assets/iconly/

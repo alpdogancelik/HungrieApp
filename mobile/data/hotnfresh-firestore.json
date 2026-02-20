@@ -1,0 +1,407 @@
+{
+    "restaurants": [
+        {
+            "id": "hot-n-fresh",
+            "name": "Hot'n Fresh",
+            "cuisine": "Fried Chicken & Burger",
+            "description": "Popcorn tavuk, gurme burger ve gece acıkmalarına özel menüler.",
+            "deliveryFee": 24.9,
+            "deliveryTime": "20-30",
+            "imageUrl": "@/assets/restaurantlogo/hotnfreshlogo.jpg",
+            "ownerId": "hot-n-fresh-owner-uid",
+            "isActive": true,
+            "address": "Kuzey Kampüs, Öğrenci Çarşısı"
+        }
+    ],
+    "categories": [
+        {
+            "id": "wraps",
+            "name": "Dürümler"
+        },
+        {
+            "id": "mains",
+            "name": "Menuler ve Tabaklar"
+        },
+        {
+            "id": "burgers",
+            "name": "Burgerler"
+        },
+        {
+            "id": "cigkofte",
+            "name": "Cigkofte"
+        },
+        {
+            "id": "cold-drinks",
+            "name": "Soğuk İçecekler"
+        }
+    ],
+    "menus": [
+        {
+            "id": "wrap-hnf-d1",
+            "name": "D1 - Cero's Popcorn Dürüm",
+            "description": "Popcorn tavuk parçacıkları, cips, mayonez, ketçap, marul, beyaz lahana. Fiyat 300 TL.",
+            "price": 300,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "wraps"
+            ]
+        },
+        {
+            "id": "wrap-hnf-d1-1",
+            "name": "D1.1 - Cero's Popcorn Dürüm",
+            "description": "Popcorn tavuk parçacıkları, cips, mayonez, ketçap, marul, beyaz lahana. Fiyat 320 TL.",
+            "price": 320,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "wraps"
+            ]
+        },
+        {
+            "id": "wrap-hnf-d2",
+            "name": "D2 - Cero's Special Dürüm",
+            "description": "Cero's özel soslu tavuk parçacıkları, cips, mayonez, ketçap, marul, beyaz lahana. Fiyat 300 TL.",
+            "price": 300,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "wraps"
+            ]
+        },
+        {
+            "id": "wrap-hnf-d2-1",
+            "name": "D2.1 - Cero's Special Dürüm",
+            "description": "Cero's özel soslu tavuk parçacıkları, cips, mayonez, ketçap, marul, beyaz lahana. Fiyat 320 TL.",
+            "price": 320,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "wraps"
+            ]
+        },
+        {
+            "id": "wrap-hnf-d3",
+            "name": "D3 - Cero's Special & Onion Dürüm",
+            "description": "Özel soslu tavuk parçacıkları, soğan halkası, cips, marul, beyaz lahana, mayonez, ketçap. Fiyat 300 TL.",
+            "price": 300,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "wraps"
+            ]
+        },
+        {
+            "id": "wrap-hnf-d3-1",
+            "name": "D3.1- Cero's Special & Onion Dürüm",
+            "description": "Özel soslu tavuk parçacıkları, soğan halkası, cips, marul, beyaz lahana, mayonez, ketçap. Fiyat 320 TL.",
+            "price": 320,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "wraps"
+            ]
+        },
+        {
+            "id": "wrap-hnf-d4",
+            "name": "D4 - Cero's Vegan Dürüm",
+            "description": "6 adet soğan halkası, cips, salata, isteğe göre soslar. Fiyat seçime göre 300–320 TL.",
+            "price": 300,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "wraps"
+            ]
+        },
+        {
+            "id": "main-hnf-m1",
+            "name": "M1 - Popcorn Tavuk Pilav Üstü",
+            "description": "Pilav üzeri 8 adet popcorn tavuk parçacığı ve cips.",
+            "price": 320,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "mains"
+            ]
+        },
+        {
+            "id": "main-hnf-m2",
+            "name": "M2 - Popcorn + Soğan Halkası Menü",
+            "description": "Pilav üzeri 8 adet popcorn tavuk, 3 adet soğan halkası, cips ve 330 ml Coca-Cola.",
+            "price": 370,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "mains"
+            ]
+        },
+        {
+            "id": "main-hnf-m3",
+            "name": "M3 - Popcorn + Kentucky Burger Menü",
+            "description": "Pilav üzeri 8 adet popcorn tavuk, cips, Kentucky burger ve Coca-Cola.",
+            "price": 385,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "mains"
+            ]
+        },
+        {
+            "id": "main-hnf-m4",
+            "name": "M4 - Jülyen Köfte Menü",
+            "description": "Pilav üzeri jülyen köfte, cips ve 330 ml Coca-Cola.",
+            "price": 375,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "mains"
+            ]
+        },
+        {
+            "id": "main-hnf-m5",
+            "name": "M5 - Popcorn Tavuk Menü",
+            "description": "230 gr popcorn tavuk parçacıkları, cips ve Coca-Cola.",
+            "price": 370,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "mains"
+            ]
+        },
+        {
+            "id": "main-hnf-m6",
+            "name": "M6 - Finger Tavuk Menü",
+            "description": "230 gr finger tavuk parçacıkları, cips ve Coca-Cola.",
+            "price": 370,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "mains"
+            ]
+        },
+        {
+            "id": "main-hnf-m7",
+            "name": "M7 - HnF Nugget Menü",
+            "description": "230 gr HnF nugget tavuk parçacıkları, cips ve Coca-Cola.",
+            "price": 370,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "mains"
+            ]
+        },
+        {
+            "id": "main-hnf-m8",
+            "name": "M8 - Popcorn + Soğan Halkası Menü",
+            "description": "8 adet popcorn tavuk, 3 adet soğan halkası, cips ve 330 ml Coca-Cola.",
+            "price": 390,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "mains"
+            ]
+        },
+        {
+            "id": "burger-hnf-b1",
+            "name": "B1 - Kentucky Fillet Burger Menü",
+            "description": "Özel lezzetiyle kızarmış 180 gr %100 tavuk, marul, mayonez ve 330 ml Coca-Cola.",
+            "price": 350,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "burgers"
+            ]
+        },
+        {
+            "id": "burger-hnf-b2",
+            "name": "B2 - Gurme Burger Menü",
+            "description": "%100 beef burger, 10 gr cheddar peyniri, karamelize soğan, burger sos, marul ve 330 ml Coca-Cola.",
+            "price": 370,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "burgers"
+            ]
+        },
+        {
+            "id": "burger-hnf-b3",
+            "name": "B3 - Double Gurme Burger Menü",
+            "description": "200 gr beef burger, 2 adet cheddar peyniri, karamelize soğan, burger sos, marul ve 300 ml Coca-Cola.",
+            "price": 450,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "burgers"
+            ]
+        },
+        {
+            "id": "burger-hnf-b4",
+            "name": "B4 - Triple Gurme Burger Menü",
+            "description": "%100 el yapımı beef burger, cheddar peyniri, karamelize soğan, burger sos, marul ve 330 ml Coca-Cola.",
+            "price": 525,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "burgers"
+            ]
+        },
+        {
+            "id": "burger-hnf-b5",
+            "name": "B5 - Beef BBQ & Onion Rings Menü",
+            "description": "100 gr beef burger, soğan halkası, BBQ sos ve 330 ml Coca-Cola.",
+            "price": 370,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "burgers"
+            ]
+        },
+        {
+            "id": "burger-hnf-b6",
+            "name": "B6 - Beef Mushroom Burger Menü",
+            "description": "180 gr dana eti, mantar, emmental peynir, karamelize soğan, mayonez ve 330 ml Coca-Cola.",
+            "price": 370,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "burgers"
+            ]
+        },
+        {
+            "id": "burger-hnf-b7",
+            "name": "B7 - Double Kentucky Fillet Burger Menü",
+            "description": "Özel lezzetiyle kızarmış 360 gr %100 tavuk, marul, mayonez ve 330 ml Coca-Cola.",
+            "price": 390,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "burgers"
+            ]
+        },
+        {
+            "id": "burger-hnf-b8",
+            "name": "B8 - Popcorn Chicken Burger Menü",
+            "description": "120 gr popcorn tavuk parçacıkları, marul, mayonez ve 330 ml Coca-Cola.",
+            "price": 340,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "burgers"
+            ]
+        },
+        {
+            "id": "cigkofte-hnf-ck1",
+            "name": "CMR Çiğköfte Dürüm (150 gr)",
+            "description": "Lavaşta 150 gr CMR çiğköfte, marul, turşu, domates, nar ekşisi.",
+            "price": 220,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "wraps",
+                "cigkofte"
+            ]
+        },
+        {
+            "id": "cigkofte-hnf-ck2",
+            "name": "CMR Doritoslu Çiğköfte Dürüm (100 gr)",
+            "description": "Lavaşta 100 gr CMR çiğköfte, Doritos, marul, turşu, domates, nar ekşisi.",
+            "price": 200,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "wraps",
+                "cigkofte"
+            ]
+        },
+        {
+            "id": "cigkofte-hnf-ck3",
+            "name": "CMR Çiğköfte Dürüm (100 gr)",
+            "description": "Lavaşta 100 gr CMR çiğköfte, marul, turşu, domates, nar ekşisi.",
+            "price": 170,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "wraps",
+                "cigkofte"
+            ]
+        },
+        {
+            "id": "cigkofte-hnf-ck4",
+            "name": "CMR Yarım Porsiyon Çiğköfte (260 gr)",
+            "description": "260 gr CMR çiğköfte, lavaş, marul ve soslar.",
+            "price": 300,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "cigkofte",
+                "mains"
+            ]
+        },
+        {
+            "id": "cigkofte-hnf-ck5",
+            "name": "CMR Tam Porsiyon Çiğköfte (400 gr)",
+            "description": "400 gr CMR çiğköfte, lavaş, marul ve soslar.",
+            "price": 450,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "cigkofte",
+                "mains"
+            ]
+        },
+        {
+            "id": "cigkofte-hnf-ck6",
+            "name": "CMR Aile Boyu Çiğköfte (700 gr)",
+            "description": "700 gr CMR çiğköfte, lavaş, marul ve soslar.",
+            "price": 700,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "cigkofte",
+                "mains"
+            ]
+        },
+        {
+            "id": "cigkofte-hnf-ck7",
+            "name": "CMR Kilo ile Çiğköfte (1 Kg)",
+            "description": "1 kg CMR çiğköfte, lavaş, marul ve soslar.",
+            "price": 840,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "cigkofte",
+                "mains"
+            ]
+        },
+        {
+            "id": "cold-hnf-cc-330",
+            "name": "Coca-Cola 330 ml",
+            "description": "330 ml Coca-Cola (Normal/Zero/Light).",
+            "price": 50,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "cold-drinks"
+            ]
+        },
+        {
+            "id": "cold-hnf-cc-1l",
+            "name": "Coca-Cola 1 lt",
+            "description": "1 lt Coca-Cola (Normal/Zero/Light).",
+            "price": 65,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "cold-drinks"
+            ]
+        },
+        {
+            "id": "cold-hnf-fanta-330",
+            "name": "Fanta 330 ml",
+            "description": "330 ml Fanta.",
+            "price": 50,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "cold-drinks"
+            ]
+        },
+        {
+            "id": "cold-hnf-sprite-330",
+            "name": "Sprite 330 ml",
+            "description": "330 ml Sprite.",
+            "price": 50,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "cold-drinks"
+            ]
+        },
+        {
+            "id": "cold-hnf-cappy-330",
+            "name": "Cappy 330 ml",
+            "description": "330 ml Cappy (Karışık/Şeftali/Vişne).",
+            "price": 50,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "cold-drinks"
+            ]
+        },
+        {
+            "id": "cold-hnf-fuse-330",
+            "name": "Fuse Tea 330 ml",
+            "description": "330 ml Fuse Tea (Şeftali/Limon).",
+            "price": 50,
+            "restaurantId": "hot-n-fresh",
+            "categories": [
+                "cold-drinks"
+            ]
+        }
+    ]
+}
