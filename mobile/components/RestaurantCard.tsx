@@ -28,7 +28,7 @@ const formatCurrency = (value?: string | number) => {
     return `TRY ${amount.toFixed(2)}`;
 };
 
-const buildImageSource = (rawImage: any) => getRestaurantImageSource(rawImage, images.logo);
+const buildImageSource = (rawImage: any, hint?: string) => getRestaurantImageSource(rawImage, images.logo, hint);
 
 const RestaurantCard = ({ restaurant, onPress, variant = "list" }: Props) => {
     const {
@@ -40,7 +40,7 @@ const RestaurantCard = ({ restaurant, onPress, variant = "list" }: Props) => {
         deliveryFee,
         imageUrl,
     } = restaurant;
-    const imageSource = buildImageSource(imageUrl);
+    const imageSource = buildImageSource(imageUrl, `${restaurant.id} ${name}`);
     const isGrid = variant === "grid";
 
     const className = isGrid ? undefined : "restaurant-card";

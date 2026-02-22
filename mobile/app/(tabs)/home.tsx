@@ -338,7 +338,7 @@ const RestaurantGridTile = ({
                     color={theme.colors.primary}
                     style={{ position: "absolute", top: logoIconOffset, left: logoIconOffset }}
                 />
-                <RestaurantImage imageUrl={imageUrl} />
+                <RestaurantImage imageUrl={imageUrl} imageHint={`${restaurantId} ${fallbackName}`} />
             </View>
             <Text
                 style={{
@@ -366,8 +366,8 @@ const RestaurantGridTile = ({
     );
 };
 
-const RestaurantImage = ({ imageUrl }: { imageUrl: any }) => {
-    const source = getRestaurantImageSource(imageUrl);
+const RestaurantImage = ({ imageUrl, imageHint }: { imageUrl: any; imageHint?: string }) => {
+    const source = getRestaurantImageSource(imageUrl, undefined, imageHint);
     return <Image source={source} style={{ width: "100%", height: "100%" }} contentFit="cover" transition={300} />;
 };
 

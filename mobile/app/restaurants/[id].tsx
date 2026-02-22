@@ -340,7 +340,11 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
         [],
     );
 
-    const heroSource = getRestaurantImageSource(restaurant?.imageUrl || restaurant?.image_url);
+    const heroSource = getRestaurantImageSource(
+        restaurant?.imageUrl || restaurant?.image_url,
+        undefined,
+        `${restaurant?.id || id} ${restaurant?.name || ""}`,
+    );
     const phoneLabel = restaurant?.phone || "(+90) 000 000 00 00";
     const heroSubtitle = restaurant?.cuisine || "World Kitchen";
     const displayName = restaurant?.name || restaurantId || "Restaurant";
@@ -684,14 +688,17 @@ const styles = StyleSheet.create({
     menuBottomRow: { marginTop: 12, flexDirection: "row", alignItems: "center" },
 
     addPill: {
-        paddingHorizontal: 16,
+        minWidth: 116,
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 14,
         paddingVertical: 10,
-        borderRadius: 999,
-        backgroundColor: "rgba(217,79,35,0.10)",
-        borderWidth: 1.2,
-        borderColor: "rgba(217,79,35,0.22)",
+        borderRadius: 12,
+        backgroundColor: "#FE8C00",
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.24)",
     },
-    addPillText: { fontFamily: "ChairoSans", fontSize: 13, color: THEME.ink, letterSpacing: 0.2 },
+    addPillText: { fontFamily: "ChairoSans", fontSize: 13, color: "#FFFFFF", letterSpacing: 0.2 },
 
     cartFab: { position: "absolute" },
     cartFabInner: {

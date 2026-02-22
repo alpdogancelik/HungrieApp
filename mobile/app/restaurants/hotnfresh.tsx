@@ -491,15 +491,18 @@ const styles = StyleSheet.create({
   menuBottomRow: { marginTop: 12, flexDirection: "row", alignItems: "center" },
 
   addPill: {
-    paddingHorizontal: 16,
+    minWidth: 116,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,90,31,0.10)",
-    borderWidth: 1.2,
-    borderColor: "rgba(255,90,31,0.22)",
+    borderRadius: 12,
+    backgroundColor: "#FE8C00",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.24)",
   },
-  addPillPressed: { transform: [{ scale: 0.985 }], opacity: 0.98, borderColor: "rgba(255,90,31,0.40)" },
-  addPillText: { fontFamily: "ChairoSans", fontSize: 13, color: THEME.ink, letterSpacing: 0.2 },
+  addPillPressed: { transform: [{ scale: 0.985 }], opacity: 0.92 },
+  addPillText: { fontFamily: "ChairoSans", fontSize: 13, color: "#FFFFFF", letterSpacing: 0.2 },
 
   cartFab: { position: "absolute" },
   cartFabInner: {

@@ -21,10 +21,39 @@ const RESTAURANT_LOGO_BY_FILE: Record<string, number> = {
 };
 
 const FALLBACK_RESTAURANT_IMAGE = RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/adapizzalogo.jpg"];
+const RESTAURANT_LOGO_BY_HINT: Record<string, number> = {
+    "ada-pizza": RESTAURANT_LOGO_BY_FILE.adapizzalogo,
+    adapizza: RESTAURANT_LOGO_BY_FILE.adapizzalogo,
+    "ala-carte-cafe": RESTAURANT_LOGO_BY_FILE.alacartelogo,
+    alacarte: RESTAURANT_LOGO_BY_FILE.alacartelogo,
+    "alacarte-cafe": RESTAURANT_LOGO_BY_FILE.alacartelogo,
+    "hot-n-fresh": RESTAURANT_LOGO_BY_FILE.hotnfreshlogo,
+    hotnfresh: RESTAURANT_LOGO_BY_FILE.hotnfreshlogo,
+    lavish: RESTAURANT_LOGO_BY_FILE.lavishlogo,
+    munchies: RESTAURANT_LOGO_BY_FILE.munchieslogo,
+    root: RESTAURANT_LOGO_BY_FILE.rootlogo,
+    "root-kitchen-coffee": RESTAURANT_LOGO_BY_FILE.rootlogo,
+    lombard: RESTAURANT_LOGO_BY_FILE.lombardlogo,
+    "lombard-kitchen": RESTAURANT_LOGO_BY_FILE.lombardlogo,
+    burgerhouse: RESTAURANT_LOGO_BY_FILE.burgerhouselogo,
+    "burger-house": RESTAURANT_LOGO_BY_FILE.burgerhouselogo,
+};
 
 type ExpoImageSource = number | { uri: string };
 
-export const resolveRestaurantImageSource = (value?: string | number | null) => {
+const normalizeHint = (value?: string | null) =>
+    String(value || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+
+const resolveByHint = (hint?: string | null) => {
+    const normalized = normalizeHint(hint);
+    if (!normalized) return null;
+    return RESTAURANT_LOGO_BY_HINT[normalized] || null;
+};
+
+export const resolveRestaurantImageSource = (value?: string | number | null, hint?: string | null) => {
     if (value && typeof value === "object") {
         const uriLike = (value as any).uri ?? (value as any).default?.uri ?? null;
         if (typeof uriLike === "string" && uriLike.trim().length) {
@@ -32,9 +61,11 @@ export const resolveRestaurantImageSource = (value?: string | number | null) => 
         }
     }
     if (typeof value === "number") return value;
-    if (typeof value !== "string") return FALLBACK_RESTAURANT_IMAGE;
+    if (typeof value !== "string") {
+        return resolveByHint(hint) || FALLBACK_RESTAURANT_IMAGE;
+    }
     const trimmed = value.trim();
-    if (!trimmed) return FALLBACK_RESTAURANT_IMAGE;
+    if (!trimmed) return resolveByHint(hint) || FALLBACK_RESTAURANT_IMAGE;
     const lowered = trimmed.toLowerCase();
     if (
         trimmed.startsWith("http://") ||
@@ -57,6 +88,9 @@ export const resolveRestaurantImageSource = (value?: string | number | null) => 
     const containsMatch = Object.entries(RESTAURANT_LOGO_BY_FILE).find(([key]) => trimmed.includes(key));
     if (containsMatch) return containsMatch[1];
 
+    const byHint = resolveByHint(hint);
+    if (byHint) return byHint;
+
     // Prevent invalid URI errors when a local asset path leaks into runtime.
     if (trimmed.startsWith("@/assets/restaurantlogo/")) return FALLBACK_RESTAURANT_IMAGE;
     return FALLBACK_RESTAURANT_IMAGE;
@@ -65,8 +99,9 @@ export const resolveRestaurantImageSource = (value?: string | number | null) => 
 export const getRestaurantImageSource = (
     value?: string | number | { uri?: string } | null,
     fallback: ExpoImageSource = FALLBACK_RESTAURANT_IMAGE,
+    hint?: string | null,
 ): ExpoImageSource => {
-    const resolved = resolveRestaurantImageSource(value as any);
+    const resolved = resolveRestaurantImageSource(value as any, hint);
     if (typeof resolved === "number") return resolved;
     if (typeof resolved === "string" && resolved.trim()) {
         return { uri: resolved.trim() };

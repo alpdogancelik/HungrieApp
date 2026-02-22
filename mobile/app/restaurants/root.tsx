@@ -546,14 +546,17 @@ const styles = StyleSheet.create({
     menuBottomRow: { marginTop: 12, flexDirection: "row", alignItems: "center" },
 
     addPill: {
-        paddingHorizontal: 16,
+        minWidth: 116,
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 14,
         paddingVertical: 10,
-        borderRadius: 999,
-        backgroundColor: THEME.coffeeSoft2,
-        borderWidth: 1.2,
-        borderColor: "rgba(201,162,122,0.42)",
+        borderRadius: 12,
+        backgroundColor: "#FE8C00",
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.24)",
     },
-    addPillText: { fontFamily: "ChairoSans", fontSize: 13, color: THEME.ink, letterSpacing: 0.2 },
+    addPillText: { fontFamily: "ChairoSans", fontSize: 13, color: "#FFFFFF", letterSpacing: 0.2 },
 
     // Cart FAB
     cartFab: { position: "absolute" },
