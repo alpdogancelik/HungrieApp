@@ -76,6 +76,13 @@ export const resolveRestaurantImageSource = (value?: string | number | null, hin
     ) {
         return trimmed;
     }
+    const byHint = resolveByHint(hint);
+    const isLocalRestaurantLogoPath =
+        trimmed.startsWith("@/assets/restaurantlogo/") || lowered.includes("restaurantlogo/");
+
+    // If backend stored an incorrect static local logo path, prefer deterministic mapping by id/name hint.
+    if (isLocalRestaurantLogoPath && byHint) return byHint;
+
     const localAsset = RESTAURANT_LOGO_MAP[trimmed];
     if (localAsset) return localAsset;
 
@@ -88,7 +95,6 @@ export const resolveRestaurantImageSource = (value?: string | number | null, hin
     const containsMatch = Object.entries(RESTAURANT_LOGO_BY_FILE).find(([key]) => trimmed.includes(key));
     if (containsMatch) return containsMatch[1];
 
-    const byHint = resolveByHint(hint);
     if (byHint) return byHint;
 
     // Prevent invalid URI errors when a local asset path leaks into runtime.
