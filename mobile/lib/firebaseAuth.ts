@@ -119,13 +119,14 @@ const syncProfile = async (user: FirebaseUser, overrides: Partial<Profile> = {})
         return base;
     }
     const stored = snap.data() as Profile & { accountId?: string };
-    const merged = { ...base, ...stored, accountId: stored.accountId || user.uid };
+    // Always use Firebase auth uid as the canonical account id.
+    const merged = { ...base, ...stored, accountId: user.uid };
     const needsUpdate =
         stored.name !== merged.name ||
         stored.email !== merged.email ||
         stored.avatar !== merged.avatar ||
         stored.whatsappNumber !== merged.whatsappNumber ||
-        !stored.accountId;
+        stored.accountId !== user.uid;
     if (needsUpdate) {
         await setDoc(
             ref,

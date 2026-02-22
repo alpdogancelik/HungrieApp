@@ -8,7 +8,7 @@ import {
     setDoc,
 } from "firebase/firestore";
 import useAuthStore from "@/store/auth.store";
-import { firestore } from "@/lib/firebase";
+import { auth, firestore } from "@/lib/firebase";
 import type { Address } from "@/src/domain/types";
 
 const LEGACY_STORAGE_KEY = "@hungrie/addresses";
@@ -43,7 +43,23 @@ const debugWarn = (message: string, error?: unknown) => {
     console.warn(`[AddressStore] ${message}`);
 };
 const notSignedInError = () => new Error("Please sign in to manage addresses.");
-const getCurrentUserId = () => useAuthStore.getState().user?.accountId ?? null;
+const getCurrentUserId = () => {
+    const authUid = auth?.currentUser?.uid ?? null;
+    const storeUid = useAuthStore.getState().user?.accountId ?? null;
+    return authUid || storeUid;
+};
+
+const toFirestoreAddress = (address: Address) => ({
+    id: address.id,
+    label: address.label,
+    line1: address.line1,
+    ...(address.block ? { block: address.block } : {}),
+    ...(address.room ? { room: address.room } : {}),
+    city: address.city,
+    country: address.country,
+    isDefault: address.isDefault,
+    createdAt: address.createdAt,
+});
 
 const resetCacheIfUserChanged = (nextUserId: string | null) => {
     if (cacheOwnerId === nextUserId) return;
@@ -77,7 +93,7 @@ const syncUserAddressSummary = async (userId: string, addresses: Address[]) => {
         {
             // Keep a simple field for quick visibility in Firestore console.
             address: addressText,
-            defaultAddress,
+            defaultAddress: defaultAddress ? toFirestoreAddress(defaultAddress) : null,
             addressesCount: addresses.length,
             addressesUpdatedAt: Date.now(),
         },
@@ -126,7 +142,7 @@ const writeAllToFirestore = async (userId: string, addresses: Address[]) => {
     await Promise.all(
         addresses.map((address) => {
             const ref = doc(col, address.id);
-            return setDoc(ref, address, { merge: true });
+            return setDoc(ref, toFirestoreAddress(address), { merge: true });
         }),
     );
 };
