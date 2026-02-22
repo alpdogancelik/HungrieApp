@@ -294,6 +294,7 @@ const RestaurantGridTile = ({
     const { t } = useTranslation();
     const { name, imageUrl } = restaurant || {};
     const fallbackName = name || "Restaurant";
+    const restaurantId = normalizeRestaurantId(restaurant, fallbackName);
     const campusLabel = campusOnly ? t("home.campusOnlyTag") : null;
     const tileWidth = columns <= 1 ? "100%" : columns >= 3 ? "31%" : "48%";
     const logoSize = columns >= 3 ? 100 : 90;
