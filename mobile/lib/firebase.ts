@@ -1,5 +1,6 @@
 import Constants from "expo-constants";
 import ReactNativeAsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 import { FirebaseApp, getApp, getApps, initializeApp } from "firebase/app";
 import { Auth, getAuth, initializeAuth } from "firebase/auth";
 import {
@@ -66,13 +67,23 @@ if (firebaseConfigured) {
 let auth: Auth | undefined;
 if (firebaseApp) {
     try {
-        const getReactNativePersistence = (require("firebase/auth") as any)
-            ?.getReactNativePersistence as
-            | ((storage: any) => unknown)
-            | undefined;
-        auth = initializeAuth(firebaseApp, {
-            persistence: getReactNativePersistence?.(ReactNativeAsyncStorage) as any,
-        });
+        if (Platform.OS === "web") {
+            auth = getAuth(firebaseApp);
+            const { browserLocalPersistence, setPersistence } = require("firebase/auth") as any;
+            void setPersistence(auth, browserLocalPersistence).catch((error: unknown) => {
+                if (__DEV__) {
+                    console.warn("[Firebase] Failed to set browser local auth persistence.", error);
+                }
+            });
+        } else {
+            const getReactNativePersistence = (require("firebase/auth") as any)
+                ?.getReactNativePersistence as
+                | ((storage: any) => unknown)
+                | undefined;
+            auth = initializeAuth(firebaseApp, {
+                persistence: getReactNativePersistence?.(ReactNativeAsyncStorage) as any,
+            });
+        }
     } catch (error) {
         auth = getAuth(firebaseApp);
     }

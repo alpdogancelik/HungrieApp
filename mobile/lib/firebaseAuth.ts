@@ -65,9 +65,16 @@ const waitForAuthUser = async (): Promise<FirebaseUser | null> => {
     const firebaseAuth = auth;
     if (!firebaseAuth) return null;
     if (firebaseAuth.currentUser) return firebaseAuth.currentUser;
+    await (firebaseAuth as any).authStateReady?.().catch(() => null);
+    if (firebaseAuth.currentUser) return firebaseAuth.currentUser;
 
     return new Promise((resolve) => {
-        const done = (u: FirebaseUser | null) => resolve(u);
+        let resolved = false;
+        const done = (u: FirebaseUser | null) => {
+            if (resolved) return;
+            resolved = true;
+            resolve(u);
+        };
         const unsub = onAuthStateChanged(
             firebaseAuth,
             (u) => {
@@ -82,7 +89,7 @@ const waitForAuthUser = async (): Promise<FirebaseUser | null> => {
         setTimeout(() => {
             unsub();
             done(firebaseAuth.currentUser ?? null);
-        }, 2000);
+        }, 8000);
     });
 };
 
