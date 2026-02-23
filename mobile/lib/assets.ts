@@ -50,7 +50,19 @@ const normalizeHint = (value?: string | null) =>
 const resolveByHint = (hint?: string | null) => {
     const normalized = normalizeHint(hint);
     if (!normalized) return null;
-    return RESTAURANT_LOGO_BY_HINT[normalized] || null;
+    const direct = RESTAURANT_LOGO_BY_HINT[normalized];
+    if (direct) return direct;
+
+    // Real-world hints can include random ids like "<docId>-burger-house".
+    const entries = Object.entries(RESTAURANT_LOGO_BY_HINT).sort((a, b) => b[0].length - a[0].length);
+    const contains = entries.find(([key]) => normalized.includes(key));
+    if (contains) return contains[1];
+
+    const compact = normalized.replace(/-/g, "");
+    const compactContains = entries.find(([key]) => compact.includes(key.replace(/-/g, "")));
+    if (compactContains) return compactContains[1];
+
+    return null;
 };
 
 export const resolveRestaurantImageSource = (value?: string | number | null, hint?: string | null) => {
