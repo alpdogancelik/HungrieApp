@@ -41,8 +41,7 @@
           "color": "#FE8C00",
           "defaultChannel": "default",
           "sounds": [
-            "./assets/hungrie.wav",
-            "./assets/hungrie.mp3"
+            "./assets/hungrie.wav"
           ]
         }
       ],

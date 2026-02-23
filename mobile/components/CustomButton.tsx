@@ -1,11 +1,10 @@
-import React from "react";
+import React, { type ReactNode } from "react";
 import {
     ActivityIndicator,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
-    type ReactNode,
     type StyleProp,
     type TextStyle,
     type ViewStyle,

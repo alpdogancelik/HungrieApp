@@ -141,6 +141,8 @@ const MenuList = ({
     onAdded?: (itemName: string) => void;
 }) => {
     const { addItem } = useCartStore();
+    const safeAddLabel = typeof addLabel === "string" && addLabel.trim() ? addLabel : "Add to cart";
+
     const handleAddToCart = (item: MenuEntry) => {
         const before = useCartStore.getState().getTotalItems();
         addItem({
@@ -162,7 +164,11 @@ const MenuList = ({
     return (
         <View style={styles.menuList}>
             {items.map((item) => (
-                <View key={String(item.id)} style={styles.menuCard}>
+                <Pressable
+                    key={String(item.id)}
+                    onPress={() => handleAddToCart(item)}
+                    style={({ pressed }) => [styles.menuCard, pressed ? styles.menuCardPressed : null]}
+                >
                     <View style={styles.menuAccentRail} />
 
                     <View style={{ flex: 1, paddingRight: 10 }}>
@@ -170,7 +176,13 @@ const MenuList = ({
                             <Text style={styles.menuTitle} numberOfLines={1}>
                                 {item.name}
                             </Text>
-                            <Text style={styles.menuPrice}>{formatPrice(item.price)}</Text>
+                            <View style={styles.menuPriceWrap}>
+                                <Text style={styles.menuPrice}>{formatPrice(item.price)}</Text>
+                                <View style={styles.quickAddPill}>
+                                    <Icon name="plus" size={12} color="#FFFFFF" />
+                                    <Text style={styles.quickAddText}>{safeAddLabel}</Text>
+                                </View>
+                            </View>
                         </View>
 
                         {item.description ? (
@@ -178,21 +190,8 @@ const MenuList = ({
                                 {item.description}
                             </Text>
                         ) : null}
-
-                        <View style={styles.menuBottomRow}>
-                            <View style={{ flex: 1 }} />
-                            <Pressable
-                                onPress={() => handleAddToCart(item)}
-                                style={({ pressed }) => [
-                                    styles.addPill,
-                                    pressed ? { transform: [{ scale: 0.985 }], opacity: 0.96 } : null,
-                                ]}
-                            >
-                                <Text style={styles.addPillText}>{addLabel}</Text>
-                            </Pressable>
-                        </View>
                     </View>
-                </View>
+                </Pressable>
             ))}
         </View>
     );
@@ -670,12 +669,17 @@ const styles = StyleSheet.create({
 
     menuTopRow: {
         flexDirection: "row",
-        alignItems: "flex-start",
+        alignItems: "center",
         justifyContent: "space-between",
         gap: 12,
     },
     menuTitle: { fontFamily: "ChairoSans", fontSize: 18, color: THEME.ink, flex: 1 },
     menuPrice: { fontFamily: "ChairoSans", fontSize: 16, color: THEME.accent, letterSpacing: 0.2 },
+    menuPriceWrap: {
+        alignItems: "flex-end",
+        gap: 6,
+        flexShrink: 0,
+    },
 
     menuDesc: {
         marginTop: 6,
@@ -685,20 +689,20 @@ const styles = StyleSheet.create({
         lineHeight: 18,
     },
 
-    menuBottomRow: { marginTop: 12, flexDirection: "row", alignItems: "center" },
-
-    addPill: {
-        minWidth: 116,
+    quickAddPill: {
+        minWidth: 118,
         alignItems: "center",
         justifyContent: "center",
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        borderRadius: 12,
+        paddingHorizontal: 10,
+        paddingVertical: 7,
+        borderRadius: 999,
         backgroundColor: "#FE8C00",
         borderWidth: 1,
         borderColor: "rgba(255,255,255,0.24)",
+        flexDirection: "row",
+        gap: 6,
     },
-    addPillText: { fontFamily: "ChairoSans", fontSize: 13, color: "#FFFFFF", letterSpacing: 0.2 },
+    quickAddText: { fontFamily: "ChairoSans", fontSize: 11, color: "#FFFFFF", letterSpacing: 0.2 },
 
     cartFab: { position: "absolute" },
     cartFabInner: {

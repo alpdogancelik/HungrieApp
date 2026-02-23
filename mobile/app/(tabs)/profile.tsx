@@ -73,12 +73,12 @@ const ui = StyleSheet.create({
     },
     userName: {
         color: "#FFFFFF",
-        fontSize: 30,
+        fontSize: 24,
         fontFamily: "ChairoSans",
     },
     userEmail: {
         color: "rgba(255,255,255,0.7)",
-        fontSize: 14,
+        fontSize: 13,
         marginTop: 2,
         fontFamily: "ChairoSans",
     },
@@ -106,23 +106,23 @@ const ui = StyleSheet.create({
     },
     ctaText: {
         color: "#FFFFFF",
-        fontSize: 16,
+        fontSize: 14,
         fontFamily: "ChairoSans",
     },
     addressTitle: {
         color: "#FFFFFF",
-        fontSize: 30,
+        fontSize: 24,
         fontFamily: "ChairoSans",
-        lineHeight: 34,
+        lineHeight: 28,
     },
     addressText: {
         color: "rgba(255,255,255,0.82)",
-        fontSize: 16,
+        fontSize: 14,
         fontFamily: "ChairoSans",
     },
     addressMeta: {
         color: "rgba(255,255,255,0.82)",
-        fontSize: 14,
+        fontSize: 13,
         fontFamily: "ChairoSans",
     },
     manageAddressBtn: {
@@ -180,12 +180,12 @@ const ui = StyleSheet.create({
     },
     accountLabel: {
         fontFamily: "ChairoSans",
-        fontSize: 16,
+        fontSize: 15,
         color: "#0F172A",
     },
     accountDesc: {
         fontFamily: "ChairoSans",
-        fontSize: 14,
+        fontSize: 13,
         color: "#334155",
         marginTop: 2,
     },

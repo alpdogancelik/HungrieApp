@@ -1,8 +1,8 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
-import Icon from "@/components/Icon";
+import Icon from "../components/Icon";
 
 type TermsSection = {
     title: string;
@@ -18,74 +18,74 @@ type TermsContent = {
 };
 
 const TERMS_TR: TermsContent = {
-    title: "Şartlar ve Koşullar",
-    header: "ŞARTLAR VE KOŞULLAR - Hungrie",
-    meta: ["Yürürlük Tarihi: [GG.AA.YYYY]", "Sahibi: [Şirket/Şahıs Adı]"],
+    title: "Sartlar ve Kosullar",
+    header: "SARTLAR VE KOSULLAR - Hungrie",
+    meta: ["Yururluk Tarihi: 01.01.2026", "Saglayici: HungrieApp"],
     sections: [
         {
-            title: "1. Sözleşmenin Onaylanması",
-            body: ["Uygulamayı kullanarak bu sözleşmeyi kabul etmiş olursun."],
+            title: "1. Sozlesmenin Kabulu",
+            body: ["Uygulamayi kullanarak bu sozlesmeyi kabul etmis olursunuz."],
         },
         {
             title: "2. Hizmetler",
             body: [
-                "Hungrie; restoran menüleri listeleyen, siparişini restorana ileten ve teslimat akışını kolaylaştıran bir platformdur. Ürün içerikleri/alerjen/hijyen ve benzeri konularda restoranın beyanları esastır.",
+                "Hungrie, restoran menulerini listeler, siparisi restorana iletir ve teslimat surecini kolaylastirir. Urun icerigi, alerjen ve hijyen konularinda restoran beyanlari gecerlidir.",
             ],
         },
         {
-            title: "3. Kullanıcı Sistemi",
+            title: "3. Kullanici Hesabi",
             body: [
-                "Hesabını doğru bilgilerle oluşturmak ve güvenliğini sağlamak senin sorumluluğundur. Hesabın üzerinden yapılan işlemler aksi ispatlanana kadar sana ait kabul edilir.",
+                "Hesabinizin dogru bilgilerle olusturulmasi ve guvenli tutulmasi sizin sorumlulugunuzdadir. Aksi ispat edilmedikce hesabinizdan yapilan islemler size ait kabul edilir.",
             ],
         },
         {
-            title: "4. Kullanıcının Yüklümlülükleri",
+            title: "4. Kullanici Yukumlulukleri",
             body: [
-                "Hizmeti hukuka uygun kullanmayı, suistimal etmemeyi, üçüncü kişilerin haklarını ihlal etmemeyi kabul edersin.",
+                "Hizmeti hukuka uygun sekilde kullanmayi, suistimal etmemeyi ve ucuncu kisi haklarini ihlal etmemeyi kabul edersiniz.",
             ],
         },
         {
-            title: "5. İçerik ve Değişiklikler",
+            title: "5. Icerik ve Degisiklikler",
             body: [
-                "Menü/fiyat/stok bilgileri restoranlar tarafından sağlanır ve değiştirilebilir. Hungrie, hizmeti geliştirmek için uygulamada değişiklik yapabilir.",
+                "Menu, fiyat ve stok bilgileri restoranlarca saglanir ve degisebilir. Hungrie, hizmeti iyilestirmek icin uygulamada degisiklik yapabilir.",
             ],
         },
         {
-            title: "6. Kullanım Amacı",
-            body: ["Siparişlerin kişisel kullanım amacı olduğunu kabul edersin."],
+            title: "6. Kullanim Amaci",
+            body: ["Siparislerin kisisel kullanim amacli oldugunu kabul edersiniz."],
         },
         {
-            title: "7. Ödeme",
+            title: "7. Odeme",
             body: [
-                "Ödeme, restoranın sunduğu seçenekler kapsamında kapalı nakit/POS olarak yapılır. Hungrie kart/banka bilgisi toplamaz (mevcut model).",
+                "Odeme, restoranin sundugu seceneklere gore kapida nakit/POS ile yapilir. Hungrie mevcut modelde kart/banka bilgisi toplamaz.",
             ],
         },
         {
-            title: "8. Kişisel Veri",
+            title: "8. Kisisel Veriler",
             body: [
-                "Kişisel verilerin işlenmesi Gizlilik Politikasına tabidir. Teslimat için gerekli bilgiler restoran ve/veya kurye ile paylaşılabilir.",
+                "Kisisel veri islemleri Gizlilik Politikasi kapsamindadir. Teslimat icin gerekli bilgiler restoran ve/veya kurye ile paylasilabilir.",
             ],
         },
         {
-            title: "9. Kanuni Zorunluluklar",
-            body: ["Mevzuat veya resmi makam talepleri nedeniyle şifrelerde güncelleme yapabilir."],
+            title: "9. Yasal Gereklilikler",
+            body: ["Surecler, mevzuat veya resmi makam taleplerine gore guncellenebilir."],
         },
         {
-            title: "10. Ürün Teslimatı",
+            title: "10. Teslimat",
             body: [
-                "Teslimat, kullanıcının seçtiği adrese yapılır. Kullanıcının adreste bulunamaması veya yanlış adres bildirmesi halinde doğabilecek sonuçlardan kullanıcı sorumlu olabilir.",
+                "Teslimat, kullanicinin sectigi adrese yapilir. Kullanici adreste bulunmazsa veya hatali adres verirse dogacak sonuclardan sorumlu olabilir.",
             ],
         },
         {
-            title: "11.Ücret iadesi",
+            title: "11. Ucret Iadesi",
             body: [
-                "İade süreleri, siparişi hazırlayan restoranın politikası ve mevzuat çerçevesinde yürür. Hungrie, iletişimi kolaylaştırabilir; ancak ürün/teslimat kaynaklı ihtilaflarda nihai sorumluluk ilgili tarafa ait olabilir.",
+                "Iadeler, restorantin politikasi ve gecerli mevzuata gore uygulanir. Hungrie iletisimi kolaylastirabilir; urun/teslimat kaynakli uyusmazliklarda nihai sorumluluk ilgili tarafta olabilir.",
             ],
         },
         {
-            title: "12. Bilgilerin Saklanması ve ispat",
+            title: "12. Kayit ve Delil",
             body: [
-                "Sipariş kayıtları ve sistem logları, uyuşmazlık halinde doğrulanabilir delil niteliğinde kullanılabilecek; veriler gerekli süre boyunca saklanır.",
+                "Siparis kayitlari ve sistem loglari uyusmazlik durumunda delil olarak kullanilabilir ve gerekli sure boyunca saklanir.",
             ],
         },
     ],
@@ -93,8 +93,8 @@ const TERMS_TR: TermsContent = {
 
 const TERMS_EN: TermsContent = {
     title: "Terms and Conditions",
-    header: "TERMS AND CONDITIONS  Hungrie",
-    meta: ["Effective Date: [01.01.2026]", "Provider: [Company/Hungrie]"],
+    header: "TERMS AND CONDITIONS - Hungrie",
+    meta: ["Effective Date: 01.01.2026", "Provider: HungrieApp"],
     sections: [
         {
             title: "1. Acceptance of the Agreement",
@@ -103,13 +103,13 @@ const TERMS_EN: TermsContent = {
         {
             title: "2. Services",
             body: [
-                "Hungrie is a platform that lists restaurant menus, forwards your order to the restaurant, and facilitates the delivery flow. For product contents/allergens/hygiene and similar matters, restaurant statements prevail.",
+                "Hungrie is a platform that lists restaurant menus, forwards your order to the restaurant, and facilitates delivery. For product contents, allergens, and hygiene matters, restaurant statements prevail.",
             ],
         },
         {
             title: "3. User Account",
             body: [
-                "You are responsible for creating your account with accurate information and keeping it secure. Transactions made through your account are considered yours unless proven otherwise.",
+                "You are responsible for providing accurate account information and keeping your account secure. Transactions made through your account are considered yours unless proven otherwise.",
             ],
         },
         {
@@ -121,7 +121,7 @@ const TERMS_EN: TermsContent = {
         {
             title: "5. Content and Changes",
             body: [
-                "Menu/price/stock information is provided by restaurants and may change. Hungrie may make changes in the app to improve the service.",
+                "Menu, price, and stock information is provided by restaurants and may change. Hungrie may update the app to improve service quality.",
             ],
         },
         {
@@ -131,7 +131,7 @@ const TERMS_EN: TermsContent = {
         {
             title: "7. Payment",
             body: [
-                "Payment is made in cash/POS on delivery based on restaurant options. Hungrie does not collect card/bank information (current model).",
+                "Payment is made in cash/POS on delivery based on restaurant options. Hungrie does not collect card/bank information in the current model.",
             ],
         },
         {
@@ -142,41 +142,44 @@ const TERMS_EN: TermsContent = {
         },
         {
             title: "9. Legal Requirements",
-            body: ["Processes may be updated due to legislation or official authority requests."],
+            body: ["Processes may be updated due to laws or requests from official authorities."],
         },
         {
             title: "10. Delivery",
             body: [
-                "Delivery is made to the address selected by the user. The user may be responsible for consequences if they are not available or provide an incorrect address.",
+                "Delivery is made to the address selected by the user. The user may be responsible for outcomes if they are unavailable or provide an incorrect address.",
             ],
         },
         {
             title: "11. Refunds",
             body: [
-                "Refunds follow the policy of the restaurant preparing the order and applicable laws. Hungrie may facilitate communication; however, final responsibility for product/delivery disputes may belong to the relevant party.",
+                "Refunds follow the policy of the restaurant preparing the order and applicable laws. Hungrie may facilitate communication, but final responsibility in product/delivery disputes may belong to the relevant party.",
             ],
         },
         {
             title: "12. Record Retention and Evidence",
             body: [
-                "Order records and system logs may be used as verifiable evidence in case of disputes; data is kept for the required period.",
+                "Order records and system logs may be used as verifiable evidence in disputes and are retained for the required period.",
             ],
         },
     ],
 };
 
 const SectionBlock = ({ section }: { section: TermsSection }) => (
-    <View className="gap-2">
-        <Text className="text-lg font-ezra-bold text-dark-100">{section.title}</Text>
+    <View style={styles.sectionBlock}>
+        <Text style={styles.sectionTitle}>{section.title}</Text>
+
         {section.body?.map((line, index) => (
-            <Text key={`${section.title}-body-${index}`} className="body-medium text-dark-60">
+            <Text key={`${section.title}-body-${index}`} style={styles.bodyText}>
                 {line}
             </Text>
         ))}
+
         {section.bullets?.map((line, index) => (
-            <Text key={`${section.title}-bullet-${index}`} className="body-medium text-dark-60">
-                {`- ${line}`}
-            </Text>
+            <View key={`${section.title}-bullet-${index}`} style={styles.bulletRow}>
+                <Text style={styles.bulletMark}>-</Text>
+                <Text style={styles.bulletText}>{line}</Text>
+            </View>
         ))}
     </View>
 );
@@ -186,28 +189,25 @@ const TermsScreen = () => {
     const content = i18n.language.startsWith("tr") ? TERMS_TR : TERMS_EN;
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50">
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 120 }}>
-                <View className="flex-row items-center gap-3 mb-4">
-                    <Pressable
-                        onPress={() => router.back()}
-                        className="h-10 w-10 rounded-full bg-white border border-gray-200 items-center justify-center"
-                    >
+        <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+                <View style={styles.headerRow}>
+                    <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}>
                         <Icon name="arrowBack" size={20} color="#0F172A" />
                     </Pressable>
-                    <Text className="text-2xl font-ezra-bold text-dark-100">{content.title}</Text>
+                    <Text style={styles.screenTitle}>{content.title}</Text>
                 </View>
 
-                <View className="gap-2 mb-6">
-                    <Text className="text-xs uppercase tracking-[3px] text-dark-60">{content.header}</Text>
+                <View style={styles.metaCard}>
+                    <Text style={styles.metaHeader}>{content.header}</Text>
                     {content.meta.map((line, index) => (
-                        <Text key={`meta-${index}`} className="body-medium text-dark-60">
+                        <Text key={`meta-${index}`} style={styles.metaText}>
                             {line}
                         </Text>
                     ))}
                 </View>
 
-                <View className="gap-6">
+                <View style={styles.sectionsWrap}>
                     {content.sections.map((section) => (
                         <SectionBlock key={section.title} section={section} />
                     ))}
@@ -216,5 +216,89 @@ const TermsScreen = () => {
         </SafeAreaView>
     );
 };
+
+const styles = StyleSheet.create({
+    safeArea: { flex: 1, backgroundColor: "#F8FAFC" },
+    content: { padding: 20, paddingBottom: 120 },
+    headerRow: { flexDirection: "row", alignItems: "center", marginBottom: 16, gap: 12 },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#E2E8F0",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    backButtonPressed: { opacity: 0.75 },
+    screenTitle: {
+        flex: 1,
+        color: "#0F172A",
+        fontFamily: "ChairoSans",
+        fontSize: 28,
+        lineHeight: 34,
+    },
+    metaCard: {
+        borderRadius: 18,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#E2E8F0",
+        padding: 14,
+        marginBottom: 18,
+    },
+    metaHeader: {
+        color: "#334155",
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        lineHeight: 18,
+        textTransform: "uppercase",
+        letterSpacing: 1.5,
+        marginBottom: 6,
+    },
+    metaText: {
+        color: "#475569",
+        fontFamily: "ChairoSans",
+        fontSize: 14,
+        lineHeight: 21,
+        marginBottom: 2,
+    },
+    sectionsWrap: { gap: 14 },
+    sectionBlock: {
+        borderRadius: 18,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#E2E8F0",
+        padding: 14,
+        gap: 8,
+    },
+    sectionTitle: {
+        color: "#0F172A",
+        fontFamily: "ChairoSans",
+        fontSize: 18,
+        lineHeight: 24,
+    },
+    bodyText: {
+        color: "#334155",
+        fontFamily: "ChairoSans",
+        fontSize: 15,
+        lineHeight: 22,
+    },
+    bulletRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+    bulletMark: {
+        color: "#334155",
+        fontFamily: "ChairoSans",
+        fontSize: 15,
+        lineHeight: 22,
+        width: 10,
+    },
+    bulletText: {
+        flex: 1,
+        color: "#334155",
+        fontFamily: "ChairoSans",
+        fontSize: 15,
+        lineHeight: 22,
+    },
+});
 
 export default TermsScreen;

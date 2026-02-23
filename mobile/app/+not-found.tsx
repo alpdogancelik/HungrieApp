@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { usePathname, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import RobotDelivery from "../assets/illustrations/Robot Delivery.svg";
+import RobotDelivery from "@/assets/illustrations/Robot Delivery.svg";
 
 const NotFoundScreen = () => {
     const router = useRouter();
