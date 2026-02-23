@@ -13,6 +13,7 @@ import "./globals.css";
 import { isRemotePushSupported, NotificationManager } from "@/src/features/notifications/NotificationManager";
 import { registerTokenWithBackend } from "@/src/features/notifications/push";
 import CartLockNotice from "@/components/CartLockNotice";
+import GlobalOrderStatusToast from "@/components/GlobalOrderStatusToast";
 
 const extra = Constants.expoConfig?.extra ?? {};
 const env = (typeof process !== "undefined" ? (process as any).env : undefined) ?? {};
@@ -103,6 +104,7 @@ function RootLayoutBase() {
         <GestureHandlerRootView style={{ flex: 1 }}>
             <ThemeProvider>
                 <CartLockNotice />
+                <GlobalOrderStatusToast />
                 <View
                     style={
                         isWeb
