@@ -521,6 +521,7 @@ const Cart = () => {
                 },
             });
         } catch (error: any) {
+            console.warn("[Cart] placeOrder failed", error);
             Alert.alert(t("cart.screen.alerts.placeErrorTitle"), error?.message || t("cart.screen.alerts.placeErrorBody"));
         } finally {
             setPlacingOrder(false);

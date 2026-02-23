@@ -20,6 +20,8 @@ const ensureDb = () => {
 const ensureAuthSession = async () => {
     if (!auth) return;
     if (auth.currentUser) return;
+    await (auth as any).authStateReady?.().catch(() => null);
+    if (auth.currentUser) return;
     try {
         await signInAnonymously(auth);
     } catch (error) {
@@ -28,6 +30,8 @@ const ensureAuthSession = async () => {
 };
 
 const ordersCol = () => collection(ensureDb(), "orders");
+const compactObject = <T extends Record<string, any>>(value: T) =>
+    Object.fromEntries(Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined));
 
 export const placeOrder = async ({
     userId,
@@ -52,6 +56,7 @@ export const placeOrder = async ({
 }) => {
     await ensureAuthSession();
 
+    const resolvedUserId = auth?.currentUser?.uid ?? userId ?? "guest";
     const subtotal = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
     const { deliveryFee = 0, serviceFee = 0, discount = 0, tip = 0 } = fees;
     const total = subtotal + deliveryFee + serviceFee + tip - discount;
@@ -70,9 +75,27 @@ export const placeOrder = async ({
               .filter(Boolean)
               .join(", ")
         : undefined;
+    const sanitizedDeliveryAddress = deliveryAddress
+        ? compactObject({
+              id: deliveryAddress.id,
+              label: deliveryAddress.label,
+              line1: deliveryAddress.line1,
+              block: deliveryAddress.block,
+              room: deliveryAddress.room,
+              city: deliveryAddress.city,
+              country: deliveryAddress.country,
+              isDefault: deliveryAddress.isDefault,
+              createdAt: deliveryAddress.createdAt,
+          })
+        : undefined;
+    const customerPayload = compactObject({
+        name: contactName,
+        email: contactEmail,
+        whatsappNumber: contactWhatsapp,
+    });
 
-    const ref = await addDoc(ordersCol(), {
-        userId,
+    const ref = await addDoc(ordersCol(), compactObject({
+        userId: resolvedUserId,
         restaurantId,
         items,
         paymentMethod,
@@ -80,11 +103,7 @@ export const placeOrder = async ({
         customerName: contactName,
         customerEmail: contactEmail,
         customerWhatsapp: contactWhatsapp,
-        customer: {
-            name: contactName,
-            email: contactEmail,
-            whatsappNumber: contactWhatsapp,
-        },
+        customer: customerPayload,
         subtotal,
         deliveryFee,
         serviceFee,
@@ -92,12 +111,12 @@ export const placeOrder = async ({
         tip,
         total,
         etaMinutes,
-        deliveryAddress: deliveryAddress ? { ...deliveryAddress } : undefined,
+        deliveryAddress: sanitizedDeliveryAddress,
         deliveryAddressText,
         notes: typeof notes === "string" ? notes.trim() : "",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-    });
+    }));
     return ref.id;
 };
 
