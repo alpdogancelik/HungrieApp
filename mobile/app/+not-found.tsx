@@ -71,20 +71,20 @@ const NotFoundScreen = () => {
                     <View style={[styles.copyCol, isWide ? styles.copyColWide : styles.copyColCompact]}>
                         <Text style={styles.eyebrow}>Hungrie</Text>
                         <Text style={styles.title}>404</Text>
-                        <Text style={styles.subtitle}>Aradigin sayfa bulunamadi.</Text>
+                        <Text style={styles.subtitle}>Page not found.</Text>
                         <Text style={styles.description}>
-                            Link degismis olabilir veya gecici bir sorun yasaniyor. Ana sayfaya donup restoranlari kesfetmeye devam edebilirsin.
+                            The link may have changed, or there may be a temporary issue. Go back to the home page and keep exploring restaurants.
                         </Text>
 
                         <View style={styles.actions}>
                             <Pressable style={styles.primaryBtn} onPress={() => router.replace("/home")}>
                                 <Feather name="home" size={16} color="#FFFFFF" />
-                                <Text style={styles.primaryBtnText}>Ana Sayfaya Don</Text>
+                                <Text style={styles.primaryBtnText}>Go Home</Text>
                             </Pressable>
 
                             <Pressable style={styles.secondaryBtn} onPress={() => router.back()}>
                                 <Feather name="corner-up-left" size={16} color="#1F2937" />
-                                <Text style={styles.secondaryBtnText}>Geri Don</Text>
+                                <Text style={styles.secondaryBtnText}>Go Back</Text>
                             </Pressable>
                         </View>
 
