@@ -9,8 +9,20 @@ export type PushTokenInfo = {
     platform: PushPlatform;
 };
 
+type NotificationPayload = Record<string, unknown>;
+type NotificationResponseHandler = (payload: NotificationPayload) => void;
+type LocalNotificationOptions = {
+    withSound?: boolean;
+    channelId?: string;
+    soundName?: string;
+    data?: NotificationPayload;
+};
+
 const isWeb = Platform.OS === "web";
 const isExpoGo = Constants.appOwnership === "expo";
+const DEFAULT_CHANNEL_ID = "default";
+const ORDER_STATUS_CHANNEL_ID = "order-status";
+const HUNGRIE_SOUND_FILE = "hungrie.wav";
 
 export const isRemotePushSupported = (): boolean => !isWeb && Device.isDevice && !isExpoGo;
 type NotificationsModule = typeof import("expo-notifications");
@@ -56,10 +68,18 @@ const ensureAndroidChannel = async () => {
     const Notifications = getNotificationsModule();
     if (!Notifications) return;
 
-    await Notifications.setNotificationChannelAsync("default", {
+    await Notifications.setNotificationChannelAsync(DEFAULT_CHANNEL_ID, {
         name: "default",
         importance: Notifications.AndroidImportance.MAX,
         sound: "default",
+        enableVibrate: true,
+        enableLights: true,
+    });
+
+    await Notifications.setNotificationChannelAsync(ORDER_STATUS_CHANNEL_ID, {
+        name: "Order Status",
+        importance: Notifications.AndroidImportance.MAX,
+        sound: HUNGRIE_SOUND_FILE,
         enableVibrate: true,
         enableLights: true,
     });
@@ -112,7 +132,13 @@ export const getPushToken = async (): Promise<PushTokenInfo | null> => {
     return { token: response.data, platform };
 };
 
-export const notifyLocal = async (title: string, body: string, withSound = true) => {
+export const notifyLocal = async (title: string, body: string, options: LocalNotificationOptions = {}) => {
+    const {
+        withSound = true,
+        channelId = DEFAULT_CHANNEL_ID,
+        soundName = HUNGRIE_SOUND_FILE,
+        data = {},
+    } = options;
     if (isWeb) {
         const NotificationApi = getWebNotification();
         if (NotificationApi && NotificationApi.permission === "granted") {
@@ -127,16 +153,36 @@ export const notifyLocal = async (title: string, body: string, withSound = true)
         content: {
             title,
             body,
-            sound: withSound ? "default" : undefined,
+            sound: withSound ? soundName : undefined,
+            data,
+            ...(Platform.OS === "android" ? { channelId } : {}),
         },
         trigger: null,
     });
 };
 
+export const subscribeToResponses = (handler: NotificationResponseHandler) => {
+    const Notifications = getNotificationsModule();
+    if (!Notifications || isWeb) {
+        return () => {};
+    }
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+        const payload = (response?.notification?.request?.content?.data ?? {}) as NotificationPayload;
+        handler(payload);
+    });
+    return () => {
+        subscription.remove();
+    };
+};
+
 export const NotificationManager = {
+    DEFAULT_CHANNEL_ID,
+    ORDER_STATUS_CHANNEL_ID,
+    HUNGRIE_SOUND_FILE,
     requestPermissions,
     getPushToken,
     notifyLocal,
+    subscribeToResponses,
 };
 
 export default NotificationManager;

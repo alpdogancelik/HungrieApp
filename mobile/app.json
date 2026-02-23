@@ -35,6 +35,18 @@
     "plugins": [
       "expo-router",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/app-icon/app-icon-192.png",
+          "color": "#FE8C00",
+          "defaultChannel": "default",
+          "sounds": [
+            "./assets/hungrie.wav",
+            "./assets/hungrie.mp3"
+          ]
+        }
+      ],
+      [
          "expo-av",
         {
           "microphonePermission": false

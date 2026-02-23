@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { SplashScreen, Stack } from "expo-router";
+import { SplashScreen, Stack, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import Constants from "expo-constants";
 import * as Sentry from "@sentry/react-native";
@@ -12,8 +12,9 @@ import "@/src/lib/i18n";
 import "./globals.css";
 import { isRemotePushSupported, NotificationManager } from "@/src/features/notifications/NotificationManager";
 import { registerTokenWithBackend } from "@/src/features/notifications/push";
+import { startOrderStatusWatcher } from "@/src/features/notifications/orderStatusWatcher";
+import { auth } from "@/lib/firebase";
 import CartLockNotice from "@/components/CartLockNotice";
-import GlobalOrderStatusToast from "@/components/GlobalOrderStatusToast";
 
 const extra = Constants.expoConfig?.extra ?? {};
 const env = (typeof process !== "undefined" ? (process as any).env : undefined) ?? {};
@@ -34,6 +35,7 @@ void SplashScreen.preventAutoHideAsync().catch(() => null);
 
 function RootLayoutBase() {
     const { isLoading, isAuthenticated, user, fetchAuthenticatedUser } = useAuthStore();
+    const router = useRouter();
     const pushRegistrationKeyRef = useRef<string | null>(null);
     const { width: windowWidth } = useWindowDimensions();
     const isWeb = Platform.OS === "web";
@@ -90,6 +92,42 @@ function RootLayoutBase() {
     }, [isAuthenticated, user]);
 
     useEffect(() => {
+        if (!isAuthenticated) return;
+        const resolvedUserId = auth?.currentUser?.uid ?? user?.accountId ?? user?.id ?? user?.$id ?? null;
+        if (!resolvedUserId) return;
+
+        let cancelled = false;
+        let stopWatcher: (() => void) | null = null;
+
+        const bootOrderNotifications = async () => {
+            const granted = await NotificationManager.requestPermissions();
+            if (!granted || cancelled) return;
+            stopWatcher = startOrderStatusWatcher(resolvedUserId);
+        };
+
+        bootOrderNotifications().catch((error) => {
+            console.warn("[notifications] Order status watcher failed", error);
+        });
+
+        return () => {
+            cancelled = true;
+            stopWatcher?.();
+        };
+    }, [isAuthenticated, user?.$id, user?.accountId, user?.id]);
+
+    useEffect(() => {
+        const unsubscribe = NotificationManager.subscribeToResponses((payload) => {
+            const orderId = String(payload?.orderId || "");
+            if (!orderId) return;
+            router.push({
+                pathname: "/order/pending",
+                params: { orderId },
+            });
+        });
+        return () => unsubscribe();
+    }, [router]);
+
+    useEffect(() => {
         if (!fontsLoaded || isLoading) return;
 
         applyDefaultFont(Text);
@@ -104,7 +142,6 @@ function RootLayoutBase() {
         <GestureHandlerRootView style={{ flex: 1 }}>
             <ThemeProvider>
                 <CartLockNotice />
-                <GlobalOrderStatusToast />
                 <View
                     style={
                         isWeb
