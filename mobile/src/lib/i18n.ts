@@ -211,6 +211,7 @@ const resources = {
                     notesPlaceholder: "Gate code, dorm details...",
                     checkout: {
                         minimumLabel: "Minimum order {{amount}}",
+                        minimumWarning: "Restaurant orders below {{amount}} are not accepted. Add {{remaining}} more to continue.",
                         checkoutLabel: "Checkout - {{amount}}",
                         placing: "Placing order..",
                         placingShort: "Placing...",
@@ -513,6 +514,7 @@ const resources = {
                     notesPlaceholder: "Kapı kodu, yurt detayı...",
                     checkout: {
                         minimumLabel: "Minimum sipariş {{amount}}",
+                        minimumWarning: "{{amount}} altı restoran siparişleri alınmıyor. Devam etmek için {{remaining}} daha ekleyin.",
                         checkoutLabel: "Ödeme - {{amount}}",
                         placing: "Sipariş veriliyor...",
                         placingShort: "Gönderiliyor...",

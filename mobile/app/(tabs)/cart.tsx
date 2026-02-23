@@ -29,7 +29,7 @@ const OrderIllustration = illustrations.foodieCelebration;
 
 const CONTAINER_PADDING = { paddingLeft: 24, paddingRight: 14 };
 const MAX_NOTES = 200;
-const MINIMUM_ORDER_TOTAL = 30;
+const MINIMUM_ORDER_TOTAL = 250;
 const TAB_BAR_HEIGHT = 80;
 const TAB_BAR_BOTTOM_OFFSET = 40;
 const EXTRA_BOTTOM_SPACE = 8;
@@ -115,6 +115,20 @@ const styles = StyleSheet.create({
         backgroundColor: "#FE8C00",
     },
     drinkAddBtnText: { color: "#FFFFFF", fontSize: 14, fontFamily: "ChairoSans" },
+    minimumNotice: {
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: "#FED7AA",
+        backgroundColor: "#FFF7ED",
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+    },
+    minimumNoticeText: {
+        color: "#9A3412",
+        fontSize: 13,
+        lineHeight: 18,
+        fontFamily: "ChairoSans",
+    },
 });
 
 const getCartItemKey = (item: CartItemType) => {
@@ -181,6 +195,7 @@ type CartFooterProps = {
     placingOrder: boolean;
     onPlaceOrder: () => void;
     drinkSuggestions: ReactNode;
+    minimumWarning?: string;
 };
 
 const CartFooter = ({
@@ -206,6 +221,7 @@ const CartFooter = ({
     placingOrder,
     onPlaceOrder,
     drinkSuggestions,
+    minimumWarning,
 }: CartFooterProps) => (
     <View className="gap-5 pt-6 pb-10" style={styles.footer}>
         {drinkSuggestions}
@@ -233,6 +249,12 @@ const CartFooter = ({
             suggestions={noteSuggestions}
             onChange={onChangeNotes}
         />
+
+        {minimumWarning ? (
+            <View style={styles.minimumNotice}>
+                <Text style={styles.minimumNoticeText}>{minimumWarning}</Text>
+            </View>
+        ) : null}
 
         <TouchableOpacity
             className="custom-btn flex-row items-center justify-center gap-3"
@@ -704,6 +726,12 @@ const Cart = () => {
     const paymentTitle = t("cart.screen.payment.title");
     const notesTitle = `${t("cart.screen.notesTitle")} (${t("common.optional", "optional")})`;
     const notesPlaceholder = t("cart.screen.notesPlaceholder");
+    const minimumWarning = isBelowMinimum
+        ? t("cart.screen.checkout.minimumWarning", {
+              amount: formatCurrency(MINIMUM_ORDER_TOTAL),
+              remaining: formatCurrency(Math.max(MINIMUM_ORDER_TOTAL - subtotal, 0)),
+          })
+        : undefined;
     const footerComponent = (
         <CartFooter
             disabled={disabled}
@@ -728,6 +756,7 @@ const Cart = () => {
             placingOrder={placingOrder}
             onPlaceOrder={handlePlaceOrder}
             drinkSuggestions={drinkSuggestionsSection}
+            minimumWarning={minimumWarning}
         />
     );
 
