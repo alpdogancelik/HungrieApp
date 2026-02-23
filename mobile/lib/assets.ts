@@ -66,6 +66,10 @@ const resolveByHint = (hint?: string | null) => {
 };
 
 export const resolveRestaurantImageSource = (value?: string | number | null, hint?: string | null) => {
+    const byHint = resolveByHint(hint);
+    // Force deterministic per-restaurant logos when we can infer restaurant id/name.
+    if (byHint) return byHint;
+
     if (value && typeof value === "object") {
         const uriLike = (value as any).uri ?? (value as any).default?.uri ?? null;
         if (typeof uriLike === "string" && uriLike.trim().length) {
@@ -74,10 +78,10 @@ export const resolveRestaurantImageSource = (value?: string | number | null, hin
     }
     if (typeof value === "number") return value;
     if (typeof value !== "string") {
-        return resolveByHint(hint) || FALLBACK_RESTAURANT_IMAGE;
+        return FALLBACK_RESTAURANT_IMAGE;
     }
     const trimmed = value.trim();
-    if (!trimmed) return resolveByHint(hint) || FALLBACK_RESTAURANT_IMAGE;
+    if (!trimmed) return FALLBACK_RESTAURANT_IMAGE;
     const lowered = trimmed.toLowerCase();
     if (
         trimmed.startsWith("http://") ||
@@ -88,7 +92,6 @@ export const resolveRestaurantImageSource = (value?: string | number | null, hin
     ) {
         return trimmed;
     }
-    const byHint = resolveByHint(hint);
     const isLocalRestaurantLogoPath =
         trimmed.startsWith("@/assets/restaurantlogo/") || lowered.includes("restaurantlogo/");
 
@@ -106,8 +109,6 @@ export const resolveRestaurantImageSource = (value?: string | number | null, hin
 
     const containsMatch = Object.entries(RESTAURANT_LOGO_BY_FILE).find(([key]) => trimmed.includes(key));
     if (containsMatch) return containsMatch[1];
-
-    if (byHint) return byHint;
 
     // Prevent invalid URI errors when a local asset path leaks into runtime.
     if (trimmed.startsWith("@/assets/restaurantlogo/")) return FALLBACK_RESTAURANT_IMAGE;
