@@ -125,5 +125,12 @@ export const getRestaurantImageSource = (
     if (typeof resolved === "string" && resolved.trim()) {
         return { uri: resolved.trim() };
     }
+    if (resolved && typeof resolved === "object") {
+        const uriLike = (resolved as any).uri ?? (resolved as any).default?.uri ?? null;
+        if (typeof uriLike === "string" && uriLike.trim()) {
+            return { uri: uriLike.trim() };
+        }
+        return resolved as ExpoImageSource;
+    }
     return fallback;
 };
