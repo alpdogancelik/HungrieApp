@@ -150,9 +150,10 @@ export default function HomeTabScreen() {
                         <View style={[styles.gridGap, { justifyContent: gridJustify }]}>
                             {(restaurants || []).map((restaurant: any, index: number) => {
                                 const restaurantId = normalizeRestaurantId(restaurant, String(index));
+                                const tileKey = `${restaurantId}-${index}`;
                                 return (
                                     <RestaurantGridTile
-                                        key={restaurantId}
+                                        key={tileKey}
                                         restaurant={restaurant}
                                         columns={gridColumns}
                                         campusOnly={restaurantId === "root" || restaurantId === "root-kitchen-coffee"}
@@ -292,9 +293,9 @@ const RestaurantGridTile = ({
 }) => {
     const { theme } = useTheme();
     const { t } = useTranslation();
-    const { name, imageUrl } = restaurant || {};
+    const { name, imageUrl, image_url: imageUrlSnake } = restaurant || {};
     const fallbackName = name || "Restaurant";
-    const restaurantId = normalizeRestaurantId(restaurant, fallbackName);
+    const displayImage = imageUrl || imageUrlSnake;
     const campusLabel = campusOnly ? t("home.campusOnlyTag") : null;
     const tileWidth = columns <= 1 ? "100%" : columns >= 3 ? "31%" : "48%";
     const logoSize = columns >= 3 ? 100 : 90;
@@ -339,7 +340,7 @@ const RestaurantGridTile = ({
                     color={theme.colors.primary}
                     style={{ position: "absolute", top: logoIconOffset, left: logoIconOffset }}
                 />
-                <RestaurantImage imageUrl={imageUrl} imageHint={`${restaurantId} ${fallbackName}`} />
+                <RestaurantImage imageUrl={displayImage} imageHint={fallbackName} />
             </View>
             <Text
                 style={{

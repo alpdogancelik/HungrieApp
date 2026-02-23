@@ -30,13 +30,14 @@ const normalizeLogoKey = (value: unknown) =>
         .replace(/[^a-z0-9]+/g, "");
 
 const resolveBundledRestaurantLogoPath = (restaurant: any) => {
+    // Prefer stable semantic fields first; some datasets have duplicated `id` values.
     const candidates = [
-        restaurant?.id,
-        restaurant?.$id,
         restaurant?.slug,
         restaurant?.code,
         restaurant?.handle,
         restaurant?.name,
+        restaurant?.id,
+        restaurant?.$id,
     ];
 
     for (const candidate of candidates) {
