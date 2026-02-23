@@ -10,6 +10,57 @@ import { firebaseConfigured, firestore, FIREBASE_COLLECTIONS } from "./firebase"
 import { filterRestaurantMenuForCustomer } from "./menuVisibility";
 import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 
+const RESTAURANT_LOGO_PATH_BY_KEY: Record<string, string> = {
+    adapizza: "@/assets/restaurantlogo/adapizzalogo.jpg",
+    alacarte: "@/assets/restaurantlogo/alacartelogo.jpg",
+    alacartecafe: "@/assets/restaurantlogo/alacartelogo.jpg",
+    hotnfresh: "@/assets/restaurantlogo/hotnfreshlogo.jpg",
+    lavish: "@/assets/restaurantlogo/lavishlogo.jpg",
+    munchies: "@/assets/restaurantlogo/munchieslogo.jpg",
+    root: "@/assets/restaurantlogo/rootlogo.jpg",
+    rootkitchencoffee: "@/assets/restaurantlogo/rootlogo.jpg",
+    lombard: "@/assets/restaurantlogo/lombardlogo.jpg",
+    lombardkitchen: "@/assets/restaurantlogo/lombardlogo.jpg",
+    burgerhouse: "@/assets/restaurantlogo/burgerhouselogo.jpg",
+};
+
+const normalizeLogoKey = (value: unknown) =>
+    String(value || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "");
+
+const resolveBundledRestaurantLogoPath = (restaurant: any) => {
+    const candidates = [
+        restaurant?.id,
+        restaurant?.$id,
+        restaurant?.slug,
+        restaurant?.code,
+        restaurant?.handle,
+        restaurant?.name,
+    ];
+
+    for (const candidate of candidates) {
+        const key = normalizeLogoKey(candidate);
+        if (!key) continue;
+
+        if (RESTAURANT_LOGO_PATH_BY_KEY[key]) return RESTAURANT_LOGO_PATH_BY_KEY[key];
+
+        const containsMatch = Object.entries(RESTAURANT_LOGO_PATH_BY_KEY).find(([lookup]) => key.includes(lookup));
+        if (containsMatch) return containsMatch[1];
+    }
+
+    return undefined;
+};
+
+const withBundledRestaurantLogo = (restaurant: any) => {
+    const bundledLogoPath = resolveBundledRestaurantLogoPath(restaurant);
+    if (!bundledLogoPath) return restaurant;
+    return {
+        ...restaurant,
+        imageUrl: bundledLogoPath,
+    };
+};
+
 const extra: any = Constants.expoConfig?.extra || {};
 const env = (name: string) => (typeof process !== 'undefined' ? (process as any).env?.[name] : undefined) || extra[name];
 
@@ -131,7 +182,7 @@ export const getRestaurants = async (filters?: { search?: string; category?: str
     const restaurantsRef = collection(firestore, FIREBASE_COLLECTIONS.restaurants);
     const snap = await getDocs(query(restaurantsRef, where("isActive", "==", true)));
     const list = snap.docs
-        .map((d) => ({ id: d.id, ...d.data() }))
+        .map((d) => withBundledRestaurantLogo({ id: d.id, ...d.data() }))
         .filter((r: any) => r.isActive !== false); // safety if field missing
 
     if (!filters?.search) return list;
@@ -148,7 +199,7 @@ export const getRestaurant = async (restaurantId: string | number) => {
     const ref = doc(firestore, FIREBASE_COLLECTIONS.restaurants, String(restaurantId));
     const snap = await getDoc(ref).catch(() => null);
     if (!snap || !snap.exists()) return null;
-    return { id: snap.id, ...snap.data() };
+    return withBundledRestaurantLogo({ id: snap.id, ...snap.data() });
 };
 
 async function getDefaultRestaurantId(): Promise<number | null> {
