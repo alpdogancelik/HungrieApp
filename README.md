@@ -1,4 +1,8 @@
-﻿# Hungrie Mobile - Expo Router + Firebase
+
+ ![WhatsApp Image 2026-02-16 at 01 20 22](https://github.com/user-attachments/assets/7025a0b1-ec93-48df-befc-8d3bb22b0fa8)
+
+ 
+ # Hungrie Mobile - Expo Router + Firebase
 
 Production ready food ordering experience built with Expo Router, NativeWind, Zustand, and Firebase. Ships with mock data for offline development and is wired for App Store / Google Play via EAS.
 
