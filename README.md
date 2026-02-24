@@ -1,5 +1,5 @@
 
- ![WhatsApp Image 2026-02-16 at 01 20 22](https://github.com/user-attachments/assets/7025a0b1-ec93-48df-befc-8d3bb22b0fa8)
+<img width="1024" height="1024" alt="hungrielogo (2)" src="https://github.com/user-attachments/assets/5954fc0c-6ed9-47c9-9bea-fece055f2dc7" />
 
  
  # Hungrie Mobile - Expo Router + Firebase
