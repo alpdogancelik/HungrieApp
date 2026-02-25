@@ -11,6 +11,7 @@ export type PushTokenInfo = {
 
 type NotificationPayload = Record<string, unknown>;
 type NotificationResponseHandler = (payload: NotificationPayload) => void;
+type NotificationReceivedHandler = (payload: NotificationPayload) => void;
 type LocalNotificationOptions = {
     withSound?: boolean;
     channelId?: string;
@@ -21,8 +22,11 @@ type LocalNotificationOptions = {
 const isWeb = Platform.OS === "web";
 const isExpoGo = Constants.appOwnership === "expo";
 const DEFAULT_CHANNEL_ID = "default";
+const NEW_ORDER_CHANNEL_ID = "orders";
 const ORDER_STATUS_CHANNEL_ID = "order-status";
 const HUNGRIE_SOUND_FILE = "hungrie.wav";
+const HUNGRIE_SOUND_ANDROID = "hungrie";
+const ORDER_CHANNEL_SOUND = "order";
 
 export const isRemotePushSupported = (): boolean => !isWeb && Device.isDevice && !isExpoGo;
 type NotificationsModule = typeof import("expo-notifications");
@@ -79,10 +83,23 @@ const ensureAndroidChannel = async () => {
     await Notifications.setNotificationChannelAsync(ORDER_STATUS_CHANNEL_ID, {
         name: "Order Status",
         importance: Notifications.AndroidImportance.MAX,
-        sound: HUNGRIE_SOUND_FILE,
+        sound: HUNGRIE_SOUND_ANDROID,
         enableVibrate: true,
         enableLights: true,
     });
+
+    await Notifications.setNotificationChannelAsync(NEW_ORDER_CHANNEL_ID, {
+        name: "New Orders",
+        importance: Notifications.AndroidImportance.MAX,
+        sound: ORDER_CHANNEL_SOUND,
+        vibrationPattern: [0, 250, 250, 250],
+        enableVibrate: true,
+        enableLights: true,
+    });
+};
+
+export const ensureNotificationChannels = async () => {
+    await ensureAndroidChannel();
 };
 
 export const requestPermissions = async (): Promise<boolean> => {
@@ -149,11 +166,19 @@ export const notifyLocal = async (title: string, body: string, options: LocalNot
     const Notifications = getNotificationsModule();
     if (!Notifications) return;
     await ensureAndroidChannel();
+    const resolvedSound =
+        Platform.OS === "android"
+            ? soundName === HUNGRIE_SOUND_FILE || soundName === "hungrie"
+              ? HUNGRIE_SOUND_ANDROID
+              : soundName === "order.wav" || soundName === ORDER_CHANNEL_SOUND
+                ? ORDER_CHANNEL_SOUND
+                : undefined
+            : soundName;
     await Notifications.scheduleNotificationAsync({
         content: {
             title,
             body,
-            sound: withSound ? soundName : undefined,
+            sound: withSound ? resolvedSound : undefined,
             data,
             ...(Platform.OS === "android" ? { channelId } : {}),
         },
@@ -175,14 +200,42 @@ export const subscribeToResponses = (handler: NotificationResponseHandler) => {
     };
 };
 
+export const subscribeToReceived = (handler: NotificationReceivedHandler) => {
+    const Notifications = getNotificationsModule();
+    if (!Notifications || isWeb) {
+        return () => {};
+    }
+    const subscription = Notifications.addNotificationReceivedListener((notification) => {
+        const payload = (notification?.request?.content?.data ?? {}) as NotificationPayload;
+        handler(payload);
+    });
+    return () => {
+        subscription.remove();
+    };
+};
+
+export const getLastNotificationResponsePayload = async (): Promise<NotificationPayload | null> => {
+    const Notifications = getNotificationsModule();
+    if (!Notifications || isWeb) return null;
+    const response = await Notifications.getLastNotificationResponseAsync().catch(() => null);
+    const payload = (response?.notification?.request?.content?.data ?? null) as NotificationPayload | null;
+    return payload;
+};
+
 export const NotificationManager = {
     DEFAULT_CHANNEL_ID,
+    NEW_ORDER_CHANNEL_ID,
     ORDER_STATUS_CHANNEL_ID,
     HUNGRIE_SOUND_FILE,
+    HUNGRIE_SOUND_ANDROID,
+    ORDER_CHANNEL_SOUND,
+    ensureNotificationChannels,
     requestPermissions,
     getPushToken,
     notifyLocal,
+    subscribeToReceived,
     subscribeToResponses,
+    getLastNotificationResponsePayload,
 };
 
 export default NotificationManager;

@@ -15,7 +15,10 @@
       "buildNumber": "1",
       "bundleIdentifier": "com.hungrie.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
       }
     },
     "android": {
@@ -41,7 +44,8 @@
           "color": "#FE8C00",
           "defaultChannel": "default",
           "sounds": [
-            "./assets/hungrie.wav"
+            "./assets/sounds/hungrie.wav",
+            "./assets/sounds/order.wav"
           ]
         }
       ],

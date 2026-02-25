@@ -1,21 +1,30 @@
-import { SafeAreaView } from "react-native-safe-area-context";
-import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    TouchableOpacity,
-    ActivityIndicator,
-    Alert,
-    TextInput,
-    Switch,
-} from "react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
 import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { useRouter } from "expo-router";
 
 import { firestore } from "@/lib/firebase";
 import { getOwnedRestaurantId } from "@/lib/firebaseAuth";
 import useAuthStore from "@/store/auth.store";
+import {
+    PanelButton,
+    PanelCard,
+    PanelEmptyState,
+    PanelLoadingState,
+    PanelShell,
+    panelDesign,
+} from "@/src/features/restaurantPanel/ui";
+import { LanguageSwitch } from "@/components/panel";
+import { useRestaurantPanelLocale } from "@/src/features/restaurantPanel/panelLocale";
 
 type MenuItem = {
     id: string;
@@ -31,6 +40,7 @@ type Category = {
 };
 
 const RestaurantMenuManager = () => {
+    const router = useRouter();
     const { isAuthenticated } = useAuthStore();
     const [restaurantId, setRestaurantId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
@@ -40,6 +50,7 @@ const RestaurantMenuManager = () => {
     const [search, setSearch] = useState("");
     const [newCategoryName, setNewCategoryName] = useState("");
     const scrollViewRef = useRef<ScrollView | null>(null);
+    const { locale, setLocale, t } = useRestaurantPanelLocale(restaurantId);
 
     useEffect(() => {
         let mounted = true;
@@ -60,15 +71,18 @@ const RestaurantMenuManager = () => {
                 const catSnap = await getDocs(
                     query(collection(firestore, "categories"), where("restaurantId", "==", owned)),
                 );
-                const catList: Category[] = catSnap.docs.map((d) => ({ id: d.id, name: (d.data() as any).name || d.id }));
+                const catList: Category[] = catSnap.docs.map((snapshot) => {
+                    const data = snapshot.data() as any;
+                    return { id: snapshot.id, name: String(data.name || snapshot.id) };
+                });
                 setCategories(catList);
 
                 const menuSnap = await getDocs(query(collection(firestore, "menus"), where("restaurantId", "==", owned)));
-                const menuList: MenuItem[] = menuSnap.docs.map((d) => {
-                    const data = d.data() as any;
+                const menuList: MenuItem[] = menuSnap.docs.map((snapshot) => {
+                    const data = snapshot.data() as any;
                     return {
-                        id: d.id,
-                        name: data.name || d.id,
+                        id: snapshot.id,
+                        name: String(data.name || snapshot.id),
                         price: Number(data.price || 0),
                         categories: Array.isArray(data.categories) ? data.categories.map(String) : [],
                         visible: data.visible !== false,
@@ -76,7 +90,10 @@ const RestaurantMenuManager = () => {
                 });
                 setItems(menuList);
             } catch (err) {
-                Alert.alert("Could not load menu", (err as any)?.message || "Please try again.");
+                Alert.alert(
+                    t("menu.loadFailedTitle"),
+                    (err as any)?.message || t("common.tryAgain"),
+                );
             } finally {
                 setLoading(false);
             }
@@ -87,13 +104,26 @@ const RestaurantMenuManager = () => {
         };
     }, [isAuthenticated]);
 
+    const categoryById = useMemo(() => {
+        return categories.reduce<Record<string, string>>((acc, category) => {
+            acc[category.id] = category.name;
+            return acc;
+        }, {});
+    }, [categories]);
+
+    const filteredItems = useMemo(() => {
+        const term = search.trim().toLowerCase();
+        if (!term) return items;
+        return items.filter((item) => item.name.toLowerCase().includes(term));
+    }, [items, search]);
+
     const toggleCategory = (itemId: string, categoryId: string) => {
         setItems((prev) =>
             prev.map((item) => {
                 if (item.id !== itemId) return item;
                 const current = item.categories || [];
                 const exists = current.includes(categoryId);
-                const nextCategories = exists ? current.filter((c) => c !== categoryId) : [...current, categoryId];
+                const nextCategories = exists ? current.filter((currentId) => currentId !== categoryId) : [...current, categoryId];
                 return { ...item, categories: nextCategories };
             }),
         );
@@ -114,9 +144,12 @@ const RestaurantMenuManager = () => {
                 visible: item.visible !== false,
                 updatedAt: Date.now(),
             });
-            Alert.alert("Saved", `${item.name} updated.`);
+            Alert.alert(t("menu.savedTitle"), t("menu.savedBody", { name: item.name }));
         } catch (err: any) {
-            Alert.alert("Could not save", err?.message || "Please try again.");
+            Alert.alert(
+                t("menu.saveFailedTitle"),
+                err?.message || t("common.tryAgain"),
+            );
         } finally {
             setSavingId(null);
         }
@@ -126,7 +159,7 @@ const RestaurantMenuManager = () => {
         if (!restaurantId || !firestore) return;
         const name = newCategoryName.trim();
         if (!name) {
-            Alert.alert("Missing name", "Please enter a category name.");
+            Alert.alert(t("menu.missingNameTitle"), t("menu.missingNameBody"));
             return;
         }
         try {
@@ -139,317 +172,342 @@ const RestaurantMenuManager = () => {
             setCategories((prev) => [...prev, { id: ref.id, name }]);
             setNewCategoryName("");
         } catch (err: any) {
-            Alert.alert("Could not add", err?.message || "Please try again.");
+            Alert.alert(
+                t("menu.addFailedTitle"),
+                err?.message || t("common.tryAgain"),
+            );
         }
     };
 
-    const handleUpdateCategory = async (cat: Category, nextName: string) => {
+    const handleUpdateCategory = async (category: Category, nextName: string) => {
         if (!firestore) return;
         try {
-            await updateDoc(doc(firestore, "categories", cat.id), { name: nextName.trim() || cat.name, updatedAt: Date.now() });
-            setCategories((prev) => prev.map((c) => (c.id === cat.id ? { ...c, name: nextName } : c)));
+            await updateDoc(doc(firestore, "categories", category.id), {
+                name: nextName.trim() || category.name,
+                updatedAt: Date.now(),
+            });
+            setCategories((prev) =>
+                prev.map((current) => (current.id === category.id ? { ...current, name: nextName } : current)),
+            );
         } catch (err: any) {
-            Alert.alert("Could not update", err?.message || "Please try again.");
+            Alert.alert(
+                t("menu.updateFailedTitle"),
+                err?.message || t("common.tryAgain"),
+            );
         }
     };
 
-    const handleDeleteCategory = async (catId: string) => {
+    const handleDeleteCategory = async (categoryId: string) => {
         if (!firestore) return;
         try {
-            await deleteDoc(doc(firestore, "categories", catId));
-            setCategories((prev) => prev.filter((c) => c.id !== catId));
+            await deleteDoc(doc(firestore, "categories", categoryId));
+            setCategories((prev) => prev.filter((category) => category.id !== categoryId));
             setItems((prev) =>
                 prev.map((item) => ({
                     ...item,
-                    categories: (item.categories || []).filter((c) => c !== catId),
+                    categories: (item.categories || []).filter((currentId) => currentId !== categoryId),
                 })),
             );
         } catch (err: any) {
-            Alert.alert("Could not delete", err?.message || "Please try again.");
+            Alert.alert(
+                t("menu.deleteFailedTitle"),
+                err?.message || t("common.tryAgain"),
+            );
         }
     };
 
-    const filteredItems = useMemo(() => {
-        const term = search.trim().toLowerCase();
-        if (!term) return items;
-        return items.filter((item) => item.name.toLowerCase().includes(term));
-    }, [items, search]);
-    const itemCount = filteredItems.length;
-
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <PanelShell
+            kicker={t("common.restaurantHub")}
+            title={t("menu.title")}
+            subtitle={t("menu.subtitle")}
+            onBackPress={() => router.push("/restaurantpanel")}
+            backLabel={t("button.backToPanel")}
+            backAccessibilityLabel={t("a11y.backToPanel")}
+            right={<LanguageSwitch locale={locale} onChange={(next) => void setLocale(next)} getAccessibilityLabel={(next) => t("a11y.switchLanguage", { value: next.toUpperCase() })} />}
+            noScroll
+        >
             <ScrollView
                 ref={scrollViewRef}
-                contentContainerStyle={styles.container}
+                contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                <Text style={styles.title}>Menu & Categories</Text>
-                <Text style={styles.subtitle}>Assign items to categories. Toggle categories for each item and save.</Text>
+                <PanelCard compact>
+                    <View style={styles.quickActionRow}>
+                        <PanelButton
+                            label={t("menu.products")}
+                            variant="outline"
+                            onPress={() => scrollViewRef.current?.scrollTo({ y: 0, animated: true })}
+                            style={styles.quickActionButton}
+                            accessibilityLabel={t("a11y.scrollToProducts")}
+                        />
+                        <PanelButton
+                            label={t("menu.categories")}
+                            variant="ghost"
+                            onPress={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+                            style={styles.quickActionButton}
+                            accessibilityLabel={t("a11y.scrollToCategories")}
+                        />
+                    </View>
 
-                {/* Top-level quick actions */}
-                <View style={styles.actionRow}>
-                    <TouchableOpacity
-                        style={[styles.chipButton, styles.chipPrimary]}
-                        onPress={() => scrollViewRef.current?.scrollTo({ y: 0, animated: true })}
-                    >
-                        <Text style={styles.chipLabelPrimary}>Edit products</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.chipButton, styles.chipOutline]}
-                        onPress={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-                    >
-                        <Text style={styles.chipLabelOutline}>Edit categories</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <TextInput
-                    placeholder="Search meals by name"
-                    placeholderTextColor="#94A3B8"
-                    value={search}
-                    onChangeText={setSearch}
-                    style={styles.searchInput}
-                />
+                    <TextInput
+                        placeholder={t("menu.search")}
+                        placeholderTextColor="#8895AA"
+                        value={search}
+                        onChangeText={setSearch}
+                        style={styles.searchInput}
+                        accessibilityLabel={t("a11y.searchMenuItems")}
+                    />
+                </PanelCard>
 
                 {loading ? (
-                    <View style={{ alignItems: "center", justifyContent: "center", paddingVertical: 40 }}>
-                        <ActivityIndicator color="#FE8C00" />
-                        <Text style={styles.helper}>Loading menu…</Text>
-                    </View>
-                ) : itemCount === 0 ? (
-                    <Text style={styles.helper}>No menu items found for this restaurant.</Text>
+                    <PanelLoadingState title={t("loading.menuTitle")} description={t("loading.menuDescription")} />
+                ) : !filteredItems.length ? (
+                    <PanelEmptyState
+                        title={t("menu.emptyTitle")}
+                        description={t("menu.emptyDescription")}
+                    />
                 ) : (
                     filteredItems.map((item) => (
-                        <View key={item.id} style={styles.card}>
-                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                                <View>
+                        <PanelCard key={item.id} title={item.name} subtitle={t("menu.itemCardSubtitle")}>
+                            <View style={styles.fieldGrid}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.label}>{t("menu.fieldName")}</Text>
                                     <TextInput
                                         value={item.name}
-                                        onChangeText={(v) => handleUpdateField(item.id, "name", v)}
-                                        placeholder="Name"
-                                        placeholderTextColor="#94A3B8"
-                                        style={styles.itemInput}
-                                    />
-                                    <TextInput
-                                        value={String(item.price ?? 0)}
-                                        onChangeText={(v) => handleUpdateField(item.id, "price", Number(v) || 0)}
-                                        placeholder="Price"
-                                        placeholderTextColor="#94A3B8"
-                                        style={[styles.itemInput, { marginTop: 6 }]}
-                                        keyboardType="numeric"
+                                        onChangeText={(value) => handleUpdateField(item.id, "name", value)}
+                                        placeholder={t("menu.fieldName")}
+                                        placeholderTextColor="#8895AA"
+                                        style={styles.input}
+                                        accessibilityLabel={t("a11y.menuItemName", { name: item.name })}
                                     />
                                 </View>
-                                <TouchableOpacity
-                                    style={[
-                                        styles.saveButton,
-                                        { opacity: savingId === item.id ? 0.7 : 1, paddingHorizontal: 14, paddingVertical: 10 },
-                                    ]}
-                                    disabled={savingId === item.id}
-                                    onPress={() => handleSaveItem(item)}
-                                >
-                                    {savingId === item.id ? (
-                                        <ActivityIndicator color="#FFF" />
-                                    ) : (
-                                        <Text style={styles.saveLabel}>Save</Text>
-                                    )}
-                                </TouchableOpacity>
+                                <View style={styles.priceBlock}>
+                                    <Text style={styles.label}>{t("menu.fieldPrice")}</Text>
+                                    <TextInput
+                                        value={String(item.price ?? 0)}
+                                        onChangeText={(value) => handleUpdateField(item.id, "price", Number(value) || 0)}
+                                        placeholder="0"
+                                        placeholderTextColor="#8895AA"
+                                        style={styles.input}
+                                        keyboardType="numeric"
+                                        accessibilityLabel={t("a11y.menuItemPrice", { name: item.name })}
+                                    />
+                                </View>
                             </View>
 
-                            <Text style={[styles.label, { marginTop: 8 }]}>Categories</Text>
+                            <Text style={styles.label}>{t("menu.fieldCategories")}</Text>
                             <View style={styles.pillRow}>
-                                {categories.map((cat) => {
-                                    const active = item.categories?.includes(cat.id);
+                                {categories.map((category) => {
+                                    const active = item.categories?.includes(category.id);
                                     return (
                                         <TouchableOpacity
-                                            key={`${item.id}-cat-${cat.id}`}
+                                            key={`${item.id}-cat-${category.id}`}
                                             style={[styles.pill, active ? styles.pillActive : null]}
-                                            onPress={() => toggleCategory(item.id, cat.id)}
+                                            onPress={() => toggleCategory(item.id, category.id)}
+                                            accessibilityRole="button"
+                                            accessibilityLabel={t("a11y.toggleCategory", { category: category.name, item: item.name })}
                                         >
                                             <Text style={[styles.pillLabel, active ? styles.pillLabelActive : null]}>
-                                                {cat.name || cat.id}
+                                                {category.name || category.id}
                                             </Text>
                                         </TouchableOpacity>
                                     );
                                 })}
-                                {!categories.length ? <Text style={styles.helper}>No categories yet.</Text> : null}
                             </View>
+
                             <Text style={styles.helper}>
-                                Assigned to:{" "}
-                                {(item.categories || [])
-                                    .map((cId) => categories.find((c) => c.id === cId)?.name || cId)
-                                    .join(", ") || "None"}
+                                {t("menu.assigned", { value: (item.categories || []).map((id) => categoryById[id] || id).join(", ") || t("common.none") })}
                             </Text>
 
-                            <View style={[styles.fieldRow, { marginTop: 8 }]}>
-                                <View>
-                                    <Text style={styles.label}>Visible</Text>
-                                    <Text style={styles.helper}>Hide or show this item to customers.</Text>
+                            <View style={styles.switchRow}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.label}>{t("menu.visible")}</Text>
+                                    <Text style={styles.helper}>{t("menu.visibleHint")}</Text>
                                 </View>
                                 <Switch
                                     value={item.visible !== false}
-                                    onValueChange={(v) => handleUpdateField(item.id, "visible", v)}
-                                    thumbColor={item.visible !== false ? "#FE8C00" : "#E2E8F0"}
-                                    trackColor={{ false: "#E2E8F0", true: "#FFE7C2" }}
+                                    onValueChange={(value) => handleUpdateField(item.id, "visible", value)}
+                                    thumbColor={item.visible !== false ? panelDesign.colors.primary : "#E2E8F0"}
+                                    trackColor={{ false: "#DCE3EE", true: "#FFE4C4" }}
                                 />
                             </View>
-                        </View>
+
+                            <PanelButton
+                                label={t("menu.saveItem")}
+                                onPress={() => handleSaveItem(item)}
+                                loading={savingId === item.id}
+                                disabled={savingId === item.id}
+                                accessibilityLabel={t("a11y.saveMenuItem", { name: item.name })}
+                            />
+                        </PanelCard>
                     ))
                 )}
 
-                <View style={styles.categoryCard}>
-                    <View style={[styles.actionRow, { marginTop: 0 }]}>
-                        <TouchableOpacity
-                            style={[styles.chipButton, styles.chipPrimary]}
-                            onPress={() => scrollViewRef.current?.scrollTo({ y: 0, animated: true })}
-                        >
-                            <Text style={styles.chipLabelPrimary}>Edit products</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.chipButton, styles.chipOutline]}
-                            onPress={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-                        >
-                            <Text style={styles.chipLabelOutline}>Edit categories</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <Text style={styles.sectionTitle}>Categories</Text>
-                    <Text style={styles.helper}>Add, rename, or delete categories.</Text>
-                    <View style={{ flexDirection: "row", gap: 8, alignItems: "center", marginTop: 8 }}>
+                <PanelCard title={t("menu.categoriesTitle")} subtitle={t("menu.categoriesSubtitle")}>
+                    <View style={styles.categoryAddRow}>
                         <TextInput
                             value={newCategoryName}
                             onChangeText={setNewCategoryName}
-                            placeholder="New category name"
-                            placeholderTextColor="#94A3B8"
+                            placeholder={t("menu.newCategoryPlaceholder")}
+                            placeholderTextColor="#8895AA"
                             style={[styles.input, { flex: 1 }]}
+                            accessibilityLabel={t("a11y.newCategoryName")}
                         />
-                        <TouchableOpacity style={[styles.saveButton, { paddingHorizontal: 14, paddingVertical: 10 }]} onPress={handleAddCategory}>
-                            <Text style={styles.saveLabel}>Add</Text>
-                        </TouchableOpacity>
+                        <PanelButton
+                            label={t("menu.addCategory")}
+                            variant="outline"
+                            onPress={handleAddCategory}
+                            accessibilityLabel={t("a11y.addCategory")}
+                        />
                     </View>
-                    <View style={{ marginTop: 10, gap: 10 }}>
-                        {categories.map((cat) => (
-                            <View key={cat.id} style={styles.categoryRow}>
-                                <TextInput
-                                    value={cat.name}
-                                    onChangeText={(v) => setCategories((prev) => prev.map((c) => (c.id === cat.id ? { ...c, name: v } : c)))}
-                                    onEndEditing={(e) => handleUpdateCategory(cat, e.nativeEvent.text)}
-                                    placeholder="Category name"
-                                    placeholderTextColor="#94A3B8"
-                                    style={[styles.input, { flex: 1 }]}
-                                />
-                                <TouchableOpacity
-                                    style={[styles.deleteButton]}
-                                    onPress={() => handleDeleteCategory(cat.id)}
-                                >
-                                    <Text style={styles.deleteLabel}>Delete</Text>
-                                </TouchableOpacity>
-                            </View>
-                        ))}
-                        {!categories.length ? <Text style={styles.helper}>No categories created yet.</Text> : null}
-                    </View>
-                </View>
+
+                    {!categories.length ? (
+                        <PanelEmptyState
+                            title={t("menu.noCategoriesTitle")}
+                            description={t("menu.noCategoriesDescription")}
+                        />
+                    ) : (
+                        <View style={styles.categoryList}>
+                            {categories.map((category) => (
+                                <View key={category.id} style={styles.categoryRow}>
+                                    <TextInput
+                                        value={category.name}
+                                        onChangeText={(value) =>
+                                            setCategories((prev) =>
+                                                prev.map((current) =>
+                                                    current.id === category.id ? { ...current, name: value } : current,
+                                                ),
+                                            )
+                                        }
+                                        onEndEditing={(event) => handleUpdateCategory(category, event.nativeEvent.text)}
+                                        placeholder={t("menu.categoryNamePlaceholder")}
+                                        placeholderTextColor="#8895AA"
+                                        style={[styles.input, { flex: 1 }]}
+                                        accessibilityLabel={t("a11y.categoryName", { name: category.name })}
+                                    />
+                                    <PanelButton
+                                        label={t("menu.deleteCategory")}
+                                        variant="danger"
+                                        onPress={() => handleDeleteCategory(category.id)}
+                                        accessibilityLabel={t("a11y.deleteCategory", { name: category.name })}
+                                    />
+                                </View>
+                            ))}
+                        </View>
+                    )}
+                </PanelCard>
             </ScrollView>
-        </SafeAreaView>
+        </PanelShell>
     );
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: "#FFF6EC", padding: 16 },
-    container: { paddingBottom: 40, gap: 14 },
-    title: { fontFamily: "ChairoSans", fontSize: 22, color: "#0F172A", letterSpacing: -0.2 },
-    subtitle: { fontFamily: "ChairoSans", fontSize: 14, color: "#475569" },
-    searchInput: {
-        backgroundColor: "#FFFFFF",
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: "#E2E8F0",
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-        fontFamily: "ChairoSans",
-        color: "#0F172A",
+    scrollContent: {
+        paddingBottom: panelDesign.spacing.xl,
+        gap: panelDesign.spacing.md,
     },
-    helper: { fontFamily: "ChairoSans", fontSize: 12, color: "#64748B", marginTop: 4 },
-    actionRow: { flexDirection: "row", gap: 8, marginTop: 8, marginBottom: 4 },
-    chipButton: {
-        flex: 1,
-        paddingVertical: 10,
-        borderRadius: 12,
-        alignItems: "center",
-        borderWidth: 1,
-    },
-    chipPrimary: { backgroundColor: "#FE8C00", borderColor: "#FE8C00" },
-    chipOutline: { backgroundColor: "rgba(254,140,0,0.08)", borderColor: "#FE8C00" },
-    chipLabelPrimary: { fontFamily: "ChairoSans", color: "#FFFFFF", fontSize: 14 },
-    chipLabelOutline: { fontFamily: "ChairoSans", color: "#C2410C", fontSize: 14 },
-    card: {
-        backgroundColor: "#FFFFFF",
-        borderRadius: 12,
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: "#E2E8F0",
-        padding: 12,
+    quickActionRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
         gap: 8,
     },
-    itemName: { fontFamily: "ChairoSans", fontSize: 16, color: "#0F172A" },
-    itemInput: {
-        backgroundColor: "#FFFFFF",
-        borderRadius: 10,
+    quickActionButton: {
+        flexGrow: 1,
+        minWidth: 140,
+    },
+    searchInput: {
+        minHeight: 46,
+        borderRadius: panelDesign.radius.md,
         borderWidth: 1,
-        borderColor: "#E2E8F0",
-        paddingHorizontal: 12,
-        paddingVertical: 8,
+        borderColor: panelDesign.colors.border,
+        backgroundColor: "#FFFFFF",
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        color: panelDesign.colors.text,
         fontFamily: "ChairoSans",
-        color: "#0F172A",
-        minWidth: 160,
+        fontSize: 16,
     },
-    label: { fontFamily: "ChairoSans", fontSize: 13, color: "#0F172A" },
-    pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-    pill: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 999,
-        borderWidth: 1,
-        borderColor: "#E2E8F0",
-        backgroundColor: "#FFFFFF",
-    },
-    pillActive: { borderColor: "#FE8C00", backgroundColor: "rgba(254,140,0,0.12)" },
-    pillLabel: { fontFamily: "ChairoSans", fontSize: 13, color: "#475569" },
-    pillLabelActive: { color: "#FE8C00" },
-    saveButton: {
-        backgroundColor: "#FE8C00",
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: "#FE8C00",
-    },
-    saveLabel: { color: "#FFFFFF", fontFamily: "ChairoSans", fontSize: 14 },
-    fieldRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-    categoryCard: {
-        backgroundColor: "#FFFFFF",
-        borderRadius: 12,
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: "#E2E8F0",
-        padding: 12,
+    fieldGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
         gap: 10,
     },
-    sectionTitle: { fontFamily: "ChairoSans", fontSize: 16, color: "#0F172A" },
-    input: {
-        backgroundColor: "#FFFFFF",
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: "#E2E8F0",
-        paddingHorizontal: 12,
-        paddingVertical: 10,
+    priceBlock: {
+        minWidth: 140,
+        flexGrow: 1,
+    },
+    label: {
         fontFamily: "ChairoSans",
-        color: "#0F172A",
+        fontSize: 14,
+        color: panelDesign.colors.text,
+        marginBottom: 4,
     },
-    categoryRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-    deleteButton: {
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-        borderRadius: 10,
+    input: {
+        minHeight: 44,
+        borderRadius: panelDesign.radius.md,
         borderWidth: 1,
-        borderColor: "#E11D48",
-        backgroundColor: "rgba(225,29,72,0.08)",
+        borderColor: panelDesign.colors.border,
+        backgroundColor: "#FFFFFF",
+        paddingHorizontal: 12,
+        paddingVertical: 9,
+        color: panelDesign.colors.text,
+        fontFamily: "ChairoSans",
+        fontSize: 15,
     },
-    deleteLabel: { fontFamily: "ChairoSans", fontSize: 13, color: "#9F1239" },
+    pillRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 8,
+    },
+    pill: {
+        borderWidth: 1,
+        borderColor: panelDesign.colors.border,
+        borderRadius: 999,
+        backgroundColor: panelDesign.colors.backgroundSoft,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+    },
+    pillActive: {
+        borderColor: panelDesign.colors.primary,
+        backgroundColor: panelDesign.colors.primarySoft,
+    },
+    pillLabel: {
+        fontFamily: "ChairoSans",
+        fontSize: 14,
+        color: panelDesign.colors.muted,
+    },
+    pillLabelActive: {
+        color: "#A34700",
+    },
+    helper: {
+        fontFamily: "ChairoSans",
+        fontSize: 13,
+        color: panelDesign.colors.muted,
+    },
+    switchRow: {
+        borderWidth: 1,
+        borderColor: panelDesign.colors.border,
+        borderRadius: panelDesign.radius.md,
+        backgroundColor: panelDesign.colors.backgroundSoft,
+        padding: panelDesign.spacing.sm,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: panelDesign.spacing.sm,
+    },
+    categoryAddRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+    },
+    categoryList: {
+        gap: 8,
+    },
+    categoryRow: {
+        flexDirection: "row",
+        gap: 8,
+        alignItems: "center",
+    },
 });
 
 export default RestaurantMenuManager;

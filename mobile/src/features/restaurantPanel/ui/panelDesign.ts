@@ -1,0 +1,46 @@
+export const panelDesign = {
+    colors: {
+        background: "#FDF4E7",
+        backgroundSoft: "#FFF9F2",
+        card: "#FFFFFF",
+        border: "#E7DCCF",
+        text: "#1E2433",
+        muted: "#627189",
+        primary: "#EE7A14",
+        primarySoft: "#FFF1E3",
+        success: "#0E9F6E",
+        successSoft: "#E7FAF2",
+        danger: "#C03855",
+        dangerSoft: "#FFEAF0",
+        warning: "#D18A00",
+        warningSoft: "#FFF7DD",
+        info: "#4D5CD9",
+        infoSoft: "#E9EDFF",
+        shadow: "rgba(45, 35, 20, 0.08)",
+    },
+    radius: {
+        sm: 10,
+        md: 14,
+        lg: 18,
+        xl: 24,
+    },
+    spacing: {
+        xs: 6,
+        sm: 10,
+        md: 14,
+        lg: 18,
+        xl: 24,
+    },
+};
+
+export const panelTypography = {
+    kicker: 13,
+    title: 34,
+    titleMobile: 27,
+    subtitle: 17,
+    subtitleMobile: 15,
+    sectionTitle: 20,
+    sectionTitleMobile: 18,
+    body: 15,
+    caption: 13,
+};

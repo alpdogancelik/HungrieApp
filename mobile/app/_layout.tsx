@@ -3,7 +3,7 @@ import { SplashScreen, Stack, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import Constants from "expo-constants";
 import * as Sentry from "@sentry/react-native";
-import { Platform, Text, TextInput, View, useWindowDimensions } from "react-native";
+import { AppState, Platform, Text, TextInput, View, useWindowDimensions } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import useAuthStore from "@/store/auth.store";
@@ -11,10 +11,11 @@ import { ThemeProvider } from "@/src/theme/themeContext";
 import "@/src/lib/i18n";
 import "./globals.css";
 import { isRemotePushSupported, NotificationManager } from "@/src/features/notifications/NotificationManager";
-import { registerTokenWithBackend } from "@/src/features/notifications/push";
 import { startOrderStatusWatcher } from "@/src/features/notifications/orderStatusWatcher";
 import { auth } from "@/lib/firebase";
 import CartLockNotice from "@/components/CartLockNotice";
+import { registerPushToken } from "@/lib/registerPushToken";
+import { playOrderNotificationSound, unloadOrderNotificationSound } from "@/src/features/notifications/orderSound";
 
 const extra = Constants.expoConfig?.extra ?? {};
 const env = (typeof process !== "undefined" ? (process as any).env : undefined) ?? {};
@@ -62,24 +63,24 @@ function RootLayoutBase() {
     }, [fetchAuthenticatedUser]);
 
     useEffect(() => {
+        if (Platform.OS !== "android") return;
+        NotificationManager.ensureNotificationChannels().catch((error) => {
+            console.warn("[notifications] Failed to initialize channels", error);
+        });
+    }, []);
+
+    useEffect(() => {
         if (!isAuthenticated) return;
         if (!isRemotePushSupported()) return;
         let cancelled = false;
 
         const registerPush = async () => {
-            const granted = await NotificationManager.requestPermissions();
-            if (!granted || cancelled) return;
-
-            const tokenInfo = await NotificationManager.getPushToken();
-            if (!tokenInfo || cancelled) return;
-
-            const userId = user?.id ?? user?.$id ?? user?.accountId ?? null;
-            const registrationKey = `${userId || "anon"}::${tokenInfo.token}`;
-            if (pushRegistrationKeyRef.current === registrationKey) return;
-            pushRegistrationKeyRef.current = registrationKey;
-
             try {
-                await registerTokenWithBackend(userId, tokenInfo.token, tokenInfo.platform);
+                const registered = await registerPushToken();
+                if (!registered || cancelled) return;
+                const registrationKey = `restaurant::${registered.token}`;
+                if (pushRegistrationKeyRef.current === registrationKey) return;
+                pushRegistrationKeyRef.current = registrationKey;
             } catch (error) {
                 console.warn("[notifications] Failed to register push token", error);
             }
@@ -90,6 +91,22 @@ function RootLayoutBase() {
             cancelled = true;
         };
     }, [isAuthenticated, user]);
+
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        if (!isRemotePushSupported()) return;
+
+        const subscription = AppState.addEventListener("change", (state) => {
+            if (state !== "active") return;
+            void registerPushToken().catch((error) => {
+                console.warn("[notifications] Re-register on resume failed", error);
+            });
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, [isAuthenticated]);
 
     useEffect(() => {
         if (!isAuthenticated) return;
@@ -116,16 +133,45 @@ function RootLayoutBase() {
     }, [isAuthenticated, user?.$id, user?.accountId, user?.id]);
 
     useEffect(() => {
-        const unsubscribe = NotificationManager.subscribeToResponses((payload) => {
+        const handleNotificationPayload = (payload: Record<string, unknown>) => {
             const orderId = String(payload?.orderId || "");
+            const restaurantId = String(payload?.restaurantId || "");
             if (!orderId) return;
+            if (restaurantId) {
+                router.push({
+                    pathname: "/restaurantpanel/order/[orderId]",
+                    params: { orderId, restaurantId },
+                });
+                return;
+            }
             router.push({
                 pathname: "/order/pending",
                 params: { orderId },
             });
-        });
+        };
+
+        NotificationManager.getLastNotificationResponsePayload()
+            .then((payload) => {
+                if (payload) handleNotificationPayload(payload);
+            })
+            .catch(() => null);
+
+        const unsubscribe = NotificationManager.subscribeToResponses(handleNotificationPayload);
         return () => unsubscribe();
     }, [router]);
+
+    useEffect(() => {
+        const unsubscribe = NotificationManager.subscribeToReceived((payload) => {
+            const orderId = String(payload?.orderId || "");
+            const restaurantId = String(payload?.restaurantId || "");
+            if (!orderId || !restaurantId) return;
+            void playOrderNotificationSound();
+        });
+        return () => {
+            unsubscribe();
+            void unloadOrderNotificationSound();
+        };
+    }, []);
 
     useEffect(() => {
         if (!fontsLoaded || isLoading) return;

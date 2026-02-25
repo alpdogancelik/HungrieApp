@@ -1,23 +1,28 @@
-import { SafeAreaView } from "react-native-safe-area-context";
-import { View, Text, StyleSheet } from "react-native";
+import { useRouter } from "expo-router";
+import { PanelButton, PanelCard, PanelShell } from "@/src/features/restaurantPanel/ui";
+import { useRestaurantPanelLocale } from "@/src/features/restaurantPanel/panelLocale";
 
 const RestaurantOrders = () => {
+    const router = useRouter();
+    const { t } = useRestaurantPanelLocale(null);
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <View style={styles.container}>
-                <Text style={styles.title}>Active Orders</Text>
-                <Text style={styles.subtitle}>Accept or reject incoming orders here.</Text>
-                {/* TODO: Implement orders list */}
-            </View>
-        </SafeAreaView>
+        <PanelShell
+            kicker={t("common.restaurantHub")}
+            title={t("section.orders")}
+            subtitle={t("section.ordersSubtitle")}
+        >
+            <PanelCard
+                title={t("button.goDashboard")}
+                subtitle={t("section.ordersSubtitle")}
+            >
+                <PanelButton
+                    label={t("button.goDashboard")}
+                    onPress={() => router.push("/restaurantpanel")}
+                    accessibilityLabel={t("a11y.goDashboard")}
+                />
+            </PanelCard>
+        </PanelShell>
     );
 };
-
-const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: "#FFF6EC", padding: 16 },
-    container: { flex: 1, gap: 8 },
-    title: { fontFamily: "ChairoSans", fontSize: 22, color: "#0F172A", letterSpacing: -0.2 },
-    subtitle: { fontFamily: "ChairoSans", fontSize: 14, color: "#475569" },
-});
 
 export default RestaurantOrders;
