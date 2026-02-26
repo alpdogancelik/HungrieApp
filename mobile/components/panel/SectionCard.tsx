@@ -25,7 +25,7 @@ const SectionCard = ({ title, subtitle, children, style, compact = false, right,
                         ) : null}
                         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
                     </View>
-                    {right}
+                    {right ? <View style={styles.headerRight}>{right}</View> : null}
                 </View>
             ) : null}
             {children}
@@ -52,8 +52,11 @@ const styles = StyleSheet.create({
     },
     header: {
         flexDirection: "row",
-        alignItems: "center",
+        alignItems: "flex-start",
         gap: 8,
+    },
+    headerRight: {
+        alignSelf: "center",
     },
     title: {
         fontFamily: "ChairoSans",

@@ -23,7 +23,10 @@ type Props = {
     actionLoadingByOrder: Record<string, string | undefined>;
     newOrderIds: string[];
     onToggleOrder: (orderId: string) => void;
-    onStatusChange: (orderId: string, nextStatus: "pending" | "accepted" | "canceled" | "delivered") => Promise<void> | void;
+    onStatusChange: (
+        orderId: string,
+        nextStatus: "pending" | "accepted" | "out_for_delivery" | "canceled" | "delivered",
+    ) => Promise<void> | void;
 };
 
 const emptyCopy = (

@@ -4,6 +4,8 @@ import type { Order, OrderStatus } from "../domain/types";
 import { CartItem, MenuItem, PaymentMethod, Restaurant } from "../domain/types";
 import { transitionOrderStatus, canTransition } from "../domain/orderMachine";
 import { emitOrderEvent } from "../lib/realtime";
+import { firebaseConfigured } from "@/lib/firebase";
+import { requestOrderReminder } from "@/src/services/firebaseOrders";
 
 const restaurants: Restaurant[] = [
     { id: "ada-pizza", name: "Ada Pizza", description: "Ada'nın geç-gece pizzaları ve dürümleri", isActive: true },
@@ -138,7 +140,14 @@ export const getOrder = async (orderId: string): Promise<Order | null> => {
 export const getOrdersByUser = async (userId: string): Promise<Order[]> =>
     orders.filter((order) => order.userId === userId);
 
-export const nudgeRestaurant = async (orderId: string) => {
+export const nudgeRestaurant = async (orderId: string, userId?: string) => {
+    if (!orderId) throw new Error("Order not found");
+
+    if (firebaseConfigured) {
+        await requestOrderReminder(orderId, { userId, source: "customer" });
+        return { success: true, notifiedAt: new Date().toISOString() };
+    }
+
     const order = await getOrder(orderId);
     if (!order) throw new Error("Order not found");
     return { success: true, notifiedAt: new Date().toISOString() };

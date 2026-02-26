@@ -32,6 +32,15 @@ const criticalFallbackTr: Dictionary = {
     "menu.newCategoryPlaceholder": "Yeni kategori ad\u0131",
     "menu.addCategory": "Ekle",
     "menu.deleteCategory": "Sil",
+    "orders.handoverCourier": "Kuryeye teslim et",
+    "orders.status.out_for_delivery": "Kuryede",
+    "orders.action.handover": "kuryeye teslim etmek",
+    "orders.updateFailedTitle": "Sipari\u015f g\u00fcncellenemedi",
+    "section.remindedOrders": "Hat\u0131rlat\u0131lan sipari\u015fler",
+    "section.remindedOrdersSubtitle": "M\u00fc\u015fteri hat\u0131rlatmalar\u0131 ana sayfada sessiz g\u00f6sterilir.",
+    "reminders.justNow": "az \u00f6nce",
+    "reminders.minutesAgo": "{{count}} dk \u00f6nce",
+    "reminders.openOrder": "A\u00e7",
     "loading.menuTitle": "Men\u00fc verisi y\u00fckleniyor",
     "loading.menuDescription": "\u00dcr\u00fcn ve kategoriler haz\u0131rlan\u0131yor.",
     "loading.historyTitle": "Ge\u00e7mi\u015f sipari\u015fler y\u00fckleniyor",
@@ -55,11 +64,10 @@ const parseLocale = (value: string | null | undefined): PanelLocale | null => {
 };
 
 export const formatPanelCurrency = (value: number, locale: PanelLocale) =>
-    new Intl.NumberFormat(locale === "tr" ? "tr-TR" : "en-US", {
-        style: "currency",
-        currency: "TRY",
+    `${new Intl.NumberFormat(locale === "tr" ? "tr-TR" : "en-US", {
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-    }).format(Number(value || 0));
+    }).format(Number(value || 0))}${locale === "tr" ? " TL" : " TRY"}`;
 
 export const formatPanelDate = (value: number | Date | string, locale: PanelLocale) => {
     const date = value instanceof Date ? value : new Date(value);

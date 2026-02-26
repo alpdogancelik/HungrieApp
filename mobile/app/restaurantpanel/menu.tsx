@@ -7,6 +7,7 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
+    useWindowDimensions,
     View,
 } from "react-native";
 import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
@@ -41,6 +42,8 @@ type Category = {
 
 const RestaurantMenuManager = () => {
     const router = useRouter();
+    const { width } = useWindowDimensions();
+    const isPhone = width < 420;
     const { isAuthenticated } = useAuthStore();
     const [restaurantId, setRestaurantId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
@@ -270,7 +273,7 @@ const RestaurantMenuManager = () => {
                 ) : (
                     filteredItems.map((item) => (
                         <PanelCard key={item.id} title={item.name} subtitle={t("menu.itemCardSubtitle")}>
-                            <View style={styles.fieldGrid}>
+                            <View style={[styles.fieldGrid, isPhone ? styles.fieldGridPhone : null]}>
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.label}>{t("menu.fieldName")}</Text>
                                     <TextInput
@@ -282,7 +285,7 @@ const RestaurantMenuManager = () => {
                                         accessibilityLabel={t("a11y.menuItemName", { name: item.name })}
                                     />
                                 </View>
-                                <View style={styles.priceBlock}>
+                                <View style={[styles.priceBlock, isPhone ? styles.priceBlockPhone : null]}>
                                     <Text style={styles.label}>{t("menu.fieldPrice")}</Text>
                                     <TextInput
                                         value={String(item.price ?? 0)}
@@ -345,7 +348,7 @@ const RestaurantMenuManager = () => {
                 )}
 
                 <PanelCard title={t("menu.categoriesTitle")} subtitle={t("menu.categoriesSubtitle")}>
-                    <View style={styles.categoryAddRow}>
+                    <View style={[styles.categoryAddRow, isPhone ? styles.categoryAddRowPhone : null]}>
                         <TextInput
                             value={newCategoryName}
                             onChangeText={setNewCategoryName}
@@ -370,7 +373,7 @@ const RestaurantMenuManager = () => {
                     ) : (
                         <View style={styles.categoryList}>
                             {categories.map((category) => (
-                                <View key={category.id} style={styles.categoryRow}>
+                                <View key={category.id} style={[styles.categoryRow, isPhone ? styles.categoryRowPhone : null]}>
                                     <TextInput
                                         value={category.name}
                                         onChangeText={(value) =>
@@ -433,9 +436,15 @@ const styles = StyleSheet.create({
         flexWrap: "wrap",
         gap: 10,
     },
+    fieldGridPhone: {
+        flexDirection: "column",
+    },
     priceBlock: {
         minWidth: 140,
         flexGrow: 1,
+    },
+    priceBlockPhone: {
+        minWidth: 0,
     },
     label: {
         fontFamily: "ChairoSans",
@@ -500,6 +509,10 @@ const styles = StyleSheet.create({
         alignItems: "center",
         gap: 8,
     },
+    categoryAddRowPhone: {
+        flexDirection: "column",
+        alignItems: "stretch",
+    },
     categoryList: {
         gap: 8,
     },
@@ -507,6 +520,10 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         gap: 8,
         alignItems: "center",
+    },
+    categoryRowPhone: {
+        flexDirection: "column",
+        alignItems: "stretch",
     },
 });
 

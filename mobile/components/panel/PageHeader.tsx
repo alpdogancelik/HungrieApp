@@ -56,8 +56,8 @@ const styles = StyleSheet.create({
         flexShrink: 1,
     },
     titleMobile: {
-        fontSize: 22,
-        lineHeight: 28,
+        fontSize: 20,
+        lineHeight: 25,
     },
     subtitle: {
         fontFamily: "ChairoSans",

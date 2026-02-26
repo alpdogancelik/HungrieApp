@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Props = {
     visible: boolean;
@@ -10,10 +11,11 @@ type Props = {
 };
 
 const OrderNotificationToast = ({ visible, message, title, dismissHint, dismissAccessibilityLabel, onClose }: Props) => {
+    const insets = useSafeAreaInsets();
     if (!visible) return null;
 
     return (
-        <View style={styles.wrap} pointerEvents="box-none">
+        <View style={[styles.wrap, { top: insets.top + 8 }]} pointerEvents="box-none">
             <Pressable
                 onPress={onClose}
                 accessibilityRole="button"

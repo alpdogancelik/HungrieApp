@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
 import type { PanelLocale } from "@/src/features/restaurantPanel/panelLocale";
 
 export type OrdersStatusFilter = "all" | "pending" | "accepted" | "canceled" | "delivered";
 
-const FILTERS: OrdersStatusFilter[] = ["all", "pending", "accepted", "canceled"];
+const FILTERS: OrdersStatusFilter[] = ["all", "pending", "accepted", "canceled", "delivered"];
 
 type Props = {
     locale: PanelLocale;
@@ -29,6 +29,8 @@ const OrderFilters = ({
     getFilterAccessibilityLabel,
     debounceMs = 280,
 }: Props) => {
+    const { width } = useWindowDimensions();
+    const isPhone = width < 760;
     const [search, setSearch] = useState("");
 
     useEffect(() => {
@@ -40,7 +42,11 @@ const OrderFilters = ({
 
     return (
         <View style={styles.wrap}>
-            <View style={styles.filterRow}>
+            <ScrollView
+                horizontal={isPhone}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={[styles.filterRow, isPhone ? styles.filterRowPhone : null]}
+            >
                 {FILTERS.map((status) => {
                     const active = statusFilter === status;
                     return (
@@ -57,29 +63,30 @@ const OrderFilters = ({
                             }
                             style={({ pressed }) => [
                                 styles.filterPill,
+                                isPhone ? styles.filterPillPhone : null,
                                 active ? styles.filterPillActive : null,
                                 pressed ? { opacity: 0.85 } : null,
                             ]}
                         >
-                            <Text style={[styles.filterText, active ? styles.filterTextActive : null]}>
+                            <Text style={[styles.filterText, isPhone ? styles.filterTextPhone : null, active ? styles.filterTextActive : null]}>
                                 {getFilterLabel(status)}
                             </Text>
-                            <View style={[styles.countBadge, active ? styles.countBadgeActive : null]}>
-                                <Text style={[styles.countText, active ? styles.countTextActive : null]}>
+                            <View style={[styles.countBadge, isPhone ? styles.countBadgePhone : null, active ? styles.countBadgeActive : null]}>
+                                <Text style={[styles.countText, isPhone ? styles.countTextPhone : null, active ? styles.countTextActive : null]}>
                                     {getFilterCount ? getFilterCount(status) : 0}
                                 </Text>
                             </View>
                         </Pressable>
                     );
                 })}
-            </View>
+            </ScrollView>
 
             <TextInput
                 placeholder={searchPlaceholder}
                 placeholderTextColor="#8895AA"
                 value={search}
                 onChangeText={setSearch}
-                style={styles.searchInput}
+                style={[styles.searchInput, isPhone ? styles.searchInputPhone : null]}
                 accessibilityLabel={searchPlaceholder}
             />
         </View>
@@ -95,6 +102,10 @@ const styles = StyleSheet.create({
         flexWrap: "wrap",
         gap: 8,
     },
+    filterRowPhone: {
+        flexWrap: "nowrap",
+        paddingRight: 4,
+    },
     filterPill: {
         borderWidth: 1,
         borderColor: "#E7DCCF",
@@ -109,6 +120,12 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         gap: 8,
     },
+    filterPillPhone: {
+        minHeight: 34,
+        minWidth: 88,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+    },
     filterPillActive: {
         borderColor: "#EE7A14",
         backgroundColor: "#FFF1E3",
@@ -118,6 +135,9 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: "#627189",
         textAlign: "center",
+    },
+    filterTextPhone: {
+        fontSize: 13,
     },
     filterTextActive: {
         color: "#B94900",
@@ -131,6 +151,11 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         backgroundColor: "#F2E9DC",
     },
+    countBadgePhone: {
+        minWidth: 20,
+        height: 20,
+        borderRadius: 10,
+    },
     countBadgeActive: {
         backgroundColor: "#FBD9B8",
     },
@@ -139,6 +164,10 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: "#627189",
         lineHeight: 14,
+    },
+    countTextPhone: {
+        fontSize: 11,
+        lineHeight: 12,
     },
     countTextActive: {
         color: "#B94900",
@@ -154,6 +183,10 @@ const styles = StyleSheet.create({
         color: "#1E2433",
         fontFamily: "ChairoSans",
         fontSize: 15,
+    },
+    searchInputPhone: {
+        minHeight: 42,
+        fontSize: 14,
     },
 });
 

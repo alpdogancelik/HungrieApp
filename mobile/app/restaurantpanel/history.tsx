@@ -307,15 +307,6 @@ const RestaurantHistory = () => {
                                     accessibilityLabel={t("a11y.orderNoteToggle")}
                                 />
                                 <Text style={styles.meta}>{t("history.payment", { value: order.paymentMethod || t("common.na") })}</Text>
-                                <View style={styles.historyActionRow}>
-                                    <PanelButton
-                                        label={t("history.viewDetails")}
-                                        variant="outline"
-                                        style={styles.historyActionButton}
-                                        onPress={() => setSelectedOrder(order)}
-                                        accessibilityLabel={t("a11y.openOrderDetails", { id: order.id })}
-                                    />
-                                </View>
                             </PanelCard>
                         </Pressable>
                     ))}

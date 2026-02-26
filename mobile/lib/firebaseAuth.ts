@@ -150,7 +150,16 @@ export const signIn = async ({ email, password }: { email: string; password: str
         const credential = await signInWithEmailAndPassword(requireAuth(), email, password);
         const verifiedUser = await ensureVerified(credential.user);
         return verifiedUser ? syncProfile(verifiedUser) : null;
-    } catch (e) {
+    } catch (e: any) {
+        const code = String(e?.code || "").toLowerCase();
+        if (
+            code === "auth/wrong-password" ||
+            code === "auth/user-not-found" ||
+            code === "auth/invalid-credential" ||
+            code === "auth/invalid-login-credentials"
+        ) {
+            throw new Error("Kullanıcı adı veya şifre hatalı.");
+        }
         throw new Error(parseErr(e));
     }
 };

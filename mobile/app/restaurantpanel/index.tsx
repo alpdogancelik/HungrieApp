@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { SafeAreaView, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 
 import useAuthStore from "@/store/auth.store";
 import { getOwnedRestaurantId } from "@/lib/firebaseAuth";
-import { subscribeRestaurantOrders, subscribeRestaurantPastOrders, transitionOrder } from "@/src/services/firebaseOrders";
+import {
+    subscribeRestaurantOrders,
+    subscribeRestaurantPastOrders,
+    subscribeRestaurantReminderOrders,
+    transitionOrder,
+} from "@/src/services/firebaseOrders";
 import { mapFirestoreOrder, normalizePanelOrderStatus, type PanelOrder, sortOrdersDesc } from "@/src/features/restaurantPanel/model/panelOrders";
 import { DashboardSummary, LanguageSwitch, PageHeader, PanelButton, SectionCard } from "@/components/panel";
 import { OrderFilters, OrderNotificationToast, OrdersList, type OrdersStatusFilter } from "@/components/orders";
@@ -46,6 +51,7 @@ const RestaurantPanel = () => {
 
     const [orders, setOrders] = useState<PanelOrder[]>([]);
     const [pastOrders, setPastOrders] = useState<PanelOrder[]>([]);
+    const [reminderOrders, setReminderOrders] = useState<PanelOrder[]>([]);
 
     const [statusFilter, setStatusFilter] = useState<OrdersStatusFilter>("all");
     const [searchTerm, setSearchTerm] = useState("");
@@ -98,7 +104,7 @@ const RestaurantPanel = () => {
     useEffect(() => {
         if (!restaurantId) return;
 
-        const unsubscribeActive = subscribeRestaurantOrders(restaurantId, ["pending", "accepted"], (list) => {
+        const unsubscribeActive = subscribeRestaurantOrders(restaurantId, ["pending", "accepted", "preparing", "ready", "out_for_delivery"], (list) => {
             setOrders(sortOrdersDesc(list.map(mapFirestoreOrder)));
         });
 
@@ -106,26 +112,36 @@ const RestaurantPanel = () => {
             setPastOrders(sortOrdersDesc(list.map(mapFirestoreOrder)));
         });
 
+        const unsubscribeReminders = subscribeRestaurantReminderOrders(restaurantId, (list) => {
+            setReminderOrders(sortOrdersDesc(list.map(mapFirestoreOrder)));
+        });
+
         return () => {
             unsubscribeActive?.();
             unsubscribePast?.();
+            unsubscribeReminders?.();
         };
     }, [restaurantId]);
 
     const updateOrderStatus = useCallback(
-        async (orderId: string, status: "pending" | "accepted" | "canceled" | "delivered") => {
+        async (orderId: string, status: "pending" | "accepted" | "out_for_delivery" | "canceled" | "delivered") => {
+            const previousOrder = orders.find((order) => order.id === orderId);
+            const previousStatus = previousOrder?.status;
             setOrders((prev) => prev.map((order) => (order.id === orderId ? { ...order, status } : order)));
             try {
                 await transitionOrder(orderId, status);
-            } catch {
-                // Keep existing behavior: optimistic UI update remains while backend call fails silently.
+            } catch (error: any) {
+                if (previousStatus) {
+                    setOrders((prev) => prev.map((order) => (order.id === orderId ? { ...order, status: previousStatus } : order)));
+                }
+                Alert.alert(t("orders.updateFailedTitle"), error?.message || t("common.tryAgain"));
             }
         },
-        [],
+        [orders, t],
     );
 
     const handleOrderAction = useCallback(
-        async (orderId: string, status: "pending" | "accepted" | "canceled" | "delivered") => {
+        async (orderId: string, status: "pending" | "accepted" | "out_for_delivery" | "canceled" | "delivered") => {
             setActionLoadingByOrder((prev) => ({ ...prev, [orderId]: status }));
             try {
                 await updateOrderStatus(orderId, status);
@@ -139,7 +155,10 @@ const RestaurantPanel = () => {
     const metrics = useMemo(() => {
         const todayOrders = [...orders, ...pastOrders].filter((order) => isSameDay(order.createdAtMs || 0, Date.now()));
         const pendingToday = todayOrders.filter((order) => normalizePanelOrderStatus(order.status) === "pending").length;
-        const acceptedToday = todayOrders.filter((order) => normalizePanelOrderStatus(order.status) === "accepted").length;
+        const acceptedToday = todayOrders.filter((order) => {
+            const status = normalizePanelOrderStatus(order.status);
+            return status === "accepted" || status === "out_for_delivery";
+        }).length;
         const deliveredToday = todayOrders.filter((order) => normalizePanelOrderStatus(order.status) === "delivered").length;
         const today = todayOrders.length;
         return { pendingToday, acceptedToday, deliveredToday, today };
@@ -151,8 +170,9 @@ const RestaurantPanel = () => {
         for (const order of orders) {
             const status = normalizePanelOrderStatus(order.status);
             if (status === "pending") pending += 1;
-            else if (status === "accepted") accepted += 1;
+            else if (status === "accepted" || status === "out_for_delivery") accepted += 1;
         }
+        const delivered = pastOrders.filter((order) => normalizePanelOrderStatus(order.status) === "delivered").length;
         const canceled = pastOrders.filter((order) => {
             const status = normalizePanelOrderStatus(order.status);
             return status === "canceled" || status === "rejected";
@@ -161,6 +181,7 @@ const RestaurantPanel = () => {
             all: orders.length,
             pending,
             accepted,
+            delivered,
             canceled,
         };
     }, [orders, pastOrders]);
@@ -177,7 +198,20 @@ const RestaurantPanel = () => {
         [pastOrders],
     );
 
-    const ordersForCurrentFilter = statusFilter === "canceled" ? canceledOrdersFromHistory : orders;
+    const deliveredOrdersFromHistory = useMemo(
+        () =>
+            sortOrdersDesc(
+                pastOrders.filter((order) => normalizePanelOrderStatus(order.status) === "delivered"),
+            ),
+        [pastOrders],
+    );
+
+    const ordersForCurrentFilter =
+        statusFilter === "canceled"
+            ? canceledOrdersFromHistory
+            : statusFilter === "delivered"
+                ? deliveredOrdersFromHistory
+                : orders;
 
     const handleGoToActiveOrders = useCallback(() => {
         setStatusFilter("all");
@@ -224,6 +258,23 @@ const RestaurantPanel = () => {
 
     const sessionIdentity = user?.email || user?.name || t("common.na");
     const systemMessage = notificationsEnabled ? t("notifications.systemMessagesEnabled") : t("notifications.systemMessagesDisabled");
+
+    const reminderFeed = useMemo(
+        () => reminderOrders.filter((order) => order.reminderPending).slice(0, 5),
+        [reminderOrders],
+    );
+
+    const formatReminderAgo = useCallback(
+        (value?: number) => {
+            const now = Date.now();
+            const ms = Number(value || 0);
+            if (!ms) return t("reminders.justNow");
+            const diffMin = Math.max(0, Math.floor((now - ms) / 60000));
+            if (diffMin <= 0) return t("reminders.justNow");
+            return t("reminders.minutesAgo", { count: diffMin });
+        },
+        [t],
+    );
 
     if (loading) {
         return (
@@ -327,6 +378,7 @@ const RestaurantPanel = () => {
                                         if (status === "pending") return filterCounts.pending;
                                         if (status === "accepted") return filterCounts.accepted;
                                         if (status === "canceled") return filterCounts.canceled;
+                                        if (status === "delivered") return filterCounts.delivered;
                                         return 0;
                                     }}
                                     getFilterAccessibilityLabel={(status) => t("a11y.filterByStatus", { value: t(`orders.filter.${status}`) })}
@@ -354,7 +406,40 @@ const RestaurantPanel = () => {
                             </View>
                         </View>
 
-                    <View style={styles.rightColumn}>
+                    <View style={[styles.rightColumn, isPhone ? styles.rightColumnMobile : null]}>
+                        {reminderFeed.length ? (
+                            <SectionCard
+                                title={t("section.remindedOrders")}
+                                subtitle={t("section.remindedOrdersSubtitle")}
+                                titleIcon={<Feather name="message-square" size={14} color="#B94900" />}
+                            >
+                                <View style={styles.reminderList}>
+                                    {reminderFeed.map((order) => (
+                                        <View key={`rem-${order.id}`} style={styles.reminderRow}>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.reminderTitle}>
+                                                    {order.customer} · {formatReminderAgo(order.reminderRequestedAtMs)}
+                                                </Text>
+                                                <Text style={styles.reminderMeta} numberOfLines={1}>
+                                                    #{order.id}
+                                                </Text>
+                                            </View>
+                                            <PanelButton
+                                                label={t("reminders.openOrder")}
+                                                variant="secondary"
+                                                style={styles.reminderActionButton}
+                                                onPress={() => {
+                                                    setStatusFilter("all");
+                                                    setExpandedOrderId(order.id);
+                                                    scrollRef.current?.scrollTo({ y: Math.max(ordersSectionY - 8, 0), animated: true });
+                                                }}
+                                            />
+                                        </View>
+                                    ))}
+                                </View>
+                            </SectionCard>
+                        ) : null}
+
                         <SectionCard
                             title={t("section.notifications")}
                             subtitle={t("section.notificationsSubtitle")}
@@ -366,7 +451,7 @@ const RestaurantPanel = () => {
                                 })}
                                 variant={notificationsEnabled ? "primary" : "secondary"}
                                 iconName={notificationsEnabled ? "bell" : "bell-off"}
-                                style={styles.fullWidthButton}
+                                style={isPhone ? styles.compactActionButton : styles.fullWidthButton}
                                 onPress={() => {
                                     void toggleNotifications();
                                 }}
@@ -376,7 +461,7 @@ const RestaurantPanel = () => {
                                 label={t("button.testNotification")}
                                 variant="secondary"
                                 iconName="zap"
-                                style={styles.fullWidthButton}
+                                style={isPhone ? styles.compactActionButton : styles.fullWidthButton}
                                 onPress={testNotification}
                                 accessibilityLabel={t("a11y.testNotification")}
                             />
@@ -395,7 +480,7 @@ const RestaurantPanel = () => {
                                 label={t("button.manageMenu")}
                                 variant="secondary"
                                 iconName="grid"
-                                style={styles.fullWidthButton}
+                                style={isPhone ? styles.compactActionButton : styles.fullWidthButton}
                                 onPress={() => router.push("/restaurantpanel/menu")}
                                 accessibilityLabel={t("a11y.manageMenu")}
                             />
@@ -403,7 +488,7 @@ const RestaurantPanel = () => {
                                 label={t("button.editDetails")}
                                 variant="secondary"
                                 iconName="edit-2"
-                                style={styles.fullWidthButton}
+                                style={isPhone ? styles.compactActionButton : styles.fullWidthButton}
                                 onPress={() => router.push("/restaurantpanel/details")}
                                 accessibilityLabel={t("a11y.editRestaurantDetails")}
                             />
@@ -416,16 +501,16 @@ const RestaurantPanel = () => {
                                     {t("session.currentUser", { value: sessionIdentity })}
                                 </Text>
                             </View>
-                            <PanelButton
-                                label={t("button.signOut")}
-                                variant="destructive"
-                                iconName="log-out"
-                                style={styles.fullWidthButton}
-                                onPress={() => router.replace("/sign-in")}
-                                accessibilityLabel={t("a11y.signOut")}
-                            />
-                        </SectionCard>
-                    </View>
+                                    <PanelButton
+                                        label={t("button.signOut")}
+                                        variant="destructive"
+                                        iconName="log-out"
+                                        style={isPhone ? styles.compactActionButton : styles.fullWidthButton}
+                                        onPress={() => router.replace("/sign-in")}
+                                        accessibilityLabel={t("a11y.signOut")}
+                                    />
+                                </SectionCard>
+                            </View>
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -438,8 +523,8 @@ const styles = StyleSheet.create({
         backgroundColor: "#FDF4E7",
     },
     container: {
-        padding: 14,
-        gap: 14,
+        padding: 12,
+        gap: 12,
         paddingBottom: 28,
     },
     grid: {
@@ -458,12 +543,15 @@ const styles = StyleSheet.create({
         flex: 1,
         gap: 12,
     },
+    rightColumnMobile: {
+        gap: 10,
+    },
     ordersListWrap: {
         minHeight: 240,
         maxHeight: 600,
     },
     ordersListWrapMobile: {
-        minHeight: 200,
+        minHeight: 180,
         maxHeight: undefined,
     },
     headerRightWrap: {
@@ -486,22 +574,58 @@ const styles = StyleSheet.create({
     headerControlsMobile: {
         width: "100%",
         justifyContent: "flex-start",
+        flexDirection: "column",
+        alignItems: "stretch",
     },
     headerActionButton: {
         minWidth: 130,
     },
     headerActionButtonMobile: {
-        flexGrow: 1,
-        minWidth: 132,
+        width: "100%",
+        minWidth: 0,
     },
     sectionTopButton: {
         minWidth: 148,
     },
     sectionTopButtonMobile: {
-        minWidth: 126,
+        minWidth: 110,
+        minHeight: 38,
     },
     fullWidthButton: {
         width: "100%",
+    },
+    compactActionButton: {
+        width: "100%",
+        minHeight: 42,
+    },
+    reminderList: {
+        gap: 8,
+    },
+    reminderRow: {
+        borderWidth: 1,
+        borderColor: "#E7DCCF",
+        borderRadius: 12,
+        backgroundColor: "#FFF9F2",
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        flexDirection: "row",
+        gap: 10,
+        alignItems: "center",
+    },
+    reminderTitle: {
+        fontFamily: "ChairoSans",
+        fontSize: 13,
+        color: "#1E2433",
+    },
+    reminderMeta: {
+        marginTop: 2,
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        color: "#627189",
+    },
+    reminderActionButton: {
+        minWidth: 96,
+        minHeight: 34,
     },
     systemMessageChip: {
         minHeight: 34,

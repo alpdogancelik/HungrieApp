@@ -41,12 +41,25 @@ const fetchStaffProfile = async (user: FirebaseUser): Promise<RestaurantSession 
 
 export const signInRestaurant = async (email: string, password: string): Promise<RestaurantSession> => {
     ensureFirebase();
-    const credential = await signInWithEmailAndPassword(auth!, email, password);
-    const session = await fetchStaffProfile(credential.user);
-    if (!session) {
-        throw new Error("Bu kullanıcı için restoran yetkisi bulunamadı (restaurantStaff kaydı eksik).");
+    try {
+        const credential = await signInWithEmailAndPassword(auth!, email, password);
+        const session = await fetchStaffProfile(credential.user);
+        if (!session) {
+            throw new Error("Bu kullanıcı için restoran yetkisi bulunamadı (restaurantStaff kaydı eksik).");
+        }
+        return session;
+    } catch (error: any) {
+        const code = String(error?.code || "").toLowerCase();
+        if (
+            code === "auth/wrong-password" ||
+            code === "auth/user-not-found" ||
+            code === "auth/invalid-credential" ||
+            code === "auth/invalid-login-credentials"
+        ) {
+            throw new Error("Kullanıcı adı veya şifre hatalı.");
+        }
+        throw error;
     }
-    return session;
 };
 
 export const signOutRestaurant = async () => {

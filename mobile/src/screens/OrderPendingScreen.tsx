@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
     Alert,
     Animated,
@@ -13,10 +13,12 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import useOrderRealtime from "@/src/hooks/useOrderRealtime";
 import useOrderStatus from "@/src/hooks/useOrderStatus";
 import { transitionOrder } from "@/src/services/firebaseOrders";
 import { nudgeRestaurant } from "@/src/api/client";
+import useAuthStore from "@/store/auth.store";
 import OrderRider from "@/assets/illustrations/Order Rider.svg";
 import type { OrderStatus } from "@/src/domain/types";
 
@@ -43,19 +45,35 @@ const colors = {
 };
 
 const radius = {
-    sm: 12,
     md: 16,
     lg: 24,
 };
 
 const CANCEL_WINDOW_SECONDS = 60;
+const APPROVAL_SLA_SECONDS = 5 * 60;
+const REMINDER_UNLOCK_SECONDS = 4 * 60;
 
-const getCancelWindowRemaining = (timestamp?: string) => {
-    if (!timestamp) return CANCEL_WINDOW_SECONDS;
-    const createdAt = new Date(timestamp).getTime();
-    if (Number.isNaN(createdAt)) return CANCEL_WINDOW_SECONDS;
-    const diffSeconds = Math.floor((Date.now() - createdAt) / 1000);
-    return Math.max(CANCEL_WINDOW_SECONDS - diffSeconds, 0);
+const toMillis = (value: unknown) => {
+    if (!value) return 0;
+    if (typeof value === "number") return value;
+    if (value instanceof Date) return value.getTime();
+    if (typeof value === "string") {
+        const parsed = new Date(value).getTime();
+        return Number.isNaN(parsed) ? 0 : parsed;
+    }
+    if (typeof (value as any)?.toDate === "function") return (value as any).toDate().getTime();
+    if (typeof (value as any)?.seconds === "number") return (value as any).seconds * 1000;
+    return 0;
+};
+
+const resolveUserId = (user: unknown): string | undefined => {
+    const candidates = [(user as any)?.id, (user as any)?.$id, (user as any)?.uid];
+    for (const candidate of candidates) {
+        if (typeof candidate === "string" && candidate.trim()) {
+            return candidate;
+        }
+    }
+    return undefined;
 };
 
 const formatTime = (seconds: number) => {
@@ -73,7 +91,7 @@ const StepRow = ({
     subtitle,
     status,
 }: {
-    icon: React.ReactNode;
+    icon: ReactNode;
     title: string;
     subtitle?: string;
     status: "done" | "active" | "pending" | "danger";
@@ -82,10 +100,10 @@ const StepRow = ({
         status === "done"
             ? colors.success
             : status === "active"
-                ? colors.primary
-                : status === "danger"
-                    ? colors.danger
-                    : colors.sub;
+              ? colors.primary
+              : status === "danger"
+                ? colors.danger
+                : colors.sub;
 
     return (
         <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}>
@@ -105,9 +123,7 @@ const StepRow = ({
             </View>
             <View style={{ flex: 1 }}>
                 <Text style={{ color: colors.text, fontFamily: "ChairoSans", fontSize: 16 }}>{title}</Text>
-                {subtitle ? (
-                    <Text style={{ color: colors.sub, marginTop: 2, fontSize: 14 }}>{subtitle}</Text>
-                ) : null}
+                {subtitle ? <Text style={{ color: colors.sub, marginTop: 2, fontSize: 14 }}>{subtitle}</Text> : null}
             </View>
             <View
                 style={{
@@ -121,21 +137,19 @@ const StepRow = ({
     );
 };
 
-const OrderPendingScreen = ({
-    orderId,
-    restaurantName,
-    etaSeconds = 120,
-    onConfirmed,
-    onRejected,
-}: Props) => {
+const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfirmed, onRejected }: Props) => {
+    const { t } = useTranslation();
+    const { user } = useAuthStore();
     const insets = useSafeAreaInsets();
     const { order } = useOrderRealtime(orderId);
     const { status: pendingStatus } = useOrderStatus(orderId);
+
     const orderStatus = useMemo<OrderStatus>(() => {
         const rawStatus = String(order?.status ?? "");
         if (rawStatus === "accepted") return "preparing";
         if (rawStatus === "rejected") return "canceled";
         if (rawStatus) return rawStatus as OrderStatus;
+
         switch (pendingStatus) {
             case "confirmed":
                 return "preparing";
@@ -145,68 +159,78 @@ const OrderPendingScreen = ({
                 return "pending";
         }
     }, [order?.status, pendingStatus]);
-    const baseEtaSeconds = useMemo(() => (order?.etaMinutes ? order.etaMinutes * 60 : etaSeconds), [order?.etaMinutes, etaSeconds]);
-    const [sla, setSla] = useState(baseEtaSeconds);
+
+    const [sla, setSla] = useState(APPROVAL_SLA_SECONDS);
+    const [reminderUnlockRemaining, setReminderUnlockRemaining] = useState(REMINDER_UNLOCK_SECONDS);
     const [cooldown, setCooldown] = useState(0);
     const [sendingNudge, setSendingNudge] = useState(false);
     const [autoCanceled, setAutoCanceled] = useState(false);
     const [cancelWindowRemaining, setCancelWindowRemaining] = useState(CANCEL_WINDOW_SECONDS);
+
     const spinner = useRef(new Animated.Value(0)).current;
     const prevStatus = useRef<OrderStatus>("pending");
     const isCancelWindowActive = orderStatus === "pending" && cancelWindowRemaining > 0 && !autoCanceled;
+    const isReminderLocked = orderStatus === "pending" && reminderUnlockRemaining > 0;
     const safeTop = Math.max(insets.top, 16);
 
     const handleAutoCancel = useCallback(async () => {
         if (autoCanceled || !orderId) return;
         setAutoCanceled(true);
+
         try {
             await transitionOrder(orderId, "canceled");
             setCancelWindowRemaining(0);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => null);
             onRejected?.(orderId);
-        } catch (err: any) {
+        } catch (error: any) {
             setAutoCanceled(false);
-            Alert.alert("Unable to cancel", err?.message || "Please try again.");
+            Alert.alert(t("orderPending.alerts.unableCancelTitle"), error?.message || t("orderPending.alerts.pleaseTryAgain"));
         }
-    }, [autoCanceled, orderId, onRejected]);
+    }, [autoCanceled, onRejected, orderId, t]);
 
     useEffect(() => {
-        setSla(baseEtaSeconds);
-    }, [baseEtaSeconds]);
-
-    useEffect(() => {
-        Animated.loop(
+        const loop = Animated.loop(
             Animated.timing(spinner, {
                 toValue: 1,
                 duration: 2000,
                 easing: Easing.linear,
                 useNativeDriver: true,
             }),
-        ).start();
+        );
+        loop.start();
+        return () => loop.stop();
     }, [spinner]);
 
     useEffect(() => {
-        if (orderStatus !== "pending") return;
-        const timer = setInterval(() => {
-            setSla((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    handleAutoCancel();
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-        return () => clearInterval(timer);
-    }, [orderStatus, handleAutoCancel]);
+        if (orderStatus !== "pending") {
+            setSla(0);
+            setReminderUnlockRemaining(0);
+            setCancelWindowRemaining(0);
+            return;
+        }
 
-    useEffect(() => {
-        if (orderStatus !== "pending") return;
-        const ticker = setInterval(() => {
-            setSla((prev) => (prev > 0 ? prev - 1 : 0));
-        }, 1000);
-        return () => clearInterval(ticker);
-    }, [orderStatus]);
+        const sourceTimestamp = order?.createdAt || order?.updatedAt;
+        const sourceMs = toMillis(sourceTimestamp);
+
+        const tick = () => {
+            const elapsedSeconds = sourceMs ? Math.max(0, Math.floor((Date.now() - sourceMs) / 1000)) : 0;
+            const nextSla = Math.max(APPROVAL_SLA_SECONDS - elapsedSeconds, 0);
+            const nextReminderLock = Math.max(REMINDER_UNLOCK_SECONDS - elapsedSeconds, 0);
+            const nextCancelWindow = Math.max(CANCEL_WINDOW_SECONDS - elapsedSeconds, 0);
+
+            setSla(nextSla);
+            setReminderUnlockRemaining(nextReminderLock);
+            setCancelWindowRemaining(nextCancelWindow);
+
+            if (nextSla === 0) {
+                void handleAutoCancel();
+            }
+        };
+
+        tick();
+        const timer = setInterval(tick, 1000);
+        return () => clearInterval(timer);
+    }, [handleAutoCancel, order?.createdAt, order?.updatedAt, orderStatus]);
 
     useEffect(() => {
         if (!cooldown) return undefined;
@@ -217,30 +241,22 @@ const OrderPendingScreen = ({
     }, [cooldown]);
 
     useEffect(() => {
-        const timestamp = order?.createdAt || order?.updatedAt;
-        setCancelWindowRemaining(getCancelWindowRemaining(timestamp));
-    }, [order?.createdAt, order?.updatedAt]);
-
-    useEffect(() => {
-        if (!isCancelWindowActive) return undefined;
-        const timer = setInterval(() => {
-            setCancelWindowRemaining((prev) => (prev <= 1 ? 0 : prev - 1));
-        }, 1000);
-        return () => clearInterval(timer);
-    }, [isCancelWindowActive]);
-
-    useEffect(() => {
         if (prevStatus.current === orderStatus) return;
+
         if (["preparing", "ready", "out_for_delivery", "delivered"].includes(orderStatus)) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => null);
             onConfirmed?.(orderId);
         } else if (orderStatus === "canceled") {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => null);
-            Alert.alert("Order canceled", `${restaurantName} bu siparişi şu anda onaylayamıyor.`);
+            Alert.alert(
+                t("orderPending.alerts.orderCanceledTitle"),
+                t("orderPending.alerts.orderCanceledBody", { restaurantName }),
+            );
             onRejected?.(orderId);
         }
+
         prevStatus.current = orderStatus;
-    }, [orderStatus, onConfirmed, onRejected, orderId, restaurantName]);
+    }, [onConfirmed, onRejected, orderId, orderStatus, restaurantName, t]);
 
     const slaColor = sla === 0 ? colors.danger : sla < 30 ? colors.warning : colors.primary;
 
@@ -248,36 +264,36 @@ const OrderPendingScreen = ({
         const sequence = [
             {
                 id: "received",
-                title: "Sipariş alındı",
-                subtitle: "Ödeme onaylandı",
+                title: t("orderPending.steps.receivedTitle"),
+                subtitle: t("orderPending.steps.receivedSubtitle"),
                 indicator: "received" as const,
                 icon: <Feather name="check-circle" size={22} color={colors.success} />,
             },
             {
                 id: "pending",
-                title: "Restorana iletildi",
-                subtitle: `${restaurantName} paneline düştü`,
+                title: t("orderPending.steps.sentTitle"),
+                subtitle: t("orderPending.steps.sentSubtitle", { restaurantName }),
                 indicator: "pending" as OrderStatus,
                 icon: <MaterialCommunityIcons name="storefront-outline" size={22} color={colors.primary} />,
             },
             {
                 id: "preparing",
-                title: "Hazırlanıyor",
-                subtitle: "Şefler siparişi hazırlıyor",
+                title: t("orderPending.steps.preparingTitle"),
+                subtitle: t("orderPending.steps.preparingSubtitle"),
                 indicator: "preparing" as OrderStatus,
                 icon: <Ionicons name="time-outline" size={22} color={colors.warning} />,
             },
             {
                 id: "ready",
-                title: "Teslime hazır",
-                subtitle: "Kurye teslim alacak",
+                title: t("orderPending.steps.readyTitle"),
+                subtitle: t("orderPending.steps.readySubtitle"),
                 indicator: "ready" as OrderStatus,
                 icon: <Feather name="thumbs-up" size={22} color={colors.success} />,
             },
             {
                 id: "out_for_delivery",
-                title: "Yolda",
-                subtitle: "Kurye kampüse geliyor",
+                title: t("orderPending.steps.outForDeliveryTitle"),
+                subtitle: t("orderPending.steps.outForDeliverySubtitle"),
                 indicator: "out_for_delivery" as OrderStatus,
                 icon: <MaterialCommunityIcons name="bike" size={22} color={colors.primary} />,
             },
@@ -288,21 +304,25 @@ const OrderPendingScreen = ({
 
         const mapped = sequence.map((step) => {
             let state: "done" | "active" | "pending" | "danger" = "pending";
-            if (step.indicator === "received") state = "done";
-            else if (orderStatus === "canceled") state = "danger";
-            else {
-                const idx = statusOrder.indexOf(step.indicator as OrderStatus);
-                if (idx < activeIndex) state = "done";
-                else if (idx === activeIndex) state = "active";
+
+            if (step.indicator === "received") {
+                state = "done";
+            } else if (orderStatus === "canceled") {
+                state = "danger";
+            } else {
+                const stepIndex = statusOrder.indexOf(step.indicator as OrderStatus);
+                if (stepIndex < activeIndex) state = "done";
+                else if (stepIndex === activeIndex) state = "active";
             }
+
             return { ...step, status: state };
         });
 
         if (orderStatus === "delivered") {
             mapped.push({
                 id: "delivered",
-                title: "Teslim edildi",
-                subtitle: "Afiyet olsun!",
+                title: t("orderPending.steps.deliveredTitle"),
+                subtitle: t("orderPending.steps.deliveredSubtitle"),
                 indicator: "delivered",
                 status: "done",
                 icon: <Feather name="check" size={22} color={colors.success} />,
@@ -312,8 +332,8 @@ const OrderPendingScreen = ({
         if (orderStatus === "canceled") {
             mapped.push({
                 id: "canceled",
-                title: "Sipariş iptal edildi",
-                subtitle: "Ödeme iadesi başlatılıyor",
+                title: t("orderPending.steps.canceledTitle"),
+                subtitle: t("orderPending.steps.canceledSubtitle"),
                 indicator: "canceled",
                 status: "danger",
                 icon: <Feather name="x-circle" size={22} color={colors.danger} />,
@@ -321,48 +341,59 @@ const OrderPendingScreen = ({
         }
 
         return mapped;
-    }, [orderStatus, restaurantName]);
+    }, [orderStatus, restaurantName, t]);
 
     const handleNudge = useCallback(async () => {
         if (cooldown > 0) {
-            Alert.alert("Please wait", `You can remind again in ${cooldown}s.`);
+            Alert.alert(t("orderPending.alerts.waitTitle"), t("orderPending.alerts.waitReminderBody", { seconds: cooldown }));
             return;
         }
+
+        if (isReminderLocked) {
+            Alert.alert(t("orderPending.alerts.waitTitle"), t("orderPending.alerts.reminderLockedBody"));
+            return;
+        }
+
         if (sendingNudge || orderStatus !== "pending") return;
         setSendingNudge(true);
+
         try {
-            await nudgeRestaurant(orderId);
+            await nudgeRestaurant(orderId, resolveUserId(user));
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => null);
-            Alert.alert("Reminder sent", `${restaurantName} was notified.`);
+            Alert.alert(
+                t("orderPending.alerts.reminderSentTitle"),
+                t("orderPending.alerts.reminderSentBody", { restaurantName }),
+            );
             setCooldown(20);
         } catch (error: any) {
-            Alert.alert("Unable to send reminder", error?.message || "Please try again.");
+            Alert.alert(t("orderPending.alerts.reminderFailedTitle"), error?.message || t("orderPending.alerts.pleaseTryAgain"));
         } finally {
             setSendingNudge(false);
         }
-    }, [cooldown, sendingNudge, orderStatus, orderId, restaurantName]);
+    }, [cooldown, isReminderLocked, orderId, orderStatus, restaurantName, sendingNudge, t, user]);
 
     const handleCancel = () => {
         if (!isCancelWindowActive) {
-            Alert.alert("Cancellation unavailable", "Orders can only be canceled within the first minute.");
+            Alert.alert(t("orderPending.alerts.cancelUnavailableTitle"), t("orderPending.alerts.cancelUnavailableBody"));
             return;
         }
+
         if (Platform.OS === "web") {
             const g = globalThis as { confirm?: (message?: string) => boolean } | undefined;
-            const confirmed = g?.confirm
-                ? g.confirm("Cancel order?\nIf you cancel now we'll start the refund automatically.")
-                : true;
+            const confirmMessage = `${t("orderPending.alerts.cancelConfirmTitle")}\n${t("orderPending.alerts.cancelConfirmBody")}`;
+            const confirmed = g?.confirm ? g.confirm(confirmMessage) : true;
             if (confirmed) {
-                handleAutoCancel();
+                void handleAutoCancel();
             }
             return;
         }
-        Alert.alert("Cancel order?", "If you cancel now we'll start the refund automatically.", [
-            { text: "Keep waiting", style: "cancel" },
+
+        Alert.alert(t("orderPending.alerts.cancelConfirmTitle"), t("orderPending.alerts.cancelConfirmBody"), [
+            { text: t("orderPending.alerts.keepWaiting"), style: "cancel" },
             {
-                text: "Cancel anyway",
+                text: t("orderPending.alerts.cancelAnyway"),
                 style: "destructive",
-                onPress: () => handleAutoCancel(),
+                onPress: () => void handleAutoCancel(),
             },
         ]);
     };
@@ -371,6 +402,71 @@ const OrderPendingScreen = ({
         inputRange: [0, 1],
         outputRange: ["0deg", "360deg"],
     });
+
+    const headerTitle = useMemo(() => {
+        switch (orderStatus) {
+            case "preparing":
+                return t("orderPending.header.preparing");
+            case "ready":
+                return t("orderPending.header.ready");
+            case "out_for_delivery":
+                return t("orderPending.header.outForDelivery");
+            case "delivered":
+                return t("orderPending.header.delivered");
+            case "canceled":
+                return t("orderPending.header.canceled");
+            case "pending":
+            default:
+                return t("orderPending.header.pending");
+        }
+    }, [orderStatus, t]);
+
+    const cardTitle = useMemo(() => {
+        switch (orderStatus) {
+            case "preparing":
+                return t("orderPending.card.preparingTitle");
+            case "ready":
+                return t("orderPending.card.readyTitle");
+            case "out_for_delivery":
+                return t("orderPending.card.outForDeliveryTitle");
+            case "delivered":
+                return t("orderPending.card.deliveredTitle");
+            case "canceled":
+                return t("orderPending.card.canceledTitle");
+            case "pending":
+            default:
+                return t("orderPending.card.pendingTitle");
+        }
+    }, [orderStatus, t]);
+
+    const cardSubtitle = useMemo(() => {
+        switch (orderStatus) {
+            case "preparing":
+                return t("orderPending.card.preparingSubtitle", { restaurantName });
+            case "ready":
+                return t("orderPending.card.readySubtitle");
+            case "out_for_delivery":
+                return t("orderPending.card.outForDeliverySubtitle");
+            case "delivered":
+                return t("orderPending.card.deliveredSubtitle");
+            case "canceled":
+                return t("orderPending.card.canceledSubtitle");
+            case "pending":
+            default:
+                return t("orderPending.card.pendingSubtitle", { restaurantName });
+        }
+    }, [orderStatus, restaurantName, t]);
+
+    const nudgeDisabled = sendingNudge || orderStatus !== "pending" || cooldown > 0 || isReminderLocked;
+    const nudgeLabel = sendingNudge
+        ? t("orderPending.remind.sending")
+        : orderStatus !== "pending"
+          ? t("orderPending.remind.disabled")
+          : isReminderLocked
+            ? t("orderPending.remind.unlockIn", { time: formatTime(reminderUnlockRemaining) })
+            : cooldown > 0
+              ? t("orderPending.remind.waitSeconds", { seconds: cooldown })
+              : t("orderPending.remind.cta");
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["left", "right", "bottom"]}>
@@ -382,28 +478,16 @@ const OrderPendingScreen = ({
                     <TouchableOpacity
                         onPress={() => onRejected?.(orderId)}
                         accessibilityRole="button"
-                        accessibilityLabel="Geri dön"
+                        accessibilityLabel={t("orderPending.a11y.back")}
                         hitSlop={12}
                     >
                         <Feather name="chevron-left" size={28} color={colors.text} />
                     </TouchableOpacity>
-                    <Text style={{ color: colors.text, fontSize: 16, fontFamily: "ChairoSans" }}>
-                        {orderStatus === "pending"
-                            ? "Sipariş Onayı Bekleniyor"
-                            : orderStatus === "preparing"
-                            ? "Restoran Siparişi Onayladı"
-                            : orderStatus === "ready"
-                            ? "Sipariş Teslime Hazır"
-                            : orderStatus === "out_for_delivery"
-                            ? "Sipariş Yolda"
-                            : orderStatus === "delivered"
-                            ? "Teslim Edildi"
-                            : "Sipariş İptal Edildi"}
-                    </Text>
+                    <Text style={{ color: colors.text, fontSize: 16, fontFamily: "ChairoSans" }}>{headerTitle}</Text>
                     <TouchableOpacity
-                        onPress={() => Alert.alert("Yardım", "Restoran 2 dakika içinde yanıt vermezse sipariş otomatik iptal olur.")}
+                        onPress={() => Alert.alert(t("orderPending.helpTitle"), t("orderPending.helpBody"))}
                         accessibilityRole="button"
-                        accessibilityLabel="Yardım"
+                        accessibilityLabel={t("orderPending.a11y.help")}
                         hitSlop={12}
                     >
                         <Feather name="help-circle" size={24} color={colors.text} />
@@ -441,32 +525,8 @@ const OrderPendingScreen = ({
                             <Ionicons name="sync" size={24} color={colors.primary} />
                         </Animated.View>
                         <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontFamily: "ChairoSans", fontSize: 18 }}>
-                                {orderStatus === "pending"
-                                    ? "Restoran onayı bekleniyor…"
-                                    : orderStatus === "preparing"
-                                    ? "Restoran siparişi onayladı."
-                                    : orderStatus === "ready"
-                                    ? "Sipariş teslime hazır."
-                                    : orderStatus === "out_for_delivery"
-                                    ? "Kurye siparişi teslim alıyor."
-                                    : orderStatus === "delivered"
-                                    ? "Teslim edildi. Afiyet olsun!"
-                                    : "Sipariş iptal edildi."}
-                            </Text>
-                            <Text style={{ color: colors.sub, marginTop: 4 }}>
-                                {orderStatus === "pending"
-                                    ? `${restaurantName} siparişini aldı. Onay gelince haber vereceğiz.`
-                                    : orderStatus === "preparing"
-                                    ? `${restaurantName} siparişi hazırlıyor.`
-                                    : orderStatus === "ready"
-                                    ? "Kurye teslim almak üzere yönlendirildi."
-                                    : orderStatus === "out_for_delivery"
-                                    ? "Kurye yolda, kısa süre içinde yanında olacak."
-                                    : orderStatus === "delivered"
-                                    ? "Sipariş tamamlandı."
-                                    : "Bu sipariş iptal edildi."}
-                            </Text>
+                            <Text style={{ color: colors.text, fontFamily: "ChairoSans", fontSize: 18 }}>{cardTitle}</Text>
+                            <Text style={{ color: colors.sub, marginTop: 4 }}>{cardSubtitle}</Text>
                         </View>
                         <OrderRider width={110} height={110} />
                     </View>
@@ -481,9 +541,7 @@ const OrderPendingScreen = ({
                             borderColor: `${slaColor}66`,
                         }}
                     >
-                        <Text style={{ color: slaColor, fontFamily: "ChairoSans" }}>
-                            SLA: {formatTime(sla)}
-                        </Text>
+                        <Text style={{ color: slaColor, fontFamily: "ChairoSans" }}>SLA: {formatTime(sla)}</Text>
                     </View>
                 </View>
 
@@ -511,8 +569,8 @@ const OrderPendingScreen = ({
                 <View style={{ gap: 12 }}>
                     <TouchableOpacity
                         onPress={handleNudge}
-                        disabled={sendingNudge || cooldown > 0 || orderStatus !== "pending"}
-                        accessibilityLabel="Remind restaurant"
+                        disabled={nudgeDisabled}
+                        accessibilityLabel={t("orderPending.a11y.remind")}
                         accessibilityRole="button"
                         style={{ borderRadius: radius.lg, overflow: "hidden" }}
                     >
@@ -524,20 +582,20 @@ const OrderPendingScreen = ({
                                 paddingVertical: 16,
                                 justifyContent: "center",
                                 alignItems: "center",
-                                opacity: sendingNudge || cooldown > 0 || orderStatus !== "pending" ? 0.6 : 1,
+                                opacity: nudgeDisabled ? 0.6 : 1,
                             }}
                         >
-                            <Text style={{ color: "#0E0F12", fontFamily: "ChairoSans", fontSize: 16 }}>
-                                {cooldown > 0 ? `Wait ${cooldown}s` : "Remind restaurant"}
-                            </Text>
+                            <Text style={{ color: "#0E0F12", fontFamily: "ChairoSans", fontSize: 16 }}>{nudgeLabel}</Text>
                         </LinearGradient>
                     </TouchableOpacity>
+
+                    <Text style={{ color: colors.sub, fontSize: 13, lineHeight: 18 }}>{t("orderPending.remind.note")}</Text>
 
                     {isCancelWindowActive ? (
                         <TouchableOpacity
                             onPress={handleCancel}
                             accessibilityRole="button"
-                            accessibilityLabel="Siparişi iptal et"
+                            accessibilityLabel={t("orderPending.a11y.cancel")}
                             style={{
                                 borderRadius: radius.lg,
                                 borderWidth: 1,
@@ -547,7 +605,7 @@ const OrderPendingScreen = ({
                             }}
                         >
                             <Text style={{ color: colors.text, fontFamily: "ChairoSans" }}>
-                                Cancel order ({cancelWindowRemaining}s)
+                                {t("orderPending.cancel.cta", { seconds: cancelWindowRemaining })}
                             </Text>
                         </TouchableOpacity>
                     ) : (
@@ -561,13 +619,14 @@ const OrderPendingScreen = ({
                                 opacity: 0.4,
                             }}
                         >
-                            <Text style={{ color: colors.sub, fontFamily: "ChairoSans" }}>Cancel window closed</Text>
+                            <Text style={{ color: colors.sub, fontFamily: "ChairoSans" }}>{t("orderPending.cancel.closed")}</Text>
                         </View>
                     )}
 
                     <Text style={{ color: colors.sub, fontSize: 13, lineHeight: 18 }}>
-                        * Restoran {Math.ceil(etaSeconds / 60)} dakika içinde onay vermezse otomatik iptal ve iade başlatılır.
-                        {"\n"}* Customer cancellations are limited to the first 60 seconds after placing an order.
+                        {t("orderPending.footnote.sla", { minutes: APPROVAL_SLA_SECONDS / 60 })}
+                        {"\n"}
+                        {t("orderPending.footnote.cancelWindow")}
                     </Text>
                 </View>
             </ScrollView>

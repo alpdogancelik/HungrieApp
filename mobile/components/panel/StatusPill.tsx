@@ -8,6 +8,7 @@ type Props = {
 const toneByStatus: Record<string, { bg: string; fg: string }> = {
     pending: { bg: "#FFF7DD", fg: "#D18A00" },
     accepted: { bg: "#E7FAF2", fg: "#0E9F6E" },
+    out_for_delivery: { bg: "#E6F4FF", fg: "#0A66C2" },
     canceled: { bg: "#FFEAF0", fg: "#C03855" },
     rejected: { bg: "#FFEAF0", fg: "#C03855" },
     delivered: { bg: "#E9EDFF", fg: "#4D5CD9" },

@@ -55,6 +55,7 @@ export const useOrderNotifications = ({ restaurantId, orders, t }: UseOrderNotif
     const seenPendingIdsRef = useRef<Set<string>>(new Set());
     const hasBaselineRef = useRef(false);
     const lastNotifyAtRef = useRef(0);
+    const recentlyNotifiedOrderIdsRef = useRef<Record<string, number>>({});
 
     const persistSeenIds = useCallback(async () => {
         if (!restaurantId) return;
@@ -155,8 +156,16 @@ export const useOrderNotifications = ({ restaurantId, orders, t }: UseOrderNotif
             return;
         }
 
-        const incomingIds = pendingIds.filter((orderId) => !seenPendingIdsRef.current.has(orderId));
+        const now = Date.now();
+        const incomingIds = pendingIds.filter((orderId) => {
+            if (seenPendingIdsRef.current.has(orderId)) return false;
+            const notifiedAt = recentlyNotifiedOrderIdsRef.current[orderId] || 0;
+            return now - notifiedAt > THROTTLE_MS;
+        });
         if (incomingIds.length) {
+            incomingIds.forEach((orderId) => {
+                recentlyNotifiedOrderIdsRef.current[orderId] = now;
+            });
             incomingIds.forEach((orderId) => seenPendingIdsRef.current.add(orderId));
             void persistSeenIds();
 
@@ -183,6 +192,12 @@ export const useOrderNotifications = ({ restaurantId, orders, t }: UseOrderNotif
             Array.from(seenPendingIdsRef.current).filter((id) => pendingSet.has(id) || !orders.find((order) => order.id === id)),
         );
         seenPendingIdsRef.current = cleaned;
+        const activeIncoming = new Set(pendingIds);
+        Object.keys(recentlyNotifiedOrderIdsRef.current).forEach((orderId) => {
+            if (!activeIncoming.has(orderId)) {
+                delete recentlyNotifiedOrderIdsRef.current[orderId];
+            }
+        });
     }, [notifyGrouped, notificationsEnabled, orders, persistSeenIds, play, ready, restaurantId, showToast, soundEnabled, t]);
 
     useEffect(() => {

@@ -11,7 +11,7 @@ export const useRestaurantOrders = (restaurantId?: string) => {
         if (!restaurantId) return;
         setLoading(true);
         setError(null);
-        return subscribeRestaurantOrders(restaurantId, ["pending", "accepted"], (incoming: any[]) => {
+        return subscribeRestaurantOrders(restaurantId, ["pending", "accepted", "preparing", "ready", "out_for_delivery"], (incoming: any[]) => {
             const normalized = (Array.isArray(incoming) ? incoming : []).map((order: any) => {
                 const items = Array.isArray(order.items) ? order.items : [];
                 return {

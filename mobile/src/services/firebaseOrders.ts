@@ -133,7 +133,7 @@ export const subscribeUserOrders = (userId: string, cb: (orders: any[]) => void)
 
 export const subscribeRestaurantOrders = (
     restaurantId: string,
-    statuses: string[] = ["pending", "accepted"],
+    statuses: string[] = ["pending", "accepted", "preparing", "ready", "out_for_delivery"],
     cb?: (orders: any[]) => void,
 ) => {
     const q = query(ordersCol(), where("restaurantId", "==", restaurantId), where("status", "in", statuses));
@@ -149,5 +149,43 @@ export const subscribeRestaurantPastOrders = (restaurantId: string, cb: (orders:
     return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
 };
 
+export const subscribeRestaurantReminderOrders = (restaurantId: string, cb: (orders: any[]) => void) => {
+    const q = query(
+        ordersCol(),
+        where("restaurantId", "==", restaurantId),
+        where("reminderPending", "==", true),
+    );
+    return onSnapshot(q, (snap) =>
+        cb(
+            snap.docs
+                .map((d) => ({ id: d.id, ...d.data() }))
+                .filter((order: any) => !["delivered", "canceled", "rejected"].includes(String(order?.status || "").toLowerCase())),
+        ),
+    );
+};
+
+export const requestOrderReminder = async (
+    orderId: string,
+    payload: { userId?: string; source?: "customer" | "system" } = {},
+) => {
+    await updateDoc(doc(ensureDb(), "orders", orderId), {
+        reminderPending: true,
+        reminderRequestedAt: serverTimestamp(),
+        reminderRequestedAtMs: Date.now(),
+        reminderRequestedBy: payload.userId || "unknown",
+        reminderSource: payload.source || "customer",
+        updatedAt: serverTimestamp(),
+    });
+};
+
 export const transitionOrder = async (orderId: string, status: OrderStatus | string) =>
-    updateDoc(doc(ensureDb(), "orders", orderId), { status, updatedAt: serverTimestamp() });
+    updateDoc(doc(ensureDb(), "orders", orderId), {
+        status,
+        ...(status !== "pending"
+            ? {
+                  reminderPending: false,
+                  reminderHandledAt: serverTimestamp(),
+              }
+            : null),
+        updatedAt: serverTimestamp(),
+    });

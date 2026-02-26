@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { Feather } from "@expo/vector-icons";
 
 import PanelButton from "./Button";
@@ -38,6 +38,9 @@ const toneStyle = (tone: MetricTone = "info") => {
 };
 
 const DashboardSummary = ({ title, metrics, links }: Props) => {
+    const { width } = useWindowDimensions();
+    const isPhone = width < 760;
+
     return (
         <View style={styles.wrap}>
             <View style={styles.headerRow}>
@@ -47,7 +50,7 @@ const DashboardSummary = ({ title, metrics, links }: Props) => {
                 <Text style={styles.title}>{title}</Text>
             </View>
 
-            <View style={styles.metricsRow}>
+            <View style={[styles.metricsRow, isPhone ? styles.metricsRowPhone : null]}>
                 {metrics.map((metric) => {
                     const tone = toneStyle(metric.tone);
                     return (
@@ -55,6 +58,7 @@ const DashboardSummary = ({ title, metrics, links }: Props) => {
                             key={metric.id}
                             style={[
                                 styles.metricCard,
+                                isPhone ? styles.metricCardPhone : null,
                                 {
                                     backgroundColor: tone.bg,
                                     borderColor: tone.border,
@@ -75,7 +79,7 @@ const DashboardSummary = ({ title, metrics, links }: Props) => {
                         label={link.label}
                         iconName={link.iconName}
                         variant="secondary"
-                        style={styles.linkButton}
+                        style={[styles.linkButton, isPhone ? styles.linkButtonPhone : null]}
                         onPress={link.onPress}
                         accessibilityLabel={link.accessibilityLabel || link.label}
                     />
@@ -119,6 +123,9 @@ const styles = StyleSheet.create({
         flexWrap: "wrap",
         gap: 8,
     },
+    metricsRowPhone: {
+        gap: 6,
+    },
     metricCard: {
         minWidth: 110,
         flexGrow: 1,
@@ -126,6 +133,11 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         paddingHorizontal: 10,
         paddingVertical: 8,
+    },
+    metricCardPhone: {
+        minWidth: 96,
+        paddingHorizontal: 9,
+        paddingVertical: 7,
     },
     metricLabel: {
         fontFamily: "ChairoSans",
@@ -147,6 +159,9 @@ const styles = StyleSheet.create({
     linkButton: {
         minWidth: 150,
         flexGrow: 1,
+    },
+    linkButtonPhone: {
+        minWidth: "48%",
     },
 });
 

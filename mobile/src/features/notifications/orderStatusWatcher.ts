@@ -48,38 +48,38 @@ const toNotification = (order: any, status: NormalizedOrderStatus) => {
     switch (status) {
         case "pending":
             return {
-                title: "Siparis alindi",
-                body: `${restaurantName} onayi bekleniyor.`,
+                title: "SipariÅŸ alÄ±ndÄ±",
+                body: `${restaurantName} onayÄ± bekleniyor.`,
             };
         case "preparing":
             return {
-                title: "Siparis onaylandi",
-                body: `${restaurantName} siparisini hazirliyor.`,
+                title: "SipariÅŸ onaylandÄ±",
+                body: `${restaurantName} sipariÅŸini hazÄ±rlÄ±yor.`,
             };
         case "ready":
             return {
-                title: "Siparis hazir",
-                body: "Kurye teslim almak uzere yonlendirildi.",
+                title: "SipariÅŸ hazÄ±r",
+                body: "Kurye teslim almak Ã¼zere yÃ¶nlendirildi.",
             };
         case "out_for_delivery":
             return {
-                title: "Siparis yolda",
-                body: "Surdurulen bir siparisin var, kurye yaklasiyor.",
+                title: "SipariÅŸ yolda",
+                body: "SipariÅŸin yolda, kurye sana yaklaÅŸÄ±yor.",
             };
         case "delivered":
             return {
-                title: "Siparis teslim edildi",
+                title: "SipariÅŸ teslim edildi",
                 body: "Afiyet olsun.",
             };
         case "canceled":
             return {
-                title: "Siparis onaylanmadi",
-                body: `${restaurantName} siparisi reddetti.`,
+                title: "SipariÅŸ onaylanmadÄ±",
+                body: `${restaurantName} sipariÅŸi reddetti.`,
             };
         default:
             return {
-                title: "Siparis guncellendi",
-                body: `${restaurantName} siparis durumunu guncelledi.`,
+                title: "SipariÅŸ gÃ¼ncellendi",
+                body: `${restaurantName} sipariÅŸ durumunu gÃ¼ncelledi.`,
             };
     }
 };
@@ -135,7 +135,7 @@ export const startOrderStatusWatcher = (userId: string) => {
                     void NotificationManager.notifyLocal(payload.title, payload.body, {
                         withSound: true,
                         channelId: NotificationManager.ORDER_STATUS_CHANNEL_ID,
-                        soundName: NotificationManager.HUNGRIE_SOUND_FILE,
+                        soundName: NotificationManager.SYSTEM_DEFAULT_SOUND,
                         data: {
                             type: "order_status",
                             orderId,

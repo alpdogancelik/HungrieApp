@@ -26,7 +26,7 @@ const NEW_ORDER_CHANNEL_ID = "orders";
 const ORDER_STATUS_CHANNEL_ID = "order-status";
 const HUNGRIE_SOUND_FILE = "hungrie.wav";
 const HUNGRIE_SOUND_ANDROID = "hungrie";
-const ORDER_CHANNEL_SOUND = "order";
+const SYSTEM_DEFAULT_SOUND = "default";
 
 export const isRemotePushSupported = (): boolean => !isWeb && Device.isDevice && !isExpoGo;
 type NotificationsModule = typeof import("expo-notifications");
@@ -83,7 +83,7 @@ const ensureAndroidChannel = async () => {
     await Notifications.setNotificationChannelAsync(ORDER_STATUS_CHANNEL_ID, {
         name: "Order Status",
         importance: Notifications.AndroidImportance.MAX,
-        sound: HUNGRIE_SOUND_ANDROID,
+        sound: SYSTEM_DEFAULT_SOUND,
         enableVibrate: true,
         enableLights: true,
     });
@@ -91,7 +91,7 @@ const ensureAndroidChannel = async () => {
     await Notifications.setNotificationChannelAsync(NEW_ORDER_CHANNEL_ID, {
         name: "New Orders",
         importance: Notifications.AndroidImportance.MAX,
-        sound: ORDER_CHANNEL_SOUND,
+        sound: HUNGRIE_SOUND_ANDROID,
         vibrationPattern: [0, 250, 250, 250],
         enableVibrate: true,
         enableLights: true,
@@ -119,7 +119,13 @@ export const requestPermissions = async (): Promise<boolean> => {
         await ensureAndroidChannel();
         return true;
     }
-    const { status } = await Notifications.requestPermissionsAsync();
+    const { status } = await Notifications.requestPermissionsAsync({
+        ios: {
+            allowAlert: true,
+            allowBadge: true,
+            allowSound: true,
+        },
+    });
     const granted = status === "granted";
     if (granted) {
         await ensureAndroidChannel();
@@ -153,7 +159,7 @@ export const notifyLocal = async (title: string, body: string, options: LocalNot
     const {
         withSound = true,
         channelId = DEFAULT_CHANNEL_ID,
-        soundName = HUNGRIE_SOUND_FILE,
+        soundName = SYSTEM_DEFAULT_SOUND,
         data = {},
     } = options;
     if (isWeb) {
@@ -170,8 +176,8 @@ export const notifyLocal = async (title: string, body: string, options: LocalNot
         Platform.OS === "android"
             ? soundName === HUNGRIE_SOUND_FILE || soundName === "hungrie"
               ? HUNGRIE_SOUND_ANDROID
-              : soundName === "order.wav" || soundName === ORDER_CHANNEL_SOUND
-                ? ORDER_CHANNEL_SOUND
+              : soundName === SYSTEM_DEFAULT_SOUND || soundName === "default"
+                ? SYSTEM_DEFAULT_SOUND
                 : undefined
             : soundName;
     await Notifications.scheduleNotificationAsync({
@@ -228,7 +234,7 @@ export const NotificationManager = {
     ORDER_STATUS_CHANNEL_ID,
     HUNGRIE_SOUND_FILE,
     HUNGRIE_SOUND_ANDROID,
-    ORDER_CHANNEL_SOUND,
+    SYSTEM_DEFAULT_SOUND,
     ensureNotificationChannels,
     requestPermissions,
     getPushToken,

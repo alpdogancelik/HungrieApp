@@ -54,8 +54,8 @@ const SignUp = () => {
         try {
             await createUser({ email, password, name, whatsappNumber });
             Alert.alert(
-                "Verify your email",
-                "We sent you a verification link. Please verify your email, then sign in.",
+                "Check your email",
+                "Registration successful. Please check your email and verify your account before signing in.",
                 [{ text: "OK", onPress: () => router.replace("/sign-in") }],
             );
             // Ensure we leave the auth flow until verification is completed.
@@ -65,8 +65,8 @@ const SignUp = () => {
             const message = error?.message || "";
             if (message.toLowerCase().includes("verify your email")) {
                 Alert.alert(
-                    "Verify your email",
-                    "We sent you a verification link. Please verify your email, then sign in.",
+                    "Check your email",
+                    "Registration successful. Please check your email and verify your account before signing in.",
                     [{ text: "OK", onPress: () => router.replace("/sign-in") }],
                 );
             } else {
