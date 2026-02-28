@@ -35,8 +35,3 @@ Then attach credentials via EAS interactive flow when requested.
 - Custom notification sounds require EAS build (Expo Go is not enough).
 - iPhone silent mode / DND can suppress audible notifications.
 
-### 6) Launch splash video QA
-- Ensure `mobile/assets/splash/hungriesplash.mp4` exists before running `eas build`.
-- Cold start (app fully killed): native static splash shows first, then MP4 plays once full-screen, then fades out (200–350ms) into the app.
-- Reduce Motion enabled: MP4 is skipped; static mark shows for ~600ms then app continues.
-- Failure mode: if MP4 fails to load/play within ~1.2s, the app continues without blocking (no black screen).
