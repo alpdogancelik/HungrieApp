@@ -58,12 +58,12 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/hungrie-mark.png",
+          "image": "./assets/hungriesplash.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#fff7ef",
           "dark": {
-            "image": "./assets/images/hungrie-mark.png",
+            "image": "./assets/hungriesplash.png",
             "backgroundColor": "#160604"
           }
         }
@@ -95,3 +95,4 @@
     "owner": "alpdogancelik1"
   }
 }
+

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SplashScreen, Stack, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import Constants from "expo-constants";
@@ -15,9 +15,10 @@ import { isRemotePushSupported, NotificationManager } from "@/src/features/notif
 import { startOrderStatusWatcher } from "@/src/features/notifications/orderStatusWatcher";
 import { auth } from "@/lib/firebase";
 import CartLockNotice from "@/components/CartLockNotice";
+import SplashPulse from "@/components/SplashPulse";
 import { registerPushToken } from "@/lib/registerPushToken";
 import { playOrderNotificationSound, unloadOrderNotificationSound } from "@/src/features/notifications/orderSound";
-import brandMark from "../assets/images/hungrie-mark.png";
+import splashImage from "../assets/hungriesplash.png";
 
 const extra = Constants.expoConfig?.extra ?? {};
 const env = (typeof process !== "undefined" ? (process as any).env : undefined) ?? {};
@@ -41,6 +42,7 @@ function RootLayoutBase() {
     const router = useRouter();
     const pushRegistrationKeyRef = useRef<string | null>(null);
     const didHideNativeSplashRef = useRef(false);
+    const [launchSplashVisible, setLaunchSplashVisible] = useState(true);
     const { width: windowWidth } = useWindowDimensions();
     const isWeb = Platform.OS === "web";
     const WEB_MAX_WIDTH = 960;
@@ -191,12 +193,7 @@ function RootLayoutBase() {
     if (!fontsLoaded) {
         return (
             <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#FFF7EF" }}>
-                <Image
-                    source={brandMark}
-                    style={{ width: 120, height: 120, opacity: 0.92 }}
-                    contentFit="contain"
-                    cachePolicy="memory-disk"
-                />
+                <Image source={splashImage} style={{ width: "100%", height: "100%" }} contentFit="cover" cachePolicy="memory-disk" />
             </View>
         );
     }
@@ -214,6 +211,12 @@ function RootLayoutBase() {
                 >
                     <Stack screenOptions={{ headerShown: false }} />
                 </View>
+                <SplashPulse
+                    visible={launchSplashVisible}
+                    onFinished={() => setLaunchSplashVisible(false)}
+                    imageSource={splashImage}
+                    backgroundColor="#FFF7EF"
+                />
             </ThemeProvider>
         </GestureHandlerRootView>
     );
