@@ -1,9 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SplashScreen, Stack, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import Constants from "expo-constants";
 import * as Sentry from "@sentry/react-native";
 import { AppState, Platform, Text, TextInput, View, useWindowDimensions } from "react-native";
+import { Image } from "expo-image";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import useAuthStore from "@/store/auth.store";
@@ -14,8 +15,11 @@ import { isRemotePushSupported, NotificationManager } from "@/src/features/notif
 import { startOrderStatusWatcher } from "@/src/features/notifications/orderStatusWatcher";
 import { auth } from "@/lib/firebase";
 import CartLockNotice from "@/components/CartLockNotice";
+import SplashVideo from "@/components/SplashVideo";
 import { registerPushToken } from "@/lib/registerPushToken";
 import { playOrderNotificationSound, unloadOrderNotificationSound } from "@/src/features/notifications/orderSound";
+import brandMark from "../assets/images/hungrie-mark.png";
+const splashVideo = require("../assets/splash/hungriesplash.mp4");
 
 const extra = Constants.expoConfig?.extra ?? {};
 const env = (typeof process !== "undefined" ? (process as any).env : undefined) ?? {};
@@ -38,6 +42,8 @@ function RootLayoutBase() {
     const { isLoading, isAuthenticated, user, fetchAuthenticatedUser } = useAuthStore();
     const router = useRouter();
     const pushRegistrationKeyRef = useRef<string | null>(null);
+    const didHideNativeSplashRef = useRef(false);
+    const [launchSplashVisible, setLaunchSplashVisible] = useState(true);
     const { width: windowWidth } = useWindowDimensions();
     const isWeb = Platform.OS === "web";
     const WEB_MAX_WIDTH = 960;
@@ -57,6 +63,7 @@ function RootLayoutBase() {
     const [fontsLoaded, error] = useFonts({
         ChairoSans: chairoRegular,
     });
+    const appReady = fontsLoaded;
 
     useEffect(() => {
         fetchAuthenticatedUser();
@@ -174,15 +181,30 @@ function RootLayoutBase() {
     }, []);
 
     useEffect(() => {
-        if (!fontsLoaded || isLoading) return;
+        if (!fontsLoaded) return;
+        if (didHideNativeSplashRef.current) return;
 
+        // Native splash is kept visible until JS is ready. Once ready, we hide it and
+        // immediately show a React-level splash overlay (video or fallback).
         applyDefaultFont(Text);
         applyDefaultFont(TextInput);
+        didHideNativeSplashRef.current = true;
         SplashScreen.hideAsync().catch(() => null);
-    }, [fontsLoaded, isLoading]);
+    }, [fontsLoaded]);
 
     if (error) throw error;
-    if (!fontsLoaded || isLoading) return null;
+    if (!fontsLoaded) {
+        return (
+            <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#FFF7EF" }}>
+                <Image
+                    source={brandMark}
+                    style={{ width: 120, height: 120, opacity: 0.92 }}
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
+                />
+            </View>
+        );
+    }
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
@@ -197,6 +219,13 @@ function RootLayoutBase() {
                 >
                     <Stack screenOptions={{ headerShown: false }} />
                 </View>
+                <SplashVideo
+                    visible={launchSplashVisible}
+                    onFinished={() => setLaunchSplashVisible(false)}
+                    videoSource={splashVideo}
+                    fallbackImage={brandMark}
+                    backgroundColor="#FFF7EF"
+                />
             </ThemeProvider>
         </GestureHandlerRootView>
     );

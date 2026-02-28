@@ -1,4 +1,4 @@
-import {
+﻿import {
     createUserWithEmailAndPassword,
     onAuthStateChanged,
     sendPasswordResetEmail,
@@ -30,6 +30,8 @@ import {
     createMenuItem as createMenuItemCore,
 } from "./firebase";
 import { filterMenuForCustomer, filterRestaurantMenuForCustomer } from "./menuVisibility";
+import i18n from "@/src/lib/i18n";
+import { getAuthErrorMessage } from "@/src/features/auth/authCopy";
 
 export type Profile = { name: string; email: string; avatar?: string; accountId?: string; whatsappNumber?: string };
 export const firebaseOrdersEnabled = firebaseConfigured && Boolean(firestore);
@@ -60,6 +62,37 @@ const mapFirebaseUser = (user: FirebaseUser, overrides: Partial<Profile> = {}): 
     };
 };
 const parseErr = (e: any) => (typeof e === "string" ? e : e?.message || "Unexpected error occurred.");
+const normalizeAuthErrorMessage = (error: any) => {
+    const language = i18n.language;
+    const code = String(error?.code || "").toLowerCase();
+    const rawMessage = parseErr(error);
+    const message = rawMessage.toLowerCase();
+
+    if (
+        code === "auth/wrong-password" ||
+        code === "auth/user-not-found" ||
+        code === "auth/invalid-credential" ||
+        code === "auth/invalid-login-credentials"
+    ) {
+        return getAuthErrorMessage(language, "invalidCredentials") || rawMessage;
+    }
+    if (code === "auth/email-already-in-use") {
+        return getAuthErrorMessage(language, "emailAlreadyInUse") || rawMessage;
+    }
+    if (code === "auth/weak-password") {
+        return getAuthErrorMessage(language, "weakPassword") || rawMessage;
+    }
+    if (code === "auth/invalid-email") {
+        return getAuthErrorMessage(language, "invalidEmail") || rawMessage;
+    }
+    if (code === "auth/too-many-requests") {
+        return getAuthErrorMessage(language, "tooManyRequests") || rawMessage;
+    }
+    if (message.includes("verify your email")) {
+        return getAuthErrorMessage(language, "verifyEmail") || rawMessage;
+    }
+    return rawMessage;
+};
 
 const waitForAuthUser = async (): Promise<FirebaseUser | null> => {
     const firebaseAuth = auth;
@@ -151,16 +184,7 @@ export const signIn = async ({ email, password }: { email: string; password: str
         const verifiedUser = await ensureVerified(credential.user);
         return verifiedUser ? syncProfile(verifiedUser) : null;
     } catch (e: any) {
-        const code = String(e?.code || "").toLowerCase();
-        if (
-            code === "auth/wrong-password" ||
-            code === "auth/user-not-found" ||
-            code === "auth/invalid-credential" ||
-            code === "auth/invalid-login-credentials"
-        ) {
-            throw new Error("Kullanıcı adı veya şifre hatalı.");
-        }
-        throw new Error(parseErr(e));
+        throw new Error(normalizeAuthErrorMessage(e));
     }
 };
 
@@ -187,15 +211,11 @@ export const createUser = async ({
         }
         const target = user || (await waitForAuthUser());
         if (!target) throw new Error("User session could not be established.");
-        await ensureVerified(target);
-        return null;
+        await syncProfile(target, { name, email, whatsappNumber }).catch(() => null);
+        await firebaseSignOut(requireAuth()).catch(() => null);
+        return { emailVerificationSent: true, email: target.email || email };
     } catch (e: any) {
-        if (e?.code === "auth/email-already-in-use") {
-            await signIn({ email, password });
-            const existing = await getCurrentUser();
-            if (existing) return existing;
-        }
-        throw new Error(parseErr(e));
+        throw new Error(normalizeAuthErrorMessage(e));
     }
 };
 
@@ -210,11 +230,15 @@ export const signOut = async () => firebaseSignOut(requireAuth());
 
 export const sendPasswordReset = async (email: string) => {
     const trimmed = email.trim();
-    if (!trimmed) throw new Error("Email is required.");
+    if (!trimmed) throw new Error(getAuthErrorMessage(i18n.language, "emailRequired") || "Email address is required.");
     try {
         await sendPasswordResetEmail(requireAuth(), trimmed);
-    } catch (e) {
-        throw new Error(parseErr(e));
+    } catch (e: any) {
+        const code = String(e?.code || "").toLowerCase();
+        if (code === "auth/user-not-found") {
+            throw new Error(getAuthErrorMessage(i18n.language, "resetUserNotFound") || "No account was found for this email address.");
+        }
+        throw new Error(normalizeAuthErrorMessage(e));
     }
 };
 
@@ -403,3 +427,4 @@ export const updateOrderStatus = async (orderId: string, status: string) => {
     await updateDoc(ref, { status, updatedAt: Date.now() });
     return { id: orderId, status };
 };
+

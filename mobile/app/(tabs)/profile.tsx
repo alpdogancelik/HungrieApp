@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -146,12 +146,57 @@ const ui = StyleSheet.create({
         borderWidth: 1,
         borderColor: "#E2E8F0",
     },
+    sectionCardWeb: {
+        borderRadius: 28,
+        padding: 20,
+    },
+    sectionCardShadow: {
+        ...makeShadow({
+            color: "#0F172A",
+            offsetY: 10,
+            blurRadius: 22,
+            opacity: 0.06,
+            elevation: 4,
+        }),
+    },
+    sectionCardShadowWeb: {
+        ...makeShadow({
+            color: "#0F172A",
+            offsetY: 14,
+            blurRadius: 28,
+            opacity: 0.07,
+            elevation: 5,
+        }),
+    },
     orderItemCard: {
         borderRadius: 18,
         padding: 14,
         borderWidth: 1,
         borderColor: "#F1F5F9",
         backgroundColor: "#FFFFFF",
+    },
+    orderItemCardWeb: {
+        borderRadius: 22,
+        padding: 18,
+        borderColor: "#E2E8F0",
+    },
+    orderItemCardShadow: {
+        ...makeShadow({
+            color: "#0F172A",
+            offsetY: 6,
+            blurRadius: 12,
+            opacity: 0.05,
+            elevation: 3,
+        }),
+    },
+    orderItemCardShadowWeb: {
+        ...makeShadow({
+            color: "#0F172A",
+            offsetY: 10,
+            blurRadius: 20,
+            opacity: 0.06,
+            elevation: 4,
+        }),
     },
     rowBetween: {
         flexDirection: "row",
@@ -314,6 +359,7 @@ const Profile = () => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const safeTop = Math.max(insets.top, 12);
+    const isWeb = Platform.OS === "web";
 
     const [orders, setOrders] = useState<any[]>([]);
     const [signingOut, setSigningOut] = useState(false);
@@ -504,10 +550,15 @@ const Profile = () => {
                     </View>
 
                     {/* ACTIVE ORDERS — keep database behaviour, keep clean UI */}
-                    <View className="secondary-card gap-4" style={ui.sectionCard}>
+                    <View
+                        className="secondary-card gap-4"
+                        style={[ui.sectionCard, ui.sectionCardShadow, isWeb ? ui.sectionCardWeb : null, isWeb ? ui.sectionCardShadowWeb : null]}
+                    >
                         <View className="flex-row items-center justify-between" style={ui.rowBetween}>
                             <SectionHeader title={t("profile.activeOrders")} />
-                            {illustrations.courierHero ? <illustrations.courierHero width={56} height={56} /> : null}
+                            {illustrations.courierHero ? (
+                                <illustrations.courierHero width={isWeb ? 64 : 56} height={isWeb ? 64 : 56} />
+                            ) : null}
                         </View>
 
                         {activeOrders.length ? (
@@ -533,13 +584,9 @@ const Profile = () => {
                                             }
                                             style={[
                                                 ui.orderItemCard,
-                                                makeShadow({
-                                                    color: "#0F172A",
-                                                    offsetY: 6,
-                                                    blurRadius: 12,
-                                                    opacity: 0.04,
-                                                    elevation: 2,
-                                                }),
+                                                ui.orderItemCardShadow,
+                                                isWeb ? ui.orderItemCardWeb : null,
+                                                isWeb ? ui.orderItemCardShadowWeb : null,
                                             ]}
                                         >
                                             <View className="flex-row items-center justify-between" style={ui.rowBetween}>
@@ -995,6 +1042,7 @@ const OrderHistorySection = ({ orders }: { orders: any[] }) => {
     const { t } = useTranslation();
     const router = useRouter();
     const HistoryIllustration = illustrations.foodieCelebration;
+    const isWeb = Platform.OS === "web";
 
     const formatTimestamp = (value: any) => {
         if (!value) return "";
@@ -1038,10 +1086,13 @@ const OrderHistorySection = ({ orders }: { orders: any[] }) => {
     const recentOrders = useMemo(() => sortedOrders.slice(0, 2), [sortedOrders]);
 
     return (
-        <View className="secondary-card gap-4" style={ui.sectionCard}>
+        <View
+            className="secondary-card gap-4"
+            style={[ui.sectionCard, ui.sectionCardShadow, isWeb ? ui.sectionCardWeb : null, isWeb ? ui.sectionCardShadowWeb : null]}
+        >
             <View className="flex-row items-center justify-between" style={ui.rowBetween}>
                 <SectionHeader title={t("orders.historyTitle", "Sipariş Geçmişi")} />
-                <HistoryIllustration width={52} height={52} />
+                <HistoryIllustration width={isWeb ? 60 : 52} height={isWeb ? 60 : 52} />
             </View>
 
             <View className="gap-3">
@@ -1060,7 +1111,9 @@ const OrderHistorySection = ({ orders }: { orders: any[] }) => {
                             className="bg-white rounded-3xl border border-gray-100 p-4"
                             style={[
                                 ui.orderItemCard,
-                                makeShadow({ color: "#0F172A", offsetY: 6, blurRadius: 12, opacity: 0.05, elevation: 3 }),
+                                ui.orderItemCardShadow,
+                                isWeb ? ui.orderItemCardWeb : null,
+                                isWeb ? ui.orderItemCardShadowWeb : null,
                             ]}
                         >
                             <View className="flex-row justify-between items-center" style={ui.rowBetween}>

@@ -48,38 +48,38 @@ const toNotification = (order: any, status: NormalizedOrderStatus) => {
     switch (status) {
         case "pending":
             return {
-                title: "SipariÅŸ alÄ±ndÄ±",
-                body: `${restaurantName} onayÄ± bekleniyor.`,
+                title: "Sipariş alındı",
+                body: `${restaurantName} onayı bekleniyor.`,
             };
         case "preparing":
             return {
-                title: "SipariÅŸ onaylandÄ±",
-                body: `${restaurantName} sipariÅŸini hazÄ±rlÄ±yor.`,
+                title: "Sipariş onaylandı",
+                body: `${restaurantName} siparişini hazırlıyor.`,
             };
         case "ready":
             return {
-                title: "SipariÅŸ hazÄ±r",
-                body: "Kurye teslim almak Ã¼zere yÃ¶nlendirildi.",
+                title: "Sipariş hazır",
+                body: "Kurye teslim almak üzere yönlendirildi.",
             };
         case "out_for_delivery":
             return {
-                title: "SipariÅŸ yolda",
-                body: "SipariÅŸin yolda, kurye sana yaklaÅŸÄ±yor.",
+                title: "Sipariş yolda",
+                body: "Siparişin yolda, kurye sana yaklaşıyor.",
             };
         case "delivered":
             return {
-                title: "SipariÅŸ teslim edildi",
+                title: "Sipariş teslim edildi",
                 body: "Afiyet olsun.",
             };
         case "canceled":
             return {
-                title: "SipariÅŸ onaylanmadÄ±",
-                body: `${restaurantName} sipariÅŸi reddetti.`,
+                title: "Sipariş onaylanmadı",
+                body: `${restaurantName} siparişi reddetti.`,
             };
         default:
             return {
-                title: "SipariÅŸ gÃ¼ncellendi",
-                body: `${restaurantName} sipariÅŸ durumunu gÃ¼ncelledi.`,
+                title: "Sipariş güncellendi",
+                body: `${restaurantName} sipariş durumunu güncelledi.`,
             };
     }
 };
