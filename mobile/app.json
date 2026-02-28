@@ -27,7 +27,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.hungrie.app",
-      "versionCode": 1,
+      "versionCode": 19,
       "edgeToEdgeEnabled": true
     },
     "web": {
