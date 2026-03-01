@@ -24,6 +24,7 @@ const extra = Constants.expoConfig?.extra ?? {};
 const env = (typeof process !== "undefined" ? (process as any).env : undefined) ?? {};
 const sentryDsn = env.EXPO_PUBLIC_SENTRY_DSN || extra.EXPO_PUBLIC_SENTRY_DSN;
 const enableSentry = Boolean(sentryDsn);
+const SPLASH_ASPECT_RATIO = 1024 / 1536;
 
 if (enableSentry) {
     Sentry.init({
@@ -43,10 +44,15 @@ function RootLayoutBase() {
     const pushRegistrationKeyRef = useRef<string | null>(null);
     const didHideNativeSplashRef = useRef(false);
     const [launchSplashVisible, setLaunchSplashVisible] = useState(true);
-    const { width: windowWidth } = useWindowDimensions();
+    const { width: windowWidth, height: windowHeight } = useWindowDimensions();
     const isWeb = Platform.OS === "web";
     const WEB_MAX_WIDTH = 960;
     const contentWidth = isWeb ? Math.min(windowWidth, WEB_MAX_WIDTH) : windowWidth;
+    const splashPreviewWidth = Math.min(
+        isWeb ? Math.min(windowWidth * 0.34, 420) : Math.min(windowWidth * 0.74, 320),
+        (isWeb ? Math.min(windowHeight * 0.72, 620) : Math.min(windowHeight * 0.6, 480)) * SPLASH_ASPECT_RATIO,
+    );
+    const splashPreviewHeight = splashPreviewWidth / SPLASH_ASPECT_RATIO;
     const chairoRegular = require("../assets/fonts/ChairoSansRegular-Regular.ttf");
     const applyDefaultFont = (component: any) => {
         const existingStyle = component?.defaultProps?.style;
@@ -193,7 +199,12 @@ function RootLayoutBase() {
     if (!fontsLoaded) {
         return (
             <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#FFF7EF" }}>
-                <Image source={splashImage} style={{ width: "100%", height: "100%" }} contentFit="cover" cachePolicy="memory-disk" />
+                <Image
+                    source={splashImage}
+                    style={{ width: splashPreviewWidth, height: splashPreviewHeight }}
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
+                />
             </View>
         );
     }

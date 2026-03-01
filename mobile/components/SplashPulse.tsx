@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { Animated, StyleSheet } from "react-native";
+import { Animated, Platform, StyleSheet, useWindowDimensions } from "react-native";
 import { Image } from "expo-image";
 
 import { useReducedMotion } from "@/src/lib/useReducedMotion";
@@ -11,11 +11,19 @@ type SplashPulseProps = {
     backgroundColor?: string;
 };
 
+const IMAGE_ASPECT_RATIO = 1024 / 1536;
+
 export default function SplashPulse({ visible, onFinished, imageSource, backgroundColor = "#FFF7EF" }: SplashPulseProps) {
     const reduceMotion = useReducedMotion();
+    const { width, height } = useWindowDimensions();
     const scale = useRef(new Animated.Value(1)).current;
     const opacity = useRef(new Animated.Value(1)).current;
     const finishedRef = useRef(false);
+    const isWeb = Platform.OS === "web";
+    const maxImageWidth = isWeb ? Math.min(width * 0.34, 420) : Math.min(width * 0.74, 320);
+    const maxImageHeight = isWeb ? Math.min(height * 0.72, 620) : Math.min(height * 0.6, 480);
+    const imageWidth = Math.min(maxImageWidth, maxImageHeight * IMAGE_ASPECT_RATIO);
+    const imageHeight = imageWidth / IMAGE_ASPECT_RATIO;
 
     const pulseAnimation = useMemo(() => {
         // A "heartbeat" feel: quick up-down-up, then a short rest.
@@ -80,8 +88,17 @@ export default function SplashPulse({ visible, onFinished, imageSource, backgrou
 
     return (
         <Animated.View pointerEvents="auto" style={[styles.overlay, { backgroundColor, opacity }]}>
-            <Animated.View style={[styles.fill, { transform: [{ scale }] }]}>
-                <Image source={imageSource} style={styles.fill} contentFit="cover" cachePolicy="memory-disk" />
+            <Animated.View
+                style={[
+                    styles.posterFrame,
+                    {
+                        width: imageWidth,
+                        height: imageHeight,
+                        transform: [{ scale }],
+                    },
+                ]}
+            >
+                <Image source={imageSource} style={styles.fill} contentFit="contain" cachePolicy="memory-disk" />
             </Animated.View>
         </Animated.View>
     );
@@ -95,5 +112,10 @@ const styles = StyleSheet.create({
     },
     fill: {
         ...StyleSheet.absoluteFillObject,
+    },
+    posterFrame: {
+        position: "relative",
+        alignItems: "center",
+        justifyContent: "center",
     },
 });

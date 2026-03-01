@@ -3,7 +3,7 @@
     "name": "hungrie.app",
     "slug": "hungrieapp",
     "version": "1.0.0",
-    "description": "Hungrie — kampüsteki favori restoranlar tek listede. Keşfet, seç, devam et.",
+    "description": "Hungrie campus favorites in one place. Discover, choose, continue.",
     "orientation": "portrait",
     "icon": "./assets/app-icon/app-icon-1024.png",
     "scheme": "fastfood",
@@ -95,4 +95,3 @@
     "owner": "alpdogancelik1"
   }
 }
-
