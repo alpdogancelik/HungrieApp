@@ -137,7 +137,18 @@ export const subscribeRestaurantOrders = (
     cb?: (orders: any[]) => void,
 ) => {
     const q = query(ordersCol(), where("restaurantId", "==", restaurantId), where("status", "in", statuses));
-    return onSnapshot(q, (snap) => (cb ? cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))) : undefined));
+    return onSnapshot(q, (snap) =>
+        cb
+            ? cb(
+                  snap.docs
+                      .map((d) => ({ id: d.id, ...d.data() }))
+                      .filter((order: any) => {
+                          const raw = String(order?.status || "").toLowerCase();
+                          return !["canceled", "cancelled", "rejected", "delivered"].includes(raw);
+                      }),
+              )
+            : undefined,
+    );
 };
 
 export const subscribeRestaurantPastOrders = (restaurantId: string, cb: (orders: any[]) => void) => {

@@ -21,7 +21,7 @@ import { storage } from "@/src/lib/storage";
 import { useTheme } from "@/src/theme/themeContext";
 
 import { OrderStatus } from "@/type";
-import { ORDER_STATUS_COLORS, ORDER_STATUS_LABELS } from "@/components/OrderCard";
+import { ORDER_STATUS_COLORS } from "@/components/OrderCard";
 import { makeShadow } from "@/src/lib/shadowStyle";
 import { updateUserProfile } from "@/lib/firebaseAuth";
 import { NotificationManager } from "@/src/features/notifications/NotificationManager";
@@ -443,13 +443,17 @@ const Profile = () => {
 
             const synced = await updateUserProfile({
                 name: trimmedName,
-                whatsappNumber: trimmedWhatsapp || undefined,
+                whatsappNumber: trimmedWhatsapp,
             });
 
             setUser({
                 ...(user || { avatar: undefined }),
+                id: synced?.accountId ?? user?.id,
+                $id: synced?.accountId ?? user?.$id,
+                accountId: synced?.accountId ?? user?.accountId,
                 name: synced?.name ?? trimmedName,
                 email: synced?.email ?? user?.email,
+                avatar: synced?.avatar ?? user?.avatar,
                 whatsappNumber: (synced?.whatsappNumber ?? trimmedWhatsapp) || undefined,
             });
 
@@ -566,7 +570,7 @@ const Profile = () => {
                                 {activeOrders.map((order: any) => {
                                     const norm = normalizeStatus(order.status);
                                     const badge = ORDER_STATUS_COLORS[norm];
-                                    const label = ORDER_STATUS_LABELS[norm] || t(`status.${norm}` as const);
+                                    const label = t(`status.${norm}` as const);
 
                                     return (
                                         <TouchableOpacity
@@ -623,7 +627,7 @@ const Profile = () => {
                     {/* ACTIONS — design version */}
                     <View className="secondary-card gap-3" style={ui.actionsCard}>
                         <SectionHeader title={t("profile.accountActions")} />
-                        {[
+                        {[ 
                             {
                                 label: t("profileExtras.actions.notifications.label"),
                                 description: t("profileExtras.actions.notifications.description"),
@@ -638,6 +642,11 @@ const Profile = () => {
                                 label: t("profileExtras.actions.terms.label"),
                                 description: t("profileExtras.actions.terms.description"),
                                 action: () => router.push("/terms"),
+                            },
+                            {
+                                label: t("profileExtras.actions.help.label"),
+                                description: t("profileExtras.actions.help.description"),
+                                action: () => router.push("/support"),
                             },
                             {
                                 label: t("profileExtras.actions.history.label"),
@@ -1091,7 +1100,7 @@ const OrderHistorySection = ({ orders }: { orders: any[] }) => {
             style={[ui.sectionCard, ui.sectionCardShadow, isWeb ? ui.sectionCardWeb : null, isWeb ? ui.sectionCardShadowWeb : null]}
         >
             <View className="flex-row items-center justify-between" style={ui.rowBetween}>
-                <SectionHeader title={t("orders.historyTitle", "Sipariş Geçmişi")} />
+                <SectionHeader title={t("orders.historyTitle")} />
                 <HistoryIllustration width={isWeb ? 60 : 52} height={isWeb ? 60 : 52} />
             </View>
 
@@ -1099,7 +1108,7 @@ const OrderHistorySection = ({ orders }: { orders: any[] }) => {
                 {recentOrders.map((order) => {
                     const normStatus = normalizeStatus(order.status);
                     const badge = ORDER_STATUS_COLORS[normStatus];
-                    const label = ORDER_STATUS_LABELS[normStatus] || t(`status.${normStatus}` as const);
+                    const label = t(`status.${normStatus}` as const);
                     const orderIdText = `#${String(order.id ?? "-")}`;
 
                     const items = resolveItems(order);
@@ -1119,7 +1128,7 @@ const OrderHistorySection = ({ orders }: { orders: any[] }) => {
                             <View className="flex-row justify-between items-center" style={ui.rowBetween}>
                                 <View style={{ flex: 1, paddingRight: 10 }}>
                                     <Text className="paragraph-semibold text-dark-100">
-                                        {resolveRestaurantName(order) || t("orders.unknownRestaurant", "Restaurant")}
+                                        {resolveRestaurantName(order) || t("orders.unknownRestaurant")}
                                     </Text>
                                     <Text className="caption text-dark-40 mt-1">Order ID: {orderIdText}</Text>
                                 </View>
@@ -1151,7 +1160,7 @@ const OrderHistorySection = ({ orders }: { orders: any[] }) => {
                 })}
 
                 {!sortedOrders.length ? (
-                    <Text className="body-medium text-dark-60">{t("orders.emptyHistory", "Hiç sipariş bulunamadı.")}</Text>
+                    <Text className="body-medium text-dark-60">{t("orders.emptyHistory")}</Text>
                 ) : null}
                 {sortedOrders.length > 2 ? (
                     <TouchableOpacity
@@ -1168,7 +1177,7 @@ const OrderHistorySection = ({ orders }: { orders: any[] }) => {
                         }}
                     >
                         <Text className="paragraph-semibold text-primary">
-                            {t("orders.viewAll", "Tüm siparişleri gör")}
+                            {t("orders.viewAll")}
                         </Text>
                     </TouchableOpacity>
                 ) : null}

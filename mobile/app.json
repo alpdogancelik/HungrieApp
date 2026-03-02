@@ -58,12 +58,12 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/hungriesplash.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
+          "image": "./assets/hungriesplashmobile.png",
+          "imageWidth": 1024,
+          "resizeMode": "cover",
           "backgroundColor": "#fff7ef",
           "dark": {
-            "image": "./assets/hungriesplash.png",
+            "image": "./assets/hungriesplashmobile.png",
             "backgroundColor": "#160604"
           }
         }

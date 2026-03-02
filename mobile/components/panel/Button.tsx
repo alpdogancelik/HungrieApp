@@ -16,12 +16,12 @@ type Props = {
 };
 
 const palette = {
-    primary: { bg: "#EE7A14", border: "#EE7A14", fg: "#FFFFFF" },
-    secondary: { bg: "#FFF1E3", border: "#EE7A14", fg: "#B94900" },
-    destructive: { bg: "#FFEAF0", border: "#EDC3CD", fg: "#C03855" },
-    outline: { bg: "#FFFFFF", border: "#EE7A14", fg: "#B94900" },
-    ghost: { bg: "transparent", border: "#EADBC8", fg: "#627189" },
-    danger: { bg: "#FFEAF0", border: "#EDC3CD", fg: "#C03855" },
+    primary: { bg: "#FFE3C4", border: "#EE7A14", fg: "#A34700" },
+    secondary: { bg: "#FFF5EA", border: "#EE7A14", fg: "#B94900" },
+    destructive: { bg: "#FFF1F4", border: "#E3A3B2", fg: "#B62B4D" },
+    outline: { bg: "#FFFFFF", border: "#D88942", fg: "#A34700" },
+    ghost: { bg: "#FFF9F2", border: "#D8C6AF", fg: "#627189" },
+    danger: { bg: "#FFF1F4", border: "#E3A3B2", fg: "#B62B4D" },
 };
 
 const Button = ({
@@ -76,13 +76,18 @@ const styles = StyleSheet.create({
     base: {
         minHeight: 44,
         borderRadius: 999,
-        borderWidth: 1,
+        borderWidth: 1.2,
         alignItems: "center",
         justifyContent: "center",
         paddingHorizontal: 12,
         paddingVertical: 9,
         flexDirection: "row",
         gap: 8,
+        shadowColor: "#D6B28A",
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 3 },
+        elevation: 1,
     },
     basePhone: {
         minHeight: 40,
@@ -95,6 +100,7 @@ const styles = StyleSheet.create({
         lineHeight: 18,
         textAlign: "center",
         flexShrink: 1,
+        fontWeight: "600",
     },
     labelPhone: {
         fontSize: 15,

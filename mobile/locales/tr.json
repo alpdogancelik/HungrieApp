@@ -53,6 +53,8 @@
   "orders.markDelivered": "Teslim edildi",
   "orders.confirmTitle": "İşlemi onayla",
   "orders.confirmBody": "Bu siparişi {{action}} istediğine emin misin?",
+  "orders.rejectConfirmTitle": "İşlemi reddet",
+  "orders.rejectConfirmBody": "Bu siparişi reddetmek istediğine emin misin?",
   "orders.confirm": "Onayla",
   "orders.cancel": "Vazgeç",
   "orders.action.accept": "onaylamak",

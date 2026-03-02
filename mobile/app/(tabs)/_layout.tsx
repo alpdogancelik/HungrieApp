@@ -1,6 +1,6 @@
 import { Redirect, Tabs } from "expo-router";
 import React, { useEffect, useRef } from "react";
-import { Animated, Platform, Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
+import { Animated, LayoutChangeEvent, Platform, Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import useAuthStore from "@/store/auth.store";
@@ -30,7 +30,12 @@ function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
             .filter(Boolean),
         ...state.routes.filter((route) => !routeOrder.includes(normalizeRouteName(route.name))),
     ] as typeof state.routes;
-    const tabW = (containerW - INNER_PAD * 2) / orderedRoutes.length;
+    const measuredBarWidth = useRef(0);
+    const fallbackTabW = (containerW - INNER_PAD * 2) / orderedRoutes.length;
+    const tabW =
+        measuredBarWidth.current > 0
+            ? (measuredBarWidth.current - INNER_PAD * 2) / orderedRoutes.length
+            : fallbackTabW;
     const translateX = useRef(new Animated.Value(0)).current;
     const activeRouteKey = state.routes[state.index]?.key;
     const activeIndex = Math.max(
@@ -47,9 +52,13 @@ function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
     }, [activeIndex, tabW, translateX]);
 
     const bottom = Math.max(insets.bottom, 10) + 8;
+    const handleLayout = (event: LayoutChangeEvent) => {
+        measuredBarWidth.current = event.nativeEvent.layout.width;
+    };
 
     return (
         <View
+            onLayout={handleLayout}
             style={[
                 styles.bar,
                 {
@@ -100,9 +109,9 @@ function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
                         key={route.key}
                         onPress={onPress}
                         hitSlop={10}
-                        style={{ width: tabW, alignItems: "center", justifyContent: "center" }}
+                        style={styles.tabPressable}
                     >
-                        {iconNode}
+                        <View style={styles.iconFrame}>{iconNode}</View>
                     </Pressable>
                 );
             })}
@@ -125,7 +134,7 @@ export default function TabLayout() {
             }}
         >
             <Tabs.Screen name="home" />
-            <Tabs.Screen name="search/index" />
+            <Tabs.Screen name="search" />
             <Tabs.Screen name="cart" />
             <Tabs.Screen name="profile" />
         </Tabs>
@@ -150,5 +159,16 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "#F7C99A",
         ...makeShadow({ color: "#F28C28", offsetY: 3, blurRadius: 8, opacity: 0.18, elevation: 4 }),
+    },
+    tabPressable: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    iconFrame: {
+        width: 48,
+        height: 48,
+        alignItems: "center",
+        justifyContent: "center",
     },
 });

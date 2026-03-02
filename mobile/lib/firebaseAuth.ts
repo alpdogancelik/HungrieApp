@@ -12,6 +12,7 @@
 import {
     addDoc,
     collection,
+    deleteField,
     doc,
     getDoc,
     getDocs,
@@ -266,24 +267,30 @@ export const updateUserProfile = async ({
     const authUser = await waitForAuthUser();
     if (!authUser) throw new Error("User is not signed in.");
     const db = requireDB();
+    const normalizedName = typeof name === "string" ? name.trim() : undefined;
+    const normalizedWhatsapp = typeof whatsappNumber === "string" ? whatsappNumber.trim() : whatsappNumber;
     const updates: Partial<Profile> = {};
-    if (name) updates.name = name;
-    if (whatsappNumber !== undefined) updates.whatsappNumber = whatsappNumber;
+    if (normalizedName) updates.name = normalizedName;
+    if (normalizedWhatsapp !== undefined) updates.whatsappNumber = normalizedWhatsapp || undefined;
 
     await updateProfile(authUser, {
-        displayName: name ?? authUser.displayName ?? undefined,
-        photoURL: whatsappNumber ? `wa:${whatsappNumber}` : authUser.photoURL ?? undefined,
-    }).catch(() => null);
+        displayName: normalizedName ?? authUser.displayName ?? undefined,
+        photoURL: normalizedWhatsapp ? `wa:${normalizedWhatsapp}` : null,
+    });
 
     await setDoc(
         doc(db, FIREBASE_COLLECTIONS.users, authUser.uid),
         {
-            ...(name ? { name } : {}),
-            ...(whatsappNumber !== undefined ? { whatsappNumber } : {}),
+            ...(normalizedName ? { name: normalizedName } : {}),
+            ...(normalizedWhatsapp !== undefined
+                ? normalizedWhatsapp
+                    ? { whatsappNumber: normalizedWhatsapp }
+                    : { whatsappNumber: deleteField() }
+                : {}),
             updatedAt: Date.now(),
         },
         { merge: true },
-    ).catch(() => null);
+    );
 
     return syncProfile(authUser, updates);
 };

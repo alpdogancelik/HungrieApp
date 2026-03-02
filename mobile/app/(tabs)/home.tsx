@@ -175,7 +175,7 @@ export default function HomeTabScreen() {
                 </View>
 
                 <View style={styles.footer}>
-                    <Text style={styles.footerText}>2026 ©HungrieApp Inc.</Text>
+                    <Text style={styles.footerText}>2026 ©HungrieApp</Text>
                 </View>
             </ScrollView>
         </SafeAreaView>

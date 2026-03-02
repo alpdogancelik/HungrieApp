@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
@@ -11,6 +11,8 @@ import { useRestaurantPanelLocale } from "@/src/features/restaurantPanel/panelLo
 const RestaurantOrderDetailScreen = () => {
     const router = useRouter();
     const { orderId } = useLocalSearchParams<{ orderId?: string }>();
+    const { width } = useWindowDimensions();
+    const isPhone = width < 760;
     const [order, setOrder] = useState<PanelOrder | null>(null);
     const { locale, setLocale, t, formatCurrency, formatDate, formatAddress, formatPhone } = useRestaurantPanelLocale(null);
 
@@ -53,9 +55,9 @@ const RestaurantOrderDetailScreen = () => {
                         <Text style={styles.sectionTitle}>{t("orders.items")}</Text>
                         <View style={styles.itemsWrap}>
                             {order.items.map((item, index) => (
-                                <View key={`${order.id}-item-${index}`} style={styles.itemRow}>
+                            <View key={`${order.id}-item-${index}`} style={[styles.itemRow, isPhone ? styles.itemRowPhone : null]}>
                                     <Text style={styles.itemQty}>{Number(item.quantity || 0)}x</Text>
-                                    <Text style={styles.itemName}>{item.name || t("common.itemFallback")}</Text>
+                                    <Text style={styles.itemName} numberOfLines={isPhone ? 2 : 1}>{item.name || t("common.itemFallback")}</Text>
                                     <Text style={styles.itemPrice}>
                                         {formatCurrency(Number(item.price || 0) * Number(item.quantity || 1))}
                                     </Text>
@@ -110,6 +112,9 @@ const styles = StyleSheet.create({
         borderBottomWidth: StyleSheet.hairlineWidth,
         borderBottomColor: "#E7DCCF",
     },
+    itemRowPhone: {
+        alignItems: "flex-start",
+    },
     itemQty: {
         width: 30,
         fontFamily: "ChairoSans",
@@ -126,6 +131,7 @@ const styles = StyleSheet.create({
         fontFamily: "ChairoSans",
         fontSize: 14,
         color: "#1E2433",
+        flexShrink: 0,
     },
     total: {
         fontFamily: "ChairoSans",

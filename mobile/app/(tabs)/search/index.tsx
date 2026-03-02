@@ -17,6 +17,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { useTranslation } from "react-i18next";
 
 import CartButton from "@/components/CartButton";
 import Icon from "@/components/Icon";
@@ -52,17 +53,6 @@ const BRAND = {
 
 const R = { xl: 28, lg: 22, md: 18, sm: 14 };
 const S = { xl: 22, lg: 16, md: 14, sm: 10, xs: 6 };
-
-const COPY = {
-
-    title: "Ara",
-    placeholder: "Restoran veya yemek ara",
-    recent: "Son aramalar",
-    clear: "Temizle",
-    tabs: { meals: "Yemekler", restaurants: "Restoranlar" },
-    emptyTitle: "Sonuç yok",
-    emptyDesc: "Yazımı kontrol et veya farklı bir kelime dene.",
-};
 
 //  logos
 const RESTAURANT_LOGOS = {
@@ -159,19 +149,21 @@ const SearchInput = ({
     onSubmit,
     loading,
     onClear,
+    placeholder,
 }: {
     value: string;
     onChange: (t: string) => void;
     onSubmit: () => void;
     loading?: boolean;
     onClear: () => void;
+    placeholder: string;
 }) => (
     <View style={styles.searchBar}>
         <Icon name="search" size={18} color={BRAND.muted} />
         <TextInput
             value={value}
             onChangeText={onChange}
-            placeholder={COPY.placeholder}
+            placeholder={placeholder}
             placeholderTextColor={"rgba(31,18,11,0.38)"}
             style={styles.searchInput}
             autoCorrect={false}
@@ -191,14 +183,18 @@ const SearchInput = ({
 const SegmentButtons = ({
     value,
     onChange,
+    mealsLabel,
+    restaurantsLabel,
 }: {
     value: "meals" | "restaurants";
     onChange: (v: "meals" | "restaurants") => void;
+    mealsLabel: string;
+    restaurantsLabel: string;
 }) => (
     <View style={styles.segmentRow}>
         {(["meals", "restaurants"] as const).map((k) => {
             const active = value === k;
-            const label = k === "meals" ? COPY.tabs.meals : COPY.tabs.restaurants;
+            const label = k === "meals" ? mealsLabel : restaurantsLabel;
 
             return (
                 <Pressable
@@ -319,7 +315,17 @@ const MealCard = ({
     );
 };
 
-const RestaurantCard = ({ restaurant, onPress }: { restaurant: any; onPress: () => void }) => {
+const RestaurantCard = ({
+    restaurant,
+    onPress,
+    cuisineFallback,
+    ctaLabel,
+}: {
+    restaurant: any;
+    onPress: () => void;
+    cuisineFallback: string;
+    ctaLabel: string;
+}) => {
     return (
         <Pressable onPress={onPress} style={({ pressed }) => [styles.card, styles.restaurantCard, pressed && { opacity: 0.98 }]}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
@@ -329,31 +335,32 @@ const RestaurantCard = ({ restaurant, onPress }: { restaurant: any; onPress: () 
                         {restaurant.name}
                     </Text>
                     <Text style={styles.rCuisine} numberOfLines={2}>
-                        {restaurant.cuisine || "Mutfak"}
+                        {restaurant.cuisine || cuisineFallback}
                     </Text>
                 </View>
             </View>
 
             <View style={styles.goPill}>
-                <Text style={styles.goPillText}>Git</Text>
+                <Text style={styles.goPillText}>{ctaLabel}</Text>
                 <Icon name="arrowDown" size={12} color={BRAND.accent} style={{ transform: [{ rotate: "-90deg" }] }} />
             </View>
         </Pressable>
     );
 };
 
-const EmptyState = () => (
+const EmptyState = ({ title, description }: { title: string; description: string }) => (
     <View style={[styles.card, styles.empty]}>
         <View style={styles.emptyIcon}>
             <Icon name="search" size={18} color={BRAND.muted} />
         </View>
-        <Text style={styles.emptyTitle}>{COPY.emptyTitle}</Text>
-        <Text style={styles.emptyDesc}>{COPY.emptyDesc}</Text>
+        <Text style={styles.emptyTitle}>{title}</Text>
+        <Text style={styles.emptyDesc}>{description}</Text>
     </View>
 );
 
 export default function Search() {
     const router = useRouter();
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const tabBarHeight = useBottomTabBarHeight();
 
@@ -405,7 +412,7 @@ const goRestaurant = (restaurant: any, index: number) => {
                 <View style={styles.header}>
                     <View style={styles.topRow}>
                         <View>
-                            <Text style={styles.topTitle}>{COPY.title}</Text>
+                            <Text style={styles.topTitle}>{t("search.title")}</Text>
                         </View>
                         <CartButton />
                     </View>
@@ -416,9 +423,15 @@ const goRestaurant = (restaurant: any, index: number) => {
                         onSubmit={submitQuery}
                         loading={loading}
                         onClear={clearAll}
+                        placeholder={t("search.placeholder")}
                     />
 
-                    <SegmentButtons value={segment} onChange={setSegment} />
+                    <SegmentButtons
+                        value={segment}
+                        onChange={setSegment}
+                        mealsLabel={t("search.tabs.meals")}
+                        restaurantsLabel={t("search.tabs.restaurants")}
+                    />
                 </View>
 
                 {/* ===== List ===== */}
@@ -437,9 +450,9 @@ const goRestaurant = (restaurant: any, index: number) => {
                         !query.trim() && recentSearches.length ? (
                             <View style={{ gap: 10, marginBottom: 14 }}>
                                 <View style={styles.sectionHeader}>
-                                    <Text style={styles.sectionTitle}>{COPY.recent}</Text>
+                                    <Text style={styles.sectionTitle}>{t("search.recentLabel")}</Text>
                                     <Pressable onPress={clearRecents} hitSlop={10}>
-                                        <Text style={styles.linkText}>{COPY.clear}</Text>
+                                        <Text style={styles.linkText}>{t("search.clear")}</Text>
                                     </Pressable>
                                 </View>
 
@@ -460,7 +473,7 @@ const goRestaurant = (restaurant: any, index: number) => {
                     }
                     ListEmptyComponent={
                         !loading && !restaurantsLoading ? (
-                            <EmptyState />
+                            <EmptyState title={t("search.empty.title")} description={t("search.empty.body")} />
                         ) : (
                             <View style={{ paddingVertical: 18, alignItems: "center" }}>
                                 <ActivityIndicator color={BRAND.accent} />
@@ -472,7 +485,12 @@ const goRestaurant = (restaurant: any, index: number) => {
                             const isLeft = index % 2 === 0;
                             return (
                                 <View style={{ flex: 1, marginRight: isLeft ? 12 : 0, marginBottom: 12 }}>
-                                    <RestaurantCard restaurant={item} onPress={() => goRestaurant(item, index)} />
+                                    <RestaurantCard
+                                        restaurant={item}
+                                        onPress={() => goRestaurant(item, index)}
+                                        cuisineFallback={t("search.cuisineFallback")}
+                                        ctaLabel={t("search.openCta")}
+                                    />
                                 </View>
                             );
                         }

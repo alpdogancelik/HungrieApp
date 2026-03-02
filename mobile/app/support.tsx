@@ -31,32 +31,32 @@ type SupportContent = {
 
 const SUPPORT_TR: SupportContent = {
     title: "Destek",
-    subtitle: "Siparis, odeme ve hesap konularinda bize ulasabilirsiniz.",
-    hoursTitle: "Calisma saatleri",
-    hours: "Her gun 09:00 - 01:00",
-    responseTitle: "Geri donus suresi",
-    response: "Yogunluga gore ortalama 5-15 dakika icinde donus saglanir.",
-    contactsTitle: "Iletisim",
+    subtitle: "Sipariş, ödeme ve hesap konularında bize ulaşabilirsiniz.",
+    hoursTitle: "Çalışma saatleri",
+    hours: "Her gün 09:00 - 00:00",
+    responseTitle: "Geri dönüş süresi",
+    response: "Yoğunluğa göre ortalama 15 dakika içinde dönüş sağlanır.",
+    contactsTitle: "Iletişim",
     contacts: [
-        { label: "E-posta", value: "support@hungrie.app", href: "mailto:support@hungrie.app" },
+        { label: "E-posta", value: "ahungrie@gmail.com", href: "mailto:ahungrie@gmail.com" },
         { label: "Web", value: "hungrie.app/support", href: "https://hungrie.app/support" },
     ],
-    faqTitle: "Sik sorulan sorular",
+    faqTitle: "Sık sorulan sorular",
     faq: [
         {
-            q: "Siparisim gecikiyor, ne yapmaliyim?",
-            a: "Siparis detayindaki durum adimlarini kontrol edin. 5 dakikayi asan gecikmelerde destek ekibine siparis numarasi ile yazin.",
+            q: "Siparişim gecikiyor, ne yapmalıyım?",
+            a: "Sipariş detayındaki durum adımlarını kontrol edin. 5 dakikayı aşan gecikmelerde destek ekibine sipariş numarası ile yazın.",
         },
         {
-            q: "Iptal/iade nasil yapiliyor?",
-            a: "Iptal ve iade sureci restoran onayina ve siparis durumuna gore degerlendirilir. Destek ekibi gerekli adimlari paylasir.",
+            q: "Iptal/iade nasıl yapılıyor?",
+            a: "Iptal ve iade süreci restoran onayına ve sipariş durumuna göre değerlendirilir. Destek ekibi gerekli adımları paylaşır.",
         },
         {
-            q: "Restoran panel bildirimi gelmiyorsa ne yapmaliyim?",
-            a: "Tarayici/telefon bildirim iznini acin, internet baglantisini kontrol edin ve paneli yenileyin.",
+            q: "Restoran panel bildirimi gelmiyorsa ne yapmalıyım?",
+            a: "Tarayıcı/telefon bildirim iznini açın, internet bağlantısını kontrol edin ve paneli yenileyin.",
         },
     ],
-    note: "Not: Hizli cozum icin mesajiniza siparis numarasi ekleyin.",
+    note: "Not: Hızlı çözüm için mesajınıza sipariş numarası ekleyin.",
 };
 
 const SUPPORT_EN: SupportContent = {
@@ -68,7 +68,7 @@ const SUPPORT_EN: SupportContent = {
     response: "Depending on queue, average response is within 5-15 minutes.",
     contactsTitle: "Contact",
     contacts: [
-        { label: "Email", value: "support@hungrie.app", href: "mailto:support@hungrie.app" },
+        { label: "Email", value: "ahungrie@gmail.com", href: "mailto:ahungrie@gmail.com" },
         { label: "Web", value: "hungrie.app/support", href: "https://hungrie.app/support" },
     ],
     faqTitle: "Frequently asked questions",
@@ -274,4 +274,3 @@ const styles = StyleSheet.create({
 });
 
 export default SupportScreen;
-

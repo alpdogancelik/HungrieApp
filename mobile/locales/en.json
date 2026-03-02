@@ -54,6 +54,8 @@
   "orders.markDelivered": "Mark delivered",
   "orders.confirmTitle": "Confirm action",
   "orders.confirmBody": "Are you sure you want to {{action}} this order?",
+  "orders.rejectConfirmTitle": "Reject order",
+  "orders.rejectConfirmBody": "Are you sure you want to reject this order?",
   "orders.confirm": "Confirm",
   "orders.cancel": "Cancel",
   "orders.action.accept": "accept",

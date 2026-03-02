@@ -29,6 +29,7 @@ export const PanelShell = ({
 }: Props) => {
     const { width } = useWindowDimensions();
     const isDesktop = width >= 980;
+    const isPhone = width < 760;
     const headerTitleSize = isDesktop ? panelTypography.title : panelTypography.titleMobile;
     const subtitleSize = isDesktop ? panelTypography.subtitle : panelTypography.subtitleMobile;
 
@@ -37,8 +38,8 @@ export const PanelShell = ({
             <View pointerEvents="none" style={styles.decoA} />
             <View pointerEvents="none" style={styles.decoB} />
 
-            <View style={styles.header}>
-                <View style={{ flex: 1 }}>
+            <View style={[styles.header, isPhone ? styles.headerPhone : null]}>
+                <View style={[styles.headerMain, isPhone ? styles.headerMainPhone : null]}>
                     {onBackPress ? (
                         <Pressable
                             onPress={onBackPress}
@@ -54,7 +55,7 @@ export const PanelShell = ({
                     <Text style={[styles.title, { fontSize: headerTitleSize, lineHeight: headerTitleSize + 6 }]}>{title}</Text>
                     {subtitle ? <Text style={[styles.subtitle, { fontSize: subtitleSize }]}>{subtitle}</Text> : null}
                 </View>
-                {right}
+                {right ? <View style={[styles.headerRight, isPhone ? styles.headerRightPhone : null]}>{right}</View> : null}
             </View>
             {children}
         </View>
@@ -102,6 +103,26 @@ const styles = StyleSheet.create({
         alignItems: "center",
         gap: panelDesign.spacing.md,
         overflow: Platform.OS === "web" ? "hidden" : "visible",
+    },
+    headerPhone: {
+        flexDirection: "column",
+        alignItems: "stretch",
+    },
+    headerMain: {
+        flex: 1,
+        minWidth: 0,
+    },
+    headerMainPhone: {
+        flexGrow: 0,
+        flexShrink: 0,
+        width: "100%",
+    },
+    headerRight: {
+        alignSelf: "flex-start",
+    },
+    headerRightPhone: {
+        width: "100%",
+        alignSelf: "stretch",
     },
     kicker: {
         fontFamily: "ChairoSans",

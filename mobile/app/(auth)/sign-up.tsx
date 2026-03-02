@@ -113,7 +113,7 @@ const SignUp = () => {
                 keyboardType="phone-pad"
             />
             <CustomInput
-                placeholder="ahmet@metu.edu.tr / ahmet@gmail.com / e232231@metu.edu.tr"
+                placeholder="e232231@metu.edu.tr"
                 value={form.email}
                 onChangeText={(text) => setField("email", text)}
                 label={copy.emailLabel}

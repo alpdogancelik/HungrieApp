@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef } from "react";
 import { Alert, Animated, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
-import type { PanelOrder } from "@/src/features/restaurantPanel/model/panelOrders";
+import { normalizePanelOrderStatus, type PanelOrder } from "@/src/features/restaurantPanel/model/panelOrders";
 import { PanelButton, SectionCard, StatusPill } from "@/components/panel";
 import OrderNote from "./OrderNote";
 import type { PanelLocale } from "@/src/features/restaurantPanel/panelLocale";
@@ -40,6 +40,8 @@ const OrderCard = ({
 }: Props) => {
     const { width } = useWindowDimensions();
     const isCompact = width < 390;
+    const isPhone = width < 430;
+    const normalizedStatus = String(normalizePanelOrderStatus(order.status));
     const bgAnim = useRef(new Animated.Value(0)).current;
     const actionsDisabled = Boolean(actionLoadingStatus);
 
@@ -74,9 +76,12 @@ const OrderCard = ({
             return;
         }
 
+        const confirmTitle = nextStatus === "canceled" ? t("orders.rejectConfirmTitle") : t("orders.confirmTitle");
+        const confirmBody = nextStatus === "canceled" ? t("orders.rejectConfirmBody") : t("orders.confirmBody", { action: actionName });
+
         Alert.alert(
-            t("orders.confirmTitle"),
-            t("orders.confirmBody", { action: actionName }),
+            confirmTitle,
+            confirmBody,
             [
                 { text: t("orders.cancel"), style: "cancel" },
                 {
@@ -107,7 +112,7 @@ const OrderCard = ({
                 <Pressable
                     onPress={() => onToggle(order.id)}
                     accessibilityRole="button"
-                    accessibilityLabel={t("a11y.orderCardSummary", { customer: order.customer, status: t(`orders.status.${order.status}`) })}
+                    accessibilityLabel={t("a11y.orderCardSummary", { customer: order.customer, status: t(`orders.status.${normalizedStatus}`) })}
                     style={({ pressed }) => [styles.summaryPressable, pressed ? styles.summaryPressablePressed : null]}
                 >
                     <View style={[styles.orderHeader, isCompact ? styles.orderHeaderCompact : null]}>
@@ -116,7 +121,7 @@ const OrderCard = ({
                             <Text style={styles.orderMeta}>{formatDate(order.createdAtMs || order.time)}</Text>
                         </View>
                         <View style={[styles.orderHeaderRight, isCompact ? styles.orderHeaderRightCompact : null]}>
-                            <StatusPill status={String(order.status)} label={t(`orders.status.${String(order.status)}`)} />
+                            <StatusPill status={normalizedStatus} label={t(`orders.status.${normalizedStatus}`)} />
                             <Text style={[styles.orderTotal, isCompact ? styles.orderTotalCompact : null]}>
                                 {formatCurrency(Number(order.total || 0))}
                             </Text>
@@ -155,14 +160,24 @@ const OrderCard = ({
                     {expanded ? <Text style={styles.orderMeta}>{t("orders.paymentMethod", { value: order.paymentMethod || t("common.na") })}</Text> : null}
                 </Pressable>
 
-                <View style={[styles.actionsRow, isCompact ? styles.actionsRowCompact : null]}>
-                    {order.status === "pending" ? (
+                <View
+                    style={[
+                        styles.actionsRow,
+                        isPhone ? styles.actionsRowCompact : null,
+                        normalizedStatus === "pending" && isPhone ? styles.pendingActionsCompact : null,
+                    ]}
+                >
+                    {normalizedStatus === "pending" ? (
                         <>
                             <PanelButton
                                 label={t("orders.accept")}
-                                variant="primary"
+                                variant="secondary"
                                 onPress={() => confirmAction("accepted")}
-                                style={[styles.actionButton, isCompact ? styles.actionButtonCompact : null]}
+                                style={[
+                                    styles.actionButton,
+                                    isCompact ? styles.actionButtonCompact : null,
+                                    isPhone ? styles.acceptButtonCompact : null,
+                                ]}
                                 disabled={actionsDisabled}
                                 loading={actionLoadingStatus === "accepted"}
                                 accessibilityLabel={t("a11y.acceptOrder", { customer: order.customer })}
@@ -171,28 +186,32 @@ const OrderCard = ({
                                 label={t("orders.reject")}
                                 variant="destructive"
                                 onPress={() => confirmAction("canceled")}
-                                style={[styles.actionButton, isCompact ? styles.actionButtonCompact : null]}
+                                style={[
+                                    styles.actionButton,
+                                    isCompact ? styles.actionButtonCompact : null,
+                                    isPhone ? styles.rejectButtonCompact : null,
+                                ]}
                                 disabled={actionsDisabled}
                                 loading={actionLoadingStatus === "canceled"}
                                 accessibilityLabel={t("a11y.rejectOrder", { customer: order.customer })}
                             />
                         </>
-                    ) : order.status === "accepted" ? (
+                    ) : normalizedStatus === "accepted" ? (
                         <View style={styles.singleActionRow}>
                             <PanelButton
                                 label={t("orders.handoverCourier")}
-                                variant="primary"
+                                variant="secondary"
                                 onPress={() => confirmAction("out_for_delivery")}
                                 style={[styles.actionButton, isCompact ? styles.actionButtonCompact : null]}
                                 disabled={actionsDisabled}
                                 loading={actionLoadingStatus === "out_for_delivery"}
                             />
                         </View>
-                    ) : order.status === "out_for_delivery" ? (
+                    ) : normalizedStatus === "out_for_delivery" ? (
                         <View style={styles.singleActionRow}>
                             <PanelButton
                                 label={t("orders.markDelivered")}
-                                variant="primary"
+                                variant="secondary"
                                 onPress={() => confirmAction("delivered")}
                                 style={[styles.actionButton, isCompact ? styles.actionButtonCompact : null]}
                                 disabled={actionsDisabled}
@@ -225,6 +244,8 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     orderHeaderCompact: {
+        flexDirection: "column",
+        alignItems: "stretch",
         gap: 6,
     },
     orderHeaderRight: {
@@ -270,7 +291,7 @@ const styles = StyleSheet.create({
     },
     itemRow: {
         flexDirection: "row",
-        alignItems: "center",
+        alignItems: "flex-start",
         gap: 8,
         borderBottomWidth: StyleSheet.hairlineWidth,
         borderBottomColor: "#E7DCCF",
@@ -293,16 +314,25 @@ const styles = StyleSheet.create({
         fontFamily: "ChairoSans",
         fontSize: 14,
         color: "#1E2433",
+        flexShrink: 0,
     },
     actionsRow: {
         flexDirection: "row",
         flexWrap: "wrap",
         gap: 8,
-        marginTop: 2,
+        marginTop: 6,
+        paddingTop: 8,
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderTopColor: "#E7DCCF",
     },
     actionsRowCompact: {
         flexDirection: "column",
         gap: 6,
+    },
+    pendingActionsCompact: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
     },
     singleActionRow: {
         width: "100%",
@@ -314,6 +344,16 @@ const styles = StyleSheet.create({
     actionButtonCompact: {
         minWidth: 0,
         width: "100%",
+    },
+    acceptButtonCompact: {
+        width: "48%",
+        alignSelf: "flex-start",
+        minWidth: 0,
+    },
+    rejectButtonCompact: {
+        width: "48%",
+        alignSelf: "flex-end",
+        minWidth: 0,
     },
 });
 

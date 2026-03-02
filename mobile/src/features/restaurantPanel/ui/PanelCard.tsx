@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { StyleProp, StyleSheet, Text, View, ViewStyle, useWindowDimensions } from "react-native";
 import { panelDesign, panelTypography } from "./panelDesign";
 
 type Props = {
@@ -12,15 +12,18 @@ type Props = {
 };
 
 export const PanelCard = ({ title, subtitle, children, style, compact = false, right }: Props) => {
+    const { width } = useWindowDimensions();
+    const isPhone = width < 760;
+
     return (
         <View style={[styles.card, compact ? styles.compactCard : null, style]}>
             {(title || subtitle || right) ? (
-                <View style={styles.header}>
-                    <View style={{ flex: 1 }}>
+                <View style={[styles.header, isPhone ? styles.headerPhone : null]}>
+                    <View style={styles.headerMain}>
                         {title ? <Text style={styles.title}>{title}</Text> : null}
                         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
                     </View>
-                    {right}
+                    {right ? <View style={[styles.headerRight, isPhone ? styles.headerRightPhone : null]}>{right}</View> : null}
                 </View>
             ) : null}
             {children}
@@ -50,6 +53,21 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         gap: panelDesign.spacing.sm,
+    },
+    headerPhone: {
+        flexDirection: "column",
+        alignItems: "stretch",
+    },
+    headerMain: {
+        flex: 1,
+        minWidth: 0,
+    },
+    headerRight: {
+        alignSelf: "center",
+    },
+    headerRightPhone: {
+        width: "100%",
+        alignSelf: "stretch",
     },
     title: {
         fontFamily: "ChairoSans",

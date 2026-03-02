@@ -128,7 +128,7 @@ const SignIn = () => {
             ) : null}
 
             <CustomInput
-                placeholder="ahmet@metumail.edu.tr / ahmet@gmail.com / e232231@metu.edu.tr"
+                placeholder="ahmet@metu.edu.tr"
                 value={form.email}
                 onChangeText={(text) => setField("email", text)}
                 label={copy.emailLabel}

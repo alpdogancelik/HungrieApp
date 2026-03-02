@@ -224,10 +224,33 @@ const RestaurantMenuManager = () => {
             kicker={t("common.restaurantHub")}
             title={t("menu.title")}
             subtitle={t("menu.subtitle")}
-            onBackPress={() => router.push("/restaurantpanel")}
-            backLabel={t("button.backToPanel")}
-            backAccessibilityLabel={t("a11y.backToPanel")}
-            right={<LanguageSwitch locale={locale} onChange={(next) => void setLocale(next)} getAccessibilityLabel={(next) => t("a11y.switchLanguage", { value: next.toUpperCase() })} />}
+            onBackPress={isPhone ? undefined : () => router.push("/restaurantpanel")}
+            backLabel={isPhone ? undefined : t("button.backToPanel")}
+            backAccessibilityLabel={isPhone ? undefined : t("a11y.backToPanel")}
+            right={
+                isPhone ? (
+                    <View style={styles.mobileHeaderTools}>
+                        <PanelButton
+                            label={t("button.backToPanel")}
+                            variant="outline"
+                            onPress={() => router.push("/restaurantpanel")}
+                            accessibilityLabel={t("a11y.backToPanel")}
+                            style={styles.mobileHeaderBackButton}
+                        />
+                        <LanguageSwitch
+                            locale={locale}
+                            onChange={(next) => void setLocale(next)}
+                            getAccessibilityLabel={(next) => t("a11y.switchLanguage", { value: next.toUpperCase() })}
+                        />
+                    </View>
+                ) : (
+                    <LanguageSwitch
+                        locale={locale}
+                        onChange={(next) => void setLocale(next)}
+                        getAccessibilityLabel={(next) => t("a11y.switchLanguage", { value: next.toUpperCase() })}
+                    />
+                )
+            }
             noScroll
         >
             <ScrollView
@@ -241,14 +264,14 @@ const RestaurantMenuManager = () => {
                             label={t("menu.products")}
                             variant="outline"
                             onPress={() => scrollViewRef.current?.scrollTo({ y: 0, animated: true })}
-                            style={styles.quickActionButton}
+                            style={[styles.quickActionButton, isPhone ? styles.quickActionButtonPhone : null]}
                             accessibilityLabel={t("a11y.scrollToProducts")}
                         />
                         <PanelButton
                             label={t("menu.categories")}
                             variant="ghost"
                             onPress={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-                            style={styles.quickActionButton}
+                            style={[styles.quickActionButton, isPhone ? styles.quickActionButtonPhone : null]}
                             accessibilityLabel={t("a11y.scrollToCategories")}
                         />
                     </View>
@@ -362,6 +385,7 @@ const RestaurantMenuManager = () => {
                             variant="outline"
                             onPress={handleAddCategory}
                             accessibilityLabel={t("a11y.addCategory")}
+                            style={isPhone ? styles.categoryAddButtonPhone : null}
                         />
                     </View>
 
@@ -394,6 +418,7 @@ const RestaurantMenuManager = () => {
                                         variant="danger"
                                         onPress={() => handleDeleteCategory(category.id)}
                                         accessibilityLabel={t("a11y.deleteCategory", { name: category.name })}
+                                        style={isPhone ? styles.categoryDeleteButtonPhone : null}
                                     />
                                 </View>
                             ))}
@@ -406,6 +431,14 @@ const RestaurantMenuManager = () => {
 };
 
 const styles = StyleSheet.create({
+    mobileHeaderTools: {
+        width: "100%",
+        gap: 10,
+        alignItems: "flex-start",
+    },
+    mobileHeaderBackButton: {
+        width: "100%",
+    },
     scrollContent: {
         paddingBottom: panelDesign.spacing.xl,
         gap: panelDesign.spacing.md,
@@ -418,6 +451,10 @@ const styles = StyleSheet.create({
     quickActionButton: {
         flexGrow: 1,
         minWidth: 140,
+    },
+    quickActionButtonPhone: {
+        minWidth: 0,
+        width: "100%",
     },
     searchInput: {
         minHeight: 46,
@@ -513,6 +550,9 @@ const styles = StyleSheet.create({
         flexDirection: "column",
         alignItems: "stretch",
     },
+    categoryAddButtonPhone: {
+        width: "100%",
+    },
     categoryList: {
         gap: 8,
     },
@@ -524,6 +564,9 @@ const styles = StyleSheet.create({
     categoryRowPhone: {
         flexDirection: "column",
         alignItems: "stretch",
+    },
+    categoryDeleteButtonPhone: {
+        width: "100%",
     },
 });
 

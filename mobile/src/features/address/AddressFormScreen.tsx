@@ -11,6 +11,7 @@ import {
     TextInput,
     TouchableOpacity,
     View,
+    useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -50,6 +51,7 @@ const buildInitialState = (options: { editing?: Partial<FormState>; defaultIsDef
 
 const AddressFormScreen = () => {
     const insets = useSafeAreaInsets();
+    const { width: windowWidth } = useWindowDimensions();
     const navigation = useNavigation<AddressFormNavigation>();
     const route = useRoute<AddressFormScreenProps["route"]>();
     const { addresses } = useAddresses();
@@ -66,6 +68,9 @@ const AddressFormScreen = () => {
     );
     const [errors, setErrors] = useState<FormErrors>({});
     const [keyboardVisible, setKeyboardVisible] = useState(false);
+    const isCompactMobile = windowWidth < 380;
+    const heroIsStacked = isCompactMobile;
+    const heroImageSize = heroIsStacked ? 92 : 140;
 
     useEffect(() => {
         setForm(
@@ -165,25 +170,27 @@ const AddressFormScreen = () => {
                         colors={["#0B1220", "#0E1A36"]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0.6 }}
-                        style={styles.hero}
+                        style={[styles.hero, heroIsStacked ? styles.heroCompact : null]}
                     >
-                        <View style={styles.heroRow}>
-                            <TouchableOpacity
-                                style={styles.backButton}
-                                onPress={() => navigation.goBack()}
-                                accessibilityRole="button"
-                                accessibilityLabel={t("common.goBack")}
-                            >
-                                <Icon name="arrowBack" size={18} color="#FFFFFF" />
-                            </TouchableOpacity>
+                        <View style={[styles.heroRow, heroIsStacked ? styles.heroRowCompact : null]}>
+                            <View style={[styles.heroHeader, heroIsStacked ? styles.heroHeaderCompact : null]}>
+                                <TouchableOpacity
+                                    style={styles.backButton}
+                                    onPress={() => navigation.goBack()}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={t("common.goBack")}
+                                >
+                                    <Icon name="arrowBack" size={18} color="#FFFFFF" />
+                                </TouchableOpacity>
 
-                            <View style={styles.heroContent}>
-                                <Text style={styles.heroEyebrow}>{screenTitle}</Text>
-                                <Text style={styles.heroTitle}>{t("address.form.heroTitle")}</Text>
-                                <Text style={styles.heroSubtitle}>{t("address.form.heroSubtitle")}</Text>
+                                <OnlineLocation width={heroImageSize} height={heroImageSize} style={[styles.heroImage, heroIsStacked ? styles.heroImageCompact : null]} />
                             </View>
 
-                            <OnlineLocation width={140} height={140} style={styles.heroImage} />
+                            <View style={[styles.heroContent, heroIsStacked ? styles.heroContentCompact : null]}>
+                                <Text style={styles.heroEyebrow}>{screenTitle}</Text>
+                                <Text style={[styles.heroTitle, heroIsStacked ? styles.heroTitleCompact : null]}>{t("address.form.heroTitle")}</Text>
+                                <Text style={[styles.heroSubtitle, heroIsStacked ? styles.heroSubtitleCompact : null]}>{t("address.form.heroSubtitle")}</Text>
+                            </View>
                         </View>
                     </LinearGradient>
 
@@ -277,10 +284,25 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 28,
         borderBottomRightRadius: 28,
     },
+    heroCompact: {
+        paddingBottom: 72,
+    },
     heroRow: {
         flexDirection: "row",
         alignItems: "flex-start",
         columnGap: 16,
+    },
+    heroRowCompact: {
+        flexDirection: "column",
+        rowGap: 12,
+    },
+    heroHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+    },
+    heroHeaderCompact: {
+        width: "100%",
     },
     backButton: {
         width: 40,
@@ -296,6 +318,10 @@ const styles = StyleSheet.create({
         flex: 1,
         rowGap: 6,
     },
+    heroContentCompact: {
+        maxWidth: "100%",
+        paddingRight: 8,
+    },
     heroEyebrow: {
         color: "rgba(255, 255, 255, 0.6)",
         letterSpacing: 3.5,
@@ -310,15 +336,27 @@ const styles = StyleSheet.create({
         lineHeight: 36,
         fontFamily: "ChairoSans-Bold",
     },
+    heroTitleCompact: {
+        fontSize: 26,
+        lineHeight: 32,
+    },
     heroSubtitle: {
         color: "rgba(255, 255, 255, 0.75)",
         fontSize: 15,
         lineHeight: 22,
         fontFamily: "ChairoSans",
     },
+    heroSubtitleCompact: {
+        maxWidth: 220,
+    },
     heroImage: {
         opacity: 0.95,
         marginTop: -10,
+    },
+    heroImageCompact: {
+        marginTop: 0,
+        marginRight: -4,
+        flexShrink: 0,
     },
     formContainer: {
         marginTop: -40,

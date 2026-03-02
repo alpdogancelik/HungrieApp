@@ -5,6 +5,7 @@ import {
     Switch,
     Text,
     TextInput,
+    useWindowDimensions,
     View,
 } from "react-native";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
@@ -25,6 +26,8 @@ import { useRestaurantPanelLocale } from "@/src/features/restaurantPanel/panelLo
 
 const RestaurantDetails = () => {
     const router = useRouter();
+    const { width } = useWindowDimensions();
+    const isPhone = width < 760;
     const { isAuthenticated } = useAuthStore();
     const [restaurantId, setRestaurantId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
@@ -180,7 +183,7 @@ const RestaurantDetails = () => {
                         />
                     </View>
 
-                    <View style={styles.switchRow}>
+                    <View style={[styles.switchRow, isPhone ? styles.switchRowPhone : null]}>
                         <View style={{ flex: 1 }}>
                             <Text style={styles.label}>{t("details.visible")}</Text>
                             <Text style={styles.helper}>{t("details.visibleHint")}</Text>
@@ -251,6 +254,10 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         gap: panelDesign.spacing.sm,
+    },
+    switchRowPhone: {
+        flexDirection: "column",
+        alignItems: "stretch",
     },
 });
 

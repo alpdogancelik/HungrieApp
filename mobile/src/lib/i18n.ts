@@ -27,6 +27,7 @@ const resources = {
                 },
             },
             status: {
+                pending: "Pending",
                 preparing: "Preparing",
                 ready: "Ready",
                 canceled: "Canceled",
@@ -35,6 +36,10 @@ const resources = {
             },
             orders: {
                 all: "All",
+                historyTitle: "Order history",
+                emptyHistory: "No orders found.",
+                viewAll: "View all orders",
+                unknownRestaurant: "Restaurant",
             },
             misc: {
                 manageSoon: "Address management will launch soon.",
@@ -243,6 +248,8 @@ const resources = {
                 },
             },
             search: {
+                title: "Search",
+                placeholder: "Search restaurants or meals",
                 discovery: {
                     title: "Smart search, campus style.",
                     subtitle: "Type a dish, venue, or ingredient; we'll show the best options nearby.",
@@ -250,6 +257,13 @@ const resources = {
                 menuBoardTitle: "Brochure picks",
                 menuBoardSubtitle: "Tap the campus classics, filters preloaded.",
                 recentLabel: "Recent searches",
+                clear: "Clear",
+                tabs: {
+                    meals: "Meals",
+                    restaurants: "Restaurants",
+                },
+                cuisineFallback: "Cuisine",
+                openCta: "Open",
                 clearFilters: "Clear filters",
                 refresh: "Refresh feed",
                 empty: {
@@ -380,7 +394,7 @@ const resources = {
                     notifications: { label: "Notification preferences", description: "SMS, push, and email" },
                     privacy: { label: "Privacy policy", description: "Learn how we handle your data" },
                     terms: { label: "Terms of service", description: "Review Hungrie terms" },
-                    help: { label: "Help center", description: "Chat with support" },
+                    help: { label: "Support", description: "Read support details" },
                     history: { label: "Order history", description: "Review your past orders" },
                     soonTitle: "Coming soon",
                 },
@@ -412,6 +426,7 @@ const resources = {
                 },
             },
             status: {
+                pending: "Beklemede",
                 preparing: "Hazırlanıyor",
                 ready: "Hazır",
                 canceled: "İptal edildi",
@@ -420,6 +435,10 @@ const resources = {
             },
             orders: {
                 all: "Tümü",
+                historyTitle: "Sipariş Geçmişi",
+                emptyHistory: "Hiç sipariş bulunamadı.",
+                viewAll: "Tüm siparişleri gör",
+                unknownRestaurant: "Restoran",
             },
             misc: {
                 manageSoon: "",
@@ -628,6 +647,8 @@ const resources = {
                 },
             },
             search: {
+                title: "Ara",
+                placeholder: "Restoran veya yemek ara",
                 discovery: {
                     title: "Akıllı arama, kampüs usulü.",
                     subtitle: "Bir yemek, mekan veya malzeme yaz; çevrendeki en iyi seçenekleri gösterelim.",
@@ -635,6 +656,13 @@ const resources = {
                 menuBoardTitle: "Broşür seçkisi",
                 menuBoardSubtitle: "Kampüs klasiğine dokun, filtreler hazır gelsin.",
                 recentLabel: "Son aramalar",
+                clear: "Temizle",
+                tabs: {
+                    meals: "Yemekler",
+                    restaurants: "Restoranlar",
+                },
+                cuisineFallback: "Mutfak",
+                openCta: "Git",
                 clearFilters: "Filtreleri temizle",
                 refresh: "Yayını yenile",
                 empty: {
@@ -766,7 +794,7 @@ const resources = {
                     notifications: { label: "Bildirim tercihleri", description: "SMS, push ve e-posta" },
                     privacy: { label: "Gizlilik politikasi", description: "Verilerin nasıl kullanıldığını gör" },
                     terms: { label: "Kullanım şartları", description: "Hungrie şartlarını incele" },
-                    help: { label: "Destek merkezi", description: "Destek ile sohbet et" },
+                    help: { label: "Destek", description: "Destek yazısını okuyun" },
                     history: { label: "Sipariş geçmişi", description: "Geçmiş siparişlerini incele" },
                     soonTitle: "Çok yakında",
                 },

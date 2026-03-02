@@ -79,7 +79,7 @@ const DashboardSummary = ({ title, metrics, links }: Props) => {
                         label={link.label}
                         iconName={link.iconName}
                         variant="secondary"
-                        style={[styles.linkButton, isPhone ? styles.linkButtonPhone : null]}
+                        style={[styles.linkButton, isPhone ? styles.linkButtonPhoneStacked : null]}
                         onPress={link.onPress}
                         accessibilityLabel={link.accessibilityLabel || link.label}
                     />
@@ -160,8 +160,10 @@ const styles = StyleSheet.create({
         minWidth: 150,
         flexGrow: 1,
     },
-    linkButtonPhone: {
-        minWidth: "48%",
+    linkButtonPhoneStacked: {
+        width: "100%",
+        minWidth: 0,
+        flexGrow: 0,
     },
 });
 

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 
@@ -22,14 +22,18 @@ const styles = StyleSheet.create({
     cardTitle: { color: "#0F172A", fontSize: 30, lineHeight: 36, fontFamily: "ChairoSans" },
     cardBody: { color: "#334155", fontSize: 14, lineHeight: 20, fontFamily: "ChairoSans" },
     helperText: { color: "#64748B", fontSize: 13, lineHeight: 19, fontFamily: "ChairoSans" },
-    footerRow: { flexDirection: "row", justifyContent: "center", columnGap: 8, marginTop: 4 },
-    footerText: { fontSize: 16, color: "#6B7280", fontFamily: "ChairoSans" },
-    footerLink: { fontSize: 16, color: "#FE8C00", fontFamily: "ChairoSans" },
+    footerRow: { flexDirection: "row", justifyContent: "center", alignItems: "center", columnGap: 8, rowGap: 4, marginTop: 4, flexWrap: "wrap" },
+    footerRowCompact: { justifyContent: "flex-start" },
+    footerText: { fontSize: 16, color: "#6B7280", fontFamily: "ChairoSans", flexShrink: 1, textAlign: "center" },
+    footerTextCompact: { width: "100%", textAlign: "left" },
+    footerLink: { fontSize: 16, color: "#FE8C00", fontFamily: "ChairoSans", flexShrink: 0 },
 });
 
 const heroPackshot = require("../../assets/images/vecteezy_fast-food-meal-with_25065315.png");
 
 const ForgotPasswordScreen = () => {
+    const { width } = useWindowDimensions();
+    const isCompact = width < 380;
     const { i18n } = useTranslation();
     const copy = getAuthScreenCopy(i18n.language).forgotPassword;
     const params = useLocalSearchParams<{ email?: string | string[] }>();
@@ -112,8 +116,8 @@ const ForgotPasswordScreen = () => {
 
             <CustomButton title={copy.submit} isLoading={isSubmitting} disabled={isSubmitting} onPress={submit} />
 
-            <View style={styles.footerRow}>
-                <Text style={styles.footerText}>{copy.backPrompt}</Text>
+            <View style={[styles.footerRow, isCompact ? styles.footerRowCompact : null]}>
+                <Text style={[styles.footerText, isCompact ? styles.footerTextCompact : null]}>{copy.backPrompt}</Text>
                 <Pressable onPress={() => router.replace("/sign-in")} hitSlop={6}>
                     <Text style={styles.footerLink}>{copy.backLink}</Text>
                 </Pressable>

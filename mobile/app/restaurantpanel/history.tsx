@@ -83,6 +83,7 @@ const RestaurantHistory = () => {
     const router = useRouter();
     const { width } = useWindowDimensions();
     const isDesktop = width >= 980;
+    const isPhone = width < 760;
 
     const { isAuthenticated } = useAuthStore();
     const [orders, setOrders] = useState<PanelOrder[]>([]);
@@ -209,7 +210,7 @@ const RestaurantHistory = () => {
                         onPress={handleExportCsv}
                         disabled={!filtered.length}
                         accessibilityLabel={t("a11y.exportCsv")}
-                        style={styles.exportButton}
+                        style={[styles.exportButton, isPhone ? styles.exportButtonPhone : null]}
                     />
                 </View>
 
@@ -287,13 +288,13 @@ const RestaurantHistory = () => {
                             style={({ pressed }) => [pressed ? { opacity: 0.95 } : null]}
                         >
                             <PanelCard compact style={styles.historyCard}>
-                                <View style={styles.rowTop}>
+                                <View style={[styles.rowTop, isPhone ? styles.rowTopPhone : null]}>
                                     <View style={{ flex: 1 }}>
                                         <Text style={styles.customer}>{order.customer}</Text>
                                         <Text style={styles.meta}>{formatDate(order.createdAtMs || order.time)}</Text>
                                         <Text style={styles.meta} numberOfLines={1}>#{order.id}</Text>
                                     </View>
-                                    <View style={styles.rowRight}>
+                                    <View style={[styles.rowRight, isPhone ? styles.rowRightPhone : null]}>
                                         <StatusPill status={String(order.status)} label={t(`orders.status.${String(order.status)}`)} />
                                         <Text style={styles.total}>{formatCurrency(Number(order.total || 0))}</Text>
                                     </View>
@@ -330,7 +331,7 @@ const RestaurantHistory = () => {
                     <View style={[styles.modalCard, isDesktop ? styles.modalCardDesktop : null]}>
                         {selectedOrder ? (
                             <>
-                                <View style={styles.modalHeader}>
+                                <View style={[styles.modalHeader, isPhone ? styles.modalHeaderPhone : null]}>
                                     <Text style={styles.modalTitle}>{t("history.orderDetails")}</Text>
                                     <StatusPill status={String(selectedOrder.status)} label={t(`orders.status.${String(selectedOrder.status)}`)} />
                                 </View>
@@ -363,7 +364,7 @@ const RestaurantHistory = () => {
                                     )}
                                 </ScrollView>
 
-                                <View style={styles.modalFooter}>
+                                <View style={[styles.modalFooter, isPhone ? styles.modalFooterPhone : null]}>
                                     <Text style={styles.modalTotal}>{formatCurrency(Number(selectedOrder.total || 0))}</Text>
                                     <PanelButton
                                         label={t("button.close")}
@@ -394,6 +395,10 @@ const styles = StyleSheet.create({
     exportButton: {
         minWidth: 160,
         flexGrow: 1,
+    },
+    exportButtonPhone: {
+        minWidth: 0,
+        width: "100%",
     },
     searchInput: {
         minHeight: 46,
@@ -447,9 +452,19 @@ const styles = StyleSheet.create({
         alignItems: "flex-start",
         gap: 10,
     },
+    rowTopPhone: {
+        flexDirection: "column",
+        gap: 8,
+    },
     rowRight: {
         alignItems: "flex-end",
         gap: 6,
+    },
+    rowRightPhone: {
+        width: "100%",
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
     },
     customer: {
         fontFamily: "ChairoSans",
@@ -500,6 +515,11 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
+    },
+    modalHeaderPhone: {
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: 8,
     },
     modalTitle: {
         fontFamily: "ChairoSans",
@@ -556,6 +576,10 @@ const styles = StyleSheet.create({
         gap: 10,
         alignItems: "center",
         justifyContent: "space-between",
+    },
+    modalFooterPhone: {
+        flexDirection: "column",
+        alignItems: "stretch",
     },
     modalTotal: {
         fontFamily: "ChairoSans",

@@ -351,8 +351,8 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
     const renderContent = () => {
         if (restaurantLoading || menuLoading) {
             return (
-                <View style={[styles.sheetWrap, { paddingTop: 40 }]}>
-                    <Text style={styles.heroTitle}>Loading...</Text>
+                <View style={[styles.sheetWrap, styles.loadingPlaceholderWrap]}>
+                    <View style={styles.loadingPlaceholderCard} />
                 </View>
             );
         }
@@ -608,6 +608,17 @@ const styles = StyleSheet.create({
     heroChipText: { fontFamily: "ChairoSans", fontSize: 12, color: THEME.accent },
 
     sheetWrap: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 22 },
+    loadingPlaceholderWrap: {
+        paddingTop: 40,
+        minHeight: 280,
+    },
+    loadingPlaceholderCard: {
+        height: 220,
+        borderRadius: 26,
+        backgroundColor: "rgba(255,255,255,0.42)",
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: "rgba(36,20,14,0.06)",
+    },
     sheetCard: {
         borderRadius: 26,
         backgroundColor: "rgba(255,255,255,0.82)",

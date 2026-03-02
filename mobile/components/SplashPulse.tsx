@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { Animated, Platform, StyleSheet, useWindowDimensions } from "react-native";
 import { Image } from "expo-image";
+import resolveAssetSource from "react-native/Libraries/Image/resolveAssetSource";
 
 import { useReducedMotion } from "@/src/lib/useReducedMotion";
 
@@ -11,8 +12,6 @@ type SplashPulseProps = {
     backgroundColor?: string;
 };
 
-const IMAGE_ASPECT_RATIO = 1024 / 1536;
-
 export default function SplashPulse({ visible, onFinished, imageSource, backgroundColor = "#FFF7EF" }: SplashPulseProps) {
     const reduceMotion = useReducedMotion();
     const { width, height } = useWindowDimensions();
@@ -20,10 +19,15 @@ export default function SplashPulse({ visible, onFinished, imageSource, backgrou
     const opacity = useRef(new Animated.Value(1)).current;
     const finishedRef = useRef(false);
     const isWeb = Platform.OS === "web";
-    const maxImageWidth = isWeb ? Math.min(width * 0.34, 420) : Math.min(width * 0.74, 320);
-    const maxImageHeight = isWeb ? Math.min(height * 0.72, 620) : Math.min(height * 0.6, 480);
-    const imageWidth = Math.min(maxImageWidth, maxImageHeight * IMAGE_ASPECT_RATIO);
-    const imageHeight = imageWidth / IMAGE_ASPECT_RATIO;
+    const resolvedSource = resolveAssetSource(imageSource);
+    const imageAspectRatio = resolvedSource?.width && resolvedSource?.height ? resolvedSource.width / resolvedSource.height : 1024 / 1536;
+    // Size the poster from both viewport axes so it stays prominent on phones
+    // and does not look undersized on shorter desktop browsers.
+    const maxImageWidth = isWeb ? Math.min(width * 0.4, 520) : Math.min(width * 0.94, 420);
+    const maxImageHeight = isWeb ? Math.min(height * 0.82, 760) : Math.min(height * 0.8, 700);
+    const imageWidth = Math.min(maxImageWidth, maxImageHeight * imageAspectRatio);
+    const imageHeight = imageWidth / imageAspectRatio;
+    const imageFit = isWeb ? "contain" : "cover";
 
     const pulseAnimation = useMemo(() => {
         // A "heartbeat" feel: quick up-down-up, then a short rest.
@@ -90,15 +94,15 @@ export default function SplashPulse({ visible, onFinished, imageSource, backgrou
         <Animated.View pointerEvents="auto" style={[styles.overlay, { backgroundColor, opacity }]}>
             <Animated.View
                 style={[
-                    styles.posterFrame,
+                    isWeb ? styles.posterFrame : styles.mobileFrame,
                     {
-                        width: imageWidth,
-                        height: imageHeight,
+                        width: isWeb ? imageWidth : width,
+                        height: isWeb ? imageHeight : height,
                         transform: [{ scale }],
                     },
                 ]}
             >
-                <Image source={imageSource} style={styles.fill} contentFit="contain" cachePolicy="memory-disk" />
+                <Image source={imageSource} style={styles.fill} contentFit={imageFit} cachePolicy="memory-disk" />
             </Animated.View>
         </Animated.View>
     );
@@ -117,5 +121,8 @@ const styles = StyleSheet.create({
         position: "relative",
         alignItems: "center",
         justifyContent: "center",
+    },
+    mobileFrame: {
+        ...StyleSheet.absoluteFillObject,
     },
 });

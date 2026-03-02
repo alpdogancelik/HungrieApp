@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, ViewStyle } from "react-native";
+import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, ViewStyle, useWindowDimensions } from "react-native";
 import { panelDesign } from "./panelDesign";
 
 type PanelButtonVariant = "primary" | "outline" | "ghost" | "danger" | "success";
@@ -47,6 +47,8 @@ export const PanelButton = ({
     style,
     accessibilityLabel,
 }: Props) => {
+    const { width } = useWindowDimensions();
+    const isPhone = width < 760;
     const palette = getButtonColors(variant);
     const isDisabled = disabled || loading;
     const [focused, setFocused] = useState(false);
@@ -61,6 +63,7 @@ export const PanelButton = ({
             accessibilityLabel={accessibilityLabel || label}
             style={({ pressed }) => [
                 styles.base,
+                isPhone ? styles.basePhone : null,
                 {
                     backgroundColor: palette.backgroundColor,
                     borderColor: palette.borderColor,
@@ -70,7 +73,7 @@ export const PanelButton = ({
                 style,
             ]}
         >
-            {loading ? <ActivityIndicator color={palette.textColor} /> : <Text style={[styles.label, { color: palette.textColor }]}>{label}</Text>}
+            {loading ? <ActivityIndicator color={palette.textColor} /> : <Text style={[styles.label, isPhone ? styles.labelPhone : null, { color: palette.textColor }]}>{label}</Text>}
         </Pressable>
     );
 };
@@ -79,11 +82,21 @@ const styles = StyleSheet.create({
     base: {
         minHeight: 46,
         borderRadius: panelDesign.radius.md,
-        borderWidth: 1,
+        borderWidth: 1.2,
         alignItems: "center",
         justifyContent: "center",
         paddingHorizontal: panelDesign.spacing.md,
         paddingVertical: panelDesign.spacing.sm,
+        shadowColor: "#D6B28A",
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 3 },
+        elevation: 1,
+    },
+    basePhone: {
+        minHeight: 42,
+        paddingHorizontal: panelDesign.spacing.sm,
+        paddingVertical: 8,
     },
     label: {
         fontFamily: "ChairoSans",
@@ -91,6 +104,10 @@ const styles = StyleSheet.create({
         lineHeight: 20,
         textAlign: "center",
         flexShrink: 1,
+    },
+    labelPhone: {
+        fontSize: 15,
+        lineHeight: 18,
     },
     focused: {
         shadowColor: panelDesign.colors.primary,

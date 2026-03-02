@@ -105,6 +105,7 @@ const styles = StyleSheet.create({
     filterRowPhone: {
         flexWrap: "nowrap",
         paddingRight: 4,
+        gap: 6,
     },
     filterPill: {
         borderWidth: 1,
@@ -122,9 +123,11 @@ const styles = StyleSheet.create({
     },
     filterPillPhone: {
         minHeight: 34,
-        minWidth: 88,
-        paddingHorizontal: 10,
+        minWidth: 76,
+        paddingHorizontal: 8,
         paddingVertical: 6,
+        gap: 6,
+        flexShrink: 0,
     },
     filterPillActive: {
         borderColor: "#EE7A14",
@@ -152,9 +155,10 @@ const styles = StyleSheet.create({
         backgroundColor: "#F2E9DC",
     },
     countBadgePhone: {
-        minWidth: 20,
+        minWidth: 24,
         height: 20,
         borderRadius: 10,
+        paddingHorizontal: 5,
     },
     countBadgeActive: {
         backgroundColor: "#FBD9B8",

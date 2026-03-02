@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 
 import useAuthStore from "@/store/auth.store";
+import { logout } from "@/lib/api";
 import { getOwnedRestaurantId } from "@/lib/firebaseAuth";
 import {
     subscribeRestaurantOrders,
@@ -43,7 +44,7 @@ const RestaurantPanel = () => {
     const isDesktop = width >= 980;
     const isPhone = width < 760;
 
-    const { isAuthenticated, user } = useAuthStore();
+    const { isAuthenticated, user, setIsAuthenticated, setUser } = useAuthStore();
     const [loading, setLoading] = useState(true);
     const [authorized, setAuthorized] = useState(false);
     const [restaurantId, setRestaurantId] = useState<string | null>(null);
@@ -258,6 +259,17 @@ const RestaurantPanel = () => {
 
     const sessionIdentity = user?.email || user?.name || t("common.na");
     const systemMessage = notificationsEnabled ? t("notifications.systemMessagesEnabled") : t("notifications.systemMessagesDisabled");
+    const handleSignOut = useCallback(async () => {
+        try {
+            await logout();
+        } catch {
+            // Best effort; still clear local auth state below.
+        } finally {
+            setUser(null);
+            setIsAuthenticated(false);
+            router.replace("/sign-in");
+        }
+    }, [router, setIsAuthenticated, setUser]);
 
     const reminderFeed = useMemo(
         () => reminderOrders.filter((order) => order.reminderPending).slice(0, 5),
@@ -418,7 +430,7 @@ const RestaurantPanel = () => {
                                         <View key={`rem-${order.id}`} style={styles.reminderRow}>
                                             <View style={{ flex: 1 }}>
                                                 <Text style={styles.reminderTitle}>
-                                                    {order.customer} · {formatReminderAgo(order.reminderRequestedAtMs)}
+                                                    {order.customer} - {formatReminderAgo(order.reminderRequestedAtMs)}
                                                 </Text>
                                                 <Text style={styles.reminderMeta} numberOfLines={1}>
                                                     #{order.id}
@@ -445,26 +457,32 @@ const RestaurantPanel = () => {
                             subtitle={t("section.notificationsSubtitle")}
                             titleIcon={<Feather name="bell" size={14} color="#B94900" />}
                         >
-                            <PanelButton
-                                label={t("button.enableNotifications", {
-                                    value: notificationsEnabled ? t("language.soundOn") : t("language.soundOff"),
-                                })}
-                                variant={notificationsEnabled ? "primary" : "secondary"}
-                                iconName={notificationsEnabled ? "bell" : "bell-off"}
-                                style={isPhone ? styles.compactActionButton : styles.fullWidthButton}
-                                onPress={() => {
-                                    void toggleNotifications();
-                                }}
-                                accessibilityLabel={t("a11y.toggleBrowserNotifications")}
-                            />
-                            <PanelButton
-                                label={t("button.testNotification")}
-                                variant="secondary"
-                                iconName="zap"
-                                style={isPhone ? styles.compactActionButton : styles.fullWidthButton}
-                                onPress={testNotification}
-                                accessibilityLabel={t("a11y.testNotification")}
-                            />
+                            <View style={styles.panelActionGroup}>
+                                <View style={styles.panelActionBox}>
+                                    <PanelButton
+                                        label={t("button.enableNotifications", {
+                                            value: notificationsEnabled ? t("language.soundOn") : t("language.soundOff"),
+                                        })}
+                                        variant={notificationsEnabled ? "primary" : "secondary"}
+                                        iconName={notificationsEnabled ? "bell" : "bell-off"}
+                                        style={isPhone ? styles.compactActionButton : styles.fullWidthButton}
+                                        onPress={() => {
+                                            void toggleNotifications();
+                                        }}
+                                        accessibilityLabel={t("a11y.toggleBrowserNotifications")}
+                                    />
+                                </View>
+                                <View style={styles.panelActionBox}>
+                                    <PanelButton
+                                        label={t("button.testNotification")}
+                                        variant="secondary"
+                                        iconName="zap"
+                                        style={isPhone ? styles.compactActionButton : styles.fullWidthButton}
+                                        onPress={testNotification}
+                                        accessibilityLabel={t("a11y.testNotification")}
+                                    />
+                                </View>
+                            </View>
                             <View style={styles.systemMessageChip}>
                                 <Feather name="message-circle" size={13} color="#627189" />
                                 <Text style={styles.systemMessageText}>{systemMessage}</Text>
@@ -476,22 +494,28 @@ const RestaurantPanel = () => {
                             subtitle={t("section.restaurantActionsSubtitle")}
                             titleIcon={<Feather name="settings" size={14} color="#B94900" />}
                         >
-                            <PanelButton
-                                label={t("button.manageMenu")}
-                                variant="secondary"
-                                iconName="grid"
-                                style={isPhone ? styles.compactActionButton : styles.fullWidthButton}
-                                onPress={() => router.push("/restaurantpanel/menu")}
-                                accessibilityLabel={t("a11y.manageMenu")}
-                            />
-                            <PanelButton
-                                label={t("button.editDetails")}
-                                variant="secondary"
-                                iconName="edit-2"
-                                style={isPhone ? styles.compactActionButton : styles.fullWidthButton}
-                                onPress={() => router.push("/restaurantpanel/details")}
-                                accessibilityLabel={t("a11y.editRestaurantDetails")}
-                            />
+                            <View style={styles.panelActionGroup}>
+                                <View style={styles.panelActionBox}>
+                                    <PanelButton
+                                        label={t("button.manageMenu")}
+                                        variant="secondary"
+                                        iconName="grid"
+                                        style={isPhone ? styles.compactActionButton : styles.fullWidthButton}
+                                        onPress={() => router.push("/restaurantpanel/menu")}
+                                        accessibilityLabel={t("a11y.manageMenu")}
+                                    />
+                                </View>
+                                <View style={styles.panelActionBox}>
+                                    <PanelButton
+                                        label={t("button.editDetails")}
+                                        variant="secondary"
+                                        iconName="edit-2"
+                                        style={isPhone ? styles.compactActionButton : styles.fullWidthButton}
+                                        onPress={() => router.push("/restaurantpanel/details")}
+                                        accessibilityLabel={t("a11y.editRestaurantDetails")}
+                                    />
+                                </View>
+                            </View>
                         </SectionCard>
 
                         <SectionCard title={t("section.session")} titleIcon={<Feather name="log-out" size={14} color="#C03855" />}>
@@ -506,7 +530,9 @@ const RestaurantPanel = () => {
                                         variant="destructive"
                                         iconName="log-out"
                                         style={isPhone ? styles.compactActionButton : styles.fullWidthButton}
-                                        onPress={() => router.replace("/sign-in")}
+                                        onPress={() => {
+                                            void handleSignOut();
+                                        }}
                                         accessibilityLabel={t("a11y.signOut")}
                                     />
                                 </SectionCard>
@@ -597,6 +623,16 @@ const styles = StyleSheet.create({
     compactActionButton: {
         width: "100%",
         minHeight: 42,
+    },
+    panelActionGroup: {
+        gap: 8,
+    },
+    panelActionBox: {
+        borderWidth: 1,
+        borderColor: "#E7DCCF",
+        borderRadius: 14,
+        backgroundColor: "#FFF9F2",
+        padding: 8,
     },
     reminderList: {
         gap: 8,

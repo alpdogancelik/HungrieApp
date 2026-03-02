@@ -7,10 +7,10 @@ const styles = StyleSheet.create({
     radioOuter: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, alignItems: "center", justifyContent: "center" },
     radioInner: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#FE8C00" },
     content: { flex: 1, rowGap: 4 },
-    labelRow: { flexDirection: "row", alignItems: "center", columnGap: 8 },
-    label: { fontFamily: "ChairoSans", fontSize: 16, color: "#0F172A" },
+    labelRow: { flexDirection: "row", alignItems: "center", columnGap: 8, flexWrap: "wrap", rowGap: 6, paddingRight: 8 },
+    label: { fontFamily: "ChairoSans", fontSize: 16, color: "#0F172A", flexShrink: 1 },
     badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: "rgba(254,140,0,0.1)" },
-    badgeText: { fontFamily: "ChairoSans", fontSize: 12, color: "#E56E00" },
+    badgeText: { fontFamily: "ChairoSans", fontSize: 11, color: "#E56E00" },
     description: { fontFamily: "ChairoSans", fontSize: 14, color: "#475569" },
     hint: { fontFamily: "ChairoSans", fontSize: 12, color: "#64748B" },
 });
