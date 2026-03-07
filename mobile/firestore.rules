@@ -8,6 +8,15 @@ service cloud.firestore {
       match /addresses/{addressId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
+
+      match /pushTokens/{tokenId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    match /restaurants/{restaurantId}/pushTokens/{tokenId} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.ownerId;
     }
 
     match /{document=**} {

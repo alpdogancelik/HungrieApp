@@ -207,7 +207,8 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
     const locale = i18n.language?.startsWith("tr") ? "tr" : "en";
 
     const restaurantParams = useMemo(() => (restaurantId ? restaurantId : undefined), [restaurantId]);
-    const menuParams = useMemo(() => (restaurantId ? { restaurantId } : undefined), [restaurantId]);
+    const menuParams = useMemo(() => (restaurantId ? restaurantId : undefined), [restaurantId]);
+    const categoryParams = useMemo(() => (restaurantId ? restaurantId : undefined), [restaurantId]);
 
     const fetchRestaurant = useCallback(
         async (targetId?: string) => {
@@ -237,10 +238,10 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
     }, [restaurant]);
 
     const fetchMenu = useCallback(
-        async (payload?: { restaurantId: string }) => {
-            const targetId = payload?.restaurantId ?? restaurantId;
-            if (!targetId) throw new Error("Restaurant id is missing.");
-            return getRestaurantMenu({ restaurantId: targetId });
+        async (targetId?: string) => {
+            const resolvedId = targetId ?? restaurantId;
+            if (!resolvedId) throw new Error("Restaurant id is missing.");
+            return getRestaurantMenu({ restaurantId: resolvedId });
         },
         [restaurantId],
     );
@@ -248,7 +249,7 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
     const {
         data: menu,
         loading: menuLoading,
-    } = useServerResource<MenuEntry[], { restaurantId: string } | undefined>({
+    } = useServerResource<MenuEntry[], string | undefined>({
         fn: fetchMenu,
         params: menuParams,
         immediate: true,
@@ -256,22 +257,17 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
     });
 
     const fetchCategories = useCallback(
-        async (payload?: { restaurantId: string }) => {
-            const targetId = payload?.restaurantId ?? restaurantId;
-            if (!targetId) throw new Error("Restaurant id is missing.");
-            return getRestaurantCategories(targetId);
+        async (targetId?: string) => {
+            const resolvedId = targetId ?? restaurantId;
+            if (!resolvedId) throw new Error("Restaurant id is missing.");
+            return getRestaurantCategories(resolvedId);
         },
         [restaurantId],
     );
 
-    const { data: categories } = useServerResource<Category[], string | { restaurantId: string }>({
-        fn: async (payload?: string | { restaurantId: string }) => {
-            const targetId =
-                typeof payload === "string" ? payload : payload?.restaurantId ?? restaurantId;
-            if (!targetId) throw new Error("Restaurant id is missing.");
-            return fetchCategories({ restaurantId: targetId });
-        },
-        params: restaurantId ? { restaurantId } : undefined,
+    const { data: categories } = useServerResource<Category[], string | undefined>({
+        fn: fetchCategories,
+        params: categoryParams,
         immediate: true,
         skipAlert: true,
     });

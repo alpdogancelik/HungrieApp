@@ -95,7 +95,7 @@ function RootLayoutBase() {
             try {
                 const registered = await registerPushToken();
                 if (!registered || cancelled) return;
-                const registrationKey = `restaurant::${registered.token}`;
+                const registrationKey = `${registered.token}::${registered.scopes.sort().join(",")}`;
                 if (pushRegistrationKeyRef.current === registrationKey) return;
                 pushRegistrationKeyRef.current = registrationKey;
             } catch (error) {
@@ -127,6 +127,7 @@ function RootLayoutBase() {
 
     useEffect(() => {
         if (!isAuthenticated) return;
+        if (isRemotePushSupported()) return;
         const resolvedUserId = auth?.currentUser?.uid ?? user?.accountId ?? user?.id ?? user?.$id ?? null;
         if (!resolvedUserId) return;
 

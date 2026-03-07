@@ -243,18 +243,27 @@ export const sendPasswordReset = async (email: string) => {
     }
 };
 
-export const getOwnedRestaurantId = async () => {
+export const getOwnedRestaurantId = async ({
+    includeInactive = true,
+}: {
+    includeInactive?: boolean;
+} = {}) => {
     if (!firebaseConfigured || !firestore) return null;
     const owner = auth?.currentUser?.uid;
     if (!owner) return null;
-    const q = query(
-        collection(requireDB(), FIREBASE_COLLECTIONS.restaurants),
-        where("ownerId", "==", owner),
-        where("isActive", "==", true),
-    );
-    const snap = await getDocs(q).catch(() => null);
+    const baseQuery = query(collection(requireDB(), FIREBASE_COLLECTIONS.restaurants), where("ownerId", "==", owner));
+    const snap = await getDocs(baseQuery).catch(() => null);
     if (!snap || snap.empty) return null;
-    return snap.docs[0].id;
+
+    if (!includeInactive) {
+        const activeDoc = snap.docs.find((snapshot) => snapshot.data()?.isActive !== false);
+        return activeDoc?.id ?? null;
+    }
+
+    // Prefer an active restaurant when available, but keep inactive ownership detectable
+    // so restaurant accounts are not treated like regular customer accounts.
+    const preferredDoc = snap.docs.find((snapshot) => snapshot.data()?.isActive !== false) ?? snap.docs[0];
+    return preferredDoc?.id ?? null;
 };
 
 export const updateUserProfile = async ({
@@ -434,4 +443,3 @@ export const updateOrderStatus = async (orderId: string, status: string) => {
     await updateDoc(ref, { status, updatedAt: Date.now() });
     return { id: orderId, status };
 };
-

@@ -26,9 +26,11 @@ npm run deploy
 This deploys:
 - `notifyRestaurantOnNewOrder` (triggered on `orders/{orderId}` create)
 - `notifyRestaurantOnPendingTransition` (triggered when an existing order status changes to `pending`)
+- `notifyUserOnOrderStatusTransition` (triggered when an existing order status changes to a user-visible status)
 
 ## Notes
 
 - The function sends Expo push notifications to tokens stored at:
   - `restaurants/{restaurantId}/pushTokens/{tokenId}`
+  - `users/{userId}/pushTokens/{tokenId}`
 - Invalid tokens (`DeviceNotRegistered`, `InvalidCredentials`) are removed automatically.

@@ -76,6 +76,14 @@ const mergeById = <T,>(items: T[], getId: (item: T) => string) => {
     return Array.from(map.values());
 };
 
+const normalizeId = (value: unknown) => String(value ?? "").trim();
+
+const getRestaurantIdFromRestaurant = (restaurant: any) =>
+    normalizeId(restaurant?.id ?? restaurant?.$id ?? restaurant?.restaurantId ?? restaurant?.restaurant_id);
+
+const getRestaurantIdFromMenu = (item: any) =>
+    normalizeId(item?.restaurantId ?? item?.restaurant_id ?? item?.restaurant?.id ?? item?.restaurant?.$id);
+
 const hydrateResults = (items: MenuItem[], restaurants: any[]): SearchResult[] => {
     const restaurantMap = new Map<string, any>();
     restaurants.forEach((restaurant) => {
@@ -237,7 +245,7 @@ export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptio
             try {
                 const [menuResult, restaurantResult] = await Promise.allSettled([
                     getMenu({ query: term || undefined }),
-                    getRestaurants(term ? { search: term } : undefined),
+                    getRestaurants(),
                 ]);
 
                 if (requestRef.current !== requestId) return;
@@ -258,7 +266,18 @@ export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptio
                     (item) => String((item as any).id ?? (item as any).$id ?? (item as any).name ?? ""),
                 );
 
-                const visibleMenus = await filterMenuForCustomer(mergedMenus);
+                const activeRestaurantIds = new Set(
+                    mergedRestaurants
+                        .map((restaurant) => getRestaurantIdFromRestaurant(restaurant))
+                        .filter(Boolean),
+                );
+
+                const activeRestaurantMenus = mergedMenus.filter((item) => {
+                    const restaurantId = getRestaurantIdFromMenu(item);
+                    return Boolean(restaurantId) && activeRestaurantIds.has(restaurantId);
+                });
+
+                const visibleMenus = await filterMenuForCustomer(activeRestaurantMenus);
 
                 setRestaurants(mergedRestaurants);
                 setAllResults(hydrateResults(visibleMenus, mergedRestaurants));
