@@ -36,7 +36,8 @@ export const ORDER_STATUS_COLORS: Record<
 const formatTimestamp = (value?: string) => {
     if (!value) return "Az önce güncellendi";
     const date = new Date(value);
-    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+    if (Number.isNaN(date.getTime())) return "Az önce güncellendi";
+    return `${date.toISOString().slice(0, 16).replace("T", " ")} UTC`;
 };
 
 type Props = {
@@ -50,7 +51,14 @@ const OrderCard = ({ order, variant = "restaurant", onAdvance, disableActions = 
     const status = ((order.status as OrderStatus) || "pending") as OrderStatus;
     const badge = ORDER_STATUS_COLORS[status];
     const nextStatus = ORDER_STATUS_FLOW[status];
-    const orderId = useMemo(() => String(order.$id ?? order.id ?? Date.now()), [order.$id, order.id]);
+    const orderId = useMemo(() => {
+        const directId = order.$id ?? order.id;
+        if (directId !== undefined && directId !== null && String(directId).trim()) return String(directId);
+        const stableParts = [order.customerName, order.updatedAt, order.createdAt, order.total]
+            .map((value) => (value === undefined || value === null ? "" : String(value).trim()))
+            .filter(Boolean);
+        return `order-${stableParts.join("-") || "unknown"}`;
+    }, [order.$id, order.id, order.customerName, order.updatedAt, order.createdAt, order.total]);
     const items = order.orderItems ?? [];
     const total = Number(order.total || 0).toFixed(2);
     const headerTitle = variant === "restaurant" ? order.customerName || "Walk-in guest" : order.restaurant?.name || "Hungrie";

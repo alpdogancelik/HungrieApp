@@ -38,6 +38,12 @@ const formatCurrency = (value?: number | string) => {
     if (Number.isNaN(amount)) return "TRY 0.00";
     return `TRY ${amount.toFixed(2)}`;
 };
+const formatPlacedAt = (value?: number) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return `${date.toISOString().slice(0, 16).replace("T", " ")} UTC`;
+};
 
 const humanizeStatus = (value: string) =>
     value
@@ -63,7 +69,7 @@ const mapAdminOrder = (order: any): AdminOrder => {
     const totalRaw = order.totalPrice ?? order.total ?? order.amount ?? 0;
 
     return {
-        id: String(order.id ?? order.orderId ?? order.$id ?? Date.now()),
+        id: String(order.id ?? order.orderId ?? order.$id ?? `order-${extractMillis(order.createdAt ?? order.updatedAt) ?? "unknown"}`),
         customerName: order.customerName || customer.name || "Walk-in customer",
         customerEmail: order.customerEmail || customer.email,
         customerWhatsapp: order.customerWhatsapp || customer.whatsappNumber || customer.whatsapp || order.whatsappNumber || null,
@@ -228,7 +234,7 @@ const SuperAdminDashboard = () => {
                             <View className="items-end">
                                 <Text className="text-xs uppercase tracking-wide text-dark-60">Placed</Text>
                                 <Text className="text-sm text-dark-80">
-                                    {new Date(order.createdAt).toLocaleString()}
+                                    {formatPlacedAt(order.createdAt)}
                                 </Text>
                             </View>
                         )}
@@ -320,4 +326,3 @@ const SuperAdminDashboard = () => {
 };
 
 export default SuperAdminDashboard;
-

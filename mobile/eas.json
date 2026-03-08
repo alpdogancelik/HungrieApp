@@ -22,6 +22,12 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "alpdogan.celik@icloud.com",
+        "ascAppId": "6759683384",
+        "appleTeamId": "PJCHJMZ5DN"
+      }
+    }
   }
 }

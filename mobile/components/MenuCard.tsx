@@ -21,6 +21,15 @@ const showToast = (message: string) => {
 };
 
 const formatPrice = (value?: number | string) => `TRY ${Number(value || 0).toFixed(2)}`;
+const toStableMenuId = (item: any) => {
+    const directId = item?.$id ?? item?.id;
+    if (directId !== undefined && directId !== null && String(directId).trim()) return String(directId);
+
+    const parts = [item?.name, item?.price, item?.image_url ?? item?.imageUrl, item?.description]
+        .map((value) => (value === undefined || value === null ? "" : String(value).trim().toLowerCase()))
+        .filter(Boolean);
+    return `menu-${parts.join("-") || "unknown"}`;
+};
 
 const MenuCard = ({ item, onPress, accentColor = "#FE8C00" }: MenuCardProps) => {
     const { $id, image_url, imageUrl: fallbackImageUrl, name, price } = item || {};
@@ -31,8 +40,7 @@ const MenuCard = ({ item, onPress, accentColor = "#FE8C00" }: MenuCardProps) => 
             : undefined;
     const { addItem } = useCartStore();
     const numericPrice = Number(price || 0);
-    const fallbackProductId = $id ?? item?.id ?? name;
-    const productId = fallbackProductId ? String(fallbackProductId) : `menu-${Date.now()}`;
+    const productId = toStableMenuId(item);
     const { average, count, currentUserReview, submitReview, isSubmitting } = useProductReviews(productId);
     const [sheetVisible, setSheetVisible] = useState(false);
     const averageLabel = useMemo(() => average.toFixed(1), [average]);
@@ -43,14 +51,14 @@ const MenuCard = ({ item, onPress, accentColor = "#FE8C00" }: MenuCardProps) => 
 
     const handleAdd = useCallback(() => {
         addItem({
-            id: String($id || item?.id || `menu-${Date.now()}`),
+            id: productId,
             name: name || "Menu Item",
             price: numericPrice || 0,
             image_url: imageUrl || "",
             restaurantId: (item as any).restaurantId || (item as any).restaurant_id,
             customizations: [],
         });
-    }, [$id, addItem, imageUrl, item?.id, name, numericPrice, item?.restaurantId]);
+    }, [addItem, imageUrl, name, numericPrice, item?.restaurantId, productId]);
 
     const handleSubmitReview = useCallback(
         async ({ rating, comment }: { rating: 1 | 2 | 3 | 4 | 5; comment?: string }) => {
