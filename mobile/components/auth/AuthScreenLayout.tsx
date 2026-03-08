@@ -6,7 +6,6 @@ import {
     StyleSheet,
     Text,
     View,
-    useWindowDimensions,
     type ImageSourcePropType,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -17,6 +16,7 @@ import Animated, { Easing, FadeInDown, FadeInUp } from "react-native-reanimated"
 
 import LanguageToggle from "@/components/LanguageToggle";
 import { useReducedMotion } from "@/src/lib/useReducedMotion";
+import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 
 type AuthScreenLayoutProps = {
     heroTitle: string;
@@ -111,9 +111,9 @@ const AuthScreenLayout = ({
 }: AuthScreenLayoutProps) => {
     const insets = useSafeAreaInsets();
     const reduceMotion = useReducedMotion();
-    const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+    const { width: windowWidth, height: windowHeight } = useStableWindowDimensions();
     const isWeb = Platform.OS === "web";
-    const contentWidth = isWeb ? Math.min(windowWidth, CONTENT_MAX_WIDTH) : windowWidth;
+    const contentWidth = isWeb ? Math.min(Math.max(windowWidth, 320), CONTENT_MAX_WIDTH) : windowWidth;
     const isCompactHeight = windowHeight < 760;
     const heroDirection = contentWidth < 380 ? "column" : "row";
     const heroMediaSize = Math.min(200, Math.max(150, Math.round(contentWidth * 0.38)));
@@ -253,4 +253,3 @@ const AuthScreenLayout = ({
 };
 
 export default AuthScreenLayout;
-

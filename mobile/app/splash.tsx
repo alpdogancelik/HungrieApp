@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
@@ -20,6 +20,7 @@ import { getOwnedRestaurantId } from "@/lib/firebaseAuth";
 import { isAuthRequired } from "@/lib/runtimeEnv";
 import useAuthStore from "@/store/auth.store";
 import { useReducedMotion } from "@/src/lib/useReducedMotion";
+import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 
 import brandMark from "../assets/images/hungrie-mark.png";
 
@@ -35,9 +36,9 @@ export default function Splash() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const reduceMotion = useReducedMotion();
-    const { width: windowWidth } = useWindowDimensions();
+    const { width: windowWidth } = useStableWindowDimensions();
     const isWeb = Platform.OS === "web";
-    const contentWidth = isWeb ? Math.min(windowWidth, CONTENT_MAX_WIDTH) : windowWidth;
+    const contentWidth = isWeb ? Math.min(Math.max(windowWidth, 320), CONTENT_MAX_WIDTH) : windowWidth;
 
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 

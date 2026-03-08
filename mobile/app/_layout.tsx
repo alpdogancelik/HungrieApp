@@ -3,9 +3,9 @@ import { SplashScreen, Stack, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import Constants from "expo-constants";
 import * as Sentry from "@sentry/react-native";
-import { AppState, Platform, Text, TextInput, View, useWindowDimensions } from "react-native";
+import { AppState, Platform, Text, TextInput, View } from "react-native";
 import { Image } from "expo-image";
-import resolveAssetSource from "react-native/Libraries/Image/resolveAssetSource";
+import { Asset } from "expo-asset";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import useAuthStore from "@/store/auth.store";
@@ -19,6 +19,7 @@ import CartLockNotice from "@/components/CartLockNotice";
 import SplashPulse from "@/components/SplashPulse";
 import { registerPushToken } from "@/lib/registerPushToken";
 import { playOrderNotificationSound, unloadOrderNotificationSound } from "@/src/features/notifications/orderSound";
+import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 import webSplashImage from "../assets/hungriesplash.png";
 import mobileSplashImage from "../assets/hungriesplashmobile.png";
 
@@ -44,16 +45,16 @@ function RootLayoutBase() {
     const pushRegistrationKeyRef = useRef<string | null>(null);
     const didHideNativeSplashRef = useRef(false);
     const [launchSplashVisible, setLaunchSplashVisible] = useState(true);
-    const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+    const { width: windowWidth, height: windowHeight } = useStableWindowDimensions();
     const isWeb = Platform.OS === "web";
     const splashImage = isWeb ? webSplashImage : mobileSplashImage;
-    const resolvedSplashSource = resolveAssetSource(splashImage);
+    const resolvedSplashSource = Asset.fromModule(splashImage);
     const splashAspectRatio =
         resolvedSplashSource?.width && resolvedSplashSource?.height
             ? resolvedSplashSource.width / resolvedSplashSource.height
             : 1024 / 1536;
     const WEB_MAX_WIDTH = 960;
-    const contentWidth = isWeb ? Math.min(windowWidth, WEB_MAX_WIDTH) : windowWidth;
+    const contentWidth = isWeb ? Math.min(Math.max(windowWidth, 320), WEB_MAX_WIDTH) : windowWidth;
     const splashPreviewWidth = Math.min(
         isWeb ? Math.min(windowWidth * 0.4, 520) : Math.min(windowWidth * 0.94, 420),
         (isWeb ? Math.min(windowHeight * 0.82, 760) : Math.min(windowHeight * 0.8, 700)) * splashAspectRatio,
