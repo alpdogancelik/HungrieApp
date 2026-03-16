@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "be624db8-7de1-4b8b-bd86-605431679967"
+      }
+    },
+    "android": {
+      "package": "com.hungrie.app"
+    }
+  }
+}
