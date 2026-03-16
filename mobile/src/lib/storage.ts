@@ -27,6 +27,14 @@ const webStorage = {
             /* noop */
         }
     },
+    async removeItem(key: string): Promise<void> {
+        if (!hasWindowStorage) return;
+        try {
+            window.localStorage.removeItem(key);
+        } catch {
+            /* noop */
+        }
+    },
 };
 
 export const storage = {
@@ -46,6 +54,15 @@ export const storage = {
         }
         if (await secureStoreAvailablePromise) {
             await SecureStore.setItemAsync(key, value);
+        }
+    },
+    async removeItem(key: string): Promise<void> {
+        if (isWeb) {
+            await webStorage.removeItem(key);
+            return;
+        }
+        if (await secureStoreAvailablePromise) {
+            await SecureStore.deleteItemAsync(key);
         }
     },
 };

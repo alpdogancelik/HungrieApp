@@ -31,6 +31,7 @@ import {
     createMenuItem as createMenuItemCore,
 } from "./firebase";
 import { filterMenuForCustomer, filterRestaurantMenuForCustomer } from "./menuVisibility";
+import { unregisterPushToken } from "./registerPushToken";
 import i18n from "@/src/lib/i18n";
 import { getAuthErrorMessage } from "@/src/features/auth/authCopy";
 
@@ -227,7 +228,10 @@ export const getCurrentUser = async () => {
     return verified ? syncProfile(verified) : null;
 };
 
-export const signOut = async () => firebaseSignOut(requireAuth());
+export const signOut = async () => {
+    await unregisterPushToken().catch(() => null);
+    return firebaseSignOut(requireAuth());
+};
 
 export const sendPasswordReset = async (email: string) => {
     const trimmed = email.trim();

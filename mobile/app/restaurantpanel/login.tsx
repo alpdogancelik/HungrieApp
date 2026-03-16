@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 
@@ -14,12 +14,12 @@ export default function RestaurantPanelLogin() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
+    const didNavigateRef = useRef(false);
 
     const handleLogin = () => {
         if (!email || !password) return;
         setLoading(true);
         login(email.trim(), password.trim())
-            .then(() => router.replace("/restaurantpanel"))
             .catch((err: any) => {
                 Alert.alert(t("login.failedTitle"), err?.message || t("login.failedBody"));
             })
@@ -27,9 +27,15 @@ export default function RestaurantPanelLogin() {
     };
 
     useEffect(() => {
-        if (session) {
+        if (!session) return;
+        if (didNavigateRef.current) return;
+
+        didNavigateRef.current = true;
+        const frame = requestAnimationFrame(() => {
             router.replace("/restaurantpanel");
-        }
+        });
+
+        return () => cancelAnimationFrame(frame);
     }, [session, router]);
 
     if (session) return null;

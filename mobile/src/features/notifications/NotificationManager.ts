@@ -1,12 +1,14 @@
+import Constants from "expo-constants";
 import { Platform } from "react-native";
 import * as Device from "expo-device";
-import Constants from "expo-constants";
 
 type PushPlatform = "ios" | "android" | "web" | "unknown";
+type PushProvider = "apns" | "fcm" | "web" | "unknown";
 
 export type PushTokenInfo = {
     token: string;
     platform: PushPlatform;
+    provider: PushProvider;
 };
 
 type NotificationPayload = Record<string, unknown>;
@@ -62,10 +64,15 @@ const notificationHandler = {
     }),
 };
 
-const notificationsModule = getNotificationsModule();
-if (notificationsModule) {
+let notificationHandlerConfigured = false;
+
+export const ensureNotificationHandler = () => {
+    if (notificationHandlerConfigured) return;
+    const notificationsModule = getNotificationsModule();
+    if (!notificationsModule) return;
     notificationsModule.setNotificationHandler(notificationHandler);
-}
+    notificationHandlerConfigured = true;
+};
 
 const ensureAndroidChannel = async () => {
     if (Platform.OS !== "android") return;
@@ -133,26 +140,17 @@ export const requestPermissions = async (): Promise<boolean> => {
     return granted;
 };
 
-const resolveProjectId = () => {
-    const easProjectId =
-        Constants?.expoConfig?.extra?.eas?.projectId ||
-        Constants?.expoConfig?.extra?.projectId ||
-        Constants?.easConfig?.projectId;
-    return easProjectId;
-};
-
 export const getPushToken = async (): Promise<PushTokenInfo | null> => {
     if (!isRemotePushSupported()) return null;
     const Notifications = getNotificationsModule();
     if (!Notifications) return null;
     const permissions = await Notifications.getPermissionsAsync();
     if (permissions.status !== "granted") return null;
-    const projectId = resolveProjectId();
-    const response = await Notifications.getExpoPushTokenAsync(
-        projectId ? { projectId } : undefined,
-    );
-    const platform: PushPlatform = Platform.OS === "ios" ? "ios" : Platform.OS === "android" ? "android" : "unknown";
-    return { token: response.data, platform };
+    const response = await Notifications.getDevicePushTokenAsync();
+    const platform: PushPlatform =
+        response.type === "ios" ? "ios" : response.type === "android" ? "android" : Platform.OS === "ios" ? "ios" : Platform.OS === "android" ? "android" : "unknown";
+    const provider: PushProvider = platform === "ios" ? "apns" : platform === "android" ? "fcm" : "unknown";
+    return { token: String(response.data || ""), platform, provider };
 };
 
 export const notifyLocal = async (title: string, body: string, options: LocalNotificationOptions = {}) => {
@@ -235,6 +233,7 @@ export const NotificationManager = {
     HUNGRIE_SOUND_FILE,
     HUNGRIE_SOUND_ANDROID,
     SYSTEM_DEFAULT_SOUND,
+    ensureNotificationHandler,
     ensureNotificationChannels,
     requestPermissions,
     getPushToken,

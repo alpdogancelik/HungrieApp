@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform } from "react-native";
 
+import { NotificationManager } from "@/src/features/notifications/NotificationManager";
 import type { PanelOrder } from "@/src/features/restaurantPanel/model/panelOrders";
 import { storage } from "@/src/lib/storage";
 import { SOUND_BLOCKED_ERROR, useNotificationSound } from "@/src/hooks/useNotificationSound";
@@ -21,6 +22,7 @@ const STORAGE_KEYS = {
 };
 
 const isWeb = Platform.OS === "web";
+const isNative = !isWeb;
 const THROTTLE_MS = 10_000;
 
 const getLastSeenKey = (restaurantId: string | null) =>
@@ -84,14 +86,30 @@ export const useOrderNotifications = ({ restaurantId, orders, t }: UseOrderNotif
         if (!force && now - lastNotifyAtRef.current < THROTTLE_MS) return;
         lastNotifyAtRef.current = now;
 
+        const title = t("toast.newOrderTitle");
         const message = newCount === 1 ? t("toast.newOrderSingle") : t("toast.newOrderMulti", { count: newCount });
+        triggerBrowserNotification(title, message);
+        if (isNative && notificationsEnabled) {
+            await NotificationManager.notifyLocal(title, message, {
+                withSound: true,
+                channelId: NotificationManager.NEW_ORDER_CHANNEL_ID,
+                soundName: NotificationManager.HUNGRIE_SOUND_FILE,
+                data: {
+                    type: "restaurant_new_order",
+                    restaurantId: restaurantId || undefined,
+                    newOrderCount: newCount,
+                },
+            });
+            showToast(message);
+            return;
+        }
+
         showToast(message);
         const soundResult = await play();
         if (soundResult.blocked) {
             showToast(t("toast.soundBlocked"));
         }
-        triggerBrowserNotification(t("toast.newOrderTitle"), message);
-    }, [play, showToast, t, triggerBrowserNotification]);
+    }, [notificationsEnabled, play, restaurantId, showToast, t, triggerBrowserNotification]);
 
     const dismissToast = useCallback(() => {
         setToast((prev) => ({ ...prev, visible: false }));
@@ -99,6 +117,13 @@ export const useOrderNotifications = ({ restaurantId, orders, t }: UseOrderNotif
 
     const toggleNotifications = useCallback(async () => {
         const next = !notificationsEnabled;
+        if (isNative && next) {
+            const granted = await NotificationManager.requestPermissions();
+            setNotificationsEnabled(granted);
+            await storage.setItem(STORAGE_KEYS.notificationsEnabled, granted ? "1" : "0");
+            return;
+        }
+
         setNotificationsEnabled(next);
         await storage.setItem(STORAGE_KEYS.notificationsEnabled, next ? "1" : "0");
 
@@ -124,7 +149,14 @@ export const useOrderNotifications = ({ restaurantId, orders, t }: UseOrderNotif
                 storage.getItem(getLastSeenKey(restaurantId)),
             ]);
             if (!mounted) return;
-            setNotificationsEnabled(notifRaw === "1");
+            let resolvedNotificationsEnabled = notifRaw === "1";
+            if (isNative && notifRaw === null) {
+                const granted = await NotificationManager.requestPermissions();
+                if (!mounted) return;
+                resolvedNotificationsEnabled = granted;
+                await storage.setItem(STORAGE_KEYS.notificationsEnabled, granted ? "1" : "0");
+            }
+            setNotificationsEnabled(resolvedNotificationsEnabled);
             seenPendingIdsRef.current = new Set(parseIds(seenRaw));
             hasBaselineRef.current = false;
             setHighlightedOrderIds([]);

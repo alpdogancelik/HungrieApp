@@ -12,7 +12,7 @@
     "ios": {
       "icon": "./assets/app-icon/app-icon-1024.png",
       "supportsTablet": true,
-      "buildNumber": "5",
+      "buildNumber": "12",
       "bundleIdentifier": "com.hungrie.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,

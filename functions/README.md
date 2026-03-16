@@ -30,7 +30,14 @@ This deploys:
 
 ## Notes
 
-- The function sends Expo push notifications to tokens stored at:
+- The functions send direct native push notifications to tokens stored at:
   - `restaurants/{restaurantId}/pushTokens/{tokenId}`
   - `users/{userId}/pushTokens/{tokenId}`
-- Invalid tokens (`DeviceNotRegistered`, `InvalidCredentials`) are removed automatically.
+- Android delivery uses Firebase Admin Messaging with native FCM tokens.
+- iOS delivery uses APNs directly. Configure these function environment variables before deploy:
+  - `APNS_KEY_ID`
+  - `APNS_TEAM_ID`
+  - `APNS_PRIVATE_KEY`
+  - `APNS_BUNDLE_ID`
+  - `APNS_USE_SANDBOX` (`true` for development/sandbox builds, otherwise omit or set `false`)
+- Invalid APNs/FCM tokens are removed automatically.

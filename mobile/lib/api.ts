@@ -7,6 +7,7 @@ import {
     signOut as firebaseSignOut,
 } from "./firebaseAuth";
 import { firebaseConfigured, firestore, FIREBASE_COLLECTIONS } from "./firebase";
+import { unregisterPushToken } from "./registerPushToken";
 import { filterRestaurantMenuForCustomer } from "./menuVisibility";
 import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 
@@ -157,6 +158,8 @@ export const signIn = async ({ email, password }: { email: string; password: str
 };
 
 export const logout = async () => {
+    await unregisterPushToken().catch(() => null);
+
     if (!shouldBypassNetwork) {
         try {
             await jsonFetch('/api/logout', { method: 'POST' });

@@ -17,7 +17,7 @@ import { startOrderStatusWatcher } from "@/src/features/notifications/orderStatu
 import { auth } from "@/lib/firebase";
 import CartLockNotice from "@/components/CartLockNotice";
 import SplashPulse from "@/components/SplashPulse";
-import { registerPushToken } from "@/lib/registerPushToken";
+import { registerPushToken, unregisterPushToken } from "@/lib/registerPushToken";
 import { playOrderNotificationSound, unloadOrderNotificationSound } from "@/src/features/notifications/orderSound";
 import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 import webSplashImage from "../assets/hungriesplash.png";
@@ -31,9 +31,6 @@ if (enableSentry) {
     Sentry.init({
         dsn: sentryDsn,
         sendDefaultPii: true,
-        replaysSessionSampleRate: 1,
-        replaysOnErrorSampleRate: 1,
-        integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
     });
 }
 
@@ -83,6 +80,10 @@ function RootLayoutBase() {
     }, [fetchAuthenticatedUser]);
 
     useEffect(() => {
+        NotificationManager.ensureNotificationHandler();
+    }, []);
+
+    useEffect(() => {
         if (Platform.OS !== "android") return;
         NotificationManager.ensureNotificationChannels().catch((error) => {
             console.warn("[notifications] Failed to initialize channels", error);
@@ -111,6 +112,15 @@ function RootLayoutBase() {
             cancelled = true;
         };
     }, [isAuthenticated, user]);
+
+    useEffect(() => {
+        if (isAuthenticated) return;
+        if (!isRemotePushSupported()) return;
+
+        unregisterPushToken().catch((error) => {
+            console.warn("[notifications] Failed to unregister push token", error);
+        });
+    }, [isAuthenticated]);
 
     useEffect(() => {
         if (!isAuthenticated) return;
@@ -247,9 +257,5 @@ function RootLayoutBase() {
 }
 
 const RootLayout = enableSentry ? Sentry.wrap(RootLayoutBase) : RootLayoutBase;
-
-if (enableSentry) {
-    Sentry.showFeedbackWidget();
-}
 
 export default RootLayout;

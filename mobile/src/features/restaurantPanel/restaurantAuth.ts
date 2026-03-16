@@ -6,6 +6,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, firestore } from "@/lib/firebase";
+import { unregisterPushToken } from "@/lib/registerPushToken";
 
 export type RestaurantSession = {
     userId: string;
@@ -64,6 +65,7 @@ export const signInRestaurant = async (email: string, password: string): Promise
 
 export const signOutRestaurant = async () => {
     ensureFirebase();
+    await unregisterPushToken().catch(() => null);
     await signOut(auth!);
 };
 
