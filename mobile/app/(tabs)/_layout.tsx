@@ -14,6 +14,7 @@ const WEB_MAX_WIDTH = 960;
 const BAR_HEIGHT = 74;
 const ACTIVE_ICON_COLOR = "#F28C28";
 const INACTIVE_ICON_COLOR = "#8A8178";
+const USE_NATIVE_DRIVER = Platform.OS !== "web";
 
 function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
     const { width } = useStableWindowDimensions();
@@ -48,7 +49,7 @@ function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
         Animated.timing(translateX, {
             toValue: tabW * activeIndex + (tabW - bubbleSize) / 2,
             duration: 200,
-            useNativeDriver: true,
+            useNativeDriver: USE_NATIVE_DRIVER,
         }).start();
     }, [activeIndex, tabW, translateX]);
 
@@ -135,7 +136,7 @@ export default function TabLayout() {
             }}
         >
             <Tabs.Screen name="home" />
-            <Tabs.Screen name="search" />
+            <Tabs.Screen name="search/index" options={{ title: "Search" }} />
             <Tabs.Screen name="cart" />
             <Tabs.Screen name="profile" />
         </Tabs>

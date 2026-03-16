@@ -168,6 +168,7 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
     const [cancelWindowRemaining, setCancelWindowRemaining] = useState(CANCEL_WINDOW_SECONDS);
 
     const spinner = useRef(new Animated.Value(0)).current;
+    const useNativeDriver = Platform.OS !== "web";
     const prevStatus = useRef<OrderStatus>("pending");
     const isCancelWindowActive = orderStatus === "pending" && cancelWindowRemaining > 0 && !autoCanceled;
     const isReminderLocked = orderStatus === "pending" && reminderUnlockRemaining > 0;
@@ -194,12 +195,12 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
                 toValue: 1,
                 duration: 2000,
                 easing: Easing.linear,
-                useNativeDriver: true,
+                useNativeDriver,
             }),
         );
         loop.start();
         return () => loop.stop();
-    }, [spinner]);
+    }, [spinner, useNativeDriver]);
 
     useEffect(() => {
         if (orderStatus !== "pending") {

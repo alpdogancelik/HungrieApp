@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { SplashScreen, Stack, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
+import { Asset } from "expo-asset";
 import Constants from "expo-constants";
 import * as Sentry from "@sentry/react-native";
 import { AppState, Platform, Text, TextInput, View } from "react-native";
 import { Image } from "expo-image";
-import resolveAssetSource from "react-native/Libraries/Image/resolveAssetSource";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import useAuthStore from "@/store/auth.store";
@@ -50,7 +50,7 @@ function RootLayoutBase() {
     const safeWindowWidth = windowWidth > 0 ? windowWidth : isWeb ? 1440 : 390;
     const safeWindowHeight = windowHeight > 0 ? windowHeight : isWeb ? 900 : 844;
     const splashImage = isWeb ? webSplashImage : mobileSplashImage;
-    const resolvedSplashSource = resolveAssetSource(splashImage);
+    const resolvedSplashSource = Asset.fromModule(splashImage);
     const splashAspectRatio =
         resolvedSplashSource?.width && resolvedSplashSource?.height
             ? resolvedSplashSource.width / resolvedSplashSource.height

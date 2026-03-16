@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -136,6 +136,7 @@ const GlobalOrderStatusToast = () => {
     const [toast, setToast] = useState<ToastPayload | null>(null);
     const [visible, setVisible] = useState(false);
     const progress = useRef(new Animated.Value(0)).current;
+    const useNativeDriver = Platform.OS !== "web";
     const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastKeyRef = useRef<string | null>(null);
 
@@ -151,13 +152,13 @@ const GlobalOrderStatusToast = () => {
         Animated.timing(progress, {
             toValue: 0,
             duration: 260,
-            useNativeDriver: true,
+            useNativeDriver,
         }).start(({ finished }) => {
             if (finished) {
                 setVisible(false);
             }
         });
-    }, [clearHideTimer, progress]);
+    }, [clearHideTimer, progress, useNativeDriver]);
 
     const scheduleHide = useCallback(() => {
         clearHideTimer();
@@ -174,11 +175,11 @@ const GlobalOrderStatusToast = () => {
             Animated.timing(progress, {
                 toValue: 1,
                 duration: 300,
-                useNativeDriver: true,
+                useNativeDriver,
             }).start();
             scheduleHide();
         },
-        [progress, scheduleHide],
+        [progress, scheduleHide, useNativeDriver],
     );
 
     useEffect(() => {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { usePathname, useRouter } from "expo-router";
@@ -12,6 +12,7 @@ const NotFoundScreen = () => {
     const pathname = usePathname();
     const { width } = useStableWindowDimensions();
     const isWide = width >= 980;
+    const useNativeDriver = Platform.OS !== "web";
 
     const floatAnim = useRef(new Animated.Value(0)).current;
     const glowAnim = useRef(new Animated.Value(0.4)).current;
@@ -22,12 +23,12 @@ const NotFoundScreen = () => {
                 Animated.timing(floatAnim, {
                     toValue: 1,
                     duration: 2200,
-                    useNativeDriver: true,
+                    useNativeDriver,
                 }),
                 Animated.timing(floatAnim, {
                     toValue: 0,
                     duration: 2200,
-                    useNativeDriver: true,
+                    useNativeDriver,
                 }),
             ]),
         ).start();
@@ -37,16 +38,16 @@ const NotFoundScreen = () => {
                 Animated.timing(glowAnim, {
                     toValue: 0.95,
                     duration: 1600,
-                    useNativeDriver: true,
+                    useNativeDriver,
                 }),
                 Animated.timing(glowAnim, {
                     toValue: 0.45,
                     duration: 1600,
-                    useNativeDriver: true,
+                    useNativeDriver,
                 }),
             ]),
         ).start();
-    }, [floatAnim, glowAnim]);
+    }, [floatAnim, glowAnim, useNativeDriver]);
 
     const floatingTransform = useMemo(
         () => [

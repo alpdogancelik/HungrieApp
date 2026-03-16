@@ -305,6 +305,7 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
     const [addedToastText, setAddedToastText] = useState("");
     const toastOpacity = useRef(new Animated.Value(0)).current;
     const toastScale = useRef(new Animated.Value(0.98)).current;
+    const useNativeDriver = Platform.OS !== "web";
 
     const onSelectCategory = (key: string) => {
         setActiveCategory(key);
@@ -316,14 +317,14 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
         setAddedToastText(itemName);
         setAddedToastVisible(true);
         Animated.parallel([
-            Animated.timing(toastOpacity, { toValue: 1, duration: 170, useNativeDriver: true }),
-            Animated.timing(toastScale, { toValue: 1, duration: 170, useNativeDriver: true }),
+            Animated.timing(toastOpacity, { toValue: 1, duration: 170, useNativeDriver }),
+            Animated.timing(toastScale, { toValue: 1, duration: 170, useNativeDriver }),
         ]).start();
         if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
         toastTimerRef.current = setTimeout(() => {
             Animated.parallel([
-                Animated.timing(toastOpacity, { toValue: 0, duration: 220, useNativeDriver: true }),
-                Animated.timing(toastScale, { toValue: 0.98, duration: 220, useNativeDriver: true }),
+                Animated.timing(toastOpacity, { toValue: 0, duration: 220, useNativeDriver }),
+                Animated.timing(toastScale, { toValue: 0.98, duration: 220, useNativeDriver }),
             ]).start(() => setAddedToastVisible(false));
         }, 1100);
     };

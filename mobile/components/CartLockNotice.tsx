@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { illustrations } from "@/constants/mediaCatalog";
 import { useTheme } from "@/src/theme/themeContext";
@@ -11,6 +11,7 @@ const CartLockNotice = () => {
     const [visible, setVisible] = useState(false);
     const [message, setMessage] = useState("");
     const slideAnim = useMemo(() => new Animated.Value(0), []);
+    const useNativeDriver = Platform.OS !== "web";
     const Illustration = illustrations.courierHero;
 
     useEffect(() => {
@@ -21,13 +22,13 @@ const CartLockNotice = () => {
             Animated.timing(slideAnim, {
                 toValue: 1,
                 duration: 250,
-                useNativeDriver: true,
+                useNativeDriver,
             }).start(() => {
                 setTimeout(() => {
                     Animated.timing(slideAnim, {
                         toValue: 0,
                         duration: 200,
-                        useNativeDriver: true,
+                        useNativeDriver,
                     }).start(() => setVisible(false));
                 }, 2800);
             });
@@ -36,7 +37,7 @@ const CartLockNotice = () => {
             // call unsubscribe and ignore its return value (some subscribe implementations return boolean)
             unsubscribe();
         };
-    }, [slideAnim]);
+    }, [slideAnim, useNativeDriver]);
 
     if (!visible) return null;
 
