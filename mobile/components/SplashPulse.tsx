@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
-import { Animated, Image as RNImage, Platform, StyleSheet } from "react-native";
+import { Animated, Platform, StyleSheet } from "react-native";
 import { Image } from "expo-image";
+import resolveAssetSource from "react-native/Libraries/Image/resolveAssetSource";
 
 import { useReducedMotion } from "@/src/lib/useReducedMotion";
 import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
@@ -21,7 +22,7 @@ export default function SplashPulse({ visible, onFinished, imageSource, backgrou
     const isWeb = Platform.OS === "web";
     const safeWidth = width > 0 ? width : isWeb ? 1440 : 390;
     const safeHeight = height > 0 ? height : isWeb ? 900 : 844;
-    const resolvedSource = RNImage.resolveAssetSource(imageSource);
+    const resolvedSource = resolveAssetSource(imageSource);
     const imageAspectRatio = resolvedSource?.width && resolvedSource?.height ? resolvedSource.width / resolvedSource.height : 1024 / 1536;
     // Size the poster from both viewport axes so it stays prominent on phones
     // and does not look undersized on shorter desktop browsers.
