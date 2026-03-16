@@ -18,74 +18,74 @@ type TermsContent = {
 };
 
 const TERMS_TR: TermsContent = {
-    title: "Sartlar ve Kosullar",
-    header: "SARTLAR VE KOSULLAR - Hungrie",
-    meta: ["Yururluk Tarihi: 01.01.2026", "Saglayici: HungrieApp"],
+    title: "Şartlar ve Koşullar",
+    header: "ŞARTLAR VE KOŞULLAR - Hungrie",
+    meta: ["Yürürlük Tarihi: 01.01.2026", "Sağlayıcı: HungrieApp"],
     sections: [
         {
-            title: "1. Sozlesmenin Kabulu",
-            body: ["Uygulamayi kullanarak bu sozlesmeyi kabul etmis olursunuz."],
+            title: "1. Sözleşmenin Kabulü",
+            body: ["Uygulamayı kullanarak bu sözleşmeyi kabul etmiş olursunuz."],
         },
         {
             title: "2. Hizmetler",
             body: [
-                "Hungrie, restoran menulerini listeler, siparisi restorana iletir ve teslimat surecini kolaylastirir. Urun icerigi, alerjen ve hijyen konularinda restoran beyanlari gecerlidir.",
+                "Hungrie, restoran menülerini listeler, siparişi restorana iletir ve teslimat sürecini kolaylaştırır. Ürün içeriği, alerjen ve hijyen konularında restoran beyanları geçerlidir.",
             ],
         },
         {
-            title: "3. Kullanici Hesabi",
+            title: "3. Kullanıcı Hesabı",
             body: [
-                "Hesabinizin dogru bilgilerle olusturulmasi ve guvenli tutulmasi sizin sorumlulugunuzdadir. Aksi ispat edilmedikce hesabinizdan yapilan islemler size ait kabul edilir.",
+                "Hesabınızın doğru bilgilerle oluşturulması ve güvenli tutulması sizin sorumluluğunuzdadır. Aksi ispat edilmedikçe hesabınızdan yapılan işlemler size ait kabul edilir.",
             ],
         },
         {
-            title: "4. Kullanici Yukumlulukleri",
+            title: "4. Kullanıcı Yükümlülükleri",
             body: [
-                "Hizmeti hukuka uygun sekilde kullanmayi, suistimal etmemeyi ve ucuncu kisi haklarini ihlal etmemeyi kabul edersiniz.",
+                "Hizmeti hukuka uygun şekilde kullanmayı, suistimal etmemeyi ve üçüncü kişi haklarını ihlal etmemeyi kabul edersiniz.",
             ],
         },
         {
-            title: "5. Icerik ve Degisiklikler",
+            title: "5. İçerik ve Değişiklikler",
             body: [
-                "Menu, fiyat ve stok bilgileri restoranlarca saglanir ve degisebilir. Hungrie, hizmeti iyilestirmek icin uygulamada degisiklik yapabilir.",
+                "Menü, fiyat ve stok bilgileri restoranlarca sağlanır ve değişebilir. Hungrie, hizmeti iyileştirmek için uygulamada değişiklik yapabilir.",
             ],
         },
         {
-            title: "6. Kullanim Amaci",
-            body: ["Siparislerin kisisel kullanim amacli oldugunu kabul edersiniz."],
+            title: "6. Kullanım Amacı",
+            body: ["Siparişlerin kişisel kullanım amaçlı olduğunu kabul edersiniz."],
         },
         {
-            title: "7. Odeme",
+            title: "7. Ödeme",
             body: [
-                "Odeme, restoranin sundugu seceneklere gore kapida nakit/POS ile yapilir. Hungrie mevcut modelde kart/banka bilgisi toplamaz.",
+                "Ödeme, restoranın sunduğu seçeneklere göre kapıda nakit/POS ile yapılır. Hungrie mevcut modelde kart/banka bilgisi toplamaz.",
             ],
         },
         {
-            title: "8. Kisisel Veriler",
+            title: "8. Kişisel Veriler",
             body: [
-                "Kisisel veri islemleri Gizlilik Politikasi kapsamindadir. Teslimat icin gerekli bilgiler restoran ve/veya kurye ile paylasilabilir.",
+                "Kişisel veri işlemleri Gizlilik Politikası kapsamındadır. Teslimat için gerekli bilgiler restoran ve/veya kurye ile paylaşılabilir.",
             ],
         },
         {
             title: "9. Yasal Gereklilikler",
-            body: ["Surecler, mevzuat veya resmi makam taleplerine gore guncellenebilir."],
+            body: ["Süreçler, mevzuat veya resmî makam taleplerine göre güncellenebilir."],
         },
         {
             title: "10. Teslimat",
             body: [
-                "Teslimat, kullanicinin sectigi adrese yapilir. Kullanici adreste bulunmazsa veya hatali adres verirse dogacak sonuclardan sorumlu olabilir.",
+                "Teslimat, kullanıcının seçtiği adrese yapılır. Kullanıcı adreste bulunmazsa veya hatalı adres verirse doğacak sonuçlardan sorumlu olabilir.",
             ],
         },
         {
-            title: "11. Ucret Iadesi",
+            title: "11. Ücret İadesi",
             body: [
-                "Iadeler, restorantin politikasi ve gecerli mevzuata gore uygulanir. Hungrie iletisimi kolaylastirabilir; urun/teslimat kaynakli uyusmazliklarda nihai sorumluluk ilgili tarafta olabilir.",
+                "İadeler, restoranın politikası ve geçerli mevzuata göre uygulanır. Hungrie iletişimi kolaylaştırabilir; ürün/teslimat kaynaklı uyuşmazlıklarda nihai sorumluluk ilgili tarafta olabilir.",
             ],
         },
         {
-            title: "12. Kayit ve Delil",
+            title: "12. Kayıt ve Delil",
             body: [
-                "Siparis kayitlari ve sistem loglari uyusmazlik durumunda delil olarak kullanilabilir ve gerekli sure boyunca saklanir.",
+                "Sipariş kayıtları ve sistem logları uyuşmazlık durumunda delil olarak kullanılabilir ve gerekli süre boyunca saklanır.",
             ],
         },
     ],

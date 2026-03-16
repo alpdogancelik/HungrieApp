@@ -18,65 +18,65 @@ type PolicyContent = {
 };
 
 const POLICY_TR: PolicyContent = {
-    title: "Gizlilik Politikasi",
-    header: "GIZLILIK POLITIKASI - Hungrie",
+    title: "Gizlilik Politikası",
+    header: "GİZLİLİK POLİTİKASI - Hungrie",
     meta: [
-        "Yururluk Tarihi: 01.01.2026",
-        "Veri Sorumlusu: HungrieApp (Metu Ncc)",
-        "Iletisim ve Veri Talepleri: privacy@hungrie.app",
+        "Yürürlük Tarihi: 01.01.2026",
+        "Veri Sorumlusu: HungrieApp (METU NCC)",
+        "İletişim ve Veri Talepleri: privacy@hungrie.app",
     ],
     sections: [
         {
             title: "1. Hangi verileri topluyoruz?",
             bullets: [
-                "Hesap bilgileri: ad soyad, e-posta, telefon/WhatsApp, kullanici kimligi (Firebase UID).",
-                "Teslimat bilgileri: teslimat adresleri (Firestore'da saklanir).",
-                "Siparis bilgileri: sepet icerigi, tutar, odeme yontemi, siparis durumu ve gecmisi.",
-                "Bildirim bilgileri: push token ve bildirim gonderim kayitlari.",
-                "Teknik veriler: crash/hata kayitlari ve performans verileri (Sentry).",
-                "Toplamadiklarimiz: hassas konum, rehber, fotograf/mikrofon, kart/banka bilgileri.",
+                "Hesap bilgileri: ad soyad, e-posta, telefon/WhatsApp, kullanıcı kimliği (Firebase UID).",
+                "Teslimat bilgileri: teslimat adresleri (Firestore'da saklanır).",
+                "Sipariş bilgileri: sepet içeriği, tutar, ödeme yöntemi, sipariş durumu ve geçmişi.",
+                "Bildirim bilgileri: push token ve bildirim gönderim kayıtları.",
+                "Teknik veriler: çökme/hata kayıtları ve performans verileri (Sentry).",
+                "Toplamadıklarımız: hassas konum, rehber, fotoğraf/mikrofon, kart/banka bilgileri.",
             ],
         },
         {
-            title: "2. Verileri ne icin kullaniyoruz?",
+            title: "2. Verileri ne için kullanıyoruz?",
             bullets: [
-                "Siparisi olusturmak, restorana iletmek ve teslimati koordine etmek.",
-                "Hesap ve oturum yonetimi.",
-                "Musteri destek surecleri.",
-                "Guvenlik ve kotuye kullanimi onleme.",
-                "Uygulama kararliligi ve hata analizi (Sentry).",
+                "Siparişi oluşturmak, restorana iletmek ve teslimatı koordine etmek.",
+                "Hesap ve oturum yönetimi.",
+                "Müşteri destek süreçleri.",
+                "Güvenlik ve kötüye kullanımı önleme.",
+                "Uygulama kararlılığı ve hata analizi (Sentry).",
             ],
         },
         {
-            title: "3. Verileri kimlerle paylasiyoruz?",
+            title: "3. Verileri kimlerle paylaşıyoruz?",
             bullets: [
-                "Restoranlar: siparis icerigi ve teslimat icin gerekli iletisim/adres bilgileri.",
-                "Kuryeler: teslimat icin gerekli adres ve iletisim bilgileri.",
-                "Hizmet saglayicilar: altyapi (Auth/DB/push) ve hata izleme (Sentry).",
+                "Restoranlar: sipariş içeriği ve teslimat için gerekli iletişim/adres bilgileri.",
+                "Kuryeler: teslimat için gerekli adres ve iletişim bilgileri.",
+                "Hizmet sağlayıcılar: altyapı (Auth/DB/push) ve hata izleme (Sentry).",
             ],
         },
         {
-            title: "4. Saklama suresi",
+            title: "4. Saklama süresi",
             body: [
-                "Veriler hizmetin yurutilmesi, guvenlik ve yasal yukumlulukler icin gerekli sure boyunca saklanir; sonrasinda silinir, anonimlestirilir veya erisim kisitlanir.",
+                "Veriler, hizmetin yürütülmesi, güvenlik ve yasal yükümlülükler için gerekli süre boyunca saklanır; sonrasında silinir, anonimleştirilir veya erişim kısıtlanır.",
             ],
         },
         {
-            title: "5. Guvenlik",
+            title: "5. Güvenlik",
             body: [
-                "TLS/HTTPS, erisim kontrolu ve benzeri teknik/idari guvenlik tedbirleri uygulanir.",
+                "TLS/HTTPS, erişim kontrolü ve benzeri teknik/idari güvenlik tedbirleri uygulanır.",
             ],
         },
         {
             title: "6. Haklar ve silme talebi",
             body: [
-                "Kullanici, erisim, duzeltme, silme ve itiraz haklarini kullanabilir.",
-                "Iletisim: privacy@hungrie.app veya https://hungrie.app/privacy-choices",
+                "Kullanıcı; erişim, düzeltme, silme ve itiraz haklarını kullanabilir.",
+                "İletişim: privacy@hungrie.app veya https://hungrie.app/privacy-choices",
             ],
         },
         {
-            title: "7. Degisiklikler",
-            body: ["Gizlilik politikasi guncellenebilir; guncel surum ilgili URL'de yayinlanir."],
+            title: "7. Değişiklikler",
+            body: ["Gizlilik politikası güncellenebilir; güncel sürüm ilgili URL'de yayımlanır."],
         },
     ],
 };
