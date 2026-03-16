@@ -1,4 +1,4 @@
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { collection, doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { Platform } from "react-native";
 
 import { auth, firestore } from "@/lib/firebase";
@@ -27,7 +27,8 @@ const toTokenId = (token: string) => {
 
 const upsertToken = async (scope: TokenScope, token: string, tokenId: string, platform: string) => {
     if (!firestore) return;
-    const ref = doc(firestore, ...scope.collectionPath, tokenId);
+    const collectionRef = collection(firestore, scope.collectionPath.join("/"));
+    const ref = doc(collectionRef, tokenId);
     await setDoc(
         ref,
         {

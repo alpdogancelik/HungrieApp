@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useRef } from "react";
-import { Animated, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { usePathname, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import RobotDelivery from "@/assets/illustrations/Robot Delivery.svg";
+import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 
 const NotFoundScreen = () => {
     const router = useRouter();
     const pathname = usePathname();
-    const { width } = useWindowDimensions();
+    const { width } = useStableWindowDimensions();
     const isWide = width >= 980;
 
     const floatAnim = useRef(new Animated.Value(0)).current;

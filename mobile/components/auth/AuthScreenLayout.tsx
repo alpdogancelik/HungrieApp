@@ -34,6 +34,7 @@ const defaultHeroPackshot = require("../../assets/images/vecteezy_fast-food-meal
 
 const BACKGROUND_COLOR = "#FFF7EF";
 const CONTENT_MAX_WIDTH = 520;
+const WEB_SAFE_EASING = Platform.OS === "web" ? Easing.linear : Easing.out(Easing.cubic);
 
 const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: BACKGROUND_COLOR },
@@ -131,7 +132,7 @@ const AuthScreenLayout = ({
         return items.map((child, index) => (
             <Animated.View
                 key={(child as any)?.key ?? `auth-child-${index}`}
-                entering={FadeInDown.delay(180 + index * 70).duration(420).easing(Easing.out(Easing.cubic))}
+                entering={FadeInDown.delay(180 + index * 70).duration(420).easing(WEB_SAFE_EASING)}
             >
                 {child}
             </Animated.View>
@@ -155,7 +156,7 @@ const AuthScreenLayout = ({
                         <Animated.View
                             entering={
                                 shouldAnimate
-                                    ? FadeInDown.duration(420).easing(Easing.out(Easing.cubic))
+                                    ? FadeInDown.duration(420).easing(WEB_SAFE_EASING)
                                     : undefined
                             }
                             style={styles.heroCard}
@@ -238,7 +239,7 @@ const AuthScreenLayout = ({
                         <Animated.View
                             entering={
                                 shouldAnimate
-                                    ? FadeInUp.delay(120).duration(420).easing(Easing.out(Easing.cubic))
+                                    ? FadeInUp.delay(120).duration(420).easing(WEB_SAFE_EASING)
                                     : undefined
                             }
                             style={[styles.authCardWrap, { marginTop: -cardOverlap }]}

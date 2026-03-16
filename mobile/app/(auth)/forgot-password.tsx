@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 
@@ -9,6 +9,7 @@ import CustomButton from "@/components/CustomButton";
 import CustomInput from "@/components/CustomInput";
 import { sendPasswordReset } from "@/lib/firebaseAuth";
 import { getAuthScreenCopy } from "@/src/features/auth/authCopy";
+import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 import OnlineOrder from "@/assets/illustrations/Online Order.svg";
 import RobotDelivery from "@/assets/illustrations/Robot Delivery.svg";
 
@@ -32,7 +33,7 @@ const styles = StyleSheet.create({
 const heroPackshot = require("../../assets/images/vecteezy_fast-food-meal-with_25065315.png");
 
 const ForgotPasswordScreen = () => {
-    const { width } = useWindowDimensions();
+    const { width } = useStableWindowDimensions();
     const isCompact = width < 380;
     const { i18n } = useTranslation();
     const copy = getAuthScreenCopy(i18n.language).forgotPassword;

@@ -3,9 +3,8 @@ import { SplashScreen, Stack, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import Constants from "expo-constants";
 import * as Sentry from "@sentry/react-native";
-import { AppState, Platform, Text, TextInput, View } from "react-native";
+import { AppState, Image as RNImage, Platform, Text, TextInput, View } from "react-native";
 import { Image } from "expo-image";
-import { Asset } from "expo-asset";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import useAuthStore from "@/store/auth.store";
@@ -47,17 +46,19 @@ function RootLayoutBase() {
     const [launchSplashVisible, setLaunchSplashVisible] = useState(true);
     const { width: windowWidth, height: windowHeight } = useStableWindowDimensions();
     const isWeb = Platform.OS === "web";
+    const safeWindowWidth = windowWidth > 0 ? windowWidth : isWeb ? 1440 : 390;
+    const safeWindowHeight = windowHeight > 0 ? windowHeight : isWeb ? 900 : 844;
     const splashImage = isWeb ? webSplashImage : mobileSplashImage;
-    const resolvedSplashSource = Asset.fromModule(splashImage);
+    const resolvedSplashSource = RNImage.resolveAssetSource(splashImage);
     const splashAspectRatio =
         resolvedSplashSource?.width && resolvedSplashSource?.height
             ? resolvedSplashSource.width / resolvedSplashSource.height
             : 1024 / 1536;
     const WEB_MAX_WIDTH = 960;
-    const contentWidth = isWeb ? Math.min(Math.max(windowWidth, 320), WEB_MAX_WIDTH) : windowWidth;
+    const contentWidth = isWeb ? Math.min(safeWindowWidth, WEB_MAX_WIDTH) : safeWindowWidth;
     const splashPreviewWidth = Math.min(
-        isWeb ? Math.min(windowWidth * 0.4, 520) : Math.min(windowWidth * 0.94, 420),
-        (isWeb ? Math.min(windowHeight * 0.82, 760) : Math.min(windowHeight * 0.8, 700)) * splashAspectRatio,
+        isWeb ? Math.min(safeWindowWidth * 0.4, 520) : Math.min(safeWindowWidth * 0.94, 420),
+        (isWeb ? Math.min(safeWindowHeight * 0.82, 760) : Math.min(safeWindowHeight * 0.8, 700)) * splashAspectRatio,
     );
     const splashPreviewHeight = splashPreviewWidth / splashAspectRatio;
     const chairoRegular = require("../assets/fonts/ChairoSansRegular-Regular.ttf");
@@ -96,7 +97,7 @@ function RootLayoutBase() {
             try {
                 const registered = await registerPushToken();
                 if (!registered || cancelled) return;
-                const registrationKey = `${registered.token}::${registered.scopes.sort().join(",")}`;
+                const registrationKey = `restaurant::${registered.token}`;
                 if (pushRegistrationKeyRef.current === registrationKey) return;
                 pushRegistrationKeyRef.current = registrationKey;
             } catch (error) {
@@ -128,7 +129,6 @@ function RootLayoutBase() {
 
     useEffect(() => {
         if (!isAuthenticated) return;
-        if (isRemotePushSupported()) return;
         const resolvedUserId = auth?.currentUser?.uid ?? user?.accountId ?? user?.id ?? user?.$id ?? null;
         if (!resolvedUserId) return;
 

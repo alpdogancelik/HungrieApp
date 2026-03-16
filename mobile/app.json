@@ -12,7 +12,7 @@
     "ios": {
       "icon": "./assets/app-icon/app-icon-1024.png",
       "supportsTablet": true,
-      "buildNumber": "3",
+      "buildNumber": "5",
       "bundleIdentifier": "com.hungrie.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -27,7 +27,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.hungrie.app",
-      "versionCode": 19,
+      "versionCode": 23,
       "edgeToEdgeEnabled": true
     },
     "web": {
@@ -47,12 +47,6 @@
             "./assets/sounds/hungrie.wav",
             "./assets/sounds/order.wav"
           ]
-        }
-      ],
-      [
-        "expo-av",
-        {
-          "microphonePermission": false
         }
       ],
       [

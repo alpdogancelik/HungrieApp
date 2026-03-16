@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
-import { Animated, Platform, StyleSheet } from "react-native";
+import { Animated, Image as RNImage, Platform, StyleSheet } from "react-native";
 import { Image } from "expo-image";
-import { Asset } from "expo-asset";
 
 import { useReducedMotion } from "@/src/lib/useReducedMotion";
 import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
@@ -20,11 +19,10 @@ export default function SplashPulse({ visible, onFinished, imageSource, backgrou
     const opacity = useRef(new Animated.Value(1)).current;
     const finishedRef = useRef(false);
     const isWeb = Platform.OS === "web";
-    const useNativeDriver = !isWeb;
-    const resolvedSource = Asset.fromModule(imageSource);
+    const safeWidth = width > 0 ? width : isWeb ? 1440 : 390;
+    const safeHeight = height > 0 ? height : isWeb ? 900 : 844;
+    const resolvedSource = RNImage.resolveAssetSource(imageSource);
     const imageAspectRatio = resolvedSource?.width && resolvedSource?.height ? resolvedSource.width / resolvedSource.height : 1024 / 1536;
-    const safeWidth = Math.max(width, 320);
-    const safeHeight = Math.max(height, 480);
     // Size the poster from both viewport axes so it stays prominent on phones
     // and does not look undersized on shorter desktop browsers.
     const maxImageWidth = isWeb ? Math.min(safeWidth * 0.4, 520) : Math.min(safeWidth * 0.94, 420);
@@ -37,13 +35,13 @@ export default function SplashPulse({ visible, onFinished, imageSource, backgrou
         // A "heartbeat" feel: quick up-down-up, then a short rest.
         // We keep the curve simple and native-driver friendly.
         return Animated.sequence([
-            Animated.timing(scale, { toValue: 1.04, duration: 140, useNativeDriver }),
-            Animated.timing(scale, { toValue: 0.99, duration: 120, useNativeDriver }),
-            Animated.timing(scale, { toValue: 1.02, duration: 120, useNativeDriver }),
-            Animated.timing(scale, { toValue: 1.0, duration: 260, useNativeDriver }),
+            Animated.timing(scale, { toValue: 1.04, duration: 140, useNativeDriver: true }),
+            Animated.timing(scale, { toValue: 0.99, duration: 120, useNativeDriver: true }),
+            Animated.timing(scale, { toValue: 1.02, duration: 120, useNativeDriver: true }),
+            Animated.timing(scale, { toValue: 1.0, duration: 260, useNativeDriver: true }),
             Animated.delay(260),
         ]);
-    }, [scale, useNativeDriver]);
+    }, [scale]);
 
     useEffect(() => {
         if (!visible) return;
@@ -65,7 +63,7 @@ export default function SplashPulse({ visible, onFinished, imageSource, backgrou
                 // Best effort; do not block exit.
             }
 
-            Animated.timing(opacity, { toValue: 0, duration: 260, useNativeDriver }).start(({ finished }) => {
+            Animated.timing(opacity, { toValue: 0, duration: 260, useNativeDriver: true }).start(({ finished }) => {
                 // Even if the animation is interrupted, we should continue into the app.
                 onFinished();
             });
@@ -90,7 +88,7 @@ export default function SplashPulse({ visible, onFinished, imageSource, backgrou
                 // ignore
             }
         };
-    }, [imageSource, onFinished, opacity, pulseAnimation, reduceMotion, scale, useNativeDriver, visible]);
+    }, [imageSource, onFinished, opacity, pulseAnimation, reduceMotion, scale, visible]);
 
     if (!visible) return null;
 
@@ -100,7 +98,7 @@ export default function SplashPulse({ visible, onFinished, imageSource, backgrou
                 style={[
                     isWeb ? styles.posterFrame : styles.mobileFrame,
                     {
-                        width: isWeb ? imageWidth : width,
+                        width: isWeb ? imageWidth : safeWidth,
                         height: isWeb ? imageHeight : safeHeight,
                         transform: [{ scale }],
                     },

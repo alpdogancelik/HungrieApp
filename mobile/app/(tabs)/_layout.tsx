@@ -1,11 +1,12 @@
 import { Redirect, Tabs } from "expo-router";
 import React, { useEffect, useRef } from "react";
-import { Animated, LayoutChangeEvent, Platform, Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
+import { Animated, LayoutChangeEvent, Platform, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import useAuthStore from "@/store/auth.store";
 import Icon from "@/components/Icon";
 import { isAuthRequired } from "@/lib/runtimeEnv";
+import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 import { makeShadow } from "@/src/lib/shadowStyle";
 
 const authGuardEnabled = isAuthRequired();
@@ -15,7 +16,7 @@ const ACTIVE_ICON_COLOR = "#F28C28";
 const INACTIVE_ICON_COLOR = "#8A8178";
 
 function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
-    const { width } = useWindowDimensions();
+    const { width } = useStableWindowDimensions();
     const effectiveWidth = Platform.OS === "web" ? Math.min(width, WEB_MAX_WIDTH) : width;
     const insets = useSafeAreaInsets();
     const OUTER_MARGIN = 18;

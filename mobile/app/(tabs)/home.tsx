@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { ActivityIndicator, Platform, ScrollView, Text, TouchableOpacity, View, StyleSheet, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -19,6 +19,7 @@ import useAuthStore from "@/store/auth.store";
 import type { Order } from "@/src/domain/types";
 import useOrderStatus, { type PendingOrderStatus } from "@/src/hooks/useOrderStatus";
 import { subscribeUserOrders } from "@/src/services/firebaseOrders";
+import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 import GodzillaIceCream from "@/assets/godzilla/VCTRLY-godzila-ice-cream-food.svg";
 import GodzillaReading from "@/assets/godzilla/VCTRLY-godzila-reading-book-magazine.svg";
 import GodzillaOffice from "@/assets/godzilla/VCTRLY-godzila-work-office-business.svg";
@@ -47,7 +48,7 @@ export default function HomeTabScreen() {
     const { t } = useTranslation();
     const { theme } = useTheme();
     const insets = useSafeAreaInsets();
-    const { width: windowWidth } = useWindowDimensions();
+    const { width: windowWidth } = useStableWindowDimensions();
     const styles = useMemo(() => createStyles(theme), [theme]);
     const displayName = (userName || "Hungrie User").trim();
     const isWeb = Platform.OS === "web";

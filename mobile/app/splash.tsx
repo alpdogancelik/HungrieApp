@@ -38,7 +38,10 @@ export default function Splash() {
     const reduceMotion = useReducedMotion();
     const { width: windowWidth } = useStableWindowDimensions();
     const isWeb = Platform.OS === "web";
-    const contentWidth = isWeb ? Math.min(Math.max(windowWidth, 320), CONTENT_MAX_WIDTH) : windowWidth;
+    const transitionEasing = isWeb ? Easing.linear : Easing.out(Easing.cubic);
+    const exitEasing = isWeb ? Easing.linear : Easing.out(Easing.quad);
+    const safeWindowWidth = windowWidth > 0 ? windowWidth : isWeb ? 1440 : 390;
+    const contentWidth = isWeb ? Math.min(safeWindowWidth, CONTENT_MAX_WIDTH) : safeWindowWidth;
 
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
@@ -120,14 +123,14 @@ export default function Splash() {
             const duration = reduceMotion ? 120 : 220;
             containerOpacity.value = withTiming(
                 0,
-                { duration, easing: Easing.out(Easing.quad) },
+                { duration, easing: exitEasing },
                 (finished) => {
                     if (!finished) return;
                     runOnJS(navigateTo)(route);
                 },
             );
         },
-        [containerOpacity, navigateTo, reduceMotion],
+        [containerOpacity, exitEasing, navigateTo, reduceMotion],
     );
 
     useEffect(() => {
@@ -143,11 +146,11 @@ export default function Splash() {
         }
 
         bgOpacity.value = withTiming(1, { duration: 200 });
-        wordmarkOpacity.value = withDelay(60, withTiming(1, { duration: 260, easing: Easing.out(Easing.cubic) }));
-        wordmarkTranslateY.value = withDelay(60, withTiming(0, { duration: 260, easing: Easing.out(Easing.cubic) }));
-        heroOpacity.value = withDelay(120, withTiming(1, { duration: 260, easing: Easing.out(Easing.cubic) }));
-        heroScale.value = withDelay(120, withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) }));
-        logoOpacity.value = withDelay(240, withTiming(1, { duration: 220, easing: Easing.out(Easing.cubic) }));
+        wordmarkOpacity.value = withDelay(60, withTiming(1, { duration: 260, easing: transitionEasing }));
+        wordmarkTranslateY.value = withDelay(60, withTiming(0, { duration: 260, easing: transitionEasing }));
+        heroOpacity.value = withDelay(120, withTiming(1, { duration: 260, easing: transitionEasing }));
+        heroScale.value = withDelay(120, withTiming(1, { duration: 600, easing: transitionEasing }));
+        logoOpacity.value = withDelay(240, withTiming(1, { duration: 220, easing: transitionEasing }));
         logoScale.value = withDelay(240, withSpring(1, { damping: 12, stiffness: 140, mass: 1 }));
     }, [
         bgOpacity,
@@ -156,6 +159,7 @@ export default function Splash() {
         logoOpacity,
         logoScale,
         reduceMotion,
+        transitionEasing,
         wordmarkOpacity,
         wordmarkTranslateY,
     ]);
