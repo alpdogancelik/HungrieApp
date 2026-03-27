@@ -332,7 +332,7 @@ const extractDrinkItems = (list: any[], restaurantId?: string | null): DrinkSugg
 const Cart = () => {
     const insets = useSafeAreaInsets();
     const { items, getTotalPrice, increaseQty, decreaseQty, removeItem, clearCart, addItem } = useCartStore();
-    const { user } = useAuthStore();
+    const { user, isAuthenticated } = useAuthStore();
     const { t } = useTranslation();
     const noteSuggestions: string[] = [];
     const paymentOptions: PaymentOption[] = [
@@ -466,6 +466,12 @@ const Cart = () => {
         if (placingOrder) return;
         if (!items.length) {
             Alert.alert(t("cart.empty.title"), t("cart.empty.subtitle"));
+            return;
+        }
+
+        if (!isAuthenticated) {
+            Alert.alert("Sign in required", "Please sign in or create an account to place an order.");
+            router.push("/sign-in");
             return;
         }
 

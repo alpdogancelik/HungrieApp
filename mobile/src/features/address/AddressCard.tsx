@@ -1,6 +1,7 @@
 import { memo, useMemo, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { Address } from "@/src/domain/types";
+import { makeShadow } from "@/src/lib/shadowStyle";
 
 type Props = {
     address: Address;
@@ -99,10 +100,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 16,
         rowGap: 12,
-        shadowColor: "#000000",
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
+        ...makeShadow({ color: "#000000", offsetY: 2, blurRadius: 8, opacity: 0.05, elevation: 1 }),
         elevation: 1,
     },
     cardHeader: {

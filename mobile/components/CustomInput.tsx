@@ -5,6 +5,7 @@ import {
     Text,
     TextInput,
     View,
+    type TextInputProps,
     type KeyboardTypeOptions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,7 +17,16 @@ type Props = {
     label: string;
     secureTextEntry?: boolean;
     keyboardType?: KeyboardTypeOptions;
+    inputKey?: string;
+    autoComplete?: TextInputProps["autoComplete"];
 };
+
+const toFieldKey = (label: string) =>
+    label
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "") || "input";
 
 const styles = StyleSheet.create({
     container: { width: "100%" },
@@ -63,18 +73,23 @@ const CustomInput = ({
     label,
     secureTextEntry = false,
     keyboardType = "default",
+    inputKey,
+    autoComplete,
 }: Props) => {
     const [isFocused, setIsFocused] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const isPasswordField = Boolean(secureTextEntry);
+    const fieldKey = inputKey || toFieldKey(label);
 
     return (
         <View style={styles.container}>
             <Text style={styles.label}>{label}</Text>
             <View style={styles.inputWrap}>
                 <TextInput
+                    {...({ id: fieldKey, name: fieldKey } as any)}
                     autoCapitalize="none"
                     autoCorrect={false}
+                    autoComplete={autoComplete}
                     value={value}
                     onChangeText={onChangeText}
                     secureTextEntry={isPasswordField && !isPasswordVisible}

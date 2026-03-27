@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { illustrations } from "@/constants/mediaCatalog";
+import { makeShadow } from "@/src/lib/shadowStyle";
 import { useTheme } from "@/src/theme/themeContext";
 import { subscribeCartLock } from "@/store/cart.store";
 
@@ -47,9 +48,13 @@ const CartLockNotice = () => {
         <Animated.View
             style={[
                 styles.container,
-                { transform: [{ translateY }], shadowColor: theme.colors.ink, backgroundColor: theme.colors.surface },
+                {
+                    transform: [{ translateY }],
+                    backgroundColor: theme.colors.surface,
+                    pointerEvents: "box-none",
+                    ...makeShadow({ color: theme.colors.ink, offsetY: 8, blurRadius: 10, opacity: 0.1, elevation: 6 }),
+                },
             ]}
-            pointerEvents="box-none"
         >
             <View style={[styles.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
                 <View style={styles.illustration}>
@@ -90,10 +95,6 @@ const styles = StyleSheet.create({
         padding: 14,
         borderRadius: 18,
         borderWidth: 1,
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        shadowOffset: { width: 0, height: 8 },
-        elevation: 6,
     },
     illustration: {
         width: 86,

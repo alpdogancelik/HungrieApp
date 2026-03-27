@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import type { Address } from "@/src/domain/types";
 import { addressStore } from "@/src/features/address/addressStore";
 import { useDefaultAddress } from "@/src/features/address/hooks";
+import useAuthStore from "@/store/auth.store";
 
 const renderAddressLine = (address: Address) =>
     [address.line1, address.block].filter(Boolean).join(", ") ||
@@ -14,6 +15,7 @@ const renderAddressDetail = (address: Address) => [address.room, address.city, a
 
 const DeliverToHeader = () => {
     const { defaultAddress, addresses } = useDefaultAddress();
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const [sheetVisible, setSheetVisible] = useState(false);
     const [selectedId, setSelectedId] = useState<string | null>(defaultAddress?.id ?? null);
     const router = useRouter();
@@ -68,10 +70,17 @@ const DeliverToHeader = () => {
     const keyExtractor = useCallback((item: Address) => item.id, []);
 
     const headerSubtitle = useMemo(() => subtitle || "", [subtitle]);
+    const handleHeaderPress = () => {
+        if (!isAuthenticated) {
+            router.push("/sign-in");
+            return;
+        }
+        setSheetVisible(true);
+    };
 
     return (
         <>
-            <Pressable style={styles.headerTrigger} onPress={() => setSheetVisible(true)}>
+            <Pressable style={styles.headerTrigger} onPress={handleHeaderPress}>
                 <Text style={styles.headerEyebrow}>
                     {t("deliverTo.eyebrow").toUpperCase()}
                 </Text>

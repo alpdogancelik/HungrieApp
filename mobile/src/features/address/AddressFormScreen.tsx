@@ -23,6 +23,7 @@ import { useAddressActions, useAddresses } from "./hooks";
 import type { AddressFormNavigation, AddressFormScreenProps } from "./types";
 import Icon from "@/components/Icon";
 import OnlineLocation from "@/assets/illustrations/Online Location.svg";
+import { makeShadow } from "@/src/lib/shadowStyle";
 
 const schema = z.object({
     label: z.string().min(2, "Enter a helpful label."),
@@ -370,10 +371,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "#E5E7EB",
         rowGap: 24,
-        shadowColor: "#FE8C00",
-        shadowOpacity: 0.1,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 6 },
+        ...makeShadow({ color: "#FE8C00", offsetY: 6, blurRadius: 16, opacity: 0.1, elevation: 3 }),
         elevation: 3,
     },
     formHeading: {
@@ -458,10 +456,7 @@ const styles = StyleSheet.create({
         paddingVertical: 16,
         alignItems: "center",
         justifyContent: "center",
-        shadowColor: "#FE8C00",
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        shadowOffset: { width: 0, height: 4 },
+        ...makeShadow({ color: "#FE8C00", offsetY: 4, blurRadius: 10, opacity: 0.3, elevation: 4 }),
         elevation: 4,
     },
     saveButtonEnabled: {

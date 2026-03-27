@@ -112,6 +112,7 @@ const SignIn = () => {
             heroBody={copy.heroBody}
             heroImageSource={heroPackshot}
             gradientColors={["#FE8C00", "#FE5F75"]}
+            onClose={() => router.replace("/home")}
         >
             <View>
                 <Text style={styles.cardTitle}>{copy.title}</Text>
@@ -132,6 +133,8 @@ const SignIn = () => {
                 value={form.email}
                 onChangeText={(text) => setField("email", text)}
                 label={copy.emailLabel}
+                inputKey="email"
+                autoComplete="email"
                 keyboardType="email-address"
             />
             <CustomInput
@@ -139,6 +142,8 @@ const SignIn = () => {
                 value={form.password}
                 onChangeText={(text) => setField("password", text)}
                 label={copy.passwordLabel}
+                inputKey="password"
+                autoComplete="current-password"
                 secureTextEntry
             />
 

@@ -53,7 +53,7 @@ const SignUp = () => {
         const password = form.password;
         const whatsappNumber = form.whatsappNumber.trim();
 
-        if (!name || !email || !password || !whatsappNumber) {
+        if (!name || !email || !password) {
             setFeedback({
                 title: copy.emptyErrorTitle,
                 message: copy.emptyErrorBody,
@@ -65,7 +65,7 @@ const SignUp = () => {
         setFeedback(null);
 
         try {
-            await createUser({ email, password, name, whatsappNumber });
+            await createUser({ email, password, name, whatsappNumber: whatsappNumber || undefined });
             goToCheckEmail(email);
             return;
         } catch (error: any) {

@@ -1,7 +1,9 @@
 import { Alert } from "react-native";
 import { create } from "zustand";
+import { router } from "expo-router";
 import type { CartCustomization, CartItemType } from "@/src/domain/types";
 import { seedMenusAll } from "@/lib/restaurantSeeds";
+import useAuthStore from "@/store/auth.store";
 
 const MENU_ID_TO_RESTAURANT: Record<string, string> = seedMenusAll.reduce((acc, entry) => {
     acc[String(entry.id)] = entry.restaurantId;
@@ -73,6 +75,13 @@ export const useCartStore = create<CartStore>((set, get) => ({
     items: [],
 
     addItem: (item) => {
+        const isAuthenticated = useAuthStore.getState().isAuthenticated;
+        if (!isAuthenticated) {
+            Alert.alert("Sign in required", "Please sign in or create an account to add items to your cart.");
+            router.push("/sign-in");
+            return;
+        }
+
         const customizations = item.customizations ?? [];
         let items = get().items;
 

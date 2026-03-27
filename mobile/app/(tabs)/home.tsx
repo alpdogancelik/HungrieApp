@@ -67,7 +67,7 @@ export default function HomeTabScreen() {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
-                <View pointerEvents="none" style={styles.bgLayer}>
+                <View style={[styles.bgLayer, { pointerEvents: "none" }]}>
                     <View style={styles.bgTopLeft}>
                         <GodzillaIceCream width={90} height={90} />
                     </View>

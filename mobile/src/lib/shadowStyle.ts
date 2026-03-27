@@ -1,5 +1,3 @@
-import { Platform } from "react-native";
-
 type ShadowParams = {
     color: string;
     offsetY: number;
@@ -41,17 +39,7 @@ const toRgba = (color: string, alpha: number) => {
     return color;
 };
 
-export const makeShadow = ({ color, offsetY, blurRadius, opacity, elevation }: ShadowParams) =>
-    Platform.select({
-        web: {
-            boxShadow: `0px ${offsetY}px ${blurRadius}px ${toRgba(color, opacity)}`,
-        },
-        default: {
-            shadowColor: color,
-            shadowOpacity: opacity,
-            shadowRadius: blurRadius,
-            shadowOffset: { width: 0, height: offsetY },
-            ...(elevation !== undefined ? { elevation } : {}),
-        },
-    });
-
+export const makeShadow = ({ color, offsetY, blurRadius, opacity, elevation }: ShadowParams) => ({
+    boxShadow: `0px ${offsetY}px ${blurRadius}px ${toRgba(color, opacity)}`,
+    ...(elevation !== undefined ? { elevation } : {}),
+});

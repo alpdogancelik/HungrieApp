@@ -95,7 +95,7 @@ export default function SplashPulse({ visible, onFinished, imageSource, backgrou
     if (!visible) return null;
 
     return (
-        <Animated.View pointerEvents="auto" style={[styles.overlay, { backgroundColor, opacity }]}>
+        <Animated.View style={[styles.overlay, { backgroundColor, opacity, pointerEvents: "auto" }]}>
             <Animated.View
                 style={[
                     isWeb ? styles.posterFrame : styles.mobileFrame,

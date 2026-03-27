@@ -19,11 +19,12 @@ import { images, illustrations, emojiSet } from "@/constants/mediaCatalog";
 import { subscribeUserOrders } from "@/src/services/firebaseOrders";
 import { storage } from "@/src/lib/storage";
 import { useTheme } from "@/src/theme/themeContext";
+import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 
 import { OrderStatus } from "@/type";
 import { ORDER_STATUS_COLORS } from "@/components/OrderCard";
 import { makeShadow } from "@/src/lib/shadowStyle";
-import { updateUserProfile } from "@/lib/firebaseAuth";
+import { deleteCurrentUserProfile, updateUserProfile } from "@/lib/firebaseAuth";
 import { NotificationManager } from "@/src/features/notifications/NotificationManager";
 import { seedRestaurants } from "@/lib/restaurantSeeds";
 
@@ -93,6 +94,7 @@ const ui = StyleSheet.create({
         paddingVertical: 12,
         backgroundColor: "#0F172A",
         alignItems: "center",
+        justifyContent: "center",
     },
     secondaryCta: {
         flex: 1,
@@ -103,6 +105,7 @@ const ui = StyleSheet.create({
         borderColor: "rgba(255,255,255,0.3)",
         backgroundColor: "rgba(255,255,255,0.1)",
         alignItems: "center",
+        justifyContent: "center",
     },
     ctaText: {
         color: "#FFFFFF",
@@ -167,6 +170,50 @@ const ui = StyleSheet.create({
             opacity: 0.07,
             elevation: 5,
         }),
+    },
+    guestCard: {
+        width: "100%",
+        maxWidth: 420,
+        paddingVertical: 28,
+        alignItems: "center",
+        rowGap: 16,
+    },
+    guestViewport: {
+        flex: 1,
+        paddingHorizontal: 20,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    guestTitle: {
+        fontFamily: "ChairoSans",
+        fontSize: 18,
+        lineHeight: 24,
+        color: "#0F172A",
+        textAlign: "center",
+    },
+    guestBody: {
+        fontFamily: "ChairoSans",
+        fontSize: 14,
+        lineHeight: 20,
+        color: "#475569",
+        textAlign: "center",
+    },
+    guestButton: {
+        width: "100%",
+        marginTop: 8,
+        borderRadius: 999,
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        backgroundColor: "#FE8C00",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    guestButtonText: {
+        fontFamily: "ChairoSans",
+        fontSize: 16,
+        lineHeight: 20,
+        color: "#FFFFFF",
+        textAlign: "center",
     },
     orderItemCard: {
         borderRadius: 18,
@@ -304,6 +351,41 @@ const ui = StyleSheet.create({
         fontSize: 16,
         color: "#FFFFFF",
     },
+    deleteAccountCard: {
+        borderRadius: 24,
+        padding: 16,
+        backgroundColor: "#FFF5F5",
+        borderWidth: 1,
+        borderColor: "#FECACA",
+        rowGap: 12,
+    },
+    deleteAccountTitle: {
+        fontFamily: "ChairoSans",
+        fontSize: 18,
+        color: "#7F1D1D",
+    },
+    deleteAccountBody: {
+        fontFamily: "ChairoSans",
+        fontSize: 14,
+        lineHeight: 20,
+        color: "#991B1B",
+    },
+    deleteAccountButton: {
+        borderRadius: 999,
+        paddingHorizontal: 18,
+        paddingVertical: 12,
+        backgroundColor: "#DC2626",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    deleteAccountButtonDisabled: {
+        opacity: 0.7,
+    },
+    deleteAccountButtonText: {
+        fontFamily: "ChairoSans",
+        fontSize: 15,
+        color: "#FFFFFF",
+    },
     editHeaderKicker: {
         color: "rgba(255,255,255,0.65)",
         letterSpacing: 5,
@@ -354,15 +436,20 @@ type OrderSummaryItem = {
 
 const Profile = () => {
     const navigation = useNavigation<ManageAddressesNavigation>();
-    const { user, setIsAuthenticated, setUser, preferredEmoji, setPreferredEmoji } = useAuthStore();
+    const { user, isAuthenticated, setIsAuthenticated, setUser, preferredEmoji, setPreferredEmoji } = useAuthStore();
     const { defaultAddress } = useDefaultAddress();
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
+    const { height: windowHeight } = useStableWindowDimensions();
     const safeTop = Math.max(insets.top, 12);
     const isWeb = Platform.OS === "web";
+    const guestTabBarOffset = Platform.OS === "web" ? 0 : 74 + Math.max(insets.bottom, 10) + 26;
+    const guestViewportHeight = Math.max(windowHeight - safeTop - guestTabBarOffset, 0);
+    const guestVisualCenterOffset = Math.max((guestTabBarOffset - safeTop) / 2, 0) + 48;
 
     const [orders, setOrders] = useState<any[]>([]);
     const [signingOut, setSigningOut] = useState(false);
+    const [deletingProfile, setDeletingProfile] = useState(false);
 
     const [notifModalVisible, setNotifModalVisible] = useState(false);
 
@@ -479,6 +566,105 @@ const Profile = () => {
         }
     };
 
+    const handleDeleteProfile = () => {
+        const confirmTitle = t("profileExtras.deleteProfile.confirmTitle", "Delete profile?");
+        const confirmBody = t(
+            "profileExtras.deleteProfile.confirmBody",
+            "Are you sure? This permanently deletes your profile and you will lose access to your account.",
+        );
+        const successTitle = t("profileExtras.deleteProfile.successTitle", "Profile deleted");
+        const successBody = t("profileExtras.deleteProfile.successBody", "Your account has been deleted permanently.");
+        const errorTitle = t("profileExtras.deleteProfile.errorTitle", "Unable to delete profile");
+        const errorBody = t(
+            "profileExtras.deleteProfile.errorBody",
+            "Please sign in again and try deleting your profile once more.",
+        );
+
+        const executeDeleteProfile = async () => {
+            try {
+                setDeletingProfile(true);
+                await deleteCurrentUserProfile();
+                setPreferredEmoji(undefined as any);
+                setUser(null);
+                setIsAuthenticated(false);
+
+                if (Platform.OS === "web") {
+                    window.alert(`${successTitle}\n\n${successBody}`);
+                } else {
+                    Alert.alert(successTitle, successBody);
+                }
+
+                router.replace("/sign-in");
+            } catch (error: any) {
+                const message = error?.message || errorBody;
+                if (Platform.OS === "web") {
+                    window.alert(`${errorTitle}\n\n${message}`);
+                } else {
+                    Alert.alert(errorTitle, message);
+                }
+            } finally {
+                setDeletingProfile(false);
+            }
+        };
+
+        if (Platform.OS === "web") {
+            const confirmed = window.confirm(`${confirmTitle}\n\n${confirmBody}`);
+            if (confirmed) {
+                void executeDeleteProfile();
+            }
+            return;
+        }
+
+        Alert.alert(confirmTitle, confirmBody, [
+            {
+                text: t("common.cancel"),
+                style: "cancel",
+            },
+            {
+                text: t("profileExtras.deleteProfile.confirmAction", "Delete profile"),
+                style: "destructive",
+                onPress: () => {
+                    void executeDeleteProfile();
+                },
+            },
+        ]);
+    };
+
+    if (!isAuthenticated) {
+        return (
+            <SafeAreaView className="flex-1 bg-gray-50" edges={["left", "right", "bottom"]}>
+                <View
+                    style={[
+                        ui.guestViewport,
+                        {
+                            paddingTop: safeTop,
+                            paddingBottom: guestTabBarOffset,
+                            minHeight: guestViewportHeight || undefined,
+                            transform: [{ translateY: guestVisualCenterOffset }],
+                        },
+                    ]}
+                >
+                    <View
+                        className="secondary-card items-center"
+                        style={[ui.sectionCard, ui.sectionCardShadow, ui.guestCard]}
+                    >
+                        {illustrations.courierHero ? <illustrations.courierHero width={120} height={120} /> : null}
+                        <Text style={ui.guestTitle}>Sign in to manage your profile</Text>
+                        <Text style={ui.guestBody}>
+                            Browse restaurants and menus freely. Sign in when you want to place orders, manage addresses, or edit your account.
+                        </Text>
+                        <TouchableOpacity
+                            style={ui.guestButton}
+                            onPress={() => router.push("/sign-in")}
+                        >
+                            <Text style={ui.guestButtonText}>Sign in</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView className="flex-1 bg-gray-50" edges={["left", "right", "bottom"]}>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 160, paddingTop: safeTop }}>
@@ -508,8 +694,14 @@ const Profile = () => {
                         </View>
 
                         <View className="flex-row gap-3" style={ui.heroActions}>
-                            <TouchableOpacity style={ui.primaryCta} onPress={() => setIsEditingProfile(true)}>
-                                <Text className="text-white" style={ui.ctaText}>{t("profile.header.edit")}</Text>
+                            <TouchableOpacity
+                                className="flex-1 px-5 py-3 rounded-full items-center justify-center"
+                                style={ui.primaryCta}
+                                onPress={() => setIsEditingProfile(true)}
+                            >
+                                <Text className="paragraph-semibold text-white" style={ui.ctaText}>
+                                    {t("profile.header.edit")}
+                                </Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity
@@ -664,6 +856,27 @@ const Profile = () => {
                                 </View>
                             </TouchableOpacity>
                         ))}
+                    </View>
+
+                    <View style={ui.deleteAccountCard}>
+                        <Text style={ui.deleteAccountTitle}>{t("profileExtras.deleteProfile.title", "Delete profile")}</Text>
+                        <Text style={ui.deleteAccountBody}>
+                            {t(
+                                "profileExtras.deleteProfile.description",
+                                "Permanently remove your account and profile data from Hungrie.",
+                            )}
+                        </Text>
+                        <TouchableOpacity
+                            style={[ui.deleteAccountButton, deletingProfile ? ui.deleteAccountButtonDisabled : null]}
+                            disabled={deletingProfile}
+                            onPress={handleDeleteProfile}
+                        >
+                            <Text style={ui.deleteAccountButtonText}>
+                                {deletingProfile
+                                    ? t("profileExtras.deleteProfile.deleting", "Deleting...")
+                                    : t("profileExtras.deleteProfile.cta", "Delete profile")}
+                            </Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
             </ScrollView>

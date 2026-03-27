@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { StyleProp, StyleSheet, Text, View, ViewStyle, useWindowDimensions } from "react-native";
+import { makeShadow } from "@/src/lib/shadowStyle";
 
 type Props = {
     title?: string;
@@ -44,10 +45,7 @@ const styles = StyleSheet.create({
         borderColor: "#E7DCCF",
         padding: 14,
         gap: 10,
-        shadowColor: "rgba(45, 35, 20, 0.08)",
-        shadowOpacity: 0.09,
-        shadowRadius: 14,
-        shadowOffset: { width: 0, height: 7 },
+        ...makeShadow({ color: "rgba(45, 35, 20, 0.08)", offsetY: 7, blurRadius: 14, opacity: 0.09, elevation: 2 }),
         elevation: 2,
     },
     compact: {

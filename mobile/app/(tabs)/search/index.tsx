@@ -25,6 +25,7 @@ import { Chip, Stepper } from "@/src/components/componentRegistry";
 import type { SearchResult } from "@/src/hooks/useSearch";
 
 import { useSearchScreenV3 } from "@/src/hooks/useSearchScreenV3";
+import { makeShadow } from "@/src/lib/shadowStyle";
 
 //restaurant logos (assets/restaurantlogo)
 import AdaPizzaLogo from "@/assets/restaurantlogo/adapizzalogo.jpg";
@@ -133,15 +134,7 @@ const isValidUri = (u: string) => {
     );
 };
 
-const cardShadow = Platform.select({
-    ios: {
-        shadowColor: "#000",
-        shadowOpacity: 0.10,
-        shadowRadius: 24,
-        shadowOffset: { width: 0, height: 12 },
-    },
-    android: { elevation: 6 },
-});
+const cardShadow = makeShadow({ color: "#000", offsetY: 12, blurRadius: 24, opacity: 0.1, elevation: 6 });
 
 const SearchInput = ({
     value,

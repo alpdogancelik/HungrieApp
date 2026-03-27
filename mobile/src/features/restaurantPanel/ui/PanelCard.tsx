@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { StyleProp, StyleSheet, Text, View, ViewStyle, useWindowDimensions } from "react-native";
 import { panelDesign, panelTypography } from "./panelDesign";
+import { makeShadow } from "@/src/lib/shadowStyle";
 
 type Props = {
     title?: string;
@@ -39,10 +40,7 @@ const styles = StyleSheet.create({
         borderColor: panelDesign.colors.border,
         padding: panelDesign.spacing.md,
         gap: panelDesign.spacing.sm,
-        shadowColor: panelDesign.colors.shadow,
-        shadowOpacity: 0.09,
-        shadowRadius: 14,
-        shadowOffset: { width: 0, height: 7 },
+        ...makeShadow({ color: panelDesign.colors.shadow, offsetY: 7, blurRadius: 14, opacity: 0.09, elevation: 2 }),
         elevation: 2,
     },
     compactCard: {

@@ -5,6 +5,7 @@ import { useCartStore } from "@/store/cart.store";
 import Icon from "./Icon";
 import ReviewSheet from "@/src/features/reviews/ReviewSheet";
 import { useProductReviews } from "@/src/features/reviews/useProductReviews";
+import { makeShadow } from "@/src/lib/shadowStyle";
 
 type MenuCardProps = {
     item: any;
@@ -21,6 +22,7 @@ const showToast = (message: string) => {
 };
 
 const formatPrice = (value?: number | string) => `TRY ${Number(value || 0).toFixed(2)}`;
+const cardShadow = makeShadow({ color: "#0F172A", offsetY: 8, blurRadius: 18, opacity: 0.08, elevation: 3 });
 const toStableMenuId = (item: any) => {
     const directId = item?.$id ?? item?.id;
     if (directId !== undefined && directId !== null && String(directId).trim()) return String(directId);
@@ -88,8 +90,8 @@ const MenuCard = ({ item, onPress, accentColor = "#FE8C00" }: MenuCardProps) => 
             onPress={onPress ?? (() => {})}
             style={[
                 styles.card,
+                cardShadow,
                 { borderColor: `${cardAccent}18` },
-                Platform.OS === "android" ? { elevation: 3, shadowColor: "#0F172A" } : {},
             ]}
         >
             <View style={styles.headerRow}>

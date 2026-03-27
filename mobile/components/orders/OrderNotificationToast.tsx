@@ -15,7 +15,7 @@ const OrderNotificationToast = ({ visible, message, title, dismissHint, dismissA
     if (!visible) return null;
 
     return (
-        <View style={[styles.wrap, { top: insets.top + 8 }]} pointerEvents="box-none">
+        <View style={[styles.wrap, { top: insets.top + 8, pointerEvents: "box-none" }]}>
             <Pressable
                 onPress={onClose}
                 accessibilityRole="button"

@@ -1,5 +1,6 @@
 ﻿import {
     createUserWithEmailAndPassword,
+    deleteUser,
     onAuthStateChanged,
     sendPasswordResetEmail,
     signInWithEmailAndPassword,
@@ -11,6 +12,7 @@
 } from "firebase/auth";
 import {
     addDoc,
+    deleteDoc,
     collection,
     deleteField,
     doc,
@@ -35,6 +37,8 @@ import { unregisterPushToken } from "./registerPushToken";
 import i18n from "@/src/lib/i18n";
 import { getAuthErrorMessage } from "@/src/features/auth/authCopy";
 
+export { getOwnedRestaurantId } from "./restaurantOwnership";
+
 export type Profile = { name: string; email: string; avatar?: string; accountId?: string; whatsappNumber?: string };
 export const firebaseOrdersEnabled = firebaseConfigured && Boolean(firestore);
 export const getMockOwnerAccount = async () => null;
@@ -52,6 +56,8 @@ const avatarUrl = (name: string) =>
     `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "Hungrie User")}&background=FE8C00&color=ffffff`;
 const parseWhatsappFromPhoto = (photoUrl?: string | null) =>
     photoUrl && photoUrl.startsWith("wa:") ? photoUrl.replace("wa:", "") : undefined;
+const compactObject = <T extends Record<string, any>>(value: T) =>
+    Object.fromEntries(Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined)) as Partial<T>;
 const mapFirebaseUser = (user: FirebaseUser, overrides: Partial<Profile> = {}): Profile & { accountId: string } => {
     const name = overrides.name || user.displayName || user.email || "Hungrie User";
     const whatsappNumber = overrides.whatsappNumber ?? parseWhatsappFromPhoto(user.photoURL);
@@ -89,6 +95,9 @@ const normalizeAuthErrorMessage = (error: any) => {
     }
     if (code === "auth/too-many-requests") {
         return getAuthErrorMessage(language, "tooManyRequests") || rawMessage;
+    }
+    if (code === "auth/requires-recent-login") {
+        return "For security, please sign in again and then try deleting your profile.";
     }
     if (message.includes("verify your email")) {
         return getAuthErrorMessage(language, "verifyEmail") || rawMessage;
@@ -150,7 +159,7 @@ const syncProfile = async (user: FirebaseUser, overrides: Partial<Profile> = {})
     const snap = await getDoc(ref).catch(() => null);
     const now = Date.now();
     if (!snap || !snap.exists()) {
-        await setDoc(ref, { ...base, ...overrides, createdAt: now, updatedAt: now }, { merge: true });
+        await setDoc(ref, compactObject({ ...base, ...overrides, createdAt: now, updatedAt: now }), { merge: true });
         return base;
     }
     const stored = snap.data() as Profile & { accountId?: string };
@@ -165,14 +174,14 @@ const syncProfile = async (user: FirebaseUser, overrides: Partial<Profile> = {})
     if (needsUpdate) {
         await setDoc(
             ref,
-            {
+            compactObject({
                 name: merged.name,
                 email: merged.email,
                 avatar: merged.avatar,
                 whatsappNumber: merged.whatsappNumber,
                 accountId: merged.accountId,
                 updatedAt: now,
-            },
+            }),
             { merge: true },
         ).catch(() => null);
     }
@@ -233,6 +242,71 @@ export const signOut = async () => {
     return firebaseSignOut(requireAuth());
 };
 
+const RECENT_LOGIN_MAX_AGE_MS = 10 * 60 * 1000;
+
+const hasRecentLogin = (authUser: FirebaseUser) => {
+    const lastSignInTime = authUser.metadata.lastSignInTime ? new Date(authUser.metadata.lastSignInTime).getTime() : 0;
+    if (!lastSignInTime) return false;
+    return Date.now() - lastSignInTime <= RECENT_LOGIN_MAX_AGE_MS;
+};
+
+const deleteCollectionDocs = async (segments: string[]) => {
+    const db = requireDB();
+    const [firstSegment, ...restSegments] = segments;
+    if (!firstSegment) return;
+    const snapshot = await getDocs(collection(db, firstSegment, ...restSegments)).catch(() => null);
+    if (!snapshot || snapshot.empty) return;
+    await Promise.all(snapshot.docs.map((entry) => deleteDoc(entry.ref).catch(() => null)));
+};
+
+const scrubUserOrders = async (userId: string) => {
+    const db = requireDB();
+    const ordersSnapshot = await getDocs(query(collection(db, FIREBASE_COLLECTIONS.orders), where("userId", "==", userId))).catch(() => null);
+    if (!ordersSnapshot || ordersSnapshot.empty) return;
+
+    await Promise.all(
+        ordersSnapshot.docs.map((orderDoc) =>
+            updateDoc(orderDoc.ref, {
+                userId: `deleted:${userId}`,
+                customerName: "Deleted User",
+                customerEmail: deleteField(),
+                customerWhatsapp: deleteField(),
+                customer: {
+                    name: "Deleted User",
+                },
+                deliveryAddress: deleteField(),
+                deliveryAddressText: deleteField(),
+                updatedAt: Date.now(),
+            }).catch(() => null),
+        ),
+    );
+};
+
+export const deleteCurrentUserProfile = async () => {
+    const authUser = await waitForAuthUser();
+    if (!authUser) throw new Error("User is not signed in.");
+    if (!hasRecentLogin(authUser)) {
+        throw new Error("For security, please sign in again and then try deleting your profile.");
+    }
+
+    const db = requireDB();
+    const userId = authUser.uid;
+
+    await unregisterPushToken().catch(() => null);
+    await deleteCollectionDocs([FIREBASE_COLLECTIONS.users, userId, "pushTokens"]).catch(() => null);
+    await deleteCollectionDocs([FIREBASE_COLLECTIONS.users, userId, "addresses"]).catch(() => null);
+    await scrubUserOrders(userId).catch(() => null);
+    await deleteDoc(doc(db, FIREBASE_COLLECTIONS.users, userId)).catch(() => null);
+
+    try {
+        await deleteUser(authUser);
+    } catch (error: any) {
+        throw new Error(normalizeAuthErrorMessage(error));
+    }
+
+    await firebaseSignOut(requireAuth()).catch(() => null);
+};
+
 export const sendPasswordReset = async (email: string) => {
     const trimmed = email.trim();
     if (!trimmed) throw new Error(getAuthErrorMessage(i18n.language, "emailRequired") || "Email address is required.");
@@ -245,29 +319,6 @@ export const sendPasswordReset = async (email: string) => {
         }
         throw new Error(normalizeAuthErrorMessage(e));
     }
-};
-
-export const getOwnedRestaurantId = async ({
-    includeInactive = true,
-}: {
-    includeInactive?: boolean;
-} = {}) => {
-    if (!firebaseConfigured || !firestore) return null;
-    const owner = auth?.currentUser?.uid;
-    if (!owner) return null;
-    const baseQuery = query(collection(requireDB(), FIREBASE_COLLECTIONS.restaurants), where("ownerId", "==", owner));
-    const snap = await getDocs(baseQuery).catch(() => null);
-    if (!snap || snap.empty) return null;
-
-    if (!includeInactive) {
-        const activeDoc = snap.docs.find((snapshot) => snapshot.data()?.isActive !== false);
-        return activeDoc?.id ?? null;
-    }
-
-    // Prefer an active restaurant when available, but keep inactive ownership detectable
-    // so restaurant accounts are not treated like regular customer accounts.
-    const preferredDoc = snap.docs.find((snapshot) => snapshot.data()?.isActive !== false) ?? snap.docs[0];
-    return preferredDoc?.id ?? null;
 };
 
 export const updateUserProfile = async ({

@@ -12,6 +12,7 @@ import useServerResource from "@/lib/useServerResource";
 import { getRestaurant, getRestaurantMenu, getRestaurantCategories } from "@/lib/api";
 import { getRestaurantImageSource } from "@/lib/assets";
 import { getCategoryLabel } from "@/src/lib/categoryLabels";
+import { makeShadow } from "@/src/lib/shadowStyle";
 
 type MenuEntry = {
     id: string;
@@ -107,13 +108,7 @@ const THEME = {
     amberSoft: "rgba(246,185,59,0.22)",
 };
 
-const shadow = {
-    shadowColor: "#000",
-    shadowOpacity: Platform.OS === "ios" ? 0.08 : 0.13,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 3,
-};
+const shadow = makeShadow({ color: "#000", offsetY: 10, blurRadius: 18, opacity: Platform.OS === "ios" ? 0.08 : 0.13, elevation: 3 });
 
 const CardPress = ({ children, onPress, style }: { children: ReactNode; onPress?: () => void; style?: any }) => (
     <Pressable
@@ -388,8 +383,8 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
                         </LinearGradient>
                     </Pressable>
 
-                    <View style={styles.heroDecorA} pointerEvents="none" />
-                    <View style={styles.heroDecorB} pointerEvents="none" />
+                    <View style={[styles.heroDecorA, { pointerEvents: "none" }]} />
+                    <View style={[styles.heroDecorB, { pointerEvents: "none" }]} />
 
                     <CardPress style={styles.heroCard}>
                         <View style={styles.heroRow}>
@@ -506,7 +501,7 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
                 </Pressable>
 
                 {addedToastVisible ? (
-                    <View pointerEvents="none" style={styles.toastOverlay}>
+                    <View style={[styles.toastOverlay, { pointerEvents: "none" }]}>
                         <Animated.View style={[styles.toastCard, { opacity: toastOpacity, transform: [{ scale: toastScale }] }]}>
                             <View style={styles.toastIconWrap}>
                                 <Icon name="check" size={16} color="#FFFFFF" />
@@ -750,10 +745,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         paddingHorizontal: 18,
         paddingVertical: 16,
-        shadowColor: "#000",
-        shadowOpacity: 0.14,
-        shadowOffset: { width: 0, height: 8 },
-        shadowRadius: 20,
+        ...makeShadow({ color: "#000", offsetY: 8, blurRadius: 20, opacity: 0.14, elevation: 10 }),
         elevation: 10,
     },
     toastIconWrap: {

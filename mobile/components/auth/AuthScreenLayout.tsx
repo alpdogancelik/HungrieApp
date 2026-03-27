@@ -2,6 +2,7 @@ import { Children, type ComponentType, type ReactNode, useMemo } from "react";
 import {
     KeyboardAvoidingView,
     Platform,
+    Pressable,
     ScrollView,
     StyleSheet,
     Text,
@@ -15,6 +16,7 @@ import type { SvgProps } from "react-native-svg";
 import Animated, { Easing, FadeInDown, FadeInUp } from "react-native-reanimated";
 
 import LanguageToggle from "@/components/LanguageToggle";
+import { makeShadow } from "@/src/lib/shadowStyle";
 import { useReducedMotion } from "@/src/lib/useReducedMotion";
 import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 
@@ -26,6 +28,7 @@ type AuthScreenLayoutProps = {
     gradientColors: readonly [string, string, ...string[]];
     showWordmark?: boolean;
     enableEntranceAnimation?: boolean;
+    onClose?: () => void;
     children: ReactNode;
 };
 
@@ -45,10 +48,7 @@ const styles = StyleSheet.create({
         overflow: "hidden",
         borderWidth: 1,
         borderColor: "rgba(255,255,255,0.24)",
-        shadowColor: "#000",
-        shadowOpacity: Platform.OS === "ios" ? 0.14 : 0.24,
-        shadowOffset: { width: 0, height: 16 },
-        shadowRadius: 26,
+        ...makeShadow({ color: "#000", offsetY: 16, blurRadius: 26, opacity: Platform.OS === "ios" ? 0.14 : 0.24, elevation: 12 }),
         elevation: 12,
     },
     heroInner: {
@@ -92,11 +92,29 @@ const styles = StyleSheet.create({
         gap: 20,
         borderWidth: 1,
         borderColor: "rgba(15,23,42,0.06)",
-        shadowColor: "#000",
-        shadowOpacity: Platform.OS === "ios" ? 0.08 : 0.12,
-        shadowOffset: { width: 0, height: 12 },
-        shadowRadius: 22,
+        ...makeShadow({ color: "#000", offsetY: 12, blurRadius: 22, opacity: Platform.OS === "ios" ? 0.08 : 0.12, elevation: 10 }),
         elevation: 10,
+    },
+    topRightActions: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+    },
+    closeButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.28)",
+        backgroundColor: "rgba(15,23,42,0.14)",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    closeButtonText: {
+        color: "#FFFFFF",
+        fontSize: 18,
+        lineHeight: 18,
+        fontFamily: "ChairoSans",
     },
 });
 
@@ -108,6 +126,7 @@ const AuthScreenLayout = ({
     gradientColors,
     showWordmark = true,
     enableEntranceAnimation = true,
+    onClose,
     children,
 }: AuthScreenLayoutProps) => {
     const insets = useSafeAreaInsets();
@@ -184,7 +203,14 @@ const AuthScreenLayout = ({
                                             Hungrie
                                         </Text>
                                     )}
-                                    <LanguageToggle appearance="inverse" showLabel={false} />
+                                    <View style={styles.topRightActions}>
+                                        <LanguageToggle appearance="inverse" showLabel={false} />
+                                        {onClose ? (
+                                            <Pressable style={styles.closeButton} onPress={onClose} hitSlop={8}>
+                                                <Text style={styles.closeButtonText}>x</Text>
+                                            </Pressable>
+                                        ) : null}
+                                    </View>
                                 </View>
 
                                 <View style={{ flexDirection: heroDirection as "row" | "column", alignItems: "center", gap: 16 }}>

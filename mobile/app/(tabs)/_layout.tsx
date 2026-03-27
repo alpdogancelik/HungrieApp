@@ -1,15 +1,12 @@
-import { Redirect, Tabs } from "expo-router";
+import { Tabs } from "expo-router";
 import React, { useEffect, useRef } from "react";
 import { Animated, LayoutChangeEvent, Platform, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import useAuthStore from "@/store/auth.store";
 import Icon from "@/components/Icon";
-import { isAuthRequired } from "@/lib/runtimeEnv";
 import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 import { makeShadow } from "@/src/lib/shadowStyle";
-
-const authGuardEnabled = isAuthRequired();
 const WEB_MAX_WIDTH = 960;
 const BAR_HEIGHT = 74;
 const ACTIVE_ICON_COLOR = "#F28C28";
@@ -73,10 +70,10 @@ function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
         >
             {/* kayan highlight */}
             <Animated.View
-                pointerEvents="none"
                 style={[
                     styles.indicator,
                     {
+                        pointerEvents: "none",
                         left: INNER_PAD,
                         width: bubbleSize,
                         height: bubbleSize,
@@ -122,8 +119,6 @@ function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
 }
 
 export default function TabLayout() {
-    const { isAuthenticated } = useAuthStore();
-    if (authGuardEnabled && !isAuthenticated) return <Redirect href="/sign-in" />;
     return (
         <Tabs
             initialRouteName="home"

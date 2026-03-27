@@ -1,9 +1,8 @@
-import { collection, doc, serverTimestamp, setDoc } from "firebase/firestore";
-import { deleteDoc, collection, doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { collection, deleteDoc, doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { Platform } from "react-native";
 
 import { auth, firestore } from "@/lib/firebase";
-import { getOwnedRestaurantId } from "@/lib/firebaseAuth";
+import { getOwnedRestaurantId } from "@/lib/restaurantOwnership";
 import { storage } from "@/src/lib/storage";
 import { NotificationManager } from "@/src/features/notifications/NotificationManager";
 

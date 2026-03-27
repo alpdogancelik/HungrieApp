@@ -35,8 +35,8 @@ export const PanelShell = ({
 
     const body = (
         <View style={[styles.contentWrap, noScroll ? styles.contentWrapNoScroll : null, { maxWidth: isDesktop ? 1080 : 860 }]}>
-            <View pointerEvents="none" style={styles.decoA} />
-            <View pointerEvents="none" style={styles.decoB} />
+            <View style={[styles.decoA, { pointerEvents: "none" }]} />
+            <View style={[styles.decoB, { pointerEvents: "none" }]} />
 
             <View style={[styles.header, isPhone ? styles.headerPhone : null]}>
                 <View style={[styles.headerMain, isPhone ? styles.headerMainPhone : null]}>

@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { PanelLocale } from "@/src/features/restaurantPanel/panelLocale";
+import { makeShadow } from "@/src/lib/shadowStyle";
 
 type Props = {
     locale: PanelLocale;
@@ -58,10 +59,7 @@ const styles = StyleSheet.create({
     pillActive: {
         borderColor: "#EE7A14",
         backgroundColor: "#FFF1E3",
-        shadowColor: "#EE7A14",
-        shadowOpacity: 0.14,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
+        ...makeShadow({ color: "#EE7A14", offsetY: 2, blurRadius: 8, opacity: 0.14, elevation: 2 }),
         elevation: 2,
     },
     label: {

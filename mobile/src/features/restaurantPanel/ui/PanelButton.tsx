@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, ViewStyle, useWindowDimensions } from "react-native";
 import { panelDesign } from "./panelDesign";
+import { makeShadow } from "@/src/lib/shadowStyle";
 
 type PanelButtonVariant = "primary" | "outline" | "ghost" | "danger" | "success";
 
@@ -87,10 +88,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         paddingHorizontal: panelDesign.spacing.md,
         paddingVertical: panelDesign.spacing.sm,
-        shadowColor: "#D6B28A",
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 3 },
+        ...makeShadow({ color: "#D6B28A", offsetY: 3, blurRadius: 8, opacity: 0.08, elevation: 1 }),
         elevation: 1,
     },
     basePhone: {
@@ -110,10 +108,7 @@ const styles = StyleSheet.create({
         lineHeight: 18,
     },
     focused: {
-        shadowColor: panelDesign.colors.primary,
-        shadowOpacity: 0.4,
-        shadowRadius: 5,
-        shadowOffset: { width: 0, height: 0 },
+        ...makeShadow({ color: panelDesign.colors.primary, offsetY: 0, blurRadius: 5, opacity: 0.4, elevation: 2 }),
         elevation: 2,
     },
 });

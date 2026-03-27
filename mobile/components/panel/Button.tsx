@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, ViewStyle, useWindowDimensions } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { makeShadow } from "@/src/lib/shadowStyle";
 
 type Variant = "primary" | "secondary" | "destructive" | "outline" | "ghost" | "danger";
 
@@ -83,10 +84,7 @@ const styles = StyleSheet.create({
         paddingVertical: 9,
         flexDirection: "row",
         gap: 8,
-        shadowColor: "#D6B28A",
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 3 },
+        ...makeShadow({ color: "#D6B28A", offsetY: 3, blurRadius: 8, opacity: 0.08, elevation: 1 }),
         elevation: 1,
     },
     basePhone: {
@@ -107,10 +105,7 @@ const styles = StyleSheet.create({
         lineHeight: 17,
     },
     focused: {
-        shadowColor: "#EE7A14",
-        shadowOpacity: 0.4,
-        shadowRadius: 5,
-        shadowOffset: { width: 0, height: 0 },
+        ...makeShadow({ color: "#EE7A14", offsetY: 0, blurRadius: 5, opacity: 0.4, elevation: 2 }),
         elevation: 2,
     },
 });

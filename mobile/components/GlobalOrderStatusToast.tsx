@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import useAuthStore from "@/store/auth.store";
 import { auth } from "@/lib/firebase";
 import { subscribeUserOrders } from "@/src/services/firebaseOrders";
+import { makeShadow } from "@/src/lib/shadowStyle";
 import { cookingScenes } from "@/constants/mediaCatalog";
 
 type NormalizedOrderStatus = "pending" | "preparing" | "ready" | "out_for_delivery" | "delivered" | "canceled";
@@ -236,10 +237,10 @@ const GlobalOrderStatusToast = () => {
 
     return (
         <Animated.View
-            pointerEvents="box-none"
             style={[
                 styles.wrap,
                 {
+                    pointerEvents: "box-none",
                     top: Math.max(insets.top + 6, 12),
                     opacity,
                     transform: [{ translateY }],
@@ -290,10 +291,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         columnGap: 8,
-        shadowColor: "#0F172A",
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 4 },
+        ...makeShadow({ color: "#0F172A", offsetY: 4, blurRadius: 8, opacity: 0.08, elevation: 3 }),
         elevation: 3,
     },
     iconCircle: {

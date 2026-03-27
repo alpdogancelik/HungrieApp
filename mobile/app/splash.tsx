@@ -17,7 +17,7 @@ import Animated, {
 
 import BrandMotion from "../components/BrandMotion";
 import { getOwnedRestaurantId } from "@/lib/firebaseAuth";
-import { isAuthRequired } from "@/lib/runtimeEnv";
+import { makeShadow } from "@/src/lib/shadowStyle";
 import useAuthStore from "@/store/auth.store";
 import { useReducedMotion } from "@/src/lib/useReducedMotion";
 import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
@@ -29,8 +29,6 @@ const heroPackshot = require("../assets/images/vecteezy_fast-food-meal-with_2506
 
 const BACKGROUND_COLOR = "#FFF7EF";
 const CONTENT_MAX_WIDTH = 520;
-
-const authGuardEnabled = isAuthRequired();
 
 export default function Splash() {
     const router = useRouter();
@@ -88,12 +86,7 @@ export default function Splash() {
         };
 
         const resolveNextRoute = async () => {
-            if (authGuardEnabled && !isAuthenticated) {
-                if (mounted) setNextRoute("/sign-in");
-                return;
-            }
-
-            if (!isAuthenticated && !authGuardEnabled) {
+            if (!isAuthenticated) {
                 if (mounted) setNextRoute("/home");
                 return;
             }
@@ -264,10 +257,7 @@ const styles = StyleSheet.create({
         overflow: "hidden",
         borderWidth: 1,
         borderColor: "rgba(255,255,255,0.22)",
-        shadowColor: "#000",
-        shadowOpacity: Platform.OS === "ios" ? 0.18 : 0.26,
-        shadowOffset: { width: 0, height: 18 },
-        shadowRadius: 28,
+        ...makeShadow({ color: "#000", offsetY: 18, blurRadius: 28, opacity: Platform.OS === "ios" ? 0.18 : 0.26, elevation: 12 }),
         elevation: 12,
     },
     heroInner: {
