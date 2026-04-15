@@ -7,6 +7,7 @@ import {
     ScrollView,
     Text,
     TouchableOpacity,
+    useWindowDimensions,
     View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -141,6 +142,7 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
     const { t } = useTranslation();
     const { user } = useAuthStore();
     const insets = useSafeAreaInsets();
+    const { height: windowHeight } = useWindowDimensions();
     const { order } = useOrderRealtime(orderId);
     const { status: pendingStatus } = useOrderStatus(orderId);
 
@@ -173,6 +175,7 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
     const isCancelWindowActive = orderStatus === "pending" && cancelWindowRemaining > 0 && !autoCanceled;
     const isReminderLocked = orderStatus === "pending" && reminderUnlockRemaining > 0;
     const safeTop = Math.max(insets.top, 16);
+    const isCompactPhone = Platform.OS === "android" || windowHeight < 860;
 
     const handleAutoCancel = useCallback(async () => {
         if (autoCanceled || !orderId) return;
@@ -468,6 +471,15 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
             : cooldown > 0
               ? t("orderPending.remind.waitSeconds", { seconds: cooldown })
               : t("orderPending.remind.cta");
+    const helpMessage = useMemo(
+        () =>
+            [
+                t("orderPending.helpBody"),
+                "",
+                t("orderPending.remind.note"),
+            ].join("\n"),
+        [t],
+    );
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["left", "right", "bottom"]}>
@@ -486,7 +498,7 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
                     </TouchableOpacity>
                     <Text style={{ color: colors.text, fontSize: 16, fontFamily: "ChairoSans" }}>{headerTitle}</Text>
                     <TouchableOpacity
-                        onPress={() => Alert.alert(t("orderPending.helpTitle"), t("orderPending.helpBody"))}
+                        onPress={() => Alert.alert(t("orderPending.helpTitle"), helpMessage)}
                         accessibilityRole="button"
                         accessibilityLabel={t("orderPending.a11y.help")}
                         hitSlop={12}
@@ -498,24 +510,28 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
 
             <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ padding: 20, paddingBottom: 24 + insets.bottom, gap: 24 }}
+                contentContainerStyle={{
+                    padding: 20,
+                    paddingBottom: 24 + insets.bottom,
+                    gap: isCompactPhone ? 16 : 24,
+                }}
             >
                 <View
                     style={{
                         backgroundColor: colors.card,
                         borderRadius: radius.lg,
-                        padding: 20,
+                        padding: isCompactPhone ? 16 : 20,
                         borderWidth: 1,
                         borderColor: colors.border,
-                        gap: 16,
+                        gap: isCompactPhone ? 12 : 16,
                     }}
                 >
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: isCompactPhone ? 10 : 16 }}>
                         <Animated.View
                             style={{
-                                width: 56,
-                                height: 56,
-                                borderRadius: 28,
+                                width: isCompactPhone ? 42 : 56,
+                                height: isCompactPhone ? 42 : 56,
+                                borderRadius: isCompactPhone ? 21 : 28,
                                 borderWidth: 2,
                                 borderColor: colors.border,
                                 alignItems: "center",
@@ -523,13 +539,33 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
                                 transform: [{ rotate: rotation }],
                             }}
                         >
-                            <Ionicons name="sync" size={24} color={colors.primary} />
+                            <Ionicons name="sync" size={isCompactPhone ? 20 : 24} color={colors.primary} />
                         </Animated.View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontFamily: "ChairoSans", fontSize: 18 }}>{cardTitle}</Text>
-                            <Text style={{ color: colors.sub, marginTop: 4 }}>{cardSubtitle}</Text>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                            <Text
+                                style={{
+                                    color: colors.text,
+                                    fontFamily: "ChairoSans",
+                                    fontSize: isCompactPhone ? 15 : 18,
+                                    lineHeight: isCompactPhone ? 18 : 24,
+                                }}
+                            >
+                                {cardTitle}
+                            </Text>
+                            <Text
+                                style={{
+                                    color: colors.sub,
+                                    marginTop: 4,
+                                    fontSize: isCompactPhone ? 12 : 14,
+                                    lineHeight: isCompactPhone ? 16 : 20,
+                                }}
+                            >
+                                {cardSubtitle}
+                            </Text>
                         </View>
-                        <OrderRider width={110} height={110} />
+                        <View style={{ width: isCompactPhone ? 90 : 110, alignItems: "flex-end" }}>
+                            <OrderRider width={isCompactPhone ? 74 : 110} height={isCompactPhone ? 74 : 110} />
+                        </View>
                     </View>
                     <View
                         style={{
@@ -550,10 +586,10 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
                     style={{
                         backgroundColor: colors.card,
                         borderRadius: radius.lg,
-                        padding: 20,
+                        padding: isCompactPhone ? 16 : 20,
                         borderWidth: 1,
                         borderColor: colors.border,
-                        gap: 20,
+                        gap: isCompactPhone ? 14 : 20,
                     }}
                 >
                     {steps.map((step) => (
@@ -590,8 +626,6 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
                         </LinearGradient>
                     </TouchableOpacity>
 
-                    <Text style={{ color: colors.sub, fontSize: 13, lineHeight: 18 }}>{t("orderPending.remind.note")}</Text>
-
                     {isCancelWindowActive ? (
                         <TouchableOpacity
                             onPress={handleCancel}
@@ -625,8 +659,6 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
                     )}
 
                     <Text style={{ color: colors.sub, fontSize: 13, lineHeight: 18 }}>
-                        {t("orderPending.footnote.sla", { minutes: APPROVAL_SLA_SECONDS / 60 })}
-                        {"\n"}
                         {t("orderPending.footnote.cancelWindow")}
                     </Text>
                 </View>

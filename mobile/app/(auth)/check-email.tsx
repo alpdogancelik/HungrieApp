@@ -22,8 +22,22 @@ const styles = StyleSheet.create({
     },
     emailLabel: { color: "#64748B", fontSize: 13, lineHeight: 18, fontFamily: "ChairoSans" },
     emailValue: { color: "#0F172A", fontSize: 16, lineHeight: 22, fontFamily: "ChairoSans" },
-    footerRow: { flexDirection: "row", justifyContent: "center", columnGap: 8, marginTop: 4 },
-    footerText: { fontSize: 16, color: "#6B7280", fontFamily: "ChairoSans" },
+    footerRow: {
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "flex-start",
+        columnGap: 8,
+        rowGap: 4,
+        marginTop: 4,
+        flexWrap: "wrap",
+    },
+    footerText: {
+        fontSize: 16,
+        color: "#6B7280",
+        fontFamily: "ChairoSans",
+        flexShrink: 1,
+        textAlign: "center",
+    },
     footerLink: { fontSize: 16, color: "#FE8C00", fontFamily: "ChairoSans" },
 });
 

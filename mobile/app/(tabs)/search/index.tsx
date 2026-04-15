@@ -19,7 +19,6 @@ import { useRouter } from "expo-router";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useTranslation } from "react-i18next";
 
-import CartButton from "@/components/CartButton";
 import Icon from "@/components/Icon";
 import { Chip, Stepper } from "@/src/components/componentRegistry";
 import type { SearchResult } from "@/src/hooks/useSearch";
@@ -206,9 +205,6 @@ const SegmentButtons = ({
                     >
                         <Text style={[styles.segmentText, active ? { color: "#fff" } : { color: BRAND.ink }]}>
                             {label}
-                        </Text>
-                        <Text style={[styles.segmentSub, active ? { color: "rgba(255,255,255,0.82)" } : { color: BRAND.muted }]}>
-
                         </Text>
                     </LinearGradient>
                 </Pressable>
@@ -407,7 +403,6 @@ const goRestaurant = (restaurant: any, index: number) => {
                         <View>
                             <Text style={styles.topTitle}>{t("search.title")}</Text>
                         </View>
-                        <CartButton />
                     </View>
 
                     <SearchInput
@@ -538,15 +533,17 @@ const styles = StyleSheet.create({
     segmentRow: { flexDirection: "row", gap: 12 },
     segmentBtnWrap: { flex: 1, borderRadius: 18, overflow: "hidden" },
     segmentBtn: {
+        minHeight: 56,
         paddingVertical: 14,
         paddingHorizontal: 14,
         borderRadius: 18,
         borderWidth: 1,
         borderColor: "rgba(0,0,0,0)",
+        alignItems: "center",
+        justifyContent: "center",
         ...(cardShadow as object),
     },
-    segmentText: { fontFamily: "ChairoSans", fontSize: 15, letterSpacing: -0.2 },
-    segmentSub: { fontFamily: "ChairoSans", fontSize: 12, marginTop: 2 },
+    segmentText: { fontFamily: "ChairoSans", fontSize: 15, lineHeight: 18, letterSpacing: -0.2, textAlign: "center" },
 
     sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
     sectionTitle: { fontFamily: "ChairoSans", fontSize: 18, color: BRAND.ink, letterSpacing: -0.2 },
@@ -580,7 +577,16 @@ const styles = StyleSheet.create({
 
     addBtn: { borderRadius: 20, overflow: "hidden" },
     addCircle: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-    addText: { color: "#fff", fontSize: 18, fontFamily: "ChairoSans", marginTop: -1 },
+    addText: {
+        color: "#fff",
+        fontSize: 18,
+        lineHeight: 18,
+        fontFamily: "ChairoSans",
+        textAlign: "center",
+        marginTop: Platform.OS === "android" ? -2 : -1,
+        includeFontPadding: false,
+        textAlignVertical: "center",
+    },
 
     // Restaurants grid card
     restaurantCard: {

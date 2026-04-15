@@ -1,8 +1,8 @@
 import { memo, useEffect, useRef } from "react";
-import { Alert, Animated, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Alert, Animated, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 
 import { normalizePanelOrderStatus, type PanelOrder } from "@/src/features/restaurantPanel/model/panelOrders";
-import { PanelButton, SectionCard, StatusPill } from "@/components/panel";
+import { SectionCard, StatusPill } from "@/components/panel";
 import OrderNote from "./OrderNote";
 import type { PanelLocale } from "@/src/features/restaurantPanel/panelLocale";
 
@@ -169,54 +169,84 @@ const OrderCard = ({
                 >
                     {normalizedStatus === "pending" ? (
                         <>
-                            <PanelButton
-                                label={t("orders.accept")}
-                                variant="secondary"
+                            <TouchableOpacity
                                 onPress={() => confirmAction("accepted")}
+                                activeOpacity={0.82}
                                 style={[
+                                    styles.actionButtonBase,
+                                    styles.acceptActionButton,
                                     styles.actionButton,
                                     isCompact ? styles.actionButtonCompact : null,
                                     isPhone ? styles.acceptButtonCompact : null,
+                                    actionsDisabled ? styles.actionButtonDisabled : null,
                                 ]}
-                                disabled={actionsDisabled}
-                                loading={actionLoadingStatus === "accepted"}
                                 accessibilityLabel={t("a11y.acceptOrder", { customer: order.customer })}
-                            />
-                            <PanelButton
-                                label={t("orders.reject")}
-                                variant="destructive"
+                                disabled={actionsDisabled}
+                            >
+                                <Text style={[styles.actionButtonText, styles.acceptActionButtonText]}>
+                                    {actionLoadingStatus === "accepted" ? `${t("orders.accept")}...` : t("orders.accept")}
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
                                 onPress={() => confirmAction("canceled")}
+                                activeOpacity={0.82}
                                 style={[
+                                    styles.actionButtonBase,
+                                    styles.rejectActionButton,
                                     styles.actionButton,
                                     isCompact ? styles.actionButtonCompact : null,
                                     isPhone ? styles.rejectButtonCompact : null,
+                                    actionsDisabled ? styles.actionButtonDisabled : null,
                                 ]}
-                                disabled={actionsDisabled}
-                                loading={actionLoadingStatus === "canceled"}
                                 accessibilityLabel={t("a11y.rejectOrder", { customer: order.customer })}
-                            />
+                                disabled={actionsDisabled}
+                            >
+                                <Text style={[styles.actionButtonText, styles.rejectActionButtonText]}>
+                                    {actionLoadingStatus === "canceled" ? `${t("orders.reject")}...` : t("orders.reject")}
+                                </Text>
+                            </TouchableOpacity>
                         </>
                     ) : normalizedStatus === "accepted" ? (
                         <View style={styles.singleActionRow}>
-                            <PanelButton
-                                label={t("orders.handoverCourier")}
-                                variant="secondary"
+                            <TouchableOpacity
                                 onPress={() => confirmAction("out_for_delivery")}
-                                style={[styles.actionButton, isCompact ? styles.actionButtonCompact : null]}
+                                activeOpacity={0.82}
+                                style={[
+                                    styles.actionButtonBase,
+                                    styles.primaryActionButton,
+                                    styles.actionButton,
+                                    isCompact ? styles.actionButtonCompact : null,
+                                    actionsDisabled ? styles.actionButtonDisabled : null,
+                                ]}
                                 disabled={actionsDisabled}
-                                loading={actionLoadingStatus === "out_for_delivery"}
-                            />
+                            >
+                                <Text style={[styles.actionButtonText, styles.primaryActionButtonText]}>
+                                    {actionLoadingStatus === "out_for_delivery"
+                                        ? `${t("orders.handoverCourier")}...`
+                                        : t("orders.handoverCourier")}
+                                </Text>
+                            </TouchableOpacity>
                         </View>
                     ) : normalizedStatus === "out_for_delivery" ? (
                         <View style={styles.singleActionRow}>
-                            <PanelButton
-                                label={t("orders.markDelivered")}
-                                variant="secondary"
+                            <TouchableOpacity
                                 onPress={() => confirmAction("delivered")}
-                                style={[styles.actionButton, isCompact ? styles.actionButtonCompact : null]}
+                                activeOpacity={0.82}
+                                style={[
+                                    styles.actionButtonBase,
+                                    styles.primaryActionButton,
+                                    styles.actionButton,
+                                    isCompact ? styles.actionButtonCompact : null,
+                                    actionsDisabled ? styles.actionButtonDisabled : null,
+                                ]}
                                 disabled={actionsDisabled}
-                                loading={actionLoadingStatus === "delivered"}
-                            />
+                            >
+                                <Text style={[styles.actionButtonText, styles.primaryActionButtonText]}>
+                                    {actionLoadingStatus === "delivered"
+                                        ? `${t("orders.markDelivered")}...`
+                                        : t("orders.markDelivered")}
+                                </Text>
+                            </TouchableOpacity>
                         </View>
                     ) : null}
                 </View>
@@ -341,9 +371,49 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         minWidth: 140,
     },
+    actionButtonBase: {
+        minHeight: 42,
+        borderRadius: 999,
+        borderWidth: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+    },
     actionButtonCompact: {
         minWidth: 0,
         width: "100%",
+    },
+    actionButtonDisabled: {
+        opacity: 0.58,
+    },
+    actionButtonText: {
+        fontFamily: "ChairoSans",
+        fontSize: 15,
+        lineHeight: 18,
+        textAlign: "center",
+        fontWeight: "600",
+    },
+    primaryActionButton: {
+        borderColor: "#EE7A14",
+        backgroundColor: "#FFF5EA",
+    },
+    primaryActionButtonText: {
+        color: "#B94900",
+    },
+    acceptActionButton: {
+        borderColor: "#EE7A14",
+        backgroundColor: "#FFF5EA",
+    },
+    acceptActionButtonText: {
+        color: "#C85B00",
+    },
+    rejectActionButton: {
+        borderColor: "#E7B3BF",
+        backgroundColor: "#FFF1F4",
+    },
+    rejectActionButtonText: {
+        color: "#C23455",
     },
     acceptButtonCompact: {
         width: "48%",

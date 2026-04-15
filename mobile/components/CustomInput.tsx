@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { forwardRef, useState } from "react";
 import {
     Pressable,
     StyleSheet,
@@ -19,6 +19,10 @@ type Props = {
     keyboardType?: KeyboardTypeOptions;
     inputKey?: string;
     autoComplete?: TextInputProps["autoComplete"];
+    returnKeyType?: TextInputProps["returnKeyType"];
+    onSubmitEditing?: TextInputProps["onSubmitEditing"];
+    blurOnSubmit?: TextInputProps["blurOnSubmit"];
+    autoFocus?: boolean;
 };
 
 const toFieldKey = (label: string) =>
@@ -66,7 +70,7 @@ const styles = StyleSheet.create({
     },
 });
 
-const CustomInput = ({
+const CustomInput = forwardRef<TextInput, Props>(({
     placeholder = "Enter text",
     value,
     onChangeText,
@@ -75,7 +79,11 @@ const CustomInput = ({
     keyboardType = "default",
     inputKey,
     autoComplete,
-}: Props) => {
+    returnKeyType,
+    onSubmitEditing,
+    blurOnSubmit,
+    autoFocus,
+}, ref) => {
     const [isFocused, setIsFocused] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const isPasswordField = Boolean(secureTextEntry);
@@ -86,14 +94,19 @@ const CustomInput = ({
             <Text style={styles.label}>{label}</Text>
             <View style={styles.inputWrap}>
                 <TextInput
+                    ref={ref}
                     {...({ id: fieldKey, name: fieldKey } as any)}
                     autoCapitalize="none"
                     autoCorrect={false}
                     autoComplete={autoComplete}
+                    autoFocus={autoFocus}
                     value={value}
                     onChangeText={onChangeText}
                     secureTextEntry={isPasswordField && !isPasswordVisible}
                     keyboardType={keyboardType}
+                    returnKeyType={returnKeyType}
+                    onSubmitEditing={onSubmitEditing}
+                    blurOnSubmit={blurOnSubmit}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
                     placeholder={placeholder}
@@ -118,6 +131,8 @@ const CustomInput = ({
             </View>
         </View>
     );
-};
+});
+
+CustomInput.displayName = "CustomInput";
 
 export default CustomInput;

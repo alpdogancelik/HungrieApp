@@ -86,6 +86,7 @@ export const useRestaurantPanelLocale = (restaurantId?: string | null) => {
 
     useEffect(() => {
         let mounted = true;
+        setReady(false);
 
         const hydrate = async () => {
             let nextLocale: PanelLocale = DEFAULT_LOCALE;
@@ -179,4 +180,3 @@ export const useRestaurantPanelLocale = (restaurantId?: string | null) => {
         [locale, ready, setLocale, t],
     );
 };
-

@@ -6,6 +6,19 @@ import { usePanelSession } from "@/src/features/restaurantPanel/panelSession";
 import { PanelButton, PanelCard, PanelShell, panelDesign } from "@/src/features/restaurantPanel/ui";
 import { LanguageSwitch } from "@/components/panel";
 import { useRestaurantPanelLocale } from "@/src/features/restaurantPanel/panelLocale";
+import { getAuthErrorMessage } from "@/src/features/auth/authCopy";
+import { isStrictValidEmail } from "@/src/features/auth/emailValidation";
+
+const replaceAfterAuth = (router: ReturnType<typeof useRouter>, pathname: "/restaurantpanel") => {
+    try {
+        if (router.canDismiss()) {
+            router.dismissAll();
+        }
+    } catch {
+        // Ignore navigator-specific dismiss support and still replace the route.
+    }
+    router.replace(pathname);
+};
 
 export default function RestaurantPanelLogin() {
     const router = useRouter();
@@ -17,9 +30,15 @@ export default function RestaurantPanelLogin() {
     const didNavigateRef = useRef(false);
 
     const handleLogin = () => {
-        if (!email || !password) return;
+        const trimmedEmail = email.trim();
+        const trimmedPassword = password.trim();
+        if (!trimmedEmail || !trimmedPassword) return;
+        if (!isStrictValidEmail(trimmedEmail)) {
+            Alert.alert(t("login.failedTitle"), getAuthErrorMessage(locale, "invalidEmail") || t("login.failedBody"));
+            return;
+        }
         setLoading(true);
-        login(email.trim(), password.trim())
+        login(trimmedEmail, trimmedPassword)
             .catch((err: any) => {
                 Alert.alert(t("login.failedTitle"), err?.message || t("login.failedBody"));
             })
@@ -32,7 +51,7 @@ export default function RestaurantPanelLogin() {
 
         didNavigateRef.current = true;
         const frame = requestAnimationFrame(() => {
-            router.replace("/restaurantpanel");
+            replaceAfterAuth(router, "/restaurantpanel");
         });
 
         return () => cancelAnimationFrame(frame);

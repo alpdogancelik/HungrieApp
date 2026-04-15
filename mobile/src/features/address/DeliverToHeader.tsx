@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DeviceEventEmitter, FlatList, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Address } from "@/src/domain/types";
 import { addressStore } from "@/src/features/address/addressStore";
 import { useDefaultAddress } from "@/src/features/address/hooks";
@@ -20,6 +21,7 @@ const DeliverToHeader = () => {
     const [selectedId, setSelectedId] = useState<string | null>(defaultAddress?.id ?? null);
     const router = useRouter();
     const { t } = useTranslation();
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         setSelectedId(defaultAddress?.id ?? null);
@@ -92,7 +94,7 @@ const DeliverToHeader = () => {
             <Modal visible={sheetVisible} transparent animationType="slide" onRequestClose={() => setSheetVisible(false)}>
                 <View style={styles.modalBackdrop}>
                     <Pressable style={styles.modalDismissArea} onPress={() => setSheetVisible(false)} />
-                    <View style={styles.modalSheet}>
+                    <View style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom, 20) + 8 }]}>
                         <View style={styles.modalHandle} />
                         <Text style={styles.modalTitle}>{t("deliverTo.modalTitle")}</Text>
                     {addresses.length ? (

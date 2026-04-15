@@ -13,6 +13,7 @@ type AuthState = {
     setUser: (user: User) => void;
     setLoading: (loading: boolean) => void;
     setPreferredEmoji: (emoji: string) => void;
+    resetAuthState: () => void;
 
     fetchAuthenticatedUser: () => Promise<void>;
 }
@@ -27,6 +28,13 @@ const useAuthStore = create<AuthState>((set) => ({
     setUser: (user) => set({ user }),
     setLoading: (value) => set({ isLoading: value }),
     setPreferredEmoji: (emoji) => set({ preferredEmoji: emoji }),
+    resetAuthState: () =>
+        set({
+            isAuthenticated: false,
+            user: null,
+            isLoading: false,
+            preferredEmoji: undefined,
+        }),
 
     fetchAuthenticatedUser: async () => {
         set({ isLoading: true });

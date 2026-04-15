@@ -8,10 +8,12 @@ import {
     StyleSheet,
     Text,
     TextInput,
+    TouchableOpacity,
     View,
     useWindowDimensions,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 
 import useAuthStore from "@/store/auth.store";
 import { getOwnedRestaurantId } from "@/lib/firebaseAuth";
@@ -85,10 +87,11 @@ const RestaurantHistory = () => {
     const isDesktop = width >= 980;
     const isPhone = width < 760;
 
-    const { isAuthenticated } = useAuthStore();
+    const { isAuthenticated, isLoading: authLoading } = useAuthStore();
     const [orders, setOrders] = useState<PanelOrder[]>([]);
     const [restaurantId, setRestaurantId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [redirectTo, setRedirectTo] = useState<"/sign-in" | null>(null);
 
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<PastStatusFilter>("all");
@@ -97,11 +100,23 @@ const RestaurantHistory = () => {
     const [customEnd, setCustomEnd] = useState("");
 
     const [selectedOrder, setSelectedOrder] = useState<PanelOrder | null>(null);
-    const { locale, setLocale, t, formatCurrency, formatDate, formatAddress, formatPhone } = useRestaurantPanelLocale(restaurantId);
+    const { locale, ready, setLocale, t, formatCurrency, formatDate, formatAddress, formatPhone } = useRestaurantPanelLocale(restaurantId);
+    const localeReady = !restaurantId || ready;
 
     useEffect(() => {
         let mounted = true;
         const load = async () => {
+            if (authLoading) return;
+            if (!isAuthenticated) {
+                if (mounted) {
+                    setRedirectTo("/sign-in");
+                    setLoading(false);
+                }
+                return;
+            }
+            if (mounted) {
+                setRedirectTo(null);
+            }
             if (!isAuthenticated) {
                 setLoading(false);
                 return;
@@ -109,13 +124,16 @@ const RestaurantHistory = () => {
             const restId = await getOwnedRestaurantId();
             if (!mounted) return;
             setRestaurantId(restId);
-            if (!restId) setLoading(false);
+            if (!restId) {
+                setRedirectTo("/sign-in");
+                setLoading(false);
+            }
         };
         load();
         return () => {
             mounted = false;
         };
-    }, [isAuthenticated]);
+    }, [authLoading, isAuthenticated]);
 
     useEffect(() => {
         if (!restaurantId) return;
@@ -181,15 +199,40 @@ const RestaurantHistory = () => {
         });
     };
 
+    if (redirectTo) {
+        return <Redirect href={redirectTo} />;
+    }
+
     return (
         <PanelShell
             kicker={t("common.restaurantHub")}
             title={t("history.title")}
             subtitle={t("history.subtitle")}
-            onBackPress={() => router.push("/restaurantpanel")}
-            backLabel={t("button.backToLiveOrders")}
-            backAccessibilityLabel={t("a11y.backToLiveOrders")}
-            right={<LanguageSwitch locale={locale} onChange={(next) => void setLocale(next)} getAccessibilityLabel={(next) => t("a11y.switchLanguage", { value: next.toUpperCase() })} />}
+            onBackPress={isPhone ? undefined : () => router.push("/restaurantpanel")}
+            backLabel={isPhone ? undefined : t("button.backToLiveOrders")}
+            backAccessibilityLabel={isPhone ? undefined : t("a11y.backToLiveOrders")}
+            right={
+                isPhone ? (
+                    <View style={styles.mobileHeaderTools}>
+                        <TouchableOpacity
+                            onPress={() => router.push("/restaurantpanel")}
+                            activeOpacity={0.82}
+                            accessibilityLabel={t("a11y.backToLiveOrders")}
+                            style={styles.mobileHeaderBackButton}
+                        >
+                            <View style={styles.mobileHeaderBackButtonContent}>
+                                <View style={styles.mobileHeaderBackButtonIconWrap}>
+                                    <Feather name="chevron-left" size={15} color="#B94900" />
+                                </View>
+                                <Text style={styles.mobileHeaderBackButtonText}>{t("button.backToLiveOrders")}</Text>
+                            </View>
+                        </TouchableOpacity>
+                        <LanguageSwitch locale={locale} onChange={(next) => void setLocale(next)} getAccessibilityLabel={(next) => t("a11y.switchLanguage", { value: next.toUpperCase() })} />
+                    </View>
+                ) : (
+                    <LanguageSwitch locale={locale} onChange={(next) => void setLocale(next)} getAccessibilityLabel={(next) => t("a11y.switchLanguage", { value: next.toUpperCase() })} />
+                )
+            }
         >
             <PanelCard compact>
                 <View style={[styles.controlsGrid, isDesktop ? styles.controlsGridDesktop : null]}>
@@ -270,7 +313,7 @@ const RestaurantHistory = () => {
                 ) : null}
             </PanelCard>
 
-            {loading ? (
+            {loading || !localeReady ? (
                 <PanelLoadingState title={t("loading.historyTitle")} description={t("loading.historyDescription")} />
             ) : !filtered.length ? (
                 <PanelEmptyState
@@ -280,36 +323,37 @@ const RestaurantHistory = () => {
             ) : (
                 <View style={styles.listWrap}>
                     {filtered.map((order) => (
-                        <Pressable
-                            key={order.id}
-                            onPress={() => setSelectedOrder(order)}
-                            accessibilityRole="button"
-                            accessibilityLabel={t("a11y.openOrderDetails", { id: order.id })}
-                            style={({ pressed }) => [pressed ? { opacity: 0.95 } : null]}
-                        >
-                            <PanelCard compact style={styles.historyCard}>
-                                <View style={[styles.rowTop, isPhone ? styles.rowTopPhone : null]}>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={styles.customer}>{order.customer}</Text>
-                                        <Text style={styles.meta}>{formatDate(order.createdAtMs || order.time)}</Text>
-                                        <Text style={styles.meta} numberOfLines={1}>#{order.id}</Text>
-                                    </View>
-                                    <View style={[styles.rowRight, isPhone ? styles.rowRightPhone : null]}>
-                                        <StatusPill status={String(order.status)} label={t(`orders.status.${String(order.status)}`)} />
-                                        <Text style={styles.total}>{formatCurrency(Number(order.total || 0))}</Text>
-                                    </View>
+                        <PanelCard key={order.id} compact style={styles.historyCard}>
+                            <View style={[styles.rowTop, isPhone ? styles.rowTopPhone : null]}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.customer}>{order.customer}</Text>
+                                    <Text style={styles.meta}>{formatDate(order.createdAtMs || order.time)}</Text>
+                                    <Text style={styles.meta} numberOfLines={1}>#{order.id}</Text>
                                 </View>
-                                {order.address ? <Text style={styles.meta}>{t("orders.address", { value: formatAddress(order.address) })}</Text> : null}
-                                <OrderNote
-                                    note={order.note}
-                                    label={t("orders.note")}
-                                    expandLabel={t("orders.tapToExpand")}
-                                    collapseLabel={t("orders.showLess")}
-                                    accessibilityLabel={t("a11y.orderNoteToggle")}
+                                <View style={[styles.rowRight, isPhone ? styles.rowRightPhone : null]}>
+                                    <StatusPill status={String(order.status)} label={t(`orders.status.${String(order.status)}`)} />
+                                    <Text style={styles.total}>{formatCurrency(Number(order.total || 0))}</Text>
+                                </View>
+                            </View>
+                            {order.address ? <Text style={styles.meta}>{t("orders.address", { value: formatAddress(order.address) })}</Text> : null}
+                            <OrderNote
+                                note={order.note}
+                                label={t("orders.note")}
+                                expandLabel={t("orders.tapToExpand")}
+                                collapseLabel={t("orders.showLess")}
+                                accessibilityLabel={t("a11y.orderNoteToggle")}
+                            />
+                            <Text style={styles.meta}>{t("history.payment", { value: order.paymentMethod || t("common.na") })}</Text>
+                            <View style={styles.historyActionRow}>
+                                <PanelButton
+                                    label={t("reminders.openOrder")}
+                                    variant="outline"
+                                    onPress={() => setSelectedOrder(order)}
+                                    accessibilityLabel={t("a11y.openOrderDetails", { id: order.id })}
+                                    style={styles.historyActionButton}
                                 />
-                                <Text style={styles.meta}>{t("history.payment", { value: order.paymentMethod || t("common.na") })}</Text>
-                            </PanelCard>
-                        </Pressable>
+                            </View>
+                        </PanelCard>
                     ))}
                 </View>
             )}
@@ -382,6 +426,45 @@ const RestaurantHistory = () => {
 };
 
 const styles = StyleSheet.create({
+    mobileHeaderTools: {
+        width: "100%",
+        gap: 10,
+        alignItems: "flex-start",
+    },
+    mobileHeaderBackButton: {
+        width: "100%",
+        minHeight: 44,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: "#EE7A14",
+        backgroundColor: "#FFF5EA",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 12,
+        paddingVertical: 9,
+    },
+    mobileHeaderBackButtonContent: {
+        width: "100%",
+        minHeight: 18,
+        justifyContent: "center",
+        alignItems: "center",
+        position: "relative",
+        paddingHorizontal: 18,
+    },
+    mobileHeaderBackButtonIconWrap: {
+        position: "absolute",
+        left: 0,
+        top: "50%",
+        marginTop: -7.5,
+    },
+    mobileHeaderBackButtonText: {
+        fontFamily: "ChairoSans",
+        fontSize: 15,
+        lineHeight: 17,
+        textAlign: "center",
+        color: "#B94900",
+        fontWeight: "600",
+    },
     controlsGrid: {
         gap: panelDesign.spacing.sm,
     },

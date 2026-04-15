@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
+import type { TextInput } from "react-native";
 
 import AuthFeedbackCard from "@/components/auth/AuthFeedbackCard";
 import AuthScreenLayout from "@/components/auth/AuthScreenLayout";
 import CustomButton from "@/components/CustomButton";
 import CustomInput from "@/components/CustomInput";
 import { createUser } from "@/lib/firebaseAuth";
-import { getAuthScreenCopy } from "@/src/features/auth/authCopy";
+import { getAuthErrorMessage, getAuthScreenCopy } from "@/src/features/auth/authCopy";
+import { isStrictValidEmail } from "@/src/features/auth/emailValidation";
 import DeliveryGuy from "@/assets/illustrations/Delivery Guy.svg";
 
 type FeedbackState = {
@@ -32,6 +34,10 @@ const SignUp = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [feedback, setFeedback] = useState<FeedbackState>(null);
     const [form, setForm] = useState({ name: "", email: "", password: "", whatsappNumber: "" });
+    const nameRef = useRef<TextInput>(null);
+    const whatsappRef = useRef<TextInput>(null);
+    const emailRef = useRef<TextInput>(null);
+    const passwordRef = useRef<TextInput>(null);
 
     const setField = (field: "name" | "email" | "password" | "whatsappNumber", value: string) => {
         setForm((prev) => ({ ...prev, [field]: value }));
@@ -57,6 +63,14 @@ const SignUp = () => {
             setFeedback({
                 title: copy.emptyErrorTitle,
                 message: copy.emptyErrorBody,
+            });
+            return;
+        }
+
+        if (!isStrictValidEmail(email)) {
+            setFeedback({
+                title: copy.emptyErrorTitle,
+                message: getAuthErrorMessage(i18n.language, "invalidEmail") || copy.fallbackError,
             });
             return;
         }
@@ -100,31 +114,46 @@ const SignUp = () => {
             ) : null}
 
             <CustomInput
+                ref={nameRef}
                 placeholder={copy.namePlaceholder}
                 value={form.name}
                 onChangeText={(text) => setField("name", text)}
                 label={copy.nameLabel}
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => whatsappRef.current?.focus()}
             />
             <CustomInput
+                ref={whatsappRef}
                 placeholder="+90 5xx xxx xx xx"
                 value={form.whatsappNumber}
                 onChangeText={(text) => setField("whatsappNumber", text)}
                 label={copy.whatsappLabel}
                 keyboardType="phone-pad"
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => emailRef.current?.focus()}
             />
             <CustomInput
+                ref={emailRef}
                 placeholder="e232231@metu.edu.tr"
                 value={form.email}
                 onChangeText={(text) => setField("email", text)}
                 label={copy.emailLabel}
                 keyboardType="email-address"
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => passwordRef.current?.focus()}
             />
             <CustomInput
+                ref={passwordRef}
                 placeholder={copy.passwordPlaceholder}
                 value={form.password}
                 onChangeText={(text) => setField("password", text)}
                 label={copy.passwordLabel}
                 secureTextEntry
+                returnKeyType="done"
+                onSubmitEditing={submit}
             />
 
             <CustomButton title={copy.submit} isLoading={isSubmitting} disabled={isSubmitting} onPress={submit} />

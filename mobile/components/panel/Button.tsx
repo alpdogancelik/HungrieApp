@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, ViewStyle, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle, useWindowDimensions } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { makeShadow } from "@/src/lib/shadowStyle";
 
@@ -64,10 +64,14 @@ const Button = ({
             {loading ? (
                 <ActivityIndicator color={tone.fg} />
             ) : (
-                <>
-                    {iconName ? <Feather name={iconName} size={15} color={tone.fg} /> : null}
+                <View style={styles.content}>
+                    {iconName ? (
+                        <View style={styles.iconWrap}>
+                            <Feather name={iconName} size={15} color={tone.fg} />
+                        </View>
+                    ) : null}
                     <Text style={[styles.label, isPhone ? styles.labelPhone : null, { color: tone.fg }]}>{label}</Text>
-                </>
+                </View>
             )}
         </Pressable>
     );
@@ -82,8 +86,6 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         paddingHorizontal: 12,
         paddingVertical: 9,
-        flexDirection: "row",
-        gap: 8,
         ...makeShadow({ color: "#D6B28A", offsetY: 3, blurRadius: 8, opacity: 0.08, elevation: 1 }),
         elevation: 1,
     },
@@ -107,6 +109,20 @@ const styles = StyleSheet.create({
     focused: {
         ...makeShadow({ color: "#EE7A14", offsetY: 0, blurRadius: 5, opacity: 0.4, elevation: 2 }),
         elevation: 2,
+    },
+    content: {
+        width: "100%",
+        minHeight: 18,
+        justifyContent: "center",
+        alignItems: "center",
+        position: "relative",
+        paddingHorizontal: 18,
+    },
+    iconWrap: {
+        position: "absolute",
+        left: 0,
+        top: "50%",
+        marginTop: -7.5,
     },
 });
 

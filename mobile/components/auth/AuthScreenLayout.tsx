@@ -62,6 +62,11 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         gap: 12,
     },
+    heroWordmarkWrap: {
+        flex: 1,
+        minWidth: 0,
+        paddingRight: 12,
+    },
     heroTitle: {
         color: "#FFFFFF",
         fontSize: 30,
@@ -99,6 +104,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         gap: 10,
+        flexShrink: 0,
     },
     closeButton: {
         width: 36,
@@ -139,9 +145,9 @@ const AuthScreenLayout = ({
     const heroMediaSize = Math.min(200, Math.max(150, Math.round(contentWidth * 0.38)));
     const wordmarkWidth = Math.round(Math.min(260, Math.max(176, contentWidth * 0.52)));
     const safeTop = Math.max(insets.top, 16);
-    const heroPaddingTop = safeTop + 18;
+    const heroPaddingTop = safeTop - 12;
     const heroPaddingBottom = isCompactHeight ? 112 : 132;
-    const cardOverlap = isCompactHeight ? 72 : 84;
+    const cardOverlap = (isCompactHeight ? 72 : 84) + (Platform.OS === "ios" ? 40 : 0) + (Platform.OS === "android" ? 40 : 0);
     const shouldAnimate = enableEntranceAnimation && !reduceMotion;
     const resolvedHeroImage = heroImageSource ?? defaultHeroPackshot;
 
@@ -191,18 +197,20 @@ const AuthScreenLayout = ({
                                 }}
                             >
                                 <View style={styles.heroTopRow}>
-                                    {showWordmark ? (
-                                        <Image
-                                            source={brandWordmark}
-                                            style={{ width: wordmarkWidth, aspectRatio: 2.786 }}
-                                            contentFit="contain"
-                                            cachePolicy="memory-disk"
-                                        />
-                                    ) : (
-                                        <Text style={{ color: "rgba(255,255,255,0.82)", letterSpacing: 8, textTransform: "uppercase" }}>
-                                            Hungrie
-                                        </Text>
-                                    )}
+                                    <View style={styles.heroWordmarkWrap}>
+                                        {showWordmark ? (
+                                            <Image
+                                                source={brandWordmark}
+                                                style={{ width: Math.min(wordmarkWidth, contentWidth * 0.44), aspectRatio: 2.786 }}
+                                                contentFit="contain"
+                                                cachePolicy="memory-disk"
+                                            />
+                                        ) : (
+                                            <Text style={{ color: "rgba(255,255,255,0.82)", letterSpacing: 8, textTransform: "uppercase" }}>
+                                                Hungrie
+                                            </Text>
+                                        )}
+                                    </View>
                                     <View style={styles.topRightActions}>
                                         <LanguageToggle appearance="inverse" showLabel={false} />
                                         {onClose ? (

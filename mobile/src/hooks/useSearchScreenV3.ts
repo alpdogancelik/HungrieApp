@@ -94,6 +94,7 @@ export const useSearchScreenV3 = () => {
         restaurantsLoading,
         error,
         refetch,
+        clearLoadedData,
     } = useSearch({
         initialQuery: typeof params.query === "string" ? params.query : "",
         initialCategory: typeof params.category === "string" ? params.category : undefined,
@@ -121,6 +122,12 @@ export const useSearchScreenV3 = () => {
             }
         });
     }, []);
+
+    useEffect(() => {
+        return () => {
+            clearLoadedData();
+        };
+    }, [clearLoadedData]);
 
     const persistRecent = useCallback((term: string) => {
         const normalized = term.trim();

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
     Alert,
     Keyboard,
@@ -69,9 +69,14 @@ const AddressFormScreen = () => {
     );
     const [errors, setErrors] = useState<FormErrors>({});
     const [keyboardVisible, setKeyboardVisible] = useState(false);
+    const labelRef = useRef<TextInput>(null);
+    const line1Ref = useRef<TextInput>(null);
+    const blockRef = useRef<TextInput>(null);
+    const roomRef = useRef<TextInput>(null);
+    const cityRef = useRef<TextInput>(null);
     const isCompactMobile = windowWidth < 380;
     const heroIsStacked = isCompactMobile;
-    const heroImageSize = heroIsStacked ? 92 : 140;
+    const heroImageSize = heroIsStacked ? 72 : 110;
 
     useEffect(() => {
         setForm(
@@ -132,16 +137,25 @@ const AddressFormScreen = () => {
 
     const screenTitle = editingAddress ? t("address.form.titleEdit") : t("address.form.titleAdd");
 
+    const nextFieldRefByName: Partial<Record<keyof FormState, RefObject<TextInput | null>>> = {
+        label: line1Ref,
+        line1: blockRef,
+        block: roomRef,
+        room: cityRef,
+    };
+
     const renderField = (
         label: string,
         field: keyof FormState,
         placeholder: string,
         keyboardType: "default" | "numeric" | "email-address" = "default",
         placeholderColor = "#94A3B8",
+        inputRef?: RefObject<TextInput | null>,
     ) => (
         <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>{label}</Text>
             <TextInput
+                ref={inputRef}
                 value={form[field] as string}
                 onChangeText={(text) => handleChange(field, text)}
                 placeholder={placeholder}
@@ -149,6 +163,15 @@ const AddressFormScreen = () => {
                 style={styles.fieldInput}
                 placeholderTextColor={placeholderColor}
                 autoCapitalize="words"
+                returnKeyType={field === "city" ? "done" : "next"}
+                blurOnSubmit={field === "city"}
+                onSubmitEditing={() => {
+                    if (field === "city") {
+                        handleSubmit();
+                        return;
+                    }
+                    nextFieldRefByName[field]?.current?.focus();
+                }}
             />
             {errors[field] ? <Text style={styles.fieldError}>{errors[field]}</Text> : null}
         </View>
@@ -173,18 +196,22 @@ const AddressFormScreen = () => {
                         end={{ x: 1, y: 0.6 }}
                         style={[styles.hero, heroIsStacked ? styles.heroCompact : null]}
                     >
+                        <TouchableOpacity
+                            style={styles.backButton}
+                            onPress={() => navigation.goBack()}
+                            accessibilityRole="button"
+                            accessibilityLabel={t("common.goBack")}
+                        >
+                            <Icon name="arrowBack" size={18} color="#FFFFFF" />
+                        </TouchableOpacity>
+
                         <View style={[styles.heroRow, heroIsStacked ? styles.heroRowCompact : null]}>
                             <View style={[styles.heroHeader, heroIsStacked ? styles.heroHeaderCompact : null]}>
-                                <TouchableOpacity
-                                    style={styles.backButton}
-                                    onPress={() => navigation.goBack()}
-                                    accessibilityRole="button"
-                                    accessibilityLabel={t("common.goBack")}
-                                >
-                                    <Icon name="arrowBack" size={18} color="#FFFFFF" />
-                                </TouchableOpacity>
-
-                                <OnlineLocation width={heroImageSize} height={heroImageSize} style={[styles.heroImage, heroIsStacked ? styles.heroImageCompact : null]} />
+                                <OnlineLocation
+                                    width={heroImageSize}
+                                    height={heroImageSize}
+                                    style={[styles.heroImage, heroIsStacked ? styles.heroImageCompact : null]}
+                                />
                             </View>
 
                             <View style={[styles.heroContent, heroIsStacked ? styles.heroContentCompact : null]}>
@@ -207,21 +234,33 @@ const AddressFormScreen = () => {
                                     t("address.form.fields.label"),
                                     "label",
                                     t("address.form.fields.labelPlaceholder"),
+                                    "default",
+                                    "#94A3B8",
+                                    labelRef,
                                 )}
                                 {renderField(
                                     t("address.form.fields.line1"),
                                     "line1",
                                     t("address.form.fields.line1Placeholder"),
+                                    "default",
+                                    "#94A3B8",
+                                    line1Ref,
                                 )}
                                 {renderField(
                                     t("address.form.fields.block"),
                                     "block",
                                     t("address.form.fields.blockPlaceholder"),
+                                    "default",
+                                    "#94A3B8",
+                                    blockRef,
                                 )}
                                 {renderField(
                                     t("address.form.fields.room"),
                                     "room",
                                     t("address.form.fields.roomPlaceholder"),
+                                    "default",
+                                    "#94A3B8",
+                                    roomRef,
                                 )}
                                 {renderField(
                                     t("address.form.fields.city"),
@@ -229,6 +268,7 @@ const AddressFormScreen = () => {
                                     t("address.form.fields.cityPlaceholder"),
                                     "default",
                                     "#A7B0C2",
+                                    cityRef,
                                 )}
                             </View>
 
@@ -251,7 +291,7 @@ const AddressFormScreen = () => {
                 <View
                     style={[
                         styles.footer,
-                        { paddingBottom: keyboardVisible ? 8 : Math.max(insets.bottom + 8, 16) },
+                        { paddingBottom: keyboardVisible ? 0 : Math.max(insets.bottom - 30, 4) },
                     ]}
                 >
                     <TouchableOpacity
@@ -292,18 +332,19 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "flex-start",
         columnGap: 16,
+        marginTop: 12,
     },
     heroRowCompact: {
         flexDirection: "column",
         rowGap: 12,
     },
     heroHeader: {
-        flexDirection: "row",
+        width: 110,
         alignItems: "center",
-        justifyContent: "space-between",
     },
     heroHeaderCompact: {
         width: "100%",
+        alignItems: "flex-start",
     },
     backButton: {
         width: 40,
@@ -314,10 +355,12 @@ const styles = StyleSheet.create({
         borderColor: "rgba(255, 255, 255, 0.25)",
         alignItems: "center",
         justifyContent: "center",
+        alignSelf: "flex-start",
     },
     heroContent: {
         flex: 1,
-        rowGap: 6,
+        rowGap: 4,
+        paddingTop: 4,
     },
     heroContentCompact: {
         maxWidth: "100%",
@@ -333,18 +376,18 @@ const styles = StyleSheet.create({
     },
     heroTitle: {
         color: "#FFFFFF",
-        fontSize: 30,
-        lineHeight: 36,
+        fontSize: 21,
+        lineHeight: 27,
         fontFamily: "ChairoSans-Bold",
     },
     heroTitleCompact: {
-        fontSize: 26,
-        lineHeight: 32,
+        fontSize: 19,
+        lineHeight: 25,
     },
     heroSubtitle: {
         color: "rgba(255, 255, 255, 0.75)",
-        fontSize: 15,
-        lineHeight: 22,
+        fontSize: 14,
+        lineHeight: 20,
         fontFamily: "ChairoSans",
     },
     heroSubtitleCompact: {
@@ -352,11 +395,10 @@ const styles = StyleSheet.create({
     },
     heroImage: {
         opacity: 0.95,
-        marginTop: -10,
+        marginTop: -2,
     },
     heroImageCompact: {
         marginTop: 0,
-        marginRight: -4,
         flexShrink: 0,
     },
     formContainer: {
@@ -450,6 +492,7 @@ const styles = StyleSheet.create({
     footer: {
         paddingHorizontal: 24,
         paddingTop: 8,
+        backgroundColor: "#0B1220",
     },
     saveButton: {
         borderRadius: 999,

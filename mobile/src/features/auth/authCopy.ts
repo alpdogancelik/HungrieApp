@@ -125,6 +125,10 @@ export const getAuthErrorMessage = (language: string | null | undefined, key: st
             return byLanguage(language, "Çok fazla deneme yapıldı. Lütfen biraz sonra tekrar dene.", "Too many attempts. Please try again in a moment.");
         case "verifyEmail":
             return byLanguage(language, "Lütfen e-posta adresini doğrula ve ardından tekrar giriş yap.", "Please verify your email and then sign in again.");
+        case "userNotFound":
+            return byLanguage(language, "Bu e-posta adresi ile eşleşen bir hesap bulunamadı.", "No account was found for this email address.");
+        case "invalidPassword":
+            return byLanguage(language, "Şifre hatalı. Lütfen tekrar dene.", "Password is incorrect. Please try again.");
         case "emailRequired":
             return byLanguage(language, "E-posta adresi gerekli.", "Email address is required.");
         case "resetUserNotFound":

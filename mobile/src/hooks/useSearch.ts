@@ -296,6 +296,15 @@ export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptio
         [],
     );
 
+    const clearLoadedData = useCallback(() => {
+        requestRef.current = Date.now();
+        setLoading(false);
+        setRestaurantsLoading(false);
+        setError(null);
+        setRestaurants([]);
+        setAllResults([]);
+    }, []);
+
     useEffect(() => {
         const timer = setTimeout(() => fetchResults(debouncedQuery), 200);
         return () => clearTimeout(timer);
@@ -349,6 +358,7 @@ export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptio
         restaurantsLoading,
         error,
         refetch: () => fetchResults(debouncedQuery),
+        clearLoadedData,
     };
 };
 

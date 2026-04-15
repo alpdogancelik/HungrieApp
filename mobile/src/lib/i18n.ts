@@ -10,6 +10,11 @@ const resources = {
                     signOut: "Sign out",
                     signingOut: "Signing out...",
                 },
+                guest: {
+                    title: "Sign in to manage your profile",
+                    body: "Browse restaurants and menus freely. Sign in when you want to place orders, manage addresses, or edit your account.",
+                    cta: "Sign in",
+                },
                 defaultAddress: "Default delivery address",
                 manageAddresses: "Manage addresses",
                 noAddress: "No address on file yet.",
@@ -421,6 +426,11 @@ const resources = {
                     edit: "Düzenle",
                     signOut: "Çıkış yap",
                     signingOut: "Çıkış yapılıyor...",
+                },
+                guest: {
+                    title: "Profilini yönetmek için giriş yap",
+                    body: "Restoranları ve menüleri özgürce gez. Sipariş vermek, adreslerini yönetmek veya hesabını düzenlemek istediğinde giriş yap.",
+                    cta: "Giriş yap",
                 },
                 defaultAddress: "Varsayılan teslimat adresi",
                 manageAddresses: "Adresleri yönet",

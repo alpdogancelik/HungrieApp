@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { StyleProp, StyleSheet, Text, View, ViewStyle, useWindowDimensions } from "react-native";
+import { Platform, StyleProp, StyleSheet, Text, View, ViewStyle, useWindowDimensions } from "react-native";
 import { makeShadow } from "@/src/lib/shadowStyle";
 
 type Props = {
@@ -41,12 +41,12 @@ const styles = StyleSheet.create({
     card: {
         backgroundColor: "#FFFFFF",
         borderRadius: 16,
-        borderWidth: StyleSheet.hairlineWidth,
+        borderWidth: Platform.OS === "android" ? 1 : StyleSheet.hairlineWidth,
         borderColor: "#E7DCCF",
         padding: 14,
         gap: 10,
         ...makeShadow({ color: "rgba(45, 35, 20, 0.08)", offsetY: 7, blurRadius: 14, opacity: 0.09, elevation: 2 }),
-        elevation: 2,
+        elevation: Platform.OS === "android" ? 0 : 2,
     },
     compact: {
         paddingVertical: 10,

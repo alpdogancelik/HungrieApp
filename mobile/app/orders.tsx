@@ -288,8 +288,11 @@ const OrderHistoryScreen = () => {
                                     <Text style={{ fontFamily: "ChairoSans", fontSize: 16, color: "#0F172A" }}>
                                         {restaurantName}
                                     </Text>
-                                    <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2, columnGap: 6 }}>
-                                        <Text style={{ fontFamily: "ChairoSans", fontSize: 12, color: "#64748B" }}>
+                                    <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2, columnGap: 6, paddingRight: 8 }}>
+                                        <Text
+                                            style={{ flex: 1, fontFamily: "ChairoSans", fontSize: 12, color: "#64748B" }}
+                                            numberOfLines={2}
+                                        >
                                             Order ID: {orderIdText}
                                         </Text>
                                         <TouchableOpacity
@@ -297,6 +300,17 @@ const OrderHistoryScreen = () => {
                                             hitSlop={8}
                                             accessibilityRole="button"
                                             accessibilityLabel="Copy order ID"
+                                            style={{
+                                                width: 24,
+                                                height: 24,
+                                                borderRadius: 12,
+                                                borderWidth: 1,
+                                                borderColor: "#E2E8F0",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                backgroundColor: "#FFFFFF",
+                                                flexShrink: 0,
+                                            }}
                                         >
                                             <Ionicons name="copy-outline" size={14} color="#64748B" />
                                         </TouchableOpacity>
@@ -342,7 +356,6 @@ const OrderHistoryScreen = () => {
                                         {formatCurrencyValue(item.total)}
                                     </Text>
                                 </View>
-                                <Text style={{ color: badge.text, fontFamily: "ChairoSans" }}>{label}</Text>
                             </View>
                         </View>
                     );

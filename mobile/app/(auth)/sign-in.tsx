@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import * as Sentry from "@sentry/react-native";
 import { useTranslation } from "react-i18next";
+import type { TextInput } from "react-native";
 
 import AuthFeedbackCard from "@/components/auth/AuthFeedbackCard";
 import AuthScreenLayout from "@/components/auth/AuthScreenLayout";
 import CustomButton from "@/components/CustomButton";
 import CustomInput from "@/components/CustomInput";
-import { getAuthScreenCopy } from "@/src/features/auth/authCopy";
+import { getAuthErrorMessage, getAuthScreenCopy } from "@/src/features/auth/authCopy";
+import { isStrictValidEmail } from "@/src/features/auth/emailValidation";
 import { getCurrentUser, getOwnedRestaurantId, signIn } from "@/lib/firebaseAuth";
 import useAuthStore from "@/store/auth.store";
 import RobotDelivery from "@/assets/illustrations/Robot Delivery.svg";
@@ -31,12 +33,25 @@ const styles = StyleSheet.create({
 
 const heroPackshot = require("../../assets/images/vecteezy_fast-food-meal-with_25065315.png");
 
+const replaceAfterAuth = (pathname: "/home" | "/restaurantpanel") => {
+    try {
+        if (router.canDismiss()) {
+            router.dismissAll();
+        }
+    } catch {
+        // Ignore navigator-specific dismiss support and still replace the route.
+    }
+    router.replace(pathname);
+};
+
 const SignIn = () => {
     const { i18n } = useTranslation();
     const copy = getAuthScreenCopy(i18n.language).signIn;
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [feedback, setFeedback] = useState<FeedbackState>(null);
     const [form, setForm] = useState({ email: "", password: "" });
+    const emailRef = useRef<TextInput>(null);
+    const passwordRef = useRef<TextInput>(null);
     const setUser = useAuthStore((s) => s.setUser);
     const setIsAuthenticated = useAuthStore((s) => s.setIsAuthenticated);
 
@@ -55,6 +70,14 @@ const SignIn = () => {
             setFeedback({
                 title: copy.emptyErrorTitle,
                 message: copy.emptyErrorBody,
+            });
+            return;
+        }
+
+        if (!isStrictValidEmail(email)) {
+            setFeedback({
+                title: copy.emptyErrorTitle,
+                message: getAuthErrorMessage(i18n.language, "invalidEmail") || copy.fallbackError,
             });
             return;
         }
@@ -82,12 +105,12 @@ const SignIn = () => {
 
                 const ownedRestaurantId = await getOwnedRestaurantId();
                 if (ownedRestaurantId) {
-                    router.replace("/restaurantpanel");
+                    replaceAfterAuth("/restaurantpanel");
                     return;
                 }
             }
 
-            router.replace("/home");
+            replaceAfterAuth("/home");
         } catch (error: any) {
             setFeedback({
                 title: copy.emptyErrorTitle,
@@ -129,6 +152,7 @@ const SignIn = () => {
             ) : null}
 
             <CustomInput
+                ref={emailRef}
                 placeholder="ahmet@metu.edu.tr"
                 value={form.email}
                 onChangeText={(text) => setField("email", text)}
@@ -136,8 +160,12 @@ const SignIn = () => {
                 inputKey="email"
                 autoComplete="email"
                 keyboardType="email-address"
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => passwordRef.current?.focus()}
             />
             <CustomInput
+                ref={passwordRef}
                 placeholder="********"
                 value={form.password}
                 onChangeText={(text) => setField("password", text)}
@@ -145,6 +173,8 @@ const SignIn = () => {
                 inputKey="password"
                 autoComplete="current-password"
                 secureTextEntry
+                returnKeyType="done"
+                onSubmitEditing={submit}
             />
 
             <View style={styles.rowBetween}>

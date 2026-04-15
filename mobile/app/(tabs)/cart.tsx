@@ -537,7 +537,9 @@ const Cart = () => {
                 notes: notes ?? "",
             });
             const restaurantLabel =
-                (items[0] as CartItemWithRestaurant | undefined)?.name?.split(" ")[0] || "Kalkanli Mutfagi";
+                seedRestaurants.find((restaurant) => stringifyId(restaurant.id) === stringifyId(restaurantId))?.name ||
+                restaurantNameForCart ||
+                "Restoran";
 
             clearCart();
             router.push({
@@ -696,7 +698,12 @@ const Cart = () => {
                     </Text>
                 </LinearGradient>
                 <View style={styles.drinkListWrap}>
-                    <ScrollView style={{ maxHeight: 260 }} showsVerticalScrollIndicator={false}>
+                    <ScrollView
+                        style={{ maxHeight: 260 }}
+                        showsVerticalScrollIndicator={false}
+                        nestedScrollEnabled
+                        keyboardShouldPersistTaps="handled"
+                    >
                         {drinkItems.map((drink) => (
                             <View key={String(drink.id)} style={styles.drinkRow}>
                                 <View style={styles.drinkRowInfo}>

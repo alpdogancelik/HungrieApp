@@ -1,7 +1,7 @@
 ﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 
 import useAuthStore from "@/store/auth.store";
@@ -45,9 +45,10 @@ const RestaurantPanel = () => {
     const isDesktop = width >= 980;
     const isPhone = width < 760;
 
-    const { isAuthenticated, user, setIsAuthenticated, setUser } = useAuthStore();
+    const { isAuthenticated, isLoading: authLoading, user, resetAuthState } = useAuthStore();
     const [loading, setLoading] = useState(true);
     const [authorized, setAuthorized] = useState(false);
+    const [redirectTo, setRedirectTo] = useState<"/" | "/sign-in" | null>(null);
     const [restaurantId, setRestaurantId] = useState<string | null>(null);
     const [restaurantName, setRestaurantName] = useState<string | null>(null);
 
@@ -61,7 +62,8 @@ const RestaurantPanel = () => {
     const [actionLoadingByOrder, setActionLoadingByOrder] = useState<Record<string, string | undefined>>({});
     const scrollRef = useRef<ScrollView | null>(null);
     const [ordersSectionY, setOrdersSectionY] = useState(0);
-    const { locale, setLocale, t, formatCurrency, formatDate, formatPhone, formatAddress } = useRestaurantPanelLocale(restaurantId);
+    const { locale, ready, setLocale, t, formatCurrency, formatDate, formatPhone, formatAddress } = useRestaurantPanelLocale(restaurantId);
+    const localeReady = !restaurantId || ready;
 
     const {
         notificationsEnabled,
@@ -78,8 +80,12 @@ const RestaurantPanel = () => {
     useEffect(() => {
         let mounted = true;
         const verifyAccess = async () => {
+            if (authLoading) return;
+
             if (!isAuthenticated) {
-                router.replace("/sign-in");
+                if (!mounted) return;
+                setRedirectTo("/sign-in");
+                setLoading(false);
                 return;
             }
 
@@ -87,10 +93,12 @@ const RestaurantPanel = () => {
             if (!mounted) return;
 
             if (!ownedRestaurantId) {
-                router.replace("/");
+                setRedirectTo("/");
+                setLoading(false);
                 return;
             }
 
+            setRedirectTo(null);
             setAuthorized(true);
             setRestaurantId(ownedRestaurantId);
             setRestaurantName(ownedRestaurantId);
@@ -101,7 +109,7 @@ const RestaurantPanel = () => {
         return () => {
             mounted = false;
         };
-    }, [isAuthenticated, router]);
+    }, [authLoading, isAuthenticated]);
 
     useEffect(() => {
         if (!restaurantId) return;
@@ -266,11 +274,21 @@ const RestaurantPanel = () => {
         } catch {
             // Best effort; still clear local auth state below.
         } finally {
-            setUser(null);
-            setIsAuthenticated(false);
+            setOrders([]);
+            setPastOrders([]);
+            setReminderOrders([]);
+            setRestaurantId(null);
+            setRestaurantName(null);
+            setAuthorized(false);
+            setRedirectTo("/sign-in");
+            setStatusFilter("all");
+            setSearchTerm("");
+            setExpandedOrderId(null);
+            setActionLoadingByOrder({});
+            resetAuthState();
             router.replace("/sign-in");
         }
-    }, [router, setIsAuthenticated, setUser]);
+    }, [resetAuthState, router]);
 
     const reminderFeed = useMemo(
         () => reminderOrders.filter((order) => order.reminderPending).slice(0, 5),
@@ -289,7 +307,11 @@ const RestaurantPanel = () => {
         [t],
     );
 
-    if (loading) {
+    if (redirectTo) {
+        return <Redirect href={redirectTo} />;
+    }
+
+    if (loading || !localeReady) {
         return (
             <SafeAreaView style={styles.safeArea}>
                 <ScrollView contentContainerStyle={styles.container}>
@@ -324,16 +346,24 @@ const RestaurantPanel = () => {
                                     onChange={(next) => void setLocale(next)}
                                     getAccessibilityLabel={(next) => t("a11y.switchLanguage", { value: next.toUpperCase() })}
                                 />
-                                <PanelButton
-                                    label={t("button.toggleSound", { value: soundEnabled ? t("language.soundOn") : t("language.soundOff") })}
-                                    variant={soundEnabled ? "primary" : "secondary"}
-                                    iconName={soundEnabled ? "volume-2" : "volume-x"}
-                                    style={isPhone ? styles.headerActionButtonMobile : styles.headerActionButton}
+                                <TouchableOpacity
                                     onPress={() => {
                                         void toggleSound();
                                     }}
+                                    accessibilityRole="button"
                                     accessibilityLabel={t("a11y.toggleSound")}
-                                />
+                                    activeOpacity={0.82}
+                                    style={[styles.headerLocalButton, isPhone ? styles.headerLocalButtonMobile : styles.headerLocalButtonDesktop]}
+                                >
+                                    <View style={styles.headerLocalButtonContent}>
+                                        <View style={styles.headerLocalButtonIconWrap}>
+                                            <Feather name={soundEnabled ? "volume-2" : "volume-x"} size={15} color="#B94900" />
+                                        </View>
+                                        <Text style={styles.headerLocalButtonLabel}>
+                                            {t("button.toggleSound", { value: soundEnabled ? t("language.soundOn") : t("language.soundOff") })}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
                                 {!soundEnabled ? (
                                     <PanelButton
                                         label={t("button.enableSound")}
@@ -369,14 +399,20 @@ const RestaurantPanel = () => {
                                 subtitle={t("section.ordersSubtitle")}
                                 titleIcon={<Feather name="shopping-bag" size={14} color="#B94900" />}
                                 right={
-                                    <PanelButton
-                                        label={t("section.pastOrders")}
-                                        variant="secondary"
-                                        iconName="clock"
-                                        style={isPhone ? styles.sectionTopButtonMobile : styles.sectionTopButton}
+                                    <TouchableOpacity
                                         onPress={() => router.push("/restaurantpanel/history")}
+                                        accessibilityRole="button"
                                         accessibilityLabel={t("a11y.openPastOrders")}
-                                    />
+                                        activeOpacity={0.82}
+                                        style={[styles.sectionTopLocalButton, isPhone ? styles.sectionTopLocalButtonMobile : styles.sectionTopLocalButtonDesktop]}
+                                    >
+                                        <View style={styles.sectionTopLocalButtonContent}>
+                                            <View style={styles.sectionTopLocalButtonIconWrap}>
+                                                <Feather name="clock" size={15} color="#B94900" />
+                                            </View>
+                                            <Text style={styles.sectionTopLocalButtonLabel}>{t("section.pastOrders")}</Text>
+                                        </View>
+                                    </TouchableOpacity>
                                 }
                             >
                                 <OrderFilters
@@ -526,18 +562,24 @@ const RestaurantPanel = () => {
                                     {t("session.currentUser", { value: sessionIdentity })}
                                 </Text>
                             </View>
-                                    <PanelButton
-                                        label={t("button.signOut")}
-                                        variant="destructive"
-                                        iconName="log-out"
-                                        style={isPhone ? styles.compactActionButton : styles.fullWidthButton}
-                                        onPress={() => {
-                                            void handleSignOut();
-                                        }}
-                                        accessibilityLabel={t("a11y.signOut")}
-                                    />
-                                </SectionCard>
-                            </View>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    void handleSignOut();
+                                }}
+                                accessibilityRole="button"
+                                accessibilityLabel={t("a11y.signOut")}
+                                activeOpacity={0.82}
+                                style={styles.signOutButton}
+                            >
+                                <View style={styles.signOutButtonContent}>
+                                    <View style={styles.signOutButtonIconWrap}>
+                                        <Feather name="log-out" size={15} color="#B62B4D" />
+                                    </View>
+                                    <Text style={styles.signOutButtonLabel}>{t("button.signOut")}</Text>
+                                </View>
+                            </TouchableOpacity>
+                        </SectionCard>
+                    </View>
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -611,6 +653,46 @@ const styles = StyleSheet.create({
         width: "100%",
         minWidth: 0,
     },
+    headerLocalButton: {
+        minHeight: 44,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: "#EE7A14",
+        backgroundColor: "#FFF5EA",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 12,
+        paddingVertical: 9,
+    },
+    headerLocalButtonDesktop: {
+        minWidth: 130,
+    },
+    headerLocalButtonMobile: {
+        width: "100%",
+        minWidth: 0,
+    },
+    headerLocalButtonContent: {
+        width: "100%",
+        minHeight: 18,
+        justifyContent: "center",
+        alignItems: "center",
+        position: "relative",
+        paddingHorizontal: 18,
+    },
+    headerLocalButtonIconWrap: {
+        position: "absolute",
+        left: 0,
+        top: "50%",
+        marginTop: -7.5,
+    },
+    headerLocalButtonLabel: {
+        fontFamily: "ChairoSans",
+        fontSize: 15,
+        lineHeight: 17,
+        textAlign: "center",
+        color: "#B94900",
+        fontWeight: "600",
+    },
     sectionTopButton: {
         minWidth: 148,
     },
@@ -618,12 +700,85 @@ const styles = StyleSheet.create({
         minWidth: 110,
         minHeight: 38,
     },
+    sectionTopLocalButton: {
+        minHeight: 44,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: "#EE7A14",
+        backgroundColor: "#FFF5EA",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 12,
+        paddingVertical: 9,
+    },
+    sectionTopLocalButtonDesktop: {
+        minWidth: 148,
+    },
+    sectionTopLocalButtonMobile: {
+        minWidth: 110,
+        minHeight: 38,
+    },
+    sectionTopLocalButtonContent: {
+        width: "100%",
+        minHeight: 18,
+        justifyContent: "center",
+        alignItems: "center",
+        position: "relative",
+        paddingHorizontal: 18,
+    },
+    sectionTopLocalButtonIconWrap: {
+        position: "absolute",
+        left: 0,
+        top: "50%",
+        marginTop: -7.5,
+    },
+    sectionTopLocalButtonLabel: {
+        fontFamily: "ChairoSans",
+        fontSize: 15,
+        lineHeight: 17,
+        textAlign: "center",
+        color: "#B94900",
+        fontWeight: "600",
+    },
     fullWidthButton: {
         width: "100%",
     },
     compactActionButton: {
         width: "100%",
         minHeight: 42,
+    },
+    signOutButton: {
+        minHeight: 44,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: "#E3A3B2",
+        backgroundColor: "#FFF1F4",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 12,
+        paddingVertical: 9,
+    },
+    signOutButtonContent: {
+        width: "100%",
+        minHeight: 18,
+        justifyContent: "center",
+        alignItems: "center",
+        position: "relative",
+        paddingHorizontal: 18,
+    },
+    signOutButtonIconWrap: {
+        position: "absolute",
+        left: 0,
+        top: "50%",
+        marginTop: -7.5,
+    },
+    signOutButtonLabel: {
+        fontFamily: "ChairoSans",
+        fontSize: 15,
+        lineHeight: 17,
+        textAlign: "center",
+        color: "#B62B4D",
+        fontWeight: "600",
     },
     panelActionGroup: {
         gap: 8,

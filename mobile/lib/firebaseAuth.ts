@@ -102,6 +102,23 @@ const normalizeAuthErrorMessage = (error: any) => {
     if (message.includes("verify your email")) {
         return getAuthErrorMessage(language, "verifyEmail") || rawMessage;
     }
+    if (message.includes("user not found") || message.includes("no user record")) {
+        return getAuthErrorMessage(language, "userNotFound") || rawMessage;
+    }
+    if (
+        message.includes("wrong password") ||
+        message.includes("invalid password") ||
+        message.includes("password is invalid")
+    ) {
+        return getAuthErrorMessage(language, "invalidPassword") || rawMessage;
+    }
+    if (
+        message.includes("incorrect username or password") ||
+        message.includes("incorrect email or password") ||
+        message.includes("invalid login credentials")
+    ) {
+        return getAuthErrorMessage(language, "invalidCredentials") || rawMessage;
+    }
     return rawMessage;
 };
 
@@ -142,7 +159,9 @@ const ensureVerified = async (user: FirebaseUser | null) => {
     await reload(user).catch(() => null);
     if (user.emailVerified) return user;
     await firebaseSignOut(requireAuth()).catch(() => null);
-    throw new Error("Please verify your email using the link we sent and then sign in again.");
+    throw new Error(
+        getAuthErrorMessage(i18n.language, "verifyEmail") || "Please verify your email using the link we sent and then sign in again.",
+    );
 };
 
 const syncProfile = async (user: FirebaseUser, overrides: Partial<Profile> = {}) => {

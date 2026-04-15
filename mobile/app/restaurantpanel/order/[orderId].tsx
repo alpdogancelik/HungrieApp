@@ -1,22 +1,35 @@
 import { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 
 import { subscribeOrder } from "@/src/services/firebaseOrders";
 import { mapFirestoreOrder, type PanelOrder } from "@/src/features/restaurantPanel/model/panelOrders";
-import { LanguageSwitch, PageHeader, PanelButton, SectionCard, StatusPill } from "@/components/panel";
+import { LanguageSwitch, PageHeader, SectionCard, StatusPill } from "@/components/panel";
 import { useRestaurantPanelLocale } from "@/src/features/restaurantPanel/panelLocale";
+import useAuthStore from "@/store/auth.store";
 
 const RestaurantOrderDetailScreen = () => {
     const router = useRouter();
     const { orderId } = useLocalSearchParams<{ orderId?: string }>();
     const { width } = useWindowDimensions();
     const isPhone = width < 760;
+    const { isAuthenticated, isLoading: authLoading } = useAuthStore();
     const [order, setOrder] = useState<PanelOrder | null>(null);
+    const [redirectTo, setRedirectTo] = useState<"/sign-in" | null>(null);
     const { locale, setLocale, t, formatCurrency, formatDate, formatAddress, formatPhone } = useRestaurantPanelLocale(null);
 
     useEffect(() => {
+        if (authLoading) return;
+        if (!isAuthenticated) {
+            setRedirectTo("/sign-in");
+            return;
+        }
+        setRedirectTo(null);
+    }, [authLoading, isAuthenticated]);
+
+    useEffect(() => {
+        if (authLoading || !isAuthenticated) return;
         const id = String(orderId || "");
         if (!id) return;
         const unsub = subscribeOrder(id, (next) => {
@@ -27,7 +40,11 @@ const RestaurantOrderDetailScreen = () => {
             setOrder(mapFirestoreOrder(next));
         });
         return () => unsub?.();
-    }, [orderId]);
+    }, [authLoading, isAuthenticated, orderId]);
+
+    if (redirectTo) {
+        return <Redirect href={redirectTo} />;
+    }
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -69,12 +86,19 @@ const RestaurantOrderDetailScreen = () => {
                     </SectionCard>
                 )}
 
-                <PanelButton
-                    label={t("button.backToPanel")}
-                    variant="secondary"
+                <TouchableOpacity
                     onPress={() => router.push("/restaurantpanel")}
+                    activeOpacity={0.82}
                     accessibilityLabel={t("a11y.backToPanel")}
-                />
+                    style={styles.backButton}
+                >
+                    <View style={styles.backButtonContent}>
+                        <View style={styles.backButtonIconWrap}>
+                            <Feather name="chevron-left" size={15} color="#B94900" />
+                        </View>
+                        <Text style={styles.backButtonLabel}>{t("button.backToPanel")}</Text>
+                    </View>
+                </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>
     );
@@ -89,6 +113,39 @@ const styles = StyleSheet.create({
         padding: 14,
         gap: 12,
         paddingBottom: 24,
+    },
+    backButton: {
+        minHeight: 44,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: "#EE7A14",
+        backgroundColor: "#FFF5EA",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 12,
+        paddingVertical: 9,
+    },
+    backButtonContent: {
+        width: "100%",
+        minHeight: 18,
+        justifyContent: "center",
+        alignItems: "center",
+        position: "relative",
+        paddingHorizontal: 18,
+    },
+    backButtonIconWrap: {
+        position: "absolute",
+        left: 0,
+        top: "50%",
+        marginTop: -7.5,
+    },
+    backButtonLabel: {
+        fontFamily: "ChairoSans",
+        fontSize: 15,
+        lineHeight: 17,
+        textAlign: "center",
+        color: "#B94900",
+        fontWeight: "600",
     },
     meta: {
         fontFamily: "ChairoSans",

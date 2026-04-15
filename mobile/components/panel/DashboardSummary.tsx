@@ -1,7 +1,5 @@
-import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 import { Feather } from "@expo/vector-icons";
-
-import PanelButton from "./Button";
 
 type MetricTone = "warning" | "success" | "info";
 
@@ -72,17 +70,23 @@ const DashboardSummary = ({ title, metrics, links }: Props) => {
                 })}
             </View>
 
-            <View style={styles.linksRow}>
+            <View style={[styles.linksRow, isPhone ? styles.linksRowPhone : null]}>
                 {links.map((link) => (
-                    <PanelButton
+                    <TouchableOpacity
                         key={link.id}
-                        label={link.label}
-                        iconName={link.iconName}
-                        variant="secondary"
-                        style={[styles.linkButton, isPhone ? styles.linkButtonPhoneStacked : null]}
                         onPress={link.onPress}
+                        accessibilityRole="button"
                         accessibilityLabel={link.accessibilityLabel || link.label}
-                    />
+                        activeOpacity={0.82}
+                        style={[styles.linkButton, isPhone ? styles.linkButtonPhoneStacked : null]}
+                    >
+                        <View style={styles.linkButtonContent}>
+                            <View style={styles.linkIconWrap}>
+                                <Feather name={link.iconName} size={15} color="#B94900" />
+                            </View>
+                            <Text style={styles.linkButtonLabel}>{link.label}</Text>
+                        </View>
+                    </TouchableOpacity>
                 ))}
             </View>
         </View>
@@ -156,14 +160,50 @@ const styles = StyleSheet.create({
         flexWrap: "wrap",
         gap: 8,
     },
+    linksRowPhone: {
+        flexDirection: "column",
+        flexWrap: "nowrap",
+    },
     linkButton: {
         minWidth: 150,
         flexGrow: 1,
+        minHeight: 44,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: "#EE7A14",
+        backgroundColor: "#FFF5EA",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 12,
+        paddingVertical: 9,
     },
     linkButtonPhoneStacked: {
         width: "100%",
         minWidth: 0,
         flexGrow: 0,
+        alignSelf: "stretch",
+    },
+    linkButtonContent: {
+        width: "100%",
+        minHeight: 18,
+        justifyContent: "center",
+        alignItems: "center",
+        position: "relative",
+        paddingHorizontal: 18,
+    },
+    linkIconWrap: {
+        position: "absolute",
+        left: 0,
+        top: "50%",
+        marginTop: -7.5,
+    },
+    linkButtonLabel: {
+        fontFamily: "ChairoSans",
+        fontSize: 15,
+        lineHeight: 17,
+        textAlign: "center",
+        color: "#B94900",
+        fontWeight: "600",
     },
 });
 

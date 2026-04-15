@@ -8,7 +8,8 @@ import AuthScreenLayout from "@/components/auth/AuthScreenLayout";
 import CustomButton from "@/components/CustomButton";
 import CustomInput from "@/components/CustomInput";
 import { sendPasswordReset } from "@/lib/firebaseAuth";
-import { getAuthScreenCopy } from "@/src/features/auth/authCopy";
+import { getAuthErrorMessage, getAuthScreenCopy } from "@/src/features/auth/authCopy";
+import { isStrictValidEmail } from "@/src/features/auth/emailValidation";
 import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 import OnlineOrder from "@/assets/illustrations/Online Order.svg";
 import RobotDelivery from "@/assets/illustrations/Robot Delivery.svg";
@@ -56,6 +57,15 @@ const ForgotPasswordScreen = () => {
                 tone: "error",
                 title: copy.emptyTitle,
                 message: copy.emptyBody,
+            });
+            return;
+        }
+
+        if (!isStrictValidEmail(trimmedEmail)) {
+            setFeedback({
+                tone: "error",
+                title: copy.emptyTitle,
+                message: getAuthErrorMessage(i18n.language, "invalidEmail") || copy.fallbackError,
             });
             return;
         }

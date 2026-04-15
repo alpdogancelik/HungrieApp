@@ -1,25 +1,34 @@
 import { Tabs } from "expo-router";
 import React, { useEffect, useRef } from "react";
-import { Animated, LayoutChangeEvent, Platform, Pressable, StyleSheet, View } from "react-native";
+import { Animated, LayoutChangeEvent, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import useAuthStore from "@/store/auth.store";
+import { useTranslation } from "react-i18next";
 import Icon from "@/components/Icon";
+import { useCartStore } from "@/store/cart.store";
 import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 import { makeShadow } from "@/src/lib/shadowStyle";
 const WEB_MAX_WIDTH = 960;
-const BAR_HEIGHT = 74;
+const BAR_HEIGHT = 88;
 const ACTIVE_ICON_COLOR = "#F28C28";
 const INACTIVE_ICON_COLOR = "#8A8178";
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
 
+const formatCartTotal = (amount: number, isTurkish: boolean) => {
+    const rounded = Math.round(amount);
+    return isTurkish ? `${rounded} TL` : `${rounded} TL`;
+};
+
 function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
+    const { i18n } = useTranslation();
     const { width } = useStableWindowDimensions();
+    const cartItems = useCartStore((state) => state.items);
+    const cartTotal = useCartStore((state) => state.getTotalPrice());
     const effectiveWidth = Platform.OS === "web" ? Math.min(width, WEB_MAX_WIDTH) : width;
     const insets = useSafeAreaInsets();
+    const isTurkish = i18n.language?.startsWith("tr");
     const OUTER_MARGIN = 18;
     const INNER_PAD = 16;
-    const bubbleSize = 48;
     const containerW = effectiveWidth - OUTER_MARGIN * 2;
     const normalizeRouteName = (name: string) => name.split("/")[0];
     const routeOrder = ["home", "search", "cart", "profile"];
@@ -44,13 +53,13 @@ function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
 
     useEffect(() => {
         Animated.timing(translateX, {
-            toValue: tabW * activeIndex + (tabW - bubbleSize) / 2,
+            toValue: tabW * activeIndex,
             duration: 200,
             useNativeDriver: USE_NATIVE_DRIVER,
         }).start();
     }, [activeIndex, tabW, translateX]);
 
-    const bottom = Math.max(insets.bottom, 10) + 8;
+    const bottom = Math.max(insets.bottom, 10) - 15;
     const handleLayout = (event: LayoutChangeEvent) => {
         measuredBarWidth.current = event.nativeEvent.layout.width;
     };
@@ -75,9 +84,7 @@ function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
                     {
                         pointerEvents: "none",
                         left: INNER_PAD,
-                        width: bubbleSize,
-                        height: bubbleSize,
-                        borderRadius: bubbleSize / 2,
+                        width: tabW,
                         transform: [{ translateX }],
                     },
                 ]}
@@ -86,6 +93,16 @@ function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
             {orderedRoutes.map((route) => {
                 const focused = route.key === activeRouteKey;
                 const baseName = normalizeRouteName(route.name);
+                const label =
+                    baseName === "home"
+                        ? isTurkish ? "Ana Sayfa" : "Home"
+                        : baseName === "search"
+                          ? isTurkish ? "Ara" : "Search"
+                          : baseName === "cart"
+                            ? isTurkish ? "Sepet" : "Bag"
+                            : isTurkish ? "Profil" : "Profile";
+                const cartCount = baseName === "cart" ? cartItems.reduce((sum, item) => sum + item.quantity, 0) : 0;
+                const showCartSummary = baseName === "cart" && cartCount > 0;
                 const onPress = () => {
                     const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
                     if (!focused && !event.defaultPrevented) {
@@ -108,9 +125,23 @@ function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
                         key={route.key}
                         onPress={onPress}
                         hitSlop={10}
-                        style={styles.tabPressable}
+                        style={[styles.tabPressable, showCartSummary ? styles.tabPressableCart : null]}
                     >
-                        <View style={styles.iconFrame}>{iconNode}</View>
+                        <View style={[styles.iconWrap, focused ? styles.iconWrapActive : null]}>
+                            <View style={styles.iconFrame}>{iconNode}</View>
+                            {showCartSummary ? (
+                                <View style={styles.cartCountBadge}>
+                                    <Text style={styles.cartCountBadgeText}>{cartCount}</Text>
+                                </View>
+                            ) : null}
+                        </View>
+                        {showCartSummary ? (
+                            <View style={styles.cartTotalPill}>
+                                <Text style={styles.cartTotalPillText}>{formatCartTotal(cartTotal, isTurkish)}</Text>
+                            </View>
+                        ) : (
+                            <Text style={[styles.label, focused ? styles.labelActive : null]}>{label}</Text>
+                        )}
                     </Pressable>
                 );
             })}
@@ -124,14 +155,19 @@ export default function TabLayout() {
             initialRouteName="home"
             tabBar={(props: BottomTabBarProps) => <HungrieTabBar {...props} />}
             screenOptions={{
-                lazy: false,
                 headerShown: false,
                 tabBarShowLabel: false,
                 tabBarHideOnKeyboard: true,
             }}
         >
             <Tabs.Screen name="home" />
-            <Tabs.Screen name="search/index" options={{ title: "Search" }} />
+            <Tabs.Screen
+                name="search/index"
+                options={{
+                    title: "Search",
+                    unmountOnBlur: true,
+                }}
+            />
             <Tabs.Screen name="cart" />
             <Tabs.Screen name="profile" />
         </Tabs>
@@ -152,20 +188,78 @@ const styles = StyleSheet.create({
     },
     indicator: {
         position: "absolute",
-        backgroundColor: "#FDE3C6",
-        borderWidth: 1,
-        borderColor: "#F7C99A",
-        ...makeShadow({ color: "#F28C28", offsetY: 3, blurRadius: 8, opacity: 0.18, elevation: 4 }),
+        top: 0,
+        bottom: 0,
     },
     tabPressable: {
         flex: 1,
         alignItems: "center",
         justifyContent: "center",
+        gap: 2,
+    },
+    tabPressableCart: {
+        gap: 0,
+    },
+    iconWrap: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    iconWrapActive: {
+        backgroundColor: "#FDE3C6",
+        borderWidth: 1,
+        borderColor: "#F7C99A",
     },
     iconFrame: {
         width: 48,
         height: 48,
         alignItems: "center",
         justifyContent: "center",
+    },
+    label: {
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        color: "#8D7B6D",
+    },
+    labelActive: {
+        color: "#B85C16",
+    },
+    cartCountBadge: {
+        position: "absolute",
+        top: -3,
+        right: -2,
+        minWidth: 20,
+        height: 20,
+        borderRadius: 10,
+        paddingHorizontal: 4,
+        backgroundColor: "#FF8A00",
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 2,
+        borderColor: "#F7EBDD",
+    },
+    cartCountBadgeText: {
+        fontFamily: "ChairoSans",
+        fontSize: 11,
+        lineHeight: 12,
+        color: "#FFFFFF",
+    },
+    cartTotalPill: {
+        minWidth: 70,
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 999,
+        backgroundColor: "#FF8A00",
+        alignItems: "center",
+        justifyContent: "center",
+        marginTop: -2,
+    },
+    cartTotalPillText: {
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        lineHeight: 14,
+        color: "#FFFFFF",
     },
 });
