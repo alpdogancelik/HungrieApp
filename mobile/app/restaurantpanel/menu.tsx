@@ -12,6 +12,7 @@ import {
     useWindowDimensions,
     View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { useFocusEffect } from "@react-navigation/native";
@@ -41,13 +42,56 @@ type MenuItem = {
 type Category = {
     id: string;
     name: string;
+    slug: string;
 };
 
 type MenuView = "products" | "categories";
 
+const slugifyCategory = (value: string) =>
+    String(value || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9çğıöşü]+/gi, "-")
+        .replace(/^-+|-+$/g, "");
+
+const resolveCategorySlug = (category: Partial<Category>) => slugifyCategory(category.name || category.slug || category.id || "");
+
+const getCategoryAliases = (category: Partial<Category>) =>
+    Array.from(
+        new Set(
+            [category.id, category.slug, category.name]
+                .map((value) => slugifyCategory(String(value || "")))
+                .filter(Boolean),
+        ),
+    );
+
+const normalizeAssignedCategories = (raw: unknown, categories: Category[]) => {
+    const values = Array.isArray(raw) ? raw.map(String) : raw ? [String(raw)] : [];
+    if (!values.length) return [];
+
+    const byId = new Map(categories.map((category) => [category.id, resolveCategorySlug(category)]));
+    const bySlug = new Map(categories.map((category) => [resolveCategorySlug(category), resolveCategorySlug(category)]));
+
+    return Array.from(
+        new Set(
+            values
+                .map((value) => {
+                    const trimmed = String(value || "").trim();
+                    if (!trimmed) return null;
+                    if (byId.has(trimmed)) return byId.get(trimmed) || null;
+                    const normalized = slugifyCategory(trimmed);
+                    if (bySlug.has(normalized)) return bySlug.get(normalized) || null;
+                    return normalized || null;
+                })
+                .filter((value): value is string => Boolean(value)),
+        ),
+    );
+};
+
 const RestaurantMenuManager = () => {
     const router = useRouter();
     const { width } = useWindowDimensions();
+    const insets = useSafeAreaInsets();
     const isPhone = width < 420;
     const { isAuthenticated, isLoading: authLoading } = useAuthStore();
     const [restaurantId, setRestaurantId] = useState<string | null>(null);
@@ -102,7 +146,9 @@ const RestaurantMenuManager = () => {
                 );
                 const catList: Category[] = catSnap.docs.map((snapshot) => {
                     const data = snapshot.data() as any;
-                    return { id: snapshot.id, name: String(data.name || snapshot.id) };
+                    const name = String(data.name || snapshot.id);
+                    const slug = slugifyCategory(String(data.slug || name || snapshot.id));
+                    return { id: snapshot.id, name, slug };
                 });
                 setCategories(catList);
 
@@ -113,7 +159,7 @@ const RestaurantMenuManager = () => {
                         id: snapshot.id,
                         name: String(data.name || snapshot.id),
                         price: Number(data.price || 0),
-                        categories: Array.isArray(data.categories) ? data.categories.map(String) : [],
+                        categories: normalizeAssignedCategories(data.categories, catList),
                         visible: data.visible !== false,
                     };
                 });
@@ -155,7 +201,9 @@ const RestaurantMenuManager = () => {
 
     const categoryById = useMemo(() => {
         return categories.reduce<Record<string, string>>((acc, category) => {
-            acc[category.id] = category.name;
+            getCategoryAliases(category).forEach((alias) => {
+                acc[alias] = category.name;
+            });
             return acc;
         }, {});
     }, [categories]);
@@ -166,22 +214,29 @@ const RestaurantMenuManager = () => {
         return items.filter((item) => item.name.toLowerCase().includes(term));
     }, [items, search]);
 
-    const toggleCategory = (itemId: string, categoryId: string) => {
+    const toggleCategory = (itemId: string, categorySlug: string) => {
         setItems((prev) =>
             prev.map((item) => {
                 if (item.id !== itemId) return item;
                 const current = item.categories || [];
-                const exists = current.includes(categoryId);
-                const nextCategories = exists ? current.filter((currentId) => currentId !== categoryId) : [...current, categoryId];
+                const category = categories.find((entry) => resolveCategorySlug(entry) === categorySlug);
+                const aliases = category ? getCategoryAliases(category) : [categorySlug];
+                const exists = current.some((currentId) => aliases.includes(slugifyCategory(currentId)));
+                const stripped = current.filter((currentId) => !aliases.includes(slugifyCategory(currentId)));
+                const nextCategories = exists ? stripped : [...stripped, categorySlug];
                 return { ...item, categories: nextCategories };
             }),
         );
     };
 
-    const toggleNewItemCategory = (categoryId: string) => {
-        setNewItemCategories((prev) =>
-            prev.includes(categoryId) ? prev.filter((currentId) => currentId !== categoryId) : [...prev, categoryId],
-        );
+    const toggleNewItemCategory = (categorySlug: string) => {
+        setNewItemCategories((prev) => {
+            const category = categories.find((entry) => resolveCategorySlug(entry) === categorySlug);
+            const aliases = category ? getCategoryAliases(category) : [categorySlug];
+            const exists = prev.some((currentId) => aliases.includes(slugifyCategory(currentId)));
+            const stripped = prev.filter((currentId) => !aliases.includes(slugifyCategory(currentId)));
+            return exists ? stripped : [...stripped, categorySlug];
+        });
     };
 
     const handleUpdateField = (itemId: string, field: keyof MenuItem, value: string | number | boolean) => {
@@ -190,10 +245,11 @@ const RestaurantMenuManager = () => {
 
     const handleSaveItem = async (item: MenuItem) => {
         if (!firestore || !restaurantId) return;
+        const normalizedCategories = Array.from(new Set((item.categories || []).map((entry) => slugifyCategory(String(entry)))));
         try {
             setSavingId(item.id);
             await updateDoc(doc(firestore, "menus", item.id), {
-                categories: item.categories || [],
+                categories: normalizedCategories,
                 name: item.name || "",
                 price: Number(item.price || 0),
                 visible: item.visible !== false,
@@ -220,11 +276,12 @@ const RestaurantMenuManager = () => {
         try {
             const ref = await addDoc(collection(firestore, "categories"), {
                 name,
+                slug: slugifyCategory(name),
                 restaurantId,
                 createdAt: Date.now(),
                 updatedAt: Date.now(),
             });
-            setCategories((prev) => [...prev, { id: ref.id, name }]);
+            setCategories((prev) => [...prev, { id: ref.id, name, slug: slugifyCategory(name) }]);
             setNewCategoryName("");
         } catch (err: any) {
             Alert.alert(
@@ -248,7 +305,7 @@ const RestaurantMenuManager = () => {
                 restaurantId,
                 name,
                 price: Number.isFinite(price) ? price : 0,
-                categories: newItemCategories,
+                categories: Array.from(new Set(newItemCategories.map((entry) => slugifyCategory(String(entry))))),
                 visible: true,
                 createdAt: Date.now(),
                 updatedAt: Date.now(),
@@ -305,14 +362,25 @@ const RestaurantMenuManager = () => {
 
     const handleUpdateCategory = async (category: Category, nextName: string) => {
         if (!firestore) return;
+        const trimmedName = nextName.trim() || category.name;
+        const nextSlug = slugifyCategory(trimmedName);
         try {
             await updateDoc(doc(firestore, "categories", category.id), {
-                name: nextName.trim() || category.name,
+                name: trimmedName,
+                slug: nextSlug,
                 updatedAt: Date.now(),
             });
             setCategories((prev) =>
-                prev.map((current) => (current.id === category.id ? { ...current, name: nextName } : current)),
+                prev.map((current) => (current.id === category.id ? { ...current, name: trimmedName, slug: nextSlug } : current)),
             );
+            if (category.slug !== nextSlug) {
+                setItems((prev) =>
+                    prev.map((item) => ({
+                        ...item,
+                        categories: (item.categories || []).map((entry) => (entry === category.slug ? nextSlug : entry)),
+                    })),
+                );
+            }
         } catch (err: any) {
             Alert.alert(
                 t("menu.updateFailedTitle"),
@@ -323,13 +391,14 @@ const RestaurantMenuManager = () => {
 
     const handleDeleteCategory = async (categoryId: string) => {
         if (!firestore) return;
+        const removedCategory = categories.find((category) => category.id === categoryId);
         try {
             await deleteDoc(doc(firestore, "categories", categoryId));
             setCategories((prev) => prev.filter((category) => category.id !== categoryId));
             setItems((prev) =>
                 prev.map((item) => ({
                     ...item,
-                    categories: (item.categories || []).filter((currentId) => currentId !== categoryId),
+                    categories: (item.categories || []).filter((currentId) => currentId !== removedCategory?.slug),
                 })),
             );
         } catch (err: any) {
@@ -513,17 +582,17 @@ const RestaurantMenuManager = () => {
             <Text style={styles.label}>{t("menu.fieldCategories")}</Text>
             <View style={styles.pillRow}>
                 {categories.map((category) => {
-                    const active = item.categories?.includes(category.id);
+                    const active = (item.categories || []).some((entry) => getCategoryAliases(category).includes(slugifyCategory(entry)));
                     return (
                         <TouchableOpacity
                             key={`${item.id}-cat-${category.id}`}
                             style={[styles.pill, active ? styles.pillActive : null]}
-                            onPress={() => toggleCategory(item.id, category.id)}
+                            onPress={() => toggleCategory(item.id, resolveCategorySlug(category))}
                             accessibilityRole="button"
                             accessibilityLabel={t("a11y.toggleCategory", { category: category.name, item: item.name })}
                         >
                             <Text style={[styles.pillLabel, active ? styles.pillLabelActive : null]}>
-                                {category.name || category.id}
+                                {category.name || category.slug}
                             </Text>
                         </TouchableOpacity>
                     );
@@ -718,17 +787,19 @@ const RestaurantMenuManager = () => {
                                             <Text style={styles.label}>{t("menu.fieldCategories")}</Text>
                                             <View style={styles.pillRow}>
                                                 {categories.map((category) => {
-                                                    const active = newItemCategories.includes(category.id);
+                                                    const active = newItemCategories.some((entry) =>
+                                                        getCategoryAliases(category).includes(slugifyCategory(entry)),
+                                                    );
                                                     return (
                                                         <TouchableOpacity
                                                             key={`new-item-cat-${category.id}`}
                                                             style={[styles.pill, active ? styles.pillActive : null]}
-                                                            onPress={() => toggleNewItemCategory(category.id)}
+                                                            onPress={() => toggleNewItemCategory(resolveCategorySlug(category))}
                                                             accessibilityRole="button"
                                                             accessibilityLabel={t("a11y.toggleNewProductCategory", { category: category.name })}
                                                         >
                                                             <Text style={[styles.pillLabel, active ? styles.pillLabelActive : null]}>
-                                                                {category.name || category.id}
+                                                                {category.name || category.slug}
                                                             </Text>
                                                         </TouchableOpacity>
                                                     );
@@ -778,7 +849,7 @@ const RestaurantMenuManager = () => {
                     accessibilityRole="button"
                     accessibilityLabel="Go up"
                     activeOpacity={0.82}
-                    style={styles.scrollTopButton}
+                    style={[styles.scrollTopButton, { bottom: Math.max(insets.bottom, 8) }]}
                 >
                     <Feather name="arrow-up" size={18} color="#FFFFFF" />
                     <Text style={styles.scrollTopButtonText}>Go up</Text>
@@ -833,7 +904,7 @@ const styles = StyleSheet.create({
         gap: panelDesign.spacing.md,
     },
     scrollContent: {
-        paddingBottom: panelDesign.spacing.xl,
+        paddingBottom: panelDesign.spacing.sm,
         gap: panelDesign.spacing.md,
     },
     modalOverlay: {
@@ -960,7 +1031,6 @@ const styles = StyleSheet.create({
     scrollTopButton: {
         position: "absolute",
         right: panelDesign.spacing.md,
-        bottom: panelDesign.spacing.lg,
         minHeight: 44,
         borderRadius: 999,
         backgroundColor: "#FE8C00",

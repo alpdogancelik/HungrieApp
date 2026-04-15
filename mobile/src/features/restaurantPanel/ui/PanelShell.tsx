@@ -62,7 +62,7 @@ export const PanelShell = ({
     );
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={styles.safeArea} edges={["left", "right"]}>
             {noScroll ? <View style={styles.staticBody}>{body}</View> : <ScrollView contentContainerStyle={styles.scrollContent}>{body}</ScrollView>}
         </SafeAreaView>
     );
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: panelDesign.spacing.md,
         paddingTop: panelDesign.spacing.md,
-        paddingBottom: panelDesign.spacing.xl,
+        paddingBottom: 0,
         alignItems: "center",
     },
     contentWrap: {

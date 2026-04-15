@@ -379,7 +379,7 @@ const Cart = () => {
     const [drinkLoading, setDrinkLoading] = useState(false);
     const resolvedAddressId = selectedAddress ?? addressList[0]?.id ?? null;
     const isBelowMinimum = subtotal < MINIMUM_ORDER_TOTAL;
-    const canCheckout = Boolean(!isCartEmpty && resolvedAddressId !== null && paymentMethod && !isBelowMinimum);
+    const canCheckout = Boolean(!isCartEmpty && paymentMethod && !isBelowMinimum);
     const selectedAddressId = stringifyId(selectedAddress);
     const handleSelectAddress = (addressId: string | number) => setSelectedAddress(String(addressId));
     const resolveRestaurantFromCart = useCallback(() => {
@@ -476,7 +476,17 @@ const Cart = () => {
         }
 
         if (resolvedAddressId === null) {
-            Alert.alert(t("cart.screen.alerts.addAddressTitle"), t("cart.screen.alerts.addAddressBody"));
+            Alert.alert(
+                t("cart.screen.alerts.addAddressTitle"),
+                t("cart.screen.alerts.addAddressBody"),
+                [
+                    { text: t("common.cancel"), style: "cancel" },
+                    {
+                        text: t("deliverTo.addAddress"),
+                        onPress: () => router.push("/ManageAddresses"),
+                    },
+                ],
+            );
             return;
         }
 

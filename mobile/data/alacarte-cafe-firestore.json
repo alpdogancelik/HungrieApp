@@ -17,8 +17,8 @@
     { "id": "fast-food", "name": "Fast Food Menuleri", "icon": "@/assets/images/fastfood.png" },
     { "id": "diet", "name": "Diyet Menuler", "icon": "@/assets/images/diet.png" },
     { "id": "durumler", "name": "Dürümler", "icon": "@/assets/images/durum.png" },
-    { "id": "burgers", "name": "Burgerler", "icon": "@/assets/images/Burger.png" },
-    { "id": "burger-extras", "name": "Burger Ekstralar", "icon": "@/assets/images/Fries.png" },
+    { "id": "burgers", "name": "Burgerler", "icon": "@/assets/images/Burger Delivery.png" },
+    { "id": "burger-extras", "name": "Burger Ekstralar", "icon": "@/assets/images/Food Review.png" },
     { "id": "grills", "name": "Izgara Cesitleri", "icon": "@/assets/images/grills.png" },
     { "id": "pasta", "name": "Makarnalar", "icon": "@/assets/images/pasta.png" },
     { "id": "salads", "name": "Salatalar", "icon": "@/assets/images/salads.png" },
@@ -613,4 +613,3 @@
     }
   ]
 }
-

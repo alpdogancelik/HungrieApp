@@ -9,7 +9,7 @@ import { useCartStore } from "@/store/cart.store";
 import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 import { makeShadow } from "@/src/lib/shadowStyle";
 const WEB_MAX_WIDTH = 960;
-const BAR_HEIGHT = 88;
+const BAR_HEIGHT = Platform.OS === "android" ? 94 : 88;
 const ACTIVE_ICON_COLOR = "#F28C28";
 const INACTIVE_ICON_COLOR = "#8A8178";
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
@@ -59,7 +59,7 @@ function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
         }).start();
     }, [activeIndex, tabW, translateX]);
 
-    const bottom = Math.max(insets.bottom, 10) - 15;
+    const bottom = Platform.OS === "android" ? Math.max(insets.bottom, 10) - 0 : Math.max(insets.bottom, 10) - 15;
     const handleLayout = (event: LayoutChangeEvent) => {
         measuredBarWidth.current = event.nativeEvent.layout.width;
     };
@@ -127,7 +127,8 @@ function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
                         hitSlop={10}
                         style={[styles.tabPressable, showCartSummary ? styles.tabPressableCart : null]}
                     >
-                        <View style={[styles.iconWrap, focused ? styles.iconWrapActive : null]}>
+                        <View style={styles.iconWrap}>
+                            {focused ? <View style={styles.iconActiveBubble} /> : null}
                             <View style={styles.iconFrame}>{iconNode}</View>
                             {showCartSummary ? (
                                 <View style={styles.cartCountBadge}>
@@ -165,7 +166,6 @@ export default function TabLayout() {
                 name="search/index"
                 options={{
                     title: "Search",
-                    unmountOnBlur: true,
                 }}
             />
             <Tabs.Screen name="cart" />
@@ -198,7 +198,9 @@ const styles = StyleSheet.create({
         gap: 2,
     },
     tabPressableCart: {
-        gap: 0,
+        gap: 2,
+        justifyContent: "center",
+        paddingTop: 2,
     },
     iconWrap: {
         width: 48,
@@ -206,8 +208,13 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         alignItems: "center",
         justifyContent: "center",
+        position: "relative",
     },
-    iconWrapActive: {
+    iconActiveBubble: {
+        position: "absolute",
+        width: 42,
+        height: 42,
+        borderRadius: 21,
         backgroundColor: "#FDE3C6",
         borderWidth: 1,
         borderColor: "#F7C99A",
@@ -215,12 +222,13 @@ const styles = StyleSheet.create({
     iconFrame: {
         width: 48,
         height: 48,
+        borderRadius: 24,
         alignItems: "center",
         justifyContent: "center",
     },
     label: {
         fontFamily: "ChairoSans",
-        fontSize: 12,
+        fontSize: Platform.OS === "android" ? 13 : 12,
         color: "#8D7B6D",
     },
     labelActive: {
@@ -228,8 +236,8 @@ const styles = StyleSheet.create({
     },
     cartCountBadge: {
         position: "absolute",
-        top: -3,
-        right: -2,
+        top: -2,
+        right: -1,
         minWidth: 20,
         height: 20,
         borderRadius: 10,
@@ -247,19 +255,21 @@ const styles = StyleSheet.create({
         color: "#FFFFFF",
     },
     cartTotalPill: {
-        minWidth: 70,
-        paddingHorizontal: 12,
-        paddingVertical: 4,
+        minWidth: 78,
+        paddingHorizontal: 14,
+        paddingVertical: 3,
         borderRadius: 999,
         backgroundColor: "#FF8A00",
         alignItems: "center",
         justifyContent: "center",
-        marginTop: -2,
+        marginTop: 0,
     },
     cartTotalPillText: {
         fontFamily: "ChairoSans",
-        fontSize: 12,
-        lineHeight: 14,
+        fontSize: 11,
+        lineHeight: 13,
         color: "#FFFFFF",
+        textAlign: "center",
+        includeFontPadding: false,
     },
 });

@@ -54,6 +54,13 @@ const resolveBundledRestaurantLogoPath = (restaurant: any) => {
     return undefined;
 };
 
+const slugifyCategory = (value: unknown) =>
+    String(value || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9çğıöşü]+/gi, "-")
+        .replace(/^-+|-+$/g, "");
+
 const withBundledRestaurantLogo = (restaurant: any) => {
     const bundledLogoPath = resolveBundledRestaurantLogoPath(restaurant);
     if (!bundledLogoPath) return restaurant;
@@ -250,7 +257,14 @@ export const getRestaurantCategories = async (restaurantId: string | number) => 
     if (!firebaseConfigured || !firestore) return [];
     const categoriesRef = collection(firestore, FIREBASE_COLLECTIONS.categories);
     const snap = await getDocs(query(categoriesRef, where("restaurantId", "==", String(restaurantId))));
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return snap.docs.map((d) => {
+        const data = d.data() as any;
+        return {
+            id: d.id,
+            ...data,
+            slug: slugifyCategory(data.slug || data.name || d.id),
+        };
+    });
 };
 
 export const getRestaurantMenu = async ({
@@ -271,6 +285,8 @@ export const getRestaurantMenu = async ({
     if (categoryId !== undefined && categoryId !== null) {
         const categoryKey = String(categoryId);
         items = items.filter((item: any) => {
+            const categories = Array.isArray(item.categories) ? item.categories.map(String) : [];
+            if (categories.includes(categoryKey)) return true;
             const cat = item.categoryId ?? item.category ?? item.categorySlug;
             if (Array.isArray(cat)) return cat.map(String).includes(categoryKey);
             return cat !== undefined && String(cat) === categoryKey;

@@ -112,6 +112,34 @@ const groupByCategory = (items: MenuEntry[]) => {
     return bucket;
 };
 
+const slugifyCategory = (value: unknown) =>
+    String(value || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9çğıöşü]+/gi, "-")
+        .replace(/^-+|-+$/g, "");
+
+const normalizeMenuCategories = (items: MenuEntry[], categories: Category[]) => {
+    if (!items.length) return items;
+    const categoryMap = new Map<string, string>();
+
+    categories.forEach((category) => {
+        const slug = slugifyCategory(category.slug || category.name || category.id);
+        if (category.id) categoryMap.set(String(category.id), slug);
+        if (category.slug) categoryMap.set(String(category.slug), slug);
+        if (category.name) categoryMap.set(String(category.name), slug);
+    });
+
+    return items.map((item) => {
+        const raw = Array.isArray(item.categories) ? item.categories : item.categories ? [item.categories] : [];
+        const normalized = raw
+            .map((entry) => categoryMap.get(String(entry)) || slugifyCategory(entry))
+            .filter(Boolean);
+
+        return normalized.length ? { ...item, categories: Array.from(new Set(normalized)) } : item;
+    });
+};
+
 const sortCategories = (keys: string[]) =>
     [...keys].sort((a, b) => {
         const ia = BASE_CATEGORY_ORDER.indexOf(a);
@@ -187,7 +215,10 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
         skipAlert: true,
     });
 
-    const menuItems = Array.isArray(menu) ? menu : [];
+    const menuItems = useMemo(
+        () => normalizeMenuCategories(Array.isArray(menu) ? menu : [], Array.isArray(categories) ? categories : []),
+        [categories, menu],
+    );
     const grouped = useMemo(() => groupByCategory(menuItems), [menuItems]);
 
     const categoryKeys = useMemo(() => {
@@ -235,8 +266,13 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
     const toastOpacity = useRef(new Animated.Value(0)).current;
     const toastScale = useRef(new Animated.Value(0.98)).current;
     const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const categoryRailRef = useRef<ScrollView | null>(null);
+    const categoryRailDragStartX = useRef(0);
+    const categoryRailDragStartScrollX = useRef(0);
+    const categoryRailScrollX = useRef(0);
     const [addedToastVisible, setAddedToastVisible] = useState(false);
     const [addedToastText, setAddedToastText] = useState("");
+    const [isCategoryDragging, setIsCategoryDragging] = useState(false);
 
     const showAddedToast = useCallback(
         (itemName: string) => {
@@ -297,6 +333,26 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
             showAddedToast(item.name);
         }
     };
+
+    const handleCategoryRailPointerDown = useCallback((event: any) => {
+        if (Platform.OS !== "web") return;
+        categoryRailDragStartX.current = Number(event?.nativeEvent?.pageX || 0);
+        categoryRailDragStartScrollX.current = categoryRailScrollX.current;
+        setIsCategoryDragging(true);
+    }, []);
+
+    const handleCategoryRailPointerMove = useCallback((event: any) => {
+        if (Platform.OS !== "web" || !isCategoryDragging) return;
+        const pageX = Number(event?.nativeEvent?.pageX || 0);
+        const deltaX = pageX - categoryRailDragStartX.current;
+        const nextX = Math.max(0, categoryRailDragStartScrollX.current - deltaX);
+        categoryRailRef.current?.scrollTo({ x: nextX, animated: false });
+    }, [isCategoryDragging]);
+
+    const stopCategoryRailDragging = useCallback(() => {
+        if (Platform.OS !== "web") return;
+        setIsCategoryDragging(false);
+    }, []);
 
     const renderContent = () => {
         if (restaurantLoading || menuLoading) {
@@ -382,7 +438,21 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
 
                 {categoryKeys.length ? (
                     <View style={styles.categoryRail}>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRailContent}>
+                        <ScrollView
+                            ref={categoryRailRef}
+                            horizontal
+                            showsHorizontalScrollIndicator={Platform.OS === "web"}
+                            contentContainerStyle={styles.categoryRailContent}
+                            style={[styles.categoryRailScroll, isCategoryDragging ? styles.categoryRailScrollDragging : null]}
+                            onScroll={(event) => {
+                                categoryRailScrollX.current = event.nativeEvent.contentOffset.x;
+                            }}
+                            scrollEventThrottle={16}
+                            onPointerDown={handleCategoryRailPointerDown}
+                            onPointerMove={handleCategoryRailPointerMove}
+                            onPointerUp={stopCategoryRailDragging}
+                            onPointerLeave={stopCategoryRailDragging}
+                        >
                             {categoryKeys.map((key) => {
                                 const active = key === activeCategory;
                                 const label = getCategoryLabel(key, locale as "tr" | "en");
@@ -655,10 +725,24 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         ...shadow,
     },
+    categoryRailScroll: {
+        flexGrow: 0,
+        ...(Platform.OS === "web"
+            ? {
+                  cursor: "grab",
+                  overflowX: "auto",
+                  overflowY: "hidden",
+                  scrollbarWidth: "none",
+                  userSelect: "none",
+              }
+            : null),
+    },
+    categoryRailScrollDragging: Platform.OS === "web" ? { cursor: "grabbing" } : {},
     categoryRailContent: {
         gap: 8,
         paddingLeft: 2,
         paddingRight: 8,
+        minWidth: "100%",
     },
     categoryPill: {
         height: 40,
