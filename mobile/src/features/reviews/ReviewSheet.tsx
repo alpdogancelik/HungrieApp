@@ -22,7 +22,7 @@ const ReviewSheet = ({
     initialComment = "",
     onClose,
     onSubmit,
-    placeholder = "Tell other students about the meal…",
+    placeholder = "Tell others about this item...",
 }: ReviewSheetProps) => {
     const [rating, setRating] = useState<number>(initialRating);
     const [comment, setComment] = useState(initialComment);

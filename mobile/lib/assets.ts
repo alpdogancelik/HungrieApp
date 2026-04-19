@@ -1,7 +1,6 @@
 const RESTAURANT_LOGO_MAP: Record<string, number> = {
     "@/assets/restaurantlogo/adapizzalogo.jpg": require("@/assets/restaurantlogo/adapizzalogo.jpg"),
     "@/assets/restaurantlogo/alacartelogo.jpg": require("@/assets/restaurantlogo/alacartelogo.jpg"),
-    "@/assets/restaurantlogo/hotnfreshlogo.jpg": require("@/assets/restaurantlogo/hotnfreshlogo.jpg"),
     "@/assets/restaurantlogo/lavishlogo.jpg": require("@/assets/restaurantlogo/lavishlogo.jpg"),
     "@/assets/restaurantlogo/munchieslogo.jpg": require("@/assets/restaurantlogo/munchieslogo.jpg"),
     "@/assets/restaurantlogo/rootlogo.jpg": require("@/assets/restaurantlogo/rootlogo.jpg"),
@@ -12,7 +11,6 @@ const RESTAURANT_LOGO_MAP: Record<string, number> = {
 const RESTAURANT_LOGO_BY_FILE: Record<string, number> = {
     adapizzalogo: RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/adapizzalogo.jpg"],
     alacartelogo: RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/alacartelogo.jpg"],
-    hotnfreshlogo: RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/hotnfreshlogo.jpg"],
     lavishlogo: RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/lavishlogo.jpg"],
     munchieslogo: RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/munchieslogo.jpg"],
     rootlogo: RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/rootlogo.jpg"],
@@ -27,8 +25,6 @@ const RESTAURANT_LOGO_BY_HINT: Record<string, number> = {
     "ala-carte-cafe": RESTAURANT_LOGO_BY_FILE.alacartelogo,
     alacarte: RESTAURANT_LOGO_BY_FILE.alacartelogo,
     "alacarte-cafe": RESTAURANT_LOGO_BY_FILE.alacartelogo,
-    "hot-n-fresh": RESTAURANT_LOGO_BY_FILE.hotnfreshlogo,
-    hotnfresh: RESTAURANT_LOGO_BY_FILE.hotnfreshlogo,
     lavish: RESTAURANT_LOGO_BY_FILE.lavishlogo,
     munchies: RESTAURANT_LOGO_BY_FILE.munchieslogo,
     root: RESTAURANT_LOGO_BY_FILE.rootlogo,

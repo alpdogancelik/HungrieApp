@@ -10,9 +10,12 @@ import Icon from "@/components/Icon";
 import { getRestaurant, getRestaurantCategories, getRestaurantMenu } from "@/lib/api";
 import { getRestaurantImageSource } from "@/lib/assets";
 import useServerResource from "@/lib/useServerResource";
-import { getCategoryLabel } from "@/src/lib/categoryLabels";
+import { fetchRestaurantReviewSummary } from "@/src/services/menuItemReviews";
+import { getCategoryLabel, normalizeCategoryKey } from "@/src/lib/categoryLabels";
 import { makeShadow } from "@/src/lib/shadowStyle";
+import MenuItemCard from "@/src/features/restaurantMenu/components/MenuItemCard";
 import { useCartStore } from "@/store/cart.store";
+import type { RestaurantReviewSummary } from "@/src/domain/types";
 
 type MenuEntry = {
     id: string;
@@ -21,6 +24,8 @@ type MenuEntry = {
     price: number;
     categories?: string[] | string;
     restaurantId?: string;
+    image_url?: string;
+    imageUrl?: string;
 };
 
 type Restaurant = {
@@ -32,6 +37,19 @@ type Restaurant = {
     image_url?: string | number;
     openingTime?: string;
     closingTime?: string;
+    ratingAverage?: number;
+    ratingCount?: number;
+    deliveryEtaAverage?: number;
+    deliveryEtaMin?: number;
+    deliveryEtaMax?: number;
+    deliveryFee?: number | string;
+    deliveryTime?: string | number;
+    etaMinutes?: number | string;
+    eta?: string | number;
+    minimumOrderAmount?: number | string;
+    minimumOrder?: number | string;
+    minOrderAmount?: number | string;
+    minBasketAmount?: number | string;
 };
 
 type Category = {
@@ -69,27 +87,96 @@ const shadow = makeShadow({
 });
 
 const BASE_CATEGORY_ORDER = [
-    "pizza",
-    "pizzas",
     "wraps",
-    "durumler",
     "burgers",
     "mains",
-    "grill",
+    "grills",
     "chicken",
+    "snacks",
+    "chips",
+    "pizzas",
+    "pizza",
+    "pide",
+    "lahmacun",
+    "gozleme",
+    "tantuni",
     "pasta",
     "salads",
-    "snacks",
-    "crispy",
-    "chips",
-    "sides",
+    "soups",
     "sauces",
-    "drinks_cold",
-    "drinks_hot",
+    "extras",
+    "burger-extras",
+    "kids-menu",
+    "desserts",
+    "cold-drinks",
+    "hot-drinks",
     "drinks",
+    "other",
 ];
 
-const formatPrice = (price?: number | string) => `${Number(price ?? 0).toFixed(0)} ₺`;
+const TRY_FORMATTERS = {
+    tr: new Intl.NumberFormat("tr-TR", {
+        style: "currency",
+        currency: "TRY",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }),
+    en: new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "TRY",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }),
+} as const;
+
+const formatTryPrice = (price: number | string | undefined, locale: "tr" | "en") => {
+    const value = Number(price ?? 0);
+    return TRY_FORMATTERS[locale].format(Number.isFinite(value) ? value : 0);
+};
+
+const parseNumericValue = (value: unknown): number | null => {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string") {
+        const normalized = value.replace(/[^\d.,-]/g, "").replace(",", ".");
+        const parsed = Number(normalized);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
+};
+
+const parseEtaRange = (value: unknown) => {
+    if (typeof value !== "string") return null;
+    const match = value.match(/(\d+)\s*-\s*(\d+)/);
+    if (!match) return null;
+    const min = Number(match[1]);
+    const max = Number(match[2]);
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+    return { min, max };
+};
+
+const formatEtaLabel = (restaurant: Restaurant | null | undefined, isTurkish: boolean, fallbackLabel: string) => {
+    const etaMin = parseNumericValue(restaurant?.deliveryEtaMin);
+    const etaMax = parseNumericValue(restaurant?.deliveryEtaMax);
+    if (etaMin !== null && etaMax !== null) {
+        return `${Math.round(etaMin)}-${Math.round(etaMax)} ${isTurkish ? "dk" : "min"}`;
+    }
+
+    const storedRange = parseEtaRange(String(restaurant?.deliveryTime || restaurant?.eta || ""));
+    if (storedRange) {
+        return `${storedRange.min}-${storedRange.max} ${isTurkish ? "dk" : "min"}`;
+    }
+
+    const etaAverage = parseNumericValue(restaurant?.deliveryEtaAverage ?? restaurant?.etaMinutes);
+    if (etaAverage !== null) {
+        const rounded = Math.max(10, Math.round(etaAverage / 5) * 5);
+        return `${Math.max(10, rounded - 5)}-${rounded + 5} ${isTurkish ? "dk" : "min"}`;
+    }
+
+    return fallbackLabel;
+};
+
+const formatCurrencyLabel = (amount: number, prefix: string, locale: "tr" | "en") =>
+    `${prefix} ${formatTryPrice(Math.round(amount), locale)}`;
 
 const groupByCategory = (items: MenuEntry[]) => {
     const bucket: Record<string, MenuEntry[]> = {};
@@ -103,7 +190,7 @@ const groupByCategory = (items: MenuEntry[]) => {
                 : [typeof (item as { category?: string }).category === "string" ? String((item as { category?: string }).category) : "diger"];
 
         categories.forEach((cat) => {
-            const key = String(cat || "diger").toLowerCase();
+            const key = normalizeCategoryKey(cat || "diger");
             if (!bucket[key]) bucket[key] = [];
             bucket[key].push(item);
         });
@@ -116,7 +203,15 @@ const slugifyCategory = (value: unknown) =>
     String(value || "")
         .trim()
         .toLowerCase()
-        .replace(/[^a-z0-9çğıöşü]+/gi, "-")
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[\u00e7]/g, "c")
+        .replace(/[\u011f]/g, "g")
+        .replace(/[\u0131]/g, "i")
+        .replace(/[\u00f6]/g, "o")
+        .replace(/[\u015f]/g, "s")
+        .replace(/[\u00fc]/g, "u")
+        .replace(/[^a-z0-9]+/gi, "-")
         .replace(/^-+|-+$/g, "");
 
 const normalizeMenuCategories = (items: MenuEntry[], categories: Category[]) => {
@@ -133,7 +228,7 @@ const normalizeMenuCategories = (items: MenuEntry[], categories: Category[]) => 
     return items.map((item) => {
         const raw = Array.isArray(item.categories) ? item.categories : item.categories ? [item.categories] : [];
         const normalized = raw
-            .map((entry) => categoryMap.get(String(entry)) || slugifyCategory(entry))
+            .map((entry) => normalizeCategoryKey(categoryMap.get(String(entry)) || slugifyCategory(entry)))
             .filter(Boolean);
 
         return normalized.length ? { ...item, categories: Array.from(new Set(normalized)) } : item;
@@ -226,7 +321,7 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
         const fromCategories =
             Array.isArray(categories) && categories.length
                 ? categories
-                      .map((category) => String(category.slug || category.id || category.name || "").toLowerCase())
+                      .map((category) => normalizeCategoryKey(category.slug || category.id || category.name || ""))
                       .filter((slug) => slug && (grouped[slug] || []).length > 0)
                 : [];
 
@@ -243,7 +338,8 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
     }, [activeCategory, categoryKeys]);
 
     const activeItems = activeCategory ? grouped[activeCategory] || [] : menuItems;
-    const sectionSubtitle = `${activeItems.length} ürün`;
+    const sectionSubtitle = isTurkish ? `${activeItems.length} \u00FCr\u00FCn` : `${activeItems.length} items`;
+    const [reviewSummary, setReviewSummary] = useState<RestaurantReviewSummary | null>(null);
 
     const openingHours = useMemo(() => {
         const open = restaurant?.openingTime || (restaurant as { opening_time?: string } | undefined)?.opening_time;
@@ -253,26 +349,80 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
     }, [restaurant]);
 
     const displayName = restaurant?.name || restaurantId || "Restaurant";
-    const heroSubtitle = restaurant?.cuisine || "Pizza & Dünya Mutfağı";
+    const heroSubtitle = restaurant?.cuisine || "Pizza & World Kitchen";
     const heroSource = getRestaurantImageSource(
         restaurant?.imageUrl || restaurant?.image_url,
         undefined,
         `${restaurant?.id || restaurantId} ${restaurant?.name || ""}`,
     );
+    const restaurantAverageRating = Number(restaurant?.ratingAverage ?? reviewSummary?.average ?? 0);
+    const restaurantRatingCount = Math.max(0, Number(restaurant?.ratingCount ?? reviewSummary?.count ?? 0));
+    const restaurantRatingLabel = restaurantRatingCount ? restaurantAverageRating.toFixed(1) : isTurkish ? "Yeni" : "New";
+    const restaurantReviewCountLabel = restaurantRatingCount ? `(${restaurantRatingCount})` : isTurkish ? "(0 yorum)" : "(0 reviews)";
+    const restaurantEtaLabel = formatEtaLabel(restaurant, isTurkish, isTurkish ? "25-35 dk" : "25-35 min");
+    const minimumOrderAmount =
+        parseNumericValue(restaurant?.minimumOrderAmount) ??
+        parseNumericValue(restaurant?.minimumOrder) ??
+        parseNumericValue(restaurant?.minOrderAmount) ??
+        parseNumericValue(restaurant?.minBasketAmount);
+    const minimumOrderLabel =
+        minimumOrderAmount !== null
+            ? formatCurrencyLabel(minimumOrderAmount, isTurkish ? "Min." : "Min.", locale)
+            : isTurkish
+              ? `Min. ${formatTryPrice(120, locale)}`
+              : `Min. ${formatTryPrice(120, locale)}`;
+    const deliveryFeeAmount = parseNumericValue(restaurant?.deliveryFee);
+    const deliveryFeeLabel =
+        deliveryFeeAmount !== null
+            ? formatCurrencyLabel(deliveryFeeAmount, isTurkish ? "Teslimat" : "Delivery", locale)
+            : isTurkish
+              ? `Teslimat ${formatTryPrice(24, locale)}`
+              : `Delivery ${formatTryPrice(24, locale)}`;
 
     const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
     const cartTotal = getTotalPrice();
+    const formatReviewDate = (value?: string) => {
+        if (!value) return isTurkish ? "Tarih yok" : "No date";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+        return date.toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US");
+    };
 
     const toastOpacity = useRef(new Animated.Value(0)).current;
     const toastScale = useRef(new Animated.Value(0.98)).current;
     const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const categoryRailRef = useRef<ScrollView | null>(null);
-    const categoryRailDragStartX = useRef(0);
-    const categoryRailDragStartScrollX = useRef(0);
-    const categoryRailScrollX = useRef(0);
     const [addedToastVisible, setAddedToastVisible] = useState(false);
     const [addedToastText, setAddedToastText] = useState("");
-    const [isCategoryDragging, setIsCategoryDragging] = useState(false);
+
+    useEffect(() => {
+        let mounted = true;
+        const loadReviewSummary = async () => {
+            if (!restaurantId) {
+                setReviewSummary(null);
+                return;
+            }
+            try {
+                const summary = await fetchRestaurantReviewSummary(restaurantId);
+                if (mounted) setReviewSummary(summary);
+            } catch {
+                if (mounted) {
+                    setReviewSummary({
+                        average: 0,
+                        count: 0,
+                        distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+                        recentReviews: [],
+                        latestByMenuItem: {},
+                    });
+                }
+            }
+        };
+
+        void loadReviewSummary();
+        return () => {
+            mounted = false;
+        };
+    }, [restaurantId]);
 
     const showAddedToast = useCallback(
         (itemName: string) => {
@@ -318,13 +468,13 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
         [],
     );
 
-    const handleAddToCart = (item: MenuEntry) => {
+    const handleAddToCart = (item: MenuEntry, imageUrl?: string) => {
         const before = getTotalItems();
         addItem({
             id: String(item.id),
             name: item.name,
             price: Number(item.price || 0),
-            image_url: "",
+            image_url: imageUrl || "",
             restaurantId: restaurantId || item.restaurantId,
             customizations: [],
         });
@@ -333,26 +483,6 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
             showAddedToast(item.name);
         }
     };
-
-    const handleCategoryRailPointerDown = useCallback((event: any) => {
-        if (Platform.OS !== "web") return;
-        categoryRailDragStartX.current = Number(event?.nativeEvent?.pageX || 0);
-        categoryRailDragStartScrollX.current = categoryRailScrollX.current;
-        setIsCategoryDragging(true);
-    }, []);
-
-    const handleCategoryRailPointerMove = useCallback((event: any) => {
-        if (Platform.OS !== "web" || !isCategoryDragging) return;
-        const pageX = Number(event?.nativeEvent?.pageX || 0);
-        const deltaX = pageX - categoryRailDragStartX.current;
-        const nextX = Math.max(0, categoryRailDragStartScrollX.current - deltaX);
-        categoryRailRef.current?.scrollTo({ x: nextX, animated: false });
-    }, [isCategoryDragging]);
-
-    const stopCategoryRailDragging = useCallback(() => {
-        if (Platform.OS !== "web") return;
-        setIsCategoryDragging(false);
-    }, []);
 
     const renderContent = () => {
         if (restaurantLoading || menuLoading) {
@@ -395,7 +525,7 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
                                     {displayName}
                                 </Text>
                                 <View style={styles.statusPill}>
-                                <Text style={styles.statusText}>{isTurkish ? "Açık" : "Open"}</Text>
+                                    <Text style={styles.statusText}>{isTurkish ? "A\u00E7\u0131k" : "Open"}</Text>
                                 </View>
                             </View>
 
@@ -406,12 +536,12 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
                             <View style={styles.metaRow}>
                                 <View style={styles.metaItem}>
                                     <Icon name="star" size={13} color="#E0A53E" />
-                                    <Text style={styles.metaText}>4.8</Text>
-                                    <Text style={styles.metaSubtle}>(1.2k)</Text>
+                                    <Text style={styles.metaText}>{restaurantRatingLabel}</Text>
+                                    <Text style={styles.metaSubtle}>{restaurantReviewCountLabel}</Text>
                                 </View>
                                 <View style={styles.metaItem}>
                                     <Icon name="clock" size={13} color={THEME.accent} />
-                                    <Text style={styles.metaText}>25-35 dk</Text>
+                                    <Text style={styles.metaText}>{restaurantEtaLabel}</Text>
                                 </View>
                             </View>
                         </View>
@@ -419,10 +549,10 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
 
                     <View style={styles.infoChips}>
                         <View style={styles.infoChip}>
-                            <Text style={styles.infoChipText}>{isTurkish ? "Min. 120 ₺" : "Min 120 ₺"}</Text>
+                            <Text style={styles.infoChipText}>{minimumOrderLabel}</Text>
                         </View>
                         <View style={styles.infoChip}>
-                            <Text style={styles.infoChipText}>{isTurkish ? "Teslimat 24 ₺" : "Delivery 24 ₺"}</Text>
+                            <Text style={styles.infoChipText}>{deliveryFeeLabel}</Text>
                         </View>
                         {openingHours ? (
                             <View style={styles.infoChip}>
@@ -430,7 +560,7 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
                             </View>
                         ) : (
                             <View style={styles.infoChip}>
-                                <Text style={styles.infoChipText}>Kalkanlı</Text>
+                                <Text style={styles.infoChipText}>{isTurkish ? "Kapal\u0131" : "Closed"}</Text>
                             </View>
                         )}
                     </View>
@@ -443,15 +573,8 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
                             horizontal
                             showsHorizontalScrollIndicator={Platform.OS === "web"}
                             contentContainerStyle={styles.categoryRailContent}
-                            style={[styles.categoryRailScroll, isCategoryDragging ? styles.categoryRailScrollDragging : null]}
-                            onScroll={(event) => {
-                                categoryRailScrollX.current = event.nativeEvent.contentOffset.x;
-                            }}
+                            style={styles.categoryRailScroll}
                             scrollEventThrottle={16}
-                            onPointerDown={handleCategoryRailPointerDown}
-                            onPointerMove={handleCategoryRailPointerMove}
-                            onPointerUp={stopCategoryRailDragging}
-                            onPointerLeave={stopCategoryRailDragging}
                         >
                             {categoryKeys.map((key) => {
                                 const active = key === activeCategory;
@@ -473,39 +596,80 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
 
                 <View style={styles.sectionHead}>
                     <Text style={styles.sectionTitle}>
-                        {activeCategory ? getCategoryLabel(activeCategory, locale as "tr" | "en") : t("restaurant.menu", "Menü")}
+                        {activeCategory ? getCategoryLabel(activeCategory, locale as "tr" | "en") : t("restaurant.menu", "Menu")}
                     </Text>
                     <Text style={styles.sectionSubtitle}>{sectionSubtitle}</Text>
                 </View>
 
                 <View style={styles.menuList}>
-                    {activeItems.map((item) => (
-                        <View key={String(item.id)} style={styles.menuCard}>
-                            <View style={styles.menuMain}>
-                                <Text style={styles.menuTitle}>{item.name}</Text>
-                                {item.description ? (
-                                    <Text style={styles.menuDescription} numberOfLines={2}>
-                                        {item.description}
-                                    </Text>
-                                ) : null}
+                    {activeItems.map((item) => {
+                        const ratingAverage = Number((item as any)?.ratingAverage ?? (item as any)?.rating ?? 0);
+                        const ratingCount = Number((item as any)?.ratingCount ?? 0);
+                        const latestReview = reviewSummary?.latestByMenuItem[String(item.id)];
 
-                                <View style={styles.menuFooter}>
-                                    <Text style={styles.menuPrice}>{formatPrice(item.price)}</Text>
-
-                                    <Pressable onPress={() => handleAddToCart(item)} style={styles.menuCta}>
-                                        <Text style={styles.menuCtaText}>{t("restaurantUi.addToCart", "Sepete ekle")}</Text>
-                                    </Pressable>
-                                </View>
-                            </View>
-
-                            <Pressable onPress={() => handleAddToCart(item)} style={styles.thumbShell}>
-                                <View style={styles.thumbInner}>
-                                    <Icon name="bag" size={18} color={THEME.accent} />
-                                </View>
-                            </Pressable>
-                        </View>
-                    ))}
+                        return (
+                            <MenuItemCard
+                                key={String(item.id)}
+                                item={item}
+                                cuisine={restaurant?.cuisine}
+                                activeCategory={activeCategory}
+                                isTurkish={isTurkish}
+                                addToCartLabel={t("restaurantUi.addToCart", "Sepete ekle")}
+                                priceLabel={formatTryPrice(item.price, locale)}
+                                ratingAverage={ratingAverage}
+                                ratingCount={ratingCount}
+                                latestReviewComment={latestReview?.comment}
+                                onAddToCart={handleAddToCart}
+                            />
+                        );
+                    })}
                 </View>
+
+                {reviewSummary ? (
+                    <View style={styles.reviewsSection}>
+                        <View style={styles.reviewsHeader}>
+                            <Text style={styles.reviewsTitle}>{isTurkish ? "Kullan\u0131c\u0131 Yorumlar\u0131" : "Customer Reviews"}</Text>
+                            <Text style={styles.reviewsSubtitle}>
+                                {`${reviewSummary.average.toFixed(1)} / 5 - ${reviewSummary.count} ${isTurkish ? "yorum" : "reviews"}`}
+                            </Text>
+                        </View>
+
+                        <View style={styles.reviewFeed}>
+                            {reviewSummary.recentReviews.length ? (
+                                reviewSummary.recentReviews.slice(0, 6).map((review) => (
+                                    <View key={review.id} style={styles.reviewCard}>
+                                        <View style={styles.reviewCardHeader}>
+                                            <Text style={styles.reviewCardTitle} numberOfLines={1}>
+                                                {review.userName || (isTurkish ? "Hungrie Kullan\u0131c\u0131s\u0131" : "Hungrie User")}
+                                            </Text>
+                                            <Text style={styles.reviewCardMuted}>{formatReviewDate(review.createdAt || review.updatedAt)}</Text>
+                                        </View>
+                                        <Text style={styles.reviewCardMuted}>
+                                            {review.menuItemName || (isTurkish ? "Men\u00FC \u00FCr\u00FCn\u00FC" : "Menu item")}
+                                        </Text>
+                                        <Text style={styles.reviewCardRating}>{`${review.rating}/5`}</Text>
+                                        {review.comment ? (
+                                            <Text style={styles.reviewCardBody}>{review.comment}</Text>
+                                        ) : (
+                                            <Text style={styles.reviewCardMuted}>
+                                                {isTurkish ? "Sadece y\u0131ld\u0131z puan\u0131 b\u0131rak\u0131ld\u0131." : "Star rating only."}
+                                            </Text>
+                                        )}
+                                    </View>
+                                ))
+                            ) : (
+                                <View style={styles.reviewEmptyCard}>
+                                    <Text style={styles.reviewCardTitle}>
+                                        {isTurkish ? "Hen\u00FCz yorum yok" : "No reviews yet"}
+                                    </Text>
+                                    <Text style={styles.reviewCardMuted}>
+                                        {isTurkish ? "Tamamlanan sipari\u015Flerden gelen yorumlar burada g\u00F6r\u00FCnecek." : "Reviews from completed orders will appear here."}
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
+                    </View>
+                ) : null}
             </>
         );
     };
@@ -535,20 +699,20 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
                             </View>
                             <View>
                                 <Text style={styles.cartTitle}>
-                                    {isTurkish ? `${cartCount} ürün` : `${cartCount} item${cartCount === 1 ? "" : "s"}`}
+                                    {isTurkish ? `${cartCount} \u00FCr\u00FCn` : `${cartCount} item${cartCount === 1 ? "" : "s"}`}
                                 </Text>
-                                <Text style={styles.cartSubtitle}>{formatPrice(cartTotal)}</Text>
+                                <Text style={styles.cartSubtitle}>{formatTryPrice(cartTotal, locale)}</Text>
                             </View>
                         </View>
 
                         <View style={styles.cartCta}>
-                            <Text style={styles.cartCtaText}>{isTurkish ? "Sepeti Gör" : "View Cart"}</Text>
+                            <Text style={styles.cartCtaText}>{isTurkish ? "Sepeti g\u00F6r" : "View Cart"}</Text>
                         </View>
                     </LinearGradient>
                 </Pressable>
 
                 {addedToastVisible ? (
-                    <View style={styles.toastOverlay} pointerEvents="none">
+                    <View style={[styles.toastOverlay, { pointerEvents: "none" as const }]}>
                         <Animated.View style={[styles.toastCard, { opacity: toastOpacity, transform: [{ scale: toastScale }] }]}>
                             <View style={styles.toastIconWrap}>
                                 <Icon name="check" size={16} color="#FFFFFF" />
@@ -729,15 +893,13 @@ const styles = StyleSheet.create({
         flexGrow: 0,
         ...(Platform.OS === "web"
             ? {
-                  cursor: "grab",
-                  overflowX: "auto",
-                  overflowY: "hidden",
-                  scrollbarWidth: "none",
-                  userSelect: "none",
+                  overflowX: "auto" as const,
+                  overflowY: "hidden" as const,
+                  scrollbarWidth: "none" as const,
+                  userSelect: "none" as const,
               }
-            : null),
+            : {}),
     },
-    categoryRailScrollDragging: Platform.OS === "web" ? { cursor: "grabbing" } : {},
     categoryRailContent: {
         gap: 8,
         paddingLeft: 2,
@@ -783,72 +945,6 @@ const styles = StyleSheet.create({
     },
     menuList: {
         gap: 12,
-    },
-    menuCard: {
-        flexDirection: "row",
-        gap: 12,
-        borderRadius: 24,
-        padding: 14,
-        backgroundColor: THEME.card,
-        borderWidth: 1,
-        borderColor: THEME.lineSoft,
-        ...shadow,
-    },
-    menuMain: {
-        flex: 1,
-    },
-    menuTitle: {
-        fontFamily: "ChairoSans",
-        fontSize: 18,
-        lineHeight: 22,
-        color: THEME.ink,
-    },
-    menuDescription: {
-        marginTop: 5,
-        fontFamily: "ChairoSans",
-        fontSize: 13,
-        lineHeight: 18,
-        color: THEME.muted,
-    },
-    menuFooter: {
-        marginTop: 12,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 12,
-    },
-    menuPrice: {
-        fontFamily: "ChairoSans",
-        fontSize: 18,
-        color: THEME.accentStrong,
-    },
-    menuCta: {
-        borderRadius: 999,
-        paddingHorizontal: 14,
-        paddingVertical: 9,
-        backgroundColor: THEME.accent,
-        minWidth: 112,
-        alignItems: "center",
-    },
-    menuCtaText: {
-        fontFamily: "ChairoSans",
-        fontSize: 12,
-        color: "#FFFFFF",
-    },
-    thumbShell: {
-        width: 70,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    thumbInner: {
-        width: 58,
-        height: 58,
-        borderRadius: 18,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: THEME.cardSoft,
-        borderWidth: 1,
-        borderColor: THEME.line,
     },
     cartBar: {
         position: "absolute",
@@ -937,4 +1033,131 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: THEME.muted,
     },
+    reviewsSection: {
+        marginTop: 22,
+        gap: 12,
+    },
+    reviewsHeader: {
+        gap: 4,
+    },
+    reviewsTitle: {
+        fontFamily: "ChairoSans",
+        fontSize: 22,
+        color: THEME.ink,
+    },
+    reviewsSubtitle: {
+        fontFamily: "ChairoSans",
+        fontSize: 13,
+        color: THEME.muted,
+    },
+    reviewSummaryCard: {
+        borderRadius: 24,
+        padding: 16,
+        backgroundColor: THEME.card,
+        borderWidth: 1,
+        borderColor: THEME.lineSoft,
+        gap: 10,
+        ...shadow,
+    },
+    reviewDistributionRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+    },
+    reviewDistributionLabel: {
+        width: 28,
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        color: THEME.muted,
+    },
+    reviewDistributionTrack: {
+        flex: 1,
+        height: 8,
+        borderRadius: 999,
+        backgroundColor: "#F5E4D6",
+        overflow: "hidden",
+    },
+    reviewDistributionFill: {
+        height: "100%",
+        borderRadius: 999,
+        backgroundColor: THEME.accent,
+    },
+    reviewDistributionValue: {
+        width: 24,
+        textAlign: "right",
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        color: THEME.ink,
+    },
+    reviewFeed: {
+        gap: 10,
+    },
+    reviewCard: {
+        borderRadius: 22,
+        padding: 14,
+        backgroundColor: THEME.card,
+        borderWidth: 1,
+        borderColor: THEME.lineSoft,
+        gap: 8,
+        ...shadow,
+    },
+    reviewEmptyCard: {
+        borderRadius: 18,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        backgroundColor: THEME.card,
+        borderWidth: 1,
+        borderColor: THEME.lineSoft,
+        gap: 8,
+        ...shadow,
+    },
+    reviewCardHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+    },
+    reviewCardTitle: {
+        flex: 1,
+        fontFamily: "ChairoSans",
+        fontSize: 15,
+        color: THEME.ink,
+    },
+    reviewCardRating: {
+        fontFamily: "ChairoSans",
+        fontSize: 13,
+        color: THEME.accentStrong,
+    },
+    reviewCardBody: {
+        fontFamily: "ChairoSans",
+        fontSize: 13,
+        lineHeight: 18,
+        color: THEME.muted,
+    },
+    reviewCardMuted: {
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        color: THEME.subtle,
+    },
+    reviewReplyCard: {
+        borderRadius: 16,
+        paddingHorizontal: 10,
+        paddingVertical: 9,
+        backgroundColor: "rgba(35,161,103,0.10)",
+        gap: 4,
+    },
+    reviewReplyLabel: {
+        fontFamily: "ChairoSans",
+        fontSize: 11,
+        color: "#1E7B51",
+    },
+    reviewReplyText: {
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        lineHeight: 16,
+        color: "#1C5F40",
+    },
 });
+
+
+

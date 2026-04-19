@@ -4,198 +4,278 @@
       "id": "alacarte-cafe",
       "name": "Ala Carte Cafe",
       "cuisine": "Cafe & Izgara",
-      "description": "Dürümlerden ızgaraya uzanan geniş kampüs menüsü.",
+      "description": "Dürümlerden ızgaraya, tavadan salataya uzanan geniş kampüs menüsü.",
       "deliveryFee": 19.9,
       "deliveryTime": "20-30",
       "imageUrl": "@/assets/restaurantlogo/alacartelogo.jpg",
       "ownerId": "alacarte-owner-uid",
       "isActive": true,
-      "address": "Merkez Kampüs, Sosyal Alan"
+      "address": "Kalkanlı",
+      "openingHours": "Pazartesi-Pazar 11:30-01:00",
+      "phone": "0539 100 66 68"
     }
   ],
-    "categories": [
-    { "id": "fast-food", "name": "Fast Food Menuleri", "icon": "@/assets/images/fastfood.png" },
-    { "id": "diet", "name": "Diyet Menuler", "icon": "@/assets/images/diet.png" },
-    { "id": "durumler", "name": "Dürümler", "icon": "@/assets/images/durum.png" },
-    { "id": "burgers", "name": "Burgerler", "icon": "@/assets/images/Burger Delivery.png" },
-    { "id": "burger-extras", "name": "Burger Ekstralar", "icon": "@/assets/images/Food Review.png" },
-    { "id": "grills", "name": "Izgara Cesitleri", "icon": "@/assets/images/grills.png" },
-    { "id": "pasta", "name": "Makarnalar", "icon": "@/assets/images/pasta.png" },
-    { "id": "salads", "name": "Salatalar", "icon": "@/assets/images/salads.png" },
-    { "id": "pan", "name": "Tava Yemekleri", "icon": "@/assets/images/tava.png" },
-    { "id": "drinks", "name": "İçecekler", "icon": "@/assets/images/drinks.png" }
+  "categories": [
+    {
+      "id": "fast-food",
+      "name": "Fast Food Menüleri",
+      "icon": "@/assets/images/fastfood.png"
+    },
+    {
+      "id": "diet",
+      "name": "Diyet Menüler",
+      "icon": "@/assets/images/diet.png"
+    },
+    {
+      "id": "durumler",
+      "name": "Dürümler",
+      "icon": "@/assets/images/durum.png"
+    },
+    {
+      "id": "burgers",
+      "name": "Burgerler",
+      "icon": "@/assets/images/Burger Delivery.png"
+    },
+    {
+      "id": "burger-extras",
+      "name": "Ekstralar",
+      "icon": "@/assets/images/Food Review.png"
+    },
+    {
+      "id": "grills",
+      "name": "Izgara Çeşitleri",
+      "icon": "@/assets/images/grills.png"
+    },
+    {
+      "id": "pasta",
+      "name": "Makarnalar",
+      "icon": "@/assets/images/pasta.png"
+    },
+    {
+      "id": "salads",
+      "name": "Salatalar",
+      "icon": "@/assets/images/salads.png"
+    },
+    {
+      "id": "pan",
+      "name": "Tava Yemekleri",
+      "icon": "@/assets/images/tava.png"
+    },
+    {
+      "id": "drinks",
+      "name": "İçecekler",
+      "icon": "@/assets/images/drinks.png"
+    }
   ],
   "menus": [
     {
       "id": "alacarte-fast-001",
       "name": "Tavuk Dolma",
-      "price": 420,
+      "price": 500,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "fast-food"
-      ]
+      ],
+      "description": "Stuffed Chicken",
+      "imageUrl": "https://images.pexels.com/photos/34134207/pexels-photo-34134207.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-fast-002",
       "name": "Tenders",
-      "price": 410,
+      "price": 490,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "fast-food"
-      ]
+      ],
+      "description": "Tenders",
+      "imageUrl": "https://images.pexels.com/photos/32986472/pexels-photo-32986472.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-fast-003",
       "name": "Şinitzel",
-      "price": 410,
+      "price": 490,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "fast-food"
-      ]
+      ],
+      "description": "Schnitzel",
+      "imageUrl": "https://images.pexels.com/photos/5175602/pexels-photo-5175602.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-fast-004",
       "name": "Kentucky",
-      "price": 410,
+      "price": 490,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "fast-food"
-      ]
+      ],
+      "description": "Kentucky",
+      "imageUrl": "https://images.pexels.com/photos/28732304/pexels-photo-28732304.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-fast-005",
       "name": "Gujon",
-      "price": 410,
+      "price": 490,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "fast-food"
-      ]
+      ],
+      "description": "Goujon",
+      "imageUrl": "https://images.pexels.com/photos/12362924/pexels-photo-12362924.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-fast-006",
       "name": "Karışık Tavuk",
-      "price": 550,
+      "price": 660,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "fast-food"
-      ]
+      ],
+      "description": "Mixed Chicken",
+      "imageUrl": "https://images.pexels.com/photos/36885731/pexels-photo-36885731.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-fast-007",
       "name": "Prenses",
-      "price": 420,
+      "price": 500,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "fast-food"
-      ]
+      ],
+      "description": "Princess",
+      "imageUrl": "https://images.pexels.com/photos/32986476/pexels-photo-32986476.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-fast-008",
       "name": "Çıtır Tavuk",
-      "price": 410,
+      "price": 490,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "fast-food"
-      ]
+      ],
+      "description": "Crispy Chicken",
+      "imageUrl": "https://images.pexels.com/photos/27352273/pexels-photo-27352273.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-fast-009",
       "name": "Tavuklu Krep",
-      "price": 410,
+      "price": 490,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "fast-food"
-      ]
+      ],
+      "description": "Chicken Pancake",
+      "imageUrl": "https://images.pexels.com/photos/17650171/pexels-photo-17650171.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-diet-001",
       "name": "Tavuk Bonfile",
-      "price": 410,
+      "price": 490,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "diet"
-      ]
+      ],
+      "description": "Chicken Steak",
+      "imageUrl": "https://images.pexels.com/photos/34134207/pexels-photo-34134207.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-diet-002",
       "name": "Izgara Tavuk Göğsü",
-      "price": 410,
+      "price": 490,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "diet"
-      ]
+      ],
+      "description": "Grilled Chicken Breast",
+      "imageUrl": "https://images.pexels.com/photos/32986493/pexels-photo-32986493.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-wrap-001",
       "name": "Popcorn Ala Carte Special",
-      "price": 300,
+      "price": 380,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "durumler"
-      ]
+      ],
+      "description": "Popcorn Ala Carte Special",
+      "imageUrl": "https://images.pexels.com/photos/10361459/pexels-photo-10361459.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-wrap-002",
       "name": "Popcorn Coleslow",
-      "price": 280,
+      "price": 350,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "durumler"
-      ]
+      ],
+      "description": "Popcorn Coleslow",
+      "imageUrl": "https://images.pexels.com/photos/23221028/pexels-photo-23221028.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-wrap-003",
       "name": "Popcorn Acılı",
-      "price": 280,
+      "price": 350,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "durumler"
-      ]
+      ],
+      "description": "Popcorn Spicy",
+      "imageUrl": "https://images.pexels.com/photos/29007123/pexels-photo-29007123.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-wrap-004",
       "name": "Tenders Dürüm",
-      "price": 280,
+      "price": 350,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "durumler"
-      ]
+      ],
+      "description": "Tenders Wrap",
+      "imageUrl": "https://images.pexels.com/photos/29535635/pexels-photo-29535635.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-wrap-005",
       "name": "Tavuk Şiş Dürüm",
-      "price": 280,
+      "price": 350,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "durumler"
-      ]
+      ],
+      "description": "Chicken Skewers Wrap",
+      "imageUrl": "https://images.pexels.com/photos/28442524/pexels-photo-28442524.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-wrap-006",
       "name": "Et Köfte Dürüm",
-      "price": 300,
+      "price": 380,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "durumler"
-      ]
+      ],
+      "description": "Meatball Wrap",
+      "imageUrl": "https://images.pexels.com/photos/34318137/pexels-photo-34318137.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-wrap-007",
       "name": "Çıtır Tavuk Dürüm",
-      "price": 280,
+      "price": 350,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "durumler"
-      ]
+      ],
+      "description": "Crispy Chicken Wrap",
+      "imageUrl": "https://images.pexels.com/photos/6416559/pexels-photo-6416559.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-wrap-008",
       "name": "Meksikan Dürüm",
-      "price": 300,
+      "price": 380,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "durumler"
-      ]
+      ],
+      "description": "Mexican Wrap",
+      "imageUrl": "https://images.pexels.com/photos/5175629/pexels-photo-5175629.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-wrap-009",
@@ -204,367 +284,449 @@
       "restaurantId": "alacarte-cafe",
       "categories": [
         "durumler"
-      ]
+      ],
+      "description": "Extra Lavash",
+      "imageUrl": "https://images.pexels.com/photos/29535640/pexels-photo-29535640.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-burger-001",
       "name": "Pres Et Burger",
-      "price": 370,
+      "price": 440,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "burgers"
-      ]
+      ],
+      "description": "Press Meat Burger",
+      "imageUrl": "https://images.pexels.com/photos/31450802/pexels-photo-31450802.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-burger-002",
       "name": "Pres Duble Et Burger",
-      "price": 430,
+      "price": 510,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "burgers"
-      ]
+      ],
+      "description": "Press Double Meat Burger",
+      "imageUrl": "https://images.pexels.com/photos/20264649/pexels-photo-20264649.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-burger-003",
       "name": "Tavuk Burger",
-      "price": 320,
+      "price": 380,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "burgers"
-      ]
+      ],
+      "description": "Chicken Burger",
+      "imageUrl": "https://images.pexels.com/photos/11001165/pexels-photo-11001165.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-burger-004",
       "name": "Pres Duble Tavuk Burger",
-      "price": 400,
+      "price": 470,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "burgers"
-      ]
+      ],
+      "description": "Press Double Chicken Burger",
+      "imageUrl": "https://images.pexels.com/photos/27049616/pexels-photo-27049616.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-burger-005",
       "name": "Tavuk Izgara Burger",
-      "price": 320,
+      "price": 380,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "burgers"
-      ]
+      ],
+      "description": "Grill Chicken Burger",
+      "imageUrl": "https://images.pexels.com/photos/16605109/pexels-photo-16605109.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-burger-006",
       "name": "Duble Tavuk Izgara Burger",
-      "price": 400,
+      "price": 470,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "burgers"
-      ]
+      ],
+      "description": "Double Grill Chicken Burger",
+      "imageUrl": "https://images.pexels.com/photos/27049617/pexels-photo-27049617.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-extra-001",
       "name": "Patates Kızartması (Küçük)",
-      "price": 110,
+      "price": 130,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "burger-extras"
-      ]
+      ],
+      "description": "French Fries Small",
+      "imageUrl": "https://images.pexels.com/photos/32421783/pexels-photo-32421783.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-extra-002",
       "name": "Patates Kızartması (Büyük)",
-      "price": 175,
+      "price": 200,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "burger-extras"
-      ]
+      ],
+      "description": "French Fries Large",
+      "imageUrl": "https://images.pexels.com/photos/115740/pexels-photo-115740.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-extra-003",
       "name": "Peynir",
-      "price": 40,
+      "price": 50,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "burger-extras"
-      ]
+      ],
+      "description": "Cheese",
+      "imageUrl": "https://placehold.co/600x600/F3E1CA/A97843?text=Extra"
     },
     {
       "id": "alacarte-extra-004",
-      "name": "BBQ / Acı / Ballı Hardal Sos",
+      "name": "BBQ Sos / Acı Sos / Ballı Hardal Sos",
       "price": 30,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "burger-extras"
-      ]
+      ],
+      "description": "BBQ Sauce / Hot Chili / Honey Mustard",
+      "imageUrl": "https://placehold.co/600x600/F2DEC6/A77540?text=Sauce"
     },
     {
       "id": "alacarte-grill-001",
       "name": "Karışık Izgara",
-      "price": 550,
+      "price": 660,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "grills"
-      ]
+      ],
+      "description": "The Mixed Grill",
+      "imageUrl": "https://images.pexels.com/photos/32986493/pexels-photo-32986493.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-grill-002",
       "name": "Tavuk Pirzola",
-      "price": 410,
+      "price": 490,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "grills"
-      ]
+      ],
+      "description": "Chicken Chops",
+      "imageUrl": "https://images.pexels.com/photos/36850060/pexels-photo-36850060.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-grill-003",
       "name": "Tavuk Şiş",
-      "price": 410,
+      "price": 490,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "grills"
-      ]
+      ],
+      "description": "Chicken Shish",
+      "imageUrl": "https://images.pexels.com/photos/16423838/pexels-photo-16423838.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-grill-004",
       "name": "Kanat",
-      "price": 410,
+      "price": 490,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "grills"
-      ]
+      ],
+      "description": "Wings",
+      "imageUrl": "https://images.pexels.com/photos/16892378/pexels-photo-16892378.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-grill-005",
       "name": "Et Köfte",
-      "price": 420,
+      "price": 490,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "grills"
-      ]
+      ],
+      "description": "Meatballs",
+      "imageUrl": "https://images.pexels.com/photos/26341210/pexels-photo-26341210.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-pasta-001",
       "name": "Kajun Baharatlı Tavuklu Penne",
-      "price": 320,
+      "price": 420,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "pasta"
-      ]
+      ],
+      "description": "Cashew Spicy Chicken Penne",
+      "imageUrl": "https://images.pexels.com/photos/12667658/pexels-photo-12667658.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-pasta-002",
       "name": "Körili Kremalı Penne",
-      "price": 320,
+      "price": 420,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "pasta"
-      ]
+      ],
+      "description": "Curry Cream Penne",
+      "imageUrl": "https://images.pexels.com/photos/35123971/pexels-photo-35123971.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-salad-001",
       "name": "Tavuklu Salata",
-      "price": 320,
-      "restaurantId": "alacarte-cafe",
-      "categories": [
-        "salads"
-      ]
-    },
-    {
-      "id": "alacarte-salad-002",
-      "name": "Tavuklu Sezar Salata",
-      "price": 320,
-      "restaurantId": "alacarte-cafe",
-      "categories": [
-        "salads"
-      ]
-    },
-    {
-      "id": "alacarte-salad-003",
-      "name": "Akdeniz Salata",
-      "price": 320,
-      "restaurantId": "alacarte-cafe",
-      "categories": [
-        "salads"
-      ]
-    },
-    {
-      "id": "alacarte-salad-004",
-      "name": "Ton Balıklı Salata",
-      "price": 340,
-      "restaurantId": "alacarte-cafe",
-      "categories": [
-        "salads"
-      ]
-    },
-    {
-      "id": "alacarte-salad-005",
-      "name": "Hellimli Salata",
-      "price": 320,
-      "restaurantId": "alacarte-cafe",
-      "categories": [
-        "salads"
-      ]
-    },
-    {
-      "id": "alacarte-salad-006",
-      "name": "BBQ Tavuk Salata",
-      "price": 320,
-      "restaurantId": "alacarte-cafe",
-      "categories": [
-        "salads"
-      ]
-    },
-    {
-      "id": "alacarte-salad-007",
-      "name": "Çıtır Tavuk Salata",
       "price": 350,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "salads"
-      ]
+      ],
+      "description": "Chicken Salad",
+      "imageUrl": "https://images.pexels.com/photos/29389673/pexels-photo-29389673.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "alacarte-salad-002",
+      "name": "Tavuklu Sezar Salata",
+      "price": 350,
+      "restaurantId": "alacarte-cafe",
+      "categories": [
+        "salads"
+      ],
+      "description": "Chicken Caesar Salad",
+      "imageUrl": "https://images.pexels.com/photos/36893631/pexels-photo-36893631.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "alacarte-salad-003",
+      "name": "Akdeniz Salata",
+      "price": 350,
+      "restaurantId": "alacarte-cafe",
+      "categories": [
+        "salads"
+      ],
+      "description": "Mediterranean Salad",
+      "imageUrl": "https://images.pexels.com/photos/4506876/pexels-photo-4506876.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "alacarte-salad-004",
+      "name": "Ton Balıklı Salata",
+      "price": 380,
+      "restaurantId": "alacarte-cafe",
+      "categories": [
+        "salads"
+      ],
+      "description": "Tuna Salad",
+      "imageUrl": "https://images.pexels.com/photos/36959594/pexels-photo-36959594.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "alacarte-salad-005",
+      "name": "Hellimli Salata",
+      "price": 350,
+      "restaurantId": "alacarte-cafe",
+      "categories": [
+        "salads"
+      ],
+      "description": "Halloumi Salad",
+      "imageUrl": "https://images.pexels.com/photos/5191822/pexels-photo-5191822.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "alacarte-salad-006",
+      "name": "BBQ Tavuk Salata",
+      "price": 350,
+      "restaurantId": "alacarte-cafe",
+      "categories": [
+        "salads"
+      ],
+      "description": "BBQ Chicken Salad",
+      "imageUrl": "https://images.pexels.com/photos/19904309/pexels-photo-19904309.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "alacarte-salad-007",
+      "name": "Çıtır Tavuk Salata",
+      "price": 380,
+      "restaurantId": "alacarte-cafe",
+      "categories": [
+        "salads"
+      ],
+      "description": "Crispy Chicken Salad",
+      "imageUrl": "https://images.pexels.com/photos/28841123/pexels-photo-28841123.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-pan-001",
       "name": "Stroganof",
-      "price": 420,
+      "price": 500,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "pan"
-      ]
+      ],
+      "description": "Stroganof",
+      "imageUrl": "https://images.pexels.com/photos/34134207/pexels-photo-34134207.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-pan-002",
       "name": "Körili Tavuk Sote",
-      "price": 420,
+      "price": 500,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "pan"
-      ]
+      ],
+      "description": "Curry Chicken Saute",
+      "imageUrl": "https://images.pexels.com/photos/32986472/pexels-photo-32986472.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-pan-003",
       "name": "Cafe de Paris",
-      "price": 420,
+      "price": 500,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "pan"
-      ]
+      ],
+      "description": "Cafe de Paris",
+      "imageUrl": "https://images.pexels.com/photos/35872317/pexels-photo-35872317.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-pan-004",
       "name": "Kremalı Fajita",
-      "price": 420,
+      "price": 500,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "pan"
-      ]
+      ],
+      "description": "Creamy Fajita",
+      "imageUrl": "https://images.pexels.com/photos/36885731/pexels-photo-36885731.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-pan-005",
       "name": "Hardal Soslu Tavuk",
-      "price": 420,
+      "price": 500,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "pan"
-      ]
+      ],
+      "description": "Chicken with Mustard Sauce",
+      "imageUrl": "https://images.pexels.com/photos/35872317/pexels-photo-35872317.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-pan-006",
       "name": "Kaşarlı Tavuk Güveç",
-      "price": 420,
+      "price": 500,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "pan"
-      ]
+      ],
+      "description": "Chicken Stew with Cheese",
+      "imageUrl": "https://images.pexels.com/photos/32986476/pexels-photo-32986476.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-pan-007",
       "name": "Beşamel Soslu Tavuk Güveç",
-      "price": 450,
+      "price": 530,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "pan"
-      ]
+      ],
+      "description": "Chicken Stew with Bechamel Sauce",
+      "imageUrl": "https://images.pexels.com/photos/17650171/pexels-photo-17650171.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-pan-008",
       "name": "Tavuk Sote",
-      "price": 420,
+      "price": 500,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "pan"
-      ]
+      ],
+      "description": "Sauteed Chicken",
+      "imageUrl": "https://images.pexels.com/photos/17696653/pexels-photo-17696653.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-pan-009",
       "name": "Cajun Baharatlı Tavuk Sote",
-      "price": 420,
+      "price": 500,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "pan"
-      ]
+      ],
+      "description": "Cajun Spicy Chicken Saute",
+      "imageUrl": "https://images.pexels.com/photos/6735031/pexels-photo-6735031.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-pan-010",
       "name": "BBQ Soslu Tavuk",
-      "price": 420,
+      "price": 500,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "pan"
-      ]
+      ],
+      "description": "BBQ Sauce Chicken",
+      "imageUrl": "https://images.pexels.com/photos/6646212/pexels-photo-6646212.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-pan-011",
       "name": "Acı Soslu Tavuk",
-      "price": 420,
+      "price": 500,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "pan"
-      ]
+      ],
+      "description": "Chili Sauce Chicken",
+      "imageUrl": "https://images.pexels.com/photos/31860141/pexels-photo-31860141.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-drink-001",
       "name": "Kola",
-      "price": 40,
+      "price": 50,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "drinks"
-      ]
+      ],
+      "description": "Cola",
+      "imageUrl": "https://placehold.co/600x600/EEDFC9/AF7B42?text=Beverage"
     },
     {
       "id": "alacarte-drink-002",
       "name": "Fanta",
-      "price": 40,
+      "price": 50,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "drinks"
-      ]
+      ],
+      "description": "Fanta",
+      "imageUrl": "https://images.pexels.com/photos/6920723/pexels-photo-6920723.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-drink-003",
       "name": "Sprite",
-      "price": 40,
+      "price": 50,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "drinks"
-      ]
+      ],
+      "description": "Sprite",
+      "imageUrl": "https://images.pexels.com/photos/17650220/pexels-photo-17650220.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-drink-004",
       "name": "Tombul Ayran",
-      "price": 40,
+      "price": 50,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "drinks"
-      ]
+      ],
+      "description": "Ayran",
+      "imageUrl": "https://images.pexels.com/photos/15873840/pexels-photo-15873840.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-drink-005",
       "name": "Soğuk Çay",
-      "price": 40,
+      "price": 50,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "drinks"
-      ]
+      ],
+      "description": "Ice Tea",
+      "imageUrl": "https://images.pexels.com/photos/17283082/pexels-photo-17283082.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "alacarte-drink-006",
@@ -573,7 +735,9 @@
       "restaurantId": "alacarte-cafe",
       "categories": [
         "drinks"
-      ]
+      ],
+      "description": "Soda",
+      "imageUrl": "https://placehold.co/600x600/EEDFC9/AF7B42?text=Beverage"
     },
     {
       "id": "alacarte-drink-007",
@@ -582,7 +746,9 @@
       "restaurantId": "alacarte-cafe",
       "categories": [
         "drinks"
-      ]
+      ],
+      "description": "Turkish Coffee",
+      "imageUrl": "https://placehold.co/600x600/F4E4CD/9C6737?text=Coffee"
     },
     {
       "id": "alacarte-drink-008",
@@ -591,25 +757,31 @@
       "restaurantId": "alacarte-cafe",
       "categories": [
         "drinks"
-      ]
+      ],
+      "description": "Water",
+      "imageUrl": "https://placehold.co/600x600/F6E9D6/B07D45?text=Drink"
     },
     {
       "id": "alacarte-drink-009",
       "name": "Litrelik Su",
-      "price": 30,
-      "restaurantId": "alacarte-cafe",
-      "categories": [
-        "drinks"
-      ]
-    },
-    {
-      "id": "alacarte-drink-010",
-      "name": "Litrelik Kola",
       "price": 50,
       "restaurantId": "alacarte-cafe",
       "categories": [
         "drinks"
-      ]
+      ],
+      "description": "1L Water",
+      "imageUrl": "https://placehold.co/600x600/F5E8D5/9A6B37?text=Soft+Drink"
+    },
+    {
+      "id": "alacarte-drink-010",
+      "name": "Litrelik Kola",
+      "price": 70,
+      "restaurantId": "alacarte-cafe",
+      "categories": [
+        "drinks"
+      ],
+      "description": "1L Cola",
+      "imageUrl": "https://placehold.co/600x600/F2E4D0/AA7A45?text=Cold+Drink"
     }
   ]
 }

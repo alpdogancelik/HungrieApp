@@ -23,8 +23,6 @@ const normalizeRestaurantKey = (value?: string | null) => {
         "alacarte-cafe": "alacarte-cafe",
         "burgerhouse": "burger-house",
         "burger-house": "burger-house",
-        "hotnfresh": "hot-n-fresh",
-        "hot-n-fresh": "hot-n-fresh",
         "lavish": "lavish",
         "munchies": "munchies",
         "root": "root-kitchen-coffee",

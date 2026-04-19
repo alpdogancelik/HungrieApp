@@ -34,6 +34,7 @@ import {
 } from "./firebase";
 import { filterMenuForCustomer, filterRestaurantMenuForCustomer } from "./menuVisibility";
 import { unregisterPushToken } from "./registerPushToken";
+import { transitionOrder as transitionFirebaseOrder } from "@/src/services/firebaseOrders";
 import i18n from "@/src/lib/i18n";
 import { getAuthErrorMessage } from "@/src/features/auth/authCopy";
 
@@ -513,7 +514,6 @@ export const updateOrderStatus = async (orderId: string, status: string) => {
     if (!orderId) throw new Error("orderId is required.");
     if (!status) throw new Error("status is required.");
     if (!firebaseOrdersEnabled) return { id: orderId, status };
-    const ref = doc(requireDB(), FIREBASE_COLLECTIONS.orders, orderId);
-    await updateDoc(ref, { status, updatedAt: Date.now() });
+    await transitionFirebaseOrder(orderId, status);
     return { id: orderId, status };
 };

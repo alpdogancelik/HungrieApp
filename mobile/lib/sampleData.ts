@@ -1,6 +1,5 @@
 const ADA_LOGO = require("@/assets/restaurantlogo/adapizzalogo.jpg");
 const ALA_LOGO = require("@/assets/restaurantlogo/alacartelogo.jpg");
-const HNF_LOGO = require("@/assets/restaurantlogo/hotnfreshlogo.jpg");
 const LAVISH_LOGO = require("@/assets/restaurantlogo/lavishlogo.jpg");
 const MUNCHIES_LOGO = require("@/assets/restaurantlogo/munchieslogo.jpg");
 const ROOT_LOGO = require("@/assets/restaurantlogo/rootlogo.jpg");
@@ -29,6 +28,7 @@ type RestaurantSeedFile = {
         restaurantId?: string;
         categories?: string[];
         imageUrl?: string;
+        image_url?: string;
     }>;
 };
 
@@ -99,10 +99,15 @@ const resolveImageUrl = (raw: string | undefined, asset: any, fallback: string) 
     return resolveAssetUri(asset, fallback);
 };
 
+const resolveMenuImageUrl = (value: unknown) => {
+    if (typeof value !== "string") return "";
+    const trimmed = value.trim();
+    return /^https?:\/\//i.test(trimmed) ? trimmed : "";
+};
+
 // Static JSON requires to avoid dynamic require issues on web/Expo.
 const adaSeedJson = require("@/data/ada-pizza-firestore.json") as RestaurantSeedFile;
 const alacarteSeedJson = require("@/data/alacarte-cafe-firestore.json") as RestaurantSeedFile;
-const hotnfreshSeedJson = require("@/data/hotnfresh-firestore.json") as RestaurantSeedFile;
 const lavishSeedJson = require("@/data/lavish-firestore.json") as RestaurantSeedFile;
 const munchiesSeedJson = require("@/data/munchies-firestore.json") as RestaurantSeedFile;
 const rootSeedJson = require("@/data/root-firestore.json") as RestaurantSeedFile;
@@ -125,14 +130,6 @@ const seedBundles: SeedBundle[] = [
         fallbackImage: "",
         rating: 4.7,
         reviewCount: 162,
-    },
-    {
-        key: "hot-n-fresh",
-        seed: hotnfreshSeedJson as RestaurantSeedFile,
-        logoAsset: HNF_LOGO,
-        fallbackImage: "",
-        rating: 4.8,
-        reviewCount: 184,
     },
     {
         key: "lavish",
@@ -217,7 +214,7 @@ const normalizeSeed = (bundle: SeedBundle): NormalizedSeed | null => {
         price: Number(item.price ?? 0),
         restaurantId: id,
         categories: ensureCategories(item.categories),
-        imageUrl: "", // menu images disabled; use logo-only experience
+        imageUrl: resolveMenuImageUrl(item.imageUrl || item.image_url),
     }));
 
     const restaurantCard = {

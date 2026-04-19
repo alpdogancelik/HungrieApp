@@ -29,7 +29,6 @@ import { makeShadow } from "@/src/lib/shadowStyle";
 //restaurant logos (assets/restaurantlogo)
 import AdaPizzaLogo from "@/assets/restaurantlogo/adapizzalogo.jpg";
 import AlaCarteLogo from "@/assets/restaurantlogo/alacartelogo.jpg";
-import HotnFreshLogo from "@/assets/restaurantlogo/hotnfreshlogo.jpg";
 import LavishLogo from "@/assets/restaurantlogo/lavishlogo.jpg";
 import MunchiesLogo from "@/assets/restaurantlogo/munchieslogo.jpg";
 import RootLogo from "@/assets/restaurantlogo/rootlogo.jpg";
@@ -58,7 +57,6 @@ const S = { xl: 22, lg: 16, md: 14, sm: 10, xs: 6 };
 const RESTAURANT_LOGOS = {
     adapizza: AdaPizzaLogo,
     alacarte: AlaCarteLogo,
-    hotnfresh: HotnFreshLogo,
     lavish: LavishLogo,
     munchies: MunchiesLogo,
     root: RootLogo,
@@ -74,7 +72,6 @@ const RESTAURANT_KEY_MAP: Record<string, RestaurantKey> = {
     adapizza: "adapizza",
     alacarte: "alacarte",
     alacartecafe: "alacarte",
-    hotnfresh: "hotnfresh",
     lavish: "lavish",
     munchies: "munchies",
     root: "root",

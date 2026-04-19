@@ -8,6 +8,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "seed:pexels-images": "node ./scripts/assign-pexels-menu-images.mjs",
     "build:configure": "npx eas build:configure",
     "build:ios": "npx eas build -p ios --profile production",
     "submit:ios": "npx eas submit -p ios --profile production --latest",

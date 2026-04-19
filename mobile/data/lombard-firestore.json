@@ -1,767 +1,921 @@
 {
-    "restaurants": [
-        {
-            "id": "lombard-kitchen",
-            "name": "Lombard Kitchen",
-            "cuisine": "Pizza & Dünya Mutfağı",
-            "description": "Pizza, makarna, salata ve piliç tabaklarıyla kampüs klasiği.",
-            "deliveryFee": 24.9,
-            "deliveryTime": "25-35",
-            "imageUrl": "@/assets/restaurantlogo/lombardlogo.jpg",
-            "ownerId": "lombard-kitchen-owner-uid",
-            "isActive": true,
-            "address": "Kuzey Kampüs, Öğrenci Çarşısı"
-        }
-    ],
-        "categories": [
-        { "id": "pizzas", "name": "Pizzalar" },
-        { "id": "salads", "name": "Salatalar" },
-        { "id": "snacks", "name": "Atistirmaliklar" },
-        { "id": "mains", "name": "Ana Yemekler" },
-        { "id": "wraps", "name": "Dürümler" },
-        { "id": "burgers", "name": "Hamburgerler" },
-        { "id": "pastas", "name": "Makarnalar" }
-    ],
-    "menus": [
-        {
-            "id": "pizza-lom-special-s",
-            "name": "Lombard Special (S)",
-            "description": "Lombard Special pizza (22 cm).",
-            "price": 290,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-special-m",
-            "name": "Lombard Special (M)",
-            "description": "Lombard Special pizza (32 cm).",
-            "price": 430,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-special-l",
-            "name": "Lombard Special (L)",
-            "description": "Lombard Special pizza (42 cm).",
-            "price": 610,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-mix-s",
-            "name": "Karışık Pizza (S)",
-            "description": "Karışık pizza (22 cm).",
-            "price": 280,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-mix-m",
-            "name": "Karışık Pizza (M)",
-            "description": "Karışık pizza (32 cm).",
-            "price": 420,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-mix-l",
-            "name": "Karışık Pizza (L)",
-            "description": "Karışık pizza (42 cm).",
-            "price": 600,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-italian-s",
-            "name": "İtalyan Pizza (S)",
-            "description": "İtalyan pizza (22 cm).",
-            "price": 270,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-italian-m",
-            "name": "İtalyan Pizza (M)",
-            "description": "İtalyan pizza (32 cm).",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-italian-l",
-            "name": "İtalyan Pizza (L)",
-            "description": "İtalyan pizza (42 cm).",
-            "price": 570,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-margarita-s",
-            "name": "Margarita (S)",
-            "description": "Klasik Margarita pizza (22 cm).",
-            "price": 270,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-margarita-m",
-            "name": "Margarita (M)",
-            "description": "Klasik Margarita pizza (32 cm).",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-margarita-l",
-            "name": "Margarita (L)",
-            "description": "Klasik Margarita pizza (42 cm).",
-            "price": 570,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-sucuklu-s",
-            "name": "Sucuklu İtalyan (S)",
-            "description": "Sucuklu İtalyan pizza (22 cm).",
-            "price": 280,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-sucuklu-m",
-            "name": "Sucuklu İtalyan (M)",
-            "description": "Sucuklu İtalyan pizza (32 cm).",
-            "price": 420,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-sucuklu-l",
-            "name": "Sucuklu İtalyan (L)",
-            "description": "Sucuklu İtalyan pizza (42 cm).",
-            "price": 600,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-veg-s",
-            "name": "Vejetaryen Pizza (S)",
-            "description": "Vejetaryen pizza (22 cm).",
-            "price": 280,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-veg-m",
-            "name": "Vejetaryen Pizza (M)",
-            "description": "Vejetaryen pizza (32 cm).",
-            "price": 420,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-veg-l",
-            "name": "Vejetaryen Pizza (L)",
-            "description": "Vejetaryen pizza (42 cm).",
-            "price": 600,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-bbqchicken-s",
-            "name": "Tavuklu Barbekülü (S)",
-            "description": "Tavuklu barbekü pizza (22 cm).",
-            "price": 280,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-bbqchicken-m",
-            "name": "Tavuklu Barbekülü (M)",
-            "description": "Tavuklu barbekü pizza (32 cm).",
-            "price": 420,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-bbqchicken-l",
-            "name": "Tavuklu Barbekülü (L)",
-            "description": "Tavuklu barbekü pizza (42 cm).",
-            "price": 600,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "pizza-lom-calzone-s",
-            "name": "Kalzon Pizza",
-            "description": "Kalzon pizza (22 cm).",
-            "price": 290,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pizzas"
-            ]
-        },
-        {
-            "id": "salad-lom-hellim",
-            "name": "Hellimli Salata",
-            "description": "Hellim peyniri ile zenginleştirilmiş salata.",
-            "price": 280,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "salads"
-            ]
-        },
-        {
-            "id": "salad-lom-tavuklu",
-            "name": "Tavuklu Salata",
-            "description": "Izgara tavuklu karışık salata.",
-            "price": 280,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "salads"
-            ]
-        },
-        {
-            "id": "salad-lom-tonbalikli",
-            "name": "Ton Balıklı Salata",
-            "description": "Ton balıklı karışık salata.",
-            "price": 280,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "salads"
-            ]
-        },
-        {
-            "id": "salad-lom-beyazpeynirli",
-            "name": "Beyaz Peynirli Salata",
-            "description": "Beyaz peynirli yeşil salata.",
-            "price": 280,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "salads"
-            ]
-        },
-        {
-            "id": "salad-lom-sezar",
-            "name": "Sezar Salata",
-            "description": "Klasik Sezar salata.",
-            "price": 280,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "salads"
-            ]
-        },
-        {
-            "id": "salad-lom-etkofteli",
-            "name": "Et Köfteli Salata",
-            "description": "Izgara et köfte ile servis edilen salata.",
-            "price": 290,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "salads"
-            ]
-        },
-        {
-            "id": "salad-lom-citirtavuklu",
-            "name": "Çıtır Tavuklu Salata",
-            "description": "Pane tavuk parçalarıyla çıtır salata.",
-            "price": 290,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "salads"
-            ]
-        },
-        {
-            "id": "salad-lom-falafel",
-            "name": "Falafel Salata",
-            "description": "Falafel topları ile servis edilen salata.",
-            "price": 290,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "salads"
-            ]
-        },
-        {
-            "id": "snack-lom-kizartmatabagi",
-            "name": "Kızartma Tabağı",
-            "description": "Karışık kızartma tabağı.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "snacks"
-            ]
-        },
-        {
-            "id": "snack-lom-patates",
-            "name": "Patates Kızartması",
-            "description": "Klasik patates kızartması.",
-            "price": 180,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "snacks"
-            ]
-        },
-        {
-            "id": "main-lom-tavukdolma",
-            "name": "Tavuk Dolma",
-            "description": "Tavuk dolma; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-tenders",
-            "name": "Tenders",
-            "description": "Tavuk tenders; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-gujons",
-            "name": "Gujons",
-            "description": "Gujon tavuk; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-schnitzel",
-            "name": "Schnitzel",
-            "description": "Pane tavuk schnitzel; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-prenses",
-            "name": "Prenses",
-            "description": "Prenses tavuk tabağı; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-tavuksis",
-            "name": "Tavuk Şiş",
-            "description": "Tavuk şiş; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-kanatizgara",
-            "name": "Kanat Izgara",
-            "description": "Izgara tavuk kanat; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-karisiktavuk",
-            "name": "Karışık Tavuk",
-            "description": "Karışık tavuk tabağı; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 520,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-tavukguvec",
-            "name": "Tavuk Güveç",
-            "description": "Sebzeli tavuk güveç; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-elviro",
-            "name": "Elviro",
-            "description": "Özel Elviro tavuk tabağı; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 420,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-tavuklukrep",
-            "name": "Tavuklu Krep",
-            "description": "Tavuklu krep; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-stragonof",
-            "name": "Stragonof",
-            "description": "Tavuk stroganof; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-isabella",
-            "name": "Isabella",
-            "description": "Isabella tavuk tabağı; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-citirtavuk",
-            "name": "Çıtır Tavuk",
-            "description": "Çıtır tavuk; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-tavukpirzola",
-            "name": "Tavuk Pirzola",
-            "description": "Tavuk pirzola; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-kiev",
-            "name": "Kiev",
-            "description": "Tavuk Kiev; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-diyettavuk",
-            "name": "Diyet Tavuk",
-            "description": "Diyet tavuk tabağı; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-tavuksarma",
-            "name": "Tavuk Sarma",
-            "description": "Tavuk sarma; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-kentucky",
-            "name": "Kentucky",
-            "description": "Kentucky usulü tavuk; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-validesultan",
-            "name": "Valide Sultan",
-            "description": "Valide Sultan tavuk tabağı; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 420,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-meksika",
-            "name": "Meksika Usulü Tavuk",
-            "description": "Meksika usulü tavuk; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-hardalsoslu",
-            "name": "Hardal Soslu Tavuk",
-            "description": "Hardal soslu tavuk; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-korisoslu",
-            "name": "Köri Soslu Tavuk",
-            "description": "Köri soslu tavuk; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-mantarsoslu",
-            "name": "Mantar Soslu Tavuk",
-            "description": "Mantar soslu tavuk; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-cafedeparis",
-            "name": "Cafe de Paris Soslu Tavuk",
-            "description": "Cafe de Paris soslu tavuk; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-karisikizgara",
-            "name": "Karışık Izgara Tavuk",
-            "description": "Karışık ızgara tavuk tabağı; patates kızartması, pilav ve salata ile servis edilir.",
-            "price": 520,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "wrap-lom-tavuksis",
-            "name": "Tavuk Şiş Dürüm",
-            "description": "Tavuk şiş dürüm.",
-            "price": 280,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "wraps"
-            ]
-        },
-        {
-            "id": "wrap-lom-tenders",
-            "name": "Tenders Dürüm",
-            "description": "Tavuk tenders dürüm.",
-            "price": 280,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "wraps"
-            ]
-        },
-        {
-            "id": "wrap-lom-popcorn",
-            "name": "Popcorn Dürüm",
-            "description": "Popcorn tavuk dürüm.",
-            "price": 280,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "wraps"
-            ]
-        },
-        {
-            "id": "wrap-lom-etkoftedurum",
-            "name": "Et Köfte Dürüm",
-            "description": "Izgara et köfte dürüm.",
-            "price": 290,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "wraps"
-            ]
-        },
-        {
-            "id": "wrap-lom-tavukwrap",
-            "name": "Tavuk Wrap",
-            "description": "Özel tavuk wrap.",
-            "price": 340,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "wraps"
-            ]
-        },
-        {
-            "id": "burger-lom-lomburger",
-            "name": "Lomburger",
-            "description": "Özel Lomburger; patates kızartması ile servis edilir.",
-            "price": 350,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "burgers"
-            ]
-        },
-        {
-            "id": "burger-lom-chicken",
-            "name": "Chicken Burger",
-            "description": "Chicken burger; patates kızartması ile servis edilir.",
-            "price": 310,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "burgers"
-            ]
-        },
-        {
-            "id": "burger-lom-cheese",
-            "name": "Cheese Burger",
-            "description": "Cheese burger; patates kızartması ile servis edilir.",
-            "price": 350,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "burgers"
-            ]
-        },
-        {
-            "id": "burger-lom-doubleet",
-            "name": "Double Et Burger",
-            "description": "Çift et burger; patates kızartması ile servis edilir.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "burgers"
-            ]
-        },
-        {
-            "id": "burger-lom-doublechicken",
-            "name": "Double Chicken Burger",
-            "description": "Double chicken burger; patates kızartması ile servis edilir.",
-            "price": 390,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "burgers"
-            ]
-        },
-        {
-            "id": "pasta-lom-bolognese",
-            "name": "Spaghetti Bolognese",
-            "description": "Kıymalı Spaghetti Bolognese.",
-            "price": 360,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pastas"
-            ]
-        },
-        {
-            "id": "pasta-lom-kremalitavuklu",
-            "name": "Kremalı Tavuklu Penne",
-            "description": "Kremalı tavuklu penne makarna.",
-            "price": 360,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pastas"
-            ]
-        },
-        {
-            "id": "pasta-lom-pesto",
-            "name": "Pesto Soslu Tavuklu Penne",
-            "description": "Pesto soslu tavuklu penne makarna.",
-            "price": 360,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pastas"
-            ]
-        },
-        {
-            "id": "pasta-lom-tagliatelle",
-            "name": "Tavuklu Mantarlı Tagliatelle",
-            "description": "Tavuklu mantarlı tagliatelle makarna.",
-            "price": 360,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "pastas"
-            ]
-        },
-        {
-            "id": "main-lom-etkofte",
-            "name": "Et Köfte",
-            "description": "Et köfte tabağı.",
-            "price": 400,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        },
-        {
-            "id": "main-lom-falafel",
-            "name": "Falafel",
-            "description": "Falafel tabağı.",
-            "price": 340,
-            "restaurantId": "lombard-kitchen",
-            "categories": [
-                "mains"
-            ]
-        }
-    ]
+  "restaurants": [
+    {
+      "id": "lombard-kitchen",
+      "name": "Lombard Kitchen",
+      "cuisine": "Pizza · Piliç · Burger · Dürüm · Makarna · Salata",
+      "description": "Pizza, kampanya menüleri, piliç tabakları, burger, dürüm, makarna ve salata seçenekleriyle Lombard Kitchen.",
+      "deliveryFee": 24.9,
+      "deliveryTime": "25-35",
+      "imageUrl": "@/assets/restaurantlogo/lombardlogo.jpg",
+      "ownerId": "lombard-kitchen-owner-uid",
+      "isActive": true,
+      "address": "Kuzey Kampüs, Öğrenci Çarşısı"
+    }
+  ],
+  "categories": [
+    {
+      "id": "campaigns",
+      "name": "Kampanya Menüleri"
+    },
+    {
+      "id": "pizzas",
+      "name": "Pizzalar"
+    },
+    {
+      "id": "salads",
+      "name": "Salatalar"
+    },
+    {
+      "id": "snacks",
+      "name": "Atıştırmalıklar"
+    },
+    {
+      "id": "mains",
+      "name": "Piliç"
+    },
+    {
+      "id": "wraps",
+      "name": "Dürümler"
+    },
+    {
+      "id": "burgers",
+      "name": "Hamburgerler"
+    },
+    {
+      "id": "pastas",
+      "name": "Makarnalar"
+    }
+  ],
+  "menus": [
+    {
+      "id": "campaigns-001",
+      "name": "Orta Boy Pizza Menü",
+      "description": "Seçeceğiniz orta boy pizza + 3’lü çıtır + cips + 1 lt kola.",
+      "price": 590,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "campaigns"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6151203/pexels-photo-6151203.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "campaigns-002",
+      "name": "2’li Orta Boy Pizza Menü",
+      "description": "Seçeceğiniz 2 orta boy pizza + 1 lt kola.",
+      "price": 960,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "campaigns"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/16939093/pexels-photo-16939093.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "campaigns-003",
+      "name": "Süper Aile Paketi",
+      "description": "Seçeceğiniz aile boy pizza + 8’li çıtır tavuk + büyük cips + 1 lt kola.",
+      "price": 950,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "campaigns"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/20115308/pexels-photo-20115308.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "campaigns-004",
+      "name": "Lombard Box Menü",
+      "description": "Seçeceğiniz aile boy pizza + 4’lü soğan halkası + 4’lü çıtır tavuk + büyük cips + 1 lt kola.",
+      "price": 930,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "campaigns"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/27874930/pexels-photo-27874930.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-001",
+      "name": "Lombard Special (S)",
+      "description": "Lombard Special pizza (22 cm).",
+      "price": 335,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6151203/pexels-photo-6151203.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-002",
+      "name": "Lombard Special (M)",
+      "description": "Lombard Special pizza (32 cm).",
+      "price": 530,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/16939093/pexels-photo-16939093.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-003",
+      "name": "Lombard Special (L)",
+      "description": "Lombard Special pizza (42 cm).",
+      "price": 780,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/20115308/pexels-photo-20115308.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-004",
+      "name": "Karışık Pizza (S)",
+      "description": "Karışık Pizza pizza (22 cm).",
+      "price": 330,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/27874930/pexels-photo-27874930.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-005",
+      "name": "Karışık Pizza (M)",
+      "description": "Karışık Pizza pizza (32 cm).",
+      "price": 520,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36741918/pexels-photo-36741918.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-006",
+      "name": "Karışık Pizza (L)",
+      "description": "Karışık Pizza pizza (42 cm).",
+      "price": 760,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/25185061/pexels-photo-25185061.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-007",
+      "name": "İtalyan Pizza (S)",
+      "description": "İtalyan Pizza pizza (22 cm).",
+      "price": 320,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11432074/pexels-photo-11432074.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-008",
+      "name": "İtalyan Pizza (M)",
+      "description": "İtalyan Pizza pizza (32 cm).",
+      "price": 500,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36925834/pexels-photo-36925834.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-009",
+      "name": "İtalyan Pizza (L)",
+      "description": "İtalyan Pizza pizza (42 cm).",
+      "price": 710,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/4394625/pexels-photo-4394625.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-010",
+      "name": "Margarita (S)",
+      "description": "Margarita pizza (22 cm).",
+      "price": 320,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/20115306/pexels-photo-20115306.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-011",
+      "name": "Margarita (M)",
+      "description": "Margarita pizza (32 cm).",
+      "price": 500,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31596394/pexels-photo-31596394.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-012",
+      "name": "Margarita (L)",
+      "description": "Margarita pizza (42 cm).",
+      "price": 710,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31136887/pexels-photo-31136887.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-013",
+      "name": "Sucuklu İtalyan (S)",
+      "description": "Sucuklu İtalyan pizza (22 cm).",
+      "price": 330,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/4394617/pexels-photo-4394617.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-014",
+      "name": "Sucuklu İtalyan (M)",
+      "description": "Sucuklu İtalyan pizza (32 cm).",
+      "price": 520,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/9513580/pexels-photo-9513580.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-015",
+      "name": "Sucuklu İtalyan (L)",
+      "description": "Sucuklu İtalyan pizza (42 cm).",
+      "price": 760,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11663567/pexels-photo-11663567.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-016",
+      "name": "Vejetaryen Pizza (S)",
+      "description": "Vejetaryen Pizza pizza (22 cm).",
+      "price": 325,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/8609973/pexels-photo-8609973.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-017",
+      "name": "Vejetaryen Pizza (M)",
+      "description": "Vejetaryen Pizza pizza (32 cm).",
+      "price": 500,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/33593000/pexels-photo-33593000.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-018",
+      "name": "Vejetaryen Pizza (L)",
+      "description": "Vejetaryen Pizza pizza (42 cm).",
+      "price": 710,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/5639546/pexels-photo-5639546.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-019",
+      "name": "Tavuklu Barbekülü (S)",
+      "description": "Tavuklu Barbekülü pizza (22 cm).",
+      "price": 330,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28097402/pexels-photo-28097402.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-020",
+      "name": "Tavuklu Barbekülü (M)",
+      "description": "Tavuklu Barbekülü pizza (32 cm).",
+      "price": 520,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/33457581/pexels-photo-33457581.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-021",
+      "name": "Tavuklu Barbekülü (L)",
+      "description": "Tavuklu Barbekülü pizza (42 cm).",
+      "price": 760,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/25185010/pexels-photo-25185010.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-022",
+      "name": "Kalzon Pizza (S)",
+      "description": "Kalzon pizza (22 cm).",
+      "price": 360,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28646989/pexels-photo-28646989.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "salads-001",
+      "name": "Hellimli Salata",
+      "description": "Hellim peyniri ile hazırlanan salata.",
+      "price": 350,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "salads"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/29389673/pexels-photo-29389673.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "salads-002",
+      "name": "Tavuklu Salata",
+      "description": "Tavuk parçaları ile hazırlanan salata.",
+      "price": 350,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "salads"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36893631/pexels-photo-36893631.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "salads-003",
+      "name": "Ton Balıklı Salata",
+      "description": "Ton balığı ile hazırlanan salata.",
+      "price": 380,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "salads"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/4506876/pexels-photo-4506876.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "salads-004",
+      "name": "Sezar Salata",
+      "description": "Klasik Sezar salata.",
+      "price": 350,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "salads"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36959594/pexels-photo-36959594.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "salads-005",
+      "name": "Et Köfteli Salata",
+      "description": "Et köfte ile hazırlanan salata.",
+      "price": 380,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "salads"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/5191822/pexels-photo-5191822.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "salads-006",
+      "name": "Çıtır Tavuklu Salata",
+      "description": "Çıtır tavuk parçaları ile hazırlanan salata.",
+      "price": 380,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "salads"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/5713762/pexels-photo-5713762.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "salads-007",
+      "name": "Falafel Salata",
+      "description": "Falafel ile hazırlanan salata.",
+      "price": 380,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "salads"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/9108725/pexels-photo-9108725.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "snacks-001",
+      "name": "Kızartma Tabağı",
+      "description": "Karışık kızartma tabağı.",
+      "price": 500,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "snacks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/35440206/pexels-photo-35440206.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "snacks-002",
+      "name": "Patates Kızartması (Küçük)",
+      "description": "Küçük boy patates kızartması.",
+      "price": 130,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "snacks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32421783/pexels-photo-32421783.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "snacks-003",
+      "name": "Patates Kızartması (Büyük)",
+      "description": "Büyük boy patates kızartması.",
+      "price": 200,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "snacks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/115740/pexels-photo-115740.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-001",
+      "name": "Tavuk Dolma",
+      "description": "Tavuk Dolma. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 500,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34134207/pexels-photo-34134207.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-002",
+      "name": "Gujons",
+      "description": "Gujons. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 490,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/12362924/pexels-photo-12362924.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-003",
+      "name": "Schnitzel",
+      "description": "Schnitzel. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 490,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/5175602/pexels-photo-5175602.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-004",
+      "name": "Prenses",
+      "description": "Prenses. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 500,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32986472/pexels-photo-32986472.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-005",
+      "name": "Tavuk Şiş",
+      "description": "Tavuk Şiş. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 490,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/16423838/pexels-photo-16423838.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-006",
+      "name": "Kanat Izgara",
+      "description": "Kanat Izgara. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 490,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/16892378/pexels-photo-16892378.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-007",
+      "name": "Karışık Tavuk",
+      "description": "Karışık Tavuk. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 660,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36885731/pexels-photo-36885731.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-008",
+      "name": "Tavuk Güveç",
+      "description": "Tavuk Güveç. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 500,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32986476/pexels-photo-32986476.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-009",
+      "name": "Elviro",
+      "description": "Elviro. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 530,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17650171/pexels-photo-17650171.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-010",
+      "name": "Valide Sultan",
+      "description": "Valide Sultan. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 530,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17696653/pexels-photo-17696653.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-011",
+      "name": "Tavuklu Krep",
+      "description": "Tavuklu Krep. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 490,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6735031/pexels-photo-6735031.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-012",
+      "name": "Stragonof",
+      "description": "Stragonof. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 500,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6646212/pexels-photo-6646212.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-013",
+      "name": "Isabella",
+      "description": "Isabella. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 500,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31860141/pexels-photo-31860141.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-014",
+      "name": "Çıtır Tavuk",
+      "description": "Çıtır Tavuk. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 490,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/27352273/pexels-photo-27352273.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-015",
+      "name": "Tavuk Pirzola",
+      "description": "Tavuk Pirzola. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 490,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32986493/pexels-photo-32986493.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-016",
+      "name": "Kiev",
+      "description": "Kiev. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 500,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/30120279/pexels-photo-30120279.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-017",
+      "name": "Diyet Tavuk",
+      "description": "Diyet Tavuk. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 490,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/9025234/pexels-photo-9025234.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-018",
+      "name": "Tavuk Sarma",
+      "description": "Tavuk Sarma. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 500,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/33683221/pexels-photo-33683221.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-019",
+      "name": "Kentucky",
+      "description": "Kentucky. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 490,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28732304/pexels-photo-28732304.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-020",
+      "name": "Tenders",
+      "description": "Tenders. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 490,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/24513655/pexels-photo-24513655.png?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-021",
+      "name": "Meksika Usulü Tavuk",
+      "description": "Meksika Usulü Tavuk. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 500,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/30120288/pexels-photo-30120288.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-022",
+      "name": "Hardal Soslu Tavuk",
+      "description": "Hardal Soslu Tavuk. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 500,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/35872317/pexels-photo-35872317.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-023",
+      "name": "Köri Soslu Tavuk",
+      "description": "Köri Soslu Tavuk. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 500,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/33683055/pexels-photo-33683055.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-024",
+      "name": "Mantar Soslu Tavuk",
+      "description": "Mantar Soslu Tavuk. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 490,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28896610/pexels-photo-28896610.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-025",
+      "name": "Cafe de Paris Soslu Tavuk",
+      "description": "Cafe de Paris Soslu Tavuk. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 500,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/35872317/pexels-photo-35872317.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-026",
+      "name": "Karışık Izgara Tavuk",
+      "description": "Karışık Izgara Tavuk. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 660,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36850060/pexels-photo-36850060.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-027",
+      "name": "Et Köfte",
+      "description": "Et Köfte. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 490,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/26341210/pexels-photo-26341210.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "mains-028",
+      "name": "Falafel",
+      "description": "Falafel. Patates kızartması, pilav ve salata ile servis edilir.",
+      "price": 420,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/26546969/pexels-photo-26546969.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wraps-001",
+      "name": "Tavuk Şiş Dürüm",
+      "description": "Tavuk şiş dürüm.",
+      "price": 350,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28442524/pexels-photo-28442524.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wraps-002",
+      "name": "Tenders Dürüm",
+      "description": "Tenders tavuk dürüm.",
+      "price": 350,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/10361459/pexels-photo-10361459.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wraps-003",
+      "name": "Popcorn Dürüm",
+      "description": "Popcorn tavuk dürüm.",
+      "price": 350,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/23221028/pexels-photo-23221028.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wraps-004",
+      "name": "Et Köfte Dürüm",
+      "description": "Et köfte dürüm.",
+      "price": 270,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34318137/pexels-photo-34318137.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wraps-005",
+      "name": "Tavuk Wrap",
+      "description": "Tavuk wrap.",
+      "price": 420,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/29535635/pexels-photo-29535635.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wraps-006",
+      "name": "Quesadilla",
+      "description": "Quesadilla.",
+      "price": 480,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6416559/pexels-photo-6416559.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgers-001",
+      "name": "Lomburger",
+      "description": "Lomburger. Patates kızartması ile servis edilir.",
+      "price": 440,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31450802/pexels-photo-31450802.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgers-002",
+      "name": "Chicken Burger",
+      "description": "Chicken Burger. Patates kızartması ile servis edilir.",
+      "price": 380,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11001165/pexels-photo-11001165.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgers-003",
+      "name": "Cheese Burger",
+      "description": "Cheese Burger. Patates kızartması ile servis edilir.",
+      "price": 440,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31450815/pexels-photo-31450815.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgers-004",
+      "name": "Double Et Burger",
+      "description": "Double Et Burger. Patates kızartması ile servis edilir.",
+      "price": 510,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/20264649/pexels-photo-20264649.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgers-005",
+      "name": "Double Chicken Burger",
+      "description": "Double Chicken Burger. Patates kızartması ile servis edilir.",
+      "price": 470,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/27049616/pexels-photo-27049616.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pastas-001",
+      "name": "Spaghetti Bolognese",
+      "description": "Kıymalı Spaghetti Bolognese.",
+      "price": 420,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pastas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/30406652/pexels-photo-30406652.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pastas-002",
+      "name": "Kremalı Tavuklu Penne",
+      "description": "Kremalı tavuklu penne makarna.",
+      "price": 420,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pastas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/12667658/pexels-photo-12667658.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pastas-003",
+      "name": "Pesto Soslu Tavuklu Penne",
+      "description": "Pesto soslu tavuklu penne makarna.",
+      "price": 420,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pastas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32675201/pexels-photo-32675201.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pastas-004",
+      "name": "Tavuklu Mantarlı Tagliatelle",
+      "description": "Tavuklu mantarlı tagliatelle makarna.",
+      "price": 420,
+      "restaurantId": "lombard-kitchen",
+      "categories": [
+        "pastas"
+      ],
+      "imageUrl": "https://placehold.co/600x600/EDE4D6/234D40?text=Makarna"
+    }
+  ]
 }

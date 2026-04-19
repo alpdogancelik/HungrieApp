@@ -18,6 +18,8 @@ import { useTranslation } from "react-i18next";
 
 import type { OrderStatus, RestaurantOrder } from "@/type";
 import { subscribeUserOrders } from "@/src/services/firebaseOrders";
+import ReviewSheet from "@/src/features/reviews/ReviewSheet";
+import { useProductReviews } from "@/src/features/reviews/useProductReviews";
 import useAuthStore from "@/store/auth.store";
 import { illustrations } from "@/constants/mediaCatalog";
 import { ORDER_STATUS_COLORS } from "@/components/OrderCard";
@@ -67,6 +69,7 @@ const normalizeStatus = (status?: string): OrderStatus => {
     if (!status) return "pending";
     if (status === "accepted") return "preparing";
     if (status === "rejected") return "canceled";
+    if (status === "completed") return "delivered";
     if (["pending", "preparing", "ready", "out_for_delivery", "delivered", "canceled"].includes(status)) {
         return status as OrderStatus;
     }
@@ -76,6 +79,7 @@ const normalizeStatus = (status?: string): OrderStatus => {
 const resolveItems = (order: any) => {
     const raw = Array.isArray(order?.orderItems) ? order.orderItems : Array.isArray(order?.items) ? order.items : [];
     return raw.map((item: any) => ({
+        menuItemId: item?.menuItemId ?? item?.id ?? undefined,
         name: item?.name ?? "-",
         quantity: Number(item?.quantity ?? 1),
     }));
@@ -94,12 +98,102 @@ const resolveRestaurantName = (order: any) =>
     restaurantNamesById[normalizeId(order?.restaurantId)] ||
     "Restaurant";
 
+const OrderItemReviewRow = ({
+    orderId,
+    restaurantId,
+    item,
+    canReview,
+}: {
+    orderId: string;
+    restaurantId: string;
+    item: { menuItemId?: string; name: string; quantity: number };
+    canReview: boolean;
+}) => {
+    const { i18n } = useTranslation();
+    const isTurkish = i18n.language?.toLowerCase().startsWith("tr");
+    const [sheetVisible, setSheetVisible] = useState(false);
+    const { currentUserReview, submitReview, isSubmitting } = useProductReviews(item.menuItemId, {
+        orderId,
+        restaurantId,
+        enabled: Boolean(canReview && item.menuItemId && orderId && restaurantId),
+    });
+
+    const handleSubmit = useCallback(
+        async ({ rating, comment }: { rating: 1 | 2 | 3 | 4 | 5; comment?: string }) => {
+            const result = await submitReview({ rating, comment });
+            if (result.error) {
+                Alert.alert(isTurkish ? "Yorum kullan\u0131lam\u0131yor" : "Review unavailable", result.error.message);
+                return;
+            }
+            setSheetVisible(false);
+            Alert.alert(
+                isTurkish ? "Yorum kaydedildi" : "Review saved",
+                isTurkish ? "Geri bildirimin bu teslim edilen \u00FCr\u00FCne kaydedildi." : "Your feedback is now linked to this delivered item.",
+            );
+        },
+        [isTurkish, submitReview],
+    );
+
+    return (
+        <View
+            style={{
+                borderRadius: 18,
+                borderWidth: 1,
+                borderColor: "#E2E8F0",
+                backgroundColor: "#F8FAFC",
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                gap: 8,
+            }}
+        >
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", columnGap: 12 }}>
+                <Text style={{ flex: 1, color: "#1E293B", fontFamily: "ChairoSans" }}>{`${item.quantity}x ${item.name}`}</Text>
+                {canReview && item.menuItemId ? (
+                    <TouchableOpacity
+                        onPress={() => {
+                            if (!currentUserReview) setSheetVisible(true);
+                        }}
+                        disabled={Boolean(currentUserReview)}
+                        style={{
+                            borderRadius: 999,
+                            paddingHorizontal: 12,
+                            paddingVertical: 8,
+                            backgroundColor: currentUserReview ? "#E2E8F0" : "#FE8C00",
+                        }}
+                    >
+                        <Text style={{ color: currentUserReview ? "#475569" : "#FFFFFF", fontFamily: "ChairoSans", fontSize: 12 }}>
+                            {currentUserReview ? (isTurkish ? "De\u011Ferlendirildi" : "Reviewed") : isTurkish ? "\u00DCr\u00FCn\u00FC de\u011Ferlendir" : "Review item"}
+                        </Text>
+                    </TouchableOpacity>
+                ) : null}
+            </View>
+
+            {currentUserReview ? (
+                <Text style={{ color: "#64748B", fontFamily: "ChairoSans", fontSize: 12 }}>
+                    {`${isTurkish ? "Puan" : "Rating"}: ${currentUserReview.rating}/5${currentUserReview.comment ? ` - ${currentUserReview.comment}` : ""}`}
+                </Text>
+            ) : null}
+
+            <ReviewSheet
+                visible={sheetVisible}
+                submitting={isSubmitting}
+                initialRating={currentUserReview?.rating}
+                initialComment={currentUserReview?.comment}
+                onClose={() => setSheetVisible(false)}
+                onSubmit={handleSubmit}
+                placeholder={isTurkish ? "Teslimattan sonra bu \u00FCr\u00FCn nas\u0131ld\u0131?" : "Tell others how this item was after delivery..."}
+            />
+        </View>
+    );
+};
+
 const OrderHistoryScreen = () => {
     const params = useLocalSearchParams<{ lang: string; highlight?: string }>();
     const router = useRouter();
     const { user } = useAuthStore();
     const { t, i18n } = useTranslation();
     const locale = i18n.language?.startsWith("tr") ? "tr-TR" : "en-US";
+    const isTurkish = i18n.language?.toLowerCase().startsWith("tr");
 
     const [orders, setOrders] = useState<RestaurantOrder[]>([]);
     const [loading, setLoading] = useState(true);
@@ -166,7 +260,7 @@ const OrderHistoryScreen = () => {
     const handleCopyOrderId = (orderId: string) => {
         if (!orderId || orderId === "-") return;
         Clipboard.setString(orderId);
-        Alert.alert("Copied", "Order ID copied.");
+        Alert.alert(isTurkish ? "Kopyaland\u0131" : "Copied", isTurkish ? "Sipari\u015F numaras\u0131 kopyaland\u0131." : "Order ID copied.");
     };
 
     const renderFilter = () => (
@@ -268,10 +362,11 @@ const OrderHistoryScreen = () => {
                     const badge = ORDER_STATUS_COLORS[normStatus];
                     const label = t(`status.${normStatus}` as any);
                     const summaryItems = resolveItems(item);
-                    const summary = summaryItems.map((it: any) => `${it.quantity}x ${it.name}`).join(" • ");
                     const restaurantName = resolveRestaurantName(item);
                     const rawOrderId = String(item.id ?? "-");
                     const orderIdText = `#${rawOrderId}`;
+                    const restaurantId = String(item.restaurantId ?? "");
+                    const canReviewDeliveredItems = normStatus === "delivered";
 
                     return (
                         <View
@@ -293,13 +388,13 @@ const OrderHistoryScreen = () => {
                                             style={{ flex: 1, fontFamily: "ChairoSans", fontSize: 12, color: "#64748B" }}
                                             numberOfLines={2}
                                         >
-                                            Order ID: {orderIdText}
+                                            {isTurkish ? `Sipari\u015F No: ${orderIdText}` : `Order ID: ${orderIdText}`}
                                         </Text>
                                         <TouchableOpacity
                                             onPress={() => handleCopyOrderId(rawOrderId)}
                                             hitSlop={8}
                                             accessibilityRole="button"
-                                            accessibilityLabel="Copy order ID"
+                                            accessibilityLabel={isTurkish ? "Sipari\u015F numaras\u0131n\u0131 kopyala" : "Copy order ID"}
                                             style={{
                                                 width: 24,
                                                 height: 24,
@@ -335,10 +430,18 @@ const OrderHistoryScreen = () => {
                             <Text style={{ color: "#94A3B8", marginTop: 4, fontFamily: "ChairoSans" }}>
                                 {formatTimestamp(item.updatedAt || item.createdAt, locale)}
                             </Text>
-                            {summary ? (
-                                <Text style={{ color: "#1E293B", marginTop: 8, fontFamily: "ChairoSans" }}>
-                                    {summary}
-                                </Text>
+                            {summaryItems.length ? (
+                                <View style={{ marginTop: 10, gap: 8 }}>
+                                    {summaryItems.map((orderItem: { menuItemId?: string; name: string; quantity: number }, index: number) => (
+                                        <OrderItemReviewRow
+                                            key={`${rawOrderId}-${String(orderItem.menuItemId || orderItem.name)}-${index}`}
+                                            orderId={rawOrderId}
+                                            restaurantId={restaurantId}
+                                            item={orderItem}
+                                            canReview={canReviewDeliveredItems}
+                                        />
+                                    ))}
+                                </View>
                             ) : null}
                             <View
                                 style={{

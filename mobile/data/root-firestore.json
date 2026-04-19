@@ -3,504 +3,92 @@
     {
       "id": "root-kitchen-coffee",
       "name": "Root Kitchen & Coffee",
-      "cuisine": "Burger, Pizza & Pasta",
-      "description": "Burger, makarna, pizza ve atıştırmalıklarlakampüs ruhunu taşıyan Root Kitchen & Coffee menüsü.",
+      "cuisine": "Burger, Pizza, Pasta, Bowl & Coffee",
+      "description": "Burger, pizza, makarna, bowl, salata, kahve ve atıştırmalık seçenekleriyle kampüsün Root menüsü.",
       "deliveryFee": 24.9,
       "deliveryTime": "25-35",
       "imageUrl": "@/assets/restaurantlogo/rootlogo.jpg",
       "ownerId": "root-kitchen-owner-uid",
       "isActive": true,
-      "address": "Kuzey Kampüs, Öğrenci Çarşısı"
+      "address": "ODTÜ KALTEV"
     }
   ],
   "categories": [
-    { "id": "burgers", "name": "Burgers" },
-    { "id": "pasta", "name": "Makarna / Pasta" },
-    { "id": "pizzas", "name": "Pizzalar" },
-    { "id": "pizza-wraps", "name": "Pizza Wrap" },
-    { "id": "tenders", "name": "Tenders" },
-    { "id": "extras", "name": "Ekstralar" },
-    { "id": "mains", "name": "Ana Yemekler" },
-    { "id": "wraps", "name": "Wraps" },
-    { "id": "snacks", "name": "Atıştırmalıklar" },
-    { "id": "salads", "name": "Salatalar" },
-    { "id": "bowls", "name": "Bowls" },
-    { "id": "drinks", "name": "Soğuk İçecekler" }
+    {
+      "id": "bowls",
+      "name": "Bowls"
+    },
+    {
+      "id": "hot-drinks",
+      "name": "Sıcak İçecekler"
+    },
+    {
+      "id": "cold-drinks",
+      "name": "Soğuk İçecekler"
+    },
+    {
+      "id": "burgers",
+      "name": "Burgers"
+    },
+    {
+      "id": "pasta",
+      "name": "Makarna / Pasta"
+    },
+    {
+      "id": "pizzas",
+      "name": "Pizzalar"
+    },
+    {
+      "id": "pizza-wraps",
+      "name": "Pizza Wrap"
+    },
+    {
+      "id": "tenders",
+      "name": "Tenders"
+    },
+    {
+      "id": "extras",
+      "name": "Ekstralar"
+    },
+    {
+      "id": "mains",
+      "name": "Ana Yemekler"
+    },
+    {
+      "id": "wraps",
+      "name": "Wraps"
+    },
+    {
+      "id": "snacks",
+      "name": "Atıştırmalıklar"
+    },
+    {
+      "id": "salads",
+      "name": "Salatalar"
+    }
   ],
   "menus": [
-    {
-      "id": "burger-001",
-      "name": "Classic Burger & Chips",
-      "description": "Dana köfte, turşu, domates, root sos, soğan halkası.",
-      "price": 360,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["burgers"]
-    },
-    {
-      "id": "burger-002",
-      "name": "Cheese Burger & Chips",
-      "description": "Dana köfte, cheddar peyniri, turşu, domates, root sos.",
-      "price": 370,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["burgers"]
-    },
-    {
-      "id": "burger-003",
-      "name": "Chili & Sweet Chili Burger & Chips",
-      "description": "Dana köfte, jalapeño, cheddar, domates, sriracha mayo, soğan.",
-      "price": 380,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["burgers"]
-    },
-    {
-      "id": "burger-004",
-      "name": "Chicken Burger & Chips",
-      "description": "Tavuk fileto, marul, domates, root sos, coleslaw.",
-      "price": 320,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["burgers"]
-    },
-    {
-      "id": "burger-005",
-      "name": "Kentucky Burger & Chips",
-      "description": "Çıtır tavuk, turşu, cheddar, domates, root sos.",
-      "price": 340,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["burgers"]
-    },
-    {
-      "id": "burger-006",
-      "name": "Vegetarian Burger & Chips",
-      "description": "Falafel burger, domates, root sos.",
-      "price": 320,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["burgers"]
-    },
-    {
-      "id": "burger-007",
-      "name": "Root Special Burger & Chips",
-      "description": "Dana köfte, root sos, cheddar, mantar, çıtır soğan.",
-      "price": 390,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["burgers"]
-    },
-    {
-      "id": "burger-008",
-      "name": "Double Root Burger & Chips",
-      "description": "Çift köfte, root sos, cheddar, mantar, çıtır soğan.",
-      "price": 470,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["burgers"]
-    },
-    {
-      "id": "burger-009",
-      "name": "Monster Burger & Chips",
-      "description": "Domates, root sos, cheddar, mantar, yumurta, soğan halkası, beef burger.",
-      "price": 520,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["burgers"]
-    },
-    {
-      "id": "burger-010",
-      "name": "Texas Burger & Chips",
-      "description": "Dana köfte, BBQ sos, cheddar, jalapeño, BBQ soğan.",
-      "price": 390,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["burgers"]
-    },
-    {
-      "id": "burger-011",
-      "name": "Crispy Onion Burger & Chips",
-      "description": "Dana köfte, domates, root sos, cheddar, çıtır soğan, soğan halkası, BBQ sos.",
-      "price": 400,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["burgers"]
-    },
-
-    {
-      "id": "pasta-001",
-      "name": "Fettucini Alfredo",
-      "description": "Tavuk fileto, krema, sarımsaklı fettucini.",
-      "price": 350,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["pasta"]
-    },
-    {
-      "id": "pasta-002",
-      "name": "Mushroom Pasta",
-      "description": "Kremalı mantarlı makarna, sarımsak aromalı.",
-      "price": 350,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["pasta"]
-    },
-    {
-      "id": "pasta-003",
-      "name": "Arabbiata Pasta",
-      "description": "Tavuk fileto, domates, acı sos ve sarımsaklı makarna.",
-      "price": 350,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["pasta"]
-    },
-
-    {
-      "id": "pizza-001",
-      "name": "Margarita (S)",
-      "description": "Mozzarella ve domates soslu pizza. S (24 cm).",
-      "price": 280,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["pizzas"]
-    },
-    {
-      "id": "pizza-002",
-      "name": "Margarita (M)",
-      "description": "Mozzarella ve domates soslu pizza. M (36 cm).",
-      "price": 410,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["pizzas"]
-    },
-    {
-      "id": "pizza-003",
-      "name": "BBQ Chicken (S)",
-      "description": "Mozzarella, tavuk, BBQ sos, mantar. S (24 cm).",
-      "price": 290,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["pizzas"]
-    },
-    {
-      "id": "pizza-004",
-      "name": "BBQ Chicken (M)",
-      "description": "Mozzarella, tavuk, BBQ sos, mantar. M (36 cm).",
-      "price": 420,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["pizzas"]
-    },
-    {
-      "id": "pizza-005",
-      "name": "Cyprus Pizza (S)",
-      "description": "Hellim, zeytin, mozzarella. S (24 cm).",
-      "price": 300,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["pizzas"]
-    },
-    {
-      "id": "pizza-006",
-      "name": "Cyprus Pizza (M)",
-      "description": "Hellim, zeytin, mozzarella. M (36 cm).",
-      "price": 439,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["pizzas"]
-    },
-    {
-      "id": "pizza-007",
-      "name": "Tuna Pizza (S)",
-      "description": "Ton balığı, mısır, zeytin. S (24 cm).",
-      "price": 290,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["pizzas"]
-    },
-    {
-      "id": "pizza-008",
-      "name": "Tuna Pizza (M)",
-      "description": "Ton balığı, mısır, zeytin. M (36 cm).",
-      "price": 420,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["pizzas"]
-    },
-    {
-      "id": "pizza-009",
-      "name": "Mix Pizza (S)",
-      "description": "Salam, sucuk, biber, mantar, mozzarella. S (24 cm).",
-      "price": 290,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["pizzas"]
-    },
-    {
-      "id": "pizza-010",
-      "name": "Mix Pizza (M)",
-      "description": "Salam, sucuk, biber, mantar, mozzarella. M (36 cm).",
-      "price": 420,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["pizzas"]
-    },
-    {
-      "id": "pizza-011",
-      "name": "Vegetarian Pizza (S)",
-      "description": "Mantar, mısır, brokoli, biber. S (24 cm).",
-      "price": 290,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["pizzas"]
-    },
-    {
-      "id": "pizza-012",
-      "name": "Vegetarian Pizza (M)",
-      "description": "Mantar, mısır, brokoli, biber. M (36 cm).",
-      "price": 429,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["pizzas"]
-    },
-    {
-      "id": "pizza-013",
-      "name": "Mushroom Pizza (S)",
-      "description": "Bol mantarlı pizza. S (24 cm).",
-      "price": 330,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["pizzas"]
-    },
-    {
-      "id": "pizza-014",
-      "name": "Mushroom Pizza (M)",
-      "description": "Bol mantarlı pizza. M (36 cm).",
-      "price": 460,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["pizzas"]
-    },
-
-    {
-      "id": "pizza-wrap-001",
-      "name": "Pizza Wrap",
-      "description": "Klasik pizza lezzetinde dürüm.",
-      "price": 320,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["pizza-wraps"]
-    },
-    {
-      "id": "pizza-wrap-002",
-      "name": "Hot Pizza Wrap",
-      "description": "Acı soslu pizza tadında wrap.",
-      "price": 335,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["pizza-wraps"]
-    },
-
-    {
-      "id": "tender-001",
-      "name": "Crispy Wings & Chips",
-      "description": "6 adet crispy kanat ve patates kızartması.",
-      "price": 390,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["tenders"]
-    },
-    {
-      "id": "tender-002",
-      "name": "Sweet Chili Wings & Chips",
-      "description": "Sweet chili soslu kanatlar ve patates.",
-      "price": 390,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["tenders"]
-    },
-    {
-      "id": "tender-003",
-      "name": "Hot Wings & Chips",
-      "description": "Acı soslu hot wings ve patates.",
-      "price": 390,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["tenders"]
-    },
-    {
-      "id": "tender-004",
-      "name": "BBQ Wings & Chips",
-      "description": "9 adet BBQ wings ve patates.",
-      "price": 450,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["tenders"]
-    },
-    {
-      "id": "tender-005",
-      "name": "Tender & Chips",
-      "description": "Çıtır tavuk tenders ve patates kızartması.",
-      "price": 390,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["tenders"]
-    },
-
-    {
-      "id": "extra-001",
-      "name": "Patates Kızartması",
-      "description": "Klasik patates kızartması.",
-      "price": 120,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["extras"]
-    },
-    {
-      "id": "extra-002",
-      "name": "Soğan Halkası",
-      "description": "Çıtır soğan halkası.",
-      "price": 100,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["extras"]
-    },
-    {
-      "id": "extra-003",
-      "name": "4’lü Kanat",
-      "description": "4 adet tavuk kanat.",
-      "price": 200,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["extras"]
-    },
-
-    {
-      "id": "main-001",
-      "name": "Popcorn Chicken + Makarna + Salata + Chips",
-      "description": "Popcorn chicken, makarna, salata ve patates kızartması.",
-      "price": 410,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["mains"]
-    },
-    {
-      "id": "main-002",
-      "name": "Sweet Chili Chicken Menü",
-      "description": "Sweet chili soslu tavuk menü garnitürleriyle.",
-      "price": 420,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["mains"]
-    },
-    {
-      "id": "main-003",
-      "name": "BBQ Chicken Menü",
-      "description": "BBQ soslu tavuk menü garnitürleriyle.",
-      "price": 420,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["mains"]
-    },
-    {
-      "id": "main-004",
-      "name": "Grilled Chicken Menü",
-      "description": "Izgara tavuk menü garnitürleriyle.",
-      "price": 420,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["mains"]
-    },
-    {
-      "id": "main-005",
-      "name": "Creamy Mushroom Chicken Menü",
-      "description": "Kremalı mantarlı tavuk menü.",
-      "price": 450,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["mains"]
-    },
-    {
-      "id": "main-006",
-      "name": "Cafe de Paris Chicken Menü",
-      "description": "Cafe de Paris soslu tavuk menü.",
-      "price": 460,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["mains"]
-    },
-    {
-      "id": "main-007",
-      "name": "Schnitzel Menü",
-      "description": "Tavuk schnitzel menü garnitürleriyle.",
-      "price": 410,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["mains"]
-    },
-
-    {
-      "id": "wrap-001",
-      "name": "Popcorn Wrap",
-      "description": "Popcorn chicken ile hazırlanan wrap.",
-      "price": 280,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["wraps"]
-    },
-    {
-      "id": "wrap-002",
-      "name": "Hot Popcorn Wrap",
-      "description": "Acı soslu popcorn chicken wrap.",
-      "price": 295,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["wraps"]
-    },
-    {
-      "id": "wrap-003",
-      "name": "Tenders Wrap",
-      "description": "Çıtır tavuk tenders wrap.",
-      "price": 280,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["wraps"]
-    },
-    {
-      "id": "wrap-004",
-      "name": "Vegetarian Wrap",
-      "description": "Sebzeli ve doyurucu vejetaryen wrap.",
-      "price": 270,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["wraps"]
-    },
-
-    {
-      "id": "snack-001",
-      "name": "Patates Tabağı",
-      "description": "Bol patates kızartmalı tabak.",
-      "price": 190,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["snacks"]
-    },
-    {
-      "id": "snack-002",
-      "name": "Patsö",
-      "description": "Sosisli patates sandviç.",
-      "price": 200,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["snacks"]
-    },
-    {
-      "id": "snack-003",
-      "name": "Patsö Cheese",
-      "description": "Cheddar peyniriyle patsö.",
-      "price": 245,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["snacks"]
-    },
-    {
-      "id": "snack-004",
-      "name": "Bira Tabağı",
-      "description": "Atıştırmalık bira tabağı.",
-      "price": 320,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["snacks"]
-    },
-
-    {
-      "id": "salad-001",
-      "name": "Ton Balıklı Salata",
-      "description": "Ton balıklı karışık salata.",
-      "price": 290,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["salads"]
-    },
-    {
-      "id": "salad-002",
-      "name": "Grilled Chicken Salad",
-      "description": "Izgara tavuklu salata.",
-      "price": 290,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["salads"]
-    },
-    {
-      "id": "salad-003",
-      "name": "Popcorn Chicken Salad",
-      "description": "Popcorn chicken ile servis edilen salata.",
-      "price": 290,
-      "restaurantId": "root-kitchen-coffee",
-      "categories": ["salads"]
-    },
-
     {
       "id": "bowl-001",
       "name": "Acai Bowl",
       "description": "Meyveli ve granolalı acai bowl.",
       "price": 320,
       "restaurantId": "root-kitchen-coffee",
-      "categories": ["bowls"]
+      "categories": [
+        "bowls"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/14167805/pexels-photo-14167805.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "bowl-002",
       "name": "Chicken Bowl",
-      "description": "Tavuklu dengeli bowl tabağı.",
+      "description": "Tavuklu bowl tabağı.",
       "price": 380,
       "restaurantId": "root-kitchen-coffee",
-      "categories": ["bowls"]
+      "categories": [
+        "bowls"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/24738519/pexels-photo-24738519.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "bowl-003",
@@ -508,48 +96,890 @@
       "description": "Sebzeli ve vejetaryen bowl tabağı.",
       "price": 380,
       "restaurantId": "root-kitchen-coffee",
-      "categories": ["bowls"]
+      "categories": [
+        "bowls"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/37079456/pexels-photo-37079456.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
-
+    {
+      "id": "hot-001",
+      "name": "Americano",
+      "description": "Sıcak americano kahve.",
+      "price": 90,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "hot-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31120018/pexels-photo-31120018.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "hot-002",
+      "name": "Cappuccino",
+      "description": "Sıcak cappuccino kahve.",
+      "price": 100,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "hot-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/2638019/pexels-photo-2638019.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "hot-003",
+      "name": "Cortado",
+      "description": "Sıcak cortado kahve.",
+      "price": 100,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "hot-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34956523/pexels-photo-34956523.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "hot-004",
+      "name": "Latte",
+      "description": "Sıcak latte kahve.",
+      "price": 100,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "hot-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/15800981/pexels-photo-15800981.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "hot-005",
+      "name": "Mocha",
+      "description": "Sıcak mocha kahve.",
+      "price": 115,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "hot-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/1195197/pexels-photo-1195197.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "hot-006",
+      "name": "Flat White",
+      "description": "Sıcak flat white kahve.",
+      "price": 100,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "hot-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/12499337/pexels-photo-12499337.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "hot-007",
+      "name": "Caramel Macchiato",
+      "description": "Karamelli macchiato kahve.",
+      "price": 115,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "hot-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/4547567/pexels-photo-4547567.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "hot-008",
+      "name": "Latte Macchiato",
+      "description": "Sıcak latte macchiato kahve.",
+      "price": 115,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "hot-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32909995/pexels-photo-32909995.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "hot-009",
+      "name": "Espresso Macchiato",
+      "description": "Sıcak espresso macchiato kahve.",
+      "price": 100,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "hot-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32321176/pexels-photo-32321176.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "hot-010",
+      "name": "Root Mocha",
+      "description": "Root özel mocha kahve.",
+      "price": 110,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "hot-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/910086/pexels-photo-910086.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "hot-011",
+      "name": "Filter Coffee",
+      "description": "Sıcak filtre kahve.",
+      "price": 90,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "hot-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/29599050/pexels-photo-29599050.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "hot-012",
+      "name": "Hot Chocolate",
+      "description": "Sıcak çikolata.",
+      "price": 100,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "hot-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/5169113/pexels-photo-5169113.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "hot-013",
+      "name": "White Chocolate",
+      "description": "Sıcak beyaz çikolata.",
+      "price": 100,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "hot-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/37012647/pexels-photo-37012647.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "hot-014",
+      "name": "Coconut Chocolate",
+      "description": "Hindistan cevizli sıcak çikolata.",
+      "price": 120,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "hot-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/2318033/pexels-photo-2318033.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
     {
       "id": "drink-001",
-      "name": "Coca-Cola / Zero / Fanta / Sprite (330 ml)",
-      "description": "330 ml kutu içecek çeşitleri.",
+      "name": "Coca-Cola / Zero / Fanta / Sprite 0.33",
+      "description": "330 ml kutu gazlı içecek seçenekleri.",
       "price": 50,
       "restaurantId": "root-kitchen-coffee",
-      "categories": ["drinks"]
+      "categories": [
+        "cold-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/24860312/pexels-photo-24860312.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "drink-002",
-      "name": "Coca-Cola / Zero / Fanta / Sprite (1 LT)",
-      "description": "1 L pet şişe içecek çeşitleri.",
+      "name": "Coca-Cola / Zero / Fanta / Sprite 1 Litre",
+      "description": "1 litre pet şişe gazlı içecek seçenekleri.",
       "price": 80,
       "restaurantId": "root-kitchen-coffee",
-      "categories": ["drinks"]
+      "categories": [
+        "cold-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/7437272/pexels-photo-7437272.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "drink-003",
-      "name": "Ice Tea (Mango / Limon / Şeftali / Karpuz)",
-      "description": "Ice Tea soğuk içecek çeşitleri.",
+      "name": "Ice Tea 0.33",
+      "description": "Mango, limon, şeftali veya karpuz aromalı 330 ml Ice Tea.",
       "price": 50,
       "restaurantId": "root-kitchen-coffee",
-      "categories": ["drinks"]
+      "categories": [
+        "cold-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6413610/pexels-photo-6413610.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "drink-004",
-      "name": "Su 0.5 LT",
-      "description": "0.5 L su.",
+      "name": "Su 0.50",
+      "description": "0.5 litre su.",
       "price": 25,
       "restaurantId": "root-kitchen-coffee",
-      "categories": ["drinks"]
+      "categories": [
+        "cold-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/1540235/pexels-photo-1540235.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "drink-005",
-      "name": "Su 1.5 LT",
-      "description": "1.5 L su.",
+      "name": "Su 1.5 Litre",
+      "description": "1.5 litre su.",
       "price": 50,
       "restaurantId": "root-kitchen-coffee",
-      "categories": ["drinks"]
+      "categories": [
+        "cold-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/8217303/pexels-photo-8217303.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-001",
+      "name": "Classic Burger & Chips",
+      "description": "Dana köfte, turşu, domates, root sos ve soğan halkası; patates kızartması ile.",
+      "price": 360,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31450802/pexels-photo-31450802.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-002",
+      "name": "Cheese Burger & Chips",
+      "description": "Dana köfte, cheddar, turşu, domates ve root sos; patates kızartması ile.",
+      "price": 370,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31450815/pexels-photo-31450815.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-003",
+      "name": "Chili & Sweet Chili Burger & Chips",
+      "description": "Dana köfte, jalapeño, cheddar, domates, sriracha mayo ve soğan; patates kızartması ile.",
+      "price": 380,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/29653152/pexels-photo-29653152.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-004",
+      "name": "Chicken Burger & Chips",
+      "description": "Tavuk fileto, marul, domates, root sos ve coleslaw; patates kızartması ile.",
+      "price": 320,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11001165/pexels-photo-11001165.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-005",
+      "name": "Kentucky Burger & Chips",
+      "description": "Çıtır tavuk, turşu, cheddar, domates ve root sos; patates kızartması ile.",
+      "price": 340,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/3877668/pexels-photo-3877668.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-006",
+      "name": "Vegetarian Burger & Chips",
+      "description": "Falafel burger, domates, root sos ve mısır; patates kızartması ile.",
+      "price": 320,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/20722041/pexels-photo-20722041.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-007",
+      "name": "Root Special Burger & Chips",
+      "description": "Dana köfte, root sos, cheddar, mantar ve çıtır soğan; patates kızartması ile.",
+      "price": 390,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/10153085/pexels-photo-10153085.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-008",
+      "name": "Double Root Burger & Chips",
+      "description": "Çift dana köfte, root sos, cheddar, mantar ve çıtır soğan; patates kızartması ile.",
+      "price": 470,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/20264649/pexels-photo-20264649.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-009",
+      "name": "Monster Burger & Chips",
+      "description": "Dana köfte, root sos, cheddar, mantar, yumurta ve soğan halkası; patates kızartması ile.",
+      "price": 520,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34003512/pexels-photo-34003512.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-010",
+      "name": "Texas Burger & Chips",
+      "description": "Dana köfte, BBQ sos, cheddar, jalapeño ve BBQ soğan; patates kızartması ile.",
+      "price": 390,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/15390182/pexels-photo-15390182.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-011",
+      "name": "Crispy Onion Burger & Chips",
+      "description": "Dana köfte, cheddar, çıtır soğan, soğan halkası ve BBQ sos; patates kızartması ile.",
+      "price": 400,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/9588852/pexels-photo-9588852.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pasta-001",
+      "name": "Fettucini Alfredo",
+      "description": "Tavuk fileto, krema, mantar ve sarımsaklı fettuccine.",
+      "price": 350,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "pasta"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11220208/pexels-photo-11220208.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pasta-002",
+      "name": "Pesto Pasta",
+      "description": "Tavuk fileto, kremalı pesto sos ve sarımsaklı makarna.",
+      "price": 350,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "pasta"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32675201/pexels-photo-32675201.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pasta-003",
+      "name": "Arabbiata Pasta",
+      "description": "Tavuk fileto, domates, acı sos, mısır ve sarımsaklı makarna.",
+      "price": 350,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "pasta"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11220209/pexels-photo-11220209.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-001",
+      "name": "Margarita Pizza (S)",
+      "description": "Mozzarella peyniri, parmesan peyniri, çeri domates ve fesleğen. S boy pizza (24 cm).",
+      "price": 280,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/20115306/pexels-photo-20115306.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-002",
+      "name": "Margarita Pizza (M)",
+      "description": "Mozzarella peyniri, parmesan peyniri, çeri domates ve fesleğen. M boy pizza (36 cm).",
+      "price": 410,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31596394/pexels-photo-31596394.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-003",
+      "name": "BBQ Chicken Pizza (S)",
+      "description": "Mozzarella peyniri, tavuk, mantar ve BBQ sos. S boy pizza (24 cm).",
+      "price": 290,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/14906564/pexels-photo-14906564.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-004",
+      "name": "BBQ Chicken Pizza (M)",
+      "description": "Mozzarella peyniri, tavuk, mantar ve BBQ sos. M boy pizza (36 cm).",
+      "price": 420,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/33458051/pexels-photo-33458051.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-005",
+      "name": "Cyprus Pizza (S)",
+      "description": "Mozzarella peyniri, pastırma, hellim, zeytin ve çeri domates. S boy pizza (24 cm).",
+      "price": 300,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6151203/pexels-photo-6151203.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-006",
+      "name": "Cyprus Pizza (M)",
+      "description": "Mozzarella peyniri, pastırma, hellim, zeytin ve çeri domates. M boy pizza (36 cm).",
+      "price": 430,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/16939093/pexels-photo-16939093.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-007",
+      "name": "Tuna Pizza (S)",
+      "description": "Mozzarella peyniri, ton balığı, zeytin, mısır ve çeri domates. S boy pizza (24 cm).",
+      "price": 290,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/29609011/pexels-photo-29609011.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-008",
+      "name": "Tuna Pizza (M)",
+      "description": "Mozzarella peyniri, ton balığı, zeytin, mısır ve çeri domates. M boy pizza (36 cm).",
+      "price": 420,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/35108130/pexels-photo-35108130.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-009",
+      "name": "Mix Pizza (S)",
+      "description": "Mozzarella peyniri, salam, pastırma, zeytin, mantar, mısır ve biber. S boy pizza (24 cm).",
+      "price": 290,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/20115308/pexels-photo-20115308.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-010",
+      "name": "Mix Pizza (M)",
+      "description": "Mozzarella peyniri, salam, pastırma, zeytin, mantar, mısır ve biber. M boy pizza (36 cm).",
+      "price": 420,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/27874930/pexels-photo-27874930.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-011",
+      "name": "Vegetarian Pizza (S)",
+      "description": "Mozzarella peyniri, zeytin, biber, mantar, mısır ve brokoli. S boy pizza (24 cm).",
+      "price": 290,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/8609973/pexels-photo-8609973.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-012",
+      "name": "Vegetarian Pizza (M)",
+      "description": "Mozzarella peyniri, zeytin, biber, mantar, mısır ve brokoli. M boy pizza (36 cm).",
+      "price": 420,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/33593000/pexels-photo-33593000.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-013",
+      "name": "Mushroom Pizza (S)",
+      "description": "Mozzarella peyniri, shiitake, oyster, kültür ve portobello mantar. S boy pizza (24 cm).",
+      "price": 330,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/29699537/pexels-photo-29699537.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-014",
+      "name": "Mushroom Pizza (M)",
+      "description": "Mozzarella peyniri, shiitake, oyster, kültür ve portobello mantar. M boy pizza (36 cm).",
+      "price": 460,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6147834/pexels-photo-6147834.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzawrap-001",
+      "name": "Pizza Wrap",
+      "description": "Root special pizza, tavuk ve patates kızartması ile hazırlanan pizza wrap.",
+      "price": 320,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "pizza-wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/23221028/pexels-photo-23221028.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzawrap-002",
+      "name": "Hot Pizza Wrap",
+      "description": "Acı soslu root special pizza, tavuk ve patates kızartması ile hazırlanan hot pizza wrap.",
+      "price": 335,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "pizza-wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/29535635/pexels-photo-29535635.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tender-001",
+      "name": "Crispy Wings & Chips (6 pcs)",
+      "description": "6 parça crispy tavuk kanat ve patates kızartması.",
+      "price": 390,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "tenders"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/27352273/pexels-photo-27352273.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tender-002",
+      "name": "Crispy Wings & Chips (9 pcs)",
+      "description": "9 parça crispy tavuk kanat ve patates kızartması.",
+      "price": 450,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "tenders"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/33068077/pexels-photo-33068077.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tender-003",
+      "name": "Sweet Chili Wings & Chips (6 pcs)",
+      "description": "6 parça sweet chili soslu tavuk kanat ve patates kızartması.",
+      "price": 390,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "tenders"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28732304/pexels-photo-28732304.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tender-004",
+      "name": "Sweet Chili Wings & Chips (9 pcs)",
+      "description": "9 parça sweet chili soslu tavuk kanat ve patates kızartması.",
+      "price": 450,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "tenders"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11118938/pexels-photo-11118938.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tender-005",
+      "name": "Hot Wings & Chips (6 pcs)",
+      "description": "6 parça acı soslu tavuk kanat ve patates kızartması.",
+      "price": 390,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "tenders"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/14994655/pexels-photo-14994655.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tender-006",
+      "name": "Hot Wings & Chips (9 pcs)",
+      "description": "9 parça acı soslu tavuk kanat ve patates kızartması.",
+      "price": 450,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "tenders"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/37025062/pexels-photo-37025062.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tender-007",
+      "name": "BBQ Wings & Chips (6 pcs)",
+      "description": "6 parça bBQ soslu tavuk kanat ve patates kızartması.",
+      "price": 390,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "tenders"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/14950910/pexels-photo-14950910.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tender-008",
+      "name": "BBQ Wings & Chips (9 pcs)",
+      "description": "9 parça bBQ soslu tavuk kanat ve patates kızartması.",
+      "price": 450,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "tenders"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31097759/pexels-photo-31097759.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tender-009",
+      "name": "Tender & Chips (6 pcs)",
+      "description": "6 parça çıtır tavuk tenders ve patates kızartması.",
+      "price": 390,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "tenders"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/33709287/pexels-photo-33709287.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tender-010",
+      "name": "Tender & Chips (9 pcs)",
+      "description": "9 parça çıtır tavuk tenders ve patates kızartması.",
+      "price": 450,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "tenders"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28491567/pexels-photo-28491567.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "extra-001",
+      "name": "Patates Kızartması / Chips",
+      "description": "Klasik patates kızartması.",
+      "price": 120,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "extras"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32421783/pexels-photo-32421783.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "extra-002",
+      "name": "Soğan Halkası / Onion Rings",
+      "description": "Çıtır soğan halkası.",
+      "price": 100,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "extras"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/9738991/pexels-photo-9738991.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "extra-003",
+      "name": "4 Parça Kanat / 4 Pcs Wings",
+      "description": "4 parça tavuk kanat.",
+      "price": 200,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "extras"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/16892378/pexels-photo-16892378.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "main-001",
+      "name": "Popcorn & Makarna & Salata & Chips",
+      "description": "Popcorn tavuk, makarna, salata ve patates kızartması.",
+      "price": 410,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28573376/pexels-photo-28573376.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "main-002",
+      "name": "Sweet Chili Chicken & Makarna & Salata & Chips",
+      "description": "Sweet chili soslu tavuk, makarna, salata ve patates kızartması.",
+      "price": 420,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34134207/pexels-photo-34134207.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "main-003",
+      "name": "BBQ Chicken & Makarna & Salata & Chips",
+      "description": "BBQ soslu tavuk, makarna, salata ve patates kızartması.",
+      "price": 420,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32986472/pexels-photo-32986472.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "main-004",
+      "name": "Grilled Chicken & Makarna & Salata & Chips",
+      "description": "Izgara tavuk, makarna, salata ve patates kızartması.",
+      "price": 420,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32986493/pexels-photo-32986493.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "main-005",
+      "name": "Creamy Mushroom & Makarna & Salata & Chips",
+      "description": "Kremalı mantarlı tavuk, makarna, salata ve patates kızartması.",
+      "price": 450,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28896610/pexels-photo-28896610.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "main-006",
+      "name": "Cafe De Paris & Makarna & Salata & Chips",
+      "description": "Cafe de Paris soslu tavuk, makarna, salata ve patates kızartması.",
+      "price": 460,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/35872317/pexels-photo-35872317.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "main-007",
+      "name": "Schnitzel & Makarna & Salata & Chips",
+      "description": "Tavuk schnitzel, makarna, salata ve patates kızartması.",
+      "price": 410,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "mains"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/5175602/pexels-photo-5175602.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-001",
+      "name": "Popcorn Wrap",
+      "description": "Popcorn tavuk, coleslaw ve chips ile hazırlanan wrap.",
+      "price": 280,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/23221028/pexels-photo-23221028.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-002",
+      "name": "Hot Popcorn Wrap",
+      "description": "Popcorn tavuk, jalapeño, coleslaw, acı sos ve chips ile hazırlanan wrap.",
+      "price": 295,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/29535635/pexels-photo-29535635.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-003",
+      "name": "Tenders Wrap",
+      "description": "Tenders, coleslaw ve chips ile hazırlanan wrap.",
+      "price": 280,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6416559/pexels-photo-6416559.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-004",
+      "name": "Vegetarian Wrap",
+      "description": "Falafel, coleslaw ve chips ile hazırlanan vejetaryen wrap.",
+      "price": 270,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32402074/pexels-photo-32402074.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "snack-001",
+      "name": "Patates Tabağı / Chips Platter",
+      "description": "Bol patates kızartmalı tabak.",
+      "price": 190,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "snacks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32421783/pexels-photo-32421783.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "snack-002",
+      "name": "Patso",
+      "description": "Patatesli sandviç.",
+      "price": 200,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "snacks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/35440206/pexels-photo-35440206.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "snack-003",
+      "name": "Patso Cheese",
+      "description": "Cheddar peynirli patatesli sandviç.",
+      "price": 245,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "snacks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/20003226/pexels-photo-20003226.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "snack-004",
+      "name": "Bira Tabağı / Beer Platter",
+      "description": "Chips, tender ve soğan halkası ile karışık atıştırmalık tabağı.",
+      "price": 320,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "snacks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/5603924/pexels-photo-5603924.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "salad-001",
+      "name": "Ton Balıklı Salata / Tuna Salad",
+      "description": "Ton balıklı karışık salata.",
+      "price": 290,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "salads"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28883617/pexels-photo-28883617.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "salad-002",
+      "name": "Grill Tavuk Göğüs Salata / Grilled Chicken Salad",
+      "description": "Izgara tavuk göğüslü salata.",
+      "price": 290,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "salads"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/19904309/pexels-photo-19904309.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "salad-003",
+      "name": "Popcorn Tavuk Salata / Popcorn Chicken Salad",
+      "description": "Popcorn tavuklu salata.",
+      "price": 290,
+      "restaurantId": "root-kitchen-coffee",
+      "categories": [
+        "salads"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/19087691/pexels-photo-19087691.jpeg?auto=compress&cs=tinysrgb&h=350"
     }
   ]
 }

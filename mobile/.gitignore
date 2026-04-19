@@ -43,3 +43,9 @@ yarn-error.*
 /android
 
 .vercel
+
+# Generated local artifacts
+expo-web.log
+data/backups/
+scripts/output/
+data/image-assignment-report.json

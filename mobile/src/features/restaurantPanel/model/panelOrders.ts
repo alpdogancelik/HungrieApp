@@ -112,7 +112,7 @@ const resolveOrderNote = (order: any): string => {
 };
 
 export const mapFirestoreOrder = (order: any): PanelOrder => {
-    const createdAtMs = toMillis(order?.createdAt || order?.updatedAt || Date.now());
+    const createdAtMs = Number(order?.createdAtMs || 0) || toMillis(order?.createdAt || order?.updatedAt || Date.now());
     const resolvedNote = resolveOrderNote(order);
 
     return {

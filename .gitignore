@@ -43,3 +43,12 @@ android/
 *.orig.*
 
 .vercel
+
+# Local secrets / generated artifacts
+keys/
+*.log
+
+# Generated data snapshots/reports
+mobile/data/backups/
+mobile/scripts/output/
+mobile/data/image-assignment-report.json

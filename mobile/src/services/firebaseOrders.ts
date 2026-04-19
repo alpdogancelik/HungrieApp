@@ -2,6 +2,7 @@ import {
     addDoc,
     collection,
     doc,
+    getDoc,
     onSnapshot,
     query,
     serverTimestamp,
@@ -11,6 +12,7 @@ import {
 import { signInAnonymously } from "firebase/auth";
 import { auth, firestore } from "@/lib/firebase";
 import type { Address, CartItem, OrderStatus, PaymentMethod } from "@/src/domain/types";
+import { recomputeRestaurantMetrics } from "@/src/services/restaurantMetrics";
 
 const ensureDb = () => {
     if (!firestore) throw new Error("Firebase is not configured");
@@ -32,6 +34,57 @@ const ensureAuthSession = async () => {
 const ordersCol = () => collection(ensureDb(), "orders");
 const compactObject = <T extends Record<string, any>>(value: T) =>
     Object.fromEntries(Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined));
+
+const hasTimestamp = (value: Record<string, any>, fieldName: string) => Boolean(value?.[fieldName] || value?.[`${fieldName}Ms`]);
+
+const buildStatusTransitionFields = (order: Record<string, any>, status: OrderStatus | string, nowMs: number) => {
+    const normalizedStatus = String(status || "").trim().toLowerCase();
+    const fields: Record<string, unknown> = {
+        status,
+        statusChangedAt: serverTimestamp(),
+        statusChangedAtMs: nowMs,
+        updatedAt: serverTimestamp(),
+        updatedAtMs: nowMs,
+    };
+
+    if (normalizedStatus !== "pending") {
+        fields.reminderPending = false;
+        fields.reminderHandledAt = serverTimestamp();
+        fields.reminderHandledAtMs = nowMs;
+    }
+
+    if (normalizedStatus === "accepted" && !hasTimestamp(order, "acceptedAt")) {
+        fields.acceptedAt = serverTimestamp();
+        fields.acceptedAtMs = nowMs;
+    }
+
+    if (normalizedStatus === "ready" && !hasTimestamp(order, "readyAt")) {
+        fields.readyAt = serverTimestamp();
+        fields.readyAtMs = nowMs;
+    }
+
+    if (normalizedStatus === "out_for_delivery" && !hasTimestamp(order, "outForDeliveryAt")) {
+        fields.outForDeliveryAt = serverTimestamp();
+        fields.outForDeliveryAtMs = nowMs;
+    }
+
+    if (normalizedStatus === "delivered" && !hasTimestamp(order, "deliveredAt")) {
+        fields.deliveredAt = serverTimestamp();
+        fields.deliveredAtMs = nowMs;
+    }
+
+    if (normalizedStatus === "canceled" && !hasTimestamp(order, "canceledAt")) {
+        fields.canceledAt = serverTimestamp();
+        fields.canceledAtMs = nowMs;
+    }
+
+    if (normalizedStatus === "rejected" && !hasTimestamp(order, "rejectedAt")) {
+        fields.rejectedAt = serverTimestamp();
+        fields.rejectedAtMs = nowMs;
+    }
+
+    return fields;
+};
 
 export const placeOrder = async ({
     userId,
@@ -56,6 +109,7 @@ export const placeOrder = async ({
 }) => {
     await ensureAuthSession();
 
+    const nowMs = Date.now();
     const resolvedUserId = auth?.currentUser?.uid ?? userId ?? "guest";
     const subtotal = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
     const { deliveryFee = 0, serviceFee = 0, discount = 0, tip = 0 } = fees;
@@ -115,7 +169,11 @@ export const placeOrder = async ({
         deliveryAddressText,
         notes: typeof notes === "string" ? notes.trim() : "",
         createdAt: serverTimestamp(),
+        createdAtMs: nowMs,
         updatedAt: serverTimestamp(),
+        updatedAtMs: nowMs,
+        statusChangedAt: serverTimestamp(),
+        statusChangedAtMs: nowMs,
     }));
     return ref.id;
 };
@@ -186,17 +244,28 @@ export const requestOrderReminder = async (
         reminderRequestedBy: payload.userId || "unknown",
         reminderSource: payload.source || "customer",
         updatedAt: serverTimestamp(),
+        updatedAtMs: Date.now(),
     });
 };
 
-export const transitionOrder = async (orderId: string, status: OrderStatus | string) =>
-    updateDoc(doc(ensureDb(), "orders", orderId), {
-        status,
-        ...(status !== "pending"
-            ? {
-                  reminderPending: false,
-                  reminderHandledAt: serverTimestamp(),
-              }
-            : null),
-        updatedAt: serverTimestamp(),
-    });
+export const transitionOrder = async (orderId: string, status: OrderStatus | string) => {
+    const orderRef = doc(ensureDb(), "orders", orderId);
+    const orderSnapshot = await getDoc(orderRef);
+
+    if (!orderSnapshot.exists()) {
+        throw new Error("Order not found.");
+    }
+
+    const order = orderSnapshot.data() || {};
+    const nowMs = Date.now();
+    await updateDoc(orderRef, buildStatusTransitionFields(order, status, nowMs));
+
+    if (String(status || "").trim().toLowerCase() === "delivered") {
+        const restaurantId = String(order.restaurantId || "").trim();
+        if (restaurantId) {
+            await recomputeRestaurantMetrics(restaurantId).catch((error) => {
+                console.warn("[Metrics] Failed to recompute restaurant metrics after delivery", error);
+            });
+        }
+    }
+};

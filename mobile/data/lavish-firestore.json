@@ -1,305 +1,348 @@
 {
-    "restaurants": [
-        {
-            "id": "lavish",
-            "name": "Lavish",
-            "cuisine": "Pide, Izgara, Tantuni",
-            "description": "Kampüsün en doyurucu pide, ızgara ve tantuni menüleri Lavish’te.",
-            "deliveryFee": 19.9,
-            "deliveryTime": "20-30",
-            "imageUrl": "@/assets/restaurantlogo/lavishlogo.jpg",
-            "ownerId": "lavish-owner-uid",
-            "isActive": true,
-            "address": "Kalkanlı, Öğrenci Çarşısı"
-        }
-    ],
-        "categories": [
-        { "id": "pide", "name": "Pideler" },
-        { "id": "grill", "name": "Izgaralar" },
-        { "id": "tantuni", "name": "Tantuniler" },
-        { "id": "drinks", "name": "İçecekler" },
-        { "id": "pizza", "name": "Pizzalar" }
-    ],
-    "menus": [
-        {
-            "id": "pide-001",
-            "name": "Lahmacun",
-            "description": "Klasik lahmacun.",
-            "price": 90,
-            "restaurantId": "lavish",
-            "categories": [
-                "pide"
-            ]
-        },
-        {
-            "id": "pide-002",
-            "name": "Kaşarlı Lahmacun",
-            "description": "Kaşarlı özel lahmacun.",
-            "price": 120,
-            "restaurantId": "lavish",
-            "categories": [
-                "pide"
-            ]
-        },
-        {
-            "id": "pide-003",
-            "name": "Kıymalı Pide",
-            "description": "Kıymalı pide.",
-            "price": 230,
-            "restaurantId": "lavish",
-            "categories": [
-                "pide"
-            ]
-        },
-        {
-            "id": "pide-004",
-            "name": "Kıyma + Kaşarlı Pide",
-            "description": "Kıymalı ve kaşarlı pide.",
-            "price": 270,
-            "restaurantId": "lavish",
-            "categories": [
-                "pide"
-            ]
-        },
-        {
-            "id": "pide-005",
-            "name": "Kuşbaşı Pide",
-            "description": "Kuşbaşı etli pide.",
-            "price": 270,
-            "restaurantId": "lavish",
-            "categories": [
-                "pide"
-            ]
-        },
-        {
-            "id": "pide-006",
-            "name": "Kaşarlı Pide",
-            "description": "Bol kaşarlı pide.",
-            "price": 230,
-            "restaurantId": "lavish",
-            "categories": [
-                "pide"
-            ]
-        },
-        {
-            "id": "pide-007",
-            "name": "Tavuk Kaşar Pide",
-            "description": "Tavuk ve kaşarlı pide.",
-            "price": 300,
-            "restaurantId": "lavish",
-            "categories": [
-                "pide"
-            ]
-        },
-        {
-            "id": "pide-008",
-            "name": "Karışık Pide",
-            "description": "Sucuk, kaşar, kıyma karışık pide.",
-            "price": 350,
-            "restaurantId": "lavish",
-            "categories": [
-                "pide"
-            ]
-        },
-        {
-            "id": "pide-009",
-            "name": "Kaşarlı Sucuklu Pide",
-            "description": "Sucuk ve kaşarlı pide.",
-            "price": 300,
-            "restaurantId": "lavish",
-            "categories": [
-                "pide"
-            ]
-        },
-        {
-            "id": "pide-010",
-            "name": "Lavish Special Pide",
-            "description": "Özel karışım Lavish special pide.",
-            "price": 350,
-            "restaurantId": "lavish",
-            "categories": [
-                "pide"
-            ]
-        },
-        {
-            "id": "grill-001",
-            "name": "Adana Servis",
-            "description": "Adana kebap servis tabak. Çips + salata + pilav + yoğurt ile.",
-            "price": 450,
-            "restaurantId": "lavish",
-            "categories": [
-                "grill"
-            ]
-        },
-        {
-            "id": "grill-002",
-            "name": "Tavuk Şiş Servis",
-            "description": "Tavuk şiş servis tabak. Çips + salata + pilav + yoğurt ile.",
-            "price": 400,
-            "restaurantId": "lavish",
-            "categories": [
-                "grill"
-            ]
-        },
-        {
-            "id": "grill-003",
-            "name": "Köfte Servis",
-            "description": "Köfte servis tabak. Çips + salata + pilav + yoğurt ile.",
-            "price": 450,
-            "restaurantId": "lavish",
-            "categories": [
-                "grill"
-            ]
-        },
-        {
-            "id": "grill-004",
-            "name": "Kanat Servis",
-            "description": "Kanat servis tabak. Çips + salata + pilav + yoğurt ile.",
-            "price": 450,
-            "restaurantId": "lavish",
-            "categories": [
-                "grill"
-            ]
-        },
-        {
-            "id": "grill-005",
-            "name": "Tavuk Pirzola Servis",
-            "description": "Tavuk pirzola servis tabak. Çips + salata + pilav + yoğurt ile.",
-            "price": 450,
-            "restaurantId": "lavish",
-            "categories": [
-                "grill"
-            ]
-        },
-        {
-            "id": "tantuni-001",
-            "name": "Yoğurtlu Tavuk Tantuni",
-            "description": "Yoğurtlu tavuk tantuni tabak.",
-            "price": 300,
-            "restaurantId": "lavish",
-            "categories": [
-                "tantuni"
-            ]
-        },
-        {
-            "id": "tantuni-002",
-            "name": "Yoğurtlu Et Tantuni",
-            "description": "Yoğurtlu et tantuni tabak.",
-            "price": 350,
-            "restaurantId": "lavish",
-            "categories": [
-                "tantuni"
-            ]
-        },
-        {
-            "id": "tantuni-003",
-            "name": "Et Tantuni Dürüm",
-            "description": "Et tantuni dürüm.",
-            "price": 300,
-            "restaurantId": "lavish",
-            "categories": [
-                "tantuni"
-            ]
-        },
-        {
-            "id": "tantuni-004",
-            "name": "Tavuk Tantuni Dürüm",
-            "description": "Tavuk tantuni dürüm.",
-            "price": 250,
-            "restaurantId": "lavish",
-            "categories": [
-                "tantuni"
-            ]
-        },
-        {
-            "id": "drink-001",
-            "name": "Ayran",
-            "description": "Soğuk ayran.",
-            "price": 45,
-            "restaurantId": "lavish",
-            "categories": [
-                "drinks"
-            ]
-        },
-        {
-            "id": "drink-002",
-            "name": "1 LT Su",
-            "description": "1 L su.",
-            "price": 45,
-            "restaurantId": "lavish",
-            "categories": [
-                "drinks"
-            ]
-        },
-        {
-            "id": "drink-003",
-            "name": "Kutu Kola",
-            "description": "Kutu Coca-Cola.",
-            "price": 50,
-            "restaurantId": "lavish",
-            "categories": [
-                "drinks"
-            ]
-        },
-        {
-            "id": "drink-004",
-            "name": "1 LT Kola",
-            "description": "1 L Coca-Cola.",
-            "price": 70,
-            "restaurantId": "lavish",
-            "categories": [
-                "drinks"
-            ]
-        },
-        {
-            "id": "drink-005",
-            "name": "Kutu Ice Tea",
-            "description": "Kutu Ice Tea.",
-            "price": 45,
-            "restaurantId": "lavish",
-            "categories": [
-                "drinks"
-            ]
-        },
-        {
-            "id": "drink-006",
-            "name": "Kutu Fanta",
-            "description": "Kutu Fanta.",
-            "price": 50,
-            "restaurantId": "lavish",
-            "categories": [
-                "drinks"
-            ]
-        },
-        {
-            "id": "pizza-001",
-            "name": "Büyük Boy Pizza",
-            "description": "Büyük boy pizza.",
-            "price": 500,
-            "restaurantId": "lavish",
-            "categories": [
-                "pizza"
-            ]
-        },
-        {
-            "id": "pizza-002",
-            "name": "Orta Boy Pizza",
-            "description": "Orta boy pizza.",
-            "price": 350,
-            "restaurantId": "lavish",
-            "categories": [
-                "pizza"
-            ]
-        },
-        {
-            "id": "pizza-003",
-            "name": "Küçük Boy Pizza",
-            "description": "Küçük boy pizza.",
-            "price": 250,
-            "restaurantId": "lavish",
-            "categories": [
-                "pizza"
-            ]
-        }
-    ]
+  "restaurants": [
+    {
+      "id": "lavish",
+      "name": "Lavish",
+      "cuisine": "Pide · Izgara · Dürüm · Tantuni",
+      "description": "Güncel pide, ızgara, dürüm ve tantuni menüleri Lavish’te.",
+      "deliveryFee": 19.9,
+      "deliveryTime": "20-30",
+      "imageUrl": "@/assets/restaurantlogo/lavishlogo.jpg",
+      "ownerId": "lavish-owner-uid",
+      "isActive": true,
+      "address": "Kalkanlı, Öğrenci Çarşısı"
+    }
+  ],
+  "categories": [
+    {
+      "id": "pide",
+      "name": "Pideler"
+    },
+    {
+      "id": "grill",
+      "name": "Izgaralar"
+    },
+    {
+      "id": "wraps",
+      "name": "Dürümler"
+    },
+    {
+      "id": "tantuni",
+      "name": "Tantuniler"
+    },
+    {
+      "id": "drinks",
+      "name": "İçecekler"
+    }
+  ],
+  "menus": [
+    {
+      "id": "pide-001",
+      "name": "Lahmacun",
+      "description": "Klasik ince hamur lahmacun.",
+      "price": 110,
+      "restaurantId": "lavish",
+      "categories": [
+        "pide"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36100513/pexels-photo-36100513.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pide-002",
+      "name": "Kaşarlı Lahmacun",
+      "description": "Kaşar peyniriyle hazırlanan lahmacun.",
+      "price": 150,
+      "restaurantId": "lavish",
+      "categories": [
+        "pide"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/15793852/pexels-photo-15793852.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pide-003",
+      "name": "Kıymalı Kaşarlı Pide",
+      "description": "Kıymalı ve kaşarlı pide.",
+      "price": 300,
+      "restaurantId": "lavish",
+      "categories": [
+        "pide"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/15793822/pexels-photo-15793822.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pide-004",
+      "name": "Kıymalı Pide",
+      "description": "Kıymalı klasik pide.",
+      "price": 280,
+      "restaurantId": "lavish",
+      "categories": [
+        "pide"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/15793808/pexels-photo-15793808.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pide-005",
+      "name": "Kuşbaşı Kaşarlı Pide",
+      "description": "Kuşbaşı et ve kaşarlı pide.",
+      "price": 330,
+      "restaurantId": "lavish",
+      "categories": [
+        "pide"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/8290116/pexels-photo-8290116.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pide-006",
+      "name": "Kuşbaşı Pide",
+      "description": "Kuşbaşı etli pide.",
+      "price": 300,
+      "restaurantId": "lavish",
+      "categories": [
+        "pide"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/7813742/pexels-photo-7813742.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pide-007",
+      "name": "Tavuk Kaşar Pide",
+      "description": "Tavuk ve kaşarlı pide.",
+      "price": 300,
+      "restaurantId": "lavish",
+      "categories": [
+        "pide"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/9513581/pexels-photo-9513581.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pide-008",
+      "name": "Kaşarlı Pide",
+      "description": "Bol kaşarlı pide.",
+      "price": 350,
+      "restaurantId": "lavish",
+      "categories": [
+        "pide"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/8290115/pexels-photo-8290115.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pide-009",
+      "name": "Karışık Pide",
+      "description": "Karışık malzemeli pide.",
+      "price": 400,
+      "restaurantId": "lavish",
+      "categories": [
+        "pide"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/16022888/pexels-photo-16022888.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pide-010",
+      "name": "Kaşar Sucuk Pide",
+      "description": "Kaşarlı sucuklu pide.",
+      "price": 350,
+      "restaurantId": "lavish",
+      "categories": [
+        "pide"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/8290110/pexels-photo-8290110.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pide-011",
+      "name": "Lavish Special Pide",
+      "description": "Lavish özel karışım special pide.",
+      "price": 400,
+      "restaurantId": "lavish",
+      "categories": [
+        "pide"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/30878209/pexels-photo-30878209.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "grill-001",
+      "name": "Adana Servis",
+      "description": "Adana kebap servis tabağı. Çips, salata, pilav ve yoğurt ile servis edilir.",
+      "price": 500,
+      "restaurantId": "lavish",
+      "categories": [
+        "grill"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34134207/pexels-photo-34134207.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "grill-002",
+      "name": "Tavuk Şiş Servis",
+      "description": "Tavuk şiş servis tabağı. Çips, salata, pilav ve yoğurt ile servis edilir.",
+      "price": 450,
+      "restaurantId": "lavish",
+      "categories": [
+        "grill"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/16423838/pexels-photo-16423838.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "grill-003",
+      "name": "Köfte Servis",
+      "description": "Köfte servis tabağı. Çips, salata, pilav ve yoğurt ile servis edilir.",
+      "price": 450,
+      "restaurantId": "lavish",
+      "categories": [
+        "grill"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/26341210/pexels-photo-26341210.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "grill-004",
+      "name": "Tavuk Pirzola Servis",
+      "description": "Tavuk pirzola servis tabağı. Çips, salata, pilav ve yoğurt ile servis edilir.",
+      "price": 450,
+      "restaurantId": "lavish",
+      "categories": [
+        "grill"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32986493/pexels-photo-32986493.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-001",
+      "name": "Adana Dürüm",
+      "description": "Adana kebap dürüm.",
+      "price": 330,
+      "restaurantId": "lavish",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/10361459/pexels-photo-10361459.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-002",
+      "name": "Tavuk Şiş Dürüm",
+      "description": "Tavuk şiş dürüm.",
+      "price": 300,
+      "restaurantId": "lavish",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28442524/pexels-photo-28442524.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-003",
+      "name": "Et Köfte Dürüm",
+      "description": "Et köfte dürüm.",
+      "price": 330,
+      "restaurantId": "lavish",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34318137/pexels-photo-34318137.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tantuni-001",
+      "name": "Yoğurtlu Et Tantuni",
+      "description": "Yoğurtlu et tantuni tabak.",
+      "price": 380,
+      "restaurantId": "lavish",
+      "categories": [
+        "tantuni"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/15202777/pexels-photo-15202777.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tantuni-002",
+      "name": "Yoğurtlu Tavuk Tantuni",
+      "description": "Yoğurtlu tavuk tantuni tabak.",
+      "price": 330,
+      "restaurantId": "lavish",
+      "categories": [
+        "tantuni"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/15202777/pexels-photo-15202777.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tantuni-003",
+      "name": "Et Tantuni Dürüm",
+      "description": "Et tantuni dürüm.",
+      "price": 330,
+      "restaurantId": "lavish",
+      "categories": [
+        "tantuni"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34318137/pexels-photo-34318137.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tantuni-004",
+      "name": "Tavuk Tantuni Dürüm",
+      "description": "Tavuk tantuni dürüm.",
+      "price": 280,
+      "restaurantId": "lavish",
+      "categories": [
+        "tantuni"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/5175629/pexels-photo-5175629.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "drink-001",
+      "name": "Ayran",
+      "description": "Soğuk ayran.",
+      "price": 45,
+      "restaurantId": "lavish",
+      "categories": [
+        "drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/15873840/pexels-photo-15873840.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "drink-002",
+      "name": "1 LT Su",
+      "description": "1 litre su.",
+      "price": 45,
+      "restaurantId": "lavish",
+      "categories": [
+        "drinks"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F2E2CE/A87A46?text=Water"
+    },
+    {
+      "id": "drink-003",
+      "name": "Kutu Kola",
+      "description": "Kutu Coca-Cola.",
+      "price": 50,
+      "restaurantId": "lavish",
+      "categories": [
+        "drinks"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F2E2CE/A87A46?text=Cola"
+    },
+    {
+      "id": "drink-004",
+      "name": "1 LT Kola",
+      "description": "1 litre Coca-Cola.",
+      "price": 70,
+      "restaurantId": "lavish",
+      "categories": [
+        "drinks"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F2E2CE/A87A46?text=Cola"
+    },
+    {
+      "id": "drink-005",
+      "name": "Kutu Ice Tea",
+      "description": "Kutu Ice Tea.",
+      "price": 45,
+      "restaurantId": "lavish",
+      "categories": [
+        "drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17283082/pexels-photo-17283082.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "drink-006",
+      "name": "Kutu Fanta",
+      "description": "Kutu Fanta.",
+      "price": 50,
+      "restaurantId": "lavish",
+      "categories": [
+        "drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6920723/pexels-photo-6920723.jpeg?auto=compress&cs=tinysrgb&h=350"
+    }
+  ]
 }

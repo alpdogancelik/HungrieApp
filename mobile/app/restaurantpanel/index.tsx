@@ -231,6 +231,8 @@ const RestaurantPanel = () => {
     const handleToggleOrder = useCallback((orderId: string) => {
         setExpandedOrderId((current) => (current === orderId ? null : orderId));
     }, []);
+    const reviewsLabel = locale === "tr" ? "Yorumlar" : "Reviews";
+    const reviewsAccessibilityLabel = locale === "tr" ? "Yorum moderasyonunu ac" : "Open review moderation";
 
     const quickLinks = useMemo(
         () => [
@@ -262,8 +264,15 @@ const RestaurantPanel = () => {
                 onPress: () => router.push("/restaurantpanel/details"),
                 accessibilityLabel: t("a11y.editRestaurantDetails"),
             },
+            {
+                id: "reviews",
+                label: reviewsLabel,
+                iconName: "message-square" as const,
+                onPress: () => router.push("/restaurantpanel/reviews"),
+                accessibilityLabel: reviewsAccessibilityLabel,
+            },
         ],
-        [handleGoToActiveOrders, router, t],
+        [handleGoToActiveOrders, reviewsAccessibilityLabel, reviewsLabel, router, t],
     );
 
     const sessionIdentity = user?.email || user?.name || t("common.na");
@@ -550,6 +559,16 @@ const RestaurantPanel = () => {
                                         style={isPhone ? styles.compactActionButton : styles.fullWidthButton}
                                         onPress={() => router.push("/restaurantpanel/details")}
                                         accessibilityLabel={t("a11y.editRestaurantDetails")}
+                                    />
+                                </View>
+                                <View style={styles.panelActionBox}>
+                                    <PanelButton
+                                        label={reviewsLabel}
+                                        variant="secondary"
+                                        iconName="message-square"
+                                        style={isPhone ? styles.compactActionButton : styles.fullWidthButton}
+                                        onPress={() => router.push("/restaurantpanel/reviews")}
+                                        accessibilityLabel={reviewsAccessibilityLabel}
                                     />
                                 </View>
                             </View>

@@ -3,827 +3,1668 @@
     {
       "id": "ada-pizza",
       "name": "Ada Pizza",
-      "cuisine": "Pizza & Dünya Mutfağı",
-      "description": "Dürümlerden pizzalara kadar kampüsün en sevilen menüleri.",
+      "cuisine": "Pizza · Dürüm · Burger · Tavuk Yemekleri",
+      "description": "Kalkanlı Köy Meydanı'nda pizza, dürüm, burger ve tavuk yemekleri.",
       "deliveryFee": 24.9,
       "deliveryTime": "25-35",
       "imageUrl": "@/assets/restaurantlogo/adapizzalogo.jpg",
       "ownerId": "ada-pizza-owner-uid",
       "isActive": true,
-      "address": "Kalkanlı"
+      "address": "Kalkanlı Köy Meydanı"
     }
   ],
-    "categories": [
-    { "id": "wraps", "name": "Dürümler" },
-    { "id": "burgers", "name": "Burgerler" },
-    { "id": "chips", "name": "Chips" },
-    { "id": "sauces", "name": "Soslar" },
-    { "id": "pizzas", "name": "Pizzalar" },
-    { "id": "mains", "name": "Ana Yemekler" },
-    { "id": "pan", "name": "Tava Yemekleri" },
-    { "id": "cold-drinks", "name": "Soğuk İçecekler" },
-    { "id": "hot-drinks", "name": "Sıcak İçecekler" }
+  "categories": [
+    {
+      "id": "campaigns",
+      "name": "Kampanya Menü"
+    },
+    {
+      "id": "pizzas",
+      "name": "Pizzalar"
+    },
+    {
+      "id": "burgers",
+      "name": "Burgerler"
+    },
+    {
+      "id": "wraps",
+      "name": "Dürümler"
+    },
+    {
+      "id": "mains",
+      "name": "Ana Yemekler"
+    },
+    {
+      "id": "pan",
+      "name": "Tava Yemekleri"
+    },
+    {
+      "id": "pastas",
+      "name": "Makarnalar"
+    },
+    {
+      "id": "chips",
+      "name": "Chips"
+    },
+    {
+      "id": "sauces",
+      "name": "Soslar"
+    },
+    {
+      "id": "cold-drinks",
+      "name": "Soğuk İçecekler"
+    },
+    {
+      "id": "hot-drinks",
+      "name": "Sıcak İçecekler"
+    }
   ],
   "menus": [
     {
-      "id": "wrap-001",
-      "name": "Tavuk Şiş Dürüm",
-      "description": "Marineli tavuk şiş, köz sebze, özel lavaş.",
-      "price": 12,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "wraps"
-      ]
-    },
-    {
-      "id": "wrap-002",
-      "name": "Çıtır Tavuk Dürüm",
-      "description": "Pane tavuk, çıtır lavaş, sarımsaklı sos.",
-      "price": 280,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "wraps"
-      ]
-    },
-    {
-      "id": "wrap-003",
-      "name": "Tenders Dürüm",
-      "description": "Ada tenders, ranch sos, turşu.",
-      "price": 280,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "wraps"
-      ]
-    },
-    {
-      "id": "wrap-004",
-      "name": "Et Köfte Dürüm",
-      "description": "Şef köftesi, köz biber, sumaklı soğan.",
-      "price": 290,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "wraps"
-      ]
-    },
-    {
-      "id": "wrap-005",
-      "name": "Şefin Dürümü",
-      "description": "Gizli soslu dana + tavuk karışımı.",
-      "price": 290,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "wraps"
-      ]
-    },
-    {
-      "id": "wrap-006",
-      "name": "Popcorn Dürüm",
-      "description": "Popcorn tavuk, ranch, çıtır patates.",
-      "price": 280,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "wraps"
-      ]
-    },
-    {
-      "id": "wrap-007",
-      "name": "Fajita Dürüm",
-      "description": "Izgara biber, tavuk, cheddar, fajita sos.",
-      "price": 300,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "wraps"
-      ]
-    },
-    {
-      "id": "wrap-008",
-      "name": "Ekstra Lavaş",
-      "description": "Eşlikçi ekstra lavaş.",
-      "price": 30,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "wraps"
-      ]
-    },
-    {
-      "id": "burger-001",
-      "name": "Chicken Burger + Chips",
-      "description": "Crispy tavuk burger, patates kızartması.",
-      "price": 310,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "burgers"
-      ]
-    },
-    {
-      "id": "burger-002",
-      "name": "Double Chicken Burger + Chips",
-      "description": "İki kat tavuk, cheddar, patates.",
-      "price": 390,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "burgers"
-      ]
-    },
-    {
-      "id": "burger-003",
-      "name": "Hamburger + Chips",
-      "description": "Dana burger ve çıtır patates.",
-      "price": 350,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "burgers"
-      ]
-    },
-    {
-      "id": "burger-004",
-      "name": "Double Hamburger + Chips",
-      "description": "Çift dana köfte ve patates.",
-      "price": 390,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "burgers"
-      ]
-    },
-    {
-      "id": "burger-005",
-      "name": "Cheese Eklemesi",
-      "description": "Her burger için ekstra peynir.",
-      "price": 40,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "burgers"
-      ]
-    },
-    {
-      "id": "chips-001",
-      "name": "Küçük Chips",
-      "description": "Tek kişilik taze patates.",
-      "price": 100,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "chips"
-      ]
-    },
-    {
-      "id": "chips-002",
-      "name": "Büyük Chips",
-      "description": "Paylaşımlık patates kızartması.",
-      "price": 160,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "chips"
-      ]
-    },
-    {
-      "id": "sauce-001",
-      "name": "Sarı Sos",
-      "description": "Ada'nın imza sarı sosu.",
-      "price": 30,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "sauces"
-      ]
-    },
-    {
-      "id": "sauce-002",
-      "name": "Acı Sos",
-      "description": "Acı sevenler için.",
-      "price": 30,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "sauces"
-      ]
-    },
-    {
-      "id": "sauce-003",
-      "name": "Barbekü Sos",
-      "description": "Tatlı dumanlı sos.",
-      "price": 30,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "sauces"
-      ]
-    },
-    {
-      "id": "sauce-004",
-      "name": "Ranch Sos",
-      "description": "Kremalı ranch.",
-      "price": 30,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "sauces"
-      ]
-    },
-    {
-      "id": "pizza-001",
-      "name": "İtalyan Pizza",
-      "description": "30 cm ince hamur; domates, mozarella.",
+      "id": "campaign-001",
+      "name": "Süper Pizza Menü",
+      "description": "Seçeceğiniz orta boy pizza + küçük cips + kola.",
       "price": 470,
       "restaurantId": "ada-pizza",
       "categories": [
-        "pizzas"
-      ]
+        "campaigns"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6151203/pexels-photo-6151203.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
-      "id": "pizza-002",
-      "name": "Sucuklu İtalyan",
-      "description": "Kalın dilim dana sucuklu pizza 30 cm.",
-      "price": 420,
+      "id": "campaign-002",
+      "name": "Orta Boy Pizza Menü",
+      "description": "Seçeceğiniz orta boy pizza + 3'lü tavuk + cips + 1 lt kola.",
+      "price": 520,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "campaigns"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/16939093/pexels-photo-16939093.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "campaign-003",
+      "name": "Large Pizza Menü",
+      "description": "Seçeceğiniz büyük boy pizza + büyük cips + 1 lt kola.",
+      "price": 590,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "campaigns"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/20115308/pexels-photo-20115308.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "campaign-004",
+      "name": "2'li Orta Boy Pizza Menü",
+      "description": "Seçeceğiniz 2 orta boy pizza + 1 lt kola.",
+      "price": 780,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "campaigns"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/27874930/pexels-photo-27874930.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "campaign-005",
+      "name": "2'li Büyük Boy Pizza Menü",
+      "description": "Seçeceğiniz 2 büyük boy pizza + 1 lt kola.",
+      "price": 960,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "campaigns"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36741918/pexels-photo-36741918.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "campaign-006",
+      "name": "Süper Aile Paketi",
+      "description": "Seçeceğiniz aile boy pizza + 8'li çıtır tavuk + büyük cips + 1 lt kola.",
+      "price": 950,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "campaigns"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/25185061/pexels-photo-25185061.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "campaign-007",
+      "name": "Party Box Menü",
+      "description": "Seçeceğiniz aile boy pizza + 4'lü soğan halkası + 4'lü çıtır tavuk + büyük cips + 1 lt kola.",
+      "price": 930,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "campaigns"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11432074/pexels-photo-11432074.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "campaign-008",
+      "name": "Dürüm Menü",
+      "description": "Seçeceğiniz 2 adet dürüm + 1 lt kola.",
+      "price": 650,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "campaigns"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/10361459/pexels-photo-10361459.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-tavuk-small",
+      "name": "Tavuk Pizza (20 cm)",
+      "description": "Mozarella, tavuk parçaları, yeşil biber, mantar, domates, zeytin, kekik.",
+      "price": 330,
       "restaurantId": "ada-pizza",
       "categories": [
         "pizzas"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34382326/pexels-photo-34382326.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
-      "id": "pizza-003",
-      "name": "Karışık Pizza",
-      "description": "Sucuk, salam, mantar karışımı (30 cm).",
-      "price": 420,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "pizzas"
-      ]
-    },
-    {
-      "id": "pizza-004",
-      "name": "Ada Special",
-      "description": "Şef seçkisi özel malzemeler (30 cm).",
-      "price": 420,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "pizzas"
-      ]
-    },
-    {
-      "id": "pizza-005",
-      "name": "Marios Pizza",
-      "description": "İtalyan usulü, zengin malzeme (30 cm).",
-      "price": 420,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "pizzas"
-      ]
-    },
-    {
-      "id": "pizza-006",
-      "name": "Vejetaryen Pizza",
-      "description": "Sebze karışımı, özel sos (30 cm).",
-      "price": 420,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "pizzas"
-      ]
-    },
-    {
-      "id": "pizza-007",
-      "name": "Akdeniz Pizza",
-      "description": "Zeytin, hellim, kekik ile (30 cm).",
-      "price": 420,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "pizzas"
-      ]
-    },
-    {
-      "id": "pizza-008",
-      "name": "Tavuklu Pizza",
-      "description": "Izgara tavuk parçaları (30 cm).",
-      "price": 420,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "pizzas"
-      ]
-    },
-    {
-      "id": "pizza-009",
-      "name": "Beef Pizza",
-      "description": "Dana eti, mozarella (30 cm).",
-      "price": 420,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "pizzas"
-      ]
-    },
-    {
-      "id": "pizza-010",
-      "name": "Chef’s Pizza",
-      "description": "Şefin gizli tarifli pizzası.",
-      "price": 420,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "pizzas"
-      ]
-    },
-    {
-      "id": "pizza-011",
-      "name": "Hellimli Pizza",
-      "description": "Hellim, zeytin, biber (30 cm).",
-      "price": 420,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "pizzas"
-      ]
-    },
-    {
-      "id": "pizza-012",
-      "name": "Köri Soslu Pizza",
-      "description": "Köri soslu tavuklu pizza (30 cm).",
-      "price": 420,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "pizzas"
-      ]
-    },
-    {
-      "id": "pizza-013",
-      "name": "BBQ Pizza",
-      "description": "BBQ soslu dana eti (30 cm).",
-      "price": 420,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "pizzas"
-      ]
-    },
-    {
-      "id": "pizza-014",
-      "name": "Margarita",
-      "description": "Klasik domates & mozarella (30 cm).",
-      "price": 420,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "pizzas"
-      ]
-    },
-    {
-      "id": "pizza-015",
-      "name": "Pepperoni Pizza",
-      "description": "Pepperoni dilimleri, mozarella (30 cm).",
-      "price": 420,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "pizzas"
-      ]
-    },
-    {
-      "id": "pizza-016",
-      "name": "Mantar Keyfi",
-      "description": "Taze kültür mantarı (30 cm).",
-      "price": 420,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "pizzas"
-      ]
-    },
-    {
-      "id": "pizza-017",
-      "name": "Sucuk Keyfi",
-      "description": "Bol sucuklu pizza (30 cm).",
-      "price": 420,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "pizzas"
-      ]
-    },
-    {
-      "id": "pizza-018",
-      "name": "Balık Etli Pizza",
-      "description": "Deniz ürünlü seçenek (30 cm).",
-      "price": 420,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "pizzas"
-      ]
-    },
-    {
-      "id": "pizza-019",
-      "name": "Sosisli Pizza",
-      "description": "Dana sosis, mısır (30 cm).",
-      "price": 420,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "pizzas"
-      ]
-    },
-    {
-      "id": "pizza-020",
-      "name": "Etine Dolgun",
-      "description": "Bol dana etli pizza (30 cm).",
-      "price": 420,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "pizzas"
-      ]
-    },
-    {
-      "id": "pizza-021",
-      "name": "Super Supreme",
-      "description": "Her şeyden biraz (30 cm).",
-      "price": 420,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "pizzas"
-      ]
-    },
-    {
-      "id": "pizza-022",
-      "name": "Barbekü Soslu Pizza",
-      "description": "BBQ soslu karışık malzeme (30 cm).",
+      "id": "pizza-tavuk-medium",
+      "name": "Tavuk Pizza (26 cm)",
+      "description": "Mozarella, tavuk parçaları, yeşil biber, mantar, domates, zeytin, kekik.",
       "price": 430,
       "restaurantId": "ada-pizza",
       "categories": [
         "pizzas"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/33457575/pexels-photo-33457575.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
-      "id": "pizza-023",
-      "name": "Etli Pizza",
-      "description": "Dana eti, biber, mozarella (30 cm).",
+      "id": "pizza-tavuk-large",
+      "name": "Tavuk Pizza (30 cm)",
+      "description": "Mozarella, tavuk parçaları, yeşil biber, mantar, domates, zeytin, kekik.",
+      "price": 520,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/2260561/pexels-photo-2260561.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-tavuk-family",
+      "name": "Tavuk Pizza (Aile Boy)",
+      "description": "Mozarella, tavuk parçaları, yeşil biber, mantar, domates, zeytin, kekik.",
+      "price": 760,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/4833636/pexels-photo-4833636.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-balik-etli-small",
+      "name": "Balık Etli Pizza (20 cm)",
+      "description": "Mozarella, ton balığı, yeşil biber, soğan, mısır.",
+      "price": 340,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36925834/pexels-photo-36925834.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-balik-etli-medium",
+      "name": "Balık Etli Pizza (26 cm)",
+      "description": "Mozarella, ton balığı, yeşil biber, soğan, mısır.",
+      "price": 440,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11432074/pexels-photo-11432074.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-balik-etli-large",
+      "name": "Balık Etli Pizza (30 cm)",
+      "description": "Mozarella, ton balığı, yeşil biber, soğan, mısır.",
+      "price": 540,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/25185061/pexels-photo-25185061.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-balik-etli-family",
+      "name": "Balık Etli Pizza (Aile Boy)",
+      "description": "Mozarella, ton balığı, yeşil biber, soğan, mısır.",
+      "price": 790,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36741918/pexels-photo-36741918.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-etine-doygun-small",
+      "name": "Etine Doygun Pizza (20 cm)",
+      "description": "Mozarella, sucuk, salam, sosis, tavuk parçaları.",
+      "price": 330,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28646989/pexels-photo-28646989.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-etine-doygun-medium",
+      "name": "Etine Doygun Pizza (26 cm)",
+      "description": "Mozarella, sucuk, salam, sosis, tavuk parçaları.",
+      "price": 430,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/25185010/pexels-photo-25185010.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-etine-doygun-large",
+      "name": "Etine Doygun Pizza (30 cm)",
+      "description": "Mozarella, sucuk, salam, sosis, tavuk parçaları.",
+      "price": 520,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/33457581/pexels-photo-33457581.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-etine-doygun-family",
+      "name": "Etine Doygun Pizza (Aile Boy)",
+      "description": "Mozarella, sucuk, salam, sosis, tavuk parçaları.",
+      "price": 760,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28097402/pexels-photo-28097402.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-super-supreme-small",
+      "name": "Super Supreme Pizza (20 cm)",
+      "description": "Mozarella, salam, tavuk, yeşil biber, mantar, zeytin.",
+      "price": 330,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/26575536/pexels-photo-26575536.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-super-supreme-medium",
+      "name": "Super Supreme Pizza (26 cm)",
+      "description": "Mozarella, salam, tavuk, yeşil biber, mantar, zeytin.",
+      "price": 430,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11485217/pexels-photo-11485217.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-super-supreme-large",
+      "name": "Super Supreme Pizza (30 cm)",
+      "description": "Mozarella, salam, tavuk, yeşil biber, mantar, zeytin.",
+      "price": 520,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28647033/pexels-photo-28647033.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-super-supreme-family",
+      "name": "Super Supreme Pizza (Aile Boy)",
+      "description": "Mozarella, salam, tavuk, yeşil biber, mantar, zeytin.",
+      "price": 760,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/7595967/pexels-photo-7595967.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-barbeku-soslu-small",
+      "name": "Barbekü Soslu Pizza (20 cm)",
+      "description": "Mozarella, tavuk, yeşil biber, kırmızı biber, soğan, BBQ sos.",
+      "price": 330,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/33458049/pexels-photo-33458049.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-barbeku-soslu-medium",
+      "name": "Barbekü Soslu Pizza (26 cm)",
+      "description": "Mozarella, tavuk, yeşil biber, kırmızı biber, soğan, BBQ sos.",
+      "price": 430,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/33458048/pexels-photo-33458048.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-barbeku-soslu-large",
+      "name": "Barbekü Soslu Pizza (30 cm)",
+      "description": "Mozarella, tavuk, yeşil biber, kırmızı biber, soğan, BBQ sos.",
+      "price": 520,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/33458051/pexels-photo-33458051.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-barbeku-soslu-family",
+      "name": "Barbekü Soslu Pizza (Aile Boy)",
+      "description": "Mozarella, tavuk, yeşil biber, kırmızı biber, soğan, BBQ sos.",
+      "price": 760,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/14906564/pexels-photo-14906564.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-chefs-small",
+      "name": "Chef's Pizza (20 cm)",
+      "description": "Mozarella, sucuk, domates, yumurta.",
+      "price": 330,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11663567/pexels-photo-11663567.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-chefs-medium",
+      "name": "Chef's Pizza (26 cm)",
+      "description": "Mozarella, sucuk, domates, yumurta.",
+      "price": 430,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/9513580/pexels-photo-9513580.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-chefs-large",
+      "name": "Chef's Pizza (30 cm)",
+      "description": "Mozarella, sucuk, domates, yumurta.",
+      "price": 520,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/4394617/pexels-photo-4394617.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-chefs-family",
+      "name": "Chef's Pizza (Aile Boy)",
+      "description": "Mozarella, sucuk, domates, yumurta.",
+      "price": 760,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/4394625/pexels-photo-4394625.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-mantar-keyfi-small",
+      "name": "Mantar Keyfi Pizza (20 cm)",
+      "description": "Mozarella, bol mantar.",
+      "price": 330,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36375369/pexels-photo-36375369.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-mantar-keyfi-medium",
+      "name": "Mantar Keyfi Pizza (26 cm)",
+      "description": "Mozarella, bol mantar.",
+      "price": 430,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11432059/pexels-photo-11432059.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-mantar-keyfi-large",
+      "name": "Mantar Keyfi Pizza (30 cm)",
+      "description": "Mozarella, bol mantar.",
+      "price": 520,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6147834/pexels-photo-6147834.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-mantar-keyfi-family",
+      "name": "Mantar Keyfi Pizza (Aile Boy)",
+      "description": "Mozarella, bol mantar.",
+      "price": 760,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/29699537/pexels-photo-29699537.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-etli-small",
+      "name": "Etli Pizza (20 cm)",
+      "description": "Mozarella, et parçaları, kırmızı biber, soğan, pizza baharatı.",
+      "price": 340,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/7595967/pexels-photo-7595967.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-etli-medium",
+      "name": "Etli Pizza (26 cm)",
+      "description": "Mozarella, et parçaları, kırmızı biber, soğan, pizza baharatı.",
+      "price": 440,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/27582711/pexels-photo-27582711.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-etli-large",
+      "name": "Etli Pizza (30 cm)",
+      "description": "Mozarella, et parçaları, kırmızı biber, soğan, pizza baharatı.",
+      "price": 540,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/26575499/pexels-photo-26575499.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-etli-family",
+      "name": "Etli Pizza (Aile Boy)",
+      "description": "Mozarella, et parçaları, kırmızı biber, soğan, pizza baharatı.",
+      "price": 790,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17637064/pexels-photo-17637064.png?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-sucuklu-italyan-small",
+      "name": "Sucuklu İtalyan Pizza (20 cm)",
+      "description": "Mozarella, sucuk, yeşil biber, zeytin, dilim biber, kekik.",
+      "price": 330,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/27582711/pexels-photo-27582711.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-sucuklu-italyan-medium",
+      "name": "Sucuklu İtalyan Pizza (26 cm)",
+      "description": "Mozarella, sucuk, yeşil biber, zeytin, dilim biber, kekik.",
+      "price": 430,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/26575499/pexels-photo-26575499.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-sucuklu-italyan-large",
+      "name": "Sucuklu İtalyan Pizza (30 cm)",
+      "description": "Mozarella, sucuk, yeşil biber, zeytin, dilim biber, kekik.",
+      "price": 520,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17637064/pexels-photo-17637064.png?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-sucuklu-italyan-family",
+      "name": "Sucuklu İtalyan Pizza (Aile Boy)",
+      "description": "Mozarella, sucuk, yeşil biber, zeytin, dilim biber, kekik.",
+      "price": 760,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28646989/pexels-photo-28646989.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-italyan-small",
+      "name": "İtalyan Pizza (20 cm)",
+      "description": "Mozarella, salam, yeşil biber, zeytin, pul biber, kekik.",
+      "price": 320,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17637066/pexels-photo-17637066.png?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-italyan-medium",
+      "name": "İtalyan Pizza (26 cm)",
+      "description": "Mozarella, salam, yeşil biber, zeytin, pul biber, kekik.",
       "price": 420,
       "restaurantId": "ada-pizza",
       "categories": [
         "pizzas"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34382326/pexels-photo-34382326.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-italyan-large",
+      "name": "İtalyan Pizza (30 cm)",
+      "description": "Mozarella, salam, yeşil biber, zeytin, pul biber, kekik.",
+      "price": 500,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/33457575/pexels-photo-33457575.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-italyan-family",
+      "name": "İtalyan Pizza (Aile Boy)",
+      "description": "Mozarella, salam, yeşil biber, zeytin, pul biber, kekik.",
+      "price": 710,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/2260561/pexels-photo-2260561.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-karisik-small",
+      "name": "Karışık Pizza (20 cm)",
+      "description": "Mozarella, sucuk, salam, sosis, mantar, yeşil biber, domates, mısır, zeytin.",
+      "price": 330,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/5903378/pexels-photo-5903378.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-karisik-medium",
+      "name": "Karışık Pizza (26 cm)",
+      "description": "Mozarella, sucuk, salam, sosis, mantar, yeşil biber, domates, mısır, zeytin.",
+      "price": 430,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/35625385/pexels-photo-35625385.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-karisik-large",
+      "name": "Karışık Pizza (30 cm)",
+      "description": "Mozarella, sucuk, salam, sosis, mantar, yeşil biber, domates, mısır, zeytin.",
+      "price": 520,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/35675695/pexels-photo-35675695.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-karisik-family",
+      "name": "Karışık Pizza (Aile Boy)",
+      "description": "Mozarella, sucuk, salam, sosis, mantar, yeşil biber, domates, mısır, zeytin.",
+      "price": 760,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32952940/pexels-photo-32952940.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-marios-small",
+      "name": "Marios Pizza (20 cm)",
+      "description": "Mozarella, sucuk, mantar.",
+      "price": 330,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/9513580/pexels-photo-9513580.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-marios-medium",
+      "name": "Marios Pizza (26 cm)",
+      "description": "Mozarella, sucuk, mantar.",
+      "price": 430,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/4394617/pexels-photo-4394617.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-marios-large",
+      "name": "Marios Pizza (30 cm)",
+      "description": "Mozarella, sucuk, mantar.",
+      "price": 520,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/4394625/pexels-photo-4394625.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-marios-family",
+      "name": "Marios Pizza (Aile Boy)",
+      "description": "Mozarella, sucuk, mantar.",
+      "price": 760,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36925834/pexels-photo-36925834.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-vegeterian-small",
+      "name": "Vegeterian Pizza (20 cm)",
+      "description": "Mozarella, mantar, yeşil biber, dilim domates, soğan, mısır, zeytin.",
+      "price": 320,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/35625385/pexels-photo-35625385.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-vegeterian-medium",
+      "name": "Vegeterian Pizza (26 cm)",
+      "description": "Mozarella, mantar, yeşil biber, dilim domates, soğan, mısır, zeytin.",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/35675695/pexels-photo-35675695.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-vegeterian-large",
+      "name": "Vegeterian Pizza (30 cm)",
+      "description": "Mozarella, mantar, yeşil biber, dilim domates, soğan, mısır, zeytin.",
+      "price": 500,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32952940/pexels-photo-32952940.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-vegeterian-family",
+      "name": "Vegeterian Pizza (Aile Boy)",
+      "description": "Mozarella, mantar, yeşil biber, dilim domates, soğan, mısır, zeytin.",
+      "price": 710,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17637066/pexels-photo-17637066.png?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-hellimli-small",
+      "name": "Hellimli Pizza (20 cm)",
+      "description": "Mozarella, hellim, sucuk, domates, zeytin.",
+      "price": 330,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/4833636/pexels-photo-4833636.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-hellimli-medium",
+      "name": "Hellimli Pizza (26 cm)",
+      "description": "Mozarella, hellim, sucuk, domates, zeytin.",
+      "price": 430,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/26575536/pexels-photo-26575536.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-hellimli-large",
+      "name": "Hellimli Pizza (30 cm)",
+      "description": "Mozarella, hellim, sucuk, domates, zeytin.",
+      "price": 520,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11485217/pexels-photo-11485217.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-hellimli-family",
+      "name": "Hellimli Pizza (Aile Boy)",
+      "description": "Mozarella, hellim, sucuk, domates, zeytin.",
+      "price": 760,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28647033/pexels-photo-28647033.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-akdeniz-small",
+      "name": "Akdeniz Pizza (20 cm)",
+      "description": "Mozarella, beyaz peynir, domates, zeytin, mısır, kekik.",
+      "price": 330,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/27874930/pexels-photo-27874930.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-akdeniz-medium",
+      "name": "Akdeniz Pizza (26 cm)",
+      "description": "Mozarella, beyaz peynir, domates, zeytin, mısır, kekik.",
+      "price": 430,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/20115308/pexels-photo-20115308.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-akdeniz-large",
+      "name": "Akdeniz Pizza (30 cm)",
+      "description": "Mozarella, beyaz peynir, domates, zeytin, mısır, kekik.",
+      "price": 520,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/16939093/pexels-photo-16939093.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-akdeniz-family",
+      "name": "Akdeniz Pizza (Aile Boy)",
+      "description": "Mozarella, beyaz peynir, domates, zeytin, mısır, kekik.",
+      "price": 760,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6151203/pexels-photo-6151203.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-sucuk-keyfi-small",
+      "name": "Sucuk Keyfi Pizza (20 cm)",
+      "description": "Mozarella, bol sucuk.",
+      "price": 330,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32795466/pexels-photo-32795466.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-sucuk-keyfi-medium",
+      "name": "Sucuk Keyfi Pizza (26 cm)",
+      "description": "Mozarella, bol sucuk.",
+      "price": 430,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/10893995/pexels-photo-10893995.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-sucuk-keyfi-large",
+      "name": "Sucuk Keyfi Pizza (30 cm)",
+      "description": "Mozarella, bol sucuk.",
+      "price": 520,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/30301971/pexels-photo-30301971.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-sucuk-keyfi-family",
+      "name": "Sucuk Keyfi Pizza (Aile Boy)",
+      "description": "Mozarella, bol sucuk.",
+      "price": 760,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36370808/pexels-photo-36370808.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-margarita-small",
+      "name": "Margarita Pizza (20 cm)",
+      "description": "Mozarella, domates.",
+      "price": 320,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31300969/pexels-photo-31300969.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-margarita-medium",
+      "name": "Margarita Pizza (26 cm)",
+      "description": "Mozarella, domates.",
+      "price": 420,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31136887/pexels-photo-31136887.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-margarita-large",
+      "name": "Margarita Pizza (30 cm)",
+      "description": "Mozarella, domates.",
+      "price": 500,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31596394/pexels-photo-31596394.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-margarita-family",
+      "name": "Margarita Pizza (Aile Boy)",
+      "description": "Mozarella, domates.",
+      "price": 710,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/20115306/pexels-photo-20115306.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-pepperoni-small",
+      "name": "Pepperoni Pizza (20 cm)",
+      "description": "Mozarella, pepperoni, sucuk.",
+      "price": 330,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17907810/pexels-photo-17907810.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-pepperoni-medium",
+      "name": "Pepperoni Pizza (26 cm)",
+      "description": "Mozarella, pepperoni, sucuk.",
+      "price": 430,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/30301974/pexels-photo-30301974.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-pepperoni-large",
+      "name": "Pepperoni Pizza (30 cm)",
+      "description": "Mozarella, pepperoni, sucuk.",
+      "price": 520,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36838155/pexels-photo-36838155.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-pepperoni-family",
+      "name": "Pepperoni Pizza (Aile Boy)",
+      "description": "Mozarella, pepperoni, sucuk.",
+      "price": 760,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/2762933/pexels-photo-2762933.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-kori-soslu-small",
+      "name": "Köri Soslu Pizza (20 cm)",
+      "description": "Tavuk, sucuk, mısır, köri baharatı.",
+      "price": 330,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/10266269/pexels-photo-10266269.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-kori-soslu-medium",
+      "name": "Köri Soslu Pizza (26 cm)",
+      "description": "Tavuk, sucuk, mısır, köri baharatı.",
+      "price": 430,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/20281834/pexels-photo-20281834.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-kori-soslu-large",
+      "name": "Köri Soslu Pizza (30 cm)",
+      "description": "Tavuk, sucuk, mısır, köri baharatı.",
+      "price": 520,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/20555502/pexels-photo-20555502.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-kori-soslu-family",
+      "name": "Köri Soslu Pizza (Aile Boy)",
+      "description": "Tavuk, sucuk, mısır, köri baharatı.",
+      "price": 760,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/19786214/pexels-photo-19786214.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-sosisli-small",
+      "name": "Sosisli Pizza (20 cm)",
+      "description": "Mozarella, bol sosis, mantar, mısır.",
+      "price": 330,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/25185010/pexels-photo-25185010.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-sosisli-medium",
+      "name": "Sosisli Pizza (26 cm)",
+      "description": "Mozarella, bol sosis, mantar, mısır.",
+      "price": 430,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/33457581/pexels-photo-33457581.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-sosisli-large",
+      "name": "Sosisli Pizza (30 cm)",
+      "description": "Mozarella, bol sosis, mantar, mısır.",
+      "price": 520,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28097402/pexels-photo-28097402.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizza-sosisli-family",
+      "name": "Sosisli Pizza (Aile Boy)",
+      "description": "Mozarella, bol sosis, mantar, mısır.",
+      "price": 760,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11663567/pexels-photo-11663567.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "main-001",
-      "name": "Tavuk Dolma",
-      "description": "İç pilavlı tavuk dolma.",
-      "price": 400,
+      "name": "Piliç Sarma",
+      "description": "Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 500,
       "restaurantId": "ada-pizza",
       "categories": [
         "mains"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34134207/pexels-photo-34134207.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "main-002",
-      "name": "Tenders Tabak",
-      "description": "6 parça tenders, salata, patates.",
-      "price": 390,
+      "name": "Pilav Üstü Tavuk Izgara",
+      "description": "Pilav üstü tavuk ızgara. Patates cipsi ve salata ile servis edilir.",
+      "price": 420,
       "restaurantId": "ada-pizza",
       "categories": [
         "mains"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32986493/pexels-photo-32986493.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "main-003",
-      "name": "Gujons",
-      "description": "Köri soslu gujon tavuk.",
-      "price": 390,
+      "name": "Tavuk Dolma",
+      "description": "Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 500,
       "restaurantId": "ada-pizza",
       "categories": [
         "mains"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34134207/pexels-photo-34134207.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "main-004",
-      "name": "Schnitzel",
-      "description": "Pane tavuk, limon, garnitür.",
-      "price": 390,
+      "name": "Tenders",
+      "description": "Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 490,
       "restaurantId": "ada-pizza",
       "categories": [
         "mains"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32986472/pexels-photo-32986472.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "main-005",
-      "name": "Kanat Pane",
-      "description": "Pane kanat, dip sos.",
-      "price": 390,
+      "name": "Gujon",
+      "description": "Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 490,
       "restaurantId": "ada-pizza",
       "categories": [
         "mains"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/12362924/pexels-photo-12362924.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "main-006",
-      "name": "Kentucky",
-      "description": "Kentucky usulü çıtır tabak.",
-      "price": 390,
+      "name": "Schnitzel",
+      "description": "Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 490,
       "restaurantId": "ada-pizza",
       "categories": [
         "mains"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/5175602/pexels-photo-5175602.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "main-007",
-      "name": "Tavuklu Krep",
-      "description": "Kremalı tavuklu krep sarma.",
-      "price": 390,
+      "name": "Mantar Soslu Tavuk",
+      "description": "Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 500,
       "restaurantId": "ada-pizza",
       "categories": [
         "mains"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28896610/pexels-photo-28896610.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "main-008",
-      "name": "Popcorn Servis",
-      "description": "Kova popcorn tavuk.",
-      "price": 390,
+      "name": "Kentucky",
+      "description": "Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 490,
       "restaurantId": "ada-pizza",
       "categories": [
         "mains"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28732304/pexels-photo-28732304.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "main-009",
-      "name": "Mantarlı Soslu Tavuk",
-      "description": "Kremalı mantarlı tavuk tabak.",
-      "price": 400,
+      "name": "Et Köfte",
+      "description": "Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 490,
       "restaurantId": "ada-pizza",
       "categories": [
         "mains"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/26341210/pexels-photo-26341210.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "main-010",
-      "name": "Karışık Tavuk",
-      "description": "Tavuk şiş + kanat karışımı.",
-      "price": 520,
+      "name": "Tavuk Şiş",
+      "description": "Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 490,
       "restaurantId": "ada-pizza",
       "categories": [
         "mains"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/16423838/pexels-photo-16423838.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "main-011",
-      "name": "Karışık Izgara",
-      "description": "Dana köfte, tavuk şiş, sucuk.",
-      "price": 520,
+      "name": "Tavuk Sote",
+      "description": "Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 490,
       "restaurantId": "ada-pizza",
       "categories": [
         "mains"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36885731/pexels-photo-36885731.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "main-012",
-      "name": "Et Köfte",
-      "description": "Izgara köfte tabağı.",
-      "price": 400,
+      "name": "Tavuk Kanat",
+      "description": "Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 490,
       "restaurantId": "ada-pizza",
       "categories": [
         "mains"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/16892378/pexels-photo-16892378.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "main-013",
-      "name": "Tavuk Şiş Tabak",
-      "description": "Pilav üstü tavuk şiş.",
-      "price": 390,
+      "name": "Prenses",
+      "description": "Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 500,
       "restaurantId": "ada-pizza",
       "categories": [
         "mains"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32986476/pexels-photo-32986476.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "main-014",
-      "name": "Tavuk Pirzola",
-      "description": "Marine pirzola, patates.",
-      "price": 390,
+      "name": "Diyet Tavuk",
+      "description": "Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 490,
       "restaurantId": "ada-pizza",
       "categories": [
         "mains"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17650171/pexels-photo-17650171.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "main-015",
-      "name": "Prenses Tabağı",
-      "description": "Püre, mantarlı soslu tavuk.",
-      "price": 390,
+      "name": "Karışık Tavuk",
+      "description": "Yarım tavuk dolma, 1 gujon, 1 tenders, 1 kentucky, 1 tavuk şiş. Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 660,
       "restaurantId": "ada-pizza",
       "categories": [
         "mains"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17696653/pexels-photo-17696653.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "main-016",
-      "name": "Tavuk Kanat",
-      "description": "Izgara kanat, sos.",
-      "price": 400,
+      "name": "Karışık Izgara",
+      "description": "150 gr tavuk ızgara, 1 tavuk şiş, 1 gujon, 1 kanat. Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 660,
       "restaurantId": "ada-pizza",
       "categories": [
         "mains"
-      ]
-    },
-    {
-      "id": "main-017",
-      "name": "Tavuk Sote",
-      "description": "Sebzeli tavuk sote.",
-      "price": 390,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "mains"
-      ]
-    },
-    {
-      "id": "main-018",
-      "name": "Dijon Tavuk",
-      "description": "Dijon hardallı tavuk.",
-      "price": 390,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "mains"
-      ]
-    },
-    {
-      "id": "main-019",
-      "name": "Diyet Tavuk",
-      "description": "Izgara tavuk + haşlanmış sebze.",
-      "price": 390,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "mains"
-      ]
-    },
-    {
-      "id": "main-020",
-      "name": "Mexican Usulü Tavuk",
-      "description": "Fasulye ve mısırla servis.",
-      "price": 390,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "mains"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36850060/pexels-photo-36850060.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "pan-001",
-      "name": "Hardal Soslu Tavuk",
-      "description": "Tava usulü hardallı tavuk.",
-      "price": 400,
+      "name": "Tavuk Stroganof",
+      "description": "Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 500,
       "restaurantId": "ada-pizza",
       "categories": [
         "pan"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34134207/pexels-photo-34134207.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "pan-002",
-      "name": "Chicken Stroganof",
-      "description": "Kremalı mantarlı stroganof.",
-      "price": 400,
+      "name": "Körili Tavuk Sote",
+      "description": "Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 500,
       "restaurantId": "ada-pizza",
       "categories": [
         "pan"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32986472/pexels-photo-32986472.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "pan-003",
-      "name": "Körili Tavuk Sote",
-      "description": "Köri aromalı tava tavuk.",
-      "price": 400,
+      "name": "Soya Soslu Tavuk",
+      "description": "Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 500,
       "restaurantId": "ada-pizza",
       "categories": [
         "pan"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36885731/pexels-photo-36885731.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "pan-004",
-      "name": "Soya Soslu Tavuk",
-      "description": "Asya soslu hızlı sauté.",
-      "price": 400,
+      "name": "Tavuk Güveç",
+      "description": "Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 500,
       "restaurantId": "ada-pizza",
       "categories": [
         "pan"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32986476/pexels-photo-32986476.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "pan-005",
-      "name": "Tavuk Güveç",
-      "description": "Sebzeli güveçte tavuk.",
-      "price": 400,
+      "name": "Kremalı Tavuklu Fajita",
+      "description": "Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 500,
       "restaurantId": "ada-pizza",
       "categories": [
         "pan"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17650171/pexels-photo-17650171.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "pan-006",
-      "name": "Kremalı Tavuklu Fajita",
-      "description": "Kremalı soslu fajita tabak.",
-      "price": 400,
+      "name": "Café de Paris",
+      "description": "Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 500,
       "restaurantId": "ada-pizza",
       "categories": [
         "pan"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/35872317/pexels-photo-35872317.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "pan-007",
-      "name": "Cafe de Paris",
-      "description": "Cafe de Paris soslu tavuk.",
-      "price": 400,
+      "name": "Kekikli Tavuk",
+      "description": "Patates cipsi, pilav ve salata ile servis edilir.",
+      "price": 500,
       "restaurantId": "ada-pizza",
       "categories": [
         "pan"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17696653/pexels-photo-17696653.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
-      "id": "pan-008",
-      "name": "Kekikli Tavuk",
-      "description": "Taze kekik ile marine tavuk.",
-      "price": 400,
+      "id": "pasta-001",
+      "name": "Kremalı Mantarlı Penne",
+      "description": "Krema, mantar, tavuk.",
+      "price": 430,
       "restaurantId": "ada-pizza",
       "categories": [
-        "pan"
-      ]
+        "pastas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/12667658/pexels-photo-12667658.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pasta-002",
+      "name": "Kremalı Tavuklu Penne",
+      "description": "Kremalı tavuklu penne.",
+      "price": 410,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "pastas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/35123971/pexels-photo-35123971.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-001",
+      "name": "Chicken Burger",
+      "description": "Patates cipsi ile servis edilir.",
+      "price": 380,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11001165/pexels-photo-11001165.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-002",
+      "name": "Double Chicken Burger",
+      "description": "Patates cipsi ile servis edilir.",
+      "price": 470,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/27049616/pexels-photo-27049616.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-003",
+      "name": "Hamburger",
+      "description": "Patates cipsi ile servis edilir.",
+      "price": 440,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31450802/pexels-photo-31450802.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-004",
+      "name": "Double Hamburger",
+      "description": "Patates cipsi ile servis edilir.",
+      "price": 510,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/20264649/pexels-photo-20264649.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-005",
+      "name": "Ekstra Cheese",
+      "description": "Burgerler için ekstra peynir eklemesi.",
+      "price": 50,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31450815/pexels-photo-31450815.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-001",
+      "name": "Tavuk Şiş Dürüm",
+      "description": "Lavaş içinde tavuk şiş dürüm.",
+      "price": 350,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28442524/pexels-photo-28442524.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-002",
+      "name": "Çıtır Tavuk Dürüm",
+      "description": "Lavaş içinde çıtır tavuk dürüm.",
+      "price": 350,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/10361459/pexels-photo-10361459.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-003",
+      "name": "Tenders Dürüm",
+      "description": "Lavaş içinde tenders dürüm.",
+      "price": 350,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/23221028/pexels-photo-23221028.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-004",
+      "name": "Et Köfte Dürüm",
+      "description": "Lavaş içinde et köfte dürüm.",
+      "price": 380,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34318137/pexels-photo-34318137.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-005",
+      "name": "Şefin Dürümü",
+      "description": "Şefin özel dürümü.",
+      "price": 350,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/29535635/pexels-photo-29535635.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-006",
+      "name": "Popcorn Dürüm",
+      "description": "Lavaş içinde popcorn tavuk dürüm.",
+      "price": 350,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6416559/pexels-photo-6416559.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-007",
+      "name": "Fajita Dürüm",
+      "description": "Lavaş içinde fajita dürüm.",
+      "price": 350,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/5175629/pexels-photo-5175629.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-008",
+      "name": "BBQ Soslu Hot Çıtır Dürüm",
+      "description": "BBQ soslu acılı çıtır tavuk dürüm.",
+      "price": 350,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/25856522/pexels-photo-25856522.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-009",
+      "name": "Ekstra Lavaş",
+      "description": "Ekstra lavaş.",
+      "price": 35,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/29535640/pexels-photo-29535640.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "chips-001",
+      "name": "Küçük Cips",
+      "description": "Küçük boy patates cipsi.",
+      "price": 130,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "chips"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32421783/pexels-photo-32421783.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "chips-002",
+      "name": "Büyük Cips",
+      "description": "Büyük boy patates cipsi.",
+      "price": 200,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "chips"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/115740/pexels-photo-115740.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sauce-001",
+      "name": "Sarı Sos",
+      "description": "Ada Pizza sarı sos.",
+      "price": 30,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "sauces"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Sauce"
+    },
+    {
+      "id": "sauce-002",
+      "name": "Acı Sos",
+      "description": "Acı sos.",
+      "price": 30,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "sauces"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Sauce"
+    },
+    {
+      "id": "sauce-003",
+      "name": "Barbekü Sos",
+      "description": "Barbekü sos.",
+      "price": 30,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "sauces"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Sauce"
+    },
+    {
+      "id": "sauce-004",
+      "name": "Ranch Sos",
+      "description": "Ranch sos.",
+      "price": 30,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "sauces"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Sauce"
+    },
+    {
+      "id": "sauce-005",
+      "name": "Buffalo Sos",
+      "description": "Buffalo sos.",
+      "price": 30,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "sauces"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Sauce"
     },
     {
       "id": "cold-001",
       "name": "Kutu Kola 330 ml",
-      "description": "Soğuk servis.",
-      "price": 40,
+      "description": "Soğuk servis edilir.",
+      "price": 50,
       "restaurantId": "ada-pizza",
       "categories": [
         "cold-drinks"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6920723/pexels-photo-6920723.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "cold-002",
       "name": "Cappy Karışık",
-      "description": "330 ml meyve suyu.",
-      "price": 50,
-      "restaurantId": "ada-pizza",
-      "categories": [
-        "cold-drinks"
-      ]
-    },
-    {
-      "id": "cold-003",
-      "name": "Litrelik Kola 1 lt",
-      "description": "Paylaşımlık kola.",
+      "description": "Meyve suyu.",
       "price": 60,
       "restaurantId": "ada-pizza",
       "categories": [
         "cold-drinks"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34405411/pexels-photo-34405411.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "cold-003",
+      "name": "Ice Tea Çeşitleri",
+      "description": "Soğuk ice tea çeşitleri.",
+      "price": 50,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "cold-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6413610/pexels-photo-6413610.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "cold-004",
-      "name": "Tombul Ayran",
-      "description": "Klasik tombul ayran.",
-      "price": 30,
+      "name": "1 lt Kola",
+      "description": "1 litrelik kola.",
+      "price": 70,
       "restaurantId": "ada-pizza",
       "categories": [
         "cold-drinks"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/24860312/pexels-photo-24860312.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "cold-005",
-      "name": "Sade Soda",
-      "description": "Cam şişe soda.",
-      "price": 30,
+      "name": "Tombul Ayran",
+      "description": "Tombul ayran.",
+      "price": 40,
       "restaurantId": "ada-pizza",
       "categories": [
         "cold-drinks"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/15873840/pexels-photo-15873840.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "cold-006",
-      "name": "Su 0.5 lt",
-      "description": "Yarım litre su.",
-      "price": 15,
+      "name": "Şişe Su 0.5 lt",
+      "description": "Yarım litre şişe su.",
+      "price": 20,
       "restaurantId": "ada-pizza",
       "categories": [
         "cold-drinks"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/1540235/pexels-photo-1540235.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "cold-007",
-      "name": "Su 1.5 lt",
-      "description": "Büyük boy su.",
-      "price": 30,
+      "name": "Şişe Su 1.5 lt",
+      "description": "1.5 litre şişe su.",
+      "price": 40,
       "restaurantId": "ada-pizza",
       "categories": [
         "cold-drinks"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/8217303/pexels-photo-8217303.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "cold-008",
+      "name": "Sade Soda",
+      "description": "Sade soda.",
+      "price": 40,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "cold-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/39720/pexels-photo-39720.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "hot-001",
       "name": "Nescafe",
-      "description": "Sıcak instant kahve.",
-      "price": 50,
+      "description": "Sıcak nescafe.",
+      "price": 70,
       "restaurantId": "ada-pizza",
       "categories": [
         "hot-drinks"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31120018/pexels-photo-31120018.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "hot-002",
       "name": "Türk Kahvesi",
-      "description": "Klasik Türk kahvesi.",
-      "price": 50,
+      "description": "Sıcak Türk kahvesi.",
+      "price": 70,
       "restaurantId": "ada-pizza",
       "categories": [
         "hot-drinks"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/14478416/pexels-photo-14478416.jpeg?auto=compress&cs=tinysrgb&h=350"
     },
     {
       "id": "hot-003",
       "name": "Bitki Çayı",
-      "description": "Karışık bitki çayı.",
-      "price": 30,
+      "description": "Sıcak bitki çayı.",
+      "price": 70,
       "restaurantId": "ada-pizza",
       "categories": [
         "hot-drinks"
-      ]
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34956523/pexels-photo-34956523.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "hot-004",
+      "name": "Çay",
+      "description": "İkramdır.",
+      "price": 0,
+      "restaurantId": "ada-pizza",
+      "categories": [
+        "hot-drinks"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17283082/pexels-photo-17283082.jpeg?auto=compress&cs=tinysrgb&h=350"
     }
   ]
 }

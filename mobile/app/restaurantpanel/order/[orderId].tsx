@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 
 import { subscribeOrder } from "@/src/services/firebaseOrders";
 import { mapFirestoreOrder, type PanelOrder } from "@/src/features/restaurantPanel/model/panelOrders";
@@ -72,7 +73,7 @@ const RestaurantOrderDetailScreen = () => {
                         <Text style={styles.sectionTitle}>{t("orders.items")}</Text>
                         <View style={styles.itemsWrap}>
                             {order.items.map((item, index) => (
-                            <View key={`${order.id}-item-${index}`} style={[styles.itemRow, isPhone ? styles.itemRowPhone : null]}>
+                                <View key={`${order.id}-item-${index}`} style={[styles.itemRow, isPhone ? styles.itemRowPhone : null]}>
                                     <Text style={styles.itemQty}>{Number(item.quantity || 0)}x</Text>
                                     <Text style={styles.itemName} numberOfLines={isPhone ? 2 : 1}>{item.name || t("common.itemFallback")}</Text>
                                     <Text style={styles.itemPrice}>

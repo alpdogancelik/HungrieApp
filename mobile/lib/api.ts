@@ -10,12 +10,12 @@ import { firebaseConfigured, firestore, FIREBASE_COLLECTIONS } from "./firebase"
 import { unregisterPushToken } from "./registerPushToken";
 import { filterRestaurantMenuForCustomer } from "./menuVisibility";
 import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { seedMenuByRestaurantId } from "./restaurantSeeds";
 
 const RESTAURANT_LOGO_PATH_BY_KEY: Record<string, string> = {
     adapizza: "@/assets/restaurantlogo/adapizzalogo.jpg",
     alacarte: "@/assets/restaurantlogo/alacartelogo.jpg",
     alacartecafe: "@/assets/restaurantlogo/alacartelogo.jpg",
-    hotnfresh: "@/assets/restaurantlogo/hotnfreshlogo.jpg",
     lavish: "@/assets/restaurantlogo/lavishlogo.jpg",
     munchies: "@/assets/restaurantlogo/munchieslogo.jpg",
     root: "@/assets/restaurantlogo/rootlogo.jpg",
@@ -29,6 +29,28 @@ const normalizeLogoKey = (value: unknown) =>
     String(value || "")
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "");
+
+const normalizeMenuTextKey = (value: unknown) =>
+    String(value || "")
+        .toLowerCase()
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+
+const resolveSeedMenuImageUrl = (restaurantId: string, item: any) => {
+    const seedMenu = seedMenuByRestaurantId(String(restaurantId));
+    if (!Array.isArray(seedMenu) || !seedMenu.length) return "";
+
+    const itemId = String(item?.id ?? item?.$id ?? "").trim();
+    const byId = itemId ? seedMenu.find((entry: any) => String(entry?.id || "").trim() === itemId) : null;
+    if (byId?.imageUrl) return String(byId.imageUrl);
+
+    const itemName = normalizeMenuTextKey(item?.name);
+    if (!itemName) return "";
+    const byName = seedMenu.find((entry: any) => normalizeMenuTextKey(entry?.name) === itemName);
+    return byName?.imageUrl ? String(byName.imageUrl) : "";
+};
 
 const resolveBundledRestaurantLogoPath = (restaurant: any) => {
     // Prefer stable semantic fields first; some datasets have duplicated `id` values.
@@ -191,10 +213,11 @@ export const getRestaurants = async (filters?: { search?: string; category?: str
     if (!firebaseConfigured || !firestore) return [];
 
     const restaurantsRef = collection(firestore, FIREBASE_COLLECTIONS.restaurants);
-    const snap = await getDocs(query(restaurantsRef, where("isActive", "==", true)));
-    const list = snap.docs
+    const activeSnap = await getDocs(query(restaurantsRef, where("isActive", "==", true)));
+    const baseSnap = activeSnap.empty ? await getDocs(restaurantsRef) : activeSnap;
+    const list = baseSnap.docs
         .map((d) => withBundledRestaurantLogo({ id: d.id, ...d.data() }))
-        .filter((r: any) => r.isActive !== false); // safety if field missing
+        .filter((r: any) => r.isActive !== false); // keep hidden ones filtered out if explicitly false
 
     if (!filters?.search) return list;
     const term = filters.search.toLowerCase();
@@ -297,7 +320,7 @@ export const getRestaurantMenu = async ({
         ...item,
         $id: item.id ?? `menu-${item.restaurantId}-${item.name}`,
         price: Number(item.price),
-        image_url: item.imageUrl || item.image_url || "",
+        image_url: item.imageUrl || item.image_url || resolveSeedMenuImageUrl(String(restaurantId), item) || "",
     }));
     return filterRestaurantMenuForCustomer(String(restaurantId), normalized);
 };

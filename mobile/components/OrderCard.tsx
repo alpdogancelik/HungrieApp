@@ -5,20 +5,24 @@ import type { OrderStatus, RestaurantOrder } from "@/type";
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
     pending: "Pending",
+    accepted: "Accepted",
     preparing: "Preparing",
     ready: "Ready",
     out_for_delivery: "On the way",
     delivered: "Delivered",
     canceled: "Canceled",
+    rejected: "Rejected",
 };
 
 export const ORDER_STATUS_FLOW: Record<OrderStatus, OrderStatus | null> = {
-    pending: "preparing",
+    pending: "accepted",
+    accepted: "preparing",
     preparing: "ready",
     ready: "out_for_delivery",
     out_for_delivery: "delivered",
     delivered: null,
     canceled: null,
+    rejected: null,
 };
 
 export const ORDER_STATUS_COLORS: Record<
@@ -26,11 +30,13 @@ export const ORDER_STATUS_COLORS: Record<
     { text: string; dot: string; bg: string }
 > = {
     pending: { text: "#f97316", dot: "#fed7aa", bg: "rgba(249,115,22,0.08)" },
+    accepted: { text: "#0ea5e9", dot: "#bae6fd", bg: "rgba(14,165,233,0.08)" },
     preparing: { text: "#d97706", dot: "#fde68a", bg: "rgba(217,119,6,0.08)" },
     ready: { text: "#059669", dot: "#bbf7d0", bg: "rgba(5,150,105,0.08)" },
     out_for_delivery: { text: "#0284c7", dot: "#bae6fd", bg: "rgba(2,132,199,0.08)" },
     delivered: { text: "#475569", dot: "#e2e8f0", bg: "rgba(71,85,105,0.08)" },
     canceled: { text: "#dc2626", dot: "#fecaca", bg: "rgba(220,38,38,0.08)" },
+    rejected: { text: "#dc2626", dot: "#fecaca", bg: "rgba(220,38,38,0.08)" },
 };
 
 const formatTimestamp = (value?: string) => {

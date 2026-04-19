@@ -1,0 +1,69 @@
+{
+  "byId": {
+    "ada-wrap-008": {
+      "canonicalType": "bread_placeholder",
+      "assignmentMode": "placeholder",
+      "confidence": "high",
+      "reason": "Ekstra lavash should never get wrap hero image"
+    },
+    "alacarte-extra-004": {
+      "canonicalType": "sauce_placeholder",
+      "assignmentMode": "placeholder",
+      "confidence": "high",
+      "reason": "Sauce bundle is utility item"
+    }
+  },
+  "byNormalizedName": {
+    "ekstra lavas": {
+      "canonicalType": "bread_placeholder",
+      "assignmentMode": "placeholder",
+      "confidence": "high",
+      "reason": "Lavash add-on"
+    },
+    "cheese eklemesi": {
+      "canonicalType": "addon_placeholder",
+      "assignmentMode": "placeholder",
+      "confidence": "high",
+      "reason": "Standalone cheese add-on"
+    },
+    "burger kofte": {
+      "canonicalType": "addon_placeholder",
+      "assignmentMode": "placeholder",
+      "confidence": "high",
+      "reason": "Extra burger patty add-on"
+    },
+    "hardal soslu tavuk": {
+      "canonicalType": "chicken_plate_mustard",
+      "assignmentMode": "photo",
+      "confidence": "high",
+      "reason": "Mustard chicken plate"
+    }
+  },
+  "regex": [
+    {
+      "pattern": "(^|\\s)(?:d\\d+(?:\\.\\d+)?\\s*[-:]\\s*)?cero'?s?\\s+popcorn\\s+(?:durum|wrap)(\\s|$)",
+      "flags": "i",
+      "canonicalType": "wrap_chicken_popcorn",
+      "assignmentMode": "photo",
+      "confidence": "high",
+      "reason": "Coded popcorn durum family"
+    },
+    {
+      "pattern": "(^|\\s)(?:s|m|l|kucuk|orta|buyuk)?\\s*margarita(\\s|$)",
+      "flags": "i",
+      "canonicalType": "pizza_margherita",
+      "assignmentMode": "photo",
+      "confidence": "high",
+      "reason": "Margherita size variants"
+    },
+    {
+      "pattern": "(^|\\s)(?:bbq|barbeku)\\s+sos(\\s|$)",
+      "flags": "i",
+      "canonicalType": "sauce_placeholder",
+      "assignmentMode": "placeholder",
+      "confidence": "high",
+      "reason": "Standalone BBQ sauce"
+    }
+  ]
+}
+

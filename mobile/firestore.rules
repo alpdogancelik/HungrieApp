@@ -2,21 +2,125 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isRestaurantStaffFor(restaurantId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/restaurantStaff/$(request.auth.uid))
+        && get(/databases/$(database)/documents/restaurantStaff/$(request.auth.uid)).data.restaurantId == restaurantId;
+    }
+
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
 
       match /addresses/{addressId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
       }
 
       match /pushTokens/{tokenId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
       }
+    }
+    
+    match /restaurantStaff/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow write: if false;
     }
 
     match /restaurants/{restaurantId}/pushTokens/{tokenId} {
-      allow read, write: if request.auth != null
+      allow read, write: if isSignedIn()
         && request.auth.uid == get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.ownerId;
+    }
+
+    match /orders/{orderId} {
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.restaurantId is string;
+      
+      allow read: if isSignedIn()
+        && (
+          resource.data.userId == request.auth.uid
+          || isRestaurantStaffFor(resource.data.restaurantId)
+        );
+
+      allow update: if isSignedIn()
+        && (
+          (
+            resource.data.userId == request.auth.uid
+            && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+              "reminderPending",
+              "reminderRequestedAt",
+              "reminderRequestedAtMs",
+              "reminderRequestedBy",
+              "reminderSource",
+              "updatedAt",
+              "updatedAtMs"
+            ])
+            && request.resource.data.reminderRequestedBy == request.auth.uid
+          )
+          || (
+            isRestaurantStaffFor(resource.data.restaurantId)
+            && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+              "status",
+              "statusChangedAt",
+              "statusChangedAtMs",
+              "updatedAt",
+              "updatedAtMs",
+              "reminderPending",
+              "reminderHandledAt",
+              "reminderHandledAtMs",
+              "acceptedAt",
+              "acceptedAtMs",
+              "readyAt",
+              "readyAtMs",
+              "outForDeliveryAt",
+              "outForDeliveryAtMs",
+              "deliveredAt",
+              "deliveredAtMs",
+              "canceledAt",
+              "canceledAtMs",
+              "rejectedAt",
+              "rejectedAtMs"
+            ])
+          )
+        );
+    }
+
+    match /restaurants/{restaurantId} {
+      allow read: if true;
+    }
+
+    match /menus/{menuId} {
+      allow read: if true;
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.orderId is string
+        && request.resource.data.restaurantId is string
+        && request.resource.data.menuItemId is string
+        && request.resource.data.menuItemName is string
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && !exists(/databases/$(database)/documents/reviews/$(reviewId))
+        && exists(/databases/$(database)/documents/orders/$(request.resource.data.orderId))
+        && get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.userId == request.auth.uid
+        && (
+          get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.status == "delivered"
+          || get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.status == "completed"
+        );
+
+      allow update, delete: if false;
     }
 
     match /{document=**} {

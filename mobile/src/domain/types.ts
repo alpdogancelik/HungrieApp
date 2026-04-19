@@ -9,11 +9,13 @@ export type PaymentMethod = "cash" | "pos";
 
 export type OrderStatus =
     | "pending"
+    | "accepted"
     | "preparing"
     | "ready"
     | "out_for_delivery"
     | "delivered"
-    | "canceled";
+    | "canceled"
+    | "rejected";
 
 export type Address = {
     id: string;
@@ -54,6 +56,17 @@ export type Restaurant = BaseDocument & {
     imageUrl?: string;
     image_url?: string;
     isActive: boolean;
+    ratingAverage?: number;
+    ratingCount?: number;
+    deliveryEtaAverage?: number;
+    deliveryEtaMin?: number;
+    deliveryEtaMax?: number;
+    deliveryFee?: number | string;
+    deliveryTime?: string | number;
+    minimumOrderAmount?: number | string;
+    minimumOrder?: number | string;
+    minOrderAmount?: number | string;
+    minBasketAmount?: number | string;
 };
 
 export type MenuItem = BaseDocument & {
@@ -71,6 +84,9 @@ export type MenuItem = BaseDocument & {
     calories?: number;
     protein?: number;
     rating?: number;
+    ratingAverage?: number;
+    ratingCount?: number;
+    ratingTotal?: number;
     type?: string;
     category_name?: string;
     visible?: boolean;
@@ -109,6 +125,20 @@ export type Order = {
     tip: number;
     total: number;
     etaMinutes?: number;
+    createdAtMs?: number;
+    updatedAtMs?: number;
+    acceptedAt?: string;
+    acceptedAtMs?: number;
+    readyAt?: string;
+    readyAtMs?: number;
+    outForDeliveryAt?: string;
+    outForDeliveryAtMs?: number;
+    deliveredAt?: string;
+    deliveredAtMs?: number;
+    canceledAt?: string;
+    canceledAtMs?: number;
+    rejectedAt?: string;
+    rejectedAtMs?: number;
     createdAt: string;
     updatedAt: string;
     customerName?: string;
@@ -141,7 +171,7 @@ export type RestaurantOrder = BaseDocument & {
     total?: string | number;
     status?: OrderStatus | string;
     paymentMethod?: string;
-    orderItems?: { name?: string; quantity?: number }[];
+    orderItems?: { menuItemId?: string; name?: string; quantity?: number }[];
 };
 
 export type Review = {
@@ -151,4 +181,33 @@ export type Review = {
     rating: 1 | 2 | 3 | 4 | 5;
     comment?: string;
     createdAt: string;
+};
+
+export type MenuItemReviewStatus = "published" | "hidden";
+
+export type MenuItemReview = {
+    id: string;
+    reviewKey: string;
+    orderId: string;
+    restaurantId: string;
+    restaurantName?: string;
+    menuItemId: string;
+    menuItemName?: string;
+    userId: string;
+    userName?: string;
+    rating: 1 | 2 | 3 | 4 | 5;
+    comment?: string;
+    status: MenuItemReviewStatus;
+    reply?: string;
+    replyAt?: string;
+    createdAt?: string;
+    updatedAt?: string;
+};
+
+export type RestaurantReviewSummary = {
+    average: number;
+    count: number;
+    distribution: Record<1 | 2 | 3 | 4 | 5, number>;
+    recentReviews: MenuItemReview[];
+    latestByMenuItem: Record<string, MenuItemReview>;
 };

@@ -1,12 +1,14 @@
 import type { Order, OrderStatus } from "./types";
 
 export const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-    pending: ["preparing", "canceled"],
+    pending: ["accepted", "preparing", "canceled", "rejected"],
+    accepted: ["preparing", "canceled", "rejected"],
     preparing: ["ready", "canceled"],
     ready: ["out_for_delivery", "canceled"],
     out_for_delivery: ["delivered", "canceled"],
     delivered: [],
     canceled: [],
+    rejected: [],
 };
 
 const guardRules: Partial<Record<OrderStatus, (order: Order) => boolean>> = {

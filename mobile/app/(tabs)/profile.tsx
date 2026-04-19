@@ -15,7 +15,7 @@ import { router, useRouter } from "expo-router";
 import { SectionHeader } from "@/src/components/componentRegistry";
 import { useDefaultAddress, type ManageAddressesNavigation } from "@/src/features/address/addressFeature";
 
-import { profileEmojiSet, profileIllustrations, profileImages } from "@/constants/profileMedia";
+import { profileIllustrations, profileImages } from "@/constants/profileMedia";
 
 import { subscribeUserOrders } from "@/src/services/firebaseOrders";
 import { storage } from "@/src/lib/storage";
@@ -28,8 +28,8 @@ import { makeShadow } from "@/src/lib/shadowStyle";
 import { deleteCurrentUserProfile, updateUserProfile } from "@/lib/firebaseAuth";
 import { NotificationManager } from "@/src/features/notifications/NotificationManager";
 import { seedRestaurants } from "@/lib/restaurantSeeds";
+import { fetchUserReviews } from "@/src/services/menuItemReviews";
 
-const EMOJI_OPTIONS = Object.values(profileEmojiSet);
 const WINE_RED = "#7F021F";
 const ORANGE = "#FE8C00";
 const normalizeId = (value: unknown) => (value === null || value === undefined ? "" : String(value));
@@ -237,31 +237,6 @@ const ui = StyleSheet.create({
         lineHeight: 20,
         color: "#FFFFFF",
         textAlign: "center",
-    },
-    emojiPickerBackdrop: {
-        flex: 1,
-        backgroundColor: "rgba(0, 0, 0, 0.3)",
-        justifyContent: "flex-end",
-    },
-    emojiPickerDismissArea: {
-        flex: 1,
-    },
-    emojiPickerSheet: {
-        backgroundColor: "#FFFFFF",
-        borderTopLeftRadius: 32,
-        borderTopRightRadius: 32,
-        paddingHorizontal: 20,
-        paddingTop: 16,
-        rowGap: 16,
-    },
-    emojiPickerScroll: {
-        maxHeight: 320,
-    },
-    emojiPickerGrid: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        gap: 12,
-        paddingBottom: 12,
     },
     orderItemCard: {
         borderRadius: 18,
@@ -477,9 +452,25 @@ const normalizeStatus = (status?: string): OrderStatus => {
     return "pending";
 };
 
+const isCompletedStatus = (status?: string) => {
+    const normalized = String(status || "").trim().toLowerCase();
+    return normalized === "delivered" || normalized === "completed";
+};
+
+const makeReviewItemKey = (orderId: string, menuItemId: string) => `${orderId}__${menuItemId}`;
+
 type OrderSummaryItem = {
     name: string;
     quantity: number;
+};
+
+type ReviewableOrder = {
+    key: string;
+    orderId: string;
+    restaurantName: string;
+    pendingCount: number;
+    totalCount: number;
+    updatedAt?: any;
 };
 
 const resolveItems = (order: any): OrderSummaryItem[] => {
@@ -488,6 +479,16 @@ const resolveItems = (order: any): OrderSummaryItem[] => {
         name: item?.name ?? "-",
         quantity: Number(item?.quantity ?? 1),
     }));
+};
+
+const resolveReviewItems = (order: any) => {
+    const rawItems = Array.isArray(order?.orderItems) ? order.orderItems : Array.isArray(order?.items) ? order.items : [];
+    return rawItems
+        .map((item: any) => ({
+            menuItemId: String(item?.menuItemId ?? item?.id ?? "").trim(),
+            menuItemName: String(item?.name ?? "").trim(),
+        }))
+        .filter((item: { menuItemId: string; menuItemName: string }) => item.menuItemId && item.menuItemName);
 };
 
 const formatTimestamp = (value: any) => {
@@ -503,9 +504,19 @@ const formatTimestamp = (value: any) => {
     return String(value);
 };
 
+const toMillis = (value: any) => {
+    if (!value) return 0;
+    if (typeof value === "object" && "seconds" in value) {
+        return value.seconds * 1000 + (value.nanoseconds || 0) / 1_000_000;
+    }
+    const d = new Date(value);
+    const ms = d.getTime();
+    return Number.isNaN(ms) ? 0 : ms;
+};
+
 const Profile = () => {
     const navigation = useNavigation<ManageAddressesNavigation>();
-    const { user, isAuthenticated, setUser, preferredEmoji, setPreferredEmoji, resetAuthState } = useAuthStore();
+    const { user, isAuthenticated, setUser, resetAuthState } = useAuthStore();
     const clearCart = useCartStore((s) => s.clearCart);
     const { defaultAddress } = useDefaultAddress();
     const { t, i18n } = useTranslation();
@@ -518,12 +529,13 @@ const Profile = () => {
     const guestVisualCenterOffset = Math.max((guestTabBarOffset - safeTop) / 2, 0) + 48;
 
     const [orders, setOrders] = useState<any[]>([]);
+    const [reviewedItemKeys, setReviewedItemKeys] = useState<Set<string>>(new Set());
+    const [reviewsLoading, setReviewsLoading] = useState(false);
     const [signingOut, setSigningOut] = useState(false);
     const [deletingProfile, setDeletingProfile] = useState(false);
 
     const [notifModalVisible, setNotifModalVisible] = useState(false);
 
-    const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [savingProfile, setSavingProfile] = useState(false);
 
@@ -545,6 +557,7 @@ const Profile = () => {
                 .toUpperCase(),
         [user?.name],
     );
+    const userId = String(user?.id ?? user?.$id ?? user?.accountId ?? "").trim();
 
     const activeOrders = useMemo(() => {
         return (orders || []).filter((o: any) => {
@@ -552,13 +565,45 @@ const Profile = () => {
             return s !== "delivered" && s !== "canceled";
         });
     }, [orders]);
+    const reviewableOrders = useMemo<ReviewableOrder[]>(() => {
+        if (!userId) return [];
+
+        const list: ReviewableOrder[] = [];
+        for (const order of orders || []) {
+            if (!isCompletedStatus(order?.status)) continue;
+            const orderId = String(order?.id ?? "").trim();
+            if (!orderId) continue;
+
+            const orderRestaurantName = resolveRestaurantName(order);
+            const reviewItems = resolveReviewItems(order);
+            if (!reviewItems.length) continue;
+
+            const reviewedCount = reviewItems.reduce((acc: number, item: { menuItemId: string; menuItemName: string }) => {
+                const key = makeReviewItemKey(orderId, item.menuItemId);
+                return acc + (reviewedItemKeys.has(key) ? 1 : 0);
+            }, 0);
+            const pendingCount = reviewItems.length - reviewedCount;
+            if (pendingCount <= 0) continue;
+
+            list.push({
+                key: orderId,
+                orderId,
+                restaurantName: orderRestaurantName,
+                pendingCount,
+                totalCount: reviewItems.length,
+                updatedAt: order?.updatedAt || order?.createdAt,
+            });
+        }
+
+        return list.sort((a, b) => toMillis(b.updatedAt) - toMillis(a.updatedAt));
+    }, [orders, reviewedItemKeys, userId]);
     const isTurkish = i18n.language?.toLowerCase().startsWith("tr");
     const guestCopy = {
-        title: isTurkish ? "Profilini yönetmek için giriş yap" : "Sign in to manage your profile",
+        title: isTurkish ? "Profilini y\u00F6netmek i\u00E7in giri\u015F yap" : "Sign in to manage your profile",
         body: isTurkish
-            ? "Restoranları ve menüleri özgürce gez. Sipariş vermek, adreslerini yönetmek veya hesabını düzenlemek istediğinde giriş yap."
+            ? "Restoranlar\u0131 ve men\u00FCleri \u00F6zg\u00FCrce gez. Sipari\u015F vermek, adreslerini y\u00F6netmek veya hesab\u0131n\u0131 d\u00FCzenlemek istedi\u011Finde giri\u015F yap."
             : "Browse restaurants and menus freely. Sign in when you want to place orders, manage addresses, or edit your account.",
-        cta: isTurkish ? "Giriş yap" : "Sign in",
+        cta: isTurkish ? "Giri\u015F yap" : "Sign in",
     };
 
     const handleManageAddressesPress = () => {
@@ -582,7 +627,6 @@ const Profile = () => {
     }, [user?.name, user?.email, user?.whatsappNumber]);
 
     useEffect(() => {
-        const userId = user?.id ?? user?.$id ?? user?.accountId ?? null;
         if (!userId) return;
 
         const unsubscribe = subscribeUserOrders(userId, (list) => setOrders(list || []));
@@ -593,7 +637,39 @@ const Profile = () => {
                 /* noop */
             }
         };
-    }, [user?.id, user?.$id, user?.accountId]);
+    }, [userId]);
+
+    useEffect(() => {
+        if (!userId) {
+            setReviewedItemKeys(new Set());
+            return;
+        }
+
+        let mounted = true;
+        const loadUserReviews = async () => {
+            try {
+                setReviewsLoading(true);
+                const reviews = await fetchUserReviews(userId);
+                if (!mounted) return;
+                setReviewedItemKeys(
+                    new Set(
+                        reviews
+                            .map((review) => makeReviewItemKey(String(review.orderId || ""), String(review.menuItemId || "")))
+                            .filter(Boolean),
+                    ),
+                );
+            } catch {
+                if (mounted) setReviewedItemKeys(new Set());
+            } finally {
+                if (mounted) setReviewsLoading(false);
+            }
+        };
+
+        void loadUserReviews();
+        return () => {
+            mounted = false;
+        };
+    }, [userId]);
 
     const handleSaveProfile = async () => {
         const trimmedName = nameDraft.trim();
@@ -640,8 +716,8 @@ const Profile = () => {
         } finally {
             setSigningOut(false);
             setOrders([]);
+            setReviewedItemKeys(new Set());
             setNotifModalVisible(false);
-            setEmojiPickerOpen(false);
             setIsEditingProfile(false);
             setSavingProfile(false);
             setNameDraft("");
@@ -671,10 +747,9 @@ const Profile = () => {
             try {
                 setDeletingProfile(true);
                 await deleteCurrentUserProfile();
-                setPreferredEmoji(undefined as any);
                 setOrders([]);
+                setReviewedItemKeys(new Set());
                 setNotifModalVisible(false);
-                setEmojiPickerOpen(false);
                 setIsEditingProfile(false);
                 setSavingProfile(false);
                 setNameDraft("");
@@ -765,22 +840,16 @@ const Profile = () => {
                     {/* HERO */}
                     <View className="secondary-card border-0 shadow-2xl gap-4" style={[ui.card, { backgroundColor: WINE_RED, rowGap: 16 }]}>
                         <View className="flex-row items-center gap-4" style={ui.heroRow}>
-                            <TouchableOpacity
+                            <View
                                 className="size-16 rounded-full bg-white/10 border border-white/40 items-center justify-center"
                                 style={ui.avatarButton}
-                                onPress={() => setEmojiPickerOpen(true)}
                             >
-                                {preferredEmoji ? (
-                                    <Image source={preferredEmoji} style={{ width: 30, height: 30 }} />
-                                ) : (
-                                    <Text className="h3-bold text-white">{initials}</Text>
-                                )}
-                            </TouchableOpacity>
+                                <Text className="h3-bold text-white">{initials}</Text>
+                            </View>
 
                             <View className="flex-1">
                                 <View className="flex-row items-center gap-2" style={ui.nameRow}>
                                     <Text className="text-white text-2xl font-ezra-bold" style={ui.userName}>{user?.name || "Hungrie Student"}</Text>
-                                    {preferredEmoji ? <Image source={preferredEmoji} style={{ width: 22, height: 22 }} /> : null}
                                 </View>
                                 <Text className="body-medium text-white/70" style={ui.userEmail}>{user?.email || "student@campus.edu"}</Text>
                             </View>
@@ -810,7 +879,7 @@ const Profile = () => {
                         </View>
                     </View>
 
-                    {/* ADDRESS — design (orange) + database defaultAddress */}
+                    {/* ADDRESS - design (orange) + database defaultAddress */}
                     <View className="secondary-card gap-3" style={[ui.card, ui.addressCard, { backgroundColor: ORANGE }]}>
                         <View style={ui.addressRow}>
                             <View style={ui.addressContent}>
@@ -840,7 +909,7 @@ const Profile = () => {
                         </View>
                     </View>
 
-                    {/* ACTIVE ORDERS — keep database behaviour, keep clean UI */}
+                    {/* ACTIVE ORDERS - keep database behaviour, keep clean UI */}
                     <View
                         className="secondary-card gap-4"
                         style={[ui.sectionCard, ui.sectionCardShadow, isWeb ? ui.sectionCardWeb : null, isWeb ? ui.sectionCardShadowWeb : null]}
@@ -861,7 +930,7 @@ const Profile = () => {
                                     const rawOrderId = String(order.id ?? "-");
                                     const orderIdText = `#${rawOrderId}`;
                                     const items = resolveItems(order);
-                                    const summary = items.length ? items.map((it) => `${it.quantity}x ${it.name}`).join(" • ") : null;
+                                    const summary = items.length ? items.map((it) => `${it.quantity}x ${it.name}`).join(" - ") : null;
                                     const restaurantName = resolveRestaurantName(order) || t("orders.unknownRestaurant");
 
                                     return (
@@ -947,9 +1016,74 @@ const Profile = () => {
                         )}
                     </View>
 
+                    <View
+                        className="secondary-card gap-4"
+                        style={[ui.sectionCard, ui.sectionCardShadow, isWeb ? ui.sectionCardWeb : null, isWeb ? ui.sectionCardShadowWeb : null]}
+                    >
+                        <View className="flex-row items-center justify-between" style={ui.rowBetween}>
+                            <SectionHeader title={isTurkish ? "De\u011Ferlendirilecek Sipari\u015Fler" : "Orders to Review"} />
+                        </View>
+
+                        {reviewableOrders.length ? (
+                            <View style={{ gap: 12 }}>
+                                {reviewableOrders.map((order) => (
+                                    <View
+                                        key={order.key}
+                                        style={[
+                                            ui.orderItemCard,
+                                            ui.orderItemCardShadow,
+                                            isWeb ? ui.orderItemCardWeb : null,
+                                            isWeb ? ui.orderItemCardShadowWeb : null,
+                                        ]}
+                                    >
+                                        <Text style={{ color: "#0F172A", fontFamily: "ChairoSans", fontSize: 16 }}>{order.restaurantName}</Text>
+                                        <Text style={{ color: "#64748B", fontFamily: "ChairoSans", marginTop: 2 }}>
+                                            {isTurkish ? `Sipari\u015F No: #${order.orderId}` : `Order ID: #${order.orderId}`}
+                                        </Text>
+                                        <Text style={{ color: "#64748B", fontFamily: "ChairoSans", marginTop: 4 }}>
+                                            {isTurkish
+                                                ? `${order.pendingCount}/${order.totalCount} \u00FCr\u00FCn de\u011Ferlendirmesi bekliyor`
+                                                : `${order.pendingCount}/${order.totalCount} items pending review`}
+                                        </Text>
+                                        <View style={{ marginTop: 10, flexDirection: "row", justifyContent: "flex-end" }}>
+                                            <TouchableOpacity
+                                                onPress={() =>
+                                                    router.push({
+                                                        pathname: "/orders",
+                                                        params: { highlight: order.orderId },
+                                                    })
+                                                }
+                                                style={{
+                                                    borderRadius: 999,
+                                                    paddingHorizontal: 14,
+                                                    paddingVertical: 9,
+                                                    backgroundColor: "#FE8C00",
+                                                }}
+                                            >
+                                                <Text style={{ color: "#FFFFFF", fontFamily: "ChairoSans", fontSize: 13 }}>
+                                                    {isTurkish ? "Sipari\u015Fi de\u011Ferlendir" : "Review order"}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                ))}
+                            </View>
+                        ) : (
+                            <Text className="body-medium text-dark-60">
+                                {reviewsLoading
+                                    ? isTurkish
+                                        ? "De\u011Ferlendirilecek sipari\u015Fler y\u00FCkleniyor..."
+                                        : "Loading reviewable orders..."
+                                    : isTurkish
+                                      ? "De\u011Ferlendirilecek sipari\u015F yok."
+                                      : "No orders to review yet."}
+                            </Text>
+                        )}
+                    </View>
+
                     <OrderHistorySection orders={orders} />
 
-                    {/* ACTIONS — design version */}
+                    {/* ACTIONS - design version */}
                     <View className="secondary-card gap-3" style={ui.actionsCard}>
                         <SectionHeader title={t("profile.accountActions")} />
                         {[ 
@@ -1014,53 +1148,7 @@ const Profile = () => {
                 </View>
             </ScrollView>
 
-            {/* EMOJI PICKER */}
-            <Modal transparent visible={emojiPickerOpen} animationType="fade" onRequestClose={() => setEmojiPickerOpen(false)}>
-                <View style={ui.emojiPickerBackdrop}>
-                    <TouchableOpacity
-                        style={ui.emojiPickerDismissArea}
-                        activeOpacity={1}
-                        onPress={() => setEmojiPickerOpen(false)}
-                    />
-                    <View
-                        style={[
-                            ui.emojiPickerSheet,
-                            { paddingBottom: Math.max(insets.bottom, 16) + 8 },
-                        ]}
-                    >
-                        <View className="h-1 w-16 bg-gray-200 rounded-full self-center" />
-                        <Text className="h4-bold text-dark-100">
-                            {i18n.language?.toLowerCase().startsWith("tr") ? "Emoji seç" : "Choose emoji"}
-                        </Text>
-
-                        <View style={ui.emojiPickerScroll}>
-                            <ScrollView contentContainerStyle={ui.emojiPickerGrid} showsVerticalScrollIndicator={false}>
-                                {EMOJI_OPTIONS.map((emojiSrc, index) => {
-                                    const isActive = preferredEmoji === emojiSrc;
-                                    return (
-                                        <TouchableOpacity
-                                            key={index}
-                                            onPress={() => {
-                                                setPreferredEmoji(emojiSrc as any);
-                                                setEmojiPickerOpen(false);
-                                            }}
-                                            style={{
-                                                borderColor: isActive ? ORANGE : "#E2E8F0",
-                                                backgroundColor: isActive ? "#FFF6EF" : "#FFFFFF",
-                                            }}
-                                            className="w-16 h-16 rounded-2xl border items-center justify-center"
-                                        >
-                                            <Image source={emojiSrc} style={{ width: 36, height: 36 }} contentFit="contain" cachePolicy="disk" />
-                                        </TouchableOpacity>
-                                    );
-                                })}
-                            </ScrollView>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* EDIT PROFILE — database (updateUserProfile + whatsapp), design modal */}
+            {/* EDIT PROFILE - database (updateUserProfile + whatsapp), design modal */}
             <Modal transparent animationType="fade" visible={isEditingProfile} onRequestClose={() => setIsEditingProfile(false)}>
                 <View className="flex-1 bg-black/40 justify-center px-5" style={ui.editModalOverlay}>
                     <View className="bg-white rounded-3xl overflow-hidden shadow-2xl" style={ui.editModalCard}>
@@ -1449,7 +1537,7 @@ const OrderHistorySection = ({ orders }: { orders: any[] }) => {
                     const orderIdText = `#${rawOrderId}`;
 
                     const items = resolveItems(order);
-                    const summary = items.length ? items.map((it) => `${it.quantity}x ${it.name}`).join(" • ") : null;
+                    const summary = items.length ? items.map((it) => `${it.quantity}x ${it.name}`).join(" - ") : null;
                     const restaurantName = resolveRestaurantName(order) || t("orders.unknownRestaurant");
 
                     return (

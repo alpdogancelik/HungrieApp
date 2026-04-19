@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { DeviceEventEmitter, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { DeviceEventEmitter, FlatList, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
@@ -23,12 +23,76 @@ import type { Address, Order } from "@/src/domain/types";
 
 const HeroArt = illustrations.foodieCelebration;
 
-const restaurantMeta = [
+const fallbackRestaurantMeta = [
     { rating: "4.8", eta: "15-20 dk", minBasket: "Min. 120 TL" },
     { rating: "4.7", eta: "18-25 dk", minBasket: "Min. 90 TL" },
     { rating: "4.9", eta: "10-15 dk", minBasket: "Min. 80 TL" },
     { rating: "4.6", eta: "20-30 dk", minBasket: "Min. 100 TL" },
 ];
+
+const parseNumericValue = (value: unknown): number | null => {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string") {
+        const normalized = value.replace(/[^\d.,-]/g, "").replace(",", ".");
+        const parsed = Number(normalized);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
+};
+
+const parseEtaRange = (value: unknown) => {
+    if (typeof value !== "string") return null;
+    const match = value.match(/(\d+)\s*-\s*(\d+)/);
+    if (!match) return null;
+    const min = Number(match[1]);
+    const max = Number(match[2]);
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+    return { min, max };
+};
+
+const formatEtaLabel = (restaurant: any, fallbackEta: string, isTurkish: boolean) => {
+    const etaMin = parseNumericValue(restaurant?.deliveryEtaMin);
+    const etaMax = parseNumericValue(restaurant?.deliveryEtaMax);
+    if (etaMin !== null && etaMax !== null) {
+        return `${Math.round(etaMin)}-${Math.round(etaMax)} ${isTurkish ? "dk" : "min"}`;
+    }
+
+    const storedRange = parseEtaRange(String(restaurant?.deliveryTime || restaurant?.eta || ""));
+    if (storedRange) {
+        return `${storedRange.min}-${storedRange.max} ${isTurkish ? "dk" : "min"}`;
+    }
+
+    const etaAverage = parseNumericValue(restaurant?.deliveryEtaAverage ?? restaurant?.etaMinutes);
+    if (etaAverage !== null) {
+        const rounded = Math.max(10, Math.round(etaAverage / 5) * 5);
+        return `${Math.max(10, rounded - 5)}-${rounded + 5} ${isTurkish ? "dk" : "min"}`;
+    }
+
+    return isTurkish ? fallbackEta : fallbackEta.replace("dk", "min");
+};
+
+const formatMinimumOrderLabel = (restaurant: any, fallbackMinBasket: string, isTurkish: boolean) => {
+    const minimumOrderAmount =
+        parseNumericValue(restaurant?.minimumOrderAmount) ??
+        parseNumericValue(restaurant?.minimumOrder) ??
+        parseNumericValue(restaurant?.minOrderAmount) ??
+        parseNumericValue(restaurant?.minBasketAmount);
+    const fallbackAmount = parseNumericValue(fallbackMinBasket) ?? 0;
+    const amount = minimumOrderAmount && minimumOrderAmount > 0 ? minimumOrderAmount : fallbackAmount;
+    return isTurkish ? `Min. ${Math.round(amount)} TL` : `Min ${Math.round(amount)} TL`;
+};
+
+const formatRatingLabel = (restaurant: any, fallbackRating: string) => {
+    const rating = parseNumericValue(restaurant?.ratingAverage ?? restaurant?.rating);
+    if (rating === null || rating <= 0) return fallbackRating;
+    return rating.toFixed(1);
+};
+
+const formatRatingCountLabel = (restaurant: any, fallbackCount: number) => {
+    const ratingCount = parseNumericValue(restaurant?.ratingCount);
+    const resolvedCount = ratingCount !== null ? Math.max(0, Math.round(ratingCount)) : fallbackCount;
+    return `(${resolvedCount})`;
+};
 
 const normalizeRestaurantId = (restaurant: any, fallback: string) => {
     const raw =
@@ -86,6 +150,9 @@ export function HomeTabScreen() {
         if (!isAuthenticated) {
             router.push("/sign-in");
             return;
+        }
+        if (Platform.OS === "web" && typeof document !== "undefined") {
+            (document.activeElement as HTMLElement | null)?.blur?.();
         }
         setSheetVisible(true);
     };
@@ -183,7 +250,6 @@ export function HomeTabScreen() {
                                 </Pressable>
                             </View>
                             <View style={styles.heroArtWrap}>
-                                <View style={styles.heroGlow} />
                                 <HeroArt width={124} height={124} />
                             </View>
                         </LinearGradient>
@@ -202,7 +268,7 @@ export function HomeTabScreen() {
                             return <View key={`skeleton-${index}`} style={styles.restaurantSkeleton} />;
                         }
 
-                        const meta = restaurantMeta[index % restaurantMeta.length];
+                        const meta = fallbackRestaurantMeta[index % fallbackRestaurantMeta.length];
                         const restaurantId = normalizeRestaurantId(restaurant, String(index));
                         const imageUrl = restaurant?.imageUrl || restaurant?.image_url;
                         const source = getRestaurantImageSource(
@@ -210,9 +276,10 @@ export function HomeTabScreen() {
                             undefined,
                             restaurant?.name || (isTurkish ? "Restoran" : "Restaurant"),
                         );
-                        const etaLabel = isTurkish ? meta.eta : meta.eta.replace("dk", "min");
-                        const minBasketAmount = meta.minBasket.match(/\d+/)?.[0] ?? "0";
-                        const minBasketLabel = isTurkish ? `Min. ${minBasketAmount} ₺` : `Min ${minBasketAmount} ₺`;
+                        const etaLabel = formatEtaLabel(restaurant, meta.eta, isTurkish);
+                        const minBasketLabel = formatMinimumOrderLabel(restaurant, meta.minBasket, isTurkish);
+                        const ratingLabel = formatRatingLabel(restaurant, meta.rating);
+                        const ratingCountLabel = formatRatingCountLabel(restaurant, index === 0 ? 1200 : 890);
 
                         return (
                             <View key={`${restaurantId}-${index}`} style={styles.restaurantCardShell}>
@@ -226,15 +293,22 @@ export function HomeTabScreen() {
                                     }
                                 >
                                     <View style={styles.restaurantImageFrame}>
-                                        <Image source={source} style={styles.restaurantImage} contentFit="cover" transition={250} />
+                                        <Image
+                                            source={source}
+                                            style={styles.restaurantImage}
+                                            contentFit="cover"
+                                            cachePolicy="memory-disk"
+                                            priority={index < 2 ? "high" : "normal"}
+                                            transition={index < 2 ? 0 : 150}
+                                        />
                                     </View>
                                     <View style={styles.restaurantContent}>
                                         <Text style={styles.restaurantName} numberOfLines={2}>
                                             {restaurant?.name || (isTurkish ? "Restoran" : "Restaurant")}
                                         </Text>
                                         <View style={styles.ratingRow}>
-                                            <Text style={styles.ratingSummary}>⭐ {meta.rating} ★★★★★</Text>
-                                            <Text style={styles.ratingCount}>{index === 0 ? "(1.2k)" : "(890)"}</Text>
+                                            <Text style={styles.ratingSummary}>{`* ${ratingLabel}`}</Text>
+                                            <Text style={styles.ratingCount}>{ratingCountLabel}</Text>
                                         </View>
                                         <View style={styles.metaRow}>
                                             <View style={styles.metaBlock}>
@@ -243,7 +317,7 @@ export function HomeTabScreen() {
                                                     <Text style={styles.metaText}>{etaLabel}</Text>
                                                 </View>
                                             </View>
-                                            <Text style={styles.metaDivider}>·</Text>
+                                            <Text style={styles.metaDivider}>|</Text>
                                             <View style={styles.metaBlock}>
                                                 <View style={styles.inlineMeta}>
                                                     <Icon name="bag" size={14} color="#FF9800" />
@@ -303,19 +377,22 @@ const OrderStatusCard = () => {
     const { t } = useTranslation();
     const { theme } = useTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);
-    const { user } = useAuthStore();
-    const userId = useMemo(() => user?.id ?? user?.$id ?? user?.accountId ?? "guest", [user?.id, user?.$id, user?.accountId]);
+    const { user, isAuthenticated } = useAuthStore();
+    const userId = useMemo(() => user?.id ?? user?.$id ?? user?.accountId ?? "", [user?.id, user?.$id, user?.accountId]);
     const [latestOrder, setLatestOrder] = useState<Order | null>(null);
     const orderId = latestOrder?.id ?? "";
     const { status } = useOrderStatus(orderId);
 
     useEffect(() => {
-        if (!userId) return;
+        if (!isAuthenticated || !userId) {
+            setLatestOrder(null);
+            return;
+        }
         return subscribeUserOrders(userId, (orders) => {
             const pendingOrder = orders.find((order) => order.status === "pending");
             setLatestOrder(pendingOrder ?? null);
         });
-    }, [userId]);
+    }, [isAuthenticated, userId]);
 
     const statusKey: PendingOrderStatus | null = orderId ? status : null;
     if (!statusKey || !latestOrder) return null;
@@ -621,13 +698,6 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
             justifyContent: "center",
             marginRight: 4,
         },
-        heroGlow: {
-            position: "absolute",
-            width: 76,
-            height: 76,
-            borderRadius: 38,
-            backgroundColor: "rgba(255,255,255,0.14)",
-        },
         sectionHeader: {
             flexDirection: "row",
             alignItems: "center",
@@ -697,29 +767,31 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
             alignItems: "center",
             justifyContent: "center",
             marginTop: 4,
-            paddingHorizontal: 10,
-            paddingVertical: 8,
+            alignSelf: "center",
+            paddingHorizontal: 12,
+            paddingVertical: 7,
             borderRadius: 999,
             backgroundColor: "#FBF3EA",
+            gap: 4,
         },
         ratingSummary: {
             fontFamily: "ChairoSans",
-            fontSize: 12,
+            fontSize: 13,
             color: "#D89C52",
         },
         ratingCount: {
-            marginLeft: 4,
             fontFamily: "ChairoSans",
-            fontSize: 12,
+            fontSize: 13,
             color: "#7D869A",
         },
         metaRow: {
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "center",
+            gap: 8,
             marginTop: 8,
             paddingTop: 6,
-            paddingHorizontal: 12,
+            paddingHorizontal: 8,
             borderTopWidth: 1,
             borderTopColor: "#F3F0EB",
         },
@@ -730,7 +802,6 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
             minWidth: 0,
         },
         metaBlock: {
-            flex: 1,
             alignItems: "center",
             justifyContent: "center",
         },
@@ -741,9 +812,8 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
             textAlign: "center",
         },
         metaDivider: {
-            marginHorizontal: 6,
             fontFamily: "ChairoSans",
-            fontSize: 14,
+            fontSize: 12,
             color: "#B6B3C2",
         },
         orderCard: {
@@ -780,3 +850,4 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
     });
 
 export default HomeTabScreen;
+
