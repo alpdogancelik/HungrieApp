@@ -94,6 +94,7 @@ const FIREBASE_COLLECTIONS = {
     users: "users",
     restaurants: "restaurants",
     menus: "menus",
+    productReviews: "reviews",
     reviews: "reviews",
     menuItemReviews: "reviews",
     orders: "orders",

@@ -3,22 +3,27 @@ import {
     doc,
     getDoc,
     getDocs,
+    onSnapshot,
     query,
     runTransaction,
     serverTimestamp,
+    setDoc,
     updateDoc,
     where,
 } from "firebase/firestore";
 
-import { FIREBASE_COLLECTIONS, firestore } from "@/lib/firebase";
+import { auth, FIREBASE_COLLECTIONS, firestore } from "@/lib/firebase";
 import type { MenuItemReview, RestaurantReviewSummary } from "@/src/domain/types";
+import { getProductReviewId, isReviewableStatus } from "@/src/features/reviews/reviewUtils";
 import { recomputeRestaurantMetrics } from "@/src/services/restaurantMetrics";
 
 type SubmitMenuItemReviewInput = {
     orderId: string;
     restaurantId: string;
-    menuItemId: string;
-    userId: string;
+    itemId?: string;
+    menuItemId?: string;
+    itemName?: string;
+    userId?: string;
     userName?: string;
     rating: 1 | 2 | 3 | 4 | 5;
     comment?: string;
@@ -29,6 +34,9 @@ type ModerateMenuItemReviewInput = {
     status?: MenuItemReview["status"];
     reply?: string;
 };
+
+const REVIEWS_COLLECTION = FIREBASE_COLLECTIONS.reviews;
+const PERMISSION_DENIED_CODE = "permission-denied";
 
 const ensureDb = () => {
     if (!firestore) {
@@ -54,23 +62,49 @@ const toIsoString = (value: unknown) => {
 
 const normalizeComment = (comment?: string) => {
     const trimmed = comment?.trim();
-    if (!trimmed) return undefined;
+    if (!trimmed) return "";
     return trimmed.slice(0, 500);
 };
 
-const createReviewId = ({ orderId, menuItemId, userId }: { orderId: string; menuItemId: string; userId: string }) =>
-    [orderId, menuItemId, userId].map((part) => encodeURIComponent(String(part))).join("__");
+const normalizeId = (value: unknown) => String(value || "").trim();
+const compactObject = <T extends Record<string, unknown>>(value: T) =>
+    Object.fromEntries(Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined)) as Partial<T>;
+
+const getCurrentAuthUid = () => normalizeId(auth?.currentUser?.uid);
+
+const getFriendlyPermissionDeniedError = () =>
+    new Error(
+        __DEV__
+            ? "Review permission denied. Check firestore.rules deployment, order.status, order.userId, and auth.currentUser.uid."
+            : "Yorum kaydedilemedi. L\u00fctfen tekrar giri\u015f yap\u0131p deneyin.",
+    );
+
+const mapReviewError = (error: unknown) => {
+    const code = normalizeId((error as { code?: string } | undefined)?.code).replace(/^firebase\//, "");
+    if (code === PERMISSION_DENIED_CODE) {
+        return getFriendlyPermissionDeniedError();
+    }
+    if (error instanceof Error && error.message.includes("Missing or insufficient permissions")) {
+        return getFriendlyPermissionDeniedError();
+    }
+    return error instanceof Error ? error : new Error("Yorum kaydedilemedi.");
+};
 
 const mapReviewDoc = (snapshot: { id: string; data: () => Record<string, unknown> }): MenuItemReview => {
     const data = snapshot.data();
+    const itemId = String(data.itemId || data.menuItemId || "");
+    const itemName = data.itemName ? String(data.itemName) : data.menuItemName ? String(data.menuItemName) : undefined;
+
     return {
         id: snapshot.id,
-        reviewKey: String(data.reviewKey || snapshot.id),
+        reviewKey: String(data.reviewKey || data.id || snapshot.id),
         orderId: String(data.orderId || ""),
         restaurantId: String(data.restaurantId || ""),
         restaurantName: data.restaurantName ? String(data.restaurantName) : undefined,
-        menuItemId: String(data.menuItemId || ""),
-        menuItemName: data.menuItemName ? String(data.menuItemName) : undefined,
+        itemId,
+        itemName,
+        menuItemId: itemId,
+        menuItemName: itemName,
         userId: String(data.userId || ""),
         userName: data.userName ? String(data.userName) : undefined,
         rating: Number(data.rating || 0) as 1 | 2 | 3 | 4 | 5,
@@ -93,6 +127,203 @@ const resolveOrderItems = (orderData: Record<string, any>) => {
     if (Array.isArray(orderData.items)) return orderData.items;
     if (Array.isArray(orderData.orderItems)) return orderData.orderItems;
     return [];
+};
+
+const buildRestaurantReviewSummary = (reviews: MenuItemReview[]): RestaurantReviewSummary => {
+    const publishedReviews = reviews.filter((review) => review.status === "published");
+    const distribution: RestaurantReviewSummary["distribution"] = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    const latestByMenuItem: Record<string, MenuItemReview> = {};
+
+    for (const review of publishedReviews) {
+        if (![1, 2, 3, 4, 5].includes(review.rating)) continue;
+        distribution[review.rating] += 1;
+        if (!latestByMenuItem[review.itemId]) {
+            latestByMenuItem[review.itemId] = review;
+        }
+    }
+
+    const total = publishedReviews.reduce((sum, review) => sum + review.rating, 0);
+    return {
+        average: publishedReviews.length ? Number((total / publishedReviews.length).toFixed(1)) : 0,
+        count: publishedReviews.length,
+        distribution,
+        recentReviews: publishedReviews.slice(0, 8),
+        latestByMenuItem,
+    };
+};
+
+const mergeReviewSnapshots = (snapshots: Array<{ docs: Array<{ id: string; data: () => Record<string, unknown> }> }>) => {
+    const merged = new Map<string, MenuItemReview>();
+
+    for (const snapshot of snapshots) {
+        for (const entry of snapshot.docs) {
+            merged.set(entry.id, mapReviewDoc(entry));
+        }
+    }
+
+    return sortReviewsByRecent(Array.from(merged.values()));
+};
+
+export const fetchMenuItemReviews = async (menuItemId: string) => {
+    const normalizedItemId = normalizeId(menuItemId);
+    if (!normalizedItemId) return [];
+
+    const db = ensureDb();
+    const [byItemIdSnapshot, byLegacyFieldSnapshot] = await Promise.all([
+        getDocs(query(collection(db, REVIEWS_COLLECTION), where("itemId", "==", normalizedItemId))),
+        getDocs(query(collection(db, REVIEWS_COLLECTION), where("menuItemId", "==", normalizedItemId))),
+    ]);
+
+    return mergeReviewSnapshots([byItemIdSnapshot, byLegacyFieldSnapshot]).filter((review) => review.status === "published");
+};
+
+export const fetchRestaurantReviews = async (restaurantId: string, options?: { includeHidden?: boolean }) => {
+    const normalizedRestaurantId = normalizeId(restaurantId);
+    if (!normalizedRestaurantId) return [];
+
+    const db = ensureDb();
+    const snapshot = await getDocs(
+        query(collection(db, REVIEWS_COLLECTION), where("restaurantId", "==", normalizedRestaurantId)),
+    );
+
+    const mapped = sortReviewsByRecent(snapshot.docs.map(mapReviewDoc));
+
+    if (options?.includeHidden) return mapped;
+    return mapped.filter((review) => review.status === "published");
+};
+
+export const fetchRestaurantReviewSummary = async (restaurantId: string) => {
+    const reviews = await fetchRestaurantReviews(restaurantId);
+    return buildRestaurantReviewSummary(reviews);
+};
+
+export const fetchUserReviews = async (userId: string) => {
+    const normalizedUserId = getCurrentAuthUid() || normalizeId(userId);
+    if (!normalizedUserId) return [];
+
+    const db = ensureDb();
+    const snapshot = await getDocs(query(collection(db, REVIEWS_COLLECTION), where("userId", "==", normalizedUserId)));
+    return sortReviewsByRecent(snapshot.docs.map(mapReviewDoc));
+};
+
+export const subscribeUserReviews = (userId: string, cb: (reviews: MenuItemReview[]) => void) => {
+    const normalizedUserId = getCurrentAuthUid() || normalizeId(userId);
+    if (!normalizedUserId) {
+        cb([]);
+        return () => undefined;
+    }
+
+    const db = ensureDb();
+    const target = query(collection(db, REVIEWS_COLLECTION), where("userId", "==", normalizedUserId));
+    return onSnapshot(
+        target,
+        (snapshot) => {
+            cb(sortReviewsByRecent(snapshot.docs.map(mapReviewDoc)));
+        },
+        () => {
+            cb([]);
+        },
+    );
+};
+
+export const submitMenuItemReview = async (input: SubmitMenuItemReviewInput) => {
+    try {
+        const db = ensureDb();
+        const orderId = normalizeId(input.orderId);
+        const restaurantId = normalizeId(input.restaurantId);
+        const itemId = normalizeId(input.itemId || input.menuItemId);
+        const userId = getCurrentAuthUid();
+        const userName = input.userName?.trim();
+        const comment = normalizeComment(input.comment);
+        const rating = Number(input.rating || 0) as 1 | 2 | 3 | 4 | 5;
+
+        if (!userId) {
+            throw new Error("L\u00fctfen tekrar giri\u015f yap\u0131p yorum g\u00f6nderin.");
+        }
+        if (!orderId || !restaurantId || !itemId) {
+            throw new Error("Missing review context.");
+        }
+        if (input.userId && normalizeId(input.userId) !== userId) {
+            throw new Error("User mismatch for review submission.");
+        }
+        if (![1, 2, 3, 4, 5].includes(rating)) {
+            throw new Error("Rating must be between 1 and 5.");
+        }
+
+        const reviewId = getProductReviewId(orderId, itemId, userId);
+        const reviewRef = doc(db, REVIEWS_COLLECTION, reviewId);
+        const orderRef = doc(db, FIREBASE_COLLECTIONS.orders, orderId);
+
+        const [orderSnapshot, existingReviewSnapshot] = await Promise.all([getDoc(orderRef), getDoc(reviewRef)]);
+
+        if (!orderSnapshot.exists()) {
+            throw new Error("Order not found.");
+        }
+        if (existingReviewSnapshot.exists()) {
+            throw new Error("Bu \u00fcr\u00fcn zaten de\u011ferlendirildi.");
+        }
+
+        const orderData = orderSnapshot.data() || {};
+        if (normalizeId(orderData.userId) !== userId) {
+            throw new Error("You can only review your own orders.");
+        }
+
+        const orderStatus = String(orderData.status || "");
+        if (!isReviewableStatus(orderStatus)) {
+            throw new Error("Reviews are only available after delivery.");
+        }
+
+        const orderItems = resolveOrderItems(orderData);
+        const matchedItem = orderItems.find((item: any) => {
+            const candidates = [item?.menuItemId, item?.itemId, item?.id];
+            return candidates.some((candidate) => normalizeId(candidate) === itemId);
+        });
+
+        if (!matchedItem) {
+            throw new Error("This item was not found in the delivered order.");
+        }
+
+        const resolvedItemName = normalizeId(input.itemName || matchedItem?.name);
+        if (!resolvedItemName) {
+            throw new Error("Item name is required.");
+        }
+
+        const orderRestaurantName =
+            String(orderData?.restaurant?.name || orderData?.restaurantName || orderData?.restaurant || "").trim() || undefined;
+        const payload = compactObject({
+            id: reviewId,
+            reviewKey: reviewId,
+            userId,
+            userName: userName || "Hungrie User",
+            restaurantId,
+            restaurantName: orderRestaurantName || undefined,
+            orderId,
+            itemId,
+            itemName: resolvedItemName,
+            menuItemId: itemId,
+            menuItemName: resolvedItemName,
+            rating,
+            comment,
+            status: "published",
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        });
+
+        await setDoc(reviewRef, payload);
+
+        const savedSnapshot = await getDoc(reviewRef);
+        if (!savedSnapshot.exists()) {
+            throw new Error("Review could not be loaded after save.");
+        }
+
+        const savedReview = mapReviewDoc(savedSnapshot);
+        await recomputeRestaurantMetrics(savedReview.restaurantId).catch((error) => {
+            console.warn("[Metrics] Failed to recompute restaurant metrics after review save", error);
+        });
+        return savedReview;
+    } catch (error) {
+        throw mapReviewError(error);
+    }
 };
 
 const getMenuAggregateAfterStatusChange = ({
@@ -136,166 +367,9 @@ const getMenuAggregateAfterStatusChange = ({
     };
 };
 
-const buildRestaurantReviewSummary = (reviews: MenuItemReview[]): RestaurantReviewSummary => {
-    const publishedReviews = reviews.filter((review) => review.status === "published");
-    const distribution: RestaurantReviewSummary["distribution"] = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    const latestByMenuItem: Record<string, MenuItemReview> = {};
-
-    for (const review of publishedReviews) {
-        distribution[review.rating] += 1;
-        if (!latestByMenuItem[review.menuItemId]) {
-            latestByMenuItem[review.menuItemId] = review;
-        }
-    }
-
-    const total = publishedReviews.reduce((sum, review) => sum + review.rating, 0);
-    return {
-        average: publishedReviews.length ? Number((total / publishedReviews.length).toFixed(1)) : 0,
-        count: publishedReviews.length,
-        distribution,
-        recentReviews: publishedReviews.slice(0, 8),
-        latestByMenuItem,
-    };
-};
-
-export const fetchMenuItemReviews = async (menuItemId: string) => {
-    if (!menuItemId) return [];
-
-    const db = ensureDb();
-    const snapshot = await getDocs(
-        query(collection(db, FIREBASE_COLLECTIONS.reviews), where("menuItemId", "==", String(menuItemId))),
-    );
-
-    return sortReviewsByRecent(snapshot.docs.map(mapReviewDoc).filter((review) => review.status === "published"));
-};
-
-export const fetchRestaurantReviews = async (restaurantId: string, options?: { includeHidden?: boolean }) => {
-    if (!restaurantId) return [];
-
-    const db = ensureDb();
-    const snapshot = await getDocs(
-        query(collection(db, FIREBASE_COLLECTIONS.reviews), where("restaurantId", "==", String(restaurantId))),
-    );
-
-    const mapped = sortReviewsByRecent(snapshot.docs.map(mapReviewDoc));
-
-    if (options?.includeHidden) return mapped;
-    return mapped.filter((review) => review.status === "published");
-};
-
-export const fetchRestaurantReviewSummary = async (restaurantId: string) => {
-    const reviews = await fetchRestaurantReviews(restaurantId);
-    return buildRestaurantReviewSummary(reviews);
-};
-
-export const fetchUserReviews = async (userId: string) => {
-    const normalizedUserId = String(userId || "").trim();
-    if (!normalizedUserId) return [];
-
-    const db = ensureDb();
-    const snapshot = await getDocs(query(collection(db, FIREBASE_COLLECTIONS.reviews), where("userId", "==", normalizedUserId)));
-    return sortReviewsByRecent(snapshot.docs.map(mapReviewDoc));
-};
-
-export const submitMenuItemReview = async (input: SubmitMenuItemReviewInput) => {
-    const db = ensureDb();
-    const orderId = String(input.orderId || "").trim();
-    const restaurantId = String(input.restaurantId || "").trim();
-    const menuItemId = String(input.menuItemId || "").trim();
-    const userId = String(input.userId || "").trim();
-    const userName = input.userName?.trim();
-    const comment = normalizeComment(input.comment);
-    const rating = Number(input.rating || 0) as 1 | 2 | 3 | 4 | 5;
-
-    if (!orderId || !restaurantId || !menuItemId || !userId) {
-        throw new Error("Missing review context.");
-    }
-    if (![1, 2, 3, 4, 5].includes(rating)) {
-        throw new Error("Rating must be between 1 and 5.");
-    }
-
-    const reviewId = createReviewId({ orderId, menuItemId, userId });
-    const reviewRef = doc(db, FIREBASE_COLLECTIONS.reviews, reviewId);
-    const orderRef = doc(db, FIREBASE_COLLECTIONS.orders, orderId);
-
-    try {
-        await runTransaction(db, async (transaction) => {
-            const orderSnapshot = await transaction.get(orderRef);
-            const reviewSnapshot = await transaction.get(reviewRef);
-
-            if (!orderSnapshot.exists()) {
-                throw new Error("Order not found.");
-            }
-
-            const orderData = orderSnapshot.data() || {};
-            if (String(orderData.userId || "") !== userId) {
-                throw new Error("You can only review your own orders.");
-            }
-            const normalizedOrderStatus = String(orderData.status || "").trim().toLowerCase();
-            if (normalizedOrderStatus !== "delivered" && normalizedOrderStatus !== "completed") {
-                throw new Error("Reviews are only available after completion.");
-            }
-
-            const orderItems = resolveOrderItems(orderData);
-            const matchedItem = orderItems.find((item: any) => {
-                const candidates = [item?.menuItemId, item?.id];
-                return candidates.some((candidate) => String(candidate || "") === menuItemId);
-            });
-
-            if (!matchedItem) {
-                throw new Error("This item was not found in the delivered order.");
-            }
-
-            if (reviewSnapshot.exists()) {
-                throw new Error("This item has already been reviewed for this order.");
-            }
-
-            const orderRestaurantName =
-                String(orderData?.restaurant?.name || orderData?.restaurantName || orderData?.restaurant || "").trim() || undefined;
-
-            transaction.set(
-                reviewRef,
-                {
-                    reviewKey: reviewId,
-                    orderId,
-                    restaurantId,
-                    restaurantName: orderRestaurantName || undefined,
-                    menuItemId,
-                    menuItemName: String(matchedItem?.name || ""),
-                    userId,
-                    userName: userName || "Hungrie User",
-                    rating,
-                    comment: comment || "",
-                    status: "published",
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp(),
-                },
-                { merge: true },
-            );
-        });
-    } catch (error: any) {
-        const code = String(error?.code || "").toLowerCase();
-        if (code.includes("permission-denied")) {
-            throw new Error("Review permission is not enabled yet. Deploy Firestore rules and try again.");
-        }
-        throw error;
-    }
-
-    const savedSnapshot = await getDoc(reviewRef);
-    if (!savedSnapshot.exists()) {
-        throw new Error("Review could not be loaded after save.");
-    }
-
-    const savedReview = mapReviewDoc(savedSnapshot);
-    await recomputeRestaurantMetrics(savedReview.restaurantId).catch((error) => {
-        console.warn("[Metrics] Failed to recompute restaurant metrics after review save", error);
-    });
-    return savedReview;
-};
-
 export const moderateMenuItemReview = async ({ reviewId, status, reply }: ModerateMenuItemReviewInput) => {
     const db = ensureDb();
-    const reviewRef = doc(db, FIREBASE_COLLECTIONS.reviews, reviewId);
+    const reviewRef = doc(db, REVIEWS_COLLECTION, reviewId);
 
     await runTransaction(db, async (transaction) => {
         const reviewSnapshot = await transaction.get(reviewRef);
@@ -306,7 +380,7 @@ export const moderateMenuItemReview = async ({ reviewId, status, reply }: Modera
         const reviewData = reviewSnapshot.data() as Record<string, any>;
         const currentStatus = (reviewData.status === "hidden" ? "hidden" : "published") as MenuItemReview["status"];
         const nextStatus = status || currentStatus;
-        const menuItemId = String(reviewData.menuItemId || "");
+        const menuItemId = String(reviewData.itemId || reviewData.menuItemId || "");
         const menuRef = doc(db, FIREBASE_COLLECTIONS.menus, menuItemId);
         const menuSnapshot = await transaction.get(menuRef);
         const menuData = menuSnapshot.exists() ? menuSnapshot.data() || {} : {};
@@ -357,10 +431,15 @@ export const moderateMenuItemReview = async ({ reviewId, status, reply }: Modera
 };
 
 export const saveMenuItemReviewReply = async (reviewId: string, reply: string) => {
-    const reviewRef = doc(ensureDb(), FIREBASE_COLLECTIONS.reviews, reviewId);
+    const reviewRef = doc(ensureDb(), REVIEWS_COLLECTION, reviewId);
     await updateDoc(reviewRef, {
         reply: reply.trim(),
-        replyAt: reply.trim() ? serverTimestamp() : null,
+        replyAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
     });
+    const updatedSnapshot = await getDoc(reviewRef);
+    if (!updatedSnapshot.exists()) {
+        throw new Error("Review not found.");
+    }
+    return mapReviewDoc(updatedSnapshot);
 };

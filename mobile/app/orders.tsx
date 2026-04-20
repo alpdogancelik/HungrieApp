@@ -15,16 +15,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { useFocusEffect } from "@react-navigation/native";
 
 import type { OrderStatus, RestaurantOrder } from "@/type";
 import { subscribeUserOrders } from "@/src/services/firebaseOrders";
 import ReviewSheet from "@/src/features/reviews/ReviewSheet";
-import { useProductReviews } from "@/src/features/reviews/useProductReviews";
+import { fetchUserReviews, submitMenuItemReview } from "@/src/services/menuItemReviews";
 import useAuthStore from "@/store/auth.store";
 import { illustrations } from "@/constants/mediaCatalog";
 import { ORDER_STATUS_COLORS } from "@/components/OrderCard";
 import Icon from "@/components/Icon";
 import { seedRestaurants } from "@/lib/restaurantSeeds";
+import { getProductReviewId, isCancelledStatus, isReviewableStatus } from "@/src/features/reviews/reviewUtils";
 
 type FilterId = "all" | OrderStatus;
 
@@ -46,7 +48,7 @@ const formatTimestamp = (value: any, locale?: string) => {
     if (!value) return "";
     if (typeof value === "string" || typeof value === "number") {
         const date = new Date(value);
-        return isNaN(date.getTime()) ? String(value) : date.toLocaleString(locale);
+        return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString(locale);
     }
     if (typeof value === "object" && "seconds" in value) {
         const millis = value.seconds * 1000 + (value.nanoseconds || 0) / 1_000_000;
@@ -66,12 +68,13 @@ const getMillis = (value: any) => {
 };
 
 const normalizeStatus = (status?: string): OrderStatus => {
-    if (!status) return "pending";
-    if (status === "accepted") return "preparing";
-    if (status === "rejected") return "canceled";
-    if (status === "completed") return "delivered";
-    if (["pending", "preparing", "ready", "out_for_delivery", "delivered", "canceled"].includes(status)) {
-        return status as OrderStatus;
+    const raw = String(status || "").trim().toLowerCase();
+    if (isCancelledStatus(raw)) return "canceled";
+    if (isReviewableStatus(raw)) return "delivered";
+    if (raw === "accepted") return "preparing";
+    if (raw === "hazir" || raw === "hazirlandi" || raw === "hazirlandı" || raw === "hazırlandı" || raw === "hazır") return "ready";
+    if (["pending", "preparing", "ready", "out_for_delivery", "delivered", "canceled"].includes(raw)) {
+        return raw as OrderStatus;
     }
     return "pending";
 };
@@ -79,9 +82,9 @@ const normalizeStatus = (status?: string): OrderStatus => {
 const resolveItems = (order: any) => {
     const raw = Array.isArray(order?.orderItems) ? order.orderItems : Array.isArray(order?.items) ? order.items : [];
     return raw.map((item: any) => ({
-        menuItemId: item?.menuItemId ?? item?.id ?? undefined,
+        itemId: String(item?.menuItemId ?? item?.itemId ?? item?.id ?? "").trim() || undefined,
         name: item?.name ?? "-",
-        quantity: Number(item?.quantity ?? 1),
+        quantity: Math.max(1, Number(item?.quantity ?? 1)),
     }));
 };
 
@@ -98,93 +101,11 @@ const resolveRestaurantName = (order: any) =>
     restaurantNamesById[normalizeId(order?.restaurantId)] ||
     "Restaurant";
 
-const OrderItemReviewRow = ({
-    orderId,
-    restaurantId,
-    item,
-    canReview,
-}: {
+type ReviewTarget = {
     orderId: string;
     restaurantId: string;
-    item: { menuItemId?: string; name: string; quantity: number };
-    canReview: boolean;
-}) => {
-    const { i18n } = useTranslation();
-    const isTurkish = i18n.language?.toLowerCase().startsWith("tr");
-    const [sheetVisible, setSheetVisible] = useState(false);
-    const { currentUserReview, submitReview, isSubmitting } = useProductReviews(item.menuItemId, {
-        orderId,
-        restaurantId,
-        enabled: Boolean(canReview && item.menuItemId && orderId && restaurantId),
-    });
-
-    const handleSubmit = useCallback(
-        async ({ rating, comment }: { rating: 1 | 2 | 3 | 4 | 5; comment?: string }) => {
-            const result = await submitReview({ rating, comment });
-            if (result.error) {
-                Alert.alert(isTurkish ? "Yorum kullan\u0131lam\u0131yor" : "Review unavailable", result.error.message);
-                return;
-            }
-            setSheetVisible(false);
-            Alert.alert(
-                isTurkish ? "Yorum kaydedildi" : "Review saved",
-                isTurkish ? "Geri bildirimin bu teslim edilen \u00FCr\u00FCne kaydedildi." : "Your feedback is now linked to this delivered item.",
-            );
-        },
-        [isTurkish, submitReview],
-    );
-
-    return (
-        <View
-            style={{
-                borderRadius: 18,
-                borderWidth: 1,
-                borderColor: "#E2E8F0",
-                backgroundColor: "#F8FAFC",
-                paddingHorizontal: 12,
-                paddingVertical: 10,
-                gap: 8,
-            }}
-        >
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", columnGap: 12 }}>
-                <Text style={{ flex: 1, color: "#1E293B", fontFamily: "ChairoSans" }}>{`${item.quantity}x ${item.name}`}</Text>
-                {canReview && item.menuItemId ? (
-                    <TouchableOpacity
-                        onPress={() => {
-                            if (!currentUserReview) setSheetVisible(true);
-                        }}
-                        disabled={Boolean(currentUserReview)}
-                        style={{
-                            borderRadius: 999,
-                            paddingHorizontal: 12,
-                            paddingVertical: 8,
-                            backgroundColor: currentUserReview ? "#E2E8F0" : "#FE8C00",
-                        }}
-                    >
-                        <Text style={{ color: currentUserReview ? "#475569" : "#FFFFFF", fontFamily: "ChairoSans", fontSize: 12 }}>
-                            {currentUserReview ? (isTurkish ? "De\u011Ferlendirildi" : "Reviewed") : isTurkish ? "\u00DCr\u00FCn\u00FC de\u011Ferlendir" : "Review item"}
-                        </Text>
-                    </TouchableOpacity>
-                ) : null}
-            </View>
-
-            {currentUserReview ? (
-                <Text style={{ color: "#64748B", fontFamily: "ChairoSans", fontSize: 12 }}>
-                    {`${isTurkish ? "Puan" : "Rating"}: ${currentUserReview.rating}/5${currentUserReview.comment ? ` - ${currentUserReview.comment}` : ""}`}
-                </Text>
-            ) : null}
-
-            <ReviewSheet
-                visible={sheetVisible}
-                submitting={isSubmitting}
-                initialRating={currentUserReview?.rating}
-                initialComment={currentUserReview?.comment}
-                onClose={() => setSheetVisible(false)}
-                onSubmit={handleSubmit}
-                placeholder={isTurkish ? "Teslimattan sonra bu \u00FCr\u00FCn nas\u0131ld\u0131?" : "Tell others how this item was after delivery..."}
-            />
-        </View>
-    );
+    itemId: string;
+    itemName: string;
 };
 
 const OrderHistoryScreen = () => {
@@ -194,12 +115,45 @@ const OrderHistoryScreen = () => {
     const { t, i18n } = useTranslation();
     const locale = i18n.language?.startsWith("tr") ? "tr-TR" : "en-US";
     const isTurkish = i18n.language?.toLowerCase().startsWith("tr");
+    const userId = String(user?.id ?? user?.$id ?? user?.accountId ?? "").trim();
+    const userName = String(user?.name || "").trim() || undefined;
 
     const [orders, setOrders] = useState<RestaurantOrder[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<FilterId>("all");
     const [search, setSearch] = useState("");
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+    const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set());
+    const [reviewTarget, setReviewTarget] = useState<ReviewTarget | null>(null);
+    const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+    const [reviewLookupLoading, setReviewLookupLoading] = useState(false);
+
+    const loadReviewedIds = useCallback(async () => {
+        if (!userId) {
+            setReviewedIds(new Set());
+            setReviewLookupLoading(false);
+            return;
+        }
+
+        try {
+            setReviewLookupLoading(true);
+            const reviews = await fetchUserReviews(userId);
+            const nextIds = new Set<string>();
+            for (const review of reviews) {
+                if (review.id) nextIds.add(String(review.id));
+                const reviewOrderId = String(review.orderId || "");
+                const reviewItemId = String(review.itemId || review.menuItemId || "");
+                if (reviewOrderId && reviewItemId) {
+                    nextIds.add(getProductReviewId(reviewOrderId, reviewItemId, userId));
+                }
+            }
+            setReviewedIds(nextIds);
+        } catch {
+            setReviewedIds(new Set());
+        } finally {
+            setReviewLookupLoading(false);
+        }
+    }, [userId]);
 
     const handleBackPress = () => {
         if (router.canGoBack()) {
@@ -209,8 +163,17 @@ const OrderHistoryScreen = () => {
         router.replace("/profile");
     };
 
+    useFocusEffect(
+        useCallback(() => {
+            void loadReviewedIds();
+            return () => {
+                setReviewTarget(null);
+                setIsSubmittingReview(false);
+            };
+        }, [loadReviewedIds]),
+    );
+
     useEffect(() => {
-        const userId = user?.id ?? user?.$id ?? user?.accountId ?? null;
         if (!userId) {
             setOrders([]);
             setLoading(false);
@@ -229,7 +192,11 @@ const OrderHistoryScreen = () => {
                 /* noop */
             }
         };
-    }, [user?.id, user?.$id, user?.accountId]);
+    }, [userId]);
+
+    useEffect(() => {
+        void loadReviewedIds();
+    }, [loadReviewedIds]);
 
     const filtered = useMemo(() => {
         const normalizedSearch = search.trim().toLowerCase();
@@ -256,12 +223,95 @@ const OrderHistoryScreen = () => {
 
     const handleRefresh = async () => {
         setVisibleCount(PAGE_SIZE);
+        await loadReviewedIds();
     };
+
     const handleCopyOrderId = (orderId: string) => {
         if (!orderId || orderId === "-") return;
         Clipboard.setString(orderId);
-        Alert.alert(isTurkish ? "Kopyaland\u0131" : "Copied", isTurkish ? "Sipari\u015F numaras\u0131 kopyaland\u0131." : "Order ID copied.");
+        Alert.alert(isTurkish ? "Kopyalandi" : "Copied", isTurkish ? "Siparis numarasi kopyalandi." : "Order ID copied.");
     };
+
+    const openReviewModal = (target: ReviewTarget) => {
+        setReviewTarget(target);
+    };
+
+    const closeReviewModal = () => {
+        setReviewTarget(null);
+    };
+
+    const handleSubmitReview = useCallback(
+        async ({ rating, comment }: { rating: 1 | 2 | 3 | 4 | 5; comment?: string }) => {
+            if (!reviewTarget) return;
+            if (!userId) {
+                Alert.alert(isTurkish ? "Yorum kullanilamiyor" : "Review unavailable", isTurkish ? "Lutfen giris yapin." : "Please sign in.");
+                return;
+            }
+            if (rating < 1 || rating > 5) {
+                Alert.alert(isTurkish ? "Gecersiz puan" : "Invalid rating", isTurkish ? "Puan 1-5 arasinda olmali." : "Rating must be 1-5.");
+                return;
+            }
+
+            try {
+                setIsSubmittingReview(true);
+                await submitMenuItemReview({
+                    orderId: reviewTarget.orderId,
+                    restaurantId: reviewTarget.restaurantId,
+                    itemId: reviewTarget.itemId,
+                    itemName: reviewTarget.itemName,
+                    userId,
+                    userName,
+                    rating,
+                    comment,
+                });
+
+                const submittedId = getProductReviewId(reviewTarget.orderId, reviewTarget.itemId, userId);
+                setReviewedIds((prev) => {
+                    const next = new Set(prev);
+                    next.add(submittedId);
+                    return next;
+                });
+                await loadReviewedIds();
+                closeReviewModal();
+                Alert.alert(
+                    isTurkish ? "Yorum kaydedildi" : "Review saved",
+                    isTurkish ? "Urun yorumu basariyla kaydedildi." : "Your product review was saved.",
+                );
+            } catch (error: any) {
+                Alert.alert(
+                    isTurkish ? "Yorum kaydedilemedi" : "Unable to save review",
+                    error?.message || (isTurkish ? "Lütfen tekrar deneyin." : "Please try again."),
+                );
+            } finally {
+                setIsSubmittingReview(false);
+            }
+        },
+        [isTurkish, loadReviewedIds, reviewTarget, userId, userName],
+    );
+
+    useEffect(() => {
+        if (!__DEV__ || !userId) return;
+
+        const deliveredOrders = orders.filter((order) => {
+            const status = String(order?.status || "");
+            return isReviewableStatus(status);
+        }).length;
+
+        let pendingItems = 0;
+        for (const order of orders) {
+            const status = String(order?.status || "");
+            if (!isReviewableStatus(status)) continue;
+            const orderId = String(order?.id || "").trim();
+            if (!orderId) continue;
+            for (const item of resolveItems(order)) {
+                if (!item.itemId) continue;
+                const reviewId = getProductReviewId(orderId, item.itemId, userId);
+                if (!reviewedIds.has(reviewId)) pendingItems += 1;
+            }
+        }
+
+        console.debug(`[Reviews][Orders] delivered=${deliveredOrders}, existing=${reviewedIds.size}, pending=${pendingItems}`);
+    }, [orders, reviewedIds, userId]);
 
     const renderFilter = () => (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
@@ -366,7 +416,7 @@ const OrderHistoryScreen = () => {
                     const rawOrderId = String(item.id ?? "-");
                     const orderIdText = `#${rawOrderId}`;
                     const restaurantId = String(item.restaurantId ?? "");
-                    const canReviewDeliveredItems = normStatus === "delivered";
+                    const canReviewDeliveredItems = isReviewableStatus(String(item.status || ""));
 
                     return (
                         <View
@@ -388,13 +438,13 @@ const OrderHistoryScreen = () => {
                                             style={{ flex: 1, fontFamily: "ChairoSans", fontSize: 12, color: "#64748B" }}
                                             numberOfLines={2}
                                         >
-                                            {isTurkish ? `Sipari\u015F No: ${orderIdText}` : `Order ID: ${orderIdText}`}
+                                            {isTurkish ? `Siparis No: ${orderIdText}` : `Order ID: ${orderIdText}`}
                                         </Text>
                                         <TouchableOpacity
                                             onPress={() => handleCopyOrderId(rawOrderId)}
                                             hitSlop={8}
                                             accessibilityRole="button"
-                                            accessibilityLabel={isTurkish ? "Sipari\u015F numaras\u0131n\u0131 kopyala" : "Copy order ID"}
+                                            accessibilityLabel={isTurkish ? "Siparis numarasini kopyala" : "Copy order ID"}
                                             style={{
                                                 width: 24,
                                                 height: 24,
@@ -432,15 +482,80 @@ const OrderHistoryScreen = () => {
                             </Text>
                             {summaryItems.length ? (
                                 <View style={{ marginTop: 10, gap: 8 }}>
-                                    {summaryItems.map((orderItem: { menuItemId?: string; name: string; quantity: number }, index: number) => (
-                                        <OrderItemReviewRow
-                                            key={`${rawOrderId}-${String(orderItem.menuItemId || orderItem.name)}-${index}`}
-                                            orderId={rawOrderId}
-                                            restaurantId={restaurantId}
-                                            item={orderItem}
-                                            canReview={canReviewDeliveredItems}
-                                        />
-                                    ))}
+                                    {summaryItems.map((orderItem: { itemId?: string; name: string; quantity: number }, index: number) => {
+                                        const reviewId =
+                                            userId && orderItem.itemId ? getProductReviewId(rawOrderId, orderItem.itemId, userId) : "";
+                                        const isReviewed = reviewId ? reviewedIds.has(reviewId) : false;
+                                        const canReviewItem =
+                                            !reviewLookupLoading &&
+                                            canReviewDeliveredItems &&
+                                            Boolean(restaurantId) &&
+                                            Boolean(orderItem.itemId) &&
+                                            !isReviewed;
+
+                                        return (
+                                            <View
+                                                key={`${rawOrderId}-${String(orderItem.itemId || orderItem.name)}-${index}`}
+                                                style={{
+                                                    borderRadius: 18,
+                                                    borderWidth: 1,
+                                                    borderColor: "#E2E8F0",
+                                                    backgroundColor: "#F8FAFC",
+                                                    paddingHorizontal: 12,
+                                                    paddingVertical: 10,
+                                                    gap: 8,
+                                                }}
+                                            >
+                                                <View
+                                                    style={{
+                                                        flexDirection: "row",
+                                                        alignItems: "center",
+                                                        justifyContent: "space-between",
+                                                        columnGap: 12,
+                                                    }}
+                                                >
+                                                    <Text style={{ flex: 1, color: "#1E293B", fontFamily: "ChairoSans" }}>
+                                                        {`${orderItem.quantity}x ${orderItem.name}`}
+                                                    </Text>
+                                                    {canReviewItem ? (
+                                                        <TouchableOpacity
+                                                            onPress={() =>
+                                                                openReviewModal({
+                                                                    orderId: rawOrderId,
+                                                                    restaurantId,
+                                                                    itemId: String(orderItem.itemId),
+                                                                    itemName: orderItem.name,
+                                                                })
+                                                            }
+                                                            style={{
+                                                                borderRadius: 999,
+                                                                paddingHorizontal: 12,
+                                                                paddingVertical: 8,
+                                                                backgroundColor: "#FE8C00",
+                                                            }}
+                                                        >
+                                                            <Text style={{ color: "#FFFFFF", fontFamily: "ChairoSans", fontSize: 12 }}>
+                                                                {isTurkish ? "\u00dcr\u00fcn\u00fc de\u011ferlendir" : "Review item"}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    ) : isReviewed ? (
+                                                        <View
+                                                            style={{
+                                                                borderRadius: 999,
+                                                                paddingHorizontal: 12,
+                                                                paddingVertical: 8,
+                                                                backgroundColor: "#E2E8F0",
+                                                            }}
+                                                        >
+                                                            <Text style={{ color: "#475569", fontFamily: "ChairoSans", fontSize: 12 }}>
+                                                                {isTurkish ? "De\u011ferlendirildi" : "Reviewed"}
+                                                            </Text>
+                                                        </View>
+                                                    ) : null}
+                                                </View>
+                                            </View>
+                                        );
+                                    })}
                                 </View>
                             ) : null}
                             <View
@@ -480,6 +595,14 @@ const OrderHistoryScreen = () => {
                         <ActivityIndicator color="#FE8C00" style={{ marginVertical: 16 }} />
                     ) : null
                 }
+            />
+
+            <ReviewSheet
+                visible={Boolean(reviewTarget)}
+                submitting={isSubmittingReview}
+                onClose={closeReviewModal}
+                onSubmit={handleSubmitReview}
+                placeholder={isTurkish ? "Teslimattan sonra bu \u00fcr\u00fcn nas\u0131ld\u0131?" : "Tell others how this item was after delivery..."}
             />
         </SafeAreaView>
     );

@@ -109,15 +109,17 @@ service cloud.firestore {
         && request.resource.data.restaurantId is string
         && request.resource.data.menuItemId is string
         && request.resource.data.menuItemName is string
-        && request.resource.data.rating is int
+        && (request.resource.data.rating is int || request.resource.data.rating is float)
         && request.resource.data.rating >= 1
         && request.resource.data.rating <= 5
+        && reviewId == request.resource.data.orderId + "__" + request.resource.data.menuItemId + "__" + request.auth.uid
         && !exists(/databases/$(database)/documents/reviews/$(reviewId))
         && exists(/databases/$(database)/documents/orders/$(request.resource.data.orderId))
         && get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.userId == request.auth.uid
         && (
           get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.status == "delivered"
           || get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.status == "completed"
+          || get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.status == "teslim edildi"
         );
 
       allow update, delete: if false;

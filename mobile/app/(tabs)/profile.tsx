@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import "@/src/lib/i18n";
 
@@ -25,13 +25,21 @@ import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 import { OrderStatus } from "@/type";
 import { ORDER_STATUS_COLORS } from "@/components/OrderCard";
 import { makeShadow } from "@/src/lib/shadowStyle";
-import { deleteCurrentUserProfile, updateUserProfile } from "@/lib/firebaseAuth";
+import { deleteCurrentUserProfile, getOwnedRestaurantId, updateUserProfile } from "@/lib/firebaseAuth";
 import { NotificationManager } from "@/src/features/notifications/NotificationManager";
 import { seedRestaurants } from "@/lib/restaurantSeeds";
 import { fetchUserReviews } from "@/src/services/menuItemReviews";
+import {
+    getOrderReviewItems,
+    getPendingReviewItems,
+    getProductReviewId,
+    isCancelledStatus,
+    isReviewableStatus,
+} from "@/src/features/reviews/reviewUtils";
 
 const WINE_RED = "#7F021F";
 const ORANGE = "#FE8C00";
+const DISMISSED_REVIEWABLE_ORDERS_KEY_PREFIX = "hungrie_dismissed_reviewable_orders_v1";
 const normalizeId = (value: unknown) => (value === null || value === undefined ? "" : String(value));
 const restaurantNamesById = seedRestaurants.reduce<Record<string, string>>((acc, restaurant: any) => {
     const id = normalizeId(restaurant?.id);
@@ -443,21 +451,16 @@ const formatCurrency = (value?: number | string) => {
 };
 
 const normalizeStatus = (status?: string): OrderStatus => {
-    if (!status) return "pending";
-    if (status === "accepted") return "preparing";
-    if (status === "rejected") return "canceled";
-    if (["pending", "preparing", "ready", "out_for_delivery", "delivered", "canceled"].includes(status)) {
-        return status as OrderStatus;
+    const raw = String(status || "").trim().toLowerCase();
+    if (!raw) return "pending";
+    if (isCancelledStatus(raw)) return "canceled";
+    if (isReviewableStatus(raw)) return "delivered";
+    if (raw === "accepted") return "preparing";
+    if (["pending", "preparing", "ready", "out_for_delivery", "delivered", "canceled"].includes(raw)) {
+        return raw as OrderStatus;
     }
     return "pending";
 };
-
-const isCompletedStatus = (status?: string) => {
-    const normalized = String(status || "").trim().toLowerCase();
-    return normalized === "delivered" || normalized === "completed";
-};
-
-const makeReviewItemKey = (orderId: string, menuItemId: string) => `${orderId}__${menuItemId}`;
 
 type OrderSummaryItem = {
     name: string;
@@ -479,16 +482,6 @@ const resolveItems = (order: any): OrderSummaryItem[] => {
         name: item?.name ?? "-",
         quantity: Number(item?.quantity ?? 1),
     }));
-};
-
-const resolveReviewItems = (order: any) => {
-    const rawItems = Array.isArray(order?.orderItems) ? order.orderItems : Array.isArray(order?.items) ? order.items : [];
-    return rawItems
-        .map((item: any) => ({
-            menuItemId: String(item?.menuItemId ?? item?.id ?? "").trim(),
-            menuItemName: String(item?.name ?? "").trim(),
-        }))
-        .filter((item: { menuItemId: string; menuItemName: string }) => item.menuItemId && item.menuItemName);
 };
 
 const formatTimestamp = (value: any) => {
@@ -529,8 +522,11 @@ const Profile = () => {
     const guestVisualCenterOffset = Math.max((guestTabBarOffset - safeTop) / 2, 0) + 48;
 
     const [orders, setOrders] = useState<any[]>([]);
-    const [reviewedItemKeys, setReviewedItemKeys] = useState<Set<string>>(new Set());
+    const [existingReviewIds, setExistingReviewIds] = useState<Set<string>>(new Set());
     const [reviewsLoading, setReviewsLoading] = useState(false);
+    const [dismissedReviewableOrderIds, setDismissedReviewableOrderIds] = useState<Set<string>>(new Set());
+    const [showAllReviewableOrders, setShowAllReviewableOrders] = useState(false);
+    const [ownedRestaurantId, setOwnedRestaurantId] = useState<string | null>(null);
     const [signingOut, setSigningOut] = useState(false);
     const [deletingProfile, setDeletingProfile] = useState(false);
 
@@ -558,31 +554,48 @@ const Profile = () => {
         [user?.name],
     );
     const userId = String(user?.id ?? user?.$id ?? user?.accountId ?? "").trim();
+    const dismissedReviewableOrdersStorageKey = `${DISMISSED_REVIEWABLE_ORDERS_KEY_PREFIX}:${userId || "guest"}`;
 
     const activeOrders = useMemo(() => {
         return (orders || []).filter((o: any) => {
-            const s = normalizeStatus(o?.status);
-            return s !== "delivered" && s !== "canceled";
+            const status = String(o?.status || "");
+            return !isReviewableStatus(status) && !isCancelledStatus(status);
         });
     }, [orders]);
-    const reviewableOrders = useMemo<ReviewableOrder[]>(() => {
+
+    const allReviewableOrders = useMemo<ReviewableOrder[]>(() => {
         if (!userId) return [];
 
-        const list: ReviewableOrder[] = [];
+        const latestOrderById = new Map<string, any>();
         for (const order of orders || []) {
-            if (!isCompletedStatus(order?.status)) continue;
             const orderId = String(order?.id ?? "").trim();
             if (!orderId) continue;
+            const existing = latestOrderById.get(orderId);
+            if (!existing) {
+                latestOrderById.set(orderId, order);
+                continue;
+            }
+            const existingUpdatedAt = toMillis(existing?.updatedAt || existing?.createdAt);
+            const nextUpdatedAt = toMillis(order?.updatedAt || order?.createdAt);
+            if (nextUpdatedAt >= existingUpdatedAt) {
+                latestOrderById.set(orderId, order);
+            }
+        }
+
+        const list: ReviewableOrder[] = [];
+        for (const order of latestOrderById.values()) {
+            const orderId = String(order?.id ?? "").trim();
+            if (!orderId) continue;
+            if (String(order?.userId || "").trim() && String(order?.userId || "").trim() !== userId) continue;
+            if (isCancelledStatus(String(order?.status || ""))) continue;
+            if (!isReviewableStatus(String(order?.status || ""))) continue;
 
             const orderRestaurantName = resolveRestaurantName(order);
-            const reviewItems = resolveReviewItems(order);
+            const reviewItems = getOrderReviewItems(order);
             if (!reviewItems.length) continue;
 
-            const reviewedCount = reviewItems.reduce((acc: number, item: { menuItemId: string; menuItemName: string }) => {
-                const key = makeReviewItemKey(orderId, item.menuItemId);
-                return acc + (reviewedItemKeys.has(key) ? 1 : 0);
-            }, 0);
-            const pendingCount = reviewItems.length - reviewedCount;
+            const pendingItems = getPendingReviewItems(order, existingReviewIds, userId);
+            const pendingCount = pendingItems.length;
             if (pendingCount <= 0) continue;
 
             list.push({
@@ -596,7 +609,32 @@ const Profile = () => {
         }
 
         return list.sort((a, b) => toMillis(b.updatedAt) - toMillis(a.updatedAt));
-    }, [orders, reviewedItemKeys, userId]);
+    }, [orders, existingReviewIds, userId]);
+
+    const reviewableOrders = useMemo(
+        () => allReviewableOrders.filter((order) => !dismissedReviewableOrderIds.has(order.orderId)),
+        [allReviewableOrders, dismissedReviewableOrderIds],
+    );
+
+    useEffect(() => {
+        if (!__DEV__ || !userId) return;
+
+        const deliveredOrdersCount = (orders || []).filter(
+            (order: any) => isReviewableStatus(String(order?.status || "")),
+        ).length;
+        const pendingReviewItems = allReviewableOrders.reduce((acc, order) => acc + order.pendingCount, 0);
+
+        console.debug(
+            `[Reviews][Profile] delivered=${deliveredOrdersCount}, existing=${existingReviewIds.size}, pending=${pendingReviewItems}`,
+        );
+    }, [orders, allReviewableOrders, existingReviewIds, userId]);
+
+    const visibleReviewableOrders = useMemo(
+        () => (showAllReviewableOrders ? reviewableOrders : reviewableOrders.slice(0, 3)),
+        [reviewableOrders, showAllReviewableOrders],
+    );
+    const canShowAllReviewableOrdersButton = reviewableOrders.length > 3;
+
     const isTurkish = i18n.language?.toLowerCase().startsWith("tr");
     const guestCopy = {
         title: isTurkish ? "Profilini y\u00F6netmek i\u00E7in giri\u015F yap" : "Sign in to manage your profile",
@@ -627,6 +665,59 @@ const Profile = () => {
     }, [user?.name, user?.email, user?.whatsappNumber]);
 
     useEffect(() => {
+        setShowAllReviewableOrders(false);
+    }, [userId]);
+
+    useEffect(() => {
+        let active = true;
+
+        const loadDismissedReviewableOrders = async () => {
+            if (!userId) {
+                if (active) setDismissedReviewableOrderIds(new Set());
+                return;
+            }
+
+            try {
+                const raw = await storage.getItem(dismissedReviewableOrdersStorageKey);
+                if (!active) return;
+
+                if (!raw) {
+                    setDismissedReviewableOrderIds(new Set());
+                    return;
+                }
+
+                const parsed = JSON.parse(raw);
+                if (!Array.isArray(parsed)) {
+                    setDismissedReviewableOrderIds(new Set());
+                    return;
+                }
+
+                const next = new Set(parsed.map((value) => String(value || "").trim()).filter(Boolean));
+                setDismissedReviewableOrderIds(next);
+            } catch {
+                if (active) setDismissedReviewableOrderIds(new Set());
+            }
+        };
+
+        void loadDismissedReviewableOrders();
+        return () => {
+            active = false;
+        };
+    }, [dismissedReviewableOrdersStorageKey, userId]);
+
+    useEffect(() => {
+        if (!userId) return;
+        const payload = JSON.stringify(Array.from(dismissedReviewableOrderIds));
+        void storage.setItem(dismissedReviewableOrdersStorageKey, payload);
+    }, [dismissedReviewableOrderIds, dismissedReviewableOrdersStorageKey, userId]);
+
+    useEffect(() => {
+        if (reviewableOrders.length <= 3) {
+            setShowAllReviewableOrders(false);
+        }
+    }, [reviewableOrders.length]);
+
+    useEffect(() => {
         if (!userId) return;
 
         const unsubscribe = subscribeUserOrders(userId, (list) => setOrders(list || []));
@@ -639,37 +730,72 @@ const Profile = () => {
         };
     }, [userId]);
 
-    useEffect(() => {
+    const loadOwnedRestaurant = useCallback(async () => {
         if (!userId) {
-            setReviewedItemKeys(new Set());
+            setOwnedRestaurantId(null);
+            return;
+        }
+        const owned = await getOwnedRestaurantId().catch(() => null);
+        setOwnedRestaurantId(owned ? String(owned) : null);
+    }, [userId]);
+
+    useEffect(() => {
+        void loadOwnedRestaurant();
+    }, [loadOwnedRestaurant]);
+
+    useFocusEffect(
+        useCallback(() => {
+            void loadOwnedRestaurant();
+            return undefined;
+        }, [loadOwnedRestaurant]),
+    );
+
+    const loadExistingReviews = useCallback(async () => {
+        if (!userId) {
+            setExistingReviewIds(new Set());
+            setReviewsLoading(false);
             return;
         }
 
-        let mounted = true;
-        const loadUserReviews = async () => {
-            try {
-                setReviewsLoading(true);
-                const reviews = await fetchUserReviews(userId);
-                if (!mounted) return;
-                setReviewedItemKeys(
-                    new Set(
-                        reviews
-                            .map((review) => makeReviewItemKey(String(review.orderId || ""), String(review.menuItemId || "")))
-                            .filter(Boolean),
-                    ),
-                );
-            } catch {
-                if (mounted) setReviewedItemKeys(new Set());
-            } finally {
-                if (mounted) setReviewsLoading(false);
+        try {
+            setReviewsLoading(true);
+            const reviews = await fetchUserReviews(userId);
+            const next = new Set<string>();
+            for (const review of reviews) {
+                if (review.id) next.add(String(review.id));
+                const orderId = String(review.orderId || "");
+                const itemId = String(review.itemId || review.menuItemId || "");
+                if (orderId && itemId) {
+                    next.add(getProductReviewId(orderId, itemId, userId));
+                }
             }
-        };
-
-        void loadUserReviews();
-        return () => {
-            mounted = false;
-        };
+            setExistingReviewIds(next);
+        } catch {
+            setExistingReviewIds(new Set());
+        } finally {
+            setReviewsLoading(false);
+        }
     }, [userId]);
+
+    useEffect(() => {
+        void loadExistingReviews();
+    }, [loadExistingReviews]);
+
+    useFocusEffect(
+        useCallback(() => {
+            void loadExistingReviews();
+            return undefined;
+        }, [loadExistingReviews]),
+    );
+
+    const handleDismissReviewableOrder = useCallback((orderId: string) => {
+        if (!orderId) return;
+        setDismissedReviewableOrderIds((prev) => {
+            const next = new Set(prev);
+            next.add(orderId);
+            return next;
+        });
+    }, []);
 
     const handleSaveProfile = async () => {
         const trimmedName = nameDraft.trim();
@@ -716,7 +842,9 @@ const Profile = () => {
         } finally {
             setSigningOut(false);
             setOrders([]);
-            setReviewedItemKeys(new Set());
+            setExistingReviewIds(new Set());
+            setDismissedReviewableOrderIds(new Set());
+            setOwnedRestaurantId(null);
             setNotifModalVisible(false);
             setIsEditingProfile(false);
             setSavingProfile(false);
@@ -748,7 +876,9 @@ const Profile = () => {
                 setDeletingProfile(true);
                 await deleteCurrentUserProfile();
                 setOrders([]);
-                setReviewedItemKeys(new Set());
+                setExistingReviewIds(new Set());
+                setDismissedReviewableOrderIds(new Set());
+                setOwnedRestaurantId(null);
                 setNotifModalVisible(false);
                 setIsEditingProfile(false);
                 setSavingProfile(false);
@@ -1026,7 +1156,7 @@ const Profile = () => {
 
                         {reviewableOrders.length ? (
                             <View style={{ gap: 12 }}>
-                                {reviewableOrders.map((order) => (
+                                {visibleReviewableOrders.map((order) => (
                                     <View
                                         key={order.key}
                                         style={[
@@ -1036,7 +1166,27 @@ const Profile = () => {
                                             isWeb ? ui.orderItemCardShadowWeb : null,
                                         ]}
                                     >
-                                        <Text style={{ color: "#0F172A", fontFamily: "ChairoSans", fontSize: 16 }}>{order.restaurantName}</Text>
+                                        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                                            <Text style={{ color: "#0F172A", fontFamily: "ChairoSans", fontSize: 16, flex: 1 }}>
+                                                {order.restaurantName}
+                                            </Text>
+                                            <TouchableOpacity
+                                                onPress={() => handleDismissReviewableOrder(order.orderId)}
+                                                style={{
+                                                    borderRadius: 999,
+                                                    borderWidth: 1,
+                                                    borderColor: "#E2E8F0",
+                                                    backgroundColor: "#FFFFFF",
+                                                    paddingHorizontal: 10,
+                                                    paddingVertical: 4,
+                                                    marginLeft: 10,
+                                                }}
+                                            >
+                                                <Text style={{ color: "#64748B", fontFamily: "ChairoSans", fontSize: 11 }}>
+                                                    {isTurkish ? "Kapat" : "Close"}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </View>
                                         <Text style={{ color: "#64748B", fontFamily: "ChairoSans", marginTop: 2 }}>
                                             {isTurkish ? `Sipari\u015F No: #${order.orderId}` : `Order ID: #${order.orderId}`}
                                         </Text>
@@ -1061,12 +1211,37 @@ const Profile = () => {
                                                 }}
                                             >
                                                 <Text style={{ color: "#FFFFFF", fontFamily: "ChairoSans", fontSize: 13 }}>
-                                                    {isTurkish ? "Sipari\u015Fi de\u011Ferlendir" : "Review order"}
+                                                    {isTurkish ? "Sipari\u015fi de\u011ferlendir" : "Review order"}
                                                 </Text>
                                             </TouchableOpacity>
                                         </View>
                                     </View>
                                 ))}
+                                {canShowAllReviewableOrdersButton ? (
+                                    <View style={{ alignItems: "flex-end" }}>
+                                        <TouchableOpacity
+                                            onPress={() => setShowAllReviewableOrders((prev) => !prev)}
+                                            style={{
+                                                borderRadius: 999,
+                                                borderWidth: 1,
+                                                borderColor: "#E2E8F0",
+                                                paddingHorizontal: 12,
+                                                paddingVertical: 6,
+                                                backgroundColor: "#FFFFFF",
+                                            }}
+                                        >
+                                            <Text style={{ color: "#475569", fontFamily: "ChairoSans", fontSize: 12 }}>
+                                                {showAllReviewableOrders
+                                                    ? isTurkish
+                                                        ? "Daha az g\u00f6ster"
+                                                        : "Show less"
+                                                    : isTurkish
+                                                      ? "T\u00fcm\u00fcn\u00fc g\u00f6r"
+                                                      : "Show all"}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                ) : null}
                             </View>
                         ) : (
                             <Text className="body-medium text-dark-60">
@@ -1086,7 +1261,18 @@ const Profile = () => {
                     {/* ACTIONS - design version */}
                     <View className="secondary-card gap-3" style={ui.actionsCard}>
                         <SectionHeader title={t("profile.accountActions")} />
-                        {[ 
+                        {[
+                            ...(ownedRestaurantId
+                                ? [
+                                      {
+                                          label: isTurkish ? "Restoran paneli" : "Restaurant panel",
+                                          description: isTurkish
+                                              ? "Restoran siparişlerini ve menünü yönet."
+                                              : "Manage restaurant orders and menu.",
+                                          action: () => router.push("/restaurantpanel"),
+                                      },
+                                  ]
+                                : []),
                             {
                                 label: t("profileExtras.actions.notifications.label"),
                                 description: t("profileExtras.actions.notifications.description"),

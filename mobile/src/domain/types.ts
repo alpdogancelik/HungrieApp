@@ -191,7 +191,9 @@ export type MenuItemReview = {
     orderId: string;
     restaurantId: string;
     restaurantName?: string;
-    menuItemId: string;
+    itemId: string;
+    itemName?: string;
+    menuItemId?: string;
     menuItemName?: string;
     userId: string;
     userName?: string;

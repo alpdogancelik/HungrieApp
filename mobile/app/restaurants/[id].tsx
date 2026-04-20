@@ -387,6 +387,10 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
         if (Number.isNaN(date.getTime())) return value;
         return date.toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US");
     };
+    const formatRatingStars = (rating: number) => {
+        const safe = Math.max(1, Math.min(5, Math.round(rating || 0)));
+        return `${"\u2605".repeat(safe)}${"\u2606".repeat(5 - safe)}`;
+    };
 
     const toastOpacity = useRef(new Animated.Value(0)).current;
     const toastScale = useRef(new Animated.Value(0.98)).current;
@@ -647,7 +651,7 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
                                         <Text style={styles.reviewCardMuted}>
                                             {review.menuItemName || (isTurkish ? "Men\u00FC \u00FCr\u00FCn\u00FC" : "Menu item")}
                                         </Text>
-                                        <Text style={styles.reviewCardRating}>{`${review.rating}/5`}</Text>
+                                        <Text style={styles.reviewCardRating}>{`${formatRatingStars(review.rating)} ${review.rating}/5`}</Text>
                                         {review.comment ? (
                                             <Text style={styles.reviewCardBody}>{review.comment}</Text>
                                         ) : (

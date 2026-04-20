@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { MenuItemReview } from "@/src/domain/types";
+import { auth } from "@/lib/firebase";
 import { fetchMenuItemReviews, submitMenuItemReview } from "@/src/services/menuItemReviews";
 import useAuthStore from "@/store/auth.store";
 
@@ -19,7 +20,9 @@ const sanitizeComment = (comment?: string) => {
 
 export const useProductReviews = (productId?: string, options: UseProductReviewsOptions = {}) => {
     const { user } = useAuthStore();
-    const userId = (user as any)?.$id || (user as any)?.id || (user as any)?.accountId || "guest";
+    const authUid = String(auth?.currentUser?.uid || "").trim();
+    const fallbackUserId = String((user as any)?.$id || (user as any)?.id || (user as any)?.accountId || "").trim();
+    const userId = authUid || fallbackUserId;
     const userName = (user as any)?.name || undefined;
     const [reviews, setReviews] = useState<MenuItemReview[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -72,8 +75,8 @@ export const useProductReviews = (productId?: string, options: UseProductReviews
             if (!orderId || !restaurantId) {
                 return { queued: false, error: new Error("Order context is required for menu item reviews.") };
             }
-            if (userId === "guest") {
-                return { queued: false, error: new Error("Please sign in before leaving a review.") };
+            if (!authUid) {
+                return { queued: false, error: new Error("Please sign in again before leaving a review.") };
             }
             setIsSubmitting(true);
 
@@ -83,6 +86,7 @@ export const useProductReviews = (productId?: string, options: UseProductReviews
                 reviewKey: currentUserReview?.reviewKey ?? `temp-${orderId}-${productId}-${userId}`,
                 orderId,
                 restaurantId,
+                itemId: productId,
                 menuItemId: productId,
                 userId,
                 userName,
@@ -108,8 +112,8 @@ export const useProductReviews = (productId?: string, options: UseProductReviews
                 await submitMenuItemReview({
                     orderId,
                     restaurantId,
-                    menuItemId: productId,
-                    userId,
+                    itemId: productId,
+                    userId: authUid,
                     userName,
                     rating,
                     comment: sanitized,
@@ -123,7 +127,7 @@ export const useProductReviews = (productId?: string, options: UseProductReviews
                 setIsSubmitting(false);
             }
         },
-        [currentUserReview?.id, currentUserReview?.reviewKey, loadReviews, orderId, productId, restaurantId, userId, userName],
+        [authUid, currentUserReview?.id, currentUserReview?.reviewKey, loadReviews, orderId, productId, restaurantId, userId, userName],
     );
 
     return {
