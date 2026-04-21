@@ -41,21 +41,6 @@ import MenuBoard from "@/assets/illustrations/Menu Board.svg";
 import Rider from "@/assets/illustrations/Rider.svg";
 import TastingFood from "@/assets/illustrations/Tasting Food.svg";
 
-// Emoji PNGs
-import beamingEmoji from "@/assets/emoji/Beaming Face with Smiling Eyes.png";
-import cryingEmoji from "@/assets/emoji/Crying Face.png";
-import explodingEmoji from "@/assets/emoji/Exploding Head.png";
-import kissEmoji from "@/assets/emoji/Face Blowing a Kiss.png";
-import savoringEmoji from "@/assets/emoji/Face Savoring Food.png";
-import screamingEmoji from "@/assets/emoji/Face Screaming in Fear.png";
-import crossedEyesEmoji from "@/assets/emoji/Face with Crossed-Out Eyes.png";
-import handOverMouthEmoji from "@/assets/emoji/Face with Hand Over Mouth.png";
-import raisedEyebrowEmoji from "@/assets/emoji/Face with Raised Eyebrow.png";
-import nerdEmoji from "@/assets/emoji/Nerd Face.png";
-import pleadingEmoji from "@/assets/emoji/Pleading Face.png";
-import shushingEmoji from "@/assets/emoji/Shushing Face.png";
-import heartEyesEmoji from "@/assets/emoji/Smiling Face with Heart-Eyes.png";
-
 // Lifestyle imagery (all files currently available inside assets/images)
 import burgerDeliveryImage from "@/assets/images/Burger Delivery.png";
 import emptyStateImage from "@/assets/images/empty-state.png";
@@ -156,22 +141,6 @@ export const illustrations = {
     menuBoard: MenuBoard,
     rider: Rider,
     tastingFood: TastingFood,
-} as const;
-
-export const emojiSet = {
-    beaming: beamingEmoji,
-    crying: cryingEmoji,
-    kiss: kissEmoji,
-    savoring: savoringEmoji,
-    heartEyes: heartEyesEmoji,
-    nerd: nerdEmoji,
-    exploding: explodingEmoji,
-    screaming: screamingEmoji,
-    crossedEyes: crossedEyesEmoji,
-    handOverMouth: handOverMouthEmoji,
-    raisedEyebrow: raisedEyebrowEmoji,
-    pleading: pleadingEmoji,
-    shushing: shushingEmoji,
 } as const;
 
 export const images = {

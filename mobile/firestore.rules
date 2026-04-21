@@ -12,6 +12,42 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/restaurantStaff/$(request.auth.uid)).data.restaurantId == restaurantId;
     }
 
+    function isRestaurantOwnerFor(restaurantId) {
+      return isSignedIn()
+        && restaurantId is string
+        && exists(/databases/$(database)/documents/restaurants/$(restaurantId))
+        && (
+          get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.ownerId == request.auth.uid
+          || (
+            request.auth.token.email != null
+            && (
+              get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.ownerEmail == request.auth.token.email
+              || (
+                get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.managerEmails is list
+                && request.auth.token.email in get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.managerEmails
+              )
+            )
+          )
+        );
+    }
+
+    function isDeliveredOrCompleted(status) {
+      return status == "delivered" || status == "completed" || status == "teslim edildi";
+    }
+
+    function isValidRatingValue(value) {
+      return (value is int || value is float)
+        && value >= 1
+        && value <= 5;
+    }
+
+    function isValidOrderReviewRatings(ratings) {
+      return ratings is map
+        && isValidRatingValue(ratings.speed)
+        && isValidRatingValue(ratings.taste)
+        && isValidRatingValue(ratings.value);
+    }
+
     match /users/{userId} {
       allow read, write: if isSignedIn() && request.auth.uid == userId;
 
@@ -43,6 +79,7 @@ service cloud.firestore {
         && (
           resource.data.userId == request.auth.uid
           || isRestaurantStaffFor(resource.data.restaurantId)
+          || isRestaurantOwnerFor(resource.data.restaurantId)
         );
 
       allow update: if isSignedIn()
@@ -61,7 +98,10 @@ service cloud.firestore {
             && request.resource.data.reminderRequestedBy == request.auth.uid
           )
           || (
-            isRestaurantStaffFor(resource.data.restaurantId)
+            (
+              isRestaurantStaffFor(resource.data.restaurantId)
+              || isRestaurantOwnerFor(resource.data.restaurantId)
+            )
             && request.resource.data.diff(resource.data).changedKeys().hasOnly([
               "status",
               "statusChangedAt",
@@ -123,6 +163,46 @@ service cloud.firestore {
         );
 
       allow update, delete: if false;
+    }
+
+    match /orderReviews/{reviewId} {
+      allow read: if resource.data.status == "published"
+        || (
+          isSignedIn() && (
+            resource.data.userId == request.auth.uid
+            || isRestaurantStaffFor(resource.data.restaurantId)
+            || isRestaurantOwnerFor(resource.data.restaurantId)
+          )
+        );
+
+      allow create: if isSignedIn()
+        && request.resource.data.id == reviewId
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.orderId is string
+        && request.resource.data.restaurantId is string
+        && request.resource.data.status == "published"
+        && request.resource.data.itemsSnapshot is list
+        && isValidOrderReviewRatings(request.resource.data.ratings)
+        && isValidRatingValue(request.resource.data.averageRating)
+        && reviewId == request.resource.data.orderId + "__" + request.auth.uid
+        && !exists(/databases/$(database)/documents/orderReviews/$(reviewId))
+        && exists(/databases/$(database)/documents/orders/$(request.resource.data.orderId))
+        && get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.userId == request.auth.uid
+        && get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.restaurantId == request.resource.data.restaurantId
+        && isDeliveredOrCompleted(get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.status);
+
+      allow update: if isSignedIn()
+        && (
+          isRestaurantStaffFor(resource.data.restaurantId)
+          || isRestaurantOwnerFor(resource.data.restaurantId)
+        )
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          "status",
+          "updatedAt"
+        ])
+        && (request.resource.data.status == "published" || request.resource.data.status == "hidden");
+
+      allow delete: if false;
     }
 
     match /{document=**} {

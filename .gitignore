@@ -46,9 +46,12 @@ android/
 
 # Local secrets / generated artifacts
 keys/
+secure/
 *.log
 
 # Generated data snapshots/reports
 mobile/data/backups/
 mobile/scripts/output/
 mobile/data/image-assignment-report.json
+mobile/data/restaurant-panel-accounts.generated.json
+mobile/data/restaurant-panel-accounts*.json

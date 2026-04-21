@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
     Alert,
-    Animated,
-    Easing,
     Platform,
     ScrollView,
     Text,
@@ -20,8 +18,8 @@ import useOrderStatus from "@/src/hooks/useOrderStatus";
 import { transitionOrder } from "@/src/services/firebaseOrders";
 import { nudgeRestaurant } from "@/src/api/client";
 import useAuthStore from "@/store/auth.store";
-import OrderRider from "@/assets/illustrations/Order Rider.svg";
 import type { OrderStatus } from "@/src/domain/types";
+import { OrderProgressTimer } from "@/src/components/order/OrderProgressTimer";
 
 type Props = {
     orderId: string;
@@ -86,6 +84,36 @@ const formatTime = (seconds: number) => {
     return `${mm}:${ss}`;
 };
 
+const normalizeRealtimeStatus = (status: unknown): OrderStatus => {
+    const raw = String(status || "")
+        .trim()
+        .toLowerCase();
+
+    if (!raw) return "pending";
+
+    if (
+        [
+            "pending",
+            "received",
+            "sent_to_restaurant",
+            "awaiting_restaurant_approval",
+            "pending_restaurant_approval",
+            "awaiting_confirmation",
+            "waiting_restaurant",
+        ].includes(raw)
+    ) {
+        return "pending";
+    }
+
+    if (["accepted", "restaurant_accepted", "preparing"].includes(raw)) return "preparing";
+    if (["ready", "ready_for_pickup"].includes(raw)) return "ready";
+    if (["out_for_delivery", "on_the_way", "picked_up", "delivering"].includes(raw)) return "out_for_delivery";
+    if (["delivered", "completed"].includes(raw)) return "delivered";
+    if (["canceled", "cancelled", "rejected"].includes(raw)) return "canceled";
+
+    return "pending";
+};
+
 const StepRow = ({
     icon,
     title,
@@ -147,10 +175,9 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
     const { status: pendingStatus } = useOrderStatus(orderId);
 
     const orderStatus = useMemo<OrderStatus>(() => {
-        const rawStatus = String(order?.status ?? "");
-        if (rawStatus === "accepted") return "preparing";
-        if (rawStatus === "rejected") return "canceled";
-        if (rawStatus) return rawStatus as OrderStatus;
+        if (order?.status) {
+            return normalizeRealtimeStatus(order.status);
+        }
 
         switch (pendingStatus) {
             case "confirmed":
@@ -162,15 +189,30 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
         }
     }, [order?.status, pendingStatus]);
 
-    const [sla, setSla] = useState(APPROVAL_SLA_SECONDS);
+    const createdAtMs = useMemo(() => toMillis(order?.createdAt || order?.updatedAt), [order?.createdAt, order?.updatedAt]);
+    const approvalDeadlineMs = useMemo(() => {
+        const fromServer =
+            toMillis((order as any)?.restaurantApprovalDeadline) ??
+            toMillis((order as any)?.approvalDeadline) ??
+            toMillis((order as any)?.slaDeadline);
+
+        if (fromServer) return fromServer;
+        if (!createdAtMs) return 0;
+        return createdAtMs + APPROVAL_SLA_SECONDS * 1000;
+    }, [createdAtMs, order]);
+    const cancelAllowedUntilMs = useMemo(() => {
+        const fromServer = toMillis((order as any)?.cancelAllowedUntil);
+        if (fromServer) return fromServer;
+        if (!createdAtMs) return 0;
+        return createdAtMs + CANCEL_WINDOW_SECONDS * 1000;
+    }, [createdAtMs, order]);
+
     const [reminderUnlockRemaining, setReminderUnlockRemaining] = useState(REMINDER_UNLOCK_SECONDS);
     const [cooldown, setCooldown] = useState(0);
     const [sendingNudge, setSendingNudge] = useState(false);
     const [autoCanceled, setAutoCanceled] = useState(false);
     const [cancelWindowRemaining, setCancelWindowRemaining] = useState(CANCEL_WINDOW_SECONDS);
 
-    const spinner = useRef(new Animated.Value(0)).current;
-    const useNativeDriver = Platform.OS !== "web";
     const prevStatus = useRef<OrderStatus>("pending");
     const isCancelWindowActive = orderStatus === "pending" && cancelWindowRemaining > 0 && !autoCanceled;
     const isReminderLocked = orderStatus === "pending" && reminderUnlockRemaining > 0;
@@ -193,36 +235,24 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
     }, [autoCanceled, onRejected, orderId, t]);
 
     useEffect(() => {
-        const loop = Animated.loop(
-            Animated.timing(spinner, {
-                toValue: 1,
-                duration: 2000,
-                easing: Easing.linear,
-                useNativeDriver,
-            }),
-        );
-        loop.start();
-        return () => loop.stop();
-    }, [spinner, useNativeDriver]);
-
-    useEffect(() => {
         if (orderStatus !== "pending") {
-            setSla(0);
             setReminderUnlockRemaining(0);
             setCancelWindowRemaining(0);
             return;
         }
 
-        const sourceTimestamp = order?.createdAt || order?.updatedAt;
-        const sourceMs = toMillis(sourceTimestamp);
-
         const tick = () => {
-            const elapsedSeconds = sourceMs ? Math.max(0, Math.floor((Date.now() - sourceMs) / 1000)) : 0;
-            const nextSla = Math.max(APPROVAL_SLA_SECONDS - elapsedSeconds, 0);
+            const nowMs = Date.now();
+            const sourceMs = createdAtMs;
+            const elapsedSeconds = sourceMs ? Math.max(0, Math.floor((nowMs - sourceMs) / 1000)) : 0;
+            const nextSla = approvalDeadlineMs
+                ? Math.max(0, Math.ceil((approvalDeadlineMs - nowMs) / 1000))
+                : Math.max(APPROVAL_SLA_SECONDS - elapsedSeconds, 0);
             const nextReminderLock = Math.max(REMINDER_UNLOCK_SECONDS - elapsedSeconds, 0);
-            const nextCancelWindow = Math.max(CANCEL_WINDOW_SECONDS - elapsedSeconds, 0);
+            const nextCancelWindow = cancelAllowedUntilMs
+                ? Math.max(0, Math.ceil((cancelAllowedUntilMs - nowMs) / 1000))
+                : Math.max(CANCEL_WINDOW_SECONDS - elapsedSeconds, 0);
 
-            setSla(nextSla);
             setReminderUnlockRemaining(nextReminderLock);
             setCancelWindowRemaining(nextCancelWindow);
 
@@ -234,7 +264,7 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
         tick();
         const timer = setInterval(tick, 1000);
         return () => clearInterval(timer);
-    }, [handleAutoCancel, order?.createdAt, order?.updatedAt, orderStatus]);
+    }, [approvalDeadlineMs, cancelAllowedUntilMs, createdAtMs, handleAutoCancel, orderStatus]);
 
     useEffect(() => {
         if (!cooldown) return undefined;
@@ -261,8 +291,6 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
 
         prevStatus.current = orderStatus;
     }, [onConfirmed, onRejected, orderId, orderStatus, restaurantName, t]);
-
-    const slaColor = sla === 0 ? colors.danger : sla < 30 ? colors.warning : colors.primary;
 
     const steps = useMemo(() => {
         const sequence = [
@@ -402,11 +430,6 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
         ]);
     };
 
-    const rotation = spinner.interpolate({
-        inputRange: [0, 1],
-        outputRange: ["0deg", "360deg"],
-    });
-
     const headerTitle = useMemo(() => {
         switch (orderStatus) {
             case "preparing":
@@ -424,42 +447,6 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
                 return t("orderPending.header.pending");
         }
     }, [orderStatus, t]);
-
-    const cardTitle = useMemo(() => {
-        switch (orderStatus) {
-            case "preparing":
-                return t("orderPending.card.preparingTitle");
-            case "ready":
-                return t("orderPending.card.readyTitle");
-            case "out_for_delivery":
-                return t("orderPending.card.outForDeliveryTitle");
-            case "delivered":
-                return t("orderPending.card.deliveredTitle");
-            case "canceled":
-                return t("orderPending.card.canceledTitle");
-            case "pending":
-            default:
-                return t("orderPending.card.pendingTitle");
-        }
-    }, [orderStatus, t]);
-
-    const cardSubtitle = useMemo(() => {
-        switch (orderStatus) {
-            case "preparing":
-                return t("orderPending.card.preparingSubtitle", { restaurantName });
-            case "ready":
-                return t("orderPending.card.readySubtitle");
-            case "out_for_delivery":
-                return t("orderPending.card.outForDeliverySubtitle");
-            case "delivered":
-                return t("orderPending.card.deliveredSubtitle");
-            case "canceled":
-                return t("orderPending.card.canceledSubtitle");
-            case "pending":
-            default:
-                return t("orderPending.card.pendingSubtitle", { restaurantName });
-        }
-    }, [orderStatus, restaurantName, t]);
 
     const nudgeDisabled = sendingNudge || orderStatus !== "pending" || cooldown > 0 || isReminderLocked;
     const nudgeLabel = sendingNudge
@@ -520,66 +507,29 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
                     style={{
                         backgroundColor: colors.card,
                         borderRadius: radius.lg,
-                        padding: isCompactPhone ? 16 : 20,
+                        padding: isCompactPhone ? 10 : 12,
                         borderWidth: 1,
                         borderColor: colors.border,
-                        gap: isCompactPhone ? 12 : 16,
                     }}
                 >
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: isCompactPhone ? 10 : 16 }}>
-                        <Animated.View
-                            style={{
-                                width: isCompactPhone ? 42 : 56,
-                                height: isCompactPhone ? 42 : 56,
-                                borderRadius: isCompactPhone ? 21 : 28,
-                                borderWidth: 2,
-                                borderColor: colors.border,
-                                alignItems: "center",
-                                justifyContent: "center",
-                                transform: [{ rotate: rotation }],
-                            }}
-                        >
-                            <Ionicons name="sync" size={isCompactPhone ? 20 : 24} color={colors.primary} />
-                        </Animated.View>
-                        <View style={{ flex: 1, minWidth: 0 }}>
-                            <Text
-                                style={{
-                                    color: colors.text,
-                                    fontFamily: "ChairoSans",
-                                    fontSize: isCompactPhone ? 15 : 18,
-                                    lineHeight: isCompactPhone ? 18 : 24,
-                                }}
-                            >
-                                {cardTitle}
-                            </Text>
-                            <Text
-                                style={{
-                                    color: colors.sub,
-                                    marginTop: 4,
-                                    fontSize: isCompactPhone ? 12 : 14,
-                                    lineHeight: isCompactPhone ? 16 : 20,
-                                }}
-                            >
-                                {cardSubtitle}
-                            </Text>
-                        </View>
-                        <View style={{ width: isCompactPhone ? 90 : 110, alignItems: "flex-end" }}>
-                            <OrderRider width={isCompactPhone ? 74 : 110} height={isCompactPhone ? 74 : 110} />
-                        </View>
-                    </View>
-                    <View
-                        style={{
-                            alignSelf: "flex-start",
-                            paddingHorizontal: 14,
-                            paddingVertical: 6,
-                            borderRadius: radius.md,
-                            backgroundColor: `${slaColor}22`,
-                            borderWidth: 1,
-                            borderColor: `${slaColor}66`,
+                    <OrderProgressTimer
+                        currentStatus={String(order?.status ?? orderStatus)}
+                        createdAt={order?.createdAt}
+                        approvalDeadline={
+                            (order as any)?.restaurantApprovalDeadline ??
+                            (order as any)?.approvalDeadline ??
+                            (order as any)?.slaDeadline ??
+                            (approvalDeadlineMs || undefined)
+                        }
+                        cancelAllowedUntil={(order as any)?.cancelAllowedUntil ?? (cancelAllowedUntilMs || undefined)}
+                        totalApprovalSeconds={APPROVAL_SLA_SECONDS}
+                        restaurantName={restaurantName}
+                        onApprovalExpired={() => {
+                            if (orderStatus === "pending") {
+                                void handleAutoCancel();
+                            }
                         }}
-                    >
-                        <Text style={{ color: slaColor, fontFamily: "ChairoSans" }}>SLA: {formatTime(sla)}</Text>
-                    </View>
+                    />
                 </View>
 
                 <View

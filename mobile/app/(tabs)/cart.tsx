@@ -296,6 +296,10 @@ const normalizeRestaurantKey = (value?: string | null) => {
         "lombard": "lombard-kitchen",
         "lombardkitchen": "lombard-kitchen",
         "lombard-kitchen": "lombard-kitchen",
+        "voy": "voy",
+        "erto": "erto-cafe",
+        "ertocafe": "erto-cafe",
+        "erto-cafe": "erto-cafe",
     };
 
     if (lookup[compact]) return lookup[compact];

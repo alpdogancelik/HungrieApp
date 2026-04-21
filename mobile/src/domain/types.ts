@@ -213,3 +213,44 @@ export type RestaurantReviewSummary = {
     recentReviews: MenuItemReview[];
     latestByMenuItem: Record<string, MenuItemReview>;
 };
+
+export type OrderReviewRatingBreakdown = {
+    speed: 1 | 2 | 3 | 4 | 5;
+    taste: 1 | 2 | 3 | 4 | 5;
+    value: 1 | 2 | 3 | 4 | 5;
+    pricePerformance?: 1 | 2 | 3 | 4 | 5;
+};
+
+export type OrderReviewItemSnapshot = {
+    menuItemId?: string;
+    name: string;
+    quantity: number;
+    price?: number;
+    imageUrl?: string;
+};
+
+export type OrderReview = {
+    id: string;
+    orderId: string;
+    userId: string;
+    userName?: string;
+    restaurantId: string;
+    restaurantName?: string;
+    ratings: OrderReviewRatingBreakdown;
+    averageRating: number;
+    comment?: string;
+    itemsSnapshot: OrderReviewItemSnapshot[];
+    status: "published" | "hidden";
+    createdAt?: string;
+    updatedAt?: string;
+};
+
+export type RestaurantOrderReviewSummary = {
+    averageRating: number;
+    count: number;
+    speedAverage: number;
+    tasteAverage: number;
+    valueAverage: number;
+    pricePerformanceAverage?: number;
+    latestComments: OrderReview[];
+};

@@ -10,12 +10,12 @@ import Icon from "@/components/Icon";
 import { getRestaurant, getRestaurantCategories, getRestaurantMenu } from "@/lib/api";
 import { getRestaurantImageSource } from "@/lib/assets";
 import useServerResource from "@/lib/useServerResource";
-import { fetchRestaurantReviewSummary } from "@/src/services/menuItemReviews";
+import type { OrderReview } from "@/src/domain/types";
 import { getCategoryLabel, normalizeCategoryKey } from "@/src/lib/categoryLabels";
 import { makeShadow } from "@/src/lib/shadowStyle";
 import MenuItemCard from "@/src/features/restaurantMenu/components/MenuItemCard";
+import { calculateRestaurantOrderReviewSummary, fetchRestaurantOrderReviews } from "@/src/services/orderReviews";
 import { useCartStore } from "@/store/cart.store";
-import type { RestaurantReviewSummary } from "@/src/domain/types";
 
 type MenuEntry = {
     id: string;
@@ -57,6 +57,22 @@ type Category = {
     name?: string;
     slug?: string;
 };
+
+type TabKey = "menu" | "categories" | "reviews";
+
+type ReviewSummaryView = {
+    count: number;
+    average: number;
+    speed: number;
+    taste: number;
+    value: number;
+};
+
+const SEGMENT_TABS: Array<{ key: "menu" | "categories" | "reviews"; label: string }> = [
+    { key: "menu", label: "Menü" },
+    { key: "categories", label: "Kategoriler" },
+    { key: "reviews", label: "Yorumlar" },
+];
 
 const THEME = {
     bg: "#FFF8F2",
@@ -177,6 +193,41 @@ const formatEtaLabel = (restaurant: Restaurant | null | undefined, isTurkish: bo
 
 const formatCurrencyLabel = (amount: number, prefix: string, locale: "tr" | "en") =>
     `${prefix} ${formatTryPrice(Math.round(amount), locale)}`;
+
+const toRelativeReviewDate = (value?: string) => {
+    if (!value) return "Az önce";
+    const reviewTime = new Date(value).getTime();
+    if (!Number.isFinite(reviewTime)) return "Az önce";
+
+    const diff = Date.now() - reviewTime;
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+
+    if (diff < minute) return "Az önce";
+    if (diff < hour) return `${Math.max(1, Math.floor(diff / minute))} dk önce`;
+    if (diff < day) return `${Math.max(1, Math.floor(diff / hour))} saat önce`;
+    return `${Math.max(1, Math.floor(diff / day))} gün önce`;
+};
+
+const maskReviewAuthor = (userName?: string, userId?: string) => {
+    const parts = String(userName || "")
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+    if (parts.length >= 2) return `${parts[0][0]?.toUpperCase()}**** ${parts[1][0]?.toUpperCase()}`;
+    if (parts.length === 1) return `${parts[0][0]?.toUpperCase()}****`;
+    const fallback = String(userId || "").trim();
+    return fallback ? `${fallback[0]?.toUpperCase()}****` : "Hungrie kullanıcısı";
+};
+
+const summarizeReviewItems = (items: OrderReview["itemsSnapshot"]) => {
+    if (!Array.isArray(items) || !items.length) return "";
+    const preview = items.slice(0, 3).map((item) => `${item.name}${item.quantity > 1 ? ` x${item.quantity}` : ""}`);
+    const remaining = items.length - preview.length;
+    if (remaining > 0) preview.push(`+${remaining} ürün`);
+    return preview.join(", ");
+};
 
 const groupByCategory = (items: MenuEntry[]) => {
     const bucket: Record<string, MenuEntry[]> = {};
@@ -329,6 +380,11 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
     }, [categories, grouped]);
 
     const [activeCategory, setActiveCategory] = useState<string>("");
+    const [activeTab, setActiveTab] = useState<TabKey>("menu");
+    const [reviews, setReviews] = useState<OrderReview[]>([]);
+    const [reviewsLoading, setReviewsLoading] = useState(false);
+    const [reviewsLoaded, setReviewsLoaded] = useState(false);
+    const [reviewsError, setReviewsError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!categoryKeys.length) return;
@@ -337,9 +393,43 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
         }
     }, [activeCategory, categoryKeys]);
 
+    useEffect(() => {
+        if (activeTab !== "reviews" || reviewsLoaded || !restaurantId) return;
+
+        let cancelled = false;
+        const loadReviews = async () => {
+            setReviewsLoading(true);
+            setReviewsError(null);
+            try {
+                const fetched = await fetchRestaurantOrderReviews(restaurantId, { limit: 20 });
+                if (cancelled) return;
+                setReviews(fetched);
+                setReviewsLoaded(true);
+            } catch (error: any) {
+                if (cancelled) return;
+                setReviewsError(error?.message || "Yorumlar alınamadı.");
+            } finally {
+                if (!cancelled) setReviewsLoading(false);
+            }
+        };
+
+        void loadReviews();
+        return () => {
+            cancelled = true;
+        };
+    }, [activeTab, restaurantId, reviewsLoaded]);
+
     const activeItems = activeCategory ? grouped[activeCategory] || [] : menuItems;
-    const sectionSubtitle = isTurkish ? `${activeItems.length} \u00FCr\u00FCn` : `${activeItems.length} items`;
-    const [reviewSummary, setReviewSummary] = useState<RestaurantReviewSummary | null>(null);
+    const sectionSubtitle = isTurkish ? `${activeItems.length} ürün` : `${activeItems.length} items`;
+    const categoryRows = useMemo(
+        () =>
+            categoryKeys.map((key) => ({
+                key,
+                label: getCategoryLabel(key, locale as "tr" | "en"),
+                count: (grouped[key] || []).length,
+            })),
+        [categoryKeys, grouped, locale],
+    );
 
     const openingHours = useMemo(() => {
         const open = restaurant?.openingTime || (restaurant as { opening_time?: string } | undefined)?.opening_time;
@@ -348,15 +438,15 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
         return `${open} - ${close}`;
     }, [restaurant]);
 
-    const displayName = restaurant?.name || restaurantId || "Restaurant";
-    const heroSubtitle = restaurant?.cuisine || "Pizza & World Kitchen";
+    const displayName = restaurant?.name || restaurantId || (isTurkish ? "Restoran" : "Restaurant");
+    const heroSubtitle = restaurant?.cuisine || (isTurkish ? "Kafe ve Izgara" : "Cafe & Grill");
     const heroSource = getRestaurantImageSource(
         restaurant?.imageUrl || restaurant?.image_url,
         undefined,
         `${restaurant?.id || restaurantId} ${restaurant?.name || ""}`,
     );
-    const restaurantAverageRating = Number(restaurant?.ratingAverage ?? reviewSummary?.average ?? 0);
-    const restaurantRatingCount = Math.max(0, Number(restaurant?.ratingCount ?? reviewSummary?.count ?? 0));
+    const restaurantAverageRating = Number(parseNumericValue(restaurant?.ratingAverage) ?? 0);
+    const restaurantRatingCount = Math.max(0, Number(parseNumericValue(restaurant?.ratingCount) ?? 0));
     const restaurantRatingLabel = restaurantRatingCount ? restaurantAverageRating.toFixed(1) : isTurkish ? "Yeni" : "New";
     const restaurantReviewCountLabel = restaurantRatingCount ? `(${restaurantRatingCount})` : isTurkish ? "(0 yorum)" : "(0 reviews)";
     const restaurantEtaLabel = formatEtaLabel(restaurant, isTurkish, isTurkish ? "25-35 dk" : "25-35 min");
@@ -378,19 +468,40 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
             : isTurkish
               ? `Teslimat ${formatTryPrice(24, locale)}`
               : `Delivery ${formatTryPrice(24, locale)}`;
+    const aggregateReviewSummary: ReviewSummaryView = useMemo(() => {
+        const count = Math.max(0, Math.round(Number(parseNumericValue(restaurant?.ratingCount) ?? 0)));
+        if (count <= 0) return { count: 0, average: 0, speed: 0, taste: 0, value: 0 };
+        return {
+            count,
+            average: Number((Number(parseNumericValue(restaurant?.ratingAverage) ?? 0)).toFixed(1)),
+            speed: Number((Number(parseNumericValue((restaurant as any)?.speedAverage) ?? 0)).toFixed(1)),
+            taste: Number((Number(parseNumericValue((restaurant as any)?.tasteAverage) ?? 0)).toFixed(1)),
+            value: Number((Number(parseNumericValue((restaurant as any)?.valueAverage) ?? 0)).toFixed(1)),
+        };
+    }, [restaurant]);
+    const computedReviewSummary = useMemo(() => {
+        const summary = calculateRestaurantOrderReviewSummary(reviews);
+        return {
+            count: summary.count,
+            average: summary.averageRating,
+            speed: summary.speedAverage,
+            taste: summary.tasteAverage,
+            value: summary.pricePerformanceAverage ?? summary.valueAverage,
+        } satisfies ReviewSummaryView;
+    }, [reviews]);
+    const reviewSummary: ReviewSummaryView = computedReviewSummary.count > 0 ? computedReviewSummary : aggregateReviewSummary;
+    const hasReviewMetrics = reviewSummary.count > 0;
 
     const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
     const cartTotal = getTotalPrice();
-    const formatReviewDate = (value?: string) => {
-        if (!value) return isTurkish ? "Tarih yok" : "No date";
-        const date = new Date(value);
-        if (Number.isNaN(date.getTime())) return value;
-        return date.toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US");
-    };
-    const formatRatingStars = (rating: number) => {
-        const safe = Math.max(1, Math.min(5, Math.round(rating || 0)));
-        return `${"\u2605".repeat(safe)}${"\u2606".repeat(5 - safe)}`;
-    };
+    const openAllReviews = useCallback(() => {
+        if (!restaurantId) return;
+        router.push({
+            pathname: "/restaurant-reviews/[id]",
+            params: { id: restaurantId },
+        });
+    }, [restaurantId, router]);
+    const visibleReviews = useMemo(() => reviews.slice(0, 20), [reviews]);
 
     const toastOpacity = useRef(new Animated.Value(0)).current;
     const toastScale = useRef(new Animated.Value(0.98)).current;
@@ -398,35 +509,6 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
     const categoryRailRef = useRef<ScrollView | null>(null);
     const [addedToastVisible, setAddedToastVisible] = useState(false);
     const [addedToastText, setAddedToastText] = useState("");
-
-    useEffect(() => {
-        let mounted = true;
-        const loadReviewSummary = async () => {
-            if (!restaurantId) {
-                setReviewSummary(null);
-                return;
-            }
-            try {
-                const summary = await fetchRestaurantReviewSummary(restaurantId);
-                if (mounted) setReviewSummary(summary);
-            } catch {
-                if (mounted) {
-                    setReviewSummary({
-                        average: 0,
-                        count: 0,
-                        distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
-                        recentReviews: [],
-                        latestByMenuItem: {},
-                    });
-                }
-            }
-        };
-
-        void loadReviewSummary();
-        return () => {
-            mounted = false;
-        };
-    }, [restaurantId]);
 
     const showAddedToast = useCallback(
         (itemName: string) => {
@@ -529,7 +611,7 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
                                     {displayName}
                                 </Text>
                                 <View style={styles.statusPill}>
-                                    <Text style={styles.statusText}>{isTurkish ? "A\u00E7\u0131k" : "Open"}</Text>
+                                    <Text style={styles.statusText}>{isTurkish ? "Açık" : "Open"}</Text>
                                 </View>
                             </View>
 
@@ -564,116 +646,221 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
                             </View>
                         ) : (
                             <View style={styles.infoChip}>
-                                <Text style={styles.infoChipText}>{isTurkish ? "Kapal\u0131" : "Closed"}</Text>
+                                <Text style={styles.infoChipText}>{isTurkish ? "Kapalı" : "Closed"}</Text>
                             </View>
                         )}
                     </View>
                 </View>
 
-                {categoryKeys.length ? (
-                    <View style={styles.categoryRail}>
-                        <ScrollView
-                            ref={categoryRailRef}
-                            horizontal
-                            showsHorizontalScrollIndicator={Platform.OS === "web"}
-                            contentContainerStyle={styles.categoryRailContent}
-                            style={styles.categoryRailScroll}
-                            scrollEventThrottle={16}
-                        >
-                            {categoryKeys.map((key) => {
-                                const active = key === activeCategory;
-                                const label = getCategoryLabel(key, locale as "tr" | "en");
-
-                                return (
-                                    <Pressable
-                                        key={key}
-                                        onPress={() => setActiveCategory(key)}
-                                        style={[styles.categoryPill, active ? styles.categoryPillActive : null]}
-                                    >
-                                        <Text style={[styles.categoryText, active ? styles.categoryTextActive : null]}>{label}</Text>
-                                    </Pressable>
-                                );
-                            })}
-                        </ScrollView>
-                    </View>
-                ) : null}
-
-                <View style={styles.sectionHead}>
-                    <Text style={styles.sectionTitle}>
-                        {activeCategory ? getCategoryLabel(activeCategory, locale as "tr" | "en") : t("restaurant.menu", "Menu")}
-                    </Text>
-                    <Text style={styles.sectionSubtitle}>{sectionSubtitle}</Text>
-                </View>
-
-                <View style={styles.menuList}>
-                    {activeItems.map((item) => {
-                        const ratingAverage = Number((item as any)?.ratingAverage ?? (item as any)?.rating ?? 0);
-                        const ratingCount = Number((item as any)?.ratingCount ?? 0);
-                        const latestReview = reviewSummary?.latestByMenuItem[String(item.id)];
-
+                <View style={styles.segmentRail}>
+                    {SEGMENT_TABS.map((tab) => {
+                        const isActive = activeTab === tab.key;
                         return (
-                            <MenuItemCard
-                                key={String(item.id)}
-                                item={item}
-                                cuisine={restaurant?.cuisine}
-                                activeCategory={activeCategory}
-                                isTurkish={isTurkish}
-                                addToCartLabel={t("restaurantUi.addToCart", "Sepete ekle")}
-                                priceLabel={formatTryPrice(item.price, locale)}
-                                ratingAverage={ratingAverage}
-                                ratingCount={ratingCount}
-                                latestReviewComment={latestReview?.comment}
-                                onAddToCart={handleAddToCart}
-                            />
+                            <Pressable
+                                key={tab.key}
+                                onPress={() => setActiveTab(tab.key)}
+                                style={[styles.segmentButton, isActive ? styles.segmentButtonActive : null]}
+                            >
+                                <Text style={[styles.segmentButtonText, isActive ? styles.segmentButtonTextActive : null]} numberOfLines={1}>
+                                    {tab.label}
+                                </Text>
+                            </Pressable>
                         );
                     })}
                 </View>
 
-                {reviewSummary ? (
+                {activeTab === "menu" ? (
+                    <>
+                        {categoryKeys.length ? (
+                            <View style={styles.categoryRail}>
+                                <ScrollView
+                                    ref={categoryRailRef}
+                                    horizontal
+                                    showsHorizontalScrollIndicator={Platform.OS === "web"}
+                                    contentContainerStyle={styles.categoryRailContent}
+                                    style={styles.categoryRailScroll}
+                                    scrollEventThrottle={16}
+                                >
+                                    {categoryKeys.map((key) => {
+                                        const active = key === activeCategory;
+                                        const label = getCategoryLabel(key, locale as "tr" | "en");
+
+                                        return (
+                                            <Pressable
+                                                key={key}
+                                                onPress={() => setActiveCategory(key)}
+                                                style={[styles.categoryPill, active ? styles.categoryPillActive : null]}
+                                            >
+                                                <Text style={[styles.categoryText, active ? styles.categoryTextActive : null]}>{label}</Text>
+                                            </Pressable>
+                                        );
+                                    })}
+                                </ScrollView>
+                            </View>
+                        ) : null}
+
+                        <View style={styles.sectionHead}>
+                            <Text style={styles.sectionTitle}>
+                                {activeCategory ? getCategoryLabel(activeCategory, locale as "tr" | "en") : isTurkish ? "Menü" : "Menu"}
+                            </Text>
+                            <Text style={styles.sectionSubtitle}>{sectionSubtitle}</Text>
+                        </View>
+
+                        <View style={styles.menuList}>
+                            {activeItems.map((item) => {
+                                const ratingAverage = Number((item as any)?.ratingAverage ?? (item as any)?.rating ?? 0);
+                                const ratingCount = Number((item as any)?.ratingCount ?? 0);
+
+                                return (
+                                    <MenuItemCard
+                                        key={String(item.id)}
+                                        item={item}
+                                        cuisine={restaurant?.cuisine}
+                                        activeCategory={activeCategory}
+                                        isTurkish={isTurkish}
+                                        addToCartLabel={t("restaurantUi.addToCart", "Sepete ekle")}
+                                        priceLabel={formatTryPrice(item.price, locale)}
+                                        ratingAverage={ratingAverage}
+                                        ratingCount={ratingCount}
+                                        onAddToCart={handleAddToCart}
+                                    />
+                                );
+                            })}
+                        </View>
+                    </>
+                ) : activeTab === "categories" ? (
+                    <>
+                        <View style={styles.sectionHead}>
+                            <Text style={styles.sectionTitle}>{isTurkish ? "Kategoriler" : "Categories"}</Text>
+                            <Text style={styles.sectionSubtitle}>{isTurkish ? "Kategoriye dokununca menüye geçilir" : "Tap a category to open in menu tab"}</Text>
+                        </View>
+
+                        <View style={styles.menuList}>
+                            {categoryRows.map((row) => (
+                                <Pressable
+                                    key={row.key}
+                                    style={styles.categoryRow}
+                                    onPress={() => {
+                                        setActiveCategory(row.key);
+                                        setActiveTab("menu");
+                                    }}
+                                >
+                                    <Text style={styles.categoryRowLabel}>{row.label}</Text>
+                                    <View style={styles.categoryRowCountPill}>
+                                        <Text style={styles.categoryRowCountText}>{row.count}</Text>
+                                    </View>
+                                </Pressable>
+                            ))}
+                        </View>
+                    </>
+                ) : (
                     <View style={styles.reviewsSection}>
                         <View style={styles.reviewsHeader}>
-                            <Text style={styles.reviewsTitle}>{isTurkish ? "Kullan\u0131c\u0131 Yorumlar\u0131" : "Customer Reviews"}</Text>
+                            <Text style={styles.reviewsTitle}>{isTurkish ? "Kullanıcı yorumları" : "Customer reviews"}</Text>
                             <Text style={styles.reviewsSubtitle}>
-                                {`${reviewSummary.average.toFixed(1)} / 5 - ${reviewSummary.count} ${isTurkish ? "yorum" : "reviews"}`}
+                                {isTurkish
+                                    ? "Teslim edilen siparişlerden gelen gerçek değerlendirmeler"
+                                    : "Authentic feedback from delivered orders"}
                             </Text>
                         </View>
 
-                        <View style={styles.reviewFeed}>
-                            {reviewSummary.recentReviews.length ? (
-                                reviewSummary.recentReviews.slice(0, 6).map((review) => (
-                                    <View key={review.id} style={styles.reviewCard}>
-                                        <View style={styles.reviewCardHeader}>
-                                            <Text style={styles.reviewCardTitle} numberOfLines={1}>
-                                                {review.userName || (isTurkish ? "Hungrie Kullan\u0131c\u0131s\u0131" : "Hungrie User")}
-                                            </Text>
-                                            <Text style={styles.reviewCardMuted}>{formatReviewDate(review.createdAt || review.updatedAt)}</Text>
+                        {reviewsLoading ? (
+                            <View style={styles.reviewEmptyCard}>
+                                <Text style={styles.reviewCardTitle}>{isTurkish ? "Yorumlar yükleniyor..." : "Loading reviews..."}</Text>
+                            </View>
+                        ) : null}
+
+                        {!reviewsLoading && reviewsError ? (
+                            <View style={styles.reviewEmptyCard}>
+                                <Text style={styles.reviewCardTitle}>{isTurkish ? "Yorumlar alınamadı" : "Unable to load reviews"}</Text>
+                                <Text style={styles.reviewCardBody}>{reviewsError}</Text>
+                                <Pressable style={styles.reviewPreviewCta} onPress={() => setReviewsLoaded(false)}>
+                                    <Text style={styles.reviewPreviewCtaText}>{isTurkish ? "Tekrar dene" : "Try again"}</Text>
+                                </Pressable>
+                            </View>
+                        ) : null}
+
+                        {!reviewsLoading && !reviewsError ? (
+                            <>
+                                {hasReviewMetrics ? (
+                                    <View style={styles.reviewSummaryCard}>
+                                        <View style={styles.reviewPreviewTopRow}>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.reviewPreviewTitle}>{isTurkish ? "Genel puan" : "Overall rating"}</Text>
+                                                <Text style={styles.reviewPreviewCount}>
+                                                    {`${reviewSummary.count} ${isTurkish ? "değerlendirme" : "reviews"}`}
+                                                </Text>
+                                            </View>
+                                            <Pressable style={styles.reviewPreviewCta} onPress={openAllReviews}>
+                                                <Text style={styles.reviewPreviewCtaText}>{isTurkish ? "Tüm yorumları gör" : "View all reviews"}</Text>
+                                            </Pressable>
                                         </View>
-                                        <Text style={styles.reviewCardMuted}>
-                                            {review.menuItemName || (isTurkish ? "Men\u00FC \u00FCr\u00FCn\u00FC" : "Menu item")}
-                                        </Text>
-                                        <Text style={styles.reviewCardRating}>{`${formatRatingStars(review.rating)} ${review.rating}/5`}</Text>
-                                        {review.comment ? (
-                                            <Text style={styles.reviewCardBody}>{review.comment}</Text>
-                                        ) : (
-                                            <Text style={styles.reviewCardMuted}>
-                                                {isTurkish ? "Sadece y\u0131ld\u0131z puan\u0131 b\u0131rak\u0131ld\u0131." : "Star rating only."}
-                                            </Text>
-                                        )}
+                                        <View style={styles.reviewPreviewMetricsRow}>
+                                            <View style={styles.reviewPreviewMetric}>
+                                                <Text style={styles.reviewPreviewMetricLabel}>{isTurkish ? "Genel" : "Overall"}</Text>
+                                                <Text style={styles.reviewPreviewMetricValue}>{reviewSummary.average.toFixed(1)}</Text>
+                                            </View>
+                                            <View style={styles.reviewPreviewMetric}>
+                                                <Text style={styles.reviewPreviewMetricLabel}>{isTurkish ? "Lezzet" : "Taste"}</Text>
+                                                <Text style={styles.reviewPreviewMetricValue}>{reviewSummary.taste.toFixed(1)}</Text>
+                                            </View>
+                                            <View style={styles.reviewPreviewMetric}>
+                                                <Text style={styles.reviewPreviewMetricLabel}>{isTurkish ? "Hız" : "Speed"}</Text>
+                                                <Text style={styles.reviewPreviewMetricValue}>{reviewSummary.speed.toFixed(1)}</Text>
+                                            </View>
+                                            <View style={styles.reviewPreviewMetric}>
+                                                <Text style={styles.reviewPreviewMetricLabel}>F/P</Text>
+                                                <Text style={styles.reviewPreviewMetricValue}>{reviewSummary.value.toFixed(1)}</Text>
+                                            </View>
+                                        </View>
                                     </View>
-                                ))
-                            ) : (
-                                <View style={styles.reviewEmptyCard}>
-                                    <Text style={styles.reviewCardTitle}>
-                                        {isTurkish ? "Hen\u00FCz yorum yok" : "No reviews yet"}
-                                    </Text>
-                                    <Text style={styles.reviewCardMuted}>
-                                        {isTurkish ? "Tamamlanan sipari\u015Flerden gelen yorumlar burada g\u00F6r\u00FCnecek." : "Reviews from completed orders will appear here."}
-                                    </Text>
-                                </View>
-                            )}
-                        </View>
+                                ) : null}
+
+                                {!visibleReviews.length ? (
+                                    <View style={styles.reviewEmptyCard}>
+                                        <Text style={styles.reviewCardTitle}>{isTurkish ? "Henüz yorum yok" : "No reviews yet"}</Text>
+                                        <Text style={styles.reviewCardBody}>
+                                            {isTurkish
+                                                ? "Teslim edilen sipariş yorumları burada görünecek."
+                                                : "Delivered-order reviews will appear here."}
+                                        </Text>
+                                    </View>
+                                ) : (
+                                    <View style={styles.reviewFeed}>
+                                        {visibleReviews.map((review) => {
+                                            const itemsText = summarizeReviewItems(review.itemsSnapshot || []);
+                                            const pricePerformance = Number(
+                                                review.ratings.pricePerformance ?? review.ratings.value ?? 0,
+                                            ).toFixed(1);
+                                            const comment = String(review.comment || "").trim();
+                                            return (
+                                                <View key={review.id} style={styles.reviewCard}>
+                                                    <View style={styles.reviewCardHeader}>
+                                                        <Text style={styles.reviewCardTitle}>
+                                                            {`${maskReviewAuthor(review.userName, review.userId)} · ${toRelativeReviewDate(review.createdAt || review.updatedAt)}`}
+                                                        </Text>
+                                                        <Text style={styles.reviewCardRating}>{review.averageRating.toFixed(1)}</Text>
+                                                    </View>
+                                                    <Text style={styles.reviewCardMuted}>
+                                                        {`${isTurkish ? "Hız" : "Speed"} ${Number(review.ratings.speed || 0).toFixed(1)} · ${
+                                                            isTurkish ? "Lezzet" : "Taste"
+                                                        } ${Number(review.ratings.taste || 0).toFixed(1)} · F/P ${pricePerformance}`}
+                                                    </Text>
+                                                    {comment ? <Text style={styles.reviewCardBody}>{comment}</Text> : null}
+                                                    {itemsText ? (
+                                                        <Text style={styles.reviewCardMuted}>
+                                                            {`${isTurkish ? "Sipariş:" : "Order:"} ${itemsText}`}
+                                                        </Text>
+                                                    ) : null}
+                                                </View>
+                                            );
+                                        })}
+                                    </View>
+                                )}
+                            </>
+                        ) : null}
                     </View>
-                ) : null}
+                )}
             </>
         );
     };
@@ -883,6 +1070,37 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: THEME.accentStrong,
     },
+    segmentRail: {
+        marginTop: 12,
+        borderRadius: 22,
+        backgroundColor: "rgba(255,255,255,0.82)",
+        borderWidth: 1,
+        borderColor: THEME.lineSoft,
+        padding: 6,
+        flexDirection: "row",
+        gap: 6,
+        ...shadow,
+    },
+    segmentButton: {
+        flex: 1,
+        height: 40,
+        borderRadius: 999,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    segmentButtonActive: {
+        backgroundColor: THEME.accentSoft,
+        borderWidth: 1,
+        borderColor: "rgba(242,140,40,0.35)",
+    },
+    segmentButtonText: {
+        fontFamily: "ChairoSans",
+        fontSize: 13,
+        color: THEME.muted,
+    },
+    segmentButtonTextActive: {
+        color: THEME.accentStrong,
+    },
     categoryRail: {
         marginTop: 14,
         borderRadius: 24,
@@ -946,6 +1164,39 @@ const styles = StyleSheet.create({
         fontFamily: "ChairoSans",
         fontSize: 13,
         color: THEME.muted,
+    },
+    categoryRow: {
+        minHeight: 56,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: THEME.lineSoft,
+        backgroundColor: THEME.card,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        alignItems: "center",
+        flexDirection: "row",
+        justifyContent: "space-between",
+        ...shadow,
+    },
+    categoryRowLabel: {
+        flex: 1,
+        fontFamily: "ChairoSans",
+        fontSize: 16,
+        color: THEME.ink,
+    },
+    categoryRowCountPill: {
+        minWidth: 34,
+        paddingHorizontal: 10,
+        height: 30,
+        borderRadius: 999,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: THEME.accentSoft,
+    },
+    categoryRowCountText: {
+        fontFamily: "ChairoSans",
+        fontSize: 13,
+        color: THEME.accentStrong,
     },
     menuList: {
         gap: 12,
@@ -1062,6 +1313,60 @@ const styles = StyleSheet.create({
         borderColor: THEME.lineSoft,
         gap: 10,
         ...shadow,
+    },
+    reviewPreviewTopRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 10,
+    },
+    reviewPreviewTitle: {
+        fontFamily: "ChairoSans",
+        fontSize: 18,
+        color: THEME.ink,
+    },
+    reviewPreviewCount: {
+        marginTop: 2,
+        fontFamily: "ChairoSans",
+        fontSize: 13,
+        color: THEME.muted,
+    },
+    reviewPreviewCta: {
+        borderRadius: 999,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        backgroundColor: THEME.accentSoft,
+        borderWidth: 1,
+        borderColor: "rgba(242,140,40,0.3)",
+    },
+    reviewPreviewCtaText: {
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        color: THEME.accentStrong,
+    },
+    reviewPreviewMetricsRow: {
+        flexDirection: "row",
+        gap: 8,
+    },
+    reviewPreviewMetric: {
+        flex: 1,
+        borderRadius: 14,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        backgroundColor: THEME.cardSoft,
+        borderWidth: 1,
+        borderColor: THEME.lineSoft,
+    },
+    reviewPreviewMetricLabel: {
+        fontFamily: "ChairoSans",
+        fontSize: 11,
+        color: THEME.muted,
+    },
+    reviewPreviewMetricValue: {
+        marginTop: 2,
+        fontFamily: "ChairoSans",
+        fontSize: 16,
+        color: THEME.accentStrong,
     },
     reviewDistributionRow: {
         flexDirection: "row",

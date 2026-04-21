@@ -23,6 +23,9 @@ const RESTAURANT_LOGO_PATH_BY_KEY: Record<string, string> = {
     lombard: "@/assets/restaurantlogo/lombardlogo.jpg",
     lombardkitchen: "@/assets/restaurantlogo/lombardlogo.jpg",
     burgerhouse: "@/assets/restaurantlogo/burgerhouselogo.jpg",
+    voy: "@/assets/restaurantlogo/voylogo.jpg",
+    erto: "@/assets/restaurantlogo/ertologo.jpg",
+    ertocafe: "@/assets/restaurantlogo/ertologo.jpg",
 };
 
 const normalizeLogoKey = (value: unknown) =>

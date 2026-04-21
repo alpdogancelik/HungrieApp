@@ -37,6 +37,8 @@ const munchiesSeed = require("@/data/munchies-firestore.json") as RestaurantSeed
 const rootSeed = require("@/data/root-firestore.json") as RestaurantSeedFile;
 const lombardSeed = require("@/data/lombard-firestore.json") as RestaurantSeedFile;
 const burgerSeed = require("@/data/burgerhouse-firestore.json") as RestaurantSeedFile;
+const voySeed = require("@/data/voy-firestore.json") as RestaurantSeedFile;
+const ertoSeed = require("@/data/erto-firestore.json") as RestaurantSeedFile;
 
 const bundles: SeedBundle[] = [
     { id: "ada-pizza", seed: adaSeed },
@@ -46,6 +48,8 @@ const bundles: SeedBundle[] = [
     { id: "root-kitchen-coffee", seed: rootSeed },
     { id: "lombard-kitchen", seed: lombardSeed },
     { id: "burgerhouse", seed: burgerSeed },
+    { id: "voy", seed: voySeed },
+    { id: "erto-cafe", seed: ertoSeed },
 ];
 
 export type SeedRestaurant = {

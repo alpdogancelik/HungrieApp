@@ -1,0 +1,815 @@
+{
+  "restaurants": [
+    {
+      "id": "erto-cafe",
+      "name": "Erto Cafe",
+      "cuisine": "Cafe · Burger · Pizza · Tavuk · Makarna",
+      "description": "Kampüs içinde burger, pizza, tavuk yemekleri ve makarna seçenekleri sunan Erto Cafe.",
+      "deliveryFee": 24.9,
+      "deliveryTime": "25-35",
+      "imageUrl": "@/assets/restaurantlogo/ertologo.jpg",
+      "ownerId": "erto-cafe-owner-uid",
+      "isActive": true,
+      "address": "ODTÜ Kuzey Kıbrıs Kampüsü içi, Kalkanlı, Güzelyurt"
+    }
+  ],
+  "categories": [
+    {
+      "id": "tava-yemekleri",
+      "name": "Tava Yemekleri"
+    },
+    {
+      "id": "makarna",
+      "name": "Makarna Çeşitleri"
+    },
+    {
+      "id": "burgers",
+      "name": "Burger Tek"
+    },
+    {
+      "id": "burger-menus",
+      "name": "Burger Menü"
+    },
+    {
+      "id": "yemekler",
+      "name": "Yemekler"
+    },
+    {
+      "id": "kahvalti",
+      "name": "Kahvaltı"
+    },
+    {
+      "id": "pizzas",
+      "name": "Pizza"
+    },
+    {
+      "id": "wraps",
+      "name": "Dürümler"
+    },
+    {
+      "id": "extras",
+      "name": "Ekstralar"
+    }
+  ],
+  "menus": [
+    {
+      "id": "tava-yemekleri-001",
+      "name": "Soya Soslu Tavuk",
+      "description": "Soya soslu tavuk tava.",
+      "price": 400,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "tava-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/35872317/pexels-photo-35872317.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tava-yemekleri-002",
+      "name": "Tavuk Dolma",
+      "description": "Tavuk dolma servis.",
+      "price": 450,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "tava-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32986476/pexels-photo-32986476.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tava-yemekleri-003",
+      "name": "Çıtır Tavuk",
+      "description": "Çıtır tavuk servis.",
+      "price": 400,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "tava-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/27352273/pexels-photo-27352273.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tava-yemekleri-004",
+      "name": "Tavuk Tenders",
+      "description": "Tavuk tenders servis.",
+      "price": 400,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "tava-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17650171/pexels-photo-17650171.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tava-yemekleri-005",
+      "name": "Köri Soslu Tavuk",
+      "description": "Köri soslu tavuk tava.",
+      "price": 400,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "tava-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36885731/pexels-photo-36885731.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tava-yemekleri-006",
+      "name": "Tavuk Bonfile",
+      "description": "Tavuk bonfile servis.",
+      "price": 410,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "tava-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34134207/pexels-photo-34134207.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tava-yemekleri-007",
+      "name": "Tavuk Strogonof",
+      "description": "Tavuk strogonof servis.",
+      "price": 400,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "tava-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32986472/pexels-photo-32986472.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tava-yemekleri-008",
+      "name": "Tavuk Göğüs",
+      "description": "Tavuk göğüs servis.",
+      "price": 430,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "tava-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17696653/pexels-photo-17696653.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tava-yemekleri-009",
+      "name": "Chicken Pepper",
+      "description": "Chicken pepper tavuk servis.",
+      "price": 400,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "tava-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6735031/pexels-photo-6735031.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "makarna-001",
+      "name": "Tavuklu Mantarlı Penne",
+      "description": "Tavuk, mantar, kaşar, krema ve peynirli penne.",
+      "price": 260,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "makarna"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/12667658/pexels-photo-12667658.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "makarna-002",
+      "name": "Mantı Penne",
+      "description": "Mantar, kaşar ve kremalı penne.",
+      "price": 245,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "makarna"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/30406652/pexels-photo-30406652.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "makarna-003",
+      "name": "Soya Soslu Penne",
+      "description": "Soya sos, tavuk, kaşar ve kremalı penne.",
+      "price": 265,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "makarna"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32675201/pexels-photo-32675201.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "makarna-004",
+      "name": "Köri Soslu Penne",
+      "description": "Köri sos, tavuk, kaşar ve kremalı penne.",
+      "price": 265,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "makarna"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11220208/pexels-photo-11220208.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "makarna-005",
+      "name": "Jambonlu Tavuk Penne",
+      "description": "Tavuk jambon, mısır, kaşar ve kremalı penne.",
+      "price": 295,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "makarna"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11220209/pexels-photo-11220209.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "makarna-006",
+      "name": "Jambonlu Dana Penne",
+      "description": "Dana jambon, mısır, kaşar ve kremalı penne.",
+      "price": 325,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "makarna"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11220208/pexels-photo-11220208.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "makarna-007",
+      "name": "Sebzeli Penne",
+      "description": "Brokoli, biber, mantar, soğan ve kaşarlı penne.",
+      "price": 260,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "makarna"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/12667658/pexels-photo-12667658.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "makarna-008",
+      "name": "Domates Soslu Penne",
+      "description": "Tavuk, domates sos ve kaşarlı penne.",
+      "price": 265,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "makarna"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32675201/pexels-photo-32675201.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "makarna-009",
+      "name": "Pesto Soslu Penne",
+      "description": "Pesto sos, kaşar ve kremalı penne.",
+      "price": 270,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "makarna"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/30406652/pexels-photo-30406652.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "makarna-010",
+      "name": "Hellimli Penne",
+      "description": "Hellim, nane, kaşar ve kremalı penne.",
+      "price": 250,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "makarna"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11220209/pexels-photo-11220209.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgers-001",
+      "name": "Hellim Burger",
+      "description": "Hellimli burger.",
+      "price": 210,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31450815/pexels-photo-31450815.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgers-002",
+      "name": "Cheeseburger",
+      "description": "Cheddar peynirli burger.",
+      "price": 165,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31450802/pexels-photo-31450802.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgers-003",
+      "name": "Double Cheeseburger",
+      "description": "Çift kat cheeseburger.",
+      "price": 185,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/3915915/pexels-photo-3915915.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgers-004",
+      "name": "Chicken Burger",
+      "description": "Tavuk burger.",
+      "price": 165,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11001165/pexels-photo-11001165.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgers-005",
+      "name": "Big Burger",
+      "description": "Büyük burger.",
+      "price": 180,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/12325104/pexels-photo-12325104.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgers-006",
+      "name": "Double Hamburger",
+      "description": "Çift hamburger.",
+      "price": 155,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/3915915/pexels-photo-3915915.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgers-007",
+      "name": "Double Chicken Burger",
+      "description": "Çift tavuk burger.",
+      "price": 205,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/27049616/pexels-photo-27049616.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgers-008",
+      "name": "Extra Burger",
+      "description": "Extra burger.",
+      "price": 215,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "burgers"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/10560087/pexels-photo-10560087.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-menus-001",
+      "name": "Hamburger Menü",
+      "description": "Burger köftesi 60 gr, turşu, ketçap ve mayonez.",
+      "price": 230,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "burger-menus"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34003512/pexels-photo-34003512.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-menus-002",
+      "name": "Hellim Burger Menü",
+      "description": "Burger köftesi 60 gr, hellim, turşu, ketçap, mayonez ve domates.",
+      "price": 295,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "burger-menus"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31450815/pexels-photo-31450815.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-menus-003",
+      "name": "Cheeseburger Menü",
+      "description": "Burger köftesi 60 gr, peynir, turşu, ketçap ve mayonez.",
+      "price": 265,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "burger-menus"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31450802/pexels-photo-31450802.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-menus-004",
+      "name": "Double Cheeseburger Menü",
+      "description": "2x burger köftesi 60 gr, turşu, ketçap ve mayonez.",
+      "price": 280,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "burger-menus"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/3915915/pexels-photo-3915915.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-menus-005",
+      "name": "Chicken Burger Menü",
+      "description": "Chicken burger 90 gr, turşu, ketçap ve mayonez.",
+      "price": 230,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "burger-menus"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11001165/pexels-photo-11001165.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-menus-006",
+      "name": "Big Burger Menü",
+      "description": "Burger köftesi 120 gr, peynir, turşu, ketçap ve domates.",
+      "price": 285,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "burger-menus"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/12325104/pexels-photo-12325104.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-menus-007",
+      "name": "Double Hamburger Menü",
+      "description": "2x burger köftesi 60 gr, turşu, ketçap ve mayonez.",
+      "price": 265,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "burger-menus"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/3915915/pexels-photo-3915915.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-menus-008",
+      "name": "Double Chicken Burger Menü",
+      "description": "2x chicken burger 90 gr, turşu, ketçap ve mayonez.",
+      "price": 270,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "burger-menus"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/27049616/pexels-photo-27049616.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burger-menus-009",
+      "name": "Extra Burger Menü",
+      "description": "Burger köftesi 120 gr, peynir, turşu, ketçap, mayonez, soğan, marul ve domates.",
+      "price": 295,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "burger-menus"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31450819/pexels-photo-31450819.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "yemekler-001",
+      "name": "Mantı",
+      "description": "Klasik mantı.",
+      "price": 265,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "yemekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/35123971/pexels-photo-35123971.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "yemekler-002",
+      "name": "Pilav Üstü Tavuk",
+      "description": "Pilav üstü tavuk.",
+      "price": 230,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "yemekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34134207/pexels-photo-34134207.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "yemekler-003",
+      "name": "1.5 Porsiyon Tavuk Pilav",
+      "description": "1.5 porsiyon tavuk pilav.",
+      "price": 315,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "yemekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28896610/pexels-photo-28896610.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "yemekler-004",
+      "name": "Ekmek Arası Tavuk Köfte",
+      "description": "Ekmek arası tavuk köfte.",
+      "price": 235,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "yemekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/10681098/pexels-photo-10681098.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "yemekler-005",
+      "name": "Ekmek Arası Et Köfte",
+      "description": "Ekmek arası et köfte.",
+      "price": 300,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "yemekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/18416961/pexels-photo-18416961.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "yemekler-006",
+      "name": "Et Köfte Servis",
+      "description": "Et köfte servis.",
+      "price": 415,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "yemekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34318137/pexels-photo-34318137.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "yemekler-007",
+      "name": "Kumru",
+      "description": "Kumru sandviç.",
+      "price": 270,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "yemekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/10681098/pexels-photo-10681098.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "kahvalti-001",
+      "name": "Sandwich",
+      "description": "Klasik sandwich.",
+      "price": 140,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "kahvalti"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/10681098/pexels-photo-10681098.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "kahvalti-002",
+      "name": "Kaşarlı Tost",
+      "description": "Kaşarlı tost.",
+      "price": 120,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "kahvalti"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/18416961/pexels-photo-18416961.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "kahvalti-003",
+      "name": "Karışık Tost",
+      "description": "Karışık tost.",
+      "price": 140,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "kahvalti"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/8478413/pexels-photo-8478413.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "kahvalti-004",
+      "name": "Patso",
+      "description": "Patatesli sandviç.",
+      "price": 190,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "kahvalti"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/35440206/pexels-photo-35440206.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "kahvalti-005",
+      "name": "Karışık Omlet",
+      "description": "Karışık omlet.",
+      "price": 230,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "kahvalti"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17650171/pexels-photo-17650171.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-001",
+      "name": "Special Pizza (Küçük)",
+      "description": "Mısır, salam, sucuk, sosis, mantar, biber ve zeytinli special pizza.",
+      "price": 325,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/5903378/pexels-photo-5903378.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-002",
+      "name": "Special Pizza (Büyük)",
+      "description": "Mısır, salam, sucuk, sosis, mantar, biber ve zeytinli special pizza.",
+      "price": 385,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/35625385/pexels-photo-35625385.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-003",
+      "name": "Margarita Pizza (Küçük)",
+      "description": "Domates ve zeytinli margarita pizza.",
+      "price": 300,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31300969/pexels-photo-31300969.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-004",
+      "name": "Margarita Pizza (Büyük)",
+      "description": "Domates ve zeytinli margarita pizza.",
+      "price": 360,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31136887/pexels-photo-31136887.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-005",
+      "name": "Tavuk Pizza (Küçük)",
+      "description": "Tavuk, mısır ve barbekü soslu pizza.",
+      "price": 300,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34382326/pexels-photo-34382326.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-006",
+      "name": "Tavuk Pizza (Büyük)",
+      "description": "Tavuk, mısır ve barbekü soslu pizza.",
+      "price": 360,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/33457575/pexels-photo-33457575.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-007",
+      "name": "Sucuklu Pizza (Küçük)",
+      "description": "Sucuk ve zeytinli pizza.",
+      "price": 300,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/27582711/pexels-photo-27582711.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-008",
+      "name": "Sucuklu Pizza (Büyük)",
+      "description": "Sucuk ve zeytinli pizza.",
+      "price": 360,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/26575499/pexels-photo-26575499.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-009",
+      "name": "Ton Balıklı Pizza (Küçük)",
+      "description": "Ton balığı ve mısırlı pizza.",
+      "price": 300,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36925834/pexels-photo-36925834.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-010",
+      "name": "Ton Balıklı Pizza (Büyük)",
+      "description": "Ton balığı ve mısırlı pizza.",
+      "price": 360,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11432074/pexels-photo-11432074.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-011",
+      "name": "Vegetarian Pizza (Küçük)",
+      "description": "Mısır, domates, mantar ve zeytinli vejetaryen pizza.",
+      "price": 300,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/8609973/pexels-photo-8609973.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzas-012",
+      "name": "Vegetarian Pizza (Büyük)",
+      "description": "Mısır, domates, mantar ve zeytinli vejetaryen pizza.",
+      "price": 360,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "pizzas"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/33593000/pexels-photo-33593000.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wraps-001",
+      "name": "Soya Soslu Dürüm",
+      "description": "Soya soslu tavuk dürüm.",
+      "price": 335,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/25856522/pexels-photo-25856522.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wraps-002",
+      "name": "Köri Soslu Dürüm",
+      "description": "Köri soslu tavuk dürüm.",
+      "price": 335,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6416559/pexels-photo-6416559.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wraps-003",
+      "name": "Chicken Pepper Dürüm",
+      "description": "Chicken pepper dürüm.",
+      "price": 335,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/5175629/pexels-photo-5175629.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wraps-004",
+      "name": "Strogonof Dürüm",
+      "description": "Strogonof tavuk dürüm.",
+      "price": 335,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/29535635/pexels-photo-29535635.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wraps-005",
+      "name": "Hatay Usulü Et Döner Dürüm",
+      "description": "Hatay usulü et döner dürüm.",
+      "price": 335,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34318137/pexels-photo-34318137.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wraps-006",
+      "name": "Hatay Usulü Et Döner Servis",
+      "description": "Hatay usulü et döner servis.",
+      "price": 415,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "yemekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/26341210/pexels-photo-26341210.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wraps-007",
+      "name": "Tenders Dürüm",
+      "description": "Tavuk tenders dürüm.",
+      "price": 300,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/10361459/pexels-photo-10361459.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wraps-008",
+      "name": "Çıtır Dürüm",
+      "description": "Çıtır tavuk dürüm.",
+      "price": 300,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "wraps"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/14979832/pexels-photo-14979832.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "extras-001",
+      "name": "Ekstra Tavuk",
+      "description": "Yemeklere ekstra tavuk ilavesi.",
+      "price": 60,
+      "restaurantId": "erto-cafe",
+      "categories": [
+        "extras"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32986493/pexels-photo-32986493.jpeg?auto=compress&cs=tinysrgb&h=350"
+    }
+  ]
+}

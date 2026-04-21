@@ -97,6 +97,7 @@ const FIREBASE_COLLECTIONS = {
     productReviews: "reviews",
     reviews: "reviews",
     menuItemReviews: "reviews",
+    orderReviews: "orderReviews",
     orders: "orders",
     categories: "categories",
 } as const;

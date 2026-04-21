@@ -17,7 +17,7 @@ import { useDefaultAddress, type ManageAddressesNavigation } from "@/src/feature
 
 import { profileIllustrations, profileImages } from "@/constants/profileMedia";
 
-import { subscribeUserOrders } from "@/src/services/firebaseOrders";
+import { fetchUserOrders } from "@/src/services/firebaseOrders";
 import { storage } from "@/src/lib/storage";
 import { useTheme } from "@/src/theme/themeContext";
 import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
@@ -28,18 +28,13 @@ import { makeShadow } from "@/src/lib/shadowStyle";
 import { deleteCurrentUserProfile, getOwnedRestaurantId, updateUserProfile } from "@/lib/firebaseAuth";
 import { NotificationManager } from "@/src/features/notifications/NotificationManager";
 import { seedRestaurants } from "@/lib/restaurantSeeds";
-import { fetchUserReviews } from "@/src/services/menuItemReviews";
-import {
-    getOrderReviewItems,
-    getPendingReviewItems,
-    getProductReviewId,
-    isCancelledStatus,
-    isReviewableStatus,
-} from "@/src/features/reviews/reviewUtils";
+import { fetchUserOrderReviews } from "@/src/services/orderReviews";
+import type { OrderReview } from "@/src/domain/types";
+import { isCancelledStatus, isReviewableStatus } from "@/src/features/reviews/reviewUtils";
+import OrderReviewCard from "@/src/features/reviews/OrderReviewCard";
 
 const WINE_RED = "#7F021F";
 const ORANGE = "#FE8C00";
-const DISMISSED_REVIEWABLE_ORDERS_KEY_PREFIX = "hungrie_dismissed_reviewable_orders_v1";
 const normalizeId = (value: unknown) => (value === null || value === undefined ? "" : String(value));
 const restaurantNamesById = seedRestaurants.reduce<Record<string, string>>((acc, restaurant: any) => {
     const id = normalizeId(restaurant?.id);
@@ -467,15 +462,6 @@ type OrderSummaryItem = {
     quantity: number;
 };
 
-type ReviewableOrder = {
-    key: string;
-    orderId: string;
-    restaurantName: string;
-    pendingCount: number;
-    totalCount: number;
-    updatedAt?: any;
-};
-
 const resolveItems = (order: any): OrderSummaryItem[] => {
     const rawItems = Array.isArray(order?.orderItems) ? order.orderItems : Array.isArray(order?.items) ? order.items : [];
     return rawItems.map((item: any) => ({
@@ -522,10 +508,8 @@ const Profile = () => {
     const guestVisualCenterOffset = Math.max((guestTabBarOffset - safeTop) / 2, 0) + 48;
 
     const [orders, setOrders] = useState<any[]>([]);
-    const [existingReviewIds, setExistingReviewIds] = useState<Set<string>>(new Set());
+    const [userOrderReviews, setUserOrderReviews] = useState<OrderReview[]>([]);
     const [reviewsLoading, setReviewsLoading] = useState(false);
-    const [dismissedReviewableOrderIds, setDismissedReviewableOrderIds] = useState<Set<string>>(new Set());
-    const [showAllReviewableOrders, setShowAllReviewableOrders] = useState(false);
     const [ownedRestaurantId, setOwnedRestaurantId] = useState<string | null>(null);
     const [signingOut, setSigningOut] = useState(false);
     const [deletingProfile, setDeletingProfile] = useState(false);
@@ -554,7 +538,11 @@ const Profile = () => {
         [user?.name],
     );
     const userId = String(user?.id ?? user?.$id ?? user?.accountId ?? "").trim();
-    const dismissedReviewableOrdersStorageKey = `${DISMISSED_REVIEWABLE_ORDERS_KEY_PREFIX}:${userId || "guest"}`;
+    const userDisplayName = String(user?.name || "").trim() || undefined;
+    const reviewedOrderIds = useMemo(
+        () => new Set(userOrderReviews.map((review) => String(review.orderId || "").trim()).filter(Boolean)),
+        [userOrderReviews],
+    );
 
     const activeOrders = useMemo(() => {
         return (orders || []).filter((o: any) => {
@@ -563,7 +551,7 @@ const Profile = () => {
         });
     }, [orders]);
 
-    const allReviewableOrders = useMemo<ReviewableOrder[]>(() => {
+    const deliveredOrders = useMemo<any[]>(() => {
         if (!userId) return [];
 
         const latestOrderById = new Map<string, any>();
@@ -582,58 +570,26 @@ const Profile = () => {
             }
         }
 
-        const list: ReviewableOrder[] = [];
+        const list: any[] = [];
         for (const order of latestOrderById.values()) {
             const orderId = String(order?.id ?? "").trim();
             if (!orderId) continue;
             if (String(order?.userId || "").trim() && String(order?.userId || "").trim() !== userId) continue;
             if (isCancelledStatus(String(order?.status || ""))) continue;
             if (!isReviewableStatus(String(order?.status || ""))) continue;
-
-            const orderRestaurantName = resolveRestaurantName(order);
-            const reviewItems = getOrderReviewItems(order);
-            if (!reviewItems.length) continue;
-
-            const pendingItems = getPendingReviewItems(order, existingReviewIds, userId);
-            const pendingCount = pendingItems.length;
-            if (pendingCount <= 0) continue;
-
-            list.push({
-                key: orderId,
-                orderId,
-                restaurantName: orderRestaurantName,
-                pendingCount,
-                totalCount: reviewItems.length,
-                updatedAt: order?.updatedAt || order?.createdAt,
-            });
+            list.push(order);
         }
 
-        return list.sort((a, b) => toMillis(b.updatedAt) - toMillis(a.updatedAt));
-    }, [orders, existingReviewIds, userId]);
-
-    const reviewableOrders = useMemo(
-        () => allReviewableOrders.filter((order) => !dismissedReviewableOrderIds.has(order.orderId)),
-        [allReviewableOrders, dismissedReviewableOrderIds],
-    );
+        return list.sort((a, b) => toMillis(b?.updatedAt || b?.createdAt) - toMillis(a?.updatedAt || a?.createdAt));
+    }, [orders, userId]);
 
     useEffect(() => {
         if (!__DEV__ || !userId) return;
 
-        const deliveredOrdersCount = (orders || []).filter(
-            (order: any) => isReviewableStatus(String(order?.status || "")),
-        ).length;
-        const pendingReviewItems = allReviewableOrders.reduce((acc, order) => acc + order.pendingCount, 0);
-
         console.debug(
-            `[Reviews][Profile] delivered=${deliveredOrdersCount}, existing=${existingReviewIds.size}, pending=${pendingReviewItems}`,
+            `[Reviews][Profile] delivered=${deliveredOrders.length}, reviewed=${reviewedOrderIds.size}`,
         );
-    }, [orders, allReviewableOrders, existingReviewIds, userId]);
-
-    const visibleReviewableOrders = useMemo(
-        () => (showAllReviewableOrders ? reviewableOrders : reviewableOrders.slice(0, 3)),
-        [reviewableOrders, showAllReviewableOrders],
-    );
-    const canShowAllReviewableOrdersButton = reviewableOrders.length > 3;
+    }, [deliveredOrders.length, reviewedOrderIds.size, userId]);
 
     const isTurkish = i18n.language?.toLowerCase().startsWith("tr");
     const guestCopy = {
@@ -664,71 +620,30 @@ const Profile = () => {
         setWhatsappDraft(user?.whatsappNumber ?? "");
     }, [user?.name, user?.email, user?.whatsappNumber]);
 
-    useEffect(() => {
-        setShowAllReviewableOrders(false);
-    }, [userId]);
-
-    useEffect(() => {
-        let active = true;
-
-        const loadDismissedReviewableOrders = async () => {
-            if (!userId) {
-                if (active) setDismissedReviewableOrderIds(new Set());
-                return;
-            }
-
-            try {
-                const raw = await storage.getItem(dismissedReviewableOrdersStorageKey);
-                if (!active) return;
-
-                if (!raw) {
-                    setDismissedReviewableOrderIds(new Set());
-                    return;
-                }
-
-                const parsed = JSON.parse(raw);
-                if (!Array.isArray(parsed)) {
-                    setDismissedReviewableOrderIds(new Set());
-                    return;
-                }
-
-                const next = new Set(parsed.map((value) => String(value || "").trim()).filter(Boolean));
-                setDismissedReviewableOrderIds(next);
-            } catch {
-                if (active) setDismissedReviewableOrderIds(new Set());
-            }
-        };
-
-        void loadDismissedReviewableOrders();
-        return () => {
-            active = false;
-        };
-    }, [dismissedReviewableOrdersStorageKey, userId]);
-
-    useEffect(() => {
-        if (!userId) return;
-        const payload = JSON.stringify(Array.from(dismissedReviewableOrderIds));
-        void storage.setItem(dismissedReviewableOrdersStorageKey, payload);
-    }, [dismissedReviewableOrderIds, dismissedReviewableOrdersStorageKey, userId]);
-
-    useEffect(() => {
-        if (reviewableOrders.length <= 3) {
-            setShowAllReviewableOrders(false);
+    const loadUserOrders = useCallback(async () => {
+        if (!userId) {
+            setOrders([]);
+            return;
         }
-    }, [reviewableOrders.length]);
+
+        try {
+            const list = await fetchUserOrders(userId);
+            setOrders(list || []);
+        } catch {
+            setOrders([]);
+        }
+    }, [userId]);
 
     useEffect(() => {
-        if (!userId) return;
+        void loadUserOrders();
+    }, [loadUserOrders]);
 
-        const unsubscribe = subscribeUserOrders(userId, (list) => setOrders(list || []));
-        return () => {
-            try {
-                unsubscribe && unsubscribe();
-            } catch {
-                /* noop */
-            }
-        };
-    }, [userId]);
+    useFocusEffect(
+        useCallback(() => {
+            void loadUserOrders();
+            return undefined;
+        }, [loadUserOrders]),
+    );
 
     const loadOwnedRestaurant = useCallback(async () => {
         if (!userId) {
@@ -750,50 +665,39 @@ const Profile = () => {
         }, [loadOwnedRestaurant]),
     );
 
-    const loadExistingReviews = useCallback(async () => {
+    const loadUserOrderReviews = useCallback(async () => {
         if (!userId) {
-            setExistingReviewIds(new Set());
+            setUserOrderReviews([]);
             setReviewsLoading(false);
             return;
         }
 
         try {
             setReviewsLoading(true);
-            const reviews = await fetchUserReviews(userId);
-            const next = new Set<string>();
-            for (const review of reviews) {
-                if (review.id) next.add(String(review.id));
-                const orderId = String(review.orderId || "");
-                const itemId = String(review.itemId || review.menuItemId || "");
-                if (orderId && itemId) {
-                    next.add(getProductReviewId(orderId, itemId, userId));
-                }
-            }
-            setExistingReviewIds(next);
+            const reviews = await fetchUserOrderReviews(userId, { limit: 100 });
+            setUserOrderReviews(reviews);
         } catch {
-            setExistingReviewIds(new Set());
+            setUserOrderReviews([]);
         } finally {
             setReviewsLoading(false);
         }
     }, [userId]);
 
     useEffect(() => {
-        void loadExistingReviews();
-    }, [loadExistingReviews]);
+        void loadUserOrderReviews();
+    }, [loadUserOrderReviews]);
 
     useFocusEffect(
         useCallback(() => {
-            void loadExistingReviews();
+            void loadUserOrderReviews();
             return undefined;
-        }, [loadExistingReviews]),
+        }, [loadUserOrderReviews]),
     );
 
-    const handleDismissReviewableOrder = useCallback((orderId: string) => {
-        if (!orderId) return;
-        setDismissedReviewableOrderIds((prev) => {
-            const next = new Set(prev);
-            next.add(orderId);
-            return next;
+    const handleOrderReviewSaved = useCallback((review: OrderReview) => {
+        setUserOrderReviews((prev) => {
+            const next = [review, ...prev.filter((entry) => entry.id !== review.id)];
+            return next.sort((a, b) => toMillis(b.createdAt || b.updatedAt) - toMillis(a.createdAt || a.updatedAt));
         });
     }, []);
 
@@ -842,8 +746,7 @@ const Profile = () => {
         } finally {
             setSigningOut(false);
             setOrders([]);
-            setExistingReviewIds(new Set());
-            setDismissedReviewableOrderIds(new Set());
+            setUserOrderReviews([]);
             setOwnedRestaurantId(null);
             setNotifModalVisible(false);
             setIsEditingProfile(false);
@@ -876,8 +779,7 @@ const Profile = () => {
                 setDeletingProfile(true);
                 await deleteCurrentUserProfile();
                 setOrders([]);
-                setExistingReviewIds(new Set());
-                setDismissedReviewableOrderIds(new Set());
+                setUserOrderReviews([]);
                 setOwnedRestaurantId(null);
                 setNotifModalVisible(false);
                 setIsEditingProfile(false);
@@ -1151,107 +1053,33 @@ const Profile = () => {
                         style={[ui.sectionCard, ui.sectionCardShadow, isWeb ? ui.sectionCardWeb : null, isWeb ? ui.sectionCardShadowWeb : null]}
                     >
                         <View className="flex-row items-center justify-between" style={ui.rowBetween}>
-                            <SectionHeader title={isTurkish ? "De\u011Ferlendirilecek Sipari\u015Fler" : "Orders to Review"} />
+                            <SectionHeader title={isTurkish ? "Teslim edilen siparisler" : "Delivered orders"} />
                         </View>
 
-                        {reviewableOrders.length ? (
+                        {deliveredOrders.length ? (
                             <View style={{ gap: 12 }}>
-                                {visibleReviewableOrders.map((order) => (
-                                    <View
-                                        key={order.key}
-                                        style={[
-                                            ui.orderItemCard,
-                                            ui.orderItemCardShadow,
-                                            isWeb ? ui.orderItemCardWeb : null,
-                                            isWeb ? ui.orderItemCardShadowWeb : null,
-                                        ]}
-                                    >
-                                        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                                            <Text style={{ color: "#0F172A", fontFamily: "ChairoSans", fontSize: 16, flex: 1 }}>
-                                                {order.restaurantName}
-                                            </Text>
-                                            <TouchableOpacity
-                                                onPress={() => handleDismissReviewableOrder(order.orderId)}
-                                                style={{
-                                                    borderRadius: 999,
-                                                    borderWidth: 1,
-                                                    borderColor: "#E2E8F0",
-                                                    backgroundColor: "#FFFFFF",
-                                                    paddingHorizontal: 10,
-                                                    paddingVertical: 4,
-                                                    marginLeft: 10,
-                                                }}
-                                            >
-                                                <Text style={{ color: "#64748B", fontFamily: "ChairoSans", fontSize: 11 }}>
-                                                    {isTurkish ? "Kapat" : "Close"}
-                                                </Text>
-                                            </TouchableOpacity>
-                                        </View>
-                                        <Text style={{ color: "#64748B", fontFamily: "ChairoSans", marginTop: 2 }}>
-                                            {isTurkish ? `Sipari\u015F No: #${order.orderId}` : `Order ID: #${order.orderId}`}
-                                        </Text>
-                                        <Text style={{ color: "#64748B", fontFamily: "ChairoSans", marginTop: 4 }}>
-                                            {isTurkish
-                                                ? `${order.pendingCount}/${order.totalCount} \u00FCr\u00FCn de\u011Ferlendirmesi bekliyor`
-                                                : `${order.pendingCount}/${order.totalCount} items pending review`}
-                                        </Text>
-                                        <View style={{ marginTop: 10, flexDirection: "row", justifyContent: "flex-end" }}>
-                                            <TouchableOpacity
-                                                onPress={() =>
-                                                    router.push({
-                                                        pathname: "/orders",
-                                                        params: { highlight: order.orderId },
-                                                    })
-                                                }
-                                                style={{
-                                                    borderRadius: 999,
-                                                    paddingHorizontal: 14,
-                                                    paddingVertical: 9,
-                                                    backgroundColor: "#FE8C00",
-                                                }}
-                                            >
-                                                <Text style={{ color: "#FFFFFF", fontFamily: "ChairoSans", fontSize: 13 }}>
-                                                    {isTurkish ? "Sipari\u015fi de\u011ferlendir" : "Review order"}
-                                                </Text>
-                                            </TouchableOpacity>
-                                        </View>
-                                    </View>
-                                ))}
-                                {canShowAllReviewableOrdersButton ? (
-                                    <View style={{ alignItems: "flex-end" }}>
-                                        <TouchableOpacity
-                                            onPress={() => setShowAllReviewableOrders((prev) => !prev)}
-                                            style={{
-                                                borderRadius: 999,
-                                                borderWidth: 1,
-                                                borderColor: "#E2E8F0",
-                                                paddingHorizontal: 12,
-                                                paddingVertical: 6,
-                                                backgroundColor: "#FFFFFF",
-                                            }}
-                                        >
-                                            <Text style={{ color: "#475569", fontFamily: "ChairoSans", fontSize: 12 }}>
-                                                {showAllReviewableOrders
-                                                    ? isTurkish
-                                                        ? "Daha az g\u00f6ster"
-                                                        : "Show less"
-                                                    : isTurkish
-                                                      ? "T\u00fcm\u00fcn\u00fc g\u00f6r"
-                                                      : "Show all"}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                ) : null}
+                                {deliveredOrders.map((order, index) => {
+                                    const orderId = String(order?.id || "").trim();
+                                    return (
+                                        <OrderReviewCard
+                                            key={orderId || `delivered-${index}`}
+                                            order={order}
+                                            reviewed={reviewedOrderIds.has(orderId)}
+                                            userName={userDisplayName}
+                                            onReviewSaved={handleOrderReviewSaved}
+                                        />
+                                    );
+                                })}
                             </View>
                         ) : (
                             <Text className="body-medium text-dark-60">
                                 {reviewsLoading
                                     ? isTurkish
-                                        ? "De\u011Ferlendirilecek sipari\u015Fler y\u00FCkleniyor..."
-                                        : "Loading reviewable orders..."
+                                        ? "Degerlendirme bilgileri yukleniyor..."
+                                        : "Loading order reviews..."
                                     : isTurkish
-                                      ? "De\u011Ferlendirilecek sipari\u015F yok."
-                                      : "No orders to review yet."}
+                                      ? "Degerlendirilecek teslim edilmis siparis yok."
+                                      : "No delivered orders to review yet."}
                             </Text>
                         )}
                     </View>

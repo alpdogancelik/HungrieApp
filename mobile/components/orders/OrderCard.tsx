@@ -20,7 +20,7 @@ type Props = {
     onToggle: (orderId: string) => void;
     onStatusChange: (
         orderId: string,
-        nextStatus: "pending" | "accepted" | "out_for_delivery" | "canceled" | "delivered",
+        nextStatus: "pending" | "accepted" | "out_for_delivery" | "canceled" | "rejected" | "delivered",
     ) => Promise<void> | void;
 };
 
@@ -55,13 +55,13 @@ const OrderCard = ({
         }).start();
     }, [bgAnim, isNew]);
 
-    const confirmAction = (nextStatus: "accepted" | "out_for_delivery" | "canceled" | "delivered") => {
+    const confirmAction = (nextStatus: "accepted" | "out_for_delivery" | "rejected" | "delivered") => {
         const actionName =
             nextStatus === "accepted"
                 ? t("orders.action.accept")
                 : nextStatus === "out_for_delivery"
                   ? t("orders.action.handover")
-                : nextStatus === "canceled"
+                : nextStatus === "rejected"
                   ? t("orders.action.reject")
                   : t("orders.action.deliver");
 
@@ -76,8 +76,8 @@ const OrderCard = ({
             return;
         }
 
-        const confirmTitle = nextStatus === "canceled" ? t("orders.rejectConfirmTitle") : t("orders.confirmTitle");
-        const confirmBody = nextStatus === "canceled" ? t("orders.rejectConfirmBody") : t("orders.confirmBody", { action: actionName });
+        const confirmTitle = nextStatus === "rejected" ? t("orders.rejectConfirmTitle") : t("orders.confirmTitle");
+        const confirmBody = nextStatus === "rejected" ? t("orders.rejectConfirmBody") : t("orders.confirmBody", { action: actionName });
 
         Alert.alert(
             confirmTitle,
@@ -86,7 +86,7 @@ const OrderCard = ({
                 { text: t("orders.cancel"), style: "cancel" },
                 {
                     text: t("orders.confirm"),
-                    style: nextStatus === "canceled" ? "destructive" : "default",
+                    style: nextStatus === "rejected" ? "destructive" : "default",
                     onPress: () => {
                         void onStatusChange(order.id, nextStatus);
                     },
@@ -188,7 +188,7 @@ const OrderCard = ({
                                 </Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                onPress={() => confirmAction("canceled")}
+                                onPress={() => confirmAction("rejected")}
                                 activeOpacity={0.82}
                                 style={[
                                     styles.actionButtonBase,
@@ -202,7 +202,7 @@ const OrderCard = ({
                                 disabled={actionsDisabled}
                             >
                                 <Text style={[styles.actionButtonText, styles.rejectActionButtonText]}>
-                                    {actionLoadingStatus === "canceled" ? `${t("orders.reject")}...` : t("orders.reject")}
+                                    {actionLoadingStatus === "rejected" ? `${t("orders.reject")}...` : t("orders.reject")}
                                 </Text>
                             </TouchableOpacity>
                         </>

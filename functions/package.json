@@ -9,7 +9,8 @@
     "deploy": "firebase deploy --only functions",
     "serve": "firebase emulators:start --only functions",
     "cleanup:push-tokens": "node scripts/cleanupPushTokens.js",
-    "sync:firestore-json": "node scripts/syncFirestoreFromJsonAdmin.js"
+    "sync:firestore-json": "node scripts/syncFirestoreFromJsonAdmin.js",
+    "provision:restaurant-panel-accounts": "node scripts/provisionRestaurantPanelAccounts.js"
   },
   "dependencies": {
     "firebase-admin": "^12.7.0",

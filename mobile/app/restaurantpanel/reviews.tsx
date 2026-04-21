@@ -3,7 +3,6 @@ import {
     Alert,
     StyleSheet,
     Text,
-    TextInput,
     TouchableOpacity,
     View,
     useWindowDimensions,
@@ -12,8 +11,8 @@ import { Redirect, useRouter } from "expo-router";
 
 import useAuthStore from "@/store/auth.store";
 import { getOwnedRestaurantId } from "@/lib/firebaseAuth";
-import type { MenuItemReview } from "@/src/domain/types";
-import { fetchRestaurantReviews, moderateMenuItemReview } from "@/src/services/menuItemReviews";
+import type { OrderReview } from "@/src/domain/types";
+import { fetchRestaurantOrderReviews, moderateOrderReview } from "@/src/services/orderReviews";
 import { PanelCard, PanelShell, panelDesign } from "@/src/features/restaurantPanel/ui";
 import { LanguageSwitch } from "@/components/panel";
 import { useRestaurantPanelLocale } from "@/src/features/restaurantPanel/panelLocale";
@@ -26,8 +25,7 @@ const RestaurantReviewsScreen = () => {
     const [restaurantId, setRestaurantId] = useState<string | null>(null);
     const [redirectTo, setRedirectTo] = useState<"/sign-in" | "/" | null>(null);
     const [loading, setLoading] = useState(true);
-    const [reviews, setReviews] = useState<MenuItemReview[]>([]);
-    const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+    const [reviews, setReviews] = useState<OrderReview[]>([]);
     const [savingById, setSavingById] = useState<Record<string, boolean>>({});
     const { locale, ready, setLocale } = useRestaurantPanelLocale(restaurantId);
     const isTurkish = locale === "tr";
@@ -70,11 +68,8 @@ const RestaurantReviewsScreen = () => {
 
         setLoading(true);
         try {
-            const nextReviews = await fetchRestaurantReviews(restaurantId, { includeHidden: true });
+            const nextReviews = await fetchRestaurantOrderReviews(restaurantId, { includeHidden: true, limit: 100 });
             setReviews(nextReviews);
-            setReplyDrafts(
-                Object.fromEntries(nextReviews.map((review) => [review.id, review.reply || ""])),
-            );
         } catch (error: any) {
             Alert.alert(
                 isTurkish ? "Yorumlar yuklenemedi" : "Unable to load reviews",
@@ -96,14 +91,10 @@ const RestaurantReviewsScreen = () => {
     }, [reviews]);
 
     const handleModerate = useCallback(
-        async (review: MenuItemReview, nextStatus: MenuItemReview["status"]) => {
+        async (review: OrderReview, nextStatus: OrderReview["status"]) => {
             setSavingById((prev) => ({ ...prev, [review.id]: true }));
             try {
-                await moderateMenuItemReview({
-                    reviewId: review.id,
-                    status: nextStatus,
-                    reply: replyDrafts[review.id] || "",
-                });
+                await moderateOrderReview(review.id, nextStatus);
                 await loadReviews();
             } catch (error: any) {
                 Alert.alert(
@@ -114,40 +105,26 @@ const RestaurantReviewsScreen = () => {
                 setSavingById((prev) => ({ ...prev, [review.id]: false }));
             }
         },
-        [isTurkish, loadReviews, replyDrafts],
+        [isTurkish, loadReviews],
     );
 
-    const handleReplySave = useCallback(
-        async (review: MenuItemReview) => {
-            setSavingById((prev) => ({ ...prev, [review.id]: true }));
-            try {
-                await moderateMenuItemReview({
-                    reviewId: review.id,
-                    reply: replyDrafts[review.id] || "",
-                });
-                await loadReviews();
-            } catch (error: any) {
-                Alert.alert(
-                    isTurkish ? "Cevap kaydedilemedi" : "Reply could not be saved",
-                    error?.message || (isTurkish ? "Lutfen tekrar deneyin." : "Please try again."),
-                );
-            } finally {
-                setSavingById((prev) => ({ ...prev, [review.id]: false }));
-            }
-        },
-        [isTurkish, loadReviews, replyDrafts],
-    );
+    const formatDate = (value?: string) => {
+        if (!value) return "-";
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) return value;
+        return parsed.toLocaleString();
+    };
 
     if (redirectTo) return <Redirect href={redirectTo} />;
 
     return (
         <PanelShell
             kicker={isTurkish ? "Restoran merkezi" : "Restaurant hub"}
-            title={isTurkish ? "Yorum moderasyonu" : "Review moderation"}
+            title={isTurkish ? "Siparis yorumlari" : "Order reviews"}
             subtitle={
                 isTurkish
-                    ? "Urun yorumlarini yayinla, gizle ve restoran cevabi ekle."
-                    : "Publish, hide, and reply to product reviews."
+                    ? "Siparis bazli restoran yorumlarini yayinla veya gizle."
+                    : "Publish or hide order-level restaurant reviews."
             }
             onBackPress={isPhone ? undefined : () => router.push("/restaurantpanel")}
             backLabel={isTurkish ? "Panele don" : "Back to panel"}
@@ -162,7 +139,7 @@ const RestaurantReviewsScreen = () => {
         >
             <PanelCard
                 title={isTurkish ? "Yorum ozeti" : "Review snapshot"}
-                subtitle={`${summary.total} ${isTurkish ? "toplam" : "total"} • ${summary.published} ${isTurkish ? "yayinlandi" : "published"} • ${summary.hidden} ${isTurkish ? "gizli" : "hidden"}`}
+                subtitle={`${summary.total} ${isTurkish ? "toplam" : "total"} - ${summary.published} ${isTurkish ? "yayinlandi" : "published"} - ${summary.hidden} ${isTurkish ? "gizli" : "hidden"}`}
             />
 
             {loading || !localeReady ? (
@@ -172,13 +149,12 @@ const RestaurantReviewsScreen = () => {
                     {reviews.length ? (
                         reviews.map((review) => {
                             const saving = Boolean(savingById[review.id]);
-                            const draft = replyDrafts[review.id] || "";
                             return (
                                 <PanelCard
                                     key={review.id}
                                     compact
-                                    title={review.menuItemName || (isTurkish ? "Menu urunu" : "Menu item")}
-                                    subtitle={`${review.rating}/5 • ${review.userName || review.userId}`}
+                                    title={review.restaurantName || (isTurkish ? "Restoran" : "Restaurant")}
+                                    subtitle={`${isTurkish ? "Siparis" : "Order"} #${review.orderId}`}
                                     style={styles.reviewCard}
                                     right={
                                         <View style={[styles.statusPill, review.status === "published" ? styles.statusPillPublished : styles.statusPillHidden]}>
@@ -188,32 +164,17 @@ const RestaurantReviewsScreen = () => {
                                         </View>
                                     }
                                 >
-                                    <Text style={styles.orderMeta}>{`#${review.orderId}`}</Text>
+                                    <Text style={styles.meta}>{`${isTurkish ? "Kullanici" : "User"}: ${review.userName || review.userId}`}</Text>
+                                    <Text style={styles.meta}>{`${isTurkish ? "Tarih" : "Date"}: ${formatDate(review.createdAt || review.updatedAt)}`}</Text>
+                                    <Text style={styles.ratingLine}>{`${isTurkish ? "Genel" : "Overall"}: ${review.averageRating.toFixed(1)}/5`}</Text>
+                                    <Text style={styles.ratingLine}>{`${isTurkish ? "Hiz" : "Speed"}: ${review.ratings.speed} - ${isTurkish ? "Lezzet" : "Taste"}: ${review.ratings.taste} - ${isTurkish ? "F/P" : "Value"}: ${review.ratings.value}`}</Text>
                                     {review.comment ? (
-                                        <Text style={styles.commentText}>{review.comment}</Text>
+                                        <Text style={styles.comment}>{review.comment}</Text>
                                     ) : (
-                                        <Text style={styles.commentMuted}>{isTurkish ? "Sadece puan birakilmis." : "Rating only, no comment."}</Text>
+                                        <Text style={styles.commentMuted}>{isTurkish ? "Yorum metni yok." : "No text comment."}</Text>
                                     )}
 
-                                    <TextInput
-                                        value={draft}
-                                        onChangeText={(value) => setReplyDrafts((prev) => ({ ...prev, [review.id]: value.slice(0, 300) }))}
-                                        placeholder={isTurkish ? "Restoran cevabi yaz..." : "Write a restaurant reply..."}
-                                        placeholderTextColor="#94A3B8"
-                                        multiline
-                                        style={styles.replyInput}
-                                    />
-
                                     <View style={styles.actionsRow}>
-                                        <TouchableOpacity
-                                            disabled={saving}
-                                            onPress={() => void handleReplySave(review)}
-                                            style={[styles.actionButton, styles.replyButton, saving ? styles.actionButtonDisabled : null]}
-                                        >
-                                            <Text style={[styles.actionButtonText, styles.replyButtonText]}>
-                                                {isTurkish ? "Cevabi kaydet" : "Save reply"}
-                                            </Text>
-                                        </TouchableOpacity>
                                         <TouchableOpacity
                                             disabled={saving || review.status === "published"}
                                             onPress={() => void handleModerate(review, "published")}
@@ -239,7 +200,7 @@ const RestaurantReviewsScreen = () => {
                     ) : (
                         <PanelCard
                             title={isTurkish ? "Henuz yorum yok" : "No reviews yet"}
-                            subtitle={isTurkish ? "Teslim edilen urunlerden yorum geldikce burada listelenecek." : "Delivered item reviews will appear here as they arrive."}
+                            subtitle={isTurkish ? "Teslim edilen siparislerden yorum geldikce burada listelenecek." : "Order reviews will appear here as they arrive."}
                         />
                     )}
                 </View>
@@ -256,12 +217,17 @@ const styles = StyleSheet.create({
     reviewCard: {
         gap: 10,
     },
-    orderMeta: {
+    meta: {
         fontFamily: "ChairoSans",
         fontSize: 12,
         color: panelDesign.colors.muted,
     },
-    commentText: {
+    ratingLine: {
+        fontFamily: "ChairoSans",
+        fontSize: 13,
+        color: panelDesign.colors.text,
+    },
+    comment: {
         fontFamily: "ChairoSans",
         fontSize: 14,
         lineHeight: 20,
@@ -271,19 +237,6 @@ const styles = StyleSheet.create({
         fontFamily: "ChairoSans",
         fontSize: 13,
         color: panelDesign.colors.muted,
-    },
-    replyInput: {
-        minHeight: 84,
-        borderRadius: panelDesign.radius.md,
-        borderWidth: 1,
-        borderColor: panelDesign.colors.border,
-        backgroundColor: "#FFFFFF",
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-        color: panelDesign.colors.text,
-        fontFamily: "ChairoSans",
-        fontSize: 14,
-        textAlignVertical: "top",
     },
     actionsRow: {
         flexDirection: "row",
@@ -305,13 +258,6 @@ const styles = StyleSheet.create({
     actionButtonText: {
         fontFamily: "ChairoSans",
         fontSize: 13,
-    },
-    replyButton: {
-        backgroundColor: "#FFF5EA",
-        borderColor: "#EE7A14",
-    },
-    replyButtonText: {
-        color: "#B94900",
     },
     publishButton: {
         backgroundColor: "#ECFDF5",

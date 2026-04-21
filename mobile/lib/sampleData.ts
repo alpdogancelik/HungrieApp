@@ -5,6 +5,8 @@ const MUNCHIES_LOGO = require("@/assets/restaurantlogo/munchieslogo.jpg");
 const ROOT_LOGO = require("@/assets/restaurantlogo/rootlogo.jpg");
 const LOMBARD_LOGO = require("@/assets/restaurantlogo/lombardlogo.jpg");
 const BURGER_LOGO = require("@/assets/restaurantlogo/burgerhouselogo.jpg");
+const VOY_LOGO = require("@/assets/restaurantlogo/voylogo.jpg");
+const ERTO_LOGO = require("@/assets/restaurantlogo/ertologo.jpg");
 
 type RestaurantSeedFile = {
     restaurants?: Array<{
@@ -113,6 +115,8 @@ const munchiesSeedJson = require("@/data/munchies-firestore.json") as Restaurant
 const rootSeedJson = require("@/data/root-firestore.json") as RestaurantSeedFile;
 const lombardSeedJson = require("@/data/lombard-firestore.json") as RestaurantSeedFile;
 const burgerhouseSeedJson = require("@/data/burgerhouse-firestore.json") as RestaurantSeedFile;
+const voySeedJson = require("@/data/voy-firestore.json") as RestaurantSeedFile;
+const ertoSeedJson = require("@/data/erto-firestore.json") as RestaurantSeedFile;
 
 const seedBundles: SeedBundle[] = [
     {
@@ -170,6 +174,22 @@ const seedBundles: SeedBundle[] = [
         fallbackImage: "",
         rating: 4.5,
         reviewCount: 96,
+    },
+    {
+        key: "voy",
+        seed: voySeedJson as RestaurantSeedFile,
+        logoAsset: VOY_LOGO,
+        fallbackImage: "",
+        rating: 4.7,
+        reviewCount: 90,
+    },
+    {
+        key: "erto-cafe",
+        seed: ertoSeedJson as RestaurantSeedFile,
+        logoAsset: ERTO_LOGO,
+        fallbackImage: "",
+        rating: 4.6,
+        reviewCount: 84,
     },
 ];
 

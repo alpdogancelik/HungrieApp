@@ -1,69 +1,118 @@
 export type SupportedLocale = "en" | "tr";
 
-const canonicalize = (value: string) =>
-    value
+type LocalizedLabel = Record<SupportedLocale, string>;
+
+type CategoryRule = {
+    key: string;
+    aliases: string[];
+};
+
+const TURKISH_CHAR_MAP: Record<string, string> = {
+    ı: "i",
+    İ: "i",
+    ç: "c",
+    Ç: "c",
+    ğ: "g",
+    Ğ: "g",
+    ö: "o",
+    Ö: "o",
+    ş: "s",
+    Ş: "s",
+    ü: "u",
+    Ü: "u",
+};
+
+export const canonicalize = (value: unknown): string => {
+    return String(value ?? "")
         .trim()
-        .toLowerCase()
+        .replace(/[ıİçÇğĞöÖşŞüÜ]/g, (char) => TURKISH_CHAR_MAP[char] ?? char)
         .normalize("NFKD")
         .replace(/[\u0300-\u036f]/g, "")
-        .replace(/ı/g, "i")
-        .replace(/ç/g, "c")
-        .replace(/ğ/g, "g")
-        .replace(/ö/g, "o")
-        .replace(/ş/g, "s")
-        .replace(/ü/g, "u")
+        .toLowerCase()
         .replace(/&/g, " and ")
         .replace(/[|/]+/g, " ")
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/-+/g, "-")
         .replace(/^-+|-+$/g, "");
-
-const hasAny = (source: string, needles: string[]) => needles.some((needle) => source.includes(needle));
-
-export const normalizeCategoryKey = (raw: unknown): string => {
-    const key = canonicalize(String(raw || ""));
-    if (!key) return "other";
-
-    if (hasAny(key, ["burger-l", "burger-level", "burger-extra", "burger-addon", "burger-topping"])) return "burger-extras";
-    if (hasAny(key, ["kids", "cocuk", "child"])) return "kids-menu";
-    if (hasAny(key, ["ice-cream", "dondurma", "gelato"])) return "desserts";
-    if (hasAny(key, ["salata", "salad"])) return "salads";
-    if (hasAny(key, ["makarna", "pasta", "penne", "spaghetti", "tagliatelle"])) return "pasta";
-    if (hasAny(key, ["pizza-wrap"])) return "pizza-wraps";
-    if (hasAny(key, ["pizza", "pizzalar", "pizzas"])) return "pizzas";
-    if (hasAny(key, ["pide"])) return "pide";
-    if (hasAny(key, ["lahmacun"])) return "lahmacun";
-    if (hasAny(key, ["gozleme"])) return "gozleme";
-    if (hasAny(key, ["tantuni"])) return "tantuni";
-    if (hasAny(key, ["durum", "wrap"])) return "wraps";
-    if (hasAny(key, ["hamburger", "burgerler", "burgers", "burger"])) return "burgers";
-    if (hasAny(key, ["izgara", "grill"])) return "grills";
-    if (hasAny(key, ["pilic", "tavuk", "chicken"])) return "chicken";
-    if (hasAny(key, ["atistirmalik", "snack", "citir", "crispy"])) return "snacks";
-    if (hasAny(key, ["fries", "chips", "patates"])) return "chips";
-    if (hasAny(key, ["sos", "sauce"])) return "sauces";
-    if (hasAny(key, ["corba", "soup"])) return "soups";
-    if (hasAny(key, ["kase", "bowl"])) return "bowls";
-    if (hasAny(key, ["mesrubat", "soft-drink", "cold-drink", "soguk-icecek", "cold-icecek", "drinks-cold", "drinks-cool"])) return "cold-drinks";
-    if (hasAny(key, ["sicak-icecek", "hot-drink", "coffee", "tea", "drinks-hot"])) return "hot-drinks";
-    if (hasAny(key, ["icecek", "i-cecek", "drink", "beverage"])) return "drinks";
-    if (hasAny(key, ["ekstra", "extra", "addon", "add-on", "sides", "yan-urun"])) return "extras";
-    if (hasAny(key, ["ana-yemek", "mains", "main", "tabak", "plate"])) return "mains";
-    if (hasAny(key, ["diet", "diyet"])) return "diet";
-    if (hasAny(key, ["fast-food"])) return "fast-food";
-    if (hasAny(key, ["deniz-urun", "seafood"])) return "seafood";
-
-    return key;
 };
 
-const CATEGORY_LABELS: Record<string, { en: string; tr: string }> = {
+const normalizeLoose = (value: unknown): string => {
+    return canonicalize(value)
+        .replace(/-/g, "")
+        // Broken Turkish spellings: "i ccekler", "iccek", etc.
+        .replace(/ccek/g, "cecek");
+};
+
+const createRule = (key: string, aliases: string[]): CategoryRule => ({
+    key,
+    aliases: [key, ...aliases],
+});
+
+const CATEGORY_RULES: CategoryRule[] = [
+    // Voy polished categories
+    createRule("kahvaltilar", ["kahvalti", "breakfast"]),
+    createRule("sandvic-tostlar", ["sandvic", "sandwich", "tost", "toast"]),
+    createRule("wrap-doner", ["wrap-doner", "doner-wrap", "doner"]),
+    createRule("makarnalar-mantilar", ["makarnalar-mantilar", "makarna-manti", "manti"]),
+    createRule("sicak-kahveler", ["sicak-kahve", "hot-coffee", "hot-coffees"]),
+    createRule("soguk-kahveler", ["soguk-kahve", "iced-coffee", "iced-coffees", "cold-coffee"]),
+    createRule("voy-ozel-kahveler", ["voy-ozel-kahve", "voy-s-ozel-kahve", "signature-coffee"]),
+    createRule("sicak-cikolatalar", ["sicak-cikolata", "hot-chocolate", "hot-chocolates"]),
+    createRule("frappeler", ["frappe", "frappeler"]),
+    createRule("chai-tea-latte", ["chai-tea", "chai-latte"]),
+    createRule("campaign-menus", ["kampanya", "campaign-menu", "kampanya-menu"]),
+    createRule("meal-menus", ["food-menuleri", "meal-menu", "yemek-menu"]),
+    createRule("appetizers", ["aperatif", "appetizer", "starter"]),
+    createRule("meat-dishes", ["et-yemek", "meat-dish", "meat-meal"]),
+    createRule("pan-dishes", ["tava-yemek", "pan-dish", "skillet"]),
+
+    // Generic food categories
+    createRule("burger-extras", ["burger-l", "burger-level", "burger-extra", "burger-addon", "burger-topping"]),
+    createRule("kids-menu", ["kids", "cocuk", "child"]),
+    createRule("desserts", ["dessert", "tatli", "sweet", "ice-cream", "dondurma", "gelato"]),
+    createRule("salads", ["salata", "salad"]),
+    createRule("pasta", ["makarna", "pasta", "penne", "spaghetti", "tagliatelle"]),
+    createRule("pizza-wraps", ["pizza-wrap"]),
+    createRule("pizzas", ["pizza", "pizzalar", "pizzas"]),
+    createRule("pide", ["pide"]),
+    createRule("lahmacun", ["lahmacun"]),
+    createRule("gozleme", ["gozleme"]),
+    createRule("tantuni", ["tantuni"]),
+    createRule("wraps", ["durum", "wrap"]),
+    createRule("burgers", ["hamburger", "burgerler", "burgers", "burger"]),
+    createRule("grills", ["izgara", "grill"]),
+    createRule("chicken", ["pilic", "tavuk", "chicken"]),
+    createRule("snacks", ["atistirmalik", "snack", "citir", "crispy"]),
+    createRule("chips", ["fries", "chips", "patates"]),
+    createRule("sauces", ["sos", "sauce"]),
+    createRule("soups", ["corba", "soup"]),
+    createRule("bowls", ["kase", "bowl"]),
+    createRule("cold-drinks", [
+        "mesrubat",
+        "soft-drink",
+        "cold-drink",
+        "soguk-icecek",
+        "cold-icecek",
+        "drinks-cold",
+        "drinks-cool",
+    ]),
+    createRule("hot-drinks", ["sicak-icecek", "hot-drink", "coffee", "tea", "drinks-hot"]),
+    createRule("drinks", ["icecek", "drink", "beverage"]),
+    createRule("extras", ["extra", "ekstra", "extralar", "addon", "add-on", "sides", "yan-urun"]),
+    createRule("mains", ["ana-yemek", "mains", "main", "tabak", "plate"]),
+    createRule("diet", ["diet", "diyet"]),
+    createRule("fast-food", ["fast-food"]),
+    createRule("seafood", ["deniz-urun", "seafood"]),
+];
+
+const CATEGORY_LABELS: Record<string, LocalizedLabel> = {
     burgers: { en: "Burgers", tr: "Burgerler" },
     wraps: { en: "Wraps", tr: "Dürümler" },
     "pizza-wraps": { en: "Pizza Wraps", tr: "Pizza Wrap" },
     pizzas: { en: "Pizzas", tr: "Pizzalar" },
     pide: { en: "Pide", tr: "Pideler" },
     lahmacun: { en: "Lahmacun", tr: "Lahmacun" },
-    gozleme: { en: "Gözleme", tr: "Gözlemeler" },
+    gozleme: { en: "Gozleme", tr: "Gözlemeler" },
     tantuni: { en: "Tantuni", tr: "Tantuniler" },
     mains: { en: "Mains", tr: "Ana Yemekler" },
     grills: { en: "Grills", tr: "Izgaralar" },
@@ -73,32 +122,77 @@ const CATEGORY_LABELS: Record<string, { en: string; tr: string }> = {
     salads: { en: "Salads", tr: "Salatalar" },
     extras: { en: "Extras", tr: "Ekstralar" },
     snacks: { en: "Snacks", tr: "Atıştırmalıklar" },
-    bowls: { en: "Bowls", tr: "Bowls" },
+    bowls: { en: "Bowls", tr: "Kaseler" },
     chips: { en: "Chips / Fries", tr: "Cips / Patates" },
     sauces: { en: "Sauces", tr: "Soslar" },
     drinks: { en: "Drinks", tr: "İçecekler" },
     "cold-drinks": { en: "Cold Drinks", tr: "Soğuk İçecekler" },
     "hot-drinks": { en: "Hot Drinks", tr: "Sıcak İçecekler" },
     toast: { en: "Toasts & Sandwiches", tr: "Tost / Sandviç" },
-    soups: { en: "Starters", tr: "Aperatifler" },
-    cigkofte: { en: "Çiğ Köfte", tr: "Çiğ Köfte" },
+    soups: { en: "Soups", tr: "Çorbalar" },
+    cigkofte: { en: "Cig Kofte", tr: "Çiğ Köfte" },
     "burger-extras": { en: "Burger Extras", tr: "Burger Ekstraları" },
     "fast-food": { en: "Fast Food", tr: "Fast Food Menüleri" },
     diet: { en: "Diet", tr: "Diyet Menüler" },
     seafood: { en: "Seafood", tr: "Deniz Ürünleri" },
+    "campaign-menus": { en: "Campaign Menus", tr: "Kampanya Menüleri" },
+    "meal-menus": { en: "Meal Menus", tr: "Yemek Menüleri" },
+    appetizers: { en: "Appetizers", tr: "Aperatifler" },
+    "meat-dishes": { en: "Meat Dishes", tr: "Et Yemekleri" },
+    "pan-dishes": { en: "Pan Dishes", tr: "Tava Yemekleri" },
     "kids-menu": { en: "Kids Menu", tr: "Çocuk Menüsü" },
     desserts: { en: "Desserts", tr: "Tatlılar" },
+
+    // Voy polished labels
+    kahvaltilar: { en: "Breakfasts", tr: "Kahvaltılar" },
+    "sandvic-tostlar": { en: "Sandwiches & Toasts", tr: "Sandviçler ve Tostlar" },
+    "wrap-doner": { en: "Wraps & Doner", tr: "Wrap ve Dönerler" },
+    "makarnalar-mantilar": { en: "Pasta & Dumplings", tr: "Makarnalar ve Mantılar" },
+    "sicak-kahveler": { en: "Hot Coffees", tr: "Sıcak Kahveler" },
+    "soguk-kahveler": { en: "Iced Coffees", tr: "Soğuk Kahveler" },
+    "voy-ozel-kahveler": { en: "Voy Signature Coffees", tr: "Voy'un Özel Kahveleri" },
+    "sicak-cikolatalar": { en: "Hot Chocolates", tr: "Sıcak Çikolatalar" },
+    frappeler: { en: "Frappes", tr: "Frappeler" },
+    "chai-tea-latte": { en: "Chai Tea Latte", tr: "Chai Tea Latte" },
+
     other: { en: "Other", tr: "Diğer" },
 };
 
-const titleCase = (value: string) =>
-    value
+const aliasMatches = (rawKey: string, alias: string): boolean => {
+    const strictAlias = canonicalize(alias);
+    const looseKey = normalizeLoose(rawKey);
+    const looseAlias = normalizeLoose(alias);
+
+    return rawKey === strictAlias || rawKey.includes(strictAlias) || looseKey.includes(looseAlias);
+};
+
+export const normalizeCategoryKey = (raw: unknown): string => {
+    const key = canonicalize(raw);
+    if (!key) return "other";
+
+    const matchedRule = CATEGORY_RULES.find((rule) =>
+        rule.aliases.some((alias) => aliasMatches(key, alias)),
+    );
+
+    return matchedRule?.key ?? key;
+};
+
+const titleCase = (value: string): string => {
+    return value
         .replace(/[_-]+/g, " ")
         .replace(/\b\w/g, (char) => char.toUpperCase());
+};
 
-export const getCategoryLabel = (key: string, locale: SupportedLocale = "en") => {
-    const normalized = normalizeCategoryKey(key);
-    const mapping = CATEGORY_LABELS[normalized];
-    if (mapping) return mapping[locale] ?? mapping.en;
-    return titleCase(normalized);
+export const getCategoryLabel = (
+    key: unknown,
+    locale: SupportedLocale = "en",
+): string => {
+    const normalizedKey = normalizeCategoryKey(key);
+    const label = CATEGORY_LABELS[normalizedKey];
+
+    return label?.[locale] ?? label?.en ?? titleCase(normalizedKey);
+};
+
+export const getCategoryLabels = (): Record<string, LocalizedLabel> => {
+    return CATEGORY_LABELS;
 };

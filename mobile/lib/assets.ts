@@ -6,6 +6,8 @@ const RESTAURANT_LOGO_MAP: Record<string, number> = {
     "@/assets/restaurantlogo/rootlogo.jpg": require("@/assets/restaurantlogo/rootlogo.jpg"),
     "@/assets/restaurantlogo/lombardlogo.jpg": require("@/assets/restaurantlogo/lombardlogo.jpg"),
     "@/assets/restaurantlogo/burgerhouselogo.jpg": require("@/assets/restaurantlogo/burgerhouselogo.jpg"),
+    "@/assets/restaurantlogo/voylogo.jpg": require("@/assets/restaurantlogo/voylogo.jpg"),
+    "@/assets/restaurantlogo/ertologo.jpg": require("@/assets/restaurantlogo/ertologo.jpg"),
 };
 
 const RESTAURANT_LOGO_BY_FILE: Record<string, number> = {
@@ -16,6 +18,8 @@ const RESTAURANT_LOGO_BY_FILE: Record<string, number> = {
     rootlogo: RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/rootlogo.jpg"],
     lombardlogo: RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/lombardlogo.jpg"],
     burgerhouselogo: RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/burgerhouselogo.jpg"],
+    voylogo: RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/voylogo.jpg"],
+    ertologo: RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/ertologo.jpg"],
 };
 
 const FALLBACK_RESTAURANT_IMAGE = RESTAURANT_LOGO_MAP["@/assets/restaurantlogo/adapizzalogo.jpg"];
@@ -33,6 +37,9 @@ const RESTAURANT_LOGO_BY_HINT: Record<string, number> = {
     "lombard-kitchen": RESTAURANT_LOGO_BY_FILE.lombardlogo,
     burgerhouse: RESTAURANT_LOGO_BY_FILE.burgerhouselogo,
     "burger-house": RESTAURANT_LOGO_BY_FILE.burgerhouselogo,
+    voy: RESTAURANT_LOGO_BY_FILE.voylogo,
+    erto: RESTAURANT_LOGO_BY_FILE.ertologo,
+    "erto-cafe": RESTAURANT_LOGO_BY_FILE.ertologo,
 };
 
 type ExpoImageSource = number | { uri: string };

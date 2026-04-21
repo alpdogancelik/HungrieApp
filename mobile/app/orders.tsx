@@ -18,7 +18,7 @@ import { useTranslation } from "react-i18next";
 import { useFocusEffect } from "@react-navigation/native";
 
 import type { OrderStatus, RestaurantOrder } from "@/type";
-import { subscribeUserOrders } from "@/src/services/firebaseOrders";
+import { fetchUserOrders } from "@/src/services/firebaseOrders";
 import ReviewSheet from "@/src/features/reviews/ReviewSheet";
 import { fetchUserReviews, submitMenuItemReview } from "@/src/services/menuItemReviews";
 import useAuthStore from "@/store/auth.store";
@@ -128,6 +128,24 @@ const OrderHistoryScreen = () => {
     const [isSubmittingReview, setIsSubmittingReview] = useState(false);
     const [reviewLookupLoading, setReviewLookupLoading] = useState(false);
 
+    const loadOrders = useCallback(async () => {
+        if (!userId) {
+            setOrders([]);
+            setLoading(false);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const list = await fetchUserOrders(userId);
+            setOrders((list as RestaurantOrder[]) || []);
+        } catch {
+            setOrders([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [userId]);
+
     const loadReviewedIds = useCallback(async () => {
         if (!userId) {
             setReviewedIds(new Set());
@@ -165,34 +183,18 @@ const OrderHistoryScreen = () => {
 
     useFocusEffect(
         useCallback(() => {
+            void loadOrders();
             void loadReviewedIds();
             return () => {
                 setReviewTarget(null);
                 setIsSubmittingReview(false);
             };
-        }, [loadReviewedIds]),
+        }, [loadOrders, loadReviewedIds]),
     );
 
     useEffect(() => {
-        if (!userId) {
-            setOrders([]);
-            setLoading(false);
-            return;
-        }
-
-        const unsub = subscribeUserOrders(userId, (list) => {
-            setOrders((list as RestaurantOrder[]) || []);
-            setLoading(false);
-        });
-
-        return () => {
-            try {
-                unsub && unsub();
-            } catch {
-                /* noop */
-            }
-        };
-    }, [userId]);
+        void loadOrders();
+    }, [loadOrders]);
 
     useEffect(() => {
         void loadReviewedIds();
@@ -223,7 +225,7 @@ const OrderHistoryScreen = () => {
 
     const handleRefresh = async () => {
         setVisibleCount(PAGE_SIZE);
-        await loadReviewedIds();
+        await Promise.all([loadOrders(), loadReviewedIds()]);
     };
 
     const handleCopyOrderId = (orderId: string) => {

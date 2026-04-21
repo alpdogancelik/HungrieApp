@@ -1,0 +1,1929 @@
+{
+  "restaurants": [
+    {
+      "id": "voy",
+      "name": "Voy",
+      "cuisine": "Cafe · Burger · Pizza · Tavuk · Tatlı",
+      "description": "Kalkanlı’da kahvaltı, kahve, burger, pizza, tavuk yemekleri ve tatlı çeşitleri sunan Voy menüsü.",
+      "deliveryFee": 24.9,
+      "deliveryTime": "25-35",
+      "imageUrl": "@/assets/restaurantlogo/voylogo.jpg",
+      "ownerId": "voy-owner-uid",
+      "isActive": true,
+      "address": "ODTÜ A Kapısı Yolu, Platform Park Apt. Dükkan No:1, Kalkanlı/Güzelyurt"
+    }
+  ],
+  "categories": [
+    {
+      "id": "kahvaltilar",
+      "name": "Kahvaltılar"
+    },
+    {
+      "id": "sandvic-tostlar",
+      "name": "Sandviçler & Tostlar"
+    },
+    {
+      "id": "wrap-doner",
+      "name": "Wraplar & Döner"
+    },
+    {
+      "id": "atistirmaliklar",
+      "name": "Atıştırmalıklar"
+    },
+    {
+      "id": "burgerler",
+      "name": "Burgerler"
+    },
+    {
+      "id": "et-yemekleri",
+      "name": "Et Yemekleri"
+    },
+    {
+      "id": "tavuk-yemekleri",
+      "name": "Tavuk Yemekleri"
+    },
+    {
+      "id": "makarnalar-mantilar",
+      "name": "Makarnalar & Mantılar"
+    },
+    {
+      "id": "pizzalar",
+      "name": "Pizzalar"
+    },
+    {
+      "id": "tatlilar",
+      "name": "Tatlılar"
+    },
+    {
+      "id": "sicak-kahveler",
+      "name": "Sıcak Kahveler"
+    },
+    {
+      "id": "soguk-kahveler",
+      "name": "Soğuk Kahveler"
+    },
+    {
+      "id": "soguk-icecekler",
+      "name": "Soğuk İçecekler"
+    },
+    {
+      "id": "voy-ozel-kahveler",
+      "name": "Voy's Özel Kahveleri"
+    },
+    {
+      "id": "sicak-cikolatalar",
+      "name": "Sıcak Çikolatalar"
+    },
+    {
+      "id": "frappeler",
+      "name": "Frappeler"
+    },
+    {
+      "id": "extralar",
+      "name": "Extralar"
+    },
+    {
+      "id": "chai-tea-latte",
+      "name": "Chai Tea Latte"
+    }
+  ],
+  "menus": [
+    {
+      "id": "kahvaltilar-001",
+      "name": "Kahvaltı Tabağı",
+      "description": "Voy menüsünden Kahvaltı Tabağı.",
+      "price": 420,
+      "restaurantId": "voy",
+      "categories": [
+        "kahvaltilar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34134207/pexels-photo-34134207.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "kahvaltilar-002",
+      "name": "Sıcak Kahvaltı Tabağı",
+      "description": "Voy menüsünden Sıcak Kahvaltı Tabağı.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "kahvaltilar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/35872317/pexels-photo-35872317.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "kahvaltilar-003",
+      "name": "Pişi Tabağı",
+      "description": "Voy menüsünden Pişi Tabağı.",
+      "price": 330,
+      "restaurantId": "voy",
+      "categories": [
+        "kahvaltilar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32986476/pexels-photo-32986476.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "kahvaltilar-004",
+      "name": "Omlet Çeşitleri",
+      "description": "Voy menüsünden Omlet Çeşitleri.",
+      "price": 330,
+      "restaurantId": "voy",
+      "categories": [
+        "kahvaltilar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17650171/pexels-photo-17650171.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "kahvaltilar-005",
+      "name": "Menemen",
+      "description": "Voy menüsünden Menemen.",
+      "price": 330,
+      "restaurantId": "voy",
+      "categories": [
+        "kahvaltilar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32986472/pexels-photo-32986472.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "kahvaltilar-006",
+      "name": "Granola",
+      "description": "Voy menüsünden Granola.",
+      "price": 330,
+      "restaurantId": "voy",
+      "categories": [
+        "kahvaltilar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28896610/pexels-photo-28896610.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sandvic-tostlar-001",
+      "name": "Özel Soslu Tavuk Sandviç",
+      "description": "Voy menüsünden Özel Soslu Tavuk Sandviç.",
+      "price": 320,
+      "restaurantId": "voy",
+      "categories": [
+        "sandvic-tostlar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/10681098/pexels-photo-10681098.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sandvic-tostlar-002",
+      "name": "Hindi Füme Sandviç",
+      "description": "Voy menüsünden Hindi Füme Sandviç.",
+      "price": 290,
+      "restaurantId": "voy",
+      "categories": [
+        "sandvic-tostlar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/18416961/pexels-photo-18416961.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sandvic-tostlar-003",
+      "name": "Dana Jambon Tost",
+      "description": "Voy menüsünden Dana Jambon Tost.",
+      "price": 265,
+      "restaurantId": "voy",
+      "categories": [
+        "sandvic-tostlar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/8478413/pexels-photo-8478413.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sandvic-tostlar-004",
+      "name": "Mozarella Pestolu Tost",
+      "description": "Voy menüsünden Mozarella Pestolu Tost.",
+      "price": 265,
+      "restaurantId": "voy",
+      "categories": [
+        "sandvic-tostlar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/15110224/pexels-photo-15110224.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-doner-001",
+      "name": "Tavuk Döner",
+      "description": "Voy menüsünden Tavuk Döner.",
+      "price": 350,
+      "restaurantId": "voy",
+      "categories": [
+        "wrap-doner"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6416559/pexels-photo-6416559.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-doner-002",
+      "name": "Et Döner",
+      "description": "Voy menüsünden Et Döner.",
+      "price": 390,
+      "restaurantId": "voy",
+      "categories": [
+        "wrap-doner"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34318137/pexels-photo-34318137.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-doner-003",
+      "name": "Tavuklu Quesadilla",
+      "description": "Voy menüsünden Tavuklu Quesadilla.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "wrap-doner"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/5175629/pexels-photo-5175629.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-doner-004",
+      "name": "Çıtır Tavuklu Wrap",
+      "description": "Voy menüsünden Çıtır Tavuklu Wrap.",
+      "price": 400,
+      "restaurantId": "voy",
+      "categories": [
+        "wrap-doner"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/25856522/pexels-photo-25856522.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-doner-005",
+      "name": "Etli Wrap",
+      "description": "Voy menüsünden Etli Wrap.",
+      "price": 450,
+      "restaurantId": "voy",
+      "categories": [
+        "wrap-doner"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/18007687/pexels-photo-18007687.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-doner-006",
+      "name": "Sebzeli Wrap",
+      "description": "Voy menüsünden Sebzeli Wrap.",
+      "price": 380,
+      "restaurantId": "voy",
+      "categories": [
+        "wrap-doner"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32402074/pexels-photo-32402074.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "wrap-doner-007",
+      "name": "Meksikan Wrap",
+      "description": "Voy menüsünden Meksikan Wrap.",
+      "price": 400,
+      "restaurantId": "voy",
+      "categories": [
+        "wrap-doner"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/29535635/pexels-photo-29535635.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "atistirmaliklar-001",
+      "name": "Atıştırmalık Tabağı",
+      "description": "Voy menüsünden Atıştırmalık Tabağı.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "atistirmaliklar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/5603924/pexels-photo-5603924.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "atistirmaliklar-002",
+      "name": "Patates Kızartması (Klasik)",
+      "description": "Voy menüsünden Patates Kızartması (Klasik).",
+      "price": 200,
+      "restaurantId": "voy",
+      "categories": [
+        "atistirmaliklar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32421783/pexels-photo-32421783.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "atistirmaliklar-003",
+      "name": "Patates Kızartması (Baharatlı)",
+      "description": "Voy menüsünden Patates Kızartması (Baharatlı).",
+      "price": 200,
+      "restaurantId": "voy",
+      "categories": [
+        "atistirmaliklar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/8839625/pexels-photo-8839625.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "atistirmaliklar-004",
+      "name": "Amsterdam Patates Kızartması",
+      "description": "Voy menüsünden Amsterdam Patates Kızartması.",
+      "price": 290,
+      "restaurantId": "voy",
+      "categories": [
+        "atistirmaliklar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/20535803/pexels-photo-20535803.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "atistirmaliklar-005",
+      "name": "Soğan Halkası",
+      "description": "Voy menüsünden Soğan Halkası.",
+      "price": 140,
+      "restaurantId": "voy",
+      "categories": [
+        "atistirmaliklar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/9738991/pexels-photo-9738991.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "atistirmaliklar-006",
+      "name": "Çıtır Tenders",
+      "description": "Voy menüsünden Çıtır Tenders.",
+      "price": 260,
+      "restaurantId": "voy",
+      "categories": [
+        "atistirmaliklar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/27352273/pexels-photo-27352273.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "atistirmaliklar-007",
+      "name": "Mozzarella Stick",
+      "description": "Voy menüsünden Mozzarella Stick.",
+      "price": 185,
+      "restaurantId": "voy",
+      "categories": [
+        "atistirmaliklar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Snacks"
+    },
+    {
+      "id": "atistirmaliklar-008",
+      "name": "Hellim Cips",
+      "description": "Voy menüsünden Hellim Cips.",
+      "price": 250,
+      "restaurantId": "voy",
+      "categories": [
+        "atistirmaliklar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/20535802/pexels-photo-20535802.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgerler-001",
+      "name": "Cheese Burger",
+      "description": "Voy menüsünden Cheese Burger.",
+      "price": 430,
+      "restaurantId": "voy",
+      "categories": [
+        "burgerler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31450815/pexels-photo-31450815.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgerler-002",
+      "name": "Bacon Burger",
+      "description": "Voy menüsünden Bacon Burger.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "burgerler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/29653152/pexels-photo-29653152.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgerler-003",
+      "name": "Voy Burger",
+      "description": "Voy menüsünden Voy Burger.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "burgerler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31450802/pexels-photo-31450802.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgerler-004",
+      "name": "Switzerland Burger",
+      "description": "Voy menüsünden Switzerland Burger.",
+      "price": 460,
+      "restaurantId": "voy",
+      "categories": [
+        "burgerler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/20264649/pexels-photo-20264649.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgerler-005",
+      "name": "Çıtır Tavuk Burger",
+      "description": "Voy menüsünden Çıtır Tavuk Burger.",
+      "price": 400,
+      "restaurantId": "voy",
+      "categories": [
+        "burgerler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11001165/pexels-photo-11001165.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgerler-006",
+      "name": "Mac Cheese Burger",
+      "description": "Voy menüsünden Mac Cheese Burger.",
+      "price": 460,
+      "restaurantId": "voy",
+      "categories": [
+        "burgerler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31450819/pexels-photo-31450819.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgerler-007",
+      "name": "Double Burger",
+      "description": "Voy menüsünden Double Burger.",
+      "price": 560,
+      "restaurantId": "voy",
+      "categories": [
+        "burgerler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/10560087/pexels-photo-10560087.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "burgerler-008",
+      "name": "Hellim Burger",
+      "description": "Voy menüsünden Hellim Burger.",
+      "price": 430,
+      "restaurantId": "voy",
+      "categories": [
+        "burgerler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31450815/pexels-photo-31450815.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "et-yemekleri-001",
+      "name": "Izgara Köfte",
+      "description": "Voy menüsünden Izgara Köfte.",
+      "price": 520,
+      "restaurantId": "voy",
+      "categories": [
+        "et-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/26341210/pexels-photo-26341210.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "et-yemekleri-002",
+      "name": "Beef Stroganof",
+      "description": "Voy menüsünden Beef Stroganof.",
+      "price": 690,
+      "restaurantId": "voy",
+      "categories": [
+        "et-yemekleri"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Meat+Plate"
+    },
+    {
+      "id": "et-yemekleri-003",
+      "name": "Beef Fajita",
+      "description": "Voy menüsünden Beef Fajita.",
+      "price": 690,
+      "restaurantId": "voy",
+      "categories": [
+        "et-yemekleri"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Meat+Plate"
+    },
+    {
+      "id": "et-yemekleri-004",
+      "name": "Dana Fajita",
+      "description": "Voy menüsünden Dana Fajita.",
+      "price": 680,
+      "restaurantId": "voy",
+      "categories": [
+        "et-yemekleri"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Meat+Plate"
+    },
+    {
+      "id": "et-yemekleri-005",
+      "name": "Dana Isabella",
+      "description": "Voy menüsünden Dana Isabella.",
+      "price": 680,
+      "restaurantId": "voy",
+      "categories": [
+        "et-yemekleri"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Meat+Plate"
+    },
+    {
+      "id": "tavuk-yemekleri-001",
+      "name": "Izgara Tavuk",
+      "description": "Voy menüsünden Izgara Tavuk.",
+      "price": 450,
+      "restaurantId": "voy",
+      "categories": [
+        "tavuk-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32986493/pexels-photo-32986493.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tavuk-yemekleri-002",
+      "name": "Krepli Piliç",
+      "description": "Voy menüsünden Krepli Piliç.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "tavuk-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/35872317/pexels-photo-35872317.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tavuk-yemekleri-003",
+      "name": "Tavuk Dolma",
+      "description": "Voy menüsünden Tavuk Dolma.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "tavuk-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32986476/pexels-photo-32986476.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tavuk-yemekleri-004",
+      "name": "Piliç Isabella",
+      "description": "Voy menüsünden Piliç Isabella.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "tavuk-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31860141/pexels-photo-31860141.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tavuk-yemekleri-005",
+      "name": "Köri Soslu Tavuk",
+      "description": "Voy menüsünden Köri Soslu Tavuk.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "tavuk-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17650171/pexels-photo-17650171.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tavuk-yemekleri-006",
+      "name": "Ballı Hardallı Tavuk",
+      "description": "Voy menüsünden Ballı Hardallı Tavuk.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "tavuk-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34134207/pexels-photo-34134207.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tavuk-yemekleri-007",
+      "name": "Kremalı Mantarlı Tavuk",
+      "description": "Voy menüsünden Kremalı Mantarlı Tavuk.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "tavuk-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32986472/pexels-photo-32986472.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tavuk-yemekleri-008",
+      "name": "Cafe de Paris Soslu Tavuk",
+      "description": "Voy menüsünden Cafe de Paris Soslu Tavuk.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "tavuk-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36885731/pexels-photo-36885731.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tavuk-yemekleri-009",
+      "name": "BBQ Soslu Tavuk",
+      "description": "Voy menüsünden BBQ Soslu Tavuk.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "tavuk-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6646212/pexels-photo-6646212.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tavuk-yemekleri-010",
+      "name": "Meksika Soslu Tavuk",
+      "description": "Voy menüsünden Meksika Soslu Tavuk.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "tavuk-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28896610/pexels-photo-28896610.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tavuk-yemekleri-011",
+      "name": "Pesto Soslu Tavuk",
+      "description": "Voy menüsünden Pesto Soslu Tavuk.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "tavuk-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/33683055/pexels-photo-33683055.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tavuk-yemekleri-012",
+      "name": "Beğendili Tavuk",
+      "description": "Voy menüsünden Beğendili Tavuk.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "tavuk-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17696653/pexels-photo-17696653.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tavuk-yemekleri-013",
+      "name": "Piliç African",
+      "description": "Voy menüsünden Piliç African.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "tavuk-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/9025234/pexels-photo-9025234.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tavuk-yemekleri-014",
+      "name": "BBQ Soslu Tavuk Kanat",
+      "description": "Voy menüsünden BBQ Soslu Tavuk Kanat.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "tavuk-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/16892378/pexels-photo-16892378.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tavuk-yemekleri-015",
+      "name": "Tenders",
+      "description": "Voy menüsünden Tenders.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "tavuk-yemekleri"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6735031/pexels-photo-6735031.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "makarnalar-mantilar-001",
+      "name": "Mac & Cheese",
+      "description": "Voy menüsünden Mac & Cheese.",
+      "price": 350,
+      "restaurantId": "voy",
+      "categories": [
+        "makarnalar-mantilar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/12667658/pexels-photo-12667658.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "makarnalar-mantilar-002",
+      "name": "Mac & Cheese Popcorn",
+      "description": "Voy menüsünden Mac & Cheese Popcorn.",
+      "price": 380,
+      "restaurantId": "voy",
+      "categories": [
+        "makarnalar-mantilar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/35123971/pexels-photo-35123971.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "makarnalar-mantilar-003",
+      "name": "Pesto Soslu Tavuklu Makarna",
+      "description": "Voy menüsünden Pesto Soslu Tavuklu Makarna.",
+      "price": 380,
+      "restaurantId": "voy",
+      "categories": [
+        "makarnalar-mantilar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32675201/pexels-photo-32675201.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "makarnalar-mantilar-004",
+      "name": "Köri Soslu Tavuklu Makarna",
+      "description": "Voy menüsünden Köri Soslu Tavuklu Makarna.",
+      "price": 380,
+      "restaurantId": "voy",
+      "categories": [
+        "makarnalar-mantilar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11220208/pexels-photo-11220208.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "makarnalar-mantilar-005",
+      "name": "Mantarlı Tavuklu Makarna",
+      "description": "Voy menüsünden Mantarlı Tavuklu Makarna.",
+      "price": 380,
+      "restaurantId": "voy",
+      "categories": [
+        "makarnalar-mantilar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/11220209/pexels-photo-11220209.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "makarnalar-mantilar-006",
+      "name": "Spaghetti Bolonez",
+      "description": "Voy menüsünden Spaghetti Bolonez.",
+      "price": 380,
+      "restaurantId": "voy",
+      "categories": [
+        "makarnalar-mantilar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/30406652/pexels-photo-30406652.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "makarnalar-mantilar-007",
+      "name": "Penne Arrabiata",
+      "description": "Voy menüsünden Penne Arrabiata.",
+      "price": 350,
+      "restaurantId": "voy",
+      "categories": [
+        "makarnalar-mantilar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/12667658/pexels-photo-12667658.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "makarnalar-mantilar-008",
+      "name": "Kayseri Mantısı",
+      "description": "Voy menüsünden Kayseri Mantısı.",
+      "price": 380,
+      "restaurantId": "voy",
+      "categories": [
+        "makarnalar-mantilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Pasta"
+    },
+    {
+      "id": "makarnalar-mantilar-009",
+      "name": "Çanakkale Mantısı",
+      "description": "Voy menüsünden Çanakkale Mantısı.",
+      "price": 380,
+      "restaurantId": "voy",
+      "categories": [
+        "makarnalar-mantilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Pasta"
+    },
+    {
+      "id": "pizzalar-001",
+      "name": "Margarita Pizza",
+      "description": "Voy menüsünden Margarita Pizza.",
+      "price": 450,
+      "restaurantId": "voy",
+      "categories": [
+        "pizzalar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31300969/pexels-photo-31300969.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzalar-002",
+      "name": "Mantarlı Pizza",
+      "description": "Voy menüsünden Mantarlı Pizza.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "pizzalar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34382326/pexels-photo-34382326.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzalar-003",
+      "name": "Dönerli Pizza",
+      "description": "Voy menüsünden Dönerli Pizza.",
+      "price": 500,
+      "restaurantId": "voy",
+      "categories": [
+        "pizzalar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/33457575/pexels-photo-33457575.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzalar-004",
+      "name": "Pepperoni Pizza",
+      "description": "Voy menüsünden Pepperoni Pizza.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "pizzalar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17907810/pexels-photo-17907810.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzalar-005",
+      "name": "Karışık Pizza",
+      "description": "Voy menüsünden Karışık Pizza.",
+      "price": 490,
+      "restaurantId": "voy",
+      "categories": [
+        "pizzalar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/5903378/pexels-photo-5903378.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzalar-006",
+      "name": "Quattro Formaggi (4 Peynirli Pizza)",
+      "description": "Voy menüsünden Quattro Formaggi (4 Peynirli Pizza).",
+      "price": 500,
+      "restaurantId": "voy",
+      "categories": [
+        "pizzalar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/2260561/pexels-photo-2260561.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzalar-007",
+      "name": "Vejetaryen Pizza",
+      "description": "Voy menüsünden Vejetaryen Pizza.",
+      "price": 480,
+      "restaurantId": "voy",
+      "categories": [
+        "pizzalar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/8609973/pexels-photo-8609973.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzalar-008",
+      "name": "BBQ Chicken Pizza",
+      "description": "Voy menüsünden BBQ Chicken Pizza.",
+      "price": 500,
+      "restaurantId": "voy",
+      "categories": [
+        "pizzalar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/14906564/pexels-photo-14906564.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzalar-009",
+      "name": "Cunda Pizza",
+      "description": "Voy menüsünden Cunda Pizza.",
+      "price": 490,
+      "restaurantId": "voy",
+      "categories": [
+        "pizzalar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/4833636/pexels-photo-4833636.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "pizzalar-010",
+      "name": "Steak Pizza",
+      "description": "Voy menüsünden Steak Pizza.",
+      "price": 590,
+      "restaurantId": "voy",
+      "categories": [
+        "pizzalar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/36925834/pexels-photo-36925834.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tatlilar-001",
+      "name": "Donut",
+      "description": "Voy menüsünden Donut.",
+      "price": 120,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/22809599/pexels-photo-22809599.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tatlilar-002",
+      "name": "Lotus Browni",
+      "description": "Voy menüsünden Lotus Browni.",
+      "price": 200,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/20683666/pexels-photo-20683666.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "tatlilar-003",
+      "name": "Mozaik Pasta",
+      "description": "Voy menüsünden Mozaik Pasta.",
+      "price": 145,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-004",
+      "name": "Tiramisu",
+      "description": "Voy menüsünden Tiramisu.",
+      "price": 170,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-005",
+      "name": "Sufle",
+      "description": "Voy menüsünden Sufle.",
+      "price": 150,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-006",
+      "name": "Islak Kek",
+      "description": "Voy menüsünden Islak Kek.",
+      "price": 180,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-007",
+      "name": "Red Velvet",
+      "description": "Voy menüsünden Red Velvet.",
+      "price": 235,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-008",
+      "name": "Bella Vista",
+      "description": "Voy menüsünden Bella Vista.",
+      "price": 195,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-009",
+      "name": "Magnolia Lotus",
+      "description": "Voy menüsünden Magnolia Lotus.",
+      "price": 230,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-010",
+      "name": "Frambuazlı Cheesecake",
+      "description": "Voy menüsünden Frambuazlı Cheesecake.",
+      "price": 220,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-011",
+      "name": "Lotus Mono Cake",
+      "description": "Voy menüsünden Lotus Mono Cake.",
+      "price": 220,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-012",
+      "name": "Profiterol",
+      "description": "Voy menüsünden Profiterol.",
+      "price": 195,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-013",
+      "name": "Choco Browni",
+      "description": "Voy menüsünden Choco Browni.",
+      "price": 195,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-014",
+      "name": "Devil's Pasta",
+      "description": "Voy menüsünden Devil's Pasta.",
+      "price": 245,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-015",
+      "name": "Lotus Cheesecake",
+      "description": "Voy menüsünden Lotus Cheesecake.",
+      "price": 200,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-016",
+      "name": "San Sebastian",
+      "description": "Voy menüsünden San Sebastian.",
+      "price": 220,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-017",
+      "name": "San Sebastian Çikolatalı",
+      "description": "Voy menüsünden San Sebastian Çikolatalı.",
+      "price": 220,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-018",
+      "name": "Voy's Cup",
+      "description": "Voy menüsünden Voy's Cup.",
+      "price": 190,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-019",
+      "name": "Ananas Bademli Pasta",
+      "description": "Voy menüsünden Ananas Bademli Pasta.",
+      "price": 220,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-020",
+      "name": "Paris Brest",
+      "description": "Voy menüsünden Paris Brest.",
+      "price": 220,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-021",
+      "name": "Beyaz Çikolatalı Browni",
+      "description": "Voy menüsünden Beyaz Çikolatalı Browni.",
+      "price": 220,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-022",
+      "name": "Elmalı Tart",
+      "description": "Voy menüsünden Elmalı Tart.",
+      "price": 120,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-023",
+      "name": "Havuçlu Tarçınlı Kek",
+      "description": "Voy menüsünden Havuçlu Tarçınlı Kek.",
+      "price": 110,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-024",
+      "name": "Çikolatalı Kek",
+      "description": "Voy menüsünden Çikolatalı Kek.",
+      "price": 110,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "tatlilar-025",
+      "name": "Oreo Magnolia",
+      "description": "Voy menüsünden Oreo Magnolia.",
+      "price": 195,
+      "restaurantId": "voy",
+      "categories": [
+        "tatlilar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Dessert"
+    },
+    {
+      "id": "sicak-kahveler-001",
+      "name": "Americano (M)",
+      "description": "Voy menüsünden Americano (M).",
+      "price": 165,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31120018/pexels-photo-31120018.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-kahveler-002",
+      "name": "Americano (L)",
+      "description": "Voy menüsünden Americano (L).",
+      "price": 170,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/14478416/pexels-photo-14478416.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-kahveler-003",
+      "name": "Cafe Latte (M)",
+      "description": "Voy menüsünden Cafe Latte (M).",
+      "price": 180,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/15800981/pexels-photo-15800981.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-kahveler-004",
+      "name": "Cafe Latte (L)",
+      "description": "Voy menüsünden Cafe Latte (L).",
+      "price": 185,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32909995/pexels-photo-32909995.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-kahveler-005",
+      "name": "Cappuccino (M)",
+      "description": "Voy menüsünden Cappuccino (M).",
+      "price": 165,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/2638019/pexels-photo-2638019.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-kahveler-006",
+      "name": "Cappuccino (L)",
+      "description": "Voy menüsünden Cappuccino (L).",
+      "price": 170,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34956523/pexels-photo-34956523.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-kahveler-007",
+      "name": "Filtre Kahve (M)",
+      "description": "Voy menüsünden Filtre Kahve (M).",
+      "price": 195,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/1195197/pexels-photo-1195197.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-kahveler-008",
+      "name": "Filtre Kahve (L)",
+      "description": "Voy menüsünden Filtre Kahve (L).",
+      "price": 200,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/12499337/pexels-photo-12499337.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-kahveler-009",
+      "name": "Aromalı Latte (M)",
+      "description": "Voy menüsünden Aromalı Latte (M).",
+      "price": 195,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17283082/pexels-photo-17283082.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-kahveler-010",
+      "name": "Aromalı Latte (L)",
+      "description": "Voy menüsünden Aromalı Latte (L).",
+      "price": 200,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32321176/pexels-photo-32321176.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-kahveler-011",
+      "name": "Cortado",
+      "description": "Voy menüsünden Cortado.",
+      "price": 170,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28675254/pexels-photo-28675254.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-kahveler-012",
+      "name": "Çay",
+      "description": "Voy menüsünden Çay.",
+      "price": 90,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/4547567/pexels-photo-4547567.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-kahveler-013",
+      "name": "Double Espresso",
+      "description": "Voy menüsünden Double Espresso.",
+      "price": 110,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/910086/pexels-photo-910086.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-kahveler-014",
+      "name": "Double Türk Kahvesi",
+      "description": "Voy menüsünden Double Türk Kahvesi.",
+      "price": 160,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/5169113/pexels-photo-5169113.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-kahveler-015",
+      "name": "Espresso Macchiato",
+      "description": "Voy menüsünden Espresso Macchiato.",
+      "price": 115,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/37012647/pexels-photo-37012647.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-kahveler-016",
+      "name": "Flat White",
+      "description": "Voy menüsünden Flat White.",
+      "price": 180,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/2318033/pexels-photo-2318033.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-kahveler-017",
+      "name": "Latte Macchiato",
+      "description": "Voy menüsünden Latte Macchiato.",
+      "price": 185,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32909995/pexels-photo-32909995.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-kahveler-018",
+      "name": "Lungo",
+      "description": "Voy menüsünden Lungo.",
+      "price": 115,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Coffee"
+    },
+    {
+      "id": "sicak-kahveler-019",
+      "name": "Matcha",
+      "description": "Voy menüsünden Matcha.",
+      "price": 220,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Coffee"
+    },
+    {
+      "id": "sicak-kahveler-020",
+      "name": "Matcha Latte",
+      "description": "Voy menüsünden Matcha Latte.",
+      "price": 240,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Coffee"
+    },
+    {
+      "id": "sicak-kahveler-021",
+      "name": "Matcha Çilekli Latte",
+      "description": "Voy menüsünden Matcha Çilekli Latte.",
+      "price": 260,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/27693022/pexels-photo-27693022.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-kahveler-022",
+      "name": "Mocha",
+      "description": "Voy menüsünden Mocha.",
+      "price": 195,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Coffee"
+    },
+    {
+      "id": "sicak-kahveler-023",
+      "name": "Nescafe",
+      "description": "Voy menüsünden Nescafe.",
+      "price": 145,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Coffee"
+    },
+    {
+      "id": "sicak-kahveler-024",
+      "name": "Salep",
+      "description": "Voy menüsünden Salep.",
+      "price": 180,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Coffee"
+    },
+    {
+      "id": "sicak-kahveler-025",
+      "name": "Single Espresso",
+      "description": "Voy menüsünden Single Espresso.",
+      "price": 95,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Coffee"
+    },
+    {
+      "id": "sicak-kahveler-026",
+      "name": "Türk Kahvesi",
+      "description": "Voy menüsünden Türk Kahvesi.",
+      "price": 90,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Coffee"
+    },
+    {
+      "id": "sicak-kahveler-027",
+      "name": "White Chocolate Mocha",
+      "description": "Voy menüsünden White Chocolate Mocha.",
+      "price": 215,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-kahveler"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Coffee"
+    },
+    {
+      "id": "soguk-kahveler-001",
+      "name": "Affogato",
+      "description": "Voy menüsünden Affogato.",
+      "price": 185,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/14478416/pexels-photo-14478416.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-kahveler-002",
+      "name": "Cold Brew",
+      "description": "Voy menüsünden Cold Brew.",
+      "price": 190,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34956523/pexels-photo-34956523.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-kahveler-003",
+      "name": "Ice Filtre Kahve",
+      "description": "Voy menüsünden Ice Filtre Kahve.",
+      "price": 170,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/12499337/pexels-photo-12499337.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-kahveler-004",
+      "name": "Ice Matcha",
+      "description": "Voy menüsünden Ice Matcha.",
+      "price": 220,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/2638019/pexels-photo-2638019.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-kahveler-005",
+      "name": "Ice Matcha Latte",
+      "description": "Voy menüsünden Ice Matcha Latte.",
+      "price": 240,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/28675254/pexels-photo-28675254.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-kahveler-006",
+      "name": "Ice Matcha Çilekli Latte",
+      "description": "Voy menüsünden Ice Matcha Çilekli Latte.",
+      "price": 260,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/4547567/pexels-photo-4547567.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-kahveler-007",
+      "name": "Iced Americano",
+      "description": "Voy menüsünden Iced Americano.",
+      "price": 170,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/910086/pexels-photo-910086.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-kahveler-008",
+      "name": "Iced Baileys Latte",
+      "description": "Voy menüsünden Iced Baileys Latte.",
+      "price": 280,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/15800981/pexels-photo-15800981.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-kahveler-009",
+      "name": "Iced Chocolate",
+      "description": "Voy menüsünden Iced Chocolate.",
+      "price": 185,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-kahveler"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Iced+Coffee"
+    },
+    {
+      "id": "soguk-kahveler-010",
+      "name": "Iced Cortado",
+      "description": "Voy menüsünden Iced Cortado.",
+      "price": 170,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-kahveler"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Iced+Coffee"
+    },
+    {
+      "id": "soguk-kahveler-011",
+      "name": "Iced Flavoured",
+      "description": "Voy menüsünden Iced Flavoured.",
+      "price": 200,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-kahveler"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Iced+Coffee"
+    },
+    {
+      "id": "soguk-kahveler-012",
+      "name": "Iced Latte",
+      "description": "Voy menüsünden Iced Latte.",
+      "price": 185,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32909995/pexels-photo-32909995.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-kahveler-013",
+      "name": "Iced Lungo",
+      "description": "Voy menüsünden Iced Lungo.",
+      "price": 115,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-kahveler"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Iced+Coffee"
+    },
+    {
+      "id": "soguk-kahveler-014",
+      "name": "Iced Mocha",
+      "description": "Voy menüsünden Iced Mocha.",
+      "price": 195,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-kahveler"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Iced+Coffee"
+    },
+    {
+      "id": "soguk-kahveler-015",
+      "name": "Iced White Chocolate Mocha",
+      "description": "Voy menüsünden Iced White Chocolate Mocha.",
+      "price": 215,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-kahveler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/37012647/pexels-photo-37012647.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-icecekler-001",
+      "name": "Ayran",
+      "description": "Voy menüsünden Ayran.",
+      "price": 35,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-icecekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/15873840/pexels-photo-15873840.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-icecekler-002",
+      "name": "Büyük Su",
+      "description": "Voy menüsünden Büyük Su.",
+      "price": 50,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-icecekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/1540235/pexels-photo-1540235.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-icecekler-003",
+      "name": "Küçük Su",
+      "description": "Voy menüsünden Küçük Su.",
+      "price": 25,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-icecekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/8217303/pexels-photo-8217303.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-icecekler-004",
+      "name": "Churchill",
+      "description": "Voy menüsünden Churchill.",
+      "price": 110,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-icecekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6920723/pexels-photo-6920723.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-icecekler-005",
+      "name": "Cool Lime",
+      "description": "Voy menüsünden Cool Lime.",
+      "price": 125,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-icecekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/34405411/pexels-photo-34405411.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-icecekler-006",
+      "name": "Italian Soda",
+      "description": "Voy menüsünden Italian Soda.",
+      "price": 125,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-icecekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/39720/pexels-photo-39720.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-icecekler-007",
+      "name": "Limonata",
+      "description": "Voy menüsünden Limonata.",
+      "price": 120,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-icecekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17650224/pexels-photo-17650224.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-icecekler-008",
+      "name": "Mandalina",
+      "description": "Voy menüsünden Mandalina.",
+      "price": 120,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-icecekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/6413610/pexels-photo-6413610.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-icecekler-009",
+      "name": "Meyveli Soda",
+      "description": "Voy menüsünden Meyveli Soda.",
+      "price": 50,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-icecekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/24860312/pexels-photo-24860312.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-icecekler-010",
+      "name": "Milkshake",
+      "description": "Voy menüsünden Milkshake.",
+      "price": 230,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-icecekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17650220/pexels-photo-17650220.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-icecekler-011",
+      "name": "Smoothie",
+      "description": "Voy menüsünden Smoothie.",
+      "price": 185,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-icecekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/7437272/pexels-photo-7437272.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-icecekler-012",
+      "name": "Coca-Cola",
+      "description": "Voy menüsünden Coca-Cola.",
+      "price": 50,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-icecekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/29223754/pexels-photo-29223754.png?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "soguk-icecekler-013",
+      "name": "Soft Drink (Kola, Fanta, Sprite)",
+      "description": "Voy menüsünden Soft Drink (Kola, Fanta, Sprite).",
+      "price": 50,
+      "restaurantId": "voy",
+      "categories": [
+        "soguk-icecekler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/24860312/pexels-photo-24860312.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "voy-ozel-kahveler-001",
+      "name": "Kinder",
+      "description": "Voy menüsünden Kinder.",
+      "price": 225,
+      "restaurantId": "voy",
+      "categories": [
+        "voy-ozel-kahveler"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Special+Coffee"
+    },
+    {
+      "id": "voy-ozel-kahveler-002",
+      "name": "Lotus",
+      "description": "Voy menüsünden Lotus.",
+      "price": 225,
+      "restaurantId": "voy",
+      "categories": [
+        "voy-ozel-kahveler"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Special+Coffee"
+    },
+    {
+      "id": "voy-ozel-kahveler-003",
+      "name": "Nutella",
+      "description": "Voy menüsünden Nutella.",
+      "price": 225,
+      "restaurantId": "voy",
+      "categories": [
+        "voy-ozel-kahveler"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Special+Coffee"
+    },
+    {
+      "id": "sicak-cikolatalar-001",
+      "name": "Klasik Sıcak Çikolata",
+      "description": "Voy menüsünden Klasik Sıcak Çikolata.",
+      "price": 185,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-cikolatalar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/5169113/pexels-photo-5169113.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-cikolatalar-002",
+      "name": "Karamelli Sıcak Çikolata",
+      "description": "Voy menüsünden Karamelli Sıcak Çikolata.",
+      "price": 195,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-cikolatalar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/37012647/pexels-photo-37012647.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-cikolatalar-003",
+      "name": "Çilekli Sıcak Çikolata",
+      "description": "Voy menüsünden Çilekli Sıcak Çikolata.",
+      "price": 195,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-cikolatalar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/2318033/pexels-photo-2318033.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "sicak-cikolatalar-004",
+      "name": "Beyaz Sıcak Çikolata",
+      "description": "Voy menüsünden Beyaz Sıcak Çikolata.",
+      "price": 195,
+      "restaurantId": "voy",
+      "categories": [
+        "sicak-cikolatalar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/29599050/pexels-photo-29599050.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "frappeler-001",
+      "name": "Kahveli Frappe",
+      "description": "Voy menüsünden Kahveli Frappe.",
+      "price": 190,
+      "restaurantId": "voy",
+      "categories": [
+        "frappeler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/29599050/pexels-photo-29599050.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "frappeler-002",
+      "name": "Mocha Frappe",
+      "description": "Voy menüsünden Mocha Frappe.",
+      "price": 190,
+      "restaurantId": "voy",
+      "categories": [
+        "frappeler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/1195197/pexels-photo-1195197.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "frappeler-003",
+      "name": "Vanilyalı Frappe",
+      "description": "Voy menüsünden Vanilyalı Frappe.",
+      "price": 190,
+      "restaurantId": "voy",
+      "categories": [
+        "frappeler"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/31120018/pexels-photo-31120018.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "extralar-001",
+      "name": "Espresso Shot",
+      "description": "Voy menüsünden Espresso Shot.",
+      "price": 50,
+      "restaurantId": "voy",
+      "categories": [
+        "extralar"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/32321176/pexels-photo-32321176.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "extralar-002",
+      "name": "Herbal Milk",
+      "description": "Voy menüsünden Herbal Milk.",
+      "price": 35,
+      "restaurantId": "voy",
+      "categories": [
+        "extralar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Extra"
+    },
+    {
+      "id": "extralar-003",
+      "name": "Syrup",
+      "description": "Voy menüsünden Syrup.",
+      "price": 35,
+      "restaurantId": "voy",
+      "categories": [
+        "extralar"
+      ],
+      "imageUrl": "https://placehold.co/600x600/F5E8D6/B18350?text=Extra"
+    },
+    {
+      "id": "chai-tea-latte-001",
+      "name": "Chai Tea Spiced",
+      "description": "Voy menüsünden Chai Tea Spiced.",
+      "price": 180,
+      "restaurantId": "voy",
+      "categories": [
+        "chai-tea-latte"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/17283082/pexels-photo-17283082.jpeg?auto=compress&cs=tinysrgb&h=350"
+    },
+    {
+      "id": "chai-tea-latte-002",
+      "name": "Chai Tea Vanilla",
+      "description": "Voy menüsünden Chai Tea Vanilla.",
+      "price": 180,
+      "restaurantId": "voy",
+      "categories": [
+        "chai-tea-latte"
+      ],
+      "imageUrl": "https://images.pexels.com/photos/15800981/pexels-photo-15800981.jpeg?auto=compress&cs=tinysrgb&h=350"
+    }
+  ]
+}

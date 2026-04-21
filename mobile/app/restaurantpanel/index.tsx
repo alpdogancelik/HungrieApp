@@ -8,8 +8,8 @@ import useAuthStore from "@/store/auth.store";
 import { logout } from "@/lib/api";
 import { getOwnedRestaurantId } from "@/lib/firebaseAuth";
 import {
+    fetchRestaurantPastOrders,
     subscribeRestaurantOrders,
-    subscribeRestaurantPastOrders,
     subscribeRestaurantReminderOrders,
     transitionOrder,
 } from "@/src/services/firebaseOrders";
@@ -77,6 +77,19 @@ const RestaurantPanel = () => {
         testNotification,
     } = useOrderNotifications({ restaurantId, orders, t });
 
+    const loadPastOrders = useCallback(async (targetRestaurantId: string) => {
+        if (!targetRestaurantId) {
+            setPastOrders([]);
+            return;
+        }
+        try {
+            const list = await fetchRestaurantPastOrders(targetRestaurantId);
+            setPastOrders(sortOrdersDesc(list.map(mapFirestoreOrder)));
+        } catch {
+            setPastOrders([]);
+        }
+    }, []);
+
     useEffect(() => {
         let mounted = true;
         const verifyAccess = async () => {
@@ -118,9 +131,7 @@ const RestaurantPanel = () => {
             setOrders(sortOrdersDesc(list.map(mapFirestoreOrder)));
         });
 
-        const unsubscribePast = subscribeRestaurantPastOrders(restaurantId, (list) => {
-            setPastOrders(sortOrdersDesc(list.map(mapFirestoreOrder)));
-        });
+        void loadPastOrders(restaurantId);
 
         const unsubscribeReminders = subscribeRestaurantReminderOrders(restaurantId, (list) => {
             setReminderOrders(sortOrdersDesc(list.map(mapFirestoreOrder)));
@@ -128,30 +139,55 @@ const RestaurantPanel = () => {
 
         return () => {
             unsubscribeActive?.();
-            unsubscribePast?.();
             unsubscribeReminders?.();
         };
-    }, [restaurantId]);
+    }, [loadPastOrders, restaurantId]);
+
+    const getOrderActionErrorMessage = useCallback(
+        (error: any) => {
+            const code = String(error?.code || "").toLowerCase();
+            const rawMessage = String(error?.message || "").toLowerCase();
+            const permissionDenied =
+                code.includes("permission-denied") ||
+                rawMessage.includes("insufficient permissions") ||
+                rawMessage.includes("missing or insufficient permissions");
+
+            if (permissionDenied) {
+                if (__DEV__) {
+                    return "Siparis guncellenemedi: restaurant panel update izni yok. firestore.rules icin owner/staff izinlerini deploy edin.";
+                }
+                return locale === "tr"
+                    ? "Siparis guncellenemedi. Lutfen oturumu yenileyip tekrar deneyin."
+                    : "Could not update order. Please refresh your session and try again.";
+            }
+
+            return error?.message || t("common.tryAgain");
+        },
+        [locale, t],
+    );
 
     const updateOrderStatus = useCallback(
-        async (orderId: string, status: "pending" | "accepted" | "out_for_delivery" | "canceled" | "delivered") => {
+        async (orderId: string, status: "pending" | "accepted" | "out_for_delivery" | "canceled" | "rejected" | "delivered") => {
             const previousOrder = orders.find((order) => order.id === orderId);
             const previousStatus = previousOrder?.status;
             setOrders((prev) => prev.map((order) => (order.id === orderId ? { ...order, status } : order)));
             try {
                 await transitionOrder(orderId, status);
+                if (restaurantId && (status === "delivered" || status === "canceled" || status === "rejected")) {
+                    void loadPastOrders(restaurantId);
+                }
             } catch (error: any) {
                 if (previousStatus) {
                     setOrders((prev) => prev.map((order) => (order.id === orderId ? { ...order, status: previousStatus } : order)));
                 }
-                Alert.alert(t("orders.updateFailedTitle"), error?.message || t("common.tryAgain"));
+                Alert.alert(t("orders.updateFailedTitle"), getOrderActionErrorMessage(error));
             }
         },
-        [orders, t],
+        [getOrderActionErrorMessage, loadPastOrders, orders, restaurantId, t],
     );
 
     const handleOrderAction = useCallback(
-        async (orderId: string, status: "pending" | "accepted" | "out_for_delivery" | "canceled" | "delivered") => {
+        async (orderId: string, status: "pending" | "accepted" | "out_for_delivery" | "canceled" | "rejected" | "delivered") => {
             setActionLoadingByOrder((prev) => ({ ...prev, [orderId]: status }));
             try {
                 await updateOrderStatus(orderId, status);

@@ -17,7 +17,7 @@ import { Feather } from "@expo/vector-icons";
 
 import useAuthStore from "@/store/auth.store";
 import { getOwnedRestaurantId } from "@/lib/firebaseAuth";
-import { subscribeRestaurantPastOrders } from "@/src/services/firebaseOrders";
+import { fetchRestaurantPastOrders } from "@/src/services/firebaseOrders";
 import { mapFirestoreOrder, type PanelOrder, sortOrdersDesc } from "@/src/features/restaurantPanel/model/panelOrders";
 import {
     PanelButton,
@@ -137,11 +137,23 @@ const RestaurantHistory = () => {
 
     useEffect(() => {
         if (!restaurantId) return;
-        const unsub = subscribeRestaurantPastOrders(restaurantId, (list) => {
-            setOrders(sortOrdersDesc(list.map(mapFirestoreOrder)));
-            setLoading(false);
-        });
-        return () => unsub?.();
+        let active = true;
+        setLoading(true);
+
+        const loadPastOrders = async () => {
+            try {
+                const list = await fetchRestaurantPastOrders(restaurantId);
+                if (!active) return;
+                setOrders(sortOrdersDesc(list.map(mapFirestoreOrder)));
+            } finally {
+                if (active) setLoading(false);
+            }
+        };
+
+        void loadPastOrders();
+        return () => {
+            active = false;
+        };
     }, [restaurantId]);
 
     const filtered = useMemo(() => {

@@ -23,15 +23,17 @@ export default function SplashPulse({ visible, onFinished, imageSource, backgrou
     const useNativeDriver = !isWeb;
     const safeWidth = width > 0 ? width : isWeb ? 1440 : 390;
     const safeHeight = height > 0 ? height : isWeb ? 900 : 844;
+    const isCompactWeb = isWeb && safeWidth <= 768;
+    const useFullScreenSplash = !isWeb || isCompactWeb;
     const resolvedSource = Asset.fromModule(imageSource);
     const imageAspectRatio = resolvedSource?.width && resolvedSource?.height ? resolvedSource.width / resolvedSource.height : 1024 / 1536;
     // Size the poster from both viewport axes so it stays prominent on phones
     // and does not look undersized on shorter desktop browsers.
-    const maxImageWidth = isWeb ? Math.min(safeWidth * 0.4, 520) : Math.min(safeWidth * 0.94, 420);
-    const maxImageHeight = isWeb ? Math.min(safeHeight * 0.82, 760) : Math.min(safeHeight * 0.8, 700);
+    const maxImageWidth = useFullScreenSplash ? Math.min(safeWidth * 0.94, 420) : Math.min(safeWidth * 0.4, 520);
+    const maxImageHeight = useFullScreenSplash ? Math.min(safeHeight * 0.8, 700) : Math.min(safeHeight * 0.82, 760);
     const imageWidth = Math.min(maxImageWidth, maxImageHeight * imageAspectRatio);
     const imageHeight = imageWidth / imageAspectRatio;
-    const imageFit = isWeb ? "contain" : "cover";
+    const imageFit = useFullScreenSplash ? "cover" : "contain";
 
     const pulseAnimation = useMemo(() => {
         // A "heartbeat" feel: quick up-down-up, then a short rest.
@@ -98,10 +100,10 @@ export default function SplashPulse({ visible, onFinished, imageSource, backgrou
         <Animated.View style={[styles.overlay, { backgroundColor, opacity, pointerEvents: "auto" }]}>
             <Animated.View
                 style={[
-                    isWeb ? styles.posterFrame : styles.mobileFrame,
+                    useFullScreenSplash ? styles.mobileFrame : styles.posterFrame,
                     {
-                        width: isWeb ? imageWidth : safeWidth,
-                        height: isWeb ? imageHeight : safeHeight,
+                        width: useFullScreenSplash ? safeWidth : imageWidth,
+                        height: useFullScreenSplash ? safeHeight : imageHeight,
                         transform: [{ scale }],
                     },
                 ]}

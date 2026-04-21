@@ -26,7 +26,7 @@ export type MenuItemImageKey =
     | "drink";
 
 export type FoodImageCandidate = {
-    reason: "explicit" | "pexels" | "item_map" | "category_map";
+    reason: "explicit" | "pexels" | "item_map" | "category_map" | "default_map";
     url: string;
     key?: MenuItemImageKey | null;
     query?: string;
@@ -100,6 +100,8 @@ export const MENU_ITEM_REMOTE_IMAGE_MAP: Record<MenuItemImageKey, string> = {
     dessert: "https://images.pexels.com/photos/29039083/pexels-photo-29039083.jpeg?auto=compress&cs=tinysrgb&h=350",
     drink: "https://images.pexels.com/photos/16716138/pexels-photo-16716138.jpeg?auto=compress&cs=tinysrgb&h=350",
 };
+
+const DEFAULT_STATIC_MENU_IMAGE = MENU_ITEM_REMOTE_IMAGE_MAP.chicken_plate;
 
 export const MENU_ITEM_PEXELS_QUERY_MAP: Record<MenuItemImageKey, string> = {
     burger_beef: "beef burger close up",
@@ -266,6 +268,11 @@ export const getMenuItemImage = (input: GetMenuItemImageInput): MenuItemImageRes
                       key: categoryKey,
                   }
                 : null,
+            {
+                reason: "default_map" as const,
+                url: DEFAULT_STATIC_MENU_IMAGE,
+                key: categoryKey ?? itemKey,
+            },
         ].filter(Boolean) as FoodImageCandidate[],
     );
 

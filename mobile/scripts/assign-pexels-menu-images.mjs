@@ -10,26 +10,28 @@ const DEFAULT_REPORT = path.resolve(DATA_DIR, "image-assignment-report.json");
 const THRESHOLD_HIGH = 25;
 const THRESHOLD_MEDIUM = 15;
 const DUP_LIMIT_CATEGORY = 2;
+const OFFLINE_POOL_THRESHOLD_MEDIUM = 30;
+const OFFLINE_POOL_THRESHOLD_STRONG = 40;
 
 const CATEGORY_RULES = [
   ["burger", "burger", ["burgers", "burgerler", "hamburgerler"]],
-  ["wrap", "wrap", ["wraps", "durum", "durumler", "pizza wrap"]],
+  ["wrap", "wrap", ["wraps", "durum", "durumler", "duruemler", "doner", "donerler", "wraplar", "pizza wrap"]],
   ["pizza", "pizza", ["pizzas", "pizzalar"]],
   ["pide", "pide", ["pide", "pideler", "lahmacun"]],
   ["gozleme", "gozleme", ["gozleme"]],
   ["tantuni", "tantuni", ["tantuni"]],
-  ["pasta", "pasta", ["pasta", "makarna"]],
+  ["pasta", "pasta", ["pasta", "makarna", "makarnalar", "manti", "mantilar"]],
   ["salad", "salad", ["salad", "salata"]],
-  ["coffee", "coffee", ["hot drinks", "sicak icecek", "hot_drinks", "hot-drinks"]],
-  ["drink", "drink", ["cold drinks", "soguk icecek", "cold-drinks", "mesrubat"]],
-  ["dessert", "dessert", ["ice cream", "dondurma"]],
+  ["coffee", "coffee", ["hot drinks", "sicak icecek", "sicak kahveler", "soguk kahveler", "kahve", "kahveler", "chai tea latte", "chai", "frappe", "frappeler", "sicak cikolata", "sicak cikolatalar", "hot_drinks", "hot-drinks"]],
+  ["drink", "drink", ["cold drinks", "soguk icecek", "soguk icecekler", "cold-drinks", "mesrubat"]],
+  ["dessert", "dessert", ["ice cream", "dondurma", "dessert", "tatli", "tatlilar"]],
   ["bowl", "bowl", ["bowls"]],
   ["sandwich", "sandwich", ["toast", "sandwich", "sandvic"]],
   ["tenders", "fried_chicken", ["tenders"]],
   ["snack", "unknown", ["snacks", "chips", "crispy", "appetizers", "atistirmalik"]],
   ["chicken_box", "snack_box", ["chicken boxes", "chicken-boxes"]],
-  ["extras", "unknown", ["extras", "sauces", "sos", "ilave", "ekstra"]],
-  ["main", "unknown", ["mains", "ana yemek", "grill", "izgara", "pilic", "pili", "fast food", "diet", "combos", "pan", "tava"]],
+  ["extras", "coffee", ["extras", "extralar", "sauces", "sos", "ilave", "ekstra"]],
+  ["main", "unknown", ["mains", "ana yemek", "grill", "izgara", "pilic", "pili", "et yemekleri", "tavuk yemekleri", "kahvaltilar", "fast food", "diet", "combos", "pan", "tava"]],
   ["campaign", "unknown", ["campaigns", "kampanya"]],
 ];
 
@@ -166,6 +168,12 @@ const has = (text, terms) => {
 };
 const isHttp = (u) => /^https?:\/\//i.test(String(u || "").trim());
 const isPlaceholder = (u) => { const s = String(u || "").trim().toLowerCase(); if (!s || !isHttp(s)) return true; return s.includes("placehold.co") || s.includes("placeholder") || s.includes("text=") || s.includes("dummyimage"); };
+const TOKEN_STOPWORDS = new Set([
+  "ve", "ile", "the", "and", "for", "voy", "menu", "menusu", "menüsünden", "menüsunden", "ozel", "özel",
+  "iced", "ice", "sicak", "soguk", "small", "medium", "large", "double", "single", "kucuk", "buyuk", "orta",
+  "m", "l", "xl", "xxl", "cm", "gr", "ml",
+]);
+const tokenize = (value) => norm(value).split(" ").filter((t) => t && t.length >= 2 && !TOKEN_STOPWORDS.has(t));
 
 const parseArgs = () => {
   const a = process.argv.slice(2);
@@ -197,6 +205,11 @@ const listFiles = async (opt) => {
   if (opt.files.length) return opt.files;
   const d = await fs.readdir(opt.dataDir, { withFileTypes: true });
   return d.filter((x) => x.isFile() && x.name.endsWith("-firestore.json")).map((x) => path.join(opt.dataDir, x.name)).sort();
+};
+
+const listAllDataFiles = async (dataDir) => {
+  const d = await fs.readdir(dataDir, { withFileTypes: true });
+  return d.filter((x) => x.isFile() && x.name.endsWith("-firestore.json")).map((x) => path.join(dataDir, x.name)).sort();
 };
 
 const categoryMap = (cats) => {
@@ -263,8 +276,9 @@ const inferText = (t) => {
   if (has(t, ["pasta", "makarna", "spaghetti", "penne"])) return "pasta";
   if (has(t, ["salad", "salata", "caesar"])) return "salad";
   if (has(t, ["coffee", "kahve", "latte", "espresso", "tea", "cay"])) return "coffee";
+  if (has(t, ["chai", "frappe", "hot chocolate", "sicak cikolata"])) return "coffee";
   if (has(t, ["drink", "cola", "fanta", "sprite", "ayran", "water"])) return "drink";
-  if (has(t, ["ice cream", "dondurma", "dessert", "tatli"])) return "dessert";
+  if (has(t, ["ice cream", "dondurma", "dessert", "tatli", "tatlilar", "donut", "brownie", "browni", "cheesecake", "tiramisu", "cookie", "kek", "cup", "sufle", "san sebastian", "pasta"])) return "dessert";
   if (has(t, ["bowl", "acai"])) return "bowl";
   if (has(t, ["sandwich", "toast", "tost"])) return "sandwich";
   if (has(t, ["fries", "chips", "wedges", "onion rings"])) return "fries";
@@ -382,6 +396,12 @@ const queriesFor = (intent) => {
     if (has(t, ["espresso"])) q.push("espresso");
     q.push("coffee cup");
   } else if (primaryType === "dessert") {
+    if (has(t, ["donut"])) q.push("donut dessert");
+    if (has(t, ["brownie", "browni", "islak kek"])) q.push("brownie dessert");
+    if (has(t, ["cheesecake", "san sebastian"])) q.push("cheesecake");
+    if (has(t, ["tiramisu"])) q.push("tiramisu");
+    if (has(t, ["cookie"])) q.push("cookie dessert");
+    if (has(t, ["cake", "kek", "pasta", "mozaik"])) q.push("cake dessert");
     if (has(t, ["ice cream", "dondurma"])) q.push("ice cream scoop");
     q.push("dessert");
   } else if (primaryType === "bowl") {
@@ -393,6 +413,16 @@ const queriesFor = (intent) => {
     if (p === "chicken") q.push("chicken sandwich toast");
     if (p === "beef") q.push("beef sandwich toast");
     q.push("toast sandwich", "grilled sandwich");
+  }
+  if (primaryType === "coffee") {
+    if (has(t, ["frappe"])) q.unshift("iced frappe");
+    if (has(t, ["chai"])) q.unshift("chai latte");
+    if (has(t, ["hot chocolate", "sicak cikolata"])) q.unshift("hot chocolate drink");
+  }
+  if (primaryType === "drink") {
+    if (has(t, ["lemonade", "limonata"])) q.unshift("lemonade drink");
+    if (has(t, ["milkshake"])) q.unshift("milkshake");
+    if (has(t, ["smoothie"])) q.unshift("smoothie drink");
   }
   return uniq(q.map(norm)).filter(Boolean).slice(0, 6);
 };
@@ -476,6 +506,150 @@ const canReuseFamily = (reg, restaurantId, categoryKey, imageUrl, family) => {
   return s.has(family || "");
 };
 
+const overlapCount = (left, rightSet) => {
+  let c = 0;
+  for (const t of left || []) if (rightSet.has(t)) c += 1;
+  return c;
+};
+
+const buildOfflinePool = async ({ allFiles, targetFiles }) => {
+  const entries = [];
+  const byType = new Map();
+  const targetSet = new Set((targetFiles || []).map((x) => path.resolve(x)));
+
+  for (const filePath of allFiles || []) {
+    const abs = path.resolve(filePath);
+    if (targetSet.has(abs)) continue;
+
+    const data = await readJson(abs, null);
+    if (!data || typeof data !== "object") continue;
+
+    const menus = Array.isArray(data.menus) ? data.menus : [];
+    const cats = categoryMap(Array.isArray(data.categories) ? data.categories : []);
+    const restaurantId = String(data?.restaurants?.[0]?.id || path.basename(abs, path.extname(abs)));
+
+    for (const item of menus) {
+      const imageUrl = String(item?.imageUrl || item?.image_url || "").trim();
+      if (!isHttp(imageUrl) || isPlaceholder(imageUrl)) continue;
+
+      const cids = Array.isArray(item?.categories) ? item.categories : item?.categories ? [item.categories] : [];
+      const category = categoryProfile(cids, cats);
+      const over = manualOverride(restaurantId, String(item?.name || ""));
+      const intent = intentFor({ item, category, override: over });
+      const text = norm(`${String(item?.name || "")} ${String(item?.description || "")} ${category.label} ${category.id}`);
+      const tokens = tokenize(text);
+
+      const candidate = {
+        imageUrl,
+        restaurantId,
+        sourceItemId: String(item?.id || item?.$id || ""),
+        sourceName: String(item?.name || "").trim(),
+        primaryType: intent.primaryType || category.primaryType || "unknown",
+        protein: intent.protein || null,
+        modifiers: Array.isArray(intent.modifiers) ? intent.modifiers : [],
+        text,
+        tokenSet: new Set(tokens),
+      };
+      entries.push(candidate);
+      if (!byType.has(candidate.primaryType)) byType.set(candidate.primaryType, []);
+      byType.get(candidate.primaryType).push(candidate);
+    }
+  }
+
+  return { entries, byType };
+};
+
+const scoreOfflineCandidate = ({ candidate, intent, context, reg, meta, targetTokens, queryTokens }) => {
+  let s = intent.confidenceBase;
+
+  if (intent.primaryType !== "unknown" && candidate.primaryType !== "unknown" && !compat(intent.primaryType, candidate.primaryType)) {
+    return { blocked: true, score: s - 30 };
+  }
+
+  if (candidate.primaryType === intent.primaryType) s += 20;
+  else if (compat(intent.primaryType, candidate.primaryType)) s += 9;
+  else s -= 26;
+
+  if (hardMismatch(intent.primaryType, candidate.primaryType)) s -= 35;
+  if (candidate.protein && intent.protein) s += candidate.protein === intent.protein ? 8 : -8;
+
+  const modShared = (intent.modifiers || []).filter((m) => (candidate.modifiers || []).includes(m)).length;
+  s += Math.min(12, modShared * 3);
+
+  const directOverlap = overlapCount(targetTokens, candidate.tokenSet);
+  s += Math.min(18, directOverlap * 2);
+
+  let queryBonus = 0;
+  for (const qt of queryTokens || []) {
+    if (!qt.length) continue;
+    const hit = overlapCount(qt, candidate.tokenSet);
+    const ratio = hit / qt.length;
+    if (ratio >= 1 && qt.length >= 2) queryBonus = Math.max(queryBonus, 8);
+    else if (ratio >= 0.66 && qt.length >= 3) queryBonus = Math.max(queryBonus, 6);
+    else if (ratio >= 0.5) queryBonus = Math.max(queryBonus, 3);
+  }
+  s += queryBonus;
+
+  if (intent.negativeKeywords.length && has(candidate.text, intent.negativeKeywords)) s -= 12;
+
+  const rCount = countMap(reg.byR, context.restaurantId, candidate.imageUrl);
+  const cCount = countMap(reg.byRC, `${context.restaurantId}|${context.categoryKey}`, candidate.imageUrl);
+  const gCount = Number(reg.global.get(candidate.imageUrl) || 0);
+  if (cCount > 0) s -= 15;
+  if (rCount >= 2) s -= 10;
+  if (gCount >= 8) s -= 5;
+
+  if (cCount >= DUP_LIMIT_CATEGORY && !canReuseFamily(reg, context.restaurantId, context.categoryKey, candidate.imageUrl, context.family)) {
+    meta.duplicatesAvoided += 1;
+    return { blocked: true, score: s };
+  }
+  return { blocked: false, score: s };
+};
+
+const pickBestFromOfflinePool = ({ pool, intent, context, reg, meta }) => {
+  if (!pool?.entries?.length) return { best: null, low: null };
+
+  const typeBucket = pool.byType.get(intent.primaryType) || [];
+  const compatBucket = [];
+  for (const [type, arr] of pool.byType.entries()) {
+    if (type === intent.primaryType) continue;
+    if (compat(intent.primaryType, type)) compatBucket.push(...arr);
+  }
+
+  const candidates = [...typeBucket, ...compatBucket];
+  if (!candidates.length) return { best: null, low: null };
+
+  const targetTokens = tokenize(`${context.itemName || ""} ${intent.text} ${context.category.label || ""} ${context.category.id || ""}`);
+  const queryTokens = (intent.searchQueries || []).map((q) => tokenize(q)).filter((x) => x.length);
+
+  let best = null;
+  let low = null;
+  const seen = new Set();
+  for (const cand of candidates) {
+    const key = `${cand.imageUrl}|${cand.primaryType}|${cand.sourceName}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const scored = scoreOfflineCandidate({ candidate: cand, intent, context, reg, meta, targetTokens, queryTokens });
+    if (scored.blocked) continue;
+
+    const row = {
+      imageUrl: cand.imageUrl,
+      query: `offline:${cand.sourceName}`,
+      qIdx: 0,
+      score: scored.score,
+      sourceRestaurantId: cand.restaurantId,
+      sourceType: cand.primaryType,
+    };
+    if (!low || row.score > low.score) low = row;
+    if (row.score < OFFLINE_POOL_THRESHOLD_MEDIUM) continue;
+    if (!best || row.score > best.score) best = row;
+  }
+
+  if (best && best.score >= OFFLINE_POOL_THRESHOLD_STRONG) return { best, low };
+  return { best, low };
+};
+
 const cacheSearch = async (apiKey, query, cache) => {
   const k = norm(query);
   if (!k) return [];
@@ -553,6 +727,8 @@ const run = async () => {
   const apiKey = await resolveApiKey(opt);
   const files = await listFiles(opt);
   if (!files.length) throw new Error("No target files found.");
+  const allDataFiles = await listAllDataFiles(opt.dataDir);
+  const offlinePool = !apiKey ? await buildOfflinePool({ allFiles: allDataFiles, targetFiles: files }) : { entries: [], byType: new Map() };
 
   const cache = new Map();
   const queryErrors = [];
@@ -591,7 +767,7 @@ const run = async () => {
 
       const over = manualOverride(restaurantId, name);
       const intent = intentFor({ item, category, override: over });
-      const context = { restaurantId, itemId, category, categoryKey, family };
+      const context = { restaurantId, itemId, itemName: name, category, categoryKey, family };
 
       let selected = null;
       let low = null;
@@ -601,6 +777,11 @@ const run = async () => {
         const r = await pickBest({ apiKey, intent, context, reg, cache, errors: queryErrors, meta, writeMode: opt.write });
         selected = r.best;
         low = r.low;
+      } else if (!apiKey && offlinePool.entries.length) {
+        const r = pickBestFromOfflinePool({ pool: offlinePool, intent, context, reg, meta });
+        selected = r.best;
+        low = r.low;
+        if (!selected) warnings.push("Pexels API key missing; offline pool could not find a high-confidence match.");
       } else if (!apiKey) {
         warnings.push("Pexels API key missing; no live search executed.");
       }
@@ -613,10 +794,14 @@ const run = async () => {
 
       if (selected) {
         newUrl = selected.imageUrl;
-        status = "assigned";
+        status = selected?.query?.startsWith("offline:") ? "assigned-offline-pool" : "assigned";
         conf = confidence(selected.score);
       } else {
-        if (low) { lowMatches += 1; warnings.push(`Best score ${low.score} below ${THRESHOLD_MEDIUM}.`); }
+        if (low) {
+          lowMatches += 1;
+          const minScore = apiKey ? THRESHOLD_MEDIUM : OFFLINE_POOL_THRESHOLD_MEDIUM;
+          warnings.push(`Best score ${low.score} below ${minScore}.`);
+        }
         if (!apiKey && oldUrl) {
           newUrl = oldUrl;
           status = "kept-existing-no-api";
@@ -650,7 +835,7 @@ const run = async () => {
         }
       }
 
-      if (status === "assigned") registerUsage(reg, restaurantId, categoryKey, newUrl, family);
+      if (status.startsWith("assigned")) registerUsage(reg, restaurantId, categoryKey, newUrl, family);
 
       rows.push({
         restaurantId,
@@ -685,6 +870,7 @@ const run = async () => {
   const summary = {
     filesScanned: files.length,
     restaurantsScanned: restaurants.size,
+    offlinePoolCandidates: offlinePool.entries.length,
     totalMenuItems: total,
     itemsWithExistingRemoteImages: existingRemote,
     itemsUpdated: updated,
@@ -710,6 +896,7 @@ const run = async () => {
   console.log("\n=== Menu Image Assignment Report ===");
   console.log(`Files scanned: ${summary.filesScanned}`);
   console.log(`Restaurants scanned: ${summary.restaurantsScanned}`);
+  console.log(`Offline pool candidates: ${summary.offlinePoolCandidates}`);
   console.log(`Total menu items: ${summary.totalMenuItems}`);
   console.log(`Items with existing remote images: ${summary.itemsWithExistingRemoteImages}`);
   console.log(`Items updated: ${summary.itemsUpdated}`);
@@ -720,7 +907,7 @@ const run = async () => {
   console.log(`Query errors: ${summary.queryErrors}`);
   console.log(`File errors: ${summary.fileErrors}`);
 
-  const assigned = rows.filter((r) => r.status === "assigned");
+  const assigned = rows.filter((r) => r.status.startsWith("assigned"));
   console.log(`Assigned rows: ${assigned.length}`);
   for (const r of assigned) {
     console.log(`ASSIGNED | ${r.restaurantId} | ${r.itemId} | ${r.name} | category=${r.category} | query="${r.selectedQuery}" | score=${r.score} | confidence=${r.confidence}`);

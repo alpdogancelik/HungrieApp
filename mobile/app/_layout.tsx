@@ -46,7 +46,8 @@ function RootLayoutBase() {
     const isWeb = Platform.OS === "web";
     const safeWindowWidth = windowWidth > 0 ? windowWidth : isWeb ? 1440 : 390;
     const safeWindowHeight = windowHeight > 0 ? windowHeight : isWeb ? 900 : 844;
-    const splashImage = isWeb ? webSplashImage : mobileSplashImage;
+    const isCompactWeb = isWeb && safeWindowWidth <= 768;
+    const splashImage = isCompactWeb ? mobileSplashImage : isWeb ? webSplashImage : mobileSplashImage;
     const resolvedSplashSource = Asset.fromModule(splashImage);
     const splashAspectRatio =
         resolvedSplashSource?.width && resolvedSplashSource?.height
@@ -59,6 +60,7 @@ function RootLayoutBase() {
         (isWeb ? Math.min(safeWindowHeight * 0.82, 760) : Math.min(safeWindowHeight * 0.8, 700)) * splashAspectRatio,
     );
     const splashPreviewHeight = splashPreviewWidth / splashAspectRatio;
+    const shouldUseFullBleedSplash = !isWeb || isCompactWeb;
     const chairoRegular = require("../assets/fonts/ChairoSansRegular-Regular.ttf");
     const applyDefaultFont = (component: any) => {
         const existingStyle = component?.defaultProps?.style;
@@ -218,15 +220,15 @@ function RootLayoutBase() {
     if (!fontsLoaded) {
         return (
             <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#FFF7EF" }}>
-                {isWeb ? (
+                {shouldUseFullBleedSplash ? (
+                    <Image source={splashImage} style={{ width: "100%", height: "100%" }} contentFit="cover" cachePolicy="memory-disk" />
+                ) : (
                     <Image
                         source={splashImage}
                         style={{ width: splashPreviewWidth, height: splashPreviewHeight }}
                         contentFit="contain"
                         cachePolicy="memory-disk"
                     />
-                ) : (
-                    <Image source={splashImage} style={{ width: "100%", height: "100%" }} contentFit="cover" cachePolicy="memory-disk" />
                 )}
             </View>
         );

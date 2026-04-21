@@ -3,7 +3,8 @@ import {
     doc,
     getDoc,
     getDocs,
-    onSnapshot,
+    limit,
+    orderBy,
     query,
     runTransaction,
     serverTimestamp,
@@ -69,6 +70,12 @@ const normalizeComment = (comment?: string) => {
 const normalizeId = (value: unknown) => String(value || "").trim();
 const compactObject = <T extends Record<string, unknown>>(value: T) =>
     Object.fromEntries(Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined)) as Partial<T>;
+const normalizeLimit = (value?: number) => {
+    if (!Number.isFinite(value)) return undefined;
+    const normalized = Math.floor(Number(value));
+    if (normalized <= 0) return undefined;
+    return Math.min(normalized, 100);
+};
 
 const getCurrentAuthUid = () => normalizeId(auth?.currentUser?.uid);
 
@@ -164,26 +171,50 @@ const mergeReviewSnapshots = (snapshots: Array<{ docs: Array<{ id: string; data:
     return sortReviewsByRecent(Array.from(merged.values()));
 };
 
-export const fetchMenuItemReviews = async (menuItemId: string) => {
+export const fetchMenuItemReviews = async (menuItemId: string, options?: { limit?: number }) => {
     const normalizedItemId = normalizeId(menuItemId);
     if (!normalizedItemId) return [];
+    const reviewLimit = normalizeLimit(options?.limit);
 
     const db = ensureDb();
+    const limitConstraint = reviewLimit ? [limit(reviewLimit)] : [];
     const [byItemIdSnapshot, byLegacyFieldSnapshot] = await Promise.all([
-        getDocs(query(collection(db, REVIEWS_COLLECTION), where("itemId", "==", normalizedItemId))),
-        getDocs(query(collection(db, REVIEWS_COLLECTION), where("menuItemId", "==", normalizedItemId))),
+        getDocs(
+            query(
+                collection(db, REVIEWS_COLLECTION),
+                where("itemId", "==", normalizedItemId),
+                orderBy("createdAt", "desc"),
+                ...limitConstraint,
+            ),
+        ),
+        getDocs(
+            query(
+                collection(db, REVIEWS_COLLECTION),
+                where("menuItemId", "==", normalizedItemId),
+                orderBy("createdAt", "desc"),
+                ...limitConstraint,
+            ),
+        ),
     ]);
 
-    return mergeReviewSnapshots([byItemIdSnapshot, byLegacyFieldSnapshot]).filter((review) => review.status === "published");
+    const merged = mergeReviewSnapshots([byItemIdSnapshot, byLegacyFieldSnapshot]).filter((review) => review.status === "published");
+    return reviewLimit ? merged.slice(0, reviewLimit) : merged;
 };
 
-export const fetchRestaurantReviews = async (restaurantId: string, options?: { includeHidden?: boolean }) => {
+export const fetchRestaurantReviews = async (restaurantId: string, options?: { includeHidden?: boolean; limit?: number }) => {
     const normalizedRestaurantId = normalizeId(restaurantId);
     if (!normalizedRestaurantId) return [];
+    const reviewLimit = normalizeLimit(options?.limit);
 
     const db = ensureDb();
+    const limitConstraint = reviewLimit ? [limit(reviewLimit)] : [];
     const snapshot = await getDocs(
-        query(collection(db, REVIEWS_COLLECTION), where("restaurantId", "==", normalizedRestaurantId)),
+        query(
+            collection(db, REVIEWS_COLLECTION),
+            where("restaurantId", "==", normalizedRestaurantId),
+            orderBy("createdAt", "desc"),
+            ...limitConstraint,
+        ),
     );
 
     const mapped = sortReviewsByRecent(snapshot.docs.map(mapReviewDoc));
@@ -197,33 +228,37 @@ export const fetchRestaurantReviewSummary = async (restaurantId: string) => {
     return buildRestaurantReviewSummary(reviews);
 };
 
-export const fetchUserReviews = async (userId: string) => {
+export const fetchUserReviews = async (userId: string, options?: { limit?: number }) => {
     const normalizedUserId = getCurrentAuthUid() || normalizeId(userId);
     if (!normalizedUserId) return [];
+    const reviewLimit = normalizeLimit(options?.limit);
 
     const db = ensureDb();
-    const snapshot = await getDocs(query(collection(db, REVIEWS_COLLECTION), where("userId", "==", normalizedUserId)));
+    const limitConstraint = reviewLimit ? [limit(reviewLimit)] : [];
+    const snapshot = await getDocs(
+        query(
+            collection(db, REVIEWS_COLLECTION),
+            where("userId", "==", normalizedUserId),
+            orderBy("createdAt", "desc"),
+            ...limitConstraint,
+        ),
+    );
     return sortReviewsByRecent(snapshot.docs.map(mapReviewDoc));
 };
 
-export const subscribeUserReviews = (userId: string, cb: (reviews: MenuItemReview[]) => void) => {
+export const subscribeUserReviews = (userId: string, cb: (reviews: MenuItemReview[]) => void, options?: { limit?: number }) => {
     const normalizedUserId = getCurrentAuthUid() || normalizeId(userId);
     if (!normalizedUserId) {
         cb([]);
         return () => undefined;
     }
 
-    const db = ensureDb();
-    const target = query(collection(db, REVIEWS_COLLECTION), where("userId", "==", normalizedUserId));
-    return onSnapshot(
-        target,
-        (snapshot) => {
-            cb(sortReviewsByRecent(snapshot.docs.map(mapReviewDoc)));
-        },
-        () => {
+    void fetchUserReviews(normalizedUserId, { limit: options?.limit })
+        .then((reviews) => cb(reviews))
+        .catch(() => {
             cb([]);
-        },
-    );
+        });
+    return () => undefined;
 };
 
 export const submitMenuItemReview = async (input: SubmitMenuItemReviewInput) => {

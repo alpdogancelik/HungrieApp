@@ -34,6 +34,8 @@ import MunchiesLogo from "@/assets/restaurantlogo/munchieslogo.jpg";
 import RootLogo from "@/assets/restaurantlogo/rootlogo.jpg";
 import LombardLogo from "@/assets/restaurantlogo/lombardlogo.jpg";
 import BurgerHouseLogo from "@/assets/restaurantlogo/burgerhouselogo.jpg";
+import VoyLogo from "@/assets/restaurantlogo/voylogo.jpg";
+import ErtoLogo from "@/assets/restaurantlogo/ertologo.jpg";
 
 const BRAND = {
     bgTop: "#FFF7EF",
@@ -62,6 +64,8 @@ const RESTAURANT_LOGOS = {
     root: RootLogo,
     lombard: LombardLogo,
     burgerhouse: BurgerHouseLogo,
+    voy: VoyLogo,
+    erto: ErtoLogo,
 } as const;
 
 type RestaurantKey = keyof typeof RESTAURANT_LOGOS;
@@ -79,6 +83,9 @@ const RESTAURANT_KEY_MAP: Record<string, RestaurantKey> = {
     lombard: "lombard",
     lombardkitchen: "lombard",
     burgerhouse: "burgerhouse",
+    voy: "voy",
+    erto: "erto",
+    ertocafe: "erto",
 };
 
 const resolveRestaurantKey = (input?: any): RestaurantKey | null => {

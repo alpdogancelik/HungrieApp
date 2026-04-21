@@ -3,7 +3,10 @@ import {
     collection,
     doc,
     getDoc,
+    getDocs,
+    limit,
     onSnapshot,
+    orderBy,
     query,
     serverTimestamp,
     updateDoc,
@@ -34,6 +37,13 @@ const ensureAuthSession = async () => {
 const ordersCol = () => collection(ensureDb(), "orders");
 const compactObject = <T extends Record<string, any>>(value: T) =>
     Object.fromEntries(Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined));
+const ACTIVE_RESTAURANT_STATUSES = ["pending", "accepted", "preparing", "ready", "out_for_delivery"] as const;
+const PAST_RESTAURANT_STATUSES = ["rejected", "delivered", "canceled"] as const;
+
+const normalizeStatuses = (statuses: string[], fallback: readonly string[]) => {
+    const normalized = statuses.map((status) => String(status || "").trim().toLowerCase()).filter(Boolean);
+    return normalized.length ? normalized : [...fallback];
+};
 
 const hasTimestamp = (value: Record<string, any>, fieldName: string) => Boolean(value?.[fieldName] || value?.[`${fieldName}Ms`]);
 
@@ -184,22 +194,50 @@ export const subscribeOrder = (orderId: string, cb: (order: any | null) => void)
         cb({ id: snap.id, ...snap.data() });
     });
 
-export const subscribeUserOrders = (userId: string, cb: (orders: any[]) => void) =>
-    onSnapshot(query(ordersCol(), where("userId", "==", userId)), (snap) =>
-        cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+export const subscribeUserOrders = (userId: string, cb: (orders: any[]) => void) => {
+    const normalizedUserId = String(userId || "").trim();
+    if (!normalizedUserId) {
+        cb([]);
+        return () => undefined;
+    }
+    return onSnapshot(query(ordersCol(), where("userId", "==", normalizedUserId), orderBy("createdAtMs", "desc"), limit(30)), (snap) =>
+        cb(snap.docs.map((d) => ({ ...d.data(), id: d.id }))),
     );
+};
+
+export const fetchUserOrders = async (userId: string) => {
+    const normalizedUserId = String(userId || "").trim();
+    if (!normalizedUserId) return [];
+    const snap = await getDocs(query(ordersCol(), where("userId", "==", normalizedUserId), orderBy("createdAtMs", "desc"), limit(30)));
+    return snap.docs.map((d) => ({ ...d.data(), id: d.id }));
+};
 
 export const subscribeRestaurantOrders = (
     restaurantId: string,
-    statuses: string[] = ["pending", "accepted", "preparing", "ready", "out_for_delivery"],
+    statuses: string[] = [...ACTIVE_RESTAURANT_STATUSES],
     cb?: (orders: any[]) => void,
 ) => {
-    const q = query(ordersCol(), where("restaurantId", "==", restaurantId), where("status", "in", statuses));
+    const normalizedRestaurantId = String(restaurantId || "").trim();
+    if (!normalizedRestaurantId) {
+        cb?.([]);
+        return () => undefined;
+    }
+    const activeStatuses = normalizeStatuses(statuses, ACTIVE_RESTAURANT_STATUSES).filter((status) =>
+        ACTIVE_RESTAURANT_STATUSES.includes(status as (typeof ACTIVE_RESTAURANT_STATUSES)[number]),
+    );
+    const statusFilter = activeStatuses.length ? activeStatuses : [...ACTIVE_RESTAURANT_STATUSES];
+    const q = query(
+        ordersCol(),
+        where("restaurantId", "==", normalizedRestaurantId),
+        where("status", "in", statusFilter),
+        orderBy("createdAtMs", "desc"),
+        limit(30),
+    );
     return onSnapshot(q, (snap) =>
         cb
             ? cb(
                   snap.docs
-                      .map((d) => ({ id: d.id, ...d.data() }))
+                      .map((d) => ({ ...d.data(), id: d.id }))
                       .filter((order: any) => {
                           const raw = String(order?.status || "").toLowerCase();
                           return !["canceled", "cancelled", "rejected", "delivered"].includes(raw);
@@ -209,25 +247,39 @@ export const subscribeRestaurantOrders = (
     );
 };
 
-export const subscribeRestaurantPastOrders = (restaurantId: string, cb: (orders: any[]) => void) => {
+export const fetchRestaurantPastOrders = async (restaurantId: string, statuses: string[] = [...PAST_RESTAURANT_STATUSES]) => {
+    const normalizedRestaurantId = String(restaurantId || "").trim();
+    if (!normalizedRestaurantId) return [];
+    const pastStatuses = normalizeStatuses(statuses, PAST_RESTAURANT_STATUSES).filter((status) =>
+        PAST_RESTAURANT_STATUSES.includes(status as (typeof PAST_RESTAURANT_STATUSES)[number]),
+    );
+    const statusFilter = pastStatuses.length ? pastStatuses : [...PAST_RESTAURANT_STATUSES];
     const q = query(
         ordersCol(),
-        where("restaurantId", "==", restaurantId),
-        where("status", "in", ["rejected", "delivered", "canceled"]),
+        where("restaurantId", "==", normalizedRestaurantId),
+        where("status", "in", statusFilter),
+        orderBy("createdAtMs", "desc"),
+        limit(30),
     );
-    return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ ...d.data(), id: d.id }));
 };
 
 export const subscribeRestaurantReminderOrders = (restaurantId: string, cb: (orders: any[]) => void) => {
+    const normalizedRestaurantId = String(restaurantId || "").trim();
+    if (!normalizedRestaurantId) {
+        cb([]);
+        return () => undefined;
+    }
     const q = query(
         ordersCol(),
-        where("restaurantId", "==", restaurantId),
+        where("restaurantId", "==", normalizedRestaurantId),
         where("reminderPending", "==", true),
     );
     return onSnapshot(q, (snap) =>
         cb(
             snap.docs
-                .map((d) => ({ id: d.id, ...d.data() }))
+                .map((d) => ({ ...d.data(), id: d.id }))
                 .filter((order: any) => !["delivered", "canceled", "rejected"].includes(String(order?.status || "").toLowerCase())),
         ),
     );
