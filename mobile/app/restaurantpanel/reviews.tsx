@@ -73,7 +73,7 @@ const RestaurantReviewsScreen = () => {
         } catch (error: any) {
             Alert.alert(
                 isTurkish ? "Yorumlar yuklenemedi" : "Unable to load reviews",
-                error?.message || (isTurkish ? "Lutfen tekrar deneyin." : "Please try again."),
+                error?.message || (isTurkish ? "Lütfen tekrar deneyin." : "Please try again."),
             );
         } finally {
             setLoading(false);
@@ -99,7 +99,7 @@ const RestaurantReviewsScreen = () => {
             } catch (error: any) {
                 Alert.alert(
                     isTurkish ? "Islem tamamlanamadi" : "Action failed",
-                    error?.message || (isTurkish ? "Lutfen tekrar deneyin." : "Please try again."),
+                    error?.message || (isTurkish ? "Lütfen tekrar deneyin." : "Please try again."),
                 );
             } finally {
                 setSavingById((prev) => ({ ...prev, [review.id]: false }));
@@ -120,10 +120,10 @@ const RestaurantReviewsScreen = () => {
     return (
         <PanelShell
             kicker={isTurkish ? "Restoran merkezi" : "Restaurant hub"}
-            title={isTurkish ? "Siparis yorumlari" : "Order reviews"}
+            title={isTurkish ? "Sipariş yorumları" : "Order reviews"}
             subtitle={
                 isTurkish
-                    ? "Siparis bazli restoran yorumlarini yayinla veya gizle."
+                    ? "Sipariş bazlı restoran yorumlarını yayınla veya gizle."
                     : "Publish or hide order-level restaurant reviews."
             }
             onBackPress={isPhone ? undefined : () => router.push("/restaurantpanel")}
@@ -139,7 +139,7 @@ const RestaurantReviewsScreen = () => {
         >
             <PanelCard
                 title={isTurkish ? "Yorum ozeti" : "Review snapshot"}
-                subtitle={`${summary.total} ${isTurkish ? "toplam" : "total"} - ${summary.published} ${isTurkish ? "yayinlandi" : "published"} - ${summary.hidden} ${isTurkish ? "gizli" : "hidden"}`}
+                subtitle={`${summary.total} ${isTurkish ? "toplam" : "total"} - ${summary.published} ${isTurkish ? "yayınlandı" : "published"} - ${summary.hidden} ${isTurkish ? "gizli" : "hidden"}`}
             />
 
             {loading || !localeReady ? (
@@ -154,7 +154,7 @@ const RestaurantReviewsScreen = () => {
                                     key={review.id}
                                     compact
                                     title={review.restaurantName || (isTurkish ? "Restoran" : "Restaurant")}
-                                    subtitle={`${isTurkish ? "Siparis" : "Order"} #${review.orderId}`}
+                                    subtitle={`${isTurkish ? "Sipariş" : "Order"} #${review.orderId}`}
                                     style={styles.reviewCard}
                                     right={
                                         <View style={[styles.statusPill, review.status === "published" ? styles.statusPillPublished : styles.statusPillHidden]}>
@@ -200,7 +200,7 @@ const RestaurantReviewsScreen = () => {
                     ) : (
                         <PanelCard
                             title={isTurkish ? "Henuz yorum yok" : "No reviews yet"}
-                            subtitle={isTurkish ? "Teslim edilen siparislerden yorum geldikce burada listelenecek." : "Order reviews will appear here as they arrive."}
+                            subtitle={isTurkish ? "Teslim edilen siparişlerden yorum geldikçe burada listelenecek." : "Order reviews will appear here as they arrive."}
                         />
                     )}
                 </View>

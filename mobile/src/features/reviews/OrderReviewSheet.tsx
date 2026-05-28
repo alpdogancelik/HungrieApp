@@ -65,7 +65,7 @@ const OrderReviewSheet = ({ visible, submitting = false, items, errorText, onClo
             onClose();
             return;
         }
-        Alert.alert("Degerlendirme kapatilsin mi?", "Girdiginiz puanlar kaybolacak.", [
+        Alert.alert("Değerlendirme kapatılsın mı?", "Girdiğiniz puanlar kaybolacak.", [
             { text: "Duzenlemeye devam et", style: "cancel" },
             { text: "Kapat", style: "destructive", onPress: onClose },
         ]);
@@ -123,7 +123,7 @@ const OrderReviewSheet = ({ visible, submitting = false, items, errorText, onClo
                                 </View>
 
                                 <View style={styles.itemsWrap}>
-                                    <Text style={styles.itemsTitle}>Bu sipariste:</Text>
+                                    <Text style={styles.itemsTitle}>Bu siparişte:</Text>
                                     {items.length ? (
                                         items.slice(0, 8).map((item, index) => (
                                             <Text key={`${item.menuItemId || item.name}-${index}`} style={styles.itemText}>
@@ -131,7 +131,7 @@ const OrderReviewSheet = ({ visible, submitting = false, items, errorText, onClo
                                             </Text>
                                         ))
                                     ) : (
-                                        <Text style={styles.itemsEmpty}>Urun detayi bulunamadi.</Text>
+                                        <Text style={styles.itemsEmpty}>Ürün detayı bulunamadı.</Text>
                                     )}
                                 </View>
 

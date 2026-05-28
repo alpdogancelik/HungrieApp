@@ -80,8 +80,16 @@ const makeCartId = (item: SearchResult) => {
     return `${r}::${m}`;
 };
 
+const getSingleParam = (value?: string | string[]) => {
+    if (Array.isArray(value)) return value[0] ?? "";
+    return typeof value === "string" ? value : "";
+};
+
 export const useSearchScreenV3 = () => {
-    const params = useLocalSearchParams<{ query?: string; category?: string }>();
+    const params = useLocalSearchParams<{ query?: string; category?: string; refresh?: string }>();
+    const routeQuery = getSingleParam(params.query);
+    const routeCategory = getSingleParam(params.category);
+    const routeRefresh = getSingleParam(params.refresh);
 
     const {
         query,
@@ -96,8 +104,8 @@ export const useSearchScreenV3 = () => {
         refetch,
         clearLoadedData,
     } = useSearch({
-        initialQuery: typeof params.query === "string" ? params.query : "",
-        initialCategory: typeof params.category === "string" ? params.category : undefined,
+        initialQuery: routeQuery,
+        initialCategory: routeCategory || undefined,
     });
 
     const { items, addItem, decreaseQty, removeItem } = useCartStore();
@@ -128,6 +136,11 @@ export const useSearchScreenV3 = () => {
             clearLoadedData();
         };
     }, [clearLoadedData]);
+
+    useEffect(() => {
+        setQuery(routeQuery);
+        setCategory(routeCategory || undefined);
+    }, [routeCategory, routeQuery, routeRefresh, setCategory, setQuery]);
 
     const persistRecent = useCallback((term: string) => {
         const normalized = term.trim();

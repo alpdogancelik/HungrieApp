@@ -1,21 +1,26 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Animated, AppState, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons";
 
 import Icon from "@/components/Icon";
-import { getRestaurant, getRestaurantCategories, getRestaurantMenu } from "@/lib/api";
+import { getRestaurant, getRestaurantCategories, getRestaurantMenu, subscribeRestaurant } from "@/lib/api";
 import { getRestaurantImageSource } from "@/lib/assets";
 import useServerResource from "@/lib/useServerResource";
 import type { OrderReview } from "@/src/domain/types";
 import { getCategoryLabel, normalizeCategoryKey } from "@/src/lib/categoryLabels";
 import { makeShadow } from "@/src/lib/shadowStyle";
+import { showUserMessage } from "@/src/lib/showUserMessage";
+import { useWebDocumentTitle } from "@/src/lib/useWebDocumentTitle";
 import MenuItemCard from "@/src/features/restaurantMenu/components/MenuItemCard";
 import { calculateRestaurantOrderReviewSummary, fetchRestaurantOrderReviews } from "@/src/services/orderReviews";
 import { useCartStore } from "@/store/cart.store";
+import useAuthStore from "@/store/auth.store";
+import { useFavoritesStore } from "@/store/favorites.store";
 
 type MenuEntry = {
     id: string;
@@ -33,10 +38,17 @@ type Restaurant = {
     name?: string;
     phone?: string;
     cuisine?: string;
+    address?: string;
+    city?: string;
+    district?: string;
+    location?: string;
     imageUrl?: string | number;
     image_url?: string | number;
     openingTime?: string;
     closingTime?: string;
+    isActive?: boolean;
+    isOpen?: boolean;
+    status?: string;
     ratingAverage?: number;
     ratingCount?: number;
     deliveryEtaAverage?: number;
@@ -137,7 +149,7 @@ const TRY_FORMATTERS = {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
     }),
-    en: new Intl.NumberFormat("en-US", {
+    en: new Intl.NumberFormat("tr-TR", {
         style: "currency",
         currency: "TRY",
         minimumFractionDigits: 0,
@@ -168,6 +180,30 @@ const parseEtaRange = (value: unknown) => {
     const max = Number(match[2]);
     if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
     return { min, max };
+};
+
+const parseTimeOfDayMinutes = (value: unknown): number | null => {
+    const raw = String(value || "").trim();
+    const match = raw.match(/^(\d{1,2})(?::(\d{2}))?/);
+    if (!match) return null;
+    const hours = Number(match[1]);
+    const minutes = Number(match[2] || 0);
+    if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null;
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+    return hours * 60 + minutes;
+};
+
+const isCurrentTimeWithinOpeningHours = (openingTime: unknown, closingTime: unknown, now = new Date()) => {
+    const openMinutes = parseTimeOfDayMinutes(openingTime);
+    const closeMinutes = parseTimeOfDayMinutes(closingTime);
+    if (openMinutes === null || closeMinutes === null) return null;
+
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    if (openMinutes === closeMinutes) return true;
+    if (openMinutes < closeMinutes) {
+        return currentMinutes >= openMinutes && currentMinutes < closeMinutes;
+    }
+    return currentMinutes >= openMinutes || currentMinutes < closeMinutes;
 };
 
 const formatEtaLabel = (restaurant: Restaurant | null | undefined, isTurkish: boolean, fallbackLabel: string) => {
@@ -301,12 +337,62 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
     const insets = useSafeAreaInsets();
     const { t, i18n } = useTranslation();
     const { addItem, items: cartItems, getTotalItems, getTotalPrice } = useCartStore();
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+    const currentUser = useAuthStore((state) => state.user);
+    const favoriteScope = currentUser?.accountId || currentUser?.id || "guest";
+    const favoritesByScope = useFavoritesStore((state) => state.favoritesByScope);
+    const favoriteScopesLoaded = useFavoritesStore((state) => state.loadedScopes);
+    const favoriteIds = favoritesByScope[favoriteScope] || [];
+    const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
+    const hydrateFavorites = useFavoritesStore((state) => state.hydrateFavorites);
     const { id } = useLocalSearchParams<{ id?: string }>();
 
     const routeId = id ? String(id) : undefined;
     const restaurantId = useMemo(() => routeId || initialId || "", [routeId, initialId]);
+    const isFavorite = favoriteIds.includes(String(restaurantId).trim().toLowerCase());
     const locale = i18n.language?.startsWith("tr") ? "tr" : "en";
     const isTurkish = locale === "tr";
+    const [restaurantStatusTick, setRestaurantStatusTick] = useState(() => Math.floor(Date.now() / 60000));
+
+    useEffect(() => {
+        if (favoriteScopesLoaded[favoriteScope]) return;
+        void hydrateFavorites(favoriteScope);
+    }, [favoriteScope, favoriteScopesLoaded, hydrateFavorites]);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setRestaurantStatusTick(Math.floor(Date.now() / 60000));
+        }, 60000);
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        const subscription = AppState.addEventListener("change", (state) => {
+            if (state === "active") {
+                setRestaurantStatusTick(Math.floor(Date.now() / 60000));
+            }
+        });
+        return () => subscription.remove();
+    }, []);
+
+    const requireSignInForFavorite = useCallback(() => {
+        showUserMessage(
+            isTurkish ? "Giriş gerekli" : "Sign in required",
+            isTurkish
+                ? "Favorilere restoran eklemek için lütfen giriş yapın."
+                : "Please sign in to add restaurants to your favourites.",
+        );
+        router.push("/sign-in");
+    }, [isTurkish, router]);
+
+    const handleToggleFavorite = useCallback(() => {
+        if (!isAuthenticated) {
+            requireSignInForFavorite();
+            return;
+        }
+
+        toggleFavorite(favoriteScope, restaurantId);
+    }, [favoriteScope, isAuthenticated, requireSignInForFavorite, restaurantId, toggleFavorite]);
 
     const fetchRestaurant = useCallback(
         async (targetId?: string) => {
@@ -319,7 +405,7 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
     );
 
     const {
-        data: restaurant,
+        data: fetchedRestaurant,
         loading: restaurantLoading,
         error: restaurantError,
     } = useServerResource<Restaurant, string | undefined>({
@@ -328,6 +414,27 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
         immediate: true,
         skipAlert: true,
     });
+    const [liveRestaurant, setLiveRestaurant] = useState<Restaurant | null>(null);
+    const restaurant = liveRestaurant ?? fetchedRestaurant;
+
+    useEffect(() => {
+        if (!restaurantId) {
+            setLiveRestaurant(null);
+            return undefined;
+        }
+
+        return subscribeRestaurant(
+            restaurantId,
+            (nextRestaurant) => {
+                setLiveRestaurant((nextRestaurant as Restaurant | null) || null);
+            },
+            (error) => {
+                console.warn("[restaurant] realtime subscription failed", error);
+            },
+        );
+    }, [restaurantId]);
+
+    useWebDocumentTitle();
 
     const fetchMenu = useCallback(
         async (targetId?: string) => {
@@ -381,6 +488,7 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
 
     const [activeCategory, setActiveCategory] = useState<string>("");
     const [activeTab, setActiveTab] = useState<TabKey>("menu");
+    const [searchQuery, setSearchQuery] = useState("");
     const [reviews, setReviews] = useState<OrderReview[]>([]);
     const [reviewsLoading, setReviewsLoading] = useState(false);
     const [reviewsLoaded, setReviewsLoaded] = useState(false);
@@ -419,8 +527,33 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
         };
     }, [activeTab, restaurantId, reviewsLoaded]);
 
-    const activeItems = activeCategory ? grouped[activeCategory] || [] : menuItems;
-    const sectionSubtitle = isTurkish ? `${activeItems.length} ürün` : `${activeItems.length} items`;
+    const visibleCategorySections = useMemo(() => {
+        const query = searchQuery.trim().toLowerCase();
+        return categoryKeys
+            .map((key) => {
+                const items = grouped[key] || [];
+                const filteredItems = query
+                    ? items.filter((item) => {
+                          const name = String(item.name || "").toLowerCase();
+                          const description = String(item.description || "").toLowerCase();
+                          return name.includes(query) || description.includes(query);
+                      })
+                    : items;
+
+                return {
+                    key,
+                    label: getCategoryLabel(key, locale as "tr" | "en"),
+                    items: filteredItems,
+                };
+            })
+            .filter((section) => section.items.length > 0);
+    }, [categoryKeys, grouped, locale, searchQuery]);
+    useEffect(() => {
+        if (!visibleCategorySections.length) return;
+        if (!visibleCategorySections.some((section) => section.key === activeCategory)) {
+            setActiveCategory(visibleCategorySections[0].key);
+        }
+    }, [activeCategory, visibleCategorySections]);
     const categoryRows = useMemo(
         () =>
             categoryKeys.map((key) => ({
@@ -437,6 +570,11 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
         if (!open || !close) return null;
         return `${open} - ${close}`;
     }, [restaurant]);
+    const isWithinOpeningHours = useMemo(() => {
+        const open = restaurant?.openingTime || (restaurant as { opening_time?: string } | undefined)?.opening_time;
+        const close = restaurant?.closingTime || (restaurant as { closing_time?: string } | undefined)?.closing_time;
+        return isCurrentTimeWithinOpeningHours(open, close);
+    }, [restaurant, restaurantStatusTick]);
 
     const displayName = restaurant?.name || restaurantId || (isTurkish ? "Restoran" : "Restaurant");
     const heroSubtitle = restaurant?.cuisine || (isTurkish ? "Kafe ve Izgara" : "Cafe & Grill");
@@ -468,6 +606,30 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
             : isTurkish
               ? `Teslimat ${formatTryPrice(24, locale)}`
               : `Delivery ${formatTryPrice(24, locale)}`;
+    const minimumOrderChipLabel = isTurkish ? minimumOrderLabel.replace("Min. ", "Min. ₺").replace("₺₺", "₺") : minimumOrderLabel;
+    const deliveryFeeChipLabel = isTurkish ? deliveryFeeLabel.replace("Teslimat ", "Teslimat ₺").replace("₺₺", "₺") : deliveryFeeLabel;
+    const locationLabel =
+        String(
+            restaurant?.district ||
+                restaurant?.city ||
+                restaurant?.location ||
+                restaurant?.address ||
+                (isTurkish ? "Kalkanlı" : "Kalkanli"),
+        ).trim() || (isTurkish ? "Kalkanlı" : "Kalkanli");
+    const rawStatus = String(restaurant?.status || "").trim().toLowerCase();
+    const restaurantIsEnabled =
+        restaurant?.isActive === false ||
+        restaurant?.isOpen === false ||
+        ["closed", "kapalı", "kapali", "inactive", "disabled", "offline"].includes(rawStatus)
+            ? false
+            : true;
+    const restaurantIsActive = restaurantIsEnabled && isWithinOpeningHours !== false;
+    const statusLabel = restaurantIsActive ? (isTurkish ? "Açık" : "Open") : isTurkish ? "Kapalı" : "Closed";
+    const ratingSummaryLabel = restaurantRatingCount
+        ? `${restaurantRatingLabel} ${restaurantReviewCountLabel}`
+        : isTurkish
+          ? "Yeni (0 yorum)"
+          : "New (0 reviews)";
     const aggregateReviewSummary: ReviewSummaryView = useMemo(() => {
         const count = Math.max(0, Math.round(Number(parseNumericValue(restaurant?.ratingCount) ?? 0)));
         if (count <= 0) return { count: 0, average: 0, speed: 0, taste: 0, value: 0 };
@@ -505,10 +667,92 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
 
     const toastOpacity = useRef(new Animated.Value(0)).current;
     const toastScale = useRef(new Animated.Value(0.98)).current;
+    const scrollY = useRef(new Animated.Value(0)).current;
     const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const scrollRef = useRef<ScrollView | null>(null);
     const categoryRailRef = useRef<ScrollView | null>(null);
+    const categorySectionYRef = useRef<Record<string, number>>({});
+    const categoryPillXRef = useRef<Record<string, number>>({});
+    const categoryPressScrollRef = useRef(false);
+    const stickyCategoryRailRef = useRef<ScrollView | null>(null);
+    const stickyCategoryPillXRef = useRef<Record<string, number>>({});
     const [addedToastVisible, setAddedToastVisible] = useState(false);
     const [addedToastText, setAddedToastText] = useState("");
+    const [stickyHeaderVisible, setStickyHeaderVisible] = useState(false);
+    const stickyHeaderVisibleRef = useRef(false);
+
+    useEffect(() => {
+        const pillX = categoryPillXRef.current[activeCategory];
+        if (pillX !== undefined) {
+            categoryRailRef.current?.scrollTo({ x: Math.max(0, pillX - 24), animated: true });
+        }
+
+        const stickyPillX = stickyCategoryPillXRef.current[activeCategory];
+        if (stickyPillX !== undefined) {
+            stickyCategoryRailRef.current?.scrollTo({ x: Math.max(0, stickyPillX - 24), animated: true });
+        }
+    }, [activeCategory]);
+
+    const scrollToCategory = useCallback((key: string) => {
+        setActiveCategory(key);
+        categoryPressScrollRef.current = true;
+
+        requestAnimationFrame(() => {
+            const y = categorySectionYRef.current[key];
+            if (y === undefined) {
+                categoryPressScrollRef.current = false;
+                return;
+            }
+
+            scrollRef.current?.scrollTo({ y: Math.max(0, y + 200), animated: true });
+            setTimeout(() => {
+                categoryPressScrollRef.current = false;
+            }, 450);
+        });
+    }, []);
+
+    const handleMenuScroll = useCallback(
+        (event: any) => {
+            const offsetY = Number(event?.nativeEvent?.contentOffset?.y || 0);
+            const shouldShowStickyHeader = activeTab === "menu" && offsetY > 360 && visibleCategorySections.length > 0;
+            if (stickyHeaderVisibleRef.current !== shouldShowStickyHeader) {
+                stickyHeaderVisibleRef.current = shouldShowStickyHeader;
+                setStickyHeaderVisible(shouldShowStickyHeader);
+            }
+
+            if (activeTab !== "menu" || categoryPressScrollRef.current || !visibleCategorySections.length) return;
+            const y = offsetY + 130;
+            let nextKey = visibleCategorySections[0]?.key || "";
+
+            for (const section of visibleCategorySections) {
+                const sectionY = categorySectionYRef.current[section.key];
+                if (sectionY === undefined) continue;
+                if (sectionY <= y) nextKey = section.key;
+                else break;
+            }
+
+            if (nextKey && nextKey !== activeCategory) {
+                setActiveCategory(nextKey);
+            }
+        },
+        [activeCategory, activeTab, visibleCategorySections],
+    );
+    const stickyHeaderAnimatedStyle = {
+        opacity: scrollY.interpolate({
+            inputRange: [200, 260],
+            outputRange: [0, 1],
+            extrapolate: "clamp",
+        }),
+        transform: [
+            {
+                translateY: scrollY.interpolate({
+                    inputRange: [320, 380],
+                    outputRange: [-12, 0],
+                    extrapolate: "clamp",
+                }),
+            },
+        ],
+    };
 
     const showAddedToast = useCallback(
         (itemName: string) => {
@@ -555,6 +799,16 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
     );
 
     const handleAddToCart = (item: MenuEntry, imageUrl?: string) => {
+        if (!restaurantIsActive) {
+            showUserMessage(
+                isTurkish ? "Restoran kapalı" : "Restaurant closed",
+                isTurkish
+                    ? "Bu restoran şu anda sipariş almıyor. Lütfen açık bir restoran seçin."
+                    : "This restaurant is not accepting orders right now. Please choose an open restaurant.",
+            );
+            return;
+        }
+
         const before = getTotalItems();
         addItem({
             id: String(item.id),
@@ -569,6 +823,29 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
             showAddedToast(item.name);
         }
     };
+
+    const renderCategoryPills = (options?: { sticky?: boolean }) =>
+        categoryKeys.map((key) => {
+            const active = key === activeCategory;
+            const label = getCategoryLabel(key, locale as "tr" | "en");
+
+            return (
+                <Pressable
+                    key={key}
+                    onLayout={(event) => {
+                        if (options?.sticky) {
+                            stickyCategoryPillXRef.current[key] = event.nativeEvent.layout.x;
+                            return;
+                        }
+                        categoryPillXRef.current[key] = event.nativeEvent.layout.x;
+                    }}
+                    onPress={() => scrollToCategory(key)}
+                    style={[styles.categoryPill, active ? styles.categoryPillActive : null]}
+                >
+                    <Text style={[styles.categoryText, active ? styles.categoryTextActive : null]}>{label}</Text>
+                </Pressable>
+            );
+        });
 
     const renderContent = () => {
         if (restaurantLoading || menuLoading) {
@@ -607,11 +884,11 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
 
                         <View style={styles.headerCopy}>
                             <View style={styles.titleRow}>
-                                <Text style={styles.title} numberOfLines={2}>
+                                <Text style={styles.title} numberOfLines={1}>
                                     {displayName}
                                 </Text>
-                                <View style={styles.statusPill}>
-                                    <Text style={styles.statusText}>{isTurkish ? "Açık" : "Open"}</Text>
+                                <View style={[styles.statusPill, restaurantIsActive ? null : styles.statusPillClosed]}>
+                                    <Text style={[styles.statusText, restaurantIsActive ? null : styles.statusTextClosed]}>{statusLabel}</Text>
                                 </View>
                             </View>
 
@@ -622,33 +899,52 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
                             <View style={styles.metaRow}>
                                 <View style={styles.metaItem}>
                                     <Icon name="star" size={13} color="#E0A53E" />
-                                    <Text style={styles.metaText}>{restaurantRatingLabel}</Text>
-                                    <Text style={styles.metaSubtle}>{restaurantReviewCountLabel}</Text>
+                                    <Text style={styles.metaText} numberOfLines={1}>
+                                        {ratingSummaryLabel}
+                                    </Text>
                                 </View>
-                                <View style={styles.metaItem}>
-                                    <Icon name="clock" size={13} color={THEME.accent} />
-                                    <Text style={styles.metaText}>{restaurantEtaLabel}</Text>
-                                </View>
+                            </View>
+                        </View>
+
+                        <Pressable
+                            style={[styles.favoriteButton, isFavorite ? styles.favoriteButtonActive : null]}
+                            onPress={handleToggleFavorite}
+                        >
+                            <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={16} color={isFavorite ? "#E5484D" : THEME.subtle} />
+                        </Pressable>
+                    </View>
+
+                    <View style={styles.infoStatsRow}>
+                        <View style={styles.infoStatCard}>
+                            <View style={styles.infoStatIconWrap}>
+                                <Ionicons name="wallet-outline" size={14} color={THEME.accentStrong} />
+                            </View>
+                            <View style={styles.infoStatCopy}>
+                                <Text style={styles.infoStatLabel}>{isTurkish ? "Min. sipariş" : "Min. order"}</Text>
+                                <Text style={styles.infoStatValue}>{minimumOrderChipLabel.replace("Min. ", "")}</Text>
+                            </View>
+                        </View>
+                        <View style={[styles.infoStatCard, styles.infoStatCardLast]}>
+                            <View style={styles.infoStatIconWrap}>
+                                <Ionicons name="location-outline" size={14} color={THEME.accentStrong} />
+                            </View>
+                            <View style={styles.infoStatCopy}>
+                                <Text style={styles.infoStatLabel}>{isTurkish ? "Konum" : "Location"}</Text>
+                                <Text style={styles.infoStatValue} numberOfLines={1}>{locationLabel}</Text>
                             </View>
                         </View>
                     </View>
 
-                    <View style={styles.infoChips}>
-                        <View style={styles.infoChip}>
-                            <Text style={styles.infoChipText}>{minimumOrderLabel}</Text>
-                        </View>
-                        <View style={styles.infoChip}>
-                            <Text style={styles.infoChipText}>{deliveryFeeLabel}</Text>
-                        </View>
-                        {openingHours ? (
-                            <View style={styles.infoChip}>
-                                <Text style={styles.infoChipText}>{openingHours}</Text>
-                            </View>
-                        ) : (
-                            <View style={styles.infoChip}>
-                                <Text style={styles.infoChipText}>{isTurkish ? "Kapalı" : "Closed"}</Text>
-                            </View>
-                        )}
+                    <View style={styles.headerSearchBar}>
+                        <Icon name="search" size={15} color={THEME.subtle} />
+                        <TextInput
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            placeholder={isTurkish ? "Bu restoranda ara..." : "Search in this restaurant..."}
+                            placeholderTextColor={THEME.subtle}
+                            style={styles.headerSearchInput}
+                            returnKeyType="search"
+                        />
                     </View>
                 </View>
 
@@ -681,51 +977,51 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
                                     style={styles.categoryRailScroll}
                                     scrollEventThrottle={16}
                                 >
-                                    {categoryKeys.map((key) => {
-                                        const active = key === activeCategory;
-                                        const label = getCategoryLabel(key, locale as "tr" | "en");
-
-                                        return (
-                                            <Pressable
-                                                key={key}
-                                                onPress={() => setActiveCategory(key)}
-                                                style={[styles.categoryPill, active ? styles.categoryPillActive : null]}
-                                            >
-                                                <Text style={[styles.categoryText, active ? styles.categoryTextActive : null]}>{label}</Text>
-                                            </Pressable>
-                                        );
-                                    })}
+                                    {renderCategoryPills()}
                                 </ScrollView>
                             </View>
                         ) : null}
 
-                        <View style={styles.sectionHead}>
-                            <Text style={styles.sectionTitle}>
-                                {activeCategory ? getCategoryLabel(activeCategory, locale as "tr" | "en") : isTurkish ? "Menü" : "Menu"}
-                            </Text>
-                            <Text style={styles.sectionSubtitle}>{sectionSubtitle}</Text>
-                        </View>
+                        <View style={styles.menuSections}>
+                            {visibleCategorySections.map((section) => (
+                                <View
+                                    key={section.key}
+                                    onLayout={(event) => {
+                                        categorySectionYRef.current[section.key] = event.nativeEvent.layout.y;
+                                    }}
+                                    style={styles.menuCategorySection}
+                                >
+                                    <View style={styles.menuCategoryHeader}>
+                                        <Text style={styles.menuCategoryTitle}>{section.label}</Text>
+                                        <Text style={styles.menuCategoryCount}>
+                                            {isTurkish ? `${section.items.length} ürün` : `${section.items.length} items`}
+                                        </Text>
+                                    </View>
 
-                        <View style={styles.menuList}>
-                            {activeItems.map((item) => {
-                                const ratingAverage = Number((item as any)?.ratingAverage ?? (item as any)?.rating ?? 0);
-                                const ratingCount = Number((item as any)?.ratingCount ?? 0);
+                                    <View style={styles.menuList}>
+                                        {section.items.map((item) => {
+                                            const ratingAverage = Number((item as any)?.ratingAverage ?? (item as any)?.rating ?? 0);
+                                            const ratingCount = Number((item as any)?.ratingCount ?? 0);
 
-                                return (
-                                    <MenuItemCard
-                                        key={String(item.id)}
-                                        item={item}
-                                        cuisine={restaurant?.cuisine}
-                                        activeCategory={activeCategory}
-                                        isTurkish={isTurkish}
-                                        addToCartLabel={t("restaurantUi.addToCart", "Sepete ekle")}
-                                        priceLabel={formatTryPrice(item.price, locale)}
-                                        ratingAverage={ratingAverage}
-                                        ratingCount={ratingCount}
-                                        onAddToCart={handleAddToCart}
-                                    />
-                                );
-                            })}
+                                            return (
+                                                <MenuItemCard
+                                                    key={String(item.id)}
+                                                    item={item}
+                                                    cuisine={restaurant?.cuisine}
+                                                    activeCategory={section.key}
+                                                    isTurkish={isTurkish}
+                                                    addToCartLabel={restaurantIsActive ? t("restaurantUi.addToCart", "Sepete ekle") : isTurkish ? "Kapalı" : "Closed"}
+                                                    priceLabel={formatTryPrice(item.price, locale)}
+                                                    ratingAverage={ratingAverage}
+                                                    ratingCount={ratingCount}
+                                                    disabled={!restaurantIsActive}
+                                                    onAddToCart={handleAddToCart}
+                                                />
+                                            );
+                                        })}
+                                    </View>
+                                </View>
+                            ))}
                         </View>
                     </>
                 ) : activeTab === "categories" ? (
@@ -741,8 +1037,8 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
                                     key={row.key}
                                     style={styles.categoryRow}
                                     onPress={() => {
-                                        setActiveCategory(row.key);
                                         setActiveTab("menu");
+                                        setTimeout(() => scrollToCategory(row.key), 0);
                                     }}
                                 >
                                     <Text style={styles.categoryRowLabel}>{row.label}</Text>
@@ -868,8 +1164,14 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
     return (
         <SafeAreaView style={styles.safeArea} edges={["left", "right"]}>
             <LinearGradient colors={[THEME.bgTop, THEME.bg, THEME.bgBottom]} style={styles.flex}>
-                <ScrollView
+                <Animated.ScrollView
+                    ref={scrollRef}
                     showsVerticalScrollIndicator={false}
+                    onScroll={Animated.event(
+                        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                        { useNativeDriver: true, listener: handleMenuScroll },
+                    )}
+                    scrollEventThrottle={8}
                     contentContainerStyle={{
                         paddingTop: Math.max(insets.top, 4),
                         paddingHorizontal: 16,
@@ -877,7 +1179,37 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
                     }}
                 >
                     {renderContent()}
-                </ScrollView>
+                </Animated.ScrollView>
+
+                {activeTab === "menu" && visibleCategorySections.length ? (
+                    <Animated.View
+                        pointerEvents={stickyHeaderVisible ? "auto" : "none"}
+                        style={[styles.stickyMenuHeader, { top: Math.max(insets.top, 8) }, stickyHeaderAnimatedStyle]}
+                    >
+                        <View style={styles.stickySearchBar}>
+                            <Icon name="search" size={15} color={THEME.subtle} />
+                            <TextInput
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                                placeholder={isTurkish ? "Bu restoranda ara..." : "Search in this restaurant..."}
+                                placeholderTextColor={THEME.subtle}
+                                style={styles.stickySearchInput}
+                                returnKeyType="search"
+                            />
+                        </View>
+
+                        <ScrollView
+                            ref={stickyCategoryRailRef}
+                            horizontal
+                            showsHorizontalScrollIndicator={Platform.OS === "web"}
+                            contentContainerStyle={styles.stickyCategoryRailContent}
+                            style={styles.stickyCategoryRailScroll}
+                            scrollEventThrottle={16}
+                        >
+                            {renderCategoryPills({ sticky: true })}
+                        </ScrollView>
+                    </Animated.View>
+                ) : null}
 
                 <Pressable
                     onPress={() => router.push("/(tabs)/cart")}
@@ -960,8 +1292,8 @@ const styles = StyleSheet.create({
         color: THEME.accentStrong,
     },
     headerCard: {
-        borderRadius: 30,
-        padding: 16,
+        borderRadius: 26,
+        padding: 12,
         backgroundColor: THEME.card,
         borderWidth: 1,
         borderColor: THEME.lineSoft,
@@ -969,16 +1301,17 @@ const styles = StyleSheet.create({
     },
     headerTop: {
         flexDirection: "row",
-        alignItems: "flex-start",
-        gap: 12,
+        alignItems: "center",
+        gap: 8,
     },
     headerBackButton: {
+        alignSelf: "flex-start",
         paddingTop: 2,
     },
     headerBackInner: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: THEME.cardSoft,
@@ -986,9 +1319,9 @@ const styles = StyleSheet.create({
         borderColor: THEME.line,
     },
     logoShell: {
-        width: 76,
-        height: 76,
-        borderRadius: 22,
+        width: 48,
+        height: 48,
+        borderRadius: 14,
         overflow: "hidden",
         borderWidth: 1,
         borderColor: THEME.line,
@@ -1000,90 +1333,162 @@ const styles = StyleSheet.create({
     },
     headerCopy: {
         flex: 1,
-        gap: 6,
+        minWidth: 0,
+        gap: 2,
     },
     titleRow: {
         flexDirection: "row",
-        alignItems: "flex-start",
-        justifyContent: "space-between",
-        gap: 10,
+        alignItems: "center",
+        gap: 6,
     },
     title: {
         flex: 1,
         fontFamily: "ChairoSans",
-        fontSize: 28,
-        lineHeight: 31,
+        fontSize: 16,
+        lineHeight: 19,
         color: THEME.ink,
     },
     statusPill: {
         borderRadius: 999,
-        paddingHorizontal: 10,
-        paddingVertical: 6,
+        paddingHorizontal: 7,
+        paddingVertical: 3,
         backgroundColor: THEME.openSoft,
-        marginTop: 2,
+    },
+    statusPillClosed: {
+        backgroundColor: "rgba(100,116,139,0.12)",
     },
     statusText: {
         fontFamily: "ChairoSans",
-        fontSize: 12,
+        fontSize: 9,
         color: THEME.open,
+    },
+    statusTextClosed: {
+        color: THEME.muted,
     },
     subtitle: {
         fontFamily: "ChairoSans",
-        fontSize: 14,
+        fontSize: 11,
         color: THEME.muted,
     },
     metaRow: {
         flexDirection: "row",
         flexWrap: "wrap",
-        gap: 12,
-        marginTop: 2,
+        gap: 6,
+        marginTop: 1,
     },
     metaItem: {
         flexDirection: "row",
         alignItems: "center",
         gap: 4,
+        minWidth: 0,
     },
     metaText: {
         fontFamily: "ChairoSans",
-        fontSize: 13,
+        fontSize: 10,
         color: THEME.ink,
     },
     metaSubtle: {
         fontFamily: "ChairoSans",
-        fontSize: 13,
+        fontSize: 10,
         color: THEME.subtle,
     },
-    infoChips: {
-        marginTop: 14,
+    favoriteButton: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 1,
+        borderColor: THEME.line,
+        backgroundColor: THEME.cardSoft,
+        alignSelf: "flex-start",
+    },
+    favoriteButtonActive: {
+        backgroundColor: "#FFF1F1",
+        borderColor: "rgba(229,72,77,0.16)",
+    },
+    infoStatsRow: {
+        marginTop: 12,
         flexDirection: "row",
-        flexWrap: "wrap",
-        gap: 8,
+        gap: 0,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: THEME.lineSoft,
+        overflow: "hidden",
+        backgroundColor: "#FFF9F4",
     },
-    infoChip: {
-        borderRadius: 999,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        backgroundColor: THEME.accentSoft,
+    infoStatCard: {
+        flex: 1,
+        minHeight: 48,
+        paddingHorizontal: 9,
+        paddingVertical: 7,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        backgroundColor: "#FFF9F4",
+        borderRightWidth: 1,
+        borderRightColor: THEME.lineSoft,
     },
-    infoChipText: {
+    infoStatCardLast: {
+        borderRightWidth: 0,
+    },
+    infoStatIconWrap: {
+        width: 20,
+        height: 20,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    infoStatCopy: {
+        flex: 1,
+        minWidth: 0,
+    },
+    infoStatLabel: {
         fontFamily: "ChairoSans",
-        fontSize: 12,
-        color: THEME.accentStrong,
+        fontSize: 9,
+        lineHeight: 11,
+        color: THEME.muted,
+    },
+    infoStatValue: {
+        marginTop: 2,
+        fontFamily: "ChairoSans",
+        fontSize: 10,
+        lineHeight: 13,
+        color: THEME.ink,
+    },
+    headerSearchBar: {
+        marginTop: 12,
+        height: 34,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: THEME.line,
+        backgroundColor: THEME.cardSoft,
+        paddingHorizontal: 11,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 7,
+    },
+    headerSearchInput: {
+        flex: 1,
+        fontFamily: "ChairoSans",
+        fontSize: 11,
+        color: THEME.ink,
+        paddingVertical: 0,
+        includeFontPadding: false,
     },
     segmentRail: {
         marginTop: 12,
-        borderRadius: 22,
+        borderRadius: 20,
         backgroundColor: "rgba(255,255,255,0.82)",
         borderWidth: 1,
         borderColor: THEME.lineSoft,
-        padding: 6,
+        padding: 5,
         flexDirection: "row",
-        gap: 6,
+        gap: 5,
         ...shadow,
     },
     segmentButton: {
         flex: 1,
-        height: 40,
+        height: 36,
         borderRadius: 999,
         alignItems: "center",
         justifyContent: "center",
@@ -1095,7 +1500,7 @@ const styles = StyleSheet.create({
     },
     segmentButtonText: {
         fontFamily: "ChairoSans",
-        fontSize: 13,
+        fontSize: 12,
         color: THEME.muted,
     },
     segmentButtonTextActive: {
@@ -1103,12 +1508,12 @@ const styles = StyleSheet.create({
     },
     categoryRail: {
         marginTop: 14,
-        borderRadius: 24,
+        borderRadius: 20,
         backgroundColor: "rgba(255,255,255,0.82)",
         borderWidth: 1,
         borderColor: THEME.lineSoft,
-        paddingVertical: 8,
-        paddingHorizontal: 8,
+        paddingVertical: 7,
+        paddingHorizontal: 7,
         ...shadow,
     },
     categoryRailScroll: {
@@ -1123,15 +1528,15 @@ const styles = StyleSheet.create({
             : {}),
     },
     categoryRailContent: {
-        gap: 8,
+        gap: 7,
         paddingLeft: 2,
         paddingRight: 8,
         minWidth: "100%",
     },
     categoryPill: {
-        height: 40,
+        height: 36,
         borderRadius: 999,
-        paddingHorizontal: 16,
+        paddingHorizontal: 14,
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: "#FFFFFF",
@@ -1144,35 +1549,89 @@ const styles = StyleSheet.create({
     },
     categoryText: {
         fontFamily: "ChairoSans",
-        fontSize: 14,
+        fontSize: 12,
         color: THEME.muted,
     },
     categoryTextActive: {
         color: THEME.accentStrong,
     },
+    stickyMenuHeader: {
+        position: "absolute",
+        left: 16,
+        right: 16,
+        zIndex: 20,
+        borderRadius: 22,
+        borderWidth: 1,
+        borderColor: THEME.lineSoft,
+        backgroundColor: "rgba(255,255,255,0.96)",
+        padding: 8,
+        gap: 8,
+        ...makeShadow({
+            color: "#8F6543",
+            offsetY: 10,
+            blurRadius: 24,
+            opacity: Platform.OS === "ios" ? 0.1 : 0.14,
+            elevation: 8,
+        }),
+    },
+    stickySearchBar: {
+        height: 34,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: THEME.line,
+        backgroundColor: THEME.cardSoft,
+        paddingHorizontal: 11,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 7,
+    },
+    stickySearchInput: {
+        flex: 1,
+        fontFamily: "ChairoSans",
+        fontSize: 11,
+        color: THEME.ink,
+        paddingVertical: 0,
+        includeFontPadding: false,
+    },
+    stickyCategoryRailScroll: {
+        flexGrow: 0,
+        ...(Platform.OS === "web"
+            ? {
+                  overflowX: "auto" as const,
+                  overflowY: "hidden" as const,
+                  scrollbarWidth: "none" as const,
+                  userSelect: "none" as const,
+              }
+            : {}),
+    },
+    stickyCategoryRailContent: {
+        gap: 7,
+        paddingRight: 8,
+        minWidth: "100%",
+    },
     sectionHead: {
-        marginTop: 18,
-        marginBottom: 10,
+        marginTop: 16,
+        marginBottom: 8,
     },
     sectionTitle: {
         fontFamily: "ChairoSans",
-        fontSize: 24,
+        fontSize: 20,
         color: THEME.ink,
     },
     sectionSubtitle: {
         marginTop: 4,
         fontFamily: "ChairoSans",
-        fontSize: 13,
+        fontSize: 11,
         color: THEME.muted,
     },
     categoryRow: {
-        minHeight: 56,
+        minHeight: 50,
         borderRadius: 16,
         borderWidth: 1,
         borderColor: THEME.lineSoft,
         backgroundColor: THEME.card,
-        paddingHorizontal: 14,
-        paddingVertical: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
         alignItems: "center",
         flexDirection: "row",
         justifyContent: "space-between",
@@ -1181,13 +1640,13 @@ const styles = StyleSheet.create({
     categoryRowLabel: {
         flex: 1,
         fontFamily: "ChairoSans",
-        fontSize: 16,
+        fontSize: 14,
         color: THEME.ink,
     },
     categoryRowCountPill: {
-        minWidth: 34,
-        paddingHorizontal: 10,
-        height: 30,
+        minWidth: 30,
+        paddingHorizontal: 8,
+        height: 26,
         borderRadius: 999,
         alignItems: "center",
         justifyContent: "center",
@@ -1195,19 +1654,43 @@ const styles = StyleSheet.create({
     },
     categoryRowCountText: {
         fontFamily: "ChairoSans",
-        fontSize: 13,
+        fontSize: 11,
         color: THEME.accentStrong,
     },
     menuList: {
+        gap: 10,
+    },
+    menuSections: {
+        gap: 18,
+    },
+    menuCategorySection: {
+        gap: 10,
+    },
+    menuCategoryHeader: {
+        minHeight: 34,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
         gap: 12,
+    },
+    menuCategoryTitle: {
+        flex: 1,
+        fontFamily: "ChairoSans",
+        fontSize: 17,
+        color: THEME.ink,
+    },
+    menuCategoryCount: {
+        fontFamily: "ChairoSans",
+        fontSize: 11,
+        color: THEME.muted,
     },
     cartBar: {
         position: "absolute",
     },
     cartBarInner: {
         borderRadius: 24,
-        paddingHorizontal: 14,
-        paddingVertical: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
@@ -1218,36 +1701,36 @@ const styles = StyleSheet.create({
     cartInfo: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 10,
+        gap: 8,
     },
     cartIconBubble: {
-        width: 38,
-        height: 38,
-        borderRadius: 19,
+        width: 34,
+        height: 34,
+        borderRadius: 17,
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: "rgba(37,27,23,0.88)",
     },
     cartTitle: {
         fontFamily: "ChairoSans",
-        fontSize: 14,
+        fontSize: 13,
         color: THEME.ink,
     },
     cartSubtitle: {
         marginTop: 2,
         fontFamily: "ChairoSans",
-        fontSize: 12,
+        fontSize: 11,
         color: "rgba(37,27,23,0.72)",
     },
     cartCta: {
         borderRadius: 999,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 9,
         backgroundColor: "rgba(255,255,255,0.8)",
     },
     cartCtaText: {
         fontFamily: "ChairoSans",
-        fontSize: 13,
+        fontSize: 12,
         color: THEME.ink,
     },
     toastOverlay: {
@@ -1467,6 +1950,3 @@ const styles = StyleSheet.create({
         color: "#1C5F40",
     },
 });
-
-
-

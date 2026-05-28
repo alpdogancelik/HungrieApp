@@ -21,7 +21,7 @@ const showToast = (message: string) => {
     }
 };
 
-const formatPrice = (value?: number | string) => `TRY ${Number(value || 0).toFixed(2)}`;
+const formatPrice = (value?: number | string) => `₺${Number(value || 0).toFixed(2)}`;
 const cardShadow = makeShadow({ color: "#0F172A", offsetY: 8, blurRadius: 18, opacity: 0.08, elevation: 3 });
 const toStableMenuId = (item: any) => {
     const directId = item?.$id ?? item?.id;
@@ -47,7 +47,7 @@ const MenuCard = ({ item, onPress, accentColor = "#FE8C00" }: MenuCardProps) => 
     const [sheetVisible, setSheetVisible] = useState(false);
     const averageLabel = useMemo(() => average.toFixed(1), [average]);
 
-    const description = item?.description || "Kampus icin sicak hazirlanir.";
+    const description = item?.description || "Kampüs için sıcak hazırlanır.";
     const eta = item?.deliveryTime || "15-25 dk";
     const cardAccent = accentColor || "#FE8C00";
 
@@ -118,7 +118,7 @@ const MenuCard = ({ item, onPress, accentColor = "#FE8C00" }: MenuCardProps) => 
                         </View>
                         <View style={styles.metaChip}>
                             <Icon name="dollar" size={14} color="#0F172A" />
-                            <Text style={styles.metaText}>Kampus indirimi</Text>
+                            <Text style={styles.metaText}>Kampüs indirimi</Text>
                         </View>
                     </View>
                 </View>

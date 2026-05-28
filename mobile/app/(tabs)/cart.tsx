@@ -4,10 +4,10 @@ import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity,
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useCartStore } from "@/store/cart.store";
-import { images, illustrations } from "@/constants/mediaCatalog";
+import { images } from "@/constants/mediaCatalog";
 import { useAddresses } from "@/src/features/address/addressFeature";
 import useAuthStore from "@/store/auth.store";
 import type { CartItemType } from "@/type";
@@ -16,16 +16,17 @@ import type { PaymentMethod } from "@/src/domain/types";
 import { placeOrder } from "@/src/services/firebaseOrders";
 import { seedMenuByRestaurantId, seedRestaurants, seedMenusAll } from "@/lib/restaurantSeeds";
 import AddressSummary from "@/components/cart/AddressSummary";
-import AddressTabBar from "@/components/cart/AddressTabBar";
 import CartItemCard from "@/components/cart/CartItemCard";
 import CourierNotes from "@/components/cart/CourierNotes";
 import PaymentMethodList from "@/components/cart/PaymentMethodList";
 import SummaryCard from "@/components/cart/SummaryCard";
 import { formatCurrency, getCustomizationsTotal } from "@/lib/cart.utils";
 import { makeShadow } from "@/src/lib/shadowStyle";
+import { showUserMessage } from "@/src/lib/showUserMessage";
+import { useWebDocumentTitle } from "@/src/lib/useWebDocumentTitle";
 import { getRestaurantMenu } from "@/lib/firebase";
-
-const OrderIllustration = illustrations.foodieCelebration;
+import { getRestaurant } from "@/lib/api";
+import { getRestaurantImageSource } from "@/lib/assets";
 
 const CONTAINER_PADDING = { paddingLeft: 24, paddingRight: 14 };
 const MAX_NOTES = 200;
@@ -35,8 +36,22 @@ const TAB_BAR_BOTTOM_OFFSET = 40;
 const EXTRA_BOTTOM_SPACE = 8;
 const styles = StyleSheet.create({
     footer: { paddingLeft: 24, paddingRight: 14, paddingTop: 24, paddingBottom: 40, rowGap: 20 },
+    footerCheckoutCard: {
+        backgroundColor: "#FFFFFF",
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: "#EEE7DE",
+        padding: 16,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        columnGap: 16,
+    },
+    footerTotalBlock: { rowGap: 2, flexShrink: 0 },
+    footerTotalLabel: { color: "#0F172A", fontSize: 14, fontFamily: "ChairoSans" },
+    footerTotalValue: { color: "#0F172A", fontSize: 20, fontFamily: "ChairoSans" },
     checkoutBtn: {
-        width: "100%",
+        flex: 1,
         borderRadius: 999,
         backgroundColor: "#FE8C00",
         minHeight: 54,
@@ -47,44 +62,80 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
     },
     checkoutText: { color: "#FFFFFF", fontSize: 16, fontFamily: "ChairoSans" },
-    restaurantName: { color: "#0F172A", fontSize: 18, fontFamily: "ChairoSans" },
-    emptyRoot: { flex: 1, backgroundColor: "#F8FAFC", alignItems: "center", justifyContent: "center", paddingHorizontal: 20 },
-    emptyTitle: { marginTop: 16, fontSize: 28, color: "#0F172A", fontFamily: "ChairoSans" },
-    emptySubtitle: { marginTop: 8, textAlign: "center", fontSize: 14, color: "#475569", fontFamily: "ChairoSans" },
-    emptyCta: { marginTop: 16, borderRadius: 999, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: "#FE8C00" },
-    heroCard: {
-        backgroundColor: "#FFFFFF",
-        borderRadius: 32,
+    emptyRoot: { flex: 1, backgroundColor: "#F8FAFC", paddingHorizontal: 24 },
+    emptyContent: { alignItems: "center", width: "100%" },
+    emptyIconWrap: {
+        width: 104,
+        height: 104,
+        borderRadius: 52,
+        backgroundColor: "#FFF3E1",
         borderWidth: 1,
-        borderColor: "#F3E4D7",
+        borderColor: "#FED7AA",
+        alignItems: "center",
+        justifyContent: "center",
+        marginBottom: 22,
+    },
+    emptyTitle: { fontSize: 34, lineHeight: 40, color: "#0F172A", fontFamily: "ChairoSans", textAlign: "center" },
+    emptySubtitle: { marginTop: 10, textAlign: "center", fontSize: 16, lineHeight: 22, color: "#475569", fontFamily: "ChairoSans" },
+    emptyCta: { marginTop: 24, borderRadius: 999, minHeight: 56, paddingHorizontal: 30, backgroundColor: "#FE8C00", alignItems: "center", justifyContent: "center" },
+    topBar: {
+        paddingLeft: 24,
+        paddingRight: 14,
+        paddingTop: 8,
+        minHeight: 48,
+        justifyContent: "center",
+    },
+    titleCenter: {
+        position: "absolute",
+        left: 0,
+        right: 0,
+        alignItems: "center",
+        justifyContent: "center",
+        pointerEvents: "none",
+    },
+    titleCompact: { fontSize: 22, color: "#0F172A", fontFamily: "ChairoSans" },
+    restaurantCard: {
+        backgroundColor: "#FFFFFF",
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: "#EEE7DE",
         flexDirection: "row",
         alignItems: "center",
-        columnGap: 16,
-        paddingHorizontal: 20,
-        paddingVertical: 16,
+        justifyContent: "space-between",
+        columnGap: 14,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        ...makeShadow({ color: "#0F172A", offsetY: 8, blurRadius: 20, opacity: 0.06, elevation: 4 }),
     },
-    headerRoot: { rowGap: 16 },
-    headerTop: { paddingLeft: 24, paddingRight: 14, paddingTop: 8, rowGap: 12 },
+    restaurantBrand: { flexDirection: "row", alignItems: "center", columnGap: 12, flex: 1, minWidth: 0 },
+    restaurantLogo: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#FFF7EA" },
+    restaurantInfo: { flex: 1, rowGap: 4, minWidth: 0 },
+    restaurantArrowWrap: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: "#FFF7EA",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+    },
     backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", alignItems: "center", justifyContent: "center" },
-    title: { fontSize: 40, color: "#0F172A", fontFamily: "ChairoSans" },
-    subtitle: { fontSize: 14, color: "#475569", fontFamily: "ChairoSans" },
+    restaurantName: { color: "#0F172A", fontSize: 16, fontFamily: "ChairoSans" },
+    restaurantMetaRow: { flexDirection: "row", alignItems: "center", columnGap: 8 },
+    restaurantMetaText: { color: "#64748B", fontSize: 13, fontFamily: "ChairoSans" },
     listSeparator: { height: 16 },
     screenBg: { flex: 1, backgroundColor: "#F8F6F2" },
+    drinkSectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+    drinkSectionTitle: { color: "#0F172A", fontSize: 18, fontFamily: "ChairoSans" },
+    drinkSectionAction: { color: "#FE8C00", fontSize: 15, fontFamily: "ChairoSans" },
     drinkCard: {
-        borderRadius: 24,
-        overflow: "hidden",
+        width: 212,
+        borderRadius: 20,
         borderWidth: 1,
-        borderColor: "#F3E4D7",
+        borderColor: "#EEE7DE",
         backgroundColor: "#FFFFFF",
+        padding: 16,
     },
-    drinkHeader: {
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: "#F3E4D7",
-    },
-    drinkHeaderTitle: { color: "#0F172A", fontSize: 18, fontFamily: "ChairoSans" },
-    drinkHeaderSubtitle: { color: "#475569", fontSize: 14, marginTop: 4, fontFamily: "ChairoSans" },
     drinkLoadingWrap: {
         borderRadius: 24,
         overflow: "hidden",
@@ -95,24 +146,21 @@ const styles = StyleSheet.create({
         paddingVertical: 16,
         alignItems: "center",
     },
-    drinkListWrap: { backgroundColor: "#F3E4D7" },
-    drinkRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        backgroundColor: "#FFFFFF",
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-    },
-    drinkRowInfo: { flex: 1, rowGap: 4, paddingRight: 12 },
+    drinkHeaderSubtitle: { marginTop: 8, color: "#64748B", fontSize: 13, fontFamily: "ChairoSans" },
+    drinkListWrap: { flexDirection: "row", columnGap: 12, paddingRight: 14 },
+    drinkRowInfo: { rowGap: 2, minWidth: 0 },
     drinkName: { color: "#0F172A", fontSize: 16, fontFamily: "ChairoSans" },
     drinkDesc: { color: "#475569", fontSize: 12, fontFamily: "ChairoSans" },
     drinkPrice: { color: "#FE8C00", fontSize: 16, fontFamily: "ChairoSans" },
     drinkAddBtn: {
+        marginTop: 12,
+        alignSelf: "flex-start",
+        minWidth: 108,
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 999,
         backgroundColor: "#FE8C00",
+        alignItems: "center",
     },
     drinkAddBtnText: { color: "#FFFFFF", fontSize: 14, fontFamily: "ChairoSans" },
     minimumNotice: {
@@ -144,6 +192,45 @@ const DEFAULT_RESTAURANT_ID = "ada-pizza";
 
 const stringifyId = (value: string | number | null | undefined) =>
     value === null || value === undefined ? "" : String(value);
+
+const parseTimeOfDayMinutes = (value: unknown): number | null => {
+    const raw = String(value || "").trim();
+    const match = raw.match(/^(\d{1,2})(?::(\d{2}))?/);
+    if (!match) return null;
+    const hours = Number(match[1]);
+    const minutes = Number(match[2] || 0);
+    if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null;
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+    return hours * 60 + minutes;
+};
+
+const isCurrentTimeWithinOpeningHours = (openingTime: unknown, closingTime: unknown, now = new Date()) => {
+    const openMinutes = parseTimeOfDayMinutes(openingTime);
+    const closeMinutes = parseTimeOfDayMinutes(closingTime);
+    if (openMinutes === null || closeMinutes === null) return null;
+
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    if (openMinutes === closeMinutes) return true;
+    if (openMinutes < closeMinutes) {
+        return currentMinutes >= openMinutes && currentMinutes < closeMinutes;
+    }
+    return currentMinutes >= openMinutes || currentMinutes < closeMinutes;
+};
+
+const isRestaurantOpenForOrdering = (restaurant: any) => {
+    const rawStatus = String(restaurant?.status || "").trim().toLowerCase();
+    const isEnabled =
+        restaurant?.isActive === false ||
+        restaurant?.isOpen === false ||
+        ["closed", "kapalı", "kapali", "inactive", "disabled", "offline"].includes(rawStatus)
+            ? false
+            : true;
+    if (!isEnabled) return false;
+
+    const open = restaurant?.openingTime || restaurant?.opening_time;
+    const close = restaurant?.closingTime || restaurant?.closing_time;
+    return isCurrentTimeWithinOpeningHours(open, close) !== false;
+};
 
 const isDrinkCategory = (cat?: string) => {
     if (!cat) return false;
@@ -256,17 +343,23 @@ const CartFooter = ({
             </View>
         ) : null}
 
-        <TouchableOpacity
-            className="custom-btn flex-row items-center justify-center gap-3"
-            style={[styles.checkoutBtn, { opacity: disabled ? 0.6 : 1 }]}
-            disabled={disabled}
-            onPress={onPlaceOrder}
-        >
-            {placingOrder && <ActivityIndicator color="#fff" />}
-            <Text className="paragraph-semibold text-white" style={styles.checkoutText}>
-                {placingOrder ? placingLabel : ctaLabel}
-            </Text>
-        </TouchableOpacity>
+        <View style={styles.footerCheckoutCard}>
+            <View style={styles.footerTotalBlock}>
+                <Text style={styles.footerTotalLabel}>{summaryLabels.total}</Text>
+                <Text style={styles.footerTotalValue}>{total}</Text>
+            </View>
+            <TouchableOpacity
+                className="custom-btn flex-row items-center justify-center gap-3"
+                style={[styles.checkoutBtn, { opacity: disabled ? 0.6 : 1 }]}
+                disabled={disabled}
+                onPress={onPlaceOrder}
+            >
+                {placingOrder && <ActivityIndicator color="#fff" />}
+                <Text className="paragraph-semibold text-white" style={styles.checkoutText}>
+                    {placingOrder ? placingLabel : ctaLabel}
+                </Text>
+            </TouchableOpacity>
+        </View>
     </View>
 );
 
@@ -332,10 +425,12 @@ const extractDrinkItems = (list: any[], restaurantId?: string | null): DrinkSugg
         }));
 
 const Cart = () => {
+    useWebDocumentTitle();
     const insets = useSafeAreaInsets();
     const { items, getTotalPrice, increaseQty, decreaseQty, removeItem, clearCart, addItem } = useCartStore();
     const { user, isAuthenticated } = useAuthStore();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const isTurkish = i18n.language?.startsWith("tr");
     const noteSuggestions: string[] = [];
     const paymentOptions: PaymentOption[] = [
         {
@@ -356,15 +451,13 @@ const Cart = () => {
     const isCartEmpty = items.length === 0;
     const deliveryFee = 0;
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>("pos");
-    const isCardOnDelivery = paymentMethod === "pos";
-    const serviceFee = isCardOnDelivery ? 1 : 0;
+    const serviceFee = 0;
     const discount = 0;
     const total = Math.max(subtotal + serviceFee - discount, 0);
-    const serviceNote = isCardOnDelivery ? t("cart.screen.serviceNote.pos") : "";
     const summaryLabels = {
         subtotal: t("cart.screen.summary.subtotal"),
         delivery: t("cart.screen.summary.delivery"),
-        serviceFee: t("cart.screen.summary.serviceFee"),
+        serviceFee: "Hizmet ücreti",
         discount: t("cart.screen.summary.discount"),
         total: t("cart.screen.summary.total"),
         footnote: t("cart.screen.summary.footnote"),
@@ -384,6 +477,20 @@ const Cart = () => {
     const canCheckout = Boolean(!isCartEmpty && paymentMethod && !isBelowMinimum);
     const selectedAddressId = stringifyId(selectedAddress);
     const handleSelectAddress = (addressId: string | number) => setSelectedAddress(String(addressId));
+    const requireSignInForAddresses = useCallback(() => {
+        showUserMessage(
+            t("authRequired.addressTitle", "Sign in required"),
+            t("authRequired.addressBody", "Please sign in or create an account to manage delivery addresses."),
+        );
+        router.push("/sign-in");
+    }, [t]);
+    const handleManageAddresses = useCallback(() => {
+        if (!isAuthenticated) {
+            requireSignInForAddresses();
+            return;
+        }
+        router.push("/ManageAddresses");
+    }, [isAuthenticated, requireSignInForAddresses]);
     const resolveRestaurantFromCart = useCallback(() => {
         const explicit = items.find((item) => (item as CartItemWithRestaurant).restaurantId)?.restaurantId;
         if (explicit) {
@@ -397,11 +504,7 @@ const Cart = () => {
 
         return inferred || null;
     }, [items]);
-    const listData = useMemo(() => {
-        const data: Array<{ type: "addresses" } | { type: "item"; item: CartItemType }> = [{ type: "addresses" }];
-        items.forEach((item) => data.push({ type: "item", item }));
-        return data;
-    }, [items]);
+    const listData = useMemo(() => items.map((item) => ({ type: "item" as const, item })), [items]);
     useEffect(() => {
         const list = addresses ?? [];
         if (!list.length) {
@@ -472,7 +575,7 @@ const Cart = () => {
         }
 
         if (!isAuthenticated) {
-            Alert.alert("Sign in required", "Please sign in or create an account to place an order.");
+            showUserMessage(t("authRequired.orderTitle"), t("authRequired.orderBody"));
             router.push("/sign-in");
             return;
         }
@@ -509,18 +612,29 @@ const Cart = () => {
             (items[0] as CartItemWithRestaurant | undefined)?.restaurantId ?? DEFAULT_RESTAURANT_ID,
         );
         const addressData = addressList.find((addr) => stringifyId(addr.id) === stringifyId(resolvedAddressId));
-
         const pendingEta = 120;
-        const localOrderItems = items.map((item) => ({
-            menuItemId: String(item.id),
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price + getCustomizationsTotal(item.customizations),
-            customizations: item.customizations?.map(({ id, name, price }) => ({ id, name, price })) ?? [],
-        }));
 
         try {
             setPlacingOrder(true);
+            const restaurant = await getRestaurant(restaurantId);
+            if (restaurant && !isRestaurantOpenForOrdering(restaurant)) {
+                Alert.alert(
+                    t("cart.screen.alerts.placeErrorTitle"),
+                    isTurkish
+                        ? "Bu restoran şu anda kapalı. Lütfen açık bir restorandan sipariş verin."
+                        : "This restaurant is closed right now. Please order from an open restaurant.",
+                );
+                return;
+            }
+
+            const localOrderItems = items.map((item) => ({
+                menuItemId: String(item.id),
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price + getCustomizationsTotal(item.customizations),
+                customizations: item.customizations?.map(({ id, name, price }) => ({ id, name, price })) ?? [],
+            }));
+
             const newOrderId = await placeOrder({
                 userId: user?.id ?? user?.$id ?? user?.accountId ?? "guest",
                 restaurantId,
@@ -572,13 +686,20 @@ const Cart = () => {
 
     if (isCartEmpty) {
         return (
-            <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center px-5" style={styles.emptyRoot}>
-                <Image source={images.deliveryBag} className="w-60 h-60" contentFit="cover" />
-                <Text className="h3-bold text-dark-100 mt-4" style={styles.emptyTitle}>{t("cart.empty.title")}</Text>
-                <Text className="body-medium text-center mt-2 text-dark-60" style={styles.emptySubtitle}>{t("cart.empty.subtitle")}</Text>
-                <TouchableOpacity className="mt-4 px-6 py-3 rounded-full bg-primary" style={styles.emptyCta} onPress={() => router.push("/")}>
+            <SafeAreaView
+                className="flex-1 bg-gray-50"
+                style={[styles.emptyRoot, { paddingTop: Math.max(insets.top + 128, 180), paddingBottom: insets.bottom + 120 }]}
+            >
+                <View style={styles.emptyContent}>
+                    <View style={styles.emptyIconWrap}>
+                        <Icon name="cart" size={46} color="#FE8C00" />
+                    </View>
+                    <Text className="h3-bold text-dark-100" style={styles.emptyTitle}>{t("cart.empty.title")}</Text>
+                    <Text className="body-medium text-center text-dark-60" style={styles.emptySubtitle}>{t("cart.empty.subtitle")}</Text>
+                    <TouchableOpacity className="rounded-full bg-primary" style={styles.emptyCta} onPress={() => router.push("/")}>
                     <Text className="text-white paragraph-semibold" style={styles.checkoutText}>{t("cart.empty.cta")}</Text>
-                </TouchableOpacity>
+                    </TouchableOpacity>
+                </View>
             </SafeAreaView>
         );
     }
@@ -595,67 +716,68 @@ const Cart = () => {
         router.push("/home");
     };
 
-    const renderOrderHero = () => (
-        <View style={{ paddingLeft: 24, paddingRight: 14 }}>
-            <View className="bg-white rounded-[32px] border border-[#F3E4D7] flex-row items-center gap-4 px-5 py-4" style={styles.heroCard}>
-                <View className="flex-1">
-                    {restaurantNameForCart ? (
-                        <Text className="text-lg font-ezra-bold text-dark-100" style={styles.restaurantName}>{restaurantNameForCart}</Text>
-                    ) : null}
-                </View>
-                <OrderIllustration width={120} height={120} />
-            </View>
-        </View>
+    const restaurantForCart = seedRestaurants.find((r) => stringifyId(r.id) === stringifyId(restaurantIdForCart));
+    const restaurantMin = `Min. ₺${Math.max(150, Math.round(Number(restaurantForCart?.deliveryFee || 0) || 0))}`;
+    const restaurantImageSource = getRestaurantImageSource(
+        restaurantForCart?.imageUrl || "",
+        undefined,
+        restaurantNameForCart || "Restaurant",
     );
 
     const renderHeader = () => (
-        <View className="gap-4" style={styles.headerRoot}>
-            <View className="pt-2 gap-3" style={styles.headerTop}>
+        <View style={{ rowGap: 16, paddingBottom: 16 }}>
+            <View style={styles.topBar}>
+                <View style={styles.titleCenter}>
+                    <Text style={styles.titleCompact}>{isAuthenticated ? "Sepet" : t("cart.screen.orderTitle")}</Text>
+                </View>
                 <TouchableOpacity
                     onPress={handleBackToRestaurant}
                     hitSlop={10}
-                    className="h-10 w-10 rounded-full bg-white border border-gray-200 items-center justify-center"
                     style={styles.backBtn}
                 >
                     <Icon name="arrowBack" size={20} color="#0F172A" />
                 </TouchableOpacity>
-                <View className="gap-2">
-                    <Text className="text-4xl font-ezra-bold text-dark-100" style={styles.title}>{t("cart.screen.orderTitle")}</Text>
-                    <Text className="body-medium text-dark-60" style={styles.subtitle}>{t("cart.screen.orderSubtitle")}</Text>
-                </View>
             </View>
             <AddressSummary
                 addresses={addressList}
                 loading={addressesLoading}
                 selectedAddressId={selectedAddressId}
                 onSelect={handleSelectAddress}
-                onManageAddresses={() => router.push("/ManageAddresses")}
-                onAddAddress={() => router.push("/ManageAddresses")}
+                onManageAddresses={handleManageAddresses}
+                onAddAddress={handleManageAddresses}
             />
-            {renderOrderHero()}
+            <View style={CONTAINER_PADDING}>
+                <TouchableOpacity style={styles.restaurantCard} onPress={handleBackToRestaurant}>
+                    <View style={styles.restaurantBrand}>
+                        <Image source={restaurantImageSource} style={styles.restaurantLogo} contentFit="cover" />
+                        <View style={styles.restaurantInfo}>
+                            <Text style={styles.restaurantName} numberOfLines={1}>
+                                {restaurantNameForCart || "Restoran"}
+                            </Text>
+                            <View style={styles.restaurantMetaRow}>
+                                <Text style={styles.restaurantMetaText}>{restaurantMin}</Text>
+                            </View>
+                        </View>
+                    </View>
+                    <View style={styles.restaurantArrowWrap}>
+                        <Ionicons name="chevron-forward" size={18} color="#FE8C00" />
+                    </View>
+                </TouchableOpacity>
+            </View>
         </View>
     );
 
-    const renderAddressTabs = () => (
-        <AddressTabBar
-            addresses={addressList}
-            loading={addressesLoading}
-            selectedAddressId={selectedAddressId}
-            onSelect={handleSelectAddress}
-            onAddAddress={() => router.push("/ManageAddresses")}
-        />
-    );
-
-    const renderListItem = ({ item }: { item: { type: "addresses" } | { type: "item"; item: CartItemType } }) => {
-        if (item.type === "addresses") return renderAddressTabs();
+    const renderListItem = ({ item }: { item: { type: "item"; item: CartItemType } }) => {
         const cartItem = item.item;
         return (
-            <CartItemCard
-                item={cartItem}
-                onIncrease={() => increaseQty(cartItem.id, cartItem.customizations || [])}
-                onDecrease={() => decreaseQty(cartItem.id, cartItem.customizations || [])}
-                onRemove={() => removeItem(cartItem.id, cartItem.customizations || [])}
-            />
+            <View style={CONTAINER_PADDING}>
+                <CartItemCard
+                    item={cartItem}
+                    onIncrease={() => increaseQty(cartItem.id, cartItem.customizations || [])}
+                    onDecrease={() => decreaseQty(cartItem.id, cartItem.customizations || [])}
+                    onRemove={() => removeItem(cartItem.id, cartItem.customizations || [])}
+                />
+            </View>
         );
     };
 
@@ -690,54 +812,39 @@ const Cart = () => {
         };
 
         return (
-            <View
-                style={[
-                    styles.drinkCard,
-                    makeShadow({ color: "#0F172A", offsetY: 10, blurRadius: 24, opacity: 0.08, elevation: 4 }),
-                ]}
-            >
-                <LinearGradient
-                    colors={["#FFF7EC", "#FFEFD9"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.drinkHeader}
-                >
-                    <Text style={styles.drinkHeaderTitle}>
-                        {t("cart.screen.drinkSuggestTitle", { restaurant: restaurantName })}
+            <View>
+                <View style={styles.drinkSectionHeader}>
+                    <Text style={styles.drinkSectionTitle}>
+                        {t("cart.screen.drinkSuggestTitle", { restaurant: restaurantName }).replace(`${restaurantName} `, "")}
                     </Text>
-                    <Text style={styles.drinkHeaderSubtitle}>
-                        {t("cart.screen.drinkSuggestSubtitle")}
-                    </Text>
-                </LinearGradient>
-                <View style={styles.drinkListWrap}>
-                    <ScrollView
-                        style={{ maxHeight: 260 }}
-                        showsVerticalScrollIndicator={false}
-                        nestedScrollEnabled
-                        keyboardShouldPersistTaps="handled"
-                    >
-                        {drinkItems.map((drink) => (
-                            <View key={String(drink.id)} style={styles.drinkRow}>
-                                <View style={styles.drinkRowInfo}>
-                                    <Text style={styles.drinkName} numberOfLines={1}>
-                                        {drink.name}
+                    <Text style={styles.drinkSectionAction}>Tümünü gör</Text>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.drinkListWrap}>
+                    {drinkItems.slice(0, 6).map((drink) => (
+                        <View
+                            key={String(drink.id)}
+                            style={[
+                                styles.drinkCard,
+                                makeShadow({ color: "#0F172A", offsetY: 8, blurRadius: 20, opacity: 0.06, elevation: 3 }),
+                            ]}
+                        >
+                            <View style={styles.drinkRowInfo}>
+                                <Text style={styles.drinkName} numberOfLines={1}>
+                                    {drink.name}
+                                </Text>
+                                {drink.description ? (
+                                    <Text style={styles.drinkDesc} numberOfLines={1}>
+                                        {drink.description}
                                     </Text>
-                                    {drink.description ? (
-                                        <Text style={styles.drinkDesc} numberOfLines={1}>
-                                            {drink.description}
-                                        </Text>
-                                    ) : null}
-                                    <Text style={styles.drinkPrice}>{formatCurrency(drink.price)}</Text>
-                                </View>
+                                ) : null}
+                                <Text style={styles.drinkPrice}>{formatCurrency(drink.price)}</Text>
                                 <TouchableOpacity style={styles.drinkAddBtn} onPress={() => handleAddDrink(drink)}>
-                                    <Text style={styles.drinkAddBtnText}>
-                                        {t("cart.screen.drinkSuggestAdd")}
-                                    </Text>
+                                    <Text style={styles.drinkAddBtnText}>{t("cart.screen.drinkSuggestAdd")}</Text>
                                 </TouchableOpacity>
                             </View>
-                        ))}
-                    </ScrollView>
-                </View>
+                        </View>
+                    ))}
+                </ScrollView>
             </View>
         );
     };
@@ -769,7 +876,7 @@ const Cart = () => {
             subtotal={formatCurrency(subtotal)}
             deliveryFee={deliveryFee ? formatCurrency(deliveryFee) : undefined}
             serviceFee={serviceFee ? formatCurrency(serviceFee) : undefined}
-            serviceNote={serviceFee ? serviceNote : undefined}
+            serviceNote={undefined}
             total={formatCurrency(total)}
             paymentOptions={paymentOptions}
             paymentMethod={paymentMethod}
@@ -791,12 +898,11 @@ const Cart = () => {
         <SafeAreaView className="flex-1 bg-[#F8F6F2]" style={styles.screenBg}>
             <FlatList
                 data={listData}
-                keyExtractor={(entry) => (entry.type === "addresses" ? "address-tabs" : getCartItemKey(entry.item))}
+                keyExtractor={(entry) => getCartItemKey(entry.item)}
                 contentContainerStyle={{ paddingBottom: contentBottomPadding }}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="always"
                 keyboardDismissMode="interactive"
-                stickyHeaderIndices={listData.length ? [1] : []}
                 ListHeaderComponent={renderHeader}
                 ListFooterComponent={footerComponent}
                 ItemSeparatorComponent={() => <View className="h-4" style={styles.listSeparator} />}

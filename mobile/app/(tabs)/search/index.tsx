@@ -18,6 +18,7 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons";
 
 import Icon from "@/components/Icon";
 import { Chip, Stepper } from "@/src/components/componentRegistry";
@@ -25,6 +26,7 @@ import type { SearchResult } from "@/src/hooks/useSearch";
 
 import { useSearchScreenV3 } from "@/src/hooks/useSearchScreenV3";
 import { makeShadow } from "@/src/lib/shadowStyle";
+import { useWebDocumentTitle } from "@/src/lib/useWebDocumentTitle";
 
 //restaurant logos (assets/restaurantlogo)
 import AdaPizzaLogo from "@/assets/restaurantlogo/adapizzalogo.jpg";
@@ -55,7 +57,6 @@ const BRAND = {
 const R = { xl: 28, lg: 22, md: 18, sm: 14 };
 const S = { xl: 22, lg: 16, md: 14, sm: 10, xs: 6 };
 
-//  logos
 const RESTAURANT_LOGOS = {
     adapizza: AdaPizzaLogo,
     alacarte: AlaCarteLogo,
@@ -111,13 +112,13 @@ const resolveRestaurantKey = (input?: any): RestaurantKey | null => {
 };
 
 const formatPrice = (value?: number | string) => {
-    if (value === undefined || value === null) return "TRY 0.00";
+    if (value === undefined || value === null) return "₺0.00";
     const parsed =
         typeof value === "string"
             ? Number(value.replace(/[^\d.,-]/g, "").replace(",", "."))
             : Number(value);
     const amount = Number.isFinite(parsed) ? parsed : 0;
-    return `TRY ${amount.toFixed(2)}`;
+    return `₺${amount.toFixed(2)}`;
 };
 
 const isBadUri = (u: string) => {
@@ -155,7 +156,7 @@ const SearchInput = ({
     placeholder: string;
 }) => (
     <View style={styles.searchBar}>
-        <Icon name="search" size={18} color={BRAND.muted} />
+        <Ionicons name="search-outline" size={22} color={BRAND.muted} />
         <TextInput
             value={value}
             onChangeText={onChange}
@@ -169,8 +170,8 @@ const SearchInput = ({
         {loading ? (
             <ActivityIndicator size="small" color={BRAND.accent} />
         ) : value ? (
-            <Pressable onPress={onClear} hitSlop={10}>
-                <Icon name="close" size={16} color={BRAND.muted2} />
+            <Pressable onPress={onClear} hitSlop={10} style={styles.searchAction}>
+                <Ionicons name="close-outline" size={18} color={BRAND.muted2} />
             </Pressable>
         ) : null}
     </View>
@@ -202,14 +203,21 @@ const SegmentButtons = ({
                     ]}
                 >
                     <LinearGradient
-                        colors={active ? [BRAND.accent, BRAND.accent2] : [BRAND.surface, BRAND.soft]}
+                        colors={active ? [BRAND.accent, BRAND.accent2] : [BRAND.surface, BRAND.surface]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        style={[styles.segmentBtn, !active && { borderColor: "rgba(31,18,11,0.06)" }]}
+                        style={[styles.segmentBtn, !active && { borderColor: "rgba(31,18,11,0.08)" }]}
                     >
-                        <Text style={[styles.segmentText, active ? { color: "#fff" } : { color: BRAND.ink }]}>
-                            {label}
-                        </Text>
+                        <View style={styles.segmentInner}>
+                            <Ionicons
+                                name={k === "meals" ? "restaurant-outline" : "storefront-outline"}
+                                size={18}
+                                color={active ? "#FFFFFF" : BRAND.ink}
+                            />
+                            <Text style={[styles.segmentText, active ? { color: "#fff" } : { color: BRAND.ink }]}>
+                                {label}
+                            </Text>
+                        </View>
                     </LinearGradient>
                 </Pressable>
             );
@@ -272,22 +280,23 @@ const MealCard = ({
 
     return (
         <View style={[styles.card, styles.mealRow]}>
-            {src ? (
-                <Image source={src} style={styles.mealImg} contentFit="cover" />
-            ) : (
-                <LogoCircle target={item.restaurantName || item.restaurantId || (item as any).restaurantSlug} size={64} />
-            )}
+            {src ? <Image source={src} style={styles.mealImg} contentFit="cover" /> : <View style={styles.mealImgFallback} />}
 
-            <View style={{ flex: 1, gap: 4 }}>
-                <Text style={styles.mealTitle} numberOfLines={1}>
-                    {item.name}
-                </Text>
-                <Text style={styles.mealSub} numberOfLines={1}>
-                    {item.restaurantName || ""}
-                </Text>
+            <View style={styles.mealContent}>
+                <View style={styles.mealHeaderRow}>
+                    <View style={styles.mealCopy}>
+                        <Text style={styles.mealTitle} numberOfLines={1}>
+                            {item.name}
+                        </Text>
+                        <Text style={styles.mealSub} numberOfLines={1}>
+                            {item.restaurantName || ""}
+                        </Text>
+                    </View>
+                    <Text style={styles.price}>{formatPrice(item.price)}</Text>
+                </View>
 
                 <View style={styles.rowBottom}>
-                    <Text style={styles.price}>{formatPrice(item.price)}</Text>
+                    <View />
                     {quantity > 0 ? (
                         <Stepper value={quantity} min={0} max={10} onChange={onQuantityChange} />
                     ) : (
@@ -323,7 +332,7 @@ const RestaurantCard = ({
         <Pressable onPress={onPress} style={({ pressed }) => [styles.card, styles.restaurantCard, pressed && { opacity: 0.98 }]}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                 <LogoCircle target={restaurant} size={46} />
-                <View style={{ flex: 1, gap: 4 }}>
+                <View style={styles.restaurantTextWrap}>
                     <Text style={styles.rName} numberOfLines={1}>
                         {restaurant.name}
                     </Text>
@@ -352,6 +361,7 @@ const EmptyState = ({ title, description }: { title: string; description: string
 );
 
 export default function Search() {
+    useWebDocumentTitle();
     const router = useRouter();
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
@@ -386,12 +396,11 @@ export default function Search() {
     } = useSearchScreenV3();
 
     const data = useMemo(() => (segment === "meals" ? mealsFlat : restaurantsGrid), [mealsFlat, restaurantsGrid, segment]);
-
     const padBottom = tabBarHeight + insets.bottom + 18;
 
 const goRestaurant = (restaurant: any, index: number) => {
     const primary = restaurant?.id ?? restaurant?.$id;
-    const target = primary ? String(primary) : resolveRestaurantKey(restaurant) ?? String(index);
+    const target = primary ? String(primary) : resolveRestaurantKey(restaurant) ?? String(restaurant?.slug ?? restaurant?.code ?? restaurant?.name ?? index);
     router.push({
         pathname: "/restaurants/[id]",
         params: { id: target },
@@ -474,9 +483,8 @@ const goRestaurant = (restaurant: any, index: number) => {
                     }
                     renderItem={({ item, index }) => {
                         if (segment === "restaurants") {
-                            const isLeft = index % 2 === 0;
                             return (
-                                <View style={{ flex: 1, marginRight: isLeft ? 12 : 0, marginBottom: 12 }}>
+                                <View style={{ flex: 1, marginRight: index % 2 === 0 ? 12 : 0, marginBottom: 12 }}>
                                     <RestaurantCard
                                         restaurant={item}
                                         onPress={() => goRestaurant(item, index)}
@@ -512,8 +520,8 @@ const styles = StyleSheet.create({
     header: {
         paddingHorizontal: S.lg,
         paddingTop: 8,
-        paddingBottom: 10,
-        gap: 12,
+        paddingBottom: 12,
+        gap: 14,
     },
 
     topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
@@ -524,28 +532,39 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         gap: 10,
-        paddingHorizontal: 14,
-        height: 46,
-        borderRadius: 16,
+        paddingHorizontal: 18,
+        height: 54,
+        borderRadius: 22,
         backgroundColor: "rgba(255,255,255,0.96)",
         borderWidth: 1,
         borderColor: "rgba(31,18,11,0.06)",
         ...(cardShadow as object),
     },
-    searchInput: { flex: 1, fontFamily: "ChairoSans", fontSize: 15, color: BRAND.ink },
+    searchInput: { flex: 1, fontFamily: "ChairoSans", fontSize: 16, color: BRAND.ink },
+    searchAction: {
+        width: 28,
+        alignItems: "center",
+        justifyContent: "center",
+    },
 
     segmentRow: { flexDirection: "row", gap: 12 },
     segmentBtnWrap: { flex: 1, borderRadius: 18, overflow: "hidden" },
     segmentBtn: {
-        minHeight: 56,
-        paddingVertical: 14,
-        paddingHorizontal: 14,
+        minHeight: 52,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
         borderRadius: 18,
         borderWidth: 1,
         borderColor: "rgba(0,0,0,0)",
         alignItems: "center",
         justifyContent: "center",
         ...(cardShadow as object),
+    },
+    segmentInner: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 10,
     },
     segmentText: { fontFamily: "ChairoSans", fontSize: 15, lineHeight: 18, letterSpacing: -0.2, textAlign: "center" },
 
@@ -566,21 +585,43 @@ const styles = StyleSheet.create({
     logoRing: { ...StyleSheet.absoluteFillObject, borderWidth: 1, borderColor: "rgba(217,79,35,0.12)" },
     logoFallback: { fontFamily: "ChairoSans", fontSize: 16, color: BRAND.accent },
 
-    // Meals
     mealRow: {
         padding: 14,
         flexDirection: "row",
         alignItems: "center",
         gap: 12,
     },
-    mealImg: { width: 64, height: 64, borderRadius: 18, backgroundColor: BRAND.soft },
-    mealTitle: { fontFamily: "ChairoSans", fontSize: 15, color: BRAND.ink },
+    mealImg: { width: 88, height: 88, borderRadius: 18, backgroundColor: BRAND.soft },
+    mealImgFallback: {
+        width: 88,
+        height: 88,
+        borderRadius: 18,
+        backgroundColor: BRAND.soft,
+    },
+    mealContent: {
+        flex: 1,
+        minWidth: 0,
+        justifyContent: "space-between",
+        gap: 12,
+    },
+    mealHeaderRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+        gap: 12,
+    },
+    mealCopy: {
+        flex: 1,
+        minWidth: 0,
+        gap: 4,
+    },
+    mealTitle: { fontFamily: "ChairoSans", fontSize: 16, color: BRAND.ink },
     mealSub: { fontFamily: "ChairoSans", fontSize: 12, color: BRAND.muted },
-    rowBottom: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 2 },
-    price: { fontFamily: "ChairoSans", fontSize: 13, color: BRAND.accent },
+    rowBottom: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    price: { fontFamily: "ChairoSans", fontSize: 14, color: BRAND.accent, flexShrink: 0 },
 
     addBtn: { borderRadius: 20, overflow: "hidden" },
-    addCircle: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+    addCircle: { width: 46, height: 46, borderRadius: 23, alignItems: "center", justifyContent: "center" },
     addText: {
         color: "#fff",
         fontSize: 18,
@@ -592,16 +633,19 @@ const styles = StyleSheet.create({
         textAlignVertical: "center",
     },
 
-    // Restaurants grid card
     restaurantCard: {
         padding: 14,
         gap: 12,
         justifyContent: "space-between",
         minHeight: 110,
     },
+    restaurantTextWrap: {
+        flex: 1,
+        minWidth: 0,
+        gap: 4,
+    },
     rName: { fontFamily: "ChairoSans", fontSize: 14, color: BRAND.ink },
     rCuisine: { fontFamily: "ChairoSans", fontSize: 12, color: BRAND.muted, lineHeight: 16 },
-
     goPill: {
         alignSelf: "flex-start",
         flexDirection: "row",
@@ -616,7 +660,6 @@ const styles = StyleSheet.create({
     },
     goPillText: { fontFamily: "ChairoSans", fontSize: 12, color: BRAND.accent },
 
-    // Empty
     empty: { padding: 18, borderRadius: R.xl, alignItems: "center", gap: 8 },
     emptyIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: BRAND.soft, alignItems: "center", justifyContent: "center" },
     emptyTitle: { fontFamily: "ChairoSans", fontSize: 16, color: BRAND.ink },

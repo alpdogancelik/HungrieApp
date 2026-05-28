@@ -41,7 +41,7 @@ const FILTERS: { id: FilterId; label: string }[] = [
 const PAGE_SIZE = 4;
 const formatCurrencyValue = (value?: number | string) => {
     const amount = Number(value ?? 0);
-    return `TRY ${Number.isNaN(amount) ? "0.00" : amount.toFixed(2)}`;
+    return `₺${Number.isNaN(amount) ? "0.00" : amount.toFixed(2)}`;
 };
 
 const formatTimestamp = (value: any, locale?: string) => {
@@ -206,7 +206,14 @@ const OrderHistoryScreen = () => {
             .filter((order) => {
                 const matchesFilter = filter === "all" || normalizeStatus(order.status) === filter;
                 const restaurantName = resolveRestaurantName(order).toLowerCase();
-                const matchesSearch = normalizedSearch ? restaurantName.includes(normalizedSearch) : true;
+                const orderId = String(order.id ?? order.$id ?? "").toLowerCase();
+                const normalizedOrderId = orderId.replace(/^#/, "");
+                const normalizedQuery = normalizedSearch.replace(/^#/, "");
+                const matchesSearch = normalizedSearch
+                    ? restaurantName.includes(normalizedSearch) ||
+                      orderId.includes(normalizedSearch) ||
+                      normalizedOrderId.includes(normalizedQuery)
+                    : true;
                 return matchesFilter && matchesSearch;
             })
             .sort((a, b) => {
@@ -231,7 +238,7 @@ const OrderHistoryScreen = () => {
     const handleCopyOrderId = (orderId: string) => {
         if (!orderId || orderId === "-") return;
         Clipboard.setString(orderId);
-        Alert.alert(isTurkish ? "Kopyalandi" : "Copied", isTurkish ? "Siparis numarasi kopyalandi." : "Order ID copied.");
+        Alert.alert(isTurkish ? "Kopyalandı" : "Copied", isTurkish ? "Sipariş numarası kopyalandı." : "Order ID copied.");
     };
 
     const openReviewModal = (target: ReviewTarget) => {
@@ -246,7 +253,7 @@ const OrderHistoryScreen = () => {
         async ({ rating, comment }: { rating: 1 | 2 | 3 | 4 | 5; comment?: string }) => {
             if (!reviewTarget) return;
             if (!userId) {
-                Alert.alert(isTurkish ? "Yorum kullanilamiyor" : "Review unavailable", isTurkish ? "Lutfen giris yapin." : "Please sign in.");
+                Alert.alert(isTurkish ? "Yorum kullanılamıyor" : "Review unavailable", isTurkish ? "Lütfen giriş yapın." : "Please sign in.");
                 return;
             }
             if (rating < 1 || rating > 5) {
@@ -277,7 +284,7 @@ const OrderHistoryScreen = () => {
                 closeReviewModal();
                 Alert.alert(
                     isTurkish ? "Yorum kaydedildi" : "Review saved",
-                    isTurkish ? "Urun yorumu basariyla kaydedildi." : "Your product review was saved.",
+                    isTurkish ? "Ürün yorumu başarıyla kaydedildi." : "Your product review was saved.",
                 );
             } catch (error: any) {
                 Alert.alert(
@@ -290,30 +297,6 @@ const OrderHistoryScreen = () => {
         },
         [isTurkish, loadReviewedIds, reviewTarget, userId, userName],
     );
-
-    useEffect(() => {
-        if (!__DEV__ || !userId) return;
-
-        const deliveredOrders = orders.filter((order) => {
-            const status = String(order?.status || "");
-            return isReviewableStatus(status);
-        }).length;
-
-        let pendingItems = 0;
-        for (const order of orders) {
-            const status = String(order?.status || "");
-            if (!isReviewableStatus(status)) continue;
-            const orderId = String(order?.id || "").trim();
-            if (!orderId) continue;
-            for (const item of resolveItems(order)) {
-                if (!item.itemId) continue;
-                const reviewId = getProductReviewId(orderId, item.itemId, userId);
-                if (!reviewedIds.has(reviewId)) pendingItems += 1;
-            }
-        }
-
-        console.debug(`[Reviews][Orders] delivered=${deliveredOrders}, existing=${reviewedIds.size}, pending=${pendingItems}`);
-    }, [orders, reviewedIds, userId]);
 
     const renderFilter = () => (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
@@ -440,13 +423,13 @@ const OrderHistoryScreen = () => {
                                             style={{ flex: 1, fontFamily: "ChairoSans", fontSize: 12, color: "#64748B" }}
                                             numberOfLines={2}
                                         >
-                                            {isTurkish ? `Siparis No: ${orderIdText}` : `Order ID: ${orderIdText}`}
+                                            {isTurkish ? `Sipariş No: ${orderIdText}` : `Order ID: ${orderIdText}`}
                                         </Text>
                                         <TouchableOpacity
                                             onPress={() => handleCopyOrderId(rawOrderId)}
                                             hitSlop={8}
                                             accessibilityRole="button"
-                                            accessibilityLabel={isTurkish ? "Siparis numarasini kopyala" : "Copy order ID"}
+                                            accessibilityLabel={isTurkish ? "Sipariş numarasını kopyala" : "Copy order ID"}
                                             style={{
                                                 width: 24,
                                                 height: 24,

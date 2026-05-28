@@ -1,11 +1,10 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import useAuthStore from "@/store/auth.store";
 import useAsyncResource from "@/lib/useAsyncResource";
-import useServerResource from "@/lib/useServerResource";
 import { getMenu } from "@/lib/firebaseAuth";
-import { getRestaurants } from "@/lib/api";
+import { getRestaurants, subscribeRestaurants } from "@/lib/api";
 import type { Category } from "@/type";
 import { CATEGORIES } from "@/constants/mediaCatalog";
 import type { IconName } from "@/components/Icon";
@@ -35,10 +34,35 @@ export const useHome = (): UseHomeResult => {
     const { t, i18n } = useTranslation();
     const featuredMenuParams = useMemo(() => ({ limit: 6 }), []);
     const { data: menu, loading: menuLoading } = useAsyncResource({ fn: getMenu, params: featuredMenuParams });
-    const {
-        data: restaurants,
-        loading: restaurantsLoading,
-    } = useServerResource({ fn: getRestaurants, immediate: true, skipAlert: true });
+    const [restaurants, setRestaurants] = useState<any[] | null>(null);
+    const [restaurantsLoading, setRestaurantsLoading] = useState(true);
+
+    useEffect(() => {
+        let active = true;
+        const unsubscribe = subscribeRestaurants(
+            (nextRestaurants) => {
+                if (!active) return;
+                setRestaurants(nextRestaurants);
+                setRestaurantsLoading(false);
+            },
+            (error) => {
+                console.warn("[home] restaurants subscription failed", error);
+                void getRestaurants()
+                    .then((nextRestaurants) => {
+                        if (!active) return;
+                        setRestaurants(nextRestaurants);
+                    })
+                    .finally(() => {
+                        if (active) setRestaurantsLoading(false);
+                    });
+            },
+        );
+
+        return () => {
+            active = false;
+            unsubscribe();
+        };
+    }, []);
 
     const categories = useMemo(() => CATEGORIES as unknown as Category[], []);
     const quickActions = useMemo<QuickAction[]>(

@@ -1,5 +1,6 @@
 import { memo, useMemo, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import type { Address } from "@/src/domain/types";
 import { makeShadow } from "@/src/lib/shadowStyle";
 
@@ -11,7 +12,23 @@ type Props = {
 };
 
 const AddressCard = ({ address, onEdit, onDelete, onSetDefault }: Props) => {
+    const { t, i18n } = useTranslation();
+    const isTurkish = i18n.language?.startsWith("tr");
     const [menuVisible, setMenuVisible] = useState(false);
+    const resolveCopy = (key: string, tr: string, en: string) => {
+        const fallback = isTurkish ? tr : en;
+        const translated = t(key, { defaultValue: fallback });
+        return translated === key ? fallback : translated;
+    };
+    const copy = {
+        defaultBadge: resolveCopy("address.manage.defaultBadge", "Varsayılan", "Default"),
+        openActions: resolveCopy("address.manage.openActions", "Adres işlemlerini aç", "Open address actions"),
+        actionsTitle: resolveCopy("address.manage.actionsTitle", "Adres işlemleri", "Address actions"),
+        edit: resolveCopy("address.manage.edit", "Düzenle", "Edit"),
+        setDefault: resolveCopy("address.manage.setDefault", "Varsayılan yap", "Set as default"),
+        alreadyDefault: resolveCopy("address.manage.alreadyDefault", "Zaten varsayılan", "Already default"),
+        delete: resolveCopy("address.manage.delete", "Sil", "Delete"),
+    };
     const buildingLine = useMemo(() => {
         const parts = [address.line1, address.block].filter(Boolean);
         return parts.join(", ");
@@ -48,7 +65,7 @@ const AddressCard = ({ address, onEdit, onDelete, onSetDefault }: Props) => {
                         <Text style={styles.labelText}>{address.label}</Text>
                         {address.isDefault ? (
                             <View style={styles.defaultBadge}>
-                                <Text style={styles.defaultBadgeText}>Default</Text>
+                                <Text style={styles.defaultBadgeText}>{copy.defaultBadge}</Text>
                             </View>
                         ) : null}
                     </View>
@@ -60,7 +77,7 @@ const AddressCard = ({ address, onEdit, onDelete, onSetDefault }: Props) => {
                     </Text>
                 </View>
                 <TouchableOpacity
-                    accessibilityLabel="Open address actions"
+                    accessibilityLabel={copy.openActions}
                     style={styles.menuButton}
                     onPress={toggleMenu}
                 >
@@ -72,17 +89,17 @@ const AddressCard = ({ address, onEdit, onDelete, onSetDefault }: Props) => {
                 <View style={styles.sheetBackdrop}>
                     <Pressable style={styles.sheetDismissArea} onPress={closeMenu} />
                     <View style={styles.sheet}>
-                        <Text style={styles.sheetTitle}>Address actions</Text>
+                        <Text style={styles.sheetTitle}>{copy.actionsTitle}</Text>
                         <TouchableOpacity style={styles.sheetAction} onPress={handleEdit}>
-                            <Text style={styles.sheetActionText}>Edit</Text>
+                            <Text style={styles.sheetActionText}>{copy.edit}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.sheetAction} disabled={address.isDefault} onPress={handleSetDefault}>
                             <Text style={address.isDefault ? styles.sheetActionDisabledText : styles.sheetActionSecondaryText}>
-                                {address.isDefault ? "Already default" : "Set as default"}
+                                {address.isDefault ? copy.alreadyDefault : copy.setDefault}
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.sheetAction} onPress={handleDelete}>
-                            <Text style={styles.sheetActionDeleteText}>Delete</Text>
+                            <Text style={styles.sheetActionDeleteText}>{copy.delete}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

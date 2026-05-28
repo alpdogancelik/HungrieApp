@@ -5,7 +5,7 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import useAuthStore from "@/store/auth.store";
 import { auth } from "@/lib/firebase";
-import { subscribeUserOrders } from "@/src/services/firebaseOrders";
+import { autoCancelExpiredPendingOrders, subscribeUserOrders } from "@/src/services/firebaseOrders";
 import { makeShadow } from "@/src/lib/shadowStyle";
 import { cookingScenes } from "@/constants/mediaCatalog";
 
@@ -22,6 +22,7 @@ type ToastPayload = {
 };
 
 const VISIBLE_DURATION_MS = 120000;
+const autoCancelingToastOrderIds = new Set<string>();
 
 const ACTIVE_STATUSES: NormalizedOrderStatus[] = ["pending", "preparing", "ready", "out_for_delivery"];
 const TERMINAL_STATUSES: NormalizedOrderStatus[] = ["delivered", "canceled"];
@@ -78,7 +79,7 @@ const buildToast = (order: any): ToastPayload => {
                 key: `${orderId}:${status}`,
                 orderId,
                 status,
-                title: "Siparis onayi bekleniyor",
+                title: "Sipariş onayı bekleniyor",
                 subtitle: "Restorandan yanit bekleniyor.",
                 tone: "info",
             };
@@ -87,8 +88,8 @@ const buildToast = (order: any): ToastPayload => {
                 key: `${orderId}:${status}`,
                 orderId,
                 status,
-                title: "Siparis onaylanmadi",
-                subtitle: "Restoran bu siparisi reddetti.",
+                title: "Sipariş onaylanmadı",
+                subtitle: "Restoran bu siparişi reddetti.",
                 tone: "danger",
             };
         case "delivered":
@@ -96,8 +97,8 @@ const buildToast = (order: any): ToastPayload => {
                 key: `${orderId}:${status}`,
                 orderId,
                 status,
-                title: "Siparis tamamlandi",
-                subtitle: "Teslimat basariyla tamamlandi.",
+                title: "Sipariş tamamlandı",
+                subtitle: "Teslimat başarıyla tamamlandı.",
                 tone: "success",
             };
         case "ready":
@@ -105,8 +106,8 @@ const buildToast = (order: any): ToastPayload => {
                 key: `${orderId}:${status}`,
                 orderId,
                 status,
-                title: "Siparis onaylandi",
-                subtitle: "Siparisin teslime hazir.",
+                title: "Sipariş onaylandı",
+                subtitle: "Siparişin teslime hazır.",
                 tone: "success",
             };
         case "out_for_delivery":
@@ -114,8 +115,8 @@ const buildToast = (order: any): ToastPayload => {
                 key: `${orderId}:${status}`,
                 orderId,
                 status,
-                title: "Siparis onaylandi",
-                subtitle: "Surdurulen bir siparisin var, kurye yolda.",
+                title: "Sipariş onaylandı",
+                subtitle: "Sürdürülen bir siparişin var, kurye yolda.",
                 tone: "success",
             };
         default:
@@ -123,8 +124,8 @@ const buildToast = (order: any): ToastPayload => {
                 key: `${orderId}:${status}`,
                 orderId,
                 status,
-                title: "Siparis onaylandi",
-                subtitle: "Surdurulen bir siparisin var.",
+                title: "Sipariş onaylandı",
+                subtitle: "Sürdürülen bir siparişin var.",
                 tone: "success",
             };
     }
@@ -194,6 +195,12 @@ const GlobalOrderStatusToast = () => {
         }
 
         return subscribeUserOrders(resolvedUserId, (orders) => {
+            void autoCancelExpiredPendingOrders(orders || [], {
+                inFlightIds: autoCancelingToastOrderIds,
+                onError: (error) => {
+                    console.warn("[orders] Failed to auto-cancel expired pending order from toast", error);
+                },
+            });
             const tracked = pickTrackedOrder(orders || []);
             if (!tracked) return;
             const nextToast = buildToast(tracked);

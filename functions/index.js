@@ -1,4 +1,5 @@
 const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/firestore");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const crypto = require("node:crypto");
@@ -7,6 +8,7 @@ const http2 = require("node:http2");
 admin.initializeApp();
 
 const USER_NOTIFIABLE_STATUSES = new Set(["preparing", "ready", "out_for_delivery", "delivered", "canceled"]);
+const ORDER_APPROVAL_SLA_MS = 5 * 60 * 1000;
 const APNS_PRODUCTION_HOST = "https://api.push.apple.com";
 const APNS_SANDBOX_HOST = "https://api.sandbox.push.apple.com";
 const APNS_DEFAULT_TOPIC = process.env.APNS_BUNDLE_ID || "com.hungrie.app";
@@ -27,6 +29,28 @@ const chunk = (items, size) => {
 };
 
 const sanitizeBody = (value) => String(value || "").trim();
+const toMillis = (value) => {
+    if (!value) return 0;
+    if (typeof value === "number") return value;
+    if (typeof value === "string") {
+        const parsed = Date.parse(value);
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+    if (typeof value.toMillis === "function") return value.toMillis();
+    if (typeof value.toDate === "function") return value.toDate().getTime();
+    if (typeof value.seconds === "number") return value.seconds * 1000 + Math.floor((value.nanoseconds || 0) / 1_000_000);
+    return 0;
+};
+const getOrderApprovalDeadlineMs = (order) => {
+    const explicitDeadline =
+        toMillis(order?.restaurantApprovalDeadline) ||
+        toMillis(order?.approvalDeadline) ||
+        toMillis(order?.slaDeadline);
+    if (explicitDeadline) return explicitDeadline;
+
+    const createdAtMs = toMillis(order?.createdAtMs) || toMillis(order?.createdAt) || toMillis(order?.updatedAtMs) || toMillis(order?.updatedAt);
+    return createdAtMs ? createdAtMs + ORDER_APPROVAL_SLA_MS : 0;
+};
 const normalizeLanguage = (value) => (String(value || "").toLowerCase() === "en" ? "en" : "tr");
 const normalizeOrderStatus = (value) => {
     const raw = String(value || "").toLowerCase();
@@ -230,7 +254,6 @@ const sendApnsNotifications = async ({ entries, title, body, sound, data, contex
                         logger.warn("APNs push failed", {
                             ...context,
                             tokenDocId: entry.tokenDocId,
-                            token: entry.token,
                             statusCode,
                             reason,
                             body: parsed || responseBody,
@@ -298,7 +321,6 @@ const sendFcmNotifications = async ({ entries, title, body, channelId, sound, da
             logger.warn("FCM push failed", {
                 ...context,
                 tokenDocId: tokenEntry?.tokenDocId,
-                token: tokenEntry?.token,
                 errorCode: code,
                 errorMessage: String(result.error?.message || ""),
             });
@@ -494,3 +516,62 @@ exports.notifyUserOnOrderStatusTransition = onDocumentUpdated("orders/{orderId}"
     const after = event.data?.after?.data() || {};
     await sendUserOrderStatusPush({ orderId, before, after });
 });
+
+exports.cancelExpiredPendingOrders = onSchedule(
+    {
+        schedule: "every 1 minutes",
+        timeZone: "Asia/Famagusta",
+    },
+    async () => {
+        const db = admin.firestore();
+        const nowMs = Date.now();
+        const snap = await db.collection("orders").where("status", "==", "pending").limit(200).get();
+
+        if (snap.empty) {
+            logger.info("Expired order cleanup skipped: no pending orders");
+            return;
+        }
+
+        const batch = db.batch();
+        let canceledCount = 0;
+        const expiredOrderIds = [];
+
+        snap.docs.forEach((docSnap) => {
+            const order = docSnap.data() || {};
+            const approvalDeadlineMs = getOrderApprovalDeadlineMs(order);
+            if (!approvalDeadlineMs || approvalDeadlineMs > nowMs) return;
+
+            const update = {
+                status: "canceled",
+                statusChangedAt: admin.firestore.FieldValue.serverTimestamp(),
+                statusChangedAtMs: nowMs,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                updatedAtMs: nowMs,
+                reminderPending: false,
+                reminderHandledAt: admin.firestore.FieldValue.serverTimestamp(),
+                reminderHandledAtMs: nowMs,
+            };
+
+            if (!order.canceledAt && !order.canceledAtMs) {
+                update.canceledAt = admin.firestore.FieldValue.serverTimestamp();
+                update.canceledAtMs = nowMs;
+            }
+
+            batch.update(docSnap.ref, update);
+            canceledCount += 1;
+            expiredOrderIds.push(docSnap.id);
+        });
+
+        if (!canceledCount) {
+            logger.info("Expired order cleanup completed: no expired pending orders", { checkedCount: snap.size });
+            return;
+        }
+
+        await batch.commit();
+        logger.info("Expired pending orders canceled", {
+            canceledCount,
+            checkedCount: snap.size,
+            orderIds: expiredOrderIds,
+        });
+    },
+);

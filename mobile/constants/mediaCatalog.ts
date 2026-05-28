@@ -44,7 +44,6 @@ import TastingFood from "@/assets/illustrations/Tasting Food.svg";
 // Lifestyle imagery (all files currently available inside assets/images)
 import burgerDeliveryImage from "@/assets/images/Burger Delivery.png";
 import emptyStateImage from "@/assets/images/empty-state.png";
-import foodDeliveryImage from "@/assets/images/Food Delivery.png";
 import foodDeliveryBagImage from "@/assets/images/Food Delivery Bag.png";
 import foodDeliveryMessageImage from "@/assets/images/Food Delivery Message.png";
 import foodOrderImage from "@/assets/images/Food Order.png";
@@ -52,8 +51,6 @@ import foodReviewImage from "@/assets/images/Food Review.png";
 import deliveryBagImage from "@/assets/images/Delivery Bag.png";
 import deliveryProcessImage from "@/assets/images/Delivery Process.png";
 import deliveryReviewImage from "@/assets/images/Delivery Review.png";
-import fastDeliveringImage from "@/assets/images/Fast Delivering.png";
-import fastDeliveryImage from "@/assets/images/Fast Delivery.png";
 import orderBillImage from "@/assets/images/Order Bill.png";
 import view3dBurgerImage from "@/assets/images/view-3d-burger-meal-with-french-fries.jpg";
 import flatLayBurgerImage from "@/assets/images/flat-lay-burger-with-fries-ketchup.jpg";
@@ -62,41 +59,64 @@ import vecteezyFastFoodImage from "@/assets/images/vecteezy_fast-food-meal-with_
 import successImage from "@/assets/images/success.png";
 import deliveryLocationImage from "@/assets/images/Delivery Location.png";
 
+// Category imagery
+import categoryBurgerImage from "@/assets/Categories/Burger1.jpg";
+import categoryDurumImage from "@/assets/Categories/Durum1.jpg";
+import categoryDrinksImage from "@/assets/Categories/Icecekler1.jpg";
+import categoryGrillsImage from "@/assets/Categories/Izgaralar1.jpg";
+import categoryCoffeeImage from "@/assets/Categories/Kahveler1.jpg";
+import categoryKebabImage from "@/assets/Categories/Kebap1.jpg";
+import categoryLahmacunImage from "@/assets/Categories/Lahmacun1.jpg";
+import categoryPastaImage from "@/assets/Categories/Makarna1.jpg";
+import categoryPizzaImage from "@/assets/Categories/Pizza1.jpg";
+import categorySaladImage from "@/assets/Categories/Salata1.jpg";
+import categorySaucesImage from "@/assets/Categories/Soslar1.jpg";
+import categoryDessertImage from "@/assets/Categories/Tatli1.jpg";
+import categoryChickenImage from "@/assets/Categories/Tavuk1.png";
+
 const avatar = foodDeliveryBagImage;
 const avocado = foodOrderImage;
 const bacon = burgerDeliveryImage;
 const burgerOne = burgerDeliveryImage;
 const burgerTwo = burgerDeliveryImage;
 const buritto = foodOrderImage;
-const cheese = foodDeliveryImage;
 const coleslaw = foodDeliveryMessageImage;
 const cucumber = foodOrderImage;
 const emptyState = emptyStateImage;
 const fries = foodReviewImage;
-const loginGraphic = foodDeliveryImage;
 const logo = deliveryLocationImage;
 const mozarellaSticks = vecteezyFastFoodImage;
 const mushrooms = flatLayBurgerImage;
 const onionRings = lifestyleOneImage;
 const onions = foodOrderImage;
-const pizzaOne = foodDeliveryImage;
 const salad = foodReviewImage;
 const success = successImage;
 const tomatoes = orderBillImage;
 
 const burgerPoster = burgerDeliveryImage;
-const pizzaPoster = foodDeliveryImage;
 const friesPoster = foodReviewImage;
 const tacoPoster = foodOrderImage;
 const burgerDelivery = burgerDeliveryImage;
 const deliveryBag = deliveryBagImage;
 const deliveryProcess = deliveryProcessImage;
 const deliveryReview = deliveryReviewImage;
-const fastDelivering = fastDeliveringImage;
-const fastDelivery = fastDeliveryImage;
 const foodReview = foodReviewImage;
 const burgerFlatLay = flatLayBurgerImage;
 const view3dBurger = view3dBurgerImage;
+
+const categoryBurger = categoryBurgerImage;
+const categoryDurum = categoryDurumImage;
+const categoryDrinks = categoryDrinksImage;
+const categoryGrills = categoryGrillsImage;
+const categoryCoffee = categoryCoffeeImage;
+const categoryKebab = categoryKebabImage;
+const categoryLahmacun = categoryLahmacunImage;
+const categoryPasta = categoryPastaImage;
+const categoryPizza = categoryPizzaImage;
+const categorySalad = categorySaladImage;
+const categorySauces = categorySaucesImage;
+const categoryDessert = categoryDessertImage;
+const categoryChicken = categoryChickenImage;
 
 export const iconset = {
     arrowBack: ArrowBackIcon,
@@ -150,40 +170,47 @@ export const images = {
     burgerOne,
     burgerTwo,
     buritto,
-    cheese,
     coleslaw,
     cucumber,
     emptyState,
     fries,
-    loginGraphic,
     logo,
     mozarellaSticks,
     mushrooms,
     onionRings,
     onions,
-    pizzaOne,
     salad,
     success,
     tomatoes,
     burgerPoster,
-    pizzaPoster,
     friesPoster,
     tacoPoster,
     burgerDelivery,
     deliveryBag,
     deliveryProcess,
     deliveryReview,
-    fastDelivering,
-    fastDelivery,
     foodReview,
     burgerFlatLay,
     view3dBurger,
+    categoryBurger,
+    categoryDurum,
+    categoryDrinks,
+    categoryGrills,
+    categoryCoffee,
+    categoryKebab,
+    categoryLahmacun,
+    categoryPasta,
+    categoryPizza,
+    categorySalad,
+    categorySauces,
+    categoryDessert,
+    categoryChicken,
 } as const;
 
 export const CATEGORIES = [
     { id: "all", name: "All", icon: logo },
     { id: "burger", name: "Burger", icon: burgerOne },
-    { id: "pizza", name: "Pizza", icon: pizzaOne },
+    { id: "pizza", name: "Pizza", icon: categoryPizza },
     { id: "wrap", name: "Wrap", icon: buritto },
     { id: "bowl", name: "Bowl", icon: salad },
 ] as const;

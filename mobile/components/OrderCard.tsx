@@ -117,7 +117,7 @@ const OrderCard = ({ order, variant = "restaurant", onAdvance, disableActions = 
             <View className="flex-row items-center justify-between pt-2">
                 <View>
                     <Text className="paragraph-semibold text-dark-80">Toplam</Text>
-                    <Text className="h3-bold text-dark-100">TRY {total}</Text>
+                    <Text className="h3-bold text-dark-100">₺{total}</Text>
                 </View>
                 {variant === "restaurant" && nextStatus ? (
                     <TouchableOpacity

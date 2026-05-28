@@ -12,7 +12,7 @@
     "ios": {
       "icon": "./assets/app-icon/app-icon-1024.png",
       "supportsTablet": true,
-      "buildNumber": "23",
+      "buildNumber": "27",
       "bundleIdentifier": "com.hungrie.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -44,8 +44,7 @@
           "color": "#FE8C00",
           "defaultChannel": "default",
           "sounds": [
-            "./assets/sounds/hungrie.wav",
-            "./assets/sounds/order.wav"
+            "./assets/sounds/hungrie.wav"
           ]
         }
       ],

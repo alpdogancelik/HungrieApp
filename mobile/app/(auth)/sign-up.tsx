@@ -1,49 +1,289 @@
 import { useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { router } from "expo-router";
-import { useTranslation } from "react-i18next";
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import type { TextInput } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
+import { Image } from "expo-image";
+import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 
 import AuthFeedbackCard from "@/components/auth/AuthFeedbackCard";
-import AuthScreenLayout from "@/components/auth/AuthScreenLayout";
 import CustomButton from "@/components/CustomButton";
 import CustomInput from "@/components/CustomInput";
+import LanguageToggle from "@/components/LanguageToggle";
 import { createUser } from "@/lib/firebaseAuth";
-import { getAuthErrorMessage, getAuthScreenCopy } from "@/src/features/auth/authCopy";
+import { getAuthErrorMessage, getAuthScreenCopy, isTurkishLanguage } from "@/src/features/auth/authCopy";
 import { isStrictValidEmail } from "@/src/features/auth/emailValidation";
+import { PASSWORD_MIN_LENGTH, getPasswordRequirementState, isStrongPassword } from "@/src/features/auth/passwordValidation";
 import DeliveryGuy from "@/assets/illustrations/Delivery Guy.svg";
+import { makeShadow } from "@/src/lib/shadowStyle";
 
 type FeedbackState = {
     title: string;
     message: string;
 } | null;
 
-const styles = StyleSheet.create({
-    cardTitle: { color: "#0F172A", fontSize: 30, lineHeight: 36, fontFamily: "ChairoSans" },
-    cardBody: { color: "#334155", fontSize: 14, lineHeight: 20, fontFamily: "ChairoSans" },
-    footerRow: { flexDirection: "row", justifyContent: "center", columnGap: 8, marginTop: 4 },
-    footerText: { fontSize: 16, color: "#6B7280", fontFamily: "ChairoSans" },
-    footerLink: { fontSize: 16, color: "#FE8C00", fontFamily: "ChairoSans" },
+const heroPackshot = require("../../assets/Categories/Sign-In Burger Photo1.png");
+const readableTurkishFont = Platform.select({
+    ios: "System",
+    android: "sans-serif",
+    default: "system-ui",
 });
 
-const heroPackshot = require("../../assets/images/vecteezy_fast-food-meal-with_25065315.png");
+const getPasswordChecks = (password: string, isTurkish: boolean) => {
+    const state = getPasswordRequirementState(password);
+    return [
+        {
+            key: "minLength",
+            met: state.minLength,
+            label: isTurkish ? `En az ${PASSWORD_MIN_LENGTH} karakter` : `At least ${PASSWORD_MIN_LENGTH} characters`,
+        },
+        {
+            key: "uppercase",
+            met: state.uppercase,
+            label: isTurkish ? "Bir büyük harf" : "One uppercase letter",
+        },
+        {
+            key: "lowercase",
+            met: state.lowercase,
+            label: isTurkish ? "Bir küçük harf" : "One lowercase letter",
+        },
+        {
+            key: "number",
+            met: state.number,
+            label: isTurkish ? "Bir sayı" : "One number",
+        },
+    ];
+};
+
+const styles = StyleSheet.create({
+    safeArea: { flex: 1, backgroundColor: "#FFF8F2" },
+    scrollContent: {
+        flexGrow: 1,
+        paddingHorizontal: 18,
+        paddingTop: 14,
+        paddingBottom: 28,
+    },
+    shell: {
+        width: "100%",
+        alignSelf: "center",
+    },
+    topRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: 18,
+        columnGap: 16,
+    },
+    topRightActions: {
+        flexDirection: "row",
+        alignItems: "center",
+        columnGap: 10,
+        flexShrink: 0,
+    },
+    brandWrap: {
+        flexDirection: "row",
+        alignItems: "baseline",
+        flexShrink: 1,
+    },
+    brandHungrie: {
+        color: "#FF5A14",
+        fontSize: 26,
+        lineHeight: 30,
+        fontFamily: "ChairoSans",
+    },
+    brandDotApp: {
+        color: "#111827",
+        fontSize: 26,
+        lineHeight: 30,
+        fontFamily: "ChairoSans",
+    },
+    heroSection: {
+        position: "relative",
+        marginBottom: 24,
+        overflow: "visible",
+        zIndex: 0,
+    },
+    heroGrid: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+    },
+    heroTextCol: {
+        flex: 1,
+        paddingRight: 18,
+        zIndex: 2,
+    },
+    heroHeading: {
+        color: "#111827",
+        fontSize: 30,
+        lineHeight: 40,
+        fontFamily: readableTurkishFont,
+        fontWeight: "500",
+    },
+    heroAccent: {
+        color: "#FF5A14",
+    },
+    heroBody: {
+        color: "#6B7280",
+        fontSize: 15,
+        lineHeight: 25,
+        fontFamily: readableTurkishFont,
+        fontWeight: "400",
+        marginTop: 14,
+        maxWidth: 255,
+    },
+    heroVisualWrap: {
+        justifyContent: "flex-start",
+        alignItems: "flex-end",
+        position: "relative",
+        overflow: "visible",
+        zIndex: 0,
+    },
+    heroVisualCard: {
+        overflow: "hidden",
+        borderRadius: 28,
+        backgroundColor: "#FFF8F2",
+    },
+    heroVisualGlow: {
+        position: "absolute",
+        right: 6,
+        top: 34,
+        backgroundColor: "#FFF0E4",
+        borderRadius: 999,
+    },
+    heroImageShadow: {
+        position: "absolute",
+        left: 54,
+        right: 18,
+        bottom: 10,
+        height: 18,
+        borderRadius: 999,
+        backgroundColor: "rgba(122, 61, 19, 0.08)",
+    },
+    heroImage: {
+        width: "100%",
+        height: "100%",
+    },
+    authCard: {
+        backgroundColor: "#FFFFFF",
+        borderRadius: 30,
+        borderWidth: 1,
+        borderColor: "rgba(15,23,42,0.06)",
+        paddingHorizontal: 22,
+        paddingTop: 20,
+        paddingBottom: 20,
+        gap: 12,
+        position: "relative",
+        zIndex: 2,
+    },
+    authCardHeader: {
+        gap: 6,
+    },
+    cardTitle: {
+        color: "#0F172A",
+        fontSize: 31,
+        lineHeight: 38,
+        fontFamily: "ChairoSans",
+    },
+    fieldLabel: {
+        color: "#6B7280",
+        fontSize: 13,
+        marginBottom: 6,
+        paddingLeft: 0,
+    },
+    fieldInput: {
+        minHeight: 50,
+        borderRadius: 16,
+        borderColor: "#D9E1EC",
+        paddingHorizontal: 14,
+        fontSize: 16,
+        color: "#0F172A",
+        backgroundColor: "#FFFFFF",
+    },
+    passwordChecklist: {
+        gap: 6,
+        marginTop: -8,
+        paddingHorizontal: 2,
+    },
+    passwordCheckRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 7,
+    },
+    passwordHelperText: {
+        color: "#6B7280",
+        fontSize: 12,
+        lineHeight: 18,
+        fontFamily: "ChairoSans",
+    },
+    passwordHelperTextMet: {
+        color: "#FF6A00",
+    },
+    submitButton: {
+        minHeight: 56,
+        borderRadius: 999,
+        marginTop: 0,
+        backgroundColor: "#FF6A00",
+    },
+    submitText: {
+        fontSize: 18,
+    },
+    footerRow: {
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
+        columnGap: 8,
+        marginTop: 0,
+        flexWrap: "wrap",
+    },
+    footerText: {
+        color: "#6B7280",
+        fontSize: 17,
+        fontFamily: "ChairoSans",
+    },
+    footerLink: {
+        color: "#FF6A00",
+        fontSize: 17,
+        fontFamily: "ChairoSans",
+    },
+    closeButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: "#F1895E",
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.32)",
+    },
+});
 
 const SignUp = () => {
     const { i18n } = useTranslation();
+    const insets = useSafeAreaInsets();
     const copy = getAuthScreenCopy(i18n.language).signUp;
+    const isTurkish = isTurkishLanguage(i18n.language);
+    const { width } = useWindowDimensions();
+    const isWide = width >= 700;
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [feedback, setFeedback] = useState<FeedbackState>(null);
     const [form, setForm] = useState({ name: "", email: "", password: "", whatsappNumber: "" });
+    const [passwordFocused, setPasswordFocused] = useState(false);
     const nameRef = useRef<TextInput>(null);
     const whatsappRef = useRef<TextInput>(null);
     const emailRef = useRef<TextInput>(null);
     const passwordRef = useRef<TextInput>(null);
 
+    const heroVisualWidth = isWide ? 360 : Math.min(266, Math.max(210, width * 0.43));
+    const heroVisualHeight = isWide ? 320 : Math.min(224, Math.max(230, width * 0.36));
+    const heroGlowWidth = isWide ? 312 : Math.min(194, Math.max(148, width * 0.26));
+    const heroGlowHeight = isWide ? 250 : Math.min(168, Math.max(124, width * 0.22));
+    const maxShellWidth = isWide ? 860 : 520;
+    const cardOverlap = isWide ? -24 : -70;
+
     const setField = (field: "name" | "email" | "password" | "whatsappNumber", value: string) => {
         setForm((prev) => ({ ...prev, [field]: value }));
-        if (feedback) {
-            setFeedback(null);
-        }
+        if (feedback) setFeedback(null);
     };
 
     const goToCheckEmail = (email: string) => {
@@ -75,13 +315,20 @@ const SignUp = () => {
             return;
         }
 
+        if (!isStrongPassword(password)) {
+            setFeedback({
+                title: copy.emptyErrorTitle,
+                message: getAuthErrorMessage(i18n.language, "weakPassword") || copy.fallbackError,
+            });
+            return;
+        }
+
         setIsSubmitting(true);
         setFeedback(null);
 
         try {
             await createUser({ email, password, name, whatsappNumber: whatsappNumber || undefined });
             goToCheckEmail(email);
-            return;
         } catch (error: any) {
             setFeedback({
                 title: copy.emptyErrorTitle,
@@ -93,78 +340,194 @@ const SignUp = () => {
     };
 
     return (
-        <AuthScreenLayout
-            heroTitle={copy.heroTitle}
-            heroBody={copy.heroBody}
-            heroImageSource={heroPackshot}
-            gradientColors={["#FE8C00", "#FE5F75"]}
-        >
-            <View>
-                <Text style={styles.cardTitle}>{copy.title}</Text>
-                <Text style={styles.cardBody}>{copy.subtitle}</Text>
-            </View>
+        <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
+            <ScrollView
+                contentContainerStyle={[
+                    styles.scrollContent,
+                    { paddingTop: Math.max(insets.top, 12), paddingBottom: Math.max(insets.bottom + 24, 28) },
+                ]}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={[styles.shell, { maxWidth: maxShellWidth }]}>
+                    <View style={styles.topRow}>
+                        <View style={styles.brandWrap}>
+                            <Text style={styles.brandHungrie}>hungrie</Text>
+                            <Text style={styles.brandDotApp}>.app</Text>
+                        </View>
+                        <View style={styles.topRightActions}>
+                            <LanguageToggle appearance="default" showLabel={false} />
+                            <Pressable style={styles.closeButton} onPress={() => router.replace("/home")} hitSlop={8}>
+                                <Ionicons name="close" size={24} color="#FFFFFF" />
+                            </Pressable>
+                        </View>
+                    </View>
 
-            {feedback ? (
-                <AuthFeedbackCard
-                    tone="error"
-                    title={feedback.title}
-                    message={feedback.message}
-                    Illustration={DeliveryGuy}
-                />
-            ) : null}
+                    <View style={styles.heroSection}>
+                        <View style={styles.heroGrid}>
+                            <View style={styles.heroTextCol}>
+                                <Text style={[styles.heroHeading, isWide ? { fontSize: 56, lineHeight: 72 } : null]}>
+                                    {isTurkish ? (
+                                        <>
+                                            Hungrie&apos;ye{"\n"}hızlıca{"\n"}
+                                            <Text style={styles.heroAccent}>katıl!</Text>
+                                        </>
+                                    ) : (
+                                        <>
+                                            Join{"\n"}Hungrie{"\n"}
+                                            <Text style={styles.heroAccent}>fast.</Text>
+                                        </>
+                                    )}
+                                </Text>
+                                <Text style={[styles.heroBody, isWide ? { fontSize: 18, lineHeight: 32, maxWidth: 420 } : null]}>
+                                    {copy.subtitle}
+                                </Text>
+                            </View>
 
-            <CustomInput
-                ref={nameRef}
-                placeholder={copy.namePlaceholder}
-                value={form.name}
-                onChangeText={(text) => setField("name", text)}
-                label={copy.nameLabel}
-                returnKeyType="next"
-                blurOnSubmit={false}
-                onSubmitEditing={() => whatsappRef.current?.focus()}
-            />
-            <CustomInput
-                ref={whatsappRef}
-                placeholder="+90 5xx xxx xx xx"
-                value={form.whatsappNumber}
-                onChangeText={(text) => setField("whatsappNumber", text)}
-                label={copy.whatsappLabel}
-                keyboardType="phone-pad"
-                returnKeyType="next"
-                blurOnSubmit={false}
-                onSubmitEditing={() => emailRef.current?.focus()}
-            />
-            <CustomInput
-                ref={emailRef}
-                placeholder="e232231@metu.edu.tr"
-                value={form.email}
-                onChangeText={(text) => setField("email", text)}
-                label={copy.emailLabel}
-                keyboardType="email-address"
-                returnKeyType="next"
-                blurOnSubmit={false}
-                onSubmitEditing={() => passwordRef.current?.focus()}
-            />
-            <CustomInput
-                ref={passwordRef}
-                placeholder={copy.passwordPlaceholder}
-                value={form.password}
-                onChangeText={(text) => setField("password", text)}
-                label={copy.passwordLabel}
-                secureTextEntry
-                returnKeyType="done"
-                onSubmitEditing={submit}
-            />
+                            <View
+                                style={[
+                                    styles.heroVisualWrap,
+                                    {
+                                        width: heroVisualWidth,
+                                        height: heroVisualHeight + (isWide ? 34 : 6),
+                                        marginRight: isWide ? -18 : -18,
+                                        marginTop: isWide ? -8 : 26,
+                                    },
+                                ]}
+                            >
+                                <View
+                                    style={[
+                                        styles.heroVisualGlow,
+                                        { width: heroGlowWidth, height: heroGlowHeight, opacity: 0.76 },
+                                    ]}
+                                />
+                                <View style={styles.heroImageShadow} />
+                                <View style={[styles.heroVisualCard, { width: heroVisualWidth, height: heroVisualHeight }]}>
+                                    <Image
+                                        source={heroPackshot}
+                                        style={[
+                                            styles.heroImage,
+                                            {
+                                                transform: [
+                                                    { scale: isWide ? 1.18 : 1.2 },
+                                                    { translateX: isWide ? 24 : 18 },
+                                                    { translateY: isWide ? 2 : 2 },
+                                                ],
+                                            },
+                                        ]}
+                                        contentFit="cover"
+                                        cachePolicy="memory-disk"
+                                    />
+                                </View>
+                            </View>
+                        </View>
+                    </View>
 
-            <CustomButton title={copy.submit} isLoading={isSubmitting} disabled={isSubmitting} onPress={submit} />
+                    <View
+                        style={[
+                            styles.authCard,
+                            { marginTop: cardOverlap },
+                            makeShadow({ color: "#000000", offsetY: 20, blurRadius: 38, opacity: 0.1, elevation: 12 }),
+                        ]}
+                    >
+                        <View style={styles.authCardHeader}>
+                            <Text style={[styles.cardTitle, isWide ? { fontSize: 46, lineHeight: 54 } : null]}>{copy.submit}</Text>
+                        </View>
 
-            <View style={styles.footerRow}>
-                <Text style={styles.footerText}>{copy.alreadyAccount}</Text>
-                <Pressable onPress={() => router.push("/sign-in")} hitSlop={6}>
-                    <Text style={styles.footerLink}>{copy.signInLink}</Text>
-                </Pressable>
-            </View>
-        </AuthScreenLayout>
+                        {feedback ? (
+                            <AuthFeedbackCard
+                                tone="error"
+                                title={feedback.title}
+                                message={feedback.message}
+                                Illustration={DeliveryGuy}
+                            />
+                        ) : null}
+
+                        <CustomInput
+                            ref={nameRef}
+                            placeholder={copy.namePlaceholder}
+                            value={form.name}
+                            onChangeText={(text) => setField("name", text)}
+                            label={copy.nameLabel}
+                            returnKeyType="next"
+                            blurOnSubmit={false}
+                            onSubmitEditing={() => whatsappRef.current?.focus()}
+                            leftIcon={<Ionicons name="person-outline" size={22} color="#FF6A00" />}
+                            labelStyle={styles.fieldLabel}
+                            inputStyle={styles.fieldInput}
+                        />
+                        <CustomInput
+                            ref={whatsappRef}
+                            placeholder="+90 5xx xxx xx xx"
+                            value={form.whatsappNumber}
+                            onChangeText={(text) => setField("whatsappNumber", text)}
+                            label={copy.whatsappLabel}
+                            keyboardType="phone-pad"
+                            returnKeyType="next"
+                            blurOnSubmit={false}
+                            onSubmitEditing={() => emailRef.current?.focus()}
+                            leftIcon={<Ionicons name="logo-whatsapp" size={22} color="#FF6A00" />}
+                            labelStyle={styles.fieldLabel}
+                            inputStyle={styles.fieldInput}
+                        />
+                        <CustomInput
+                            ref={emailRef}
+                            placeholder="e232231@metu.edu.tr"
+                            value={form.email}
+                            onChangeText={(text) => setField("email", text)}
+                            label={copy.emailLabel}
+                            keyboardType="email-address"
+                            returnKeyType="next"
+                            blurOnSubmit={false}
+                            onSubmitEditing={() => passwordRef.current?.focus()}
+                            leftIcon={<Ionicons name="mail-outline" size={22} color="#FF6A00" />}
+                            labelStyle={styles.fieldLabel}
+                            inputStyle={styles.fieldInput}
+                        />
+                        <CustomInput
+                            ref={passwordRef}
+                            placeholder={copy.passwordPlaceholder}
+                            value={form.password}
+                            onChangeText={(text) => setField("password", text)}
+                            label={copy.passwordLabel}
+                            secureTextEntry
+                            returnKeyType="done"
+                            onSubmitEditing={submit}
+                            onFocus={() => setPasswordFocused(true)}
+                            onBlur={() => setTimeout(() => setPasswordFocused(false), 120)}
+                            leftIcon={<Ionicons name="lock-closed-outline" size={22} color="#FF6A00" />}
+                            labelStyle={styles.fieldLabel}
+                            inputStyle={styles.fieldInput}
+                        />
+                        {passwordFocused ? (
+                            <View style={styles.passwordChecklist}>
+                                {getPasswordChecks(form.password, isTurkish).map((check) => (
+                                    <View key={check.key} style={styles.passwordCheckRow}>
+                                        <Ionicons
+                                            name={check.met ? "checkmark-circle" : "ellipse-outline"}
+                                            size={15}
+                                            color={check.met ? "#FF6A00" : "#9CA3AF"}
+                                        />
+                                        <Text style={[styles.passwordHelperText, check.met ? styles.passwordHelperTextMet : null]}>
+                                            {check.label}
+                                        </Text>
+                                    </View>
+                                ))}
+                            </View>
+                        ) : null}
+
+                        <CustomButton title={copy.submit} isLoading={isSubmitting} disabled={isSubmitting} onPress={submit} style={styles.submitButton} textStyle={styles.submitText} />
+
+                        <View style={styles.footerRow}>
+                            <Text style={styles.footerText}>{copy.alreadyAccount}</Text>
+                            <Pressable onPress={() => router.push("/sign-in")} hitSlop={6}>
+                                <Text style={styles.footerLink}>{copy.signInLink}</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                </View>
+            </ScrollView>
+        </SafeAreaView>
     );
 };
 

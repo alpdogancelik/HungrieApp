@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NotificationManager } from "@/src/features/notifications/NotificationManager";
-import { subscribeUserOrders } from "@/src/services/firebaseOrders";
+import { autoCancelExpiredPendingOrders, subscribeUserOrders } from "@/src/services/firebaseOrders";
 
 type NormalizedOrderStatus = "pending" | "preparing" | "ready" | "out_for_delivery" | "delivered" | "canceled";
 type StatusMap = Record<string, NormalizedOrderStatus>;
@@ -92,6 +92,7 @@ export const startOrderStatusWatcher = (userId: string) => {
     let active = true;
     let primed = false;
     let statusMap: StatusMap = {};
+    const autoCancelingIds = new Set<string>();
 
     const init = async () => {
         const raw = await AsyncStorage.getItem(STORAGE_KEY).catch(() => null);
@@ -101,6 +102,12 @@ export const startOrderStatusWatcher = (userId: string) => {
         const unsubscribe = subscribeUserOrders(userId, (orders: any[]) => {
             if (!active) return;
             const list = Array.isArray(orders) ? orders : [];
+            void autoCancelExpiredPendingOrders(list, {
+                inFlightIds: autoCancelingIds,
+                onError: (error) => {
+                    console.warn("[orders] Failed to auto-cancel expired pending order", error);
+                },
+            });
 
             if (!primed) {
                 const initialMap = { ...statusMap };

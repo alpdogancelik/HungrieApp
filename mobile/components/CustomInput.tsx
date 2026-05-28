@@ -1,4 +1,4 @@
-import { forwardRef, useState } from "react";
+import { forwardRef, useState, type ReactNode } from "react";
 import {
     Pressable,
     StyleSheet,
@@ -7,6 +7,9 @@ import {
     View,
     type TextInputProps,
     type KeyboardTypeOptions,
+    type StyleProp,
+    type TextStyle,
+    type ViewStyle,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -20,9 +23,16 @@ type Props = {
     inputKey?: string;
     autoComplete?: TextInputProps["autoComplete"];
     returnKeyType?: TextInputProps["returnKeyType"];
+    onFocus?: TextInputProps["onFocus"];
+    onBlur?: TextInputProps["onBlur"];
     onSubmitEditing?: TextInputProps["onSubmitEditing"];
     blurOnSubmit?: TextInputProps["blurOnSubmit"];
     autoFocus?: boolean;
+    leftIcon?: ReactNode;
+    containerStyle?: StyleProp<ViewStyle>;
+    labelStyle?: StyleProp<TextStyle>;
+    inputStyle?: StyleProp<TextStyle>;
+    inputWrapStyle?: StyleProp<ViewStyle>;
 };
 
 const toFieldKey = (label: string) =>
@@ -55,9 +65,21 @@ const styles = StyleSheet.create({
     inputWithToggle: {
         paddingRight: 44,
     },
+    inputWithLeftIcon: {
+        paddingLeft: 48,
+    },
     focused: { borderColor: "#FE8C00" },
     inputWrap: {
         position: "relative",
+    },
+    leftIconWrap: {
+        position: "absolute",
+        left: 14,
+        top: 0,
+        bottom: 0,
+        justifyContent: "center",
+        alignItems: "center",
+        width: 24,
     },
     toggleBtn: {
         position: "absolute",
@@ -80,9 +102,16 @@ const CustomInput = forwardRef<TextInput, Props>(({
     inputKey,
     autoComplete,
     returnKeyType,
+    onFocus,
+    onBlur,
     onSubmitEditing,
     blurOnSubmit,
     autoFocus,
+    leftIcon,
+    containerStyle,
+    labelStyle,
+    inputStyle,
+    inputWrapStyle,
 }, ref) => {
     const [isFocused, setIsFocused] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -90,9 +119,9 @@ const CustomInput = forwardRef<TextInput, Props>(({
     const fieldKey = inputKey || toFieldKey(label);
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.label}>{label}</Text>
-            <View style={styles.inputWrap}>
+        <View style={[styles.container, containerStyle]}>
+            <Text style={[styles.label, labelStyle]}>{label}</Text>
+            <View style={[styles.inputWrap, inputWrapStyle]}>
                 <TextInput
                     ref={ref}
                     {...({ id: fieldKey, name: fieldKey } as any)}
@@ -107,12 +136,25 @@ const CustomInput = forwardRef<TextInput, Props>(({
                     returnKeyType={returnKeyType}
                     onSubmitEditing={onSubmitEditing}
                     blurOnSubmit={blurOnSubmit}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
+                    onFocus={(event) => {
+                        setIsFocused(true);
+                        onFocus?.(event);
+                    }}
+                    onBlur={(event) => {
+                        setIsFocused(false);
+                        onBlur?.(event);
+                    }}
                     placeholder={placeholder}
                     placeholderTextColor="#94A3B8"
-                    style={[styles.input, isPasswordField && styles.inputWithToggle, isFocused && styles.focused]}
+                    style={[
+                        styles.input,
+                        leftIcon && styles.inputWithLeftIcon,
+                        isPasswordField && styles.inputWithToggle,
+                        isFocused && styles.focused,
+                        inputStyle,
+                    ]}
                 />
+                {leftIcon ? <View style={styles.leftIconWrap}>{leftIcon}</View> : null}
                 {isPasswordField ? (
                     <Pressable
                         style={styles.toggleBtn}

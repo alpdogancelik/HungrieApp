@@ -35,8 +35,8 @@ const STATUS_BADGE_CLASS: Record<string, string> = {
 
 const formatCurrency = (value?: number | string) => {
     const amount = Number(value ?? 0);
-    if (Number.isNaN(amount)) return "TRY 0.00";
-    return `TRY ${amount.toFixed(2)}`;
+    if (Number.isNaN(amount)) return "₺0.00";
+    return `₺${amount.toFixed(2)}`;
 };
 const formatPlacedAt = (value?: number) => {
     if (!value) return "";

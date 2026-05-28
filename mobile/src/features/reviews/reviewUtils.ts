@@ -69,7 +69,7 @@ export const getOrderReviewItems = (order: any): ReviewOrderItem[] => {
 
         const current = mergedByItemId.get(itemId);
         const quantity = Math.max(1, Number(item?.quantity ?? 1));
-        const itemName = normalizeId(item?.name) || current?.itemName || "Urun";
+        const itemName = normalizeId(item?.name) || current?.itemName || "Ürün";
 
         if (current) {
             mergedByItemId.set(itemId, {

@@ -213,10 +213,10 @@ export const submitOrderReview = async (input: SubmitOrderReviewInput) => {
     const orderId = normalizeId(input.orderId);
     const userId = getCurrentAuthUid();
     if (!userId) {
-        throw new Error("Lutfen tekrar giris yapip siparis degerlendirmesi yapin.");
+        throw new Error("Lütfen tekrar giriş yapıp sipariş değerlendirmesi yapın.");
     }
     if (!orderId) {
-        throw new Error("Siparis bulunamadi.");
+        throw new Error("Sipariş bulunamadı.");
     }
 
     const ratings: OrderReviewRatingBreakdown = {
@@ -231,18 +231,18 @@ export const submitOrderReview = async (input: SubmitOrderReviewInput) => {
     const [orderSnapshot, existingReviewSnapshot] = await Promise.all([getDoc(orderRef), getDoc(reviewRef)]);
 
     if (!orderSnapshot.exists()) {
-        throw new Error("Siparis bulunamadi.");
+        throw new Error("Sipariş bulunamadı.");
     }
     if (existingReviewSnapshot.exists()) {
-        throw new Error("Bu siparis zaten degerlendirildi.");
+        throw new Error("Bu sipariş zaten değerlendirildi.");
     }
 
     const orderData = orderSnapshot.data() || {};
     if (normalizeId(orderData.userId) !== userId) {
-        throw new Error("Sadece kendi siparisinizi degerlendirebilirsiniz.");
+        throw new Error("Sadece kendi siparişinizi değerlendirebilirsiniz.");
     }
     if (!isOrderReviewableStatus(orderData.status)) {
-        throw new Error("Sadece teslim edilen siparisler degerlendirilebilir.");
+        throw new Error("Sadece teslim edilen siparişler değerlendirilebilir.");
     }
 
     const restaurantId = normalizeId(orderData.restaurantId);
@@ -280,7 +280,7 @@ export const submitOrderReview = async (input: SubmitOrderReviewInput) => {
 
     const savedSnapshot = await getDoc(reviewRef);
     if (!savedSnapshot.exists()) {
-        throw new Error("Degerlendirme kaydi olusturulamadi.");
+        throw new Error("Değerlendirme kaydı oluşturulamadı.");
     }
     return mapOrderReviewDoc(savedSnapshot);
 };
@@ -446,7 +446,7 @@ export const fetchRestaurantOrderReviewSummary = async (restaurantId: string): P
 export const moderateOrderReview = async (reviewId: string, status: OrderReview["status"]) => {
     const normalizedReviewId = normalizeId(reviewId);
     if (!normalizedReviewId) {
-        throw new Error("Degerlendirme bulunamadi.");
+        throw new Error("Değerlendirme bulunamadı.");
     }
     if (!["published", "hidden"].includes(status)) {
         throw new Error("Gecersiz yorum durumu.");

@@ -173,6 +173,11 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
     const { height: windowHeight } = useWindowDimensions();
     const { order } = useOrderRealtime(orderId);
     const { status: pendingStatus } = useOrderStatus(orderId);
+    const localCreatedAtMsRef = useRef(Date.now());
+
+    useEffect(() => {
+        localCreatedAtMsRef.current = Date.now();
+    }, [orderId]);
 
     const orderStatus = useMemo<OrderStatus>(() => {
         if (order?.status) {
@@ -189,21 +194,27 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
         }
     }, [order?.status, pendingStatus]);
 
-    const createdAtMs = useMemo(() => toMillis(order?.createdAt || order?.updatedAt), [order?.createdAt, order?.updatedAt]);
+    const createdAtMs = useMemo(
+        () =>
+            toMillis((order as any)?.createdAtMs) ||
+            toMillis(order?.createdAt) ||
+            toMillis((order as any)?.updatedAtMs) ||
+            toMillis(order?.updatedAt) ||
+            localCreatedAtMsRef.current,
+        [order],
+    );
     const approvalDeadlineMs = useMemo(() => {
         const fromServer =
-            toMillis((order as any)?.restaurantApprovalDeadline) ??
-            toMillis((order as any)?.approvalDeadline) ??
+            toMillis((order as any)?.restaurantApprovalDeadline) ||
+            toMillis((order as any)?.approvalDeadline) ||
             toMillis((order as any)?.slaDeadline);
 
         if (fromServer) return fromServer;
-        if (!createdAtMs) return 0;
         return createdAtMs + APPROVAL_SLA_SECONDS * 1000;
     }, [createdAtMs, order]);
     const cancelAllowedUntilMs = useMemo(() => {
         const fromServer = toMillis((order as any)?.cancelAllowedUntil);
         if (fromServer) return fromServer;
-        if (!createdAtMs) return 0;
         return createdAtMs + CANCEL_WINDOW_SECONDS * 1000;
     }, [createdAtMs, order]);
 
@@ -514,7 +525,7 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
                 >
                     <OrderProgressTimer
                         currentStatus={String(order?.status ?? orderStatus)}
-                        createdAt={order?.createdAt}
+                        createdAt={(order as any)?.createdAtMs ?? order?.createdAt ?? createdAtMs}
                         approvalDeadline={
                             (order as any)?.restaurantApprovalDeadline ??
                             (order as any)?.approvalDeadline ??

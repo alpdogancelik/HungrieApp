@@ -12,7 +12,6 @@ import {
     updateDoc,
     where,
 } from "firebase/firestore";
-import { signInAnonymously } from "firebase/auth";
 import { auth, firestore } from "@/lib/firebase";
 import type { Address, CartItem, OrderStatus, PaymentMethod } from "@/src/domain/types";
 import { recomputeRestaurantMetrics } from "@/src/services/restaurantMetrics";
@@ -23,15 +22,11 @@ const ensureDb = () => {
 };
 
 const ensureAuthSession = async () => {
-    if (!auth) return;
+    if (!auth) throw new Error("Firebase Auth is not configured");
     if (auth.currentUser) return;
     await (auth as any).authStateReady?.().catch(() => null);
     if (auth.currentUser) return;
-    try {
-        await signInAnonymously(auth);
-    } catch (error) {
-        console.warn("[Firebase] Anonymous sign-in failed", error);
-    }
+    throw new Error("Please sign in before placing an order.");
 };
 
 const ordersCol = () => collection(ensureDb(), "orders");
@@ -39,6 +34,68 @@ const compactObject = <T extends Record<string, any>>(value: T) =>
     Object.fromEntries(Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined));
 const ACTIVE_RESTAURANT_STATUSES = ["pending", "accepted", "preparing", "ready", "out_for_delivery"] as const;
 const PAST_RESTAURANT_STATUSES = ["rejected", "delivered", "canceled"] as const;
+const APPROVAL_SLA_MS = 5 * 60 * 1000;
+
+const toMillis = (value: any) => {
+    if (!value) return 0;
+    if (typeof value === "number") return value;
+    if (typeof value === "string") {
+        const parsed = new Date(value).getTime();
+        return Number.isNaN(parsed) ? 0 : parsed;
+    }
+    if (typeof value?.toDate === "function") return value.toDate().getTime();
+    if (typeof value?.seconds === "number") return value.seconds * 1000 + (value.nanoseconds || 0) / 1_000_000;
+    return 0;
+};
+
+const getOrderSortMs = (order: any) =>
+    toMillis(order?.createdAtMs) ||
+    toMillis(order?.createdAt) ||
+    toMillis(order?.updatedAtMs) ||
+    toMillis(order?.updatedAt) ||
+    0;
+
+const sortOrdersByRecent = (orders: any[]) => [...orders].sort((a, b) => getOrderSortMs(b) - getOrderSortMs(a));
+
+const isPermissionDeniedError = (error: unknown) => {
+    const code = String((error as any)?.code || "").toLowerCase();
+    const message = String((error as any)?.message || "").toLowerCase();
+    return code.includes("permission-denied") || message.includes("missing or insufficient permissions");
+};
+
+const handleSnapshotError = (scope: string, cb?: (orders: any[]) => void) => (error: unknown) => {
+    cb?.([]);
+    if (__DEV__ && !isPermissionDeniedError(error)) {
+        console.warn(`[orders] ${scope} listener failed`, error);
+    }
+};
+
+export const getOrderApprovalDeadlineMs = (order: any) => {
+    const explicitDeadline =
+        toMillis(order?.restaurantApprovalDeadline) ||
+        toMillis(order?.approvalDeadline) ||
+        toMillis(order?.slaDeadline);
+    if (explicitDeadline) return explicitDeadline;
+
+    const createdAtMs = toMillis(order?.createdAtMs) || toMillis(order?.createdAt) || toMillis(order?.updatedAtMs) || toMillis(order?.updatedAt);
+    return createdAtMs ? createdAtMs + APPROVAL_SLA_MS : 0;
+};
+
+export const isExpiredPendingOrder = (order: any, nowMs = Date.now()) => {
+    const status = String(order?.status || "").trim().toLowerCase();
+    const isPending =
+        !status ||
+        status === "pending" ||
+        status === "awaiting_confirmation" ||
+        status === "waiting_restaurant" ||
+        status === "pending_restaurant_approval" ||
+        status === "awaiting_restaurant_approval" ||
+        status.includes("pending") ||
+        status.includes("awaiting");
+    if (!isPending) return false;
+    const approvalDeadlineMs = getOrderApprovalDeadlineMs(order);
+    return Boolean(approvalDeadlineMs && approvalDeadlineMs <= nowMs);
+};
 
 const normalizeStatuses = (statuses: string[], fallback: readonly string[]) => {
     const normalized = statuses.map((status) => String(status || "").trim().toLowerCase()).filter(Boolean);
@@ -189,10 +246,19 @@ export const placeOrder = async ({
 };
 
 export const subscribeOrder = (orderId: string, cb: (order: any | null) => void) =>
-    onSnapshot(doc(ensureDb(), "orders", orderId), (snap) => {
-        if (!snap.exists()) return cb(null);
-        cb({ id: snap.id, ...snap.data() });
-    });
+    onSnapshot(
+        doc(ensureDb(), "orders", orderId),
+        (snap) => {
+            if (!snap.exists()) return cb(null);
+            cb({ id: snap.id, ...snap.data() });
+        },
+        (error) => {
+            cb(null);
+            if (__DEV__ && !isPermissionDeniedError(error)) {
+                console.warn("[orders] order listener failed", error);
+            }
+        },
+    );
 
 export const subscribeUserOrders = (userId: string, cb: (orders: any[]) => void) => {
     const normalizedUserId = String(userId || "").trim();
@@ -200,16 +266,18 @@ export const subscribeUserOrders = (userId: string, cb: (orders: any[]) => void)
         cb([]);
         return () => undefined;
     }
-    return onSnapshot(query(ordersCol(), where("userId", "==", normalizedUserId), orderBy("createdAtMs", "desc"), limit(30)), (snap) =>
-        cb(snap.docs.map((d) => ({ ...d.data(), id: d.id }))),
+    return onSnapshot(
+        query(ordersCol(), where("userId", "==", normalizedUserId)),
+        (snap) => cb(sortOrdersByRecent(snap.docs.map((d) => ({ ...d.data(), id: d.id }))).slice(0, 60)),
+        handleSnapshotError("user orders", cb),
     );
 };
 
 export const fetchUserOrders = async (userId: string) => {
     const normalizedUserId = String(userId || "").trim();
     if (!normalizedUserId) return [];
-    const snap = await getDocs(query(ordersCol(), where("userId", "==", normalizedUserId), orderBy("createdAtMs", "desc"), limit(30)));
-    return snap.docs.map((d) => ({ ...d.data(), id: d.id }));
+    const snap = await getDocs(query(ordersCol(), where("userId", "==", normalizedUserId)));
+    return sortOrdersByRecent(snap.docs.map((d) => ({ ...d.data(), id: d.id }))).slice(0, 60);
 };
 
 export const subscribeRestaurantOrders = (
@@ -233,17 +301,20 @@ export const subscribeRestaurantOrders = (
         orderBy("createdAtMs", "desc"),
         limit(30),
     );
-    return onSnapshot(q, (snap) =>
-        cb
-            ? cb(
-                  snap.docs
-                      .map((d) => ({ ...d.data(), id: d.id }))
-                      .filter((order: any) => {
-                          const raw = String(order?.status || "").toLowerCase();
-                          return !["canceled", "cancelled", "rejected", "delivered"].includes(raw);
-                      }),
-              )
-            : undefined,
+    return onSnapshot(
+        q,
+        (snap) =>
+            cb
+                ? cb(
+                      snap.docs
+                          .map((d) => ({ ...d.data(), id: d.id }))
+                          .filter((order: any) => {
+                              const raw = String(order?.status || "").toLowerCase();
+                              return !["canceled", "cancelled", "rejected", "delivered"].includes(raw);
+                          }),
+                  )
+                : undefined,
+        handleSnapshotError("restaurant active orders", cb),
     );
 };
 
@@ -276,12 +347,15 @@ export const subscribeRestaurantReminderOrders = (restaurantId: string, cb: (ord
         where("restaurantId", "==", normalizedRestaurantId),
         where("reminderPending", "==", true),
     );
-    return onSnapshot(q, (snap) =>
-        cb(
-            snap.docs
-                .map((d) => ({ ...d.data(), id: d.id }))
-                .filter((order: any) => !["delivered", "canceled", "rejected"].includes(String(order?.status || "").toLowerCase())),
-        ),
+    return onSnapshot(
+        q,
+        (snap) =>
+            cb(
+                snap.docs
+                    .map((d) => ({ ...d.data(), id: d.id }))
+                    .filter((order: any) => !["delivered", "canceled", "rejected"].includes(String(order?.status || "").toLowerCase())),
+            ),
+        handleSnapshotError("restaurant reminder orders", cb),
     );
 };
 
@@ -320,4 +394,29 @@ export const transitionOrder = async (orderId: string, status: OrderStatus | str
             });
         }
     }
+};
+
+export const autoCancelExpiredPendingOrders = async (
+    orders: any[],
+    options: { inFlightIds?: Set<string>; onError?: (error: unknown, order: any) => void } = {},
+) => {
+    const list = Array.isArray(orders) ? orders : [];
+    const nowMs = Date.now();
+
+    await Promise.all(
+        list.map(async (order) => {
+            const orderId = String(order?.id || "");
+            if (!orderId || options.inFlightIds?.has(orderId)) return;
+            if (!isExpiredPendingOrder(order, nowMs)) return;
+
+            options.inFlightIds?.add(orderId);
+            try {
+                await transitionOrder(orderId, "canceled");
+            } catch (error) {
+                options.onError?.(error, order);
+            } finally {
+                options.inFlightIds?.delete(orderId);
+            }
+        }),
+    );
 };

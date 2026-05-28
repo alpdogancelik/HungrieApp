@@ -37,6 +37,7 @@ import { unregisterPushToken } from "./registerPushToken";
 import { transitionOrder as transitionFirebaseOrder } from "@/src/services/firebaseOrders";
 import i18n from "@/src/lib/i18n";
 import { getAuthErrorMessage } from "@/src/features/auth/authCopy";
+import { isStrongPassword } from "@/src/features/auth/passwordValidation";
 
 export { getOwnedRestaurantId } from "./restaurantOwnership";
 
@@ -230,6 +231,10 @@ export const createUser = async ({
     name: string;
     whatsappNumber?: string;
 }) => {
+    if (!isStrongPassword(password)) {
+        throw new Error(getAuthErrorMessage(i18n.language, "weakPassword") || "Password does not meet requirements.");
+    }
+
     try {
         const credential = await createUserWithEmailAndPassword(requireAuth(), email, password);
         const user = credential.user;

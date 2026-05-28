@@ -154,10 +154,10 @@ const RestaurantPanel = () => {
 
             if (permissionDenied) {
                 if (__DEV__) {
-                    return "Siparis guncellenemedi: restaurant panel update izni yok. firestore.rules icin owner/staff izinlerini deploy edin.";
+                    return "Sipariş güncellenemedi: restaurant panel update izni yok. firestore.rules için owner/staff izinlerini deploy edin.";
                 }
                 return locale === "tr"
-                    ? "Siparis guncellenemedi. Lutfen oturumu yenileyip tekrar deneyin."
+                    ? "Sipariş güncellenemedi. Lütfen oturumu yenileyip tekrar deneyin."
                     : "Could not update order. Please refresh your session and try again.";
             }
 
@@ -314,22 +314,23 @@ const RestaurantPanel = () => {
     const sessionIdentity = user?.email || user?.name || t("common.na");
     const systemMessage = notificationsEnabled ? t("notifications.systemMessagesEnabled") : t("notifications.systemMessagesDisabled");
     const handleSignOut = useCallback(async () => {
+        setOrders([]);
+        setPastOrders([]);
+        setReminderOrders([]);
+        setRestaurantId(null);
+        setRestaurantName(null);
+        setAuthorized(false);
+        setRedirectTo("/sign-in");
+        setStatusFilter("all");
+        setSearchTerm("");
+        setExpandedOrderId(null);
+        setActionLoadingByOrder({});
+
         try {
             await logout();
         } catch {
             // Best effort; still clear local auth state below.
         } finally {
-            setOrders([]);
-            setPastOrders([]);
-            setReminderOrders([]);
-            setRestaurantId(null);
-            setRestaurantName(null);
-            setAuthorized(false);
-            setRedirectTo("/sign-in");
-            setStatusFilter("all");
-            setSearchTerm("");
-            setExpandedOrderId(null);
-            setActionLoadingByOrder({});
             resetAuthState();
             router.replace("/sign-in");
         }

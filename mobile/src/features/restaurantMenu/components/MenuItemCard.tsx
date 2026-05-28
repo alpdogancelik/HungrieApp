@@ -27,6 +27,7 @@ type MenuItemCardProps = {
     ratingAverage: number;
     ratingCount: number;
     latestReviewComment?: string;
+    disabled?: boolean;
     onAddToCart: (item: RestaurantMenuItem, imageUrl?: string) => void;
 };
 
@@ -55,6 +56,7 @@ const MenuItemCard = ({
     ratingAverage,
     ratingCount,
     latestReviewComment,
+    disabled = false,
     onAddToCart,
 }: MenuItemCardProps) => {
     const useNativeDriver = Platform.OS !== "web";
@@ -122,6 +124,7 @@ const MenuItemCard = ({
     };
 
     const handleAddToCart = () => {
+        if (disabled) return;
         onAddToCart(item, activeImageUrl || imageResolution.bestImageUrl || undefined);
     };
 
@@ -162,13 +165,13 @@ const MenuItemCard = ({
                 <View style={styles.menuFooter}>
                     <Text style={styles.menuPrice}>{priceLabel}</Text>
 
-                    <Pressable onPress={handleAddToCart} style={styles.menuCta}>
-                        <Text style={styles.menuCtaText}>{addToCartLabel}</Text>
+                    <Pressable disabled={disabled} onPress={handleAddToCart} style={[styles.menuCta, disabled ? styles.menuCtaDisabled : null]}>
+                        <Text style={[styles.menuCtaText, disabled ? styles.menuCtaTextDisabled : null]}>{addToCartLabel}</Text>
                     </Pressable>
                 </View>
             </View>
 
-            <Pressable onPress={handleAddToCart} style={styles.thumbShell}>
+            <Pressable disabled={disabled} onPress={handleAddToCart} style={styles.thumbShell}>
                 <View style={styles.thumbInner}>
                     <LinearGradient
                         colors={["#FFECD4", "#FFD7A6"]}
@@ -210,13 +213,13 @@ const MenuItemCard = ({
 const styles = StyleSheet.create({
     menuCard: {
         flexDirection: "row",
-        borderRadius: 26,
-        paddingVertical: 15,
-        paddingHorizontal: 16,
+        borderRadius: 22,
+        paddingVertical: 13,
+        paddingHorizontal: 14,
         backgroundColor: "#FFFFFF",
         borderWidth: 1,
         borderColor: "rgba(37,27,23,0.06)",
-        gap: 13,
+        gap: 11,
         ...cardShadow,
     },
     menuMain: {
@@ -225,18 +228,18 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
     },
     titleBlock: {
-        gap: 5,
+        gap: 4,
     },
     menuTitle: {
         fontFamily: "ChairoSans",
-        fontSize: 20,
-        lineHeight: 24,
+        fontSize: 16,
+        lineHeight: 20,
         color: "#251B17",
     },
     menuDescription: {
         fontFamily: "ChairoSans",
-        fontSize: 13,
-        lineHeight: 18,
+        fontSize: 11,
+        lineHeight: 15,
         color: "#85776B",
     },
     menuRatingRow: {
@@ -247,68 +250,74 @@ const styles = StyleSheet.create({
     },
     menuRatingText: {
         fontFamily: "ChairoSans",
-        fontSize: 13,
+        fontSize: 11,
         color: "#251B17",
     },
     menuRatingCount: {
         fontFamily: "ChairoSans",
-        fontSize: 12,
+        fontSize: 10,
         color: "#AB9D90",
     },
     menuReviewSnippet: {
         marginTop: 4,
-        borderRadius: 14,
-        paddingHorizontal: 10,
-        paddingVertical: 8,
+        borderRadius: 12,
+        paddingHorizontal: 9,
+        paddingVertical: 7,
         backgroundColor: "rgba(242,140,40,0.08)",
     },
     menuReviewSnippetLabel: {
         fontFamily: "ChairoSans",
-        fontSize: 11,
+        fontSize: 10,
         color: "#E46F10",
     },
     menuReviewSnippetText: {
         marginTop: 3,
         fontFamily: "ChairoSans",
-        fontSize: 12,
-        lineHeight: 16,
+        fontSize: 11,
+        lineHeight: 14,
         color: "#7E7167",
     },
     menuFooter: {
-        marginTop: 10,
+        marginTop: 8,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        gap: 10,
+        gap: 8,
     },
     menuPrice: {
         flexShrink: 1,
         fontFamily: "ChairoSans",
-        fontSize: 22,
+        fontSize: 16,
         color: "#E46F10",
     },
     menuCta: {
         borderRadius: 999,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        minWidth: 110,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        minWidth: 96,
         alignItems: "center",
         backgroundColor: "#F28C28",
     },
+    menuCtaDisabled: {
+        backgroundColor: "#E5E7EB",
+    },
     menuCtaText: {
         fontFamily: "ChairoSans",
-        fontSize: 12,
+        fontSize: 11,
         color: "#FFFFFF",
     },
+    menuCtaTextDisabled: {
+        color: "#64748B",
+    },
     thumbShell: {
-        width: 90,
+        width: 80,
         alignItems: "center",
         justifyContent: "center",
     },
     thumbInner: {
-        width: 88,
-        height: 88,
-        borderRadius: 16,
+        width: 76,
+        height: 76,
+        borderRadius: 14,
         overflow: "hidden",
         backgroundColor: "#FAEFE3",
     },
@@ -318,9 +327,9 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
     placeholderIconBubble: {
-        width: 34,
-        height: 34,
-        borderRadius: 17,
+        width: 28,
+        height: 28,
+        borderRadius: 14,
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: "rgba(255,255,255,0.52)",

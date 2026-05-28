@@ -228,6 +228,7 @@ export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptio
     const [allResults, setAllResults] = useState<SearchResult[]>([]);
     const [restaurants, setRestaurants] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [fetchPending, setFetchPending] = useState(false);
     const [restaurantsLoading, setRestaurantsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const requestRef = useRef(0);
@@ -288,6 +289,7 @@ export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptio
                 setAllResults([]);
             } finally {
                 if (requestRef.current === requestId) {
+                    setFetchPending(false);
                     setLoading(false);
                     setRestaurantsLoading(false);
                 }
@@ -298,6 +300,7 @@ export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptio
 
     const clearLoadedData = useCallback(() => {
         requestRef.current = Date.now();
+        setFetchPending(false);
         setLoading(false);
         setRestaurantsLoading(false);
         setError(null);
@@ -306,8 +309,11 @@ export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptio
     }, []);
 
     useEffect(() => {
+        setFetchPending(true);
         const timer = setTimeout(() => fetchResults(debouncedQuery), 200);
-        return () => clearTimeout(timer);
+        return () => {
+            clearTimeout(timer);
+        };
     }, [debouncedQuery, fetchResults]);
 
     const indexedResults = useMemo(() => buildIndex(allResults), [allResults]);
@@ -354,7 +360,7 @@ export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptio
         allResults,
         categories,
         restaurants,
-        loading,
+        loading: loading || fetchPending,
         restaurantsLoading,
         error,
         refetch: () => fetchResults(debouncedQuery),

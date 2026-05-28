@@ -9,13 +9,13 @@ const cardShadow = makeShadow({
     elevation: 5,
 });
 const styles = StyleSheet.create({
-    card: { backgroundColor: "#FFFFFF", borderRadius: 32, padding: 20, rowGap: 8 },
+    card: { backgroundColor: "#FFFFFF", borderRadius: 28, padding: 20, rowGap: 8, borderWidth: 1, borderColor: "#EEE7DE" },
     row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 4 },
     label: { fontFamily: "ChairoSans", fontSize: 14, color: "#475569" },
     value: { fontFamily: "ChairoSans", fontSize: 16, color: "#0F172A" },
     labelStrong: { fontFamily: "ChairoSans", fontSize: 16, color: "#1E293B" },
     valueStrong: { fontFamily: "ChairoSans", fontSize: 20, color: "#0F172A" },
-    divider: { borderTopWidth: 1, borderColor: "#E2E8F0", marginVertical: 8 },
+    divider: { borderTopWidth: 1, borderColor: "#E9E2D8", marginVertical: 8 },
     caption: { fontFamily: "ChairoSans", fontSize: 12, color: "#475569" },
     serviceBlock: { rowGap: 4 },
 });
@@ -53,8 +53,6 @@ const SummaryCard = ({ subtotal, serviceFee, serviceNote, deliveryFee, discount,
         total: "Total",
         footnote: "You will pay total amount shown above.",
     };
-    const hasFees = Boolean(serviceFee || deliveryFee || discount);
-
     return (
         <View className="bg-white rounded-[32px] p-5 gap-2" style={[styles.card, cardShadow]}>
             <SummaryRow label={summaryLabels.subtotal} value={subtotal} />
@@ -68,9 +66,6 @@ const SummaryCard = ({ subtotal, serviceFee, serviceNote, deliveryFee, discount,
             {discount ? <SummaryRow label={summaryLabels.discount} value={`-${discount}`} /> : null}
             <View className="border-t border-gray-100 my-2" style={styles.divider} />
             <SummaryRow label={summaryLabels.total} value={total} highlight />
-            {hasFees ? (
-                <Text className="caption text-dark-60" style={styles.caption}>{summaryLabels.footnote}</Text>
-            ) : null}
         </View>
     );
 };

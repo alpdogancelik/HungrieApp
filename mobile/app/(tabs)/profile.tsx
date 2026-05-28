@@ -1,23 +1,25 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import type { DimensionValue } from "react-native";
 import { Image } from "expo-image";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import "@/src/lib/i18n";
 
 import useAuthStore from "@/store/auth.store";
 import { useCartStore } from "@/store/cart.store";
 import { logout } from "@/lib/api";
 import { router, useRouter } from "expo-router";
+import { getRestaurantImageSource } from "@/lib/assets";
 
-import { SectionHeader } from "@/src/components/componentRegistry";
 import { useDefaultAddress, type ManageAddressesNavigation } from "@/src/features/address/addressFeature";
 
 import { profileIllustrations, profileImages } from "@/constants/profileMedia";
 
-import { fetchUserOrders } from "@/src/services/firebaseOrders";
+import { autoCancelExpiredPendingOrders, fetchUserOrders, subscribeUserOrders } from "@/src/services/firebaseOrders";
 import { storage } from "@/src/lib/storage";
 import { useTheme } from "@/src/theme/themeContext";
 import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
@@ -25,16 +27,14 @@ import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 import { OrderStatus } from "@/type";
 import { ORDER_STATUS_COLORS } from "@/components/OrderCard";
 import { makeShadow } from "@/src/lib/shadowStyle";
+import { useWebDocumentTitle } from "@/src/lib/useWebDocumentTitle";
 import { deleteCurrentUserProfile, getOwnedRestaurantId, updateUserProfile } from "@/lib/firebaseAuth";
 import { NotificationManager } from "@/src/features/notifications/NotificationManager";
 import { seedRestaurants } from "@/lib/restaurantSeeds";
-import { fetchUserOrderReviews } from "@/src/services/orderReviews";
-import type { OrderReview } from "@/src/domain/types";
 import { isCancelledStatus, isReviewableStatus } from "@/src/features/reviews/reviewUtils";
-import OrderReviewCard from "@/src/features/reviews/OrderReviewCard";
 
-const WINE_RED = "#7F021F";
 const ORANGE = "#FE8C00";
+const autoCancelingProfileOrderIds = new Set<string>();
 const normalizeId = (value: unknown) => (value === null || value === undefined ? "" : String(value));
 const restaurantNamesById = seedRestaurants.reduce<Record<string, string>>((acc, restaurant: any) => {
     const id = normalizeId(restaurant?.id);
@@ -47,10 +47,626 @@ const resolveRestaurantName = (order: any) =>
     order?.restaurantName ||
     restaurantNamesById[normalizeId(order?.restaurantId)] ||
     "Restaurant";
+const resolveRestaurantSeed = (order: any) => {
+    const restaurantId = normalizeId(order?.restaurantId).toLowerCase();
+    const restaurantName = normalizeId(order?.restaurant?.name || order?.restaurantName).toLowerCase();
+    return seedRestaurants.find((restaurant: any) => {
+        const seedId = normalizeId(restaurant?.id).toLowerCase();
+        const seedName = normalizeId(restaurant?.name).toLowerCase();
+        return (restaurantId && seedId === restaurantId) || (restaurantName && seedName === restaurantName);
+    });
+};
 const ui = StyleSheet.create({
     pageContent: {
         paddingHorizontal: 20,
         rowGap: 24,
+    },
+    screenTitle: {
+        fontFamily: "ChairoSans",
+        fontSize: 20,
+        lineHeight: 25,
+        color: "#0F172A",
+    },
+    screenSubtitle: {
+        marginTop: 4,
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        lineHeight: 17,
+        color: "#667085",
+    },
+    topHeaderRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+    },
+    topHeaderActions: {
+        flexDirection: "row",
+        alignItems: "center",
+        columnGap: 12,
+    },
+    topIconButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#E9EEF5",
+        ...makeShadow({
+            color: "#0F172A",
+            offsetY: 8,
+            blurRadius: 18,
+            opacity: 0.05,
+            elevation: 2,
+        }),
+    },
+    profileCard: {
+        borderRadius: 24,
+        padding: 16,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#E9EEF5",
+        rowGap: 16,
+        ...makeShadow({
+            color: "#0F172A",
+            offsetY: 10,
+            blurRadius: 24,
+            opacity: 0.06,
+            elevation: 3,
+        }),
+    },
+    profileCardTop: {
+        flexDirection: "row",
+        alignItems: "center",
+        columnGap: 14,
+    },
+    profileAvatar: {
+        width: 62,
+        height: 62,
+        borderRadius: 31,
+        backgroundColor: "#FFE3BD",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    profileAvatarText: {
+        fontFamily: "ChairoSans",
+        fontSize: 28,
+        color: "#D97706",
+    },
+    profileIdentity: {
+        flex: 1,
+        minWidth: 0,
+    },
+    profileName: {
+        fontFamily: "ChairoSans",
+        fontSize: 16,
+        lineHeight: 20,
+        color: "#0F172A",
+    },
+    profileEmail: {
+        marginTop: 4,
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        lineHeight: 16,
+        color: "#667085",
+    },
+    editButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        columnGap: 8,
+        borderWidth: 1,
+        borderColor: "#E5E7EB",
+        borderRadius: 999,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        backgroundColor: "#FFFFFF",
+    },
+    editButtonText: {
+        fontFamily: "ChairoSans",
+        fontSize: 13,
+        color: "#F97316",
+    },
+    profileDivider: {
+        height: 1,
+        backgroundColor: "#EAECF0",
+    },
+    signOutRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        columnGap: 10,
+    },
+    signOutTextInline: {
+        fontFamily: "ChairoSans",
+        fontSize: 14,
+        color: "#DC2626",
+    },
+    addressModernCard: {
+        borderRadius: 18,
+        paddingHorizontal: 13,
+        paddingVertical: 10,
+        backgroundColor: "#FFF9F3",
+        borderWidth: 1,
+        borderColor: "#FFE1C2",
+        rowGap: 0,
+        ...makeShadow({
+            color: "#F28C28",
+            offsetY: 6,
+            blurRadius: 18,
+            opacity: 0.07,
+            elevation: 2,
+        }),
+    },
+    addressModernTop: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        columnGap: 14,
+    },
+    addressModernInfo: {
+        flex: 1,
+        minWidth: 0,
+    },
+    addressKickerRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        columnGap: 5,
+        marginBottom: 6,
+    },
+    addressKicker: {
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        lineHeight: 16,
+        color: "#F26B00",
+    },
+    addressModernTitle: {
+        fontFamily: "ChairoSans",
+        fontSize: 15,
+        lineHeight: 20,
+        color: "#0F172A",
+    },
+    addressModernMeta: {
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        lineHeight: 17,
+        color: "#667085",
+    },
+    addressImage: {
+        width: 132,
+        height: 118,
+        alignSelf: "flex-end",
+        alignItems: "flex-end",
+        justifyContent: "flex-end",
+    },
+    addressManageButton: {
+        alignSelf: "flex-start",
+        flexDirection: "row",
+        alignItems: "center",
+        columnGap: 4,
+        borderRadius: 999,
+        paddingHorizontal: 11,
+        paddingVertical: 6,
+        backgroundColor: "#FF6A00",
+    },
+    addressManageButtonText: {
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        lineHeight: 16,
+        color: "#FFFFFF",
+    },
+    modernSectionCard: {
+        borderRadius: 24,
+        padding: 16,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#E9EEF5",
+        rowGap: 14,
+        ...makeShadow({
+            color: "#0F172A",
+            offsetY: 10,
+            blurRadius: 24,
+            opacity: 0.06,
+            elevation: 3,
+        }),
+    },
+    modernSectionHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+    },
+    modernSectionTitle: {
+        fontFamily: "ChairoSans",
+        fontSize: 17,
+        lineHeight: 21,
+        color: "#0F172A",
+    },
+    linkButtonRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        columnGap: 4,
+    },
+    linkButtonText: {
+        fontFamily: "ChairoSans",
+        fontSize: 13,
+        color: "#F97316",
+    },
+    activeOrderEmptyRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        columnGap: 14,
+    },
+    activeOrderEmptyState: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        columnGap: 14,
+    },
+    emptyBagBubble: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: "#FFF3E8",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    activeOrderCopy: {
+        flex: 1,
+        minWidth: 0,
+    },
+    activeOrderEmptyCopy: {
+        flex: 1,
+        minWidth: 0,
+        rowGap: 10,
+    },
+    activeOrderTitle: {
+        fontFamily: "ChairoSans",
+        fontSize: 15,
+        lineHeight: 19,
+        color: "#0F172A",
+    },
+    activeOrderBody: {
+        marginTop: 3,
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        lineHeight: 17,
+        color: "#667085",
+    },
+    orangeCta: {
+        borderRadius: 999,
+        backgroundColor: "#FF8A00",
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    orangeCtaText: {
+        fontFamily: "ChairoSans",
+        fontSize: 13,
+        color: "#FFFFFF",
+    },
+    orangeCtaInline: {
+        alignSelf: "flex-start",
+    },
+    compactStatusPill: {
+        borderRadius: 999,
+        paddingHorizontal: 12,
+        paddingVertical: 7,
+        backgroundColor: "#EAF9EE",
+        flexDirection: "row",
+        alignItems: "center",
+        columnGap: 6,
+    },
+    compactStatusText: {
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        color: "#249F5D",
+    },
+    activeOrdersSection: {
+        rowGap: 12,
+    },
+    activeOrdersHeader: {
+        paddingHorizontal: 8,
+    },
+    activeOrderCard: {
+        borderRadius: 20,
+        backgroundColor: "#FFFFFF",
+        rowGap: 18,
+    },
+    activeOrderTopRow: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        columnGap: 12,
+    },
+    activeRestaurantLogoShell: {
+        width: 56,
+        height: 56,
+        borderRadius: 18,
+        backgroundColor: "#FFFFFF",
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 1,
+        borderColor: "#EEF2F6",
+        ...makeShadow({
+            color: "#0F172A",
+            offsetY: 7,
+            blurRadius: 14,
+            opacity: 0.08,
+            elevation: 2,
+        }),
+    },
+    activeRestaurantLogo: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: "#FFFFFF",
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "hidden",
+    },
+    activeRestaurantLogoImage: {
+        width: "100%",
+        height: "100%",
+    },
+    activeOrderInfo: {
+        flex: 1,
+        minWidth: 0,
+    },
+    activeOrderName: {
+        fontFamily: "ChairoSans",
+        fontSize: 17,
+        lineHeight: 22,
+        color: "#111827",
+    },
+    activeOrderMetaRow: {
+        marginTop: 6,
+        flexDirection: "row",
+        alignItems: "center",
+        flexWrap: "wrap",
+        columnGap: 7,
+        rowGap: 5,
+    },
+    activeStatusPill: {
+        borderRadius: 999,
+        paddingHorizontal: 11,
+        paddingVertical: 5,
+        borderWidth: 1,
+        borderColor: "rgba(249,115,22,0.14)",
+        backgroundColor: "#FFF4ED",
+    },
+    activeStatusPillText: {
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        lineHeight: 15,
+        color: "#F97316",
+    },
+    activeEtaText: {
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        lineHeight: 16,
+        color: "#667085",
+    },
+    activeDateRow: {
+        marginTop: 4,
+        flexDirection: "row",
+        alignItems: "center",
+        columnGap: 4,
+    },
+    activeDateText: {
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        lineHeight: 16,
+        color: "#98A2B3",
+        flexShrink: 0,
+    },
+    trackOrderButton: {
+        flexShrink: 0,
+        borderRadius: 999,
+        backgroundColor: "#FF6A00",
+        paddingHorizontal: 13,
+        paddingVertical: 10,
+        flexDirection: "row",
+        alignItems: "center",
+        columnGap: 4,
+    },
+    trackOrderButtonText: {
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        lineHeight: 15,
+        color: "#FFFFFF",
+    },
+    activeProgressRow: {
+        position: "relative",
+        flexDirection: "row",
+        alignItems: "flex-start",
+        justifyContent: "space-between",
+        paddingHorizontal: 8,
+        paddingTop: 2,
+    },
+    activeProgressLine: {
+        position: "absolute",
+        left: 28,
+        right: 28,
+        top: 22,
+        height: 2,
+        backgroundColor: "#EEF2F6",
+    },
+    activeProgressLineFill: {
+        position: "absolute",
+        left: 28,
+        top: 22,
+        height: 2,
+        backgroundColor: "#FF6A00",
+    },
+    activeProgressStep: {
+        width: 62,
+        alignItems: "center",
+        rowGap: 7,
+    },
+    activeProgressDot: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 1,
+        borderColor: "#E5E7EB",
+        backgroundColor: "#F6F8FB",
+    },
+    activeProgressDotDone: {
+        borderColor: "#FF6A00",
+        backgroundColor: "#FFFFFF",
+    },
+    activeProgressDotCurrent: {
+        borderColor: "#FF6A00",
+        backgroundColor: "#FF6A00",
+    },
+    activeProgressLabel: {
+        fontFamily: "ChairoSans",
+        fontSize: 10,
+        lineHeight: 13,
+        color: "#98A2B3",
+        textAlign: "center",
+    },
+    activeProgressLabelDone: {
+        color: "#FF6A00",
+    },
+    activeProgressLabelCurrent: {
+        color: "#111827",
+    },
+    historyRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        columnGap: 12,
+    },
+    historySection: {
+        rowGap: 12,
+    },
+    historyHeader: {
+        paddingHorizontal: 8,
+    },
+    historyCard: {
+        borderRadius: 20,
+        paddingHorizontal: 18,
+        paddingVertical: 16,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#E9EEF5",
+        ...makeShadow({
+            color: "#0F172A",
+            offsetY: 10,
+            blurRadius: 24,
+            opacity: 0.06,
+            elevation: 3,
+        }),
+    },
+    historyTextWrap: {
+        flex: 1,
+        minWidth: 0,
+    },
+    historyRestaurantName: {
+        fontFamily: "ChairoSans",
+        fontSize: 16,
+        lineHeight: 20,
+        color: "#0F172A",
+    },
+    historyMeta: {
+        marginTop: 4,
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        lineHeight: 17,
+        color: "#667085",
+    },
+    historyPrice: {
+        color: "#F97316",
+        fontFamily: "ChairoSans",
+    },
+    historyStatusWrap: {
+        flexDirection: "row",
+        alignItems: "center",
+        columnGap: 8,
+        flexShrink: 0,
+    },
+    historyArrowWrap: {
+        width: 28,
+        height: 28,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    accountList: {
+        borderRadius: 22,
+        borderWidth: 1,
+        borderColor: "#E9EEF5",
+        backgroundColor: "#FFFFFF",
+        overflow: "hidden",
+    },
+    accountListRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        columnGap: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: "#EEF2F6",
+    },
+    accountListIcon: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: "#FFF4EA",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    accountListTextWrap: {
+        flex: 1,
+        minWidth: 0,
+    },
+    accountListTitle: {
+        fontFamily: "ChairoSans",
+        fontSize: 15,
+        color: "#0F172A",
+    },
+    accountListBody: {
+        marginTop: 2,
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        lineHeight: 17,
+        color: "#667085",
+    },
+    deleteInlineCard: {
+        borderRadius: 24,
+        paddingHorizontal: 16,
+        paddingVertical: 18,
+        backgroundColor: "#FFF5F5",
+        borderWidth: 1,
+        borderColor: "#FECACA",
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        columnGap: 16,
+    },
+    deleteInlineCopy: {
+        flex: 1,
+        minWidth: 0,
+    },
+    deleteInlineTitle: {
+        fontFamily: "ChairoSans",
+        fontSize: 15,
+        lineHeight: 19,
+        color: "#B42318",
+    },
+    deleteInlineBody: {
+        marginTop: 6,
+        fontFamily: "ChairoSans",
+        fontSize: 12,
+        lineHeight: 17,
+        color: "#B42318",
+    },
+    deleteInlineButton: {
+        borderRadius: 999,
+        paddingHorizontal: 18,
+        paddingVertical: 12,
+        backgroundColor: "#EF4444",
+        alignItems: "center",
+        justifyContent: "center",
     },
     card: {
         borderRadius: 24,
@@ -138,20 +754,20 @@ const ui = StyleSheet.create({
     addressRow: {
         flexDirection: "row",
         alignItems: "center",
-        columnGap: 12,
+        columnGap: 8,
     },
     addressContent: {
         flex: 1,
-        rowGap: 8,
+        rowGap: 7,
         minWidth: 0,
     },
     addressTextGroup: {
-        rowGap: 2,
+        rowGap: 1,
     },
     addressIllustrationWrap: {
-        width: 96,
+        width: 78,
         alignItems: "center",
-        justifyContent: "flex-end",
+        justifyContent: "center",
         alignSelf: "stretch",
     },
     manageAddressBtn: {
@@ -427,22 +1043,40 @@ const ui = StyleSheet.create({
     },
     editHeaderSubtitle: {
         color: "rgba(255,255,255,0.8)",
-        fontSize: 14,
-        lineHeight: 20,
+        fontSize: 13,
+        lineHeight: 18,
         fontFamily: "ChairoSans",
     },
+    editHeaderHero: {
+        position: "relative",
+        padding: 20,
+        minHeight: 146,
+        flexDirection: "row",
+        alignItems: "center",
+        overflow: "hidden",
+    },
+    editHeaderCopy: {
+        flex: 1,
+        minWidth: 0,
+        rowGap: 4,
+        paddingRight: 66,
+    },
     editHeaderImageWrap: {
-        width: 110,
-        height: 110,
+        position: "absolute",
+        right: 10,
+        bottom: 18,
+        width: 58,
+        height: 78,
         alignItems: "center",
         justifyContent: "center",
+        overflow: "hidden",
     },
 });
 
 const formatCurrency = (value?: number | string) => {
     const amount = Number(value ?? 0);
-    if (Number.isNaN(amount)) return "TRY 0.00";
-    return `TRY ${amount.toFixed(2)}`;
+    if (Number.isNaN(amount)) return "₺0.00";
+    return `₺${amount.toFixed(2)}`;
 };
 
 const normalizeStatus = (status?: string): OrderStatus => {
@@ -455,6 +1089,29 @@ const normalizeStatus = (status?: string): OrderStatus => {
         return raw as OrderStatus;
     }
     return "pending";
+};
+
+const getActiveOrderStep = (status: OrderStatus) => {
+    if (status === "preparing") return 2;
+    if (status === "ready" || status === "out_for_delivery") return 3;
+    if (status === "delivered") return 4;
+    return 0;
+};
+
+const formatProfileEta = (order: any, isTurkish: boolean) => {
+    const etaMin = Number(order?.etaMin ?? order?.deliveryEtaMin);
+    const etaMax = Number(order?.etaMax ?? order?.deliveryEtaMax);
+    if (Number.isFinite(etaMin) && Number.isFinite(etaMax) && etaMin > 0 && etaMax > 0) {
+        return `${isTurkish ? "Tahmini" : "Estimated"} ${Math.round(etaMin)}-${Math.round(etaMax)} ${isTurkish ? "dk" : "min"}`;
+    }
+
+    const eta = Number(order?.etaMinutes ?? order?.eta);
+    if (Number.isFinite(eta) && eta > 0 && eta < 180) {
+        const rounded = Math.max(10, Math.round(eta / 5) * 5);
+        return `${isTurkish ? "Tahmini" : "Estimated"} ${Math.max(10, rounded - 5)}-${rounded + 5} ${isTurkish ? "dk" : "min"}`;
+    }
+
+    return isTurkish ? "Tahmini 25-35 dk" : "Estimated 25-35 min";
 };
 
 type OrderSummaryItem = {
@@ -483,17 +1140,27 @@ const formatTimestamp = (value: any) => {
     return String(value);
 };
 
-const toMillis = (value: any) => {
-    if (!value) return 0;
-    if (typeof value === "object" && "seconds" in value) {
-        return value.seconds * 1000 + (value.nanoseconds || 0) / 1_000_000;
-    }
-    const d = new Date(value);
-    const ms = d.getTime();
-    return Number.isNaN(ms) ? 0 : ms;
+const formatProfileOrderDate = (value: any, isTurkish: boolean) => {
+    if (!value) return "";
+    const date =
+        typeof value === "object" && "seconds" in value
+            ? new Date(value.seconds * 1000 + (value.nanoseconds || 0) / 1_000_000)
+            : new Date(value);
+
+    if (Number.isNaN(date.getTime())) return String(value);
+
+    return new Intl.DateTimeFormat(isTurkish ? "tr-TR" : "en-GB", {
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+    })
+        .format(date)
+        .replace(",", " •");
 };
 
 const Profile = () => {
+    useWebDocumentTitle();
     const navigation = useNavigation<ManageAddressesNavigation>();
     const { user, isAuthenticated, setUser, resetAuthState } = useAuthStore();
     const clearCart = useCartStore((s) => s.clearCart);
@@ -508,8 +1175,6 @@ const Profile = () => {
     const guestVisualCenterOffset = Math.max((guestTabBarOffset - safeTop) / 2, 0) + 48;
 
     const [orders, setOrders] = useState<any[]>([]);
-    const [userOrderReviews, setUserOrderReviews] = useState<OrderReview[]>([]);
-    const [reviewsLoading, setReviewsLoading] = useState(false);
     const [ownedRestaurantId, setOwnedRestaurantId] = useState<string | null>(null);
     const [signingOut, setSigningOut] = useState(false);
     const [deletingProfile, setDeletingProfile] = useState(false);
@@ -538,59 +1203,12 @@ const Profile = () => {
         [user?.name],
     );
     const userId = String(user?.id ?? user?.$id ?? user?.accountId ?? "").trim();
-    const userDisplayName = String(user?.name || "").trim() || undefined;
-    const reviewedOrderIds = useMemo(
-        () => new Set(userOrderReviews.map((review) => String(review.orderId || "").trim()).filter(Boolean)),
-        [userOrderReviews],
-    );
-
     const activeOrders = useMemo(() => {
         return (orders || []).filter((o: any) => {
             const status = String(o?.status || "");
             return !isReviewableStatus(status) && !isCancelledStatus(status);
         });
     }, [orders]);
-
-    const deliveredOrders = useMemo<any[]>(() => {
-        if (!userId) return [];
-
-        const latestOrderById = new Map<string, any>();
-        for (const order of orders || []) {
-            const orderId = String(order?.id ?? "").trim();
-            if (!orderId) continue;
-            const existing = latestOrderById.get(orderId);
-            if (!existing) {
-                latestOrderById.set(orderId, order);
-                continue;
-            }
-            const existingUpdatedAt = toMillis(existing?.updatedAt || existing?.createdAt);
-            const nextUpdatedAt = toMillis(order?.updatedAt || order?.createdAt);
-            if (nextUpdatedAt >= existingUpdatedAt) {
-                latestOrderById.set(orderId, order);
-            }
-        }
-
-        const list: any[] = [];
-        for (const order of latestOrderById.values()) {
-            const orderId = String(order?.id ?? "").trim();
-            if (!orderId) continue;
-            if (String(order?.userId || "").trim() && String(order?.userId || "").trim() !== userId) continue;
-            if (isCancelledStatus(String(order?.status || ""))) continue;
-            if (!isReviewableStatus(String(order?.status || ""))) continue;
-            list.push(order);
-        }
-
-        return list.sort((a, b) => toMillis(b?.updatedAt || b?.createdAt) - toMillis(a?.updatedAt || a?.createdAt));
-    }, [orders, userId]);
-
-    useEffect(() => {
-        if (!__DEV__ || !userId) return;
-
-        console.debug(
-            `[Reviews][Profile] delivered=${deliveredOrders.length}, reviewed=${reviewedOrderIds.size}`,
-        );
-    }, [deliveredOrders.length, reviewedOrderIds.size, userId]);
-
     const isTurkish = i18n.language?.toLowerCase().startsWith("tr");
     const guestCopy = {
         title: isTurkish ? "Profilini y\u00F6netmek i\u00E7in giri\u015F yap" : "Sign in to manage your profile",
@@ -628,6 +1246,12 @@ const Profile = () => {
 
         try {
             const list = await fetchUserOrders(userId);
+            void autoCancelExpiredPendingOrders(list || [], {
+                inFlightIds: autoCancelingProfileOrderIds,
+                onError: (error) => {
+                    console.warn("[orders] Failed to auto-cancel expired pending order from profile", error);
+                },
+            });
             setOrders(list || []);
         } catch {
             setOrders([]);
@@ -635,8 +1259,26 @@ const Profile = () => {
     }, [userId]);
 
     useEffect(() => {
-        void loadUserOrders();
-    }, [loadUserOrders]);
+        if (!userId) {
+            setOrders([]);
+            return undefined;
+        }
+
+        try {
+            return subscribeUserOrders(userId, (nextOrders) => {
+                void autoCancelExpiredPendingOrders(nextOrders || [], {
+                    inFlightIds: autoCancelingProfileOrderIds,
+                    onError: (error) => {
+                        console.warn("[orders] Failed to auto-cancel expired pending order from profile", error);
+                    },
+                });
+                setOrders(nextOrders || []);
+            });
+        } catch {
+            void loadUserOrders();
+            return undefined;
+        }
+    }, [loadUserOrders, userId]);
 
     useFocusEffect(
         useCallback(() => {
@@ -664,42 +1306,6 @@ const Profile = () => {
             return undefined;
         }, [loadOwnedRestaurant]),
     );
-
-    const loadUserOrderReviews = useCallback(async () => {
-        if (!userId) {
-            setUserOrderReviews([]);
-            setReviewsLoading(false);
-            return;
-        }
-
-        try {
-            setReviewsLoading(true);
-            const reviews = await fetchUserOrderReviews(userId, { limit: 100 });
-            setUserOrderReviews(reviews);
-        } catch {
-            setUserOrderReviews([]);
-        } finally {
-            setReviewsLoading(false);
-        }
-    }, [userId]);
-
-    useEffect(() => {
-        void loadUserOrderReviews();
-    }, [loadUserOrderReviews]);
-
-    useFocusEffect(
-        useCallback(() => {
-            void loadUserOrderReviews();
-            return undefined;
-        }, [loadUserOrderReviews]),
-    );
-
-    const handleOrderReviewSaved = useCallback((review: OrderReview) => {
-        setUserOrderReviews((prev) => {
-            const next = [review, ...prev.filter((entry) => entry.id !== review.id)];
-            return next.sort((a, b) => toMillis(b.createdAt || b.updatedAt) - toMillis(a.createdAt || a.updatedAt));
-        });
-    }, []);
 
     const handleSaveProfile = async () => {
         const trimmedName = nameDraft.trim();
@@ -746,7 +1352,6 @@ const Profile = () => {
         } finally {
             setSigningOut(false);
             setOrders([]);
-            setUserOrderReviews([]);
             setOwnedRestaurantId(null);
             setNotifModalVisible(false);
             setIsEditingProfile(false);
@@ -779,7 +1384,6 @@ const Profile = () => {
                 setDeletingProfile(true);
                 await deleteCurrentUserProfile();
                 setOrders([]);
-                setUserOrderReviews([]);
                 setOwnedRestaurantId(null);
                 setNotifModalVisible(false);
                 setIsEditingProfile(false);
@@ -869,286 +1473,330 @@ const Profile = () => {
         <SafeAreaView className="flex-1 bg-gray-50" edges={["left", "right", "bottom"]}>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 160, paddingTop: safeTop }}>
                 <View className="px-5 gap-6" style={ui.pageContent}>
-                    {/* HERO */}
-                    <View className="secondary-card border-0 shadow-2xl gap-4" style={[ui.card, { backgroundColor: WINE_RED, rowGap: 16 }]}>
-                        <View className="flex-row items-center gap-4" style={ui.heroRow}>
-                            <View
-                                className="size-16 rounded-full bg-white/10 border border-white/40 items-center justify-center"
-                                style={ui.avatarButton}
-                            >
-                                <Text className="h3-bold text-white">{initials}</Text>
-                            </View>
-
-                            <View className="flex-1">
-                                <View className="flex-row items-center gap-2" style={ui.nameRow}>
-                                    <Text className="text-white text-2xl font-ezra-bold" style={ui.userName}>{user?.name || "Hungrie Student"}</Text>
-                                </View>
-                                <Text className="body-medium text-white/70" style={ui.userEmail}>{user?.email || "student@campus.edu"}</Text>
-                            </View>
+                    <View style={ui.topHeaderRow}>
+                        <View>
+                            <Text style={ui.screenTitle}>{isTurkish ? "Profilim" : "My Profile"}</Text>
+                            <Text style={ui.screenSubtitle}>
+                                {isTurkish ? "Hesabını yönet ve siparişlerini takip et." : "Manage your account and track your orders."}
+                            </Text>
                         </View>
-
-                        <View className="flex-row gap-3" style={ui.heroActions}>
-                            <TouchableOpacity
-                                className="flex-1 px-5 py-3 rounded-full items-center justify-center"
-                                style={ui.primaryCta}
-                                onPress={() => setIsEditingProfile(true)}
-                            >
-                                <Text className="paragraph-semibold text-white" style={ui.ctaText}>
-                                    {t("profile.header.edit")}
-                                </Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                className="flex-1 px-5 py-3 rounded-full bg-white/10 border border-white/30 items-center"
-                                style={ui.secondaryCta}
-                                disabled={signingOut}
-                                onPress={handleLogout}
-                            >
-                                <Text className="paragraph-semibold text-white" style={ui.ctaText}>
-                                    {signingOut ? t("profile.header.signingOut") : t("profile.header.signOut")}
-                                </Text>
-                            </TouchableOpacity>
+                        <View style={ui.topHeaderActions}>
+                            <Pressable style={ui.topIconButton} onPress={() => setIsEditingProfile(true)}>
+                                <Ionicons name="settings-outline" size={22} color="#0F172A" />
+                            </Pressable>
+                            <Pressable style={ui.topIconButton} onPress={() => setNotifModalVisible(true)}>
+                                <Ionicons name="notifications-outline" size={22} color="#0F172A" />
+                            </Pressable>
                         </View>
                     </View>
 
-                    {/* ADDRESS - design (orange) + database defaultAddress */}
-                    <View className="secondary-card gap-3" style={[ui.card, ui.addressCard, { backgroundColor: ORANGE }]}>
+                    <View style={ui.profileCard}>
+                        <View style={ui.profileCardTop}>
+                            <View style={ui.profileAvatar}>
+                                <Text style={ui.profileAvatarText}>{initials.slice(0, 1)}</Text>
+                            </View>
+                            <View style={ui.profileIdentity}>
+                                <Text style={ui.profileName}>{user?.name || "Hungrie Student"}</Text>
+                                <Text style={ui.profileEmail}>{user?.email || "student@campus.edu"}</Text>
+                            </View>
+                            <TouchableOpacity style={ui.editButton} onPress={() => setIsEditingProfile(true)}>
+                                <Text style={ui.editButtonText}>{t("profile.header.edit")}</Text>
+                                <Ionicons name="create-outline" size={16} color="#F97316" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={ui.profileDivider} />
+
+                        <TouchableOpacity style={ui.signOutRow} disabled={signingOut} onPress={handleLogout}>
+                            <Ionicons name="log-out-outline" size={18} color="#DC2626" />
+                            <Text style={ui.signOutTextInline}>
+                                {signingOut ? t("profile.header.signingOut") : t("profile.header.signOut")}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={[ui.card, ui.addressCard, ui.addressModernCard]}>
                         <View style={ui.addressRow}>
                             <View style={ui.addressContent}>
-                                <Text className="text-white text-2xl font-ezra-bold" style={ui.addressTitle}>{t("profile.defaultAddress")}</Text>
+                                <View style={ui.addressKickerRow}>
+                                    <Ionicons name="location-sharp" size={15} color="#FF6A00" />
+                                    <Text style={ui.addressKicker}>{t("profile.defaultAddress")}</Text>
+                                </View>
                                 {defaultAddress ? (
                                     <View style={ui.addressTextGroup}>
-                                        <Text className="paragraph-semibold text-white" style={ui.addressText}>{defaultAddress.label}</Text>
-                                        {addressLineOne ? <Text className="body-medium text-white/80" style={ui.addressMeta}>{addressLineOne}</Text> : null}
-                                        {addressLineTwo ? <Text className="body-medium text-white/80" style={ui.addressMeta}>{addressLineTwo}</Text> : null}
+                                        <Text style={ui.addressModernTitle} numberOfLines={1}>
+                                            {defaultAddress.label}
+                                        </Text>
+                                        {addressLineOne ? (
+                                            <Text style={ui.addressModernMeta} numberOfLines={1}>
+                                                {addressLineOne}
+                                            </Text>
+                                        ) : null}
+                                        {addressLineTwo ? (
+                                            <Text style={ui.addressModernMeta} numberOfLines={1}>
+                                                {addressLineTwo}
+                                            </Text>
+                                        ) : null}
                                     </View>
                                 ) : (
-                                    <Text className="body-medium text-white/80" style={ui.addressMeta}>{t("profile.noAddress")}</Text>
+                                    <Text style={ui.addressModernMeta} numberOfLines={2}>
+                                        {t("profile.noAddress")}
+                                    </Text>
                                 )}
 
                                 <TouchableOpacity
-                                    className="self-start px-4 py-2 rounded-full bg-white/15"
-                                    style={ui.manageAddressBtn}
+                                    style={ui.addressManageButton}
                                     onPress={handleManageAddressesPress}
                                 >
-                                    <Text className="paragraph-semibold text-white" style={ui.ctaText}>{t("profile.manageAddresses")}</Text>
+                                    <Ionicons name="location-outline" size={14} color="#FFFFFF" />
+                                    <Text style={ui.addressManageButtonText}>
+                                        {t("profile.manageAddresses")}
+                                    </Text>
                                 </TouchableOpacity>
                             </View>
 
                             <View style={ui.addressIllustrationWrap}>
-                                <TrackingIllustration width={92} height={92} />
+                                <TrackingIllustration width={70} height={70} />
                             </View>
                         </View>
                     </View>
 
-                    {/* ACTIVE ORDERS - keep database behaviour, keep clean UI */}
-                    <View
-                        className="secondary-card gap-4"
-                        style={[ui.sectionCard, ui.sectionCardShadow, isWeb ? ui.sectionCardWeb : null, isWeb ? ui.sectionCardShadowWeb : null]}
-                    >
-                        <View className="flex-row items-center justify-between" style={ui.rowBetween}>
-                            <SectionHeader title={t("profile.activeOrders")} />
-                            {profileIllustrations.courierHero ? (
-                                <profileIllustrations.courierHero width={isWeb ? 64 : 56} height={isWeb ? 64 : 56} />
-                            ) : null}
+                    <View style={ui.activeOrdersSection}>
+                        <View style={[ui.modernSectionHeader, ui.activeOrdersHeader]}>
+                            <Text style={ui.modernSectionTitle}>{t("profile.activeOrders")}</Text>
+                            <TouchableOpacity onPress={() => router.push("/orders")} style={ui.linkButtonRow}>
+                                <Text style={ui.linkButtonText}>{isTurkish ? "Tümünü gör" : "See all"}</Text>
+                                <Ionicons name="chevron-forward" size={15} color="#F97316" />
+                            </TouchableOpacity>
                         </View>
 
-                        {activeOrders.length ? (
-                            <View style={{ gap: 12 }}>
-                                {activeOrders.map((order: any) => {
-                                    const norm = normalizeStatus(order.status);
-                                    const badge = ORDER_STATUS_COLORS[norm];
-                                    const label = t(`status.${norm}` as const);
-                                    const rawOrderId = String(order.id ?? "-");
-                                    const orderIdText = `#${rawOrderId}`;
-                                    const items = resolveItems(order);
-                                    const summary = items.length ? items.map((it) => `${it.quantity}x ${it.name}`).join(" - ") : null;
-                                    const restaurantName = resolveRestaurantName(order) || t("orders.unknownRestaurant");
+                        <View style={ui.modernSectionCard}>
+                            {activeOrders.length ? (
+                                activeOrders.slice(0, 1).map((order: any) => {
+                                const norm = normalizeStatus(order.status);
+                                const label = t(`status.${norm}` as const);
+                                const restaurantName = resolveRestaurantName(order) || t("orders.unknownRestaurant");
+                                const restaurantSeed = resolveRestaurantSeed(order);
+                                const logoSource = getRestaurantImageSource(
+                                    order?.restaurant?.imageUrl || order?.restaurant?.image_url || order?.imageUrl || restaurantSeed?.imageUrl,
+                                    undefined,
+                                    `${normalizeId(order?.restaurantId)} ${restaurantName}`,
+                                );
+                                const activeStep = getActiveOrderStep(norm);
+                                const etaLabel = formatProfileEta(order, isTurkish);
+                                const orderDate = formatProfileOrderDate(order.updatedAt || order.createdAt, isTurkish);
+                                const progressSteps = [
+                                    {
+                                        label: isTurkish ? "Yanıt bekliyor" : "Waiting",
+                                        icon: "time-outline" as const,
+                                    },
+                                    {
+                                        label: isTurkish ? "Alındı" : "Received",
+                                        icon: "checkmark-circle-outline" as const,
+                                    },
+                                    {
+                                        label: isTurkish ? "Hazırlanıyor" : "Preparing",
+                                        icon: "restaurant-outline" as const,
+                                    },
+                                    {
+                                        label: isTurkish ? "Yolda" : "On the way",
+                                        icon: "bicycle-outline" as const,
+                                    },
+                                    {
+                                        label: isTurkish ? "Teslim edildi" : "Delivered",
+                                        icon: "cube-outline" as const,
+                                    },
+                                ];
+                                const progressDenominator = Math.max(progressSteps.length - 1, 1);
+                                const progressFill = `${Math.min(100, Math.max(0, (activeStep / progressDenominator) * 100))}%` as DimensionValue;
+                                const openOrder = () =>
+                                    router.push({
+                                        pathname: "/order/pending",
+                                        params: {
+                                            orderId: order.id,
+                                            restaurantName: resolveRestaurantName(order),
+                                            eta: String(order.eta || order.etaMinutes || 120),
+                                        },
+                                    });
 
-                                    return (
-                                        <TouchableOpacity
-                                            key={order.id}
-                                            onPress={() =>
-                                                router.push({
-                                                    pathname: "/order/pending",
-                                                    params: {
-                                                        orderId: order.id,
-                                                        restaurantName: resolveRestaurantName(order),
-                                                        eta: String(order.eta || order.etaMinutes || 120),
-                                                    },
-                                                })
-                                            }
-                                            style={[
-                                                ui.orderItemCard,
-                                                ui.orderItemCardShadow,
-                                                isWeb ? ui.orderItemCardWeb : null,
-                                                isWeb ? ui.orderItemCardShadowWeb : null,
-                                            ]}
-                                        >
-                                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                                                <View style={{ flex: 1, paddingRight: 10 }}>
-                                                    <Text style={{ fontFamily: "ChairoSans", fontSize: 16, color: "#0F172A" }}>
-                                                        {restaurantName}
-                                                    </Text>
-                                                    <Text style={{ fontFamily: "ChairoSans", fontSize: 12, color: "#64748B", marginTop: 2 }}>
-                                                        Order ID: {orderIdText}
-                                                    </Text>
-                                                </View>
-
-                                                <View
-                                                    style={{
-                                                        paddingHorizontal: 10,
-                                                        paddingVertical: 6,
-                                                        borderRadius: 999,
-                                                        backgroundColor: badge.bg,
-                                                        flexDirection: "row",
-                                                        alignItems: "center",
-                                                    }}
-                                                >
-                                                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: badge.dot }} />
-                                                    <Text style={{ color: badge.text, fontFamily: "ChairoSans", marginLeft: 6 }}>
-                                                        {label}
-                                                    </Text>
+                                return (
+                                    <TouchableOpacity
+                                        key={order.id}
+                                        activeOpacity={0.9}
+                                        style={ui.activeOrderCard}
+                                        onPress={openOrder}
+                                    >
+                                        <View style={ui.activeOrderTopRow}>
+                                            <View style={ui.activeRestaurantLogoShell}>
+                                                <View style={ui.activeRestaurantLogo}>
+                                                    <Image source={logoSource} style={ui.activeRestaurantLogoImage} contentFit="cover" />
                                                 </View>
                                             </View>
 
-                                            <Text style={{ color: "#94A3B8", marginTop: 4, fontFamily: "ChairoSans" }}>
-                                                {formatTimestamp(order.updatedAt || order.createdAt)}
-                                            </Text>
-
-                                            {summary ? (
-                                                <Text style={{ color: "#1E293B", marginTop: 8, fontFamily: "ChairoSans" }}>
-                                                    {summary}
+                                            <View style={ui.activeOrderInfo}>
+                                                <Text style={ui.activeOrderName} numberOfLines={1}>
+                                                    {restaurantName}
                                                 </Text>
-                                            ) : null}
-
-                                            <View
-                                                style={{
-                                                    flexDirection: "row",
-                                                    justifyContent: "space-between",
-                                                    alignItems: "center",
-                                                    marginTop: 12,
-                                                }}
-                                            >
-                                                <View>
-                                                    <Text style={{ color: "#94A3B8", fontFamily: "ChairoSans" }}>
-                                                        {t("cart.screen.summary.total")}
-                                                    </Text>
-                                                    <Text style={{ color: "#0F172A", fontSize: 18, fontFamily: "ChairoSans" }}>
-                                                        {formatCurrency(order.total)}
-                                                    </Text>
+                                                <View style={ui.activeOrderMetaRow}>
+                                                    <View style={ui.activeStatusPill}>
+                                                        <Text style={ui.activeStatusPillText}>{label}</Text>
+                                                    </View>
+                                                    <View style={ui.activeDateRow}>
+                                                        <Ionicons name="time-outline" size={13} color="#98A2B3" />
+                                                        <Text style={ui.activeEtaText} numberOfLines={1}>
+                                                            {etaLabel}
+                                                        </Text>
+                                                    </View>
                                                 </View>
+                                                {orderDate ? (
+                                                    <View style={ui.activeDateRow}>
+                                                        <Ionicons name="calendar-outline" size={13} color="#98A2B3" />
+                                                        <Text style={ui.activeDateText}>
+                                                            {orderDate}
+                                                        </Text>
+                                                    </View>
+                                                ) : null}
                                             </View>
+
+                                            <TouchableOpacity style={ui.trackOrderButton} onPress={openOrder}>
+                                                <Text style={ui.trackOrderButtonText}>
+                                                    {isTurkish ? "Siparişi takip et" : "Track order"}
+                                                </Text>
+                                                <Ionicons name="chevron-forward" size={13} color="#FFFFFF" />
+                                            </TouchableOpacity>
+                                        </View>
+
+                                        <View style={ui.activeProgressRow}>
+                                            <View style={ui.activeProgressLine} />
+                                            <View style={[ui.activeProgressLineFill, { width: progressFill }]} />
+                                            {progressSteps.map((step, index) => {
+                                                const isDone = index < activeStep;
+                                                const isCurrent = index === activeStep;
+                                                const iconColor = isCurrent ? "#FFFFFF" : isDone ? "#FF6A00" : "#98A2B3";
+                                                return (
+                                                    <View key={step.label} style={ui.activeProgressStep}>
+                                                        <View
+                                                            style={[
+                                                                ui.activeProgressDot,
+                                                                isDone ? ui.activeProgressDotDone : null,
+                                                                isCurrent ? ui.activeProgressDotCurrent : null,
+                                                            ]}
+                                                        >
+                                                            <Ionicons name={step.icon} size={18} color={iconColor} />
+                                                        </View>
+                                                        <Text
+                                                            style={[
+                                                                ui.activeProgressLabel,
+                                                                isDone ? ui.activeProgressLabelDone : null,
+                                                                isCurrent ? ui.activeProgressLabelCurrent : null,
+                                                            ]}
+                                                            numberOfLines={1}
+                                                        >
+                                                            {step.label}
+                                                        </Text>
+                                                    </View>
+                                                );
+                                            })}
+                                        </View>
+                                    </TouchableOpacity>
+                                    );
+                                })
+                            ) : (
+                                <View style={ui.activeOrderEmptyState}>
+                                    <View style={ui.emptyBagBubble}>
+                                        <Ionicons name="bag-handle-outline" size={22} color="#F97316" />
+                                    </View>
+                                    <View style={ui.activeOrderEmptyCopy}>
+                                        <Text style={ui.activeOrderTitle}>{t("profile.noActiveOrders")}</Text>
+                                        <Text style={ui.activeOrderBody}>
+                                            {isTurkish ? "Lezzetli bir şeyler sipariş vermeye ne dersin?" : "How about ordering something tasty?"}
+                                        </Text>
+                                        <TouchableOpacity style={[ui.orangeCta, ui.orangeCtaInline]} onPress={() => router.push("/search")}>
+                                            <Text style={ui.orangeCtaText}>{isTurkish ? "Restoranlara göz at" : "Browse restaurants"}</Text>
                                         </TouchableOpacity>
-                                    );
-                                })}
-                            </View>
-                        ) : (
-                            <Text className="body-medium text-dark-60">{t("profile.noActiveOrders")}</Text>
-                        )}
-                    </View>
-
-                    <View
-                        className="secondary-card gap-4"
-                        style={[ui.sectionCard, ui.sectionCardShadow, isWeb ? ui.sectionCardWeb : null, isWeb ? ui.sectionCardShadowWeb : null]}
-                    >
-                        <View className="flex-row items-center justify-between" style={ui.rowBetween}>
-                            <SectionHeader title={isTurkish ? "Teslim edilen siparisler" : "Delivered orders"} />
+                                    </View>
+                                </View>
+                            )}
                         </View>
-
-                        {deliveredOrders.length ? (
-                            <View style={{ gap: 12 }}>
-                                {deliveredOrders.map((order, index) => {
-                                    const orderId = String(order?.id || "").trim();
-                                    return (
-                                        <OrderReviewCard
-                                            key={orderId || `delivered-${index}`}
-                                            order={order}
-                                            reviewed={reviewedOrderIds.has(orderId)}
-                                            userName={userDisplayName}
-                                            onReviewSaved={handleOrderReviewSaved}
-                                        />
-                                    );
-                                })}
-                            </View>
-                        ) : (
-                            <Text className="body-medium text-dark-60">
-                                {reviewsLoading
-                                    ? isTurkish
-                                        ? "Degerlendirme bilgileri yukleniyor..."
-                                        : "Loading order reviews..."
-                                    : isTurkish
-                                      ? "Degerlendirilecek teslim edilmis siparis yok."
-                                      : "No delivered orders to review yet."}
-                            </Text>
-                        )}
                     </View>
 
                     <OrderHistorySection orders={orders} />
 
-                    {/* ACTIONS - design version */}
-                    <View className="secondary-card gap-3" style={ui.actionsCard}>
-                        <SectionHeader title={t("profile.accountActions")} />
-                        {[
-                            ...(ownedRestaurantId
-                                ? [
-                                      {
-                                          label: isTurkish ? "Restoran paneli" : "Restaurant panel",
-                                          description: isTurkish
-                                              ? "Restoran siparişlerini ve menünü yönet."
-                                              : "Manage restaurant orders and menu.",
-                                          action: () => router.push("/restaurantpanel"),
-                                      },
-                                  ]
-                                : []),
-                            {
-                                label: t("profileExtras.actions.notifications.label"),
-                                description: t("profileExtras.actions.notifications.description"),
-                                action: () => setNotifModalVisible(true),
-                            },
-                            {
-                                label: t("profileExtras.actions.privacy.label"),
-                                description: t("profileExtras.actions.privacy.description"),
-                                action: () => router.push("/privacy"),
-                            },
-                            {
-                                label: t("profileExtras.actions.terms.label"),
-                                description: t("profileExtras.actions.terms.description"),
-                                action: () => router.push("/terms"),
-                            },
-                            {
-                                label: t("profileExtras.actions.help.label"),
-                                description: t("profileExtras.actions.help.description"),
-                                action: () => router.push("/support"),
-                            },
-                            {
-                                label: t("profileExtras.actions.history.label"),
-                                description: t("profileExtras.actions.history.description"),
-                                action: () => router.push("/orders"),
-                            },
-                        ].map((item) => (
-                            <TouchableOpacity key={item.label} className="profile-field" style={ui.accountRow} onPress={item.action}>
-                                <View className="profile-field__icon" style={ui.accountIcon}>
-                                    <Text className="paragraph-semibold text-primary-dark" style={ui.accountInitial}>{item.label[0]}</Text>
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="paragraph-semibold text-dark-100" style={ui.accountLabel}>{item.label}</Text>
-                                    <Text className="body-medium text-dark-60" style={ui.accountDesc}>{item.description}</Text>
-                                </View>
-                            </TouchableOpacity>
-                        ))}
+                    <View style={ui.modernSectionCard}>
+                        <Text style={ui.modernSectionTitle}>{t("profile.accountActions")}</Text>
+                        <View style={ui.accountList}>
+                            {[
+                                ...(ownedRestaurantId
+                                    ? [
+                                          {
+                                              label: isTurkish ? "Restoran paneli" : "Restaurant panel",
+                                              description: isTurkish ? "Restoran siparişlerini ve menünü yönet." : "Manage restaurant orders and menu.",
+                                              action: () => router.push("/restaurantpanel"),
+                                              icon: "storefront-outline" as const,
+                                          },
+                                      ]
+                                    : []),
+                                {
+                                    label: t("profileExtras.actions.notifications.label"),
+                                    description: t("profileExtras.actions.notifications.description"),
+                                    action: () => setNotifModalVisible(true),
+                                    icon: "notifications-outline" as const,
+                                },
+                                {
+                                    label: t("profileExtras.actions.privacy.label"),
+                                    description: t("profileExtras.actions.privacy.description"),
+                                    action: () => router.push("/privacy"),
+                                    icon: "shield-checkmark-outline" as const,
+                                },
+                                {
+                                    label: t("profileExtras.actions.terms.label"),
+                                    description: t("profileExtras.actions.terms.description"),
+                                    action: () => router.push("/terms"),
+                                    icon: "document-text-outline" as const,
+                                },
+                                {
+                                    label: t("profileExtras.actions.help.label"),
+                                    description: t("profileExtras.actions.help.description"),
+                                    action: () => router.push("/support"),
+                                    icon: "headset-outline" as const,
+                                },
+                                {
+                                    label: t("profileExtras.actions.history.label"),
+                                    description: t("profileExtras.actions.history.description"),
+                                    action: () => router.push("/orders"),
+                                    icon: "time-outline" as const,
+                                },
+                            ].map((item, index, array) => (
+                                <TouchableOpacity
+                                    key={item.label}
+                                    style={[ui.accountListRow, index === array.length - 1 ? { borderBottomWidth: 0 } : null]}
+                                    onPress={item.action}
+                                >
+                                    <View style={ui.accountListIcon}>
+                                        <Ionicons name={item.icon} size={20} color="#F97316" />
+                                    </View>
+                                    <View style={ui.accountListTextWrap}>
+                                        <Text style={ui.accountListTitle}>{item.label}</Text>
+                                        <Text style={ui.accountListBody}>{item.description}</Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={18} color="#98A2B3" />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
                     </View>
 
-                    <View style={ui.deleteAccountCard}>
-                        <Text style={ui.deleteAccountTitle}>{t("profileExtras.deleteProfile.title", "Delete profile")}</Text>
-                        <Text style={ui.deleteAccountBody}>
-                            {t(
-                                "profileExtras.deleteProfile.description",
-                                "Permanently remove your account and profile data from Hungrie.",
-                            )}
-                        </Text>
+                    <View style={ui.deleteInlineCard}>
+                        <View style={ui.deleteInlineCopy}>
+                            <Text style={ui.deleteInlineTitle}>{t("profileExtras.deleteProfile.title", "Delete profile")}</Text>
+                            <Text style={ui.deleteInlineBody}>
+                                {t(
+                                    "profileExtras.deleteProfile.description",
+                                    "Permanently remove your account and profile data from Hungrie.",
+                                )}
+                            </Text>
+                        </View>
                         <TouchableOpacity
-                            style={[ui.deleteAccountButton, deletingProfile ? ui.deleteAccountButtonDisabled : null]}
+                            style={[ui.deleteInlineButton, deletingProfile ? ui.deleteAccountButtonDisabled : null]}
                             disabled={deletingProfile}
                             onPress={handleDeleteProfile}
                         >
@@ -1170,22 +1818,34 @@ const Profile = () => {
                             colors={["#0B1220", "#0E1A36"]}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0.8 }}
-                            style={{ padding: 20, flexDirection: "row", alignItems: "center", gap: 12 }}
+                            style={ui.editHeaderHero}
                         >
-                            <View className="flex-1 gap-1">
-                                <Text className="text-white/60 tracking-[5px] uppercase text-[11px]" style={ui.editHeaderKicker}>
+                            <View style={ui.editHeaderCopy}>
+                                <Text
+                                    className="text-white/60 tracking-[5px] uppercase text-[11px]"
+                                    style={ui.editHeaderKicker}
+                                    numberOfLines={1}
+                                >
                                     {t("profile.header.edit")}
                                 </Text>
-                                <Text className="text-white text-2xl font-ezra-bold leading-7" style={ui.editHeaderTitle}>
+                                <Text
+                                    className="text-white text-2xl font-ezra-bold leading-7"
+                                    style={ui.editHeaderTitle}
+                                    numberOfLines={2}
+                                >
                                     {t("profileExtras.editModal.title")}
                                 </Text>
-                                <Text className="body-medium text-white/75" style={ui.editHeaderSubtitle}>
+                                <Text
+                                    className="body-medium text-white/75"
+                                    style={ui.editHeaderSubtitle}
+                                    numberOfLines={2}
+                                >
                                     {t("profileExtras.editModal.subtitle")}
                                 </Text>
                             </View>
                             {EditHeaderIllustration ? (
                                 <View style={ui.editHeaderImageWrap}>
-                                    <EditHeaderIllustration width={96} height={96} />
+                                    <EditHeaderIllustration width={70} height={70} />
                                 </View>
                             ) : null}
                         </LinearGradient>
@@ -1507,10 +2167,9 @@ const NotificationPreferencesModal = ({ visible, onClose }: { visible: boolean; 
 /* -------------------------------------------------------------------------- */
 
 const OrderHistorySection = ({ orders }: { orders: any[] }) => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const router = useRouter();
-    const HistoryIllustration = profileIllustrations.foodieCelebration;
-    const isWeb = Platform.OS === "web";
+    const isTurkish = i18n.language?.toLowerCase().startsWith("tr");
 
     const getMillis = (value: any) => {
         if (!value) return 0;
@@ -1530,120 +2189,54 @@ const OrderHistorySection = ({ orders }: { orders: any[] }) => {
                 return db - da;
             });
     }, [orders]);
-    const recentOrders = useMemo(() => sortedOrders.slice(0, 2), [sortedOrders]);
+    const recentOrder = sortedOrders[0];
+    const normStatus = recentOrder ? normalizeStatus(recentOrder.status) : null;
+    const badge = normStatus ? ORDER_STATUS_COLORS[normStatus] : null;
+    const label = normStatus ? t(`status.${normStatus}` as const) : "";
+    const items = recentOrder ? resolveItems(recentOrder) : [];
+    const restaurantName = recentOrder ? resolveRestaurantName(recentOrder) || t("orders.unknownRestaurant") : "";
+    const orderTotal = recentOrder ? formatCurrency(recentOrder.total) : "";
 
     return (
-        <View
-            className="secondary-card gap-4"
-            style={[ui.sectionCard, ui.sectionCardShadow, isWeb ? ui.sectionCardWeb : null, isWeb ? ui.sectionCardShadowWeb : null]}
-        >
-            <View className="flex-row items-center justify-between" style={ui.rowBetween}>
-                <SectionHeader title={t("orders.historyTitle")} />
-                <HistoryIllustration width={isWeb ? 60 : 52} height={isWeb ? 60 : 52} />
+        <View style={ui.historySection}>
+            <View style={[ui.modernSectionHeader, ui.historyHeader]}>
+                <Text style={ui.modernSectionTitle}>{t("orders.historyTitle")}</Text>
+                <TouchableOpacity onPress={() => router.push("/orders")} style={ui.linkButtonRow}>
+                    <Text style={ui.linkButtonText}>{isTurkish ? "Tümünü gör" : "See all"}</Text>
+                    <Ionicons name="chevron-forward" size={15} color="#F97316" />
+                </TouchableOpacity>
             </View>
 
-            <View style={{ gap: 12 }}>
-                {recentOrders.map((order) => {
-                    const normStatus = normalizeStatus(order.status);
-                    const badge = ORDER_STATUS_COLORS[normStatus];
-                    const label = t(`status.${normStatus}` as const);
-                    const rawOrderId = String(order.id ?? "-");
-                    const orderIdText = `#${rawOrderId}`;
-
-                    const items = resolveItems(order);
-                    const summary = items.length ? items.map((it) => `${it.quantity}x ${it.name}`).join(" - ") : null;
-                    const restaurantName = resolveRestaurantName(order) || t("orders.unknownRestaurant");
-
-                    return (
-                        <View
-                            key={order.id}
-                            style={[
-                                ui.orderItemCard,
-                                ui.orderItemCardShadow,
-                                isWeb ? ui.orderItemCardWeb : null,
-                                isWeb ? ui.orderItemCardShadowWeb : null,
-                            ]}
-                        >
-                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                                <View style={{ flex: 1, paddingRight: 10 }}>
-                                    <Text style={{ fontFamily: "ChairoSans", fontSize: 16, color: "#0F172A" }}>
-                                        {restaurantName}
-                                    </Text>
-                                    <Text style={{ fontFamily: "ChairoSans", fontSize: 12, color: "#64748B", marginTop: 2 }}>
-                                        Order ID: {orderIdText}
-                                    </Text>
-                                </View>
-
-                                <View
-                                    style={{
-                                        paddingHorizontal: 10,
-                                        paddingVertical: 6,
-                                        borderRadius: 999,
-                                        backgroundColor: badge.bg,
-                                        flexDirection: "row",
-                                        alignItems: "center",
-                                    }}
-                                >
-                                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: badge.dot }} />
-                                    <Text style={{ color: badge.text, fontFamily: "ChairoSans", marginLeft: 6 }}>
-                                        {label}
-                                    </Text>
-                                </View>
-                            </View>
-
-                            <Text style={{ color: "#94A3B8", marginTop: 4, fontFamily: "ChairoSans" }}>
-                                {formatTimestamp(order.updatedAt || order.createdAt)}
-                            </Text>
-
-                            {summary ? (
-                                <Text style={{ color: "#1E293B", marginTop: 8, fontFamily: "ChairoSans" }}>
-                                    {summary}
-                                </Text>
-                            ) : null}
-
-                            <View
-                                style={{
-                                    flexDirection: "row",
-                                    justifyContent: "space-between",
-                                    alignItems: "center",
-                                    marginTop: 12,
-                                }}
-                            >
-                                <View>
-                                    <Text style={{ color: "#94A3B8", fontFamily: "ChairoSans" }}>
-                                        {t("cart.screen.summary.total")}
-                                    </Text>
-                                    <Text style={{ color: "#0F172A", fontSize: 18, fontFamily: "ChairoSans" }}>
-                                        {formatCurrency(order.total)}
-                                    </Text>
-                                </View>
-                            </View>
-                        </View>
-                    );
-                })}
-
-                {!sortedOrders.length ? (
-                    <Text className="body-medium text-dark-60">{t("orders.emptyHistory")}</Text>
-                ) : null}
-                {sortedOrders.length > 2 ? (
-                    <TouchableOpacity
-                        onPress={() => router.push("/orders")}
-                        style={{
-                            marginTop: 4,
-                            alignSelf: "center",
-                            paddingHorizontal: 16,
-                            paddingVertical: 10,
-                            borderRadius: 999,
-                            borderWidth: 1,
-                            borderColor: "#E2E8F0",
-                            backgroundColor: "#FFFFFF",
-                        }}
-                    >
-                        <Text className="paragraph-semibold text-primary">
-                            {t("orders.viewAll")}
+            <View style={ui.historyCard}>
+                {recentOrder ? (
+                <TouchableOpacity style={ui.historyRow} onPress={() => router.push("/orders")} activeOpacity={0.88}>
+                    <View style={ui.historyTextWrap}>
+                        <Text style={ui.historyRestaurantName}>{restaurantName}</Text>
+                        <Text style={ui.historyMeta}>{formatProfileOrderDate(recentOrder.updatedAt || recentOrder.createdAt, isTurkish)}</Text>
+                        <Text style={ui.historyMeta}>
+                            {`${items.length || 0} ${isTurkish ? "ürün" : items.length === 1 ? "item" : "items"} • `}
+                            <Text style={ui.historyPrice}>{orderTotal}</Text>
                         </Text>
-                    </TouchableOpacity>
-                ) : null}
+                    </View>
+                    <View style={ui.historyStatusWrap}>
+                        {badge ? (
+                            <View style={[ui.compactStatusPill, { backgroundColor: badge.bg }]}>
+                                <Ionicons
+                                    name={normStatus === "delivered" ? "checkmark-circle-outline" : "ellipse"}
+                                    size={13}
+                                    color={badge.text}
+                                />
+                                <Text style={[ui.compactStatusText, { color: badge.text }]}>{label}</Text>
+                            </View>
+                        ) : null}
+                        <View style={ui.historyArrowWrap}>
+                            <Ionicons name="chevron-forward" size={18} color="#98A2B3" />
+                        </View>
+                    </View>
+                </TouchableOpacity>
+                ) : (
+                    <Text style={ui.activeOrderBody}>{t("orders.emptyHistory")}</Text>
+                )}
             </View>
         </View>
     );

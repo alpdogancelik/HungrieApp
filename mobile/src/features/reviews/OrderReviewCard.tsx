@@ -30,8 +30,8 @@ const formatDate = (value: any) => {
 
 const formatCurrency = (value?: number | string) => {
     const amount = Number(value ?? 0);
-    if (Number.isNaN(amount)) return "TRY 0.00";
-    return `TRY ${amount.toFixed(2)}`;
+    if (Number.isNaN(amount)) return "₺0.00";
+    return `₺${amount.toFixed(2)}`;
 };
 
 const normalizeOrderItems = (order: any): OrderReviewItemSnapshot[] => {
@@ -60,7 +60,7 @@ const OrderReviewCard = ({ order, reviewed, userName, onReviewSaved }: OrderRevi
     const itemsSnapshot = useMemo(() => normalizeOrderItems(order), [order]);
     const itemsSummary = itemsSnapshot.length
         ? itemsSnapshot.map((item) => `${Number(item.quantity || 1)}x ${item.name}`).join(" - ")
-        : "Urun bilgisi yok";
+        : "Ürün bilgisi yok";
 
     const handleSubmit = async (payload: { ratings: { speed: 1 | 2 | 3 | 4 | 5; taste: 1 | 2 | 3 | 4 | 5; value: 1 | 2 | 3 | 4 | 5 }; comment?: string }) => {
         if (!orderId || reviewed) return;
@@ -75,11 +75,11 @@ const OrderReviewCard = ({ order, reviewed, userName, onReviewSaved }: OrderRevi
             });
             onReviewSaved?.(saved);
             setSheetVisible(false);
-            Alert.alert("Tesekkurler", "Siparis degerlendirmeniz kaydedildi.");
+            Alert.alert("Teşekkürler", "Sipariş değerlendirmeniz kaydedildi.");
         } catch (error: any) {
-            const message = error?.message || "Lutfen tekrar deneyin.";
+            const message = error?.message || "Lütfen tekrar deneyin.";
             setSubmitError(message);
-            Alert.alert("Degerlendirme kaydedilemedi", message);
+            Alert.alert("Değerlendirme kaydedilemedi", message);
         } finally {
             setSubmitting(false);
         }

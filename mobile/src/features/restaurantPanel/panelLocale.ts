@@ -64,10 +64,10 @@ const parseLocale = (value: string | null | undefined): PanelLocale | null => {
 };
 
 export const formatPanelCurrency = (value: number, locale: PanelLocale) =>
-    `${new Intl.NumberFormat(locale === "tr" ? "tr-TR" : "en-US", {
+    `₺${new Intl.NumberFormat(locale === "tr" ? "tr-TR" : "en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-    }).format(Number(value || 0))}${locale === "tr" ? " TL" : " TRY"}`;
+    }).format(Number(value || 0))}`;
 
 export const formatPanelDate = (value: number | Date | string, locale: PanelLocale) => {
     const date = value instanceof Date ? value : new Date(value);

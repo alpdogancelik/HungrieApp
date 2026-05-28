@@ -18,6 +18,11 @@ export const getAuthScreenCopy = (language?: string | null) => ({
         ),
         emailLabel: byLanguage(language, "E-posta", "Email"),
         passwordLabel: byLanguage(language, "Şifre", "Password"),
+        passwordRequirement: byLanguage(
+            language,
+            "Şifre en az 8 karakter olmalı; en az bir büyük harf, bir küçük harf ve bir sayı içermeli.",
+            "Password must be at least 8 characters and include one uppercase letter, one lowercase letter, and one number.",
+        ),
         staySignedIn: byLanguage(language, "Oturum açık kalsın :)", "Stay signed in :)"),
         forgotPassword: byLanguage(language, "Şifremi unuttum", "Forgot password"),
         submit: byLanguage(language, "Giriş yap", "Sign In"),
@@ -37,7 +42,12 @@ export const getAuthScreenCopy = (language?: string | null) => ({
         whatsappLabel: byLanguage(language, "WhatsApp numarası (opsiyonel)", "WhatsApp number (optional)"),
         emailLabel: byLanguage(language, "E-posta", "Email"),
         passwordLabel: byLanguage(language, "Şifre", "Password"),
-        passwordPlaceholder: byLanguage(language, "En az 8 karakter", "At least 8 characters"),
+        passwordPlaceholder: byLanguage(language, "Aa123456", "Aa123456"),
+        passwordRequirement: byLanguage(
+            language,
+            "Şifre en az 8 karakter olmalı; en az bir büyük harf, bir küçük harf ve bir sayı içermeli.",
+            "Password must be at least 8 characters and include one uppercase letter, one lowercase letter, and one number.",
+        ),
         submit: byLanguage(language, "Kayıt ol", "Sign Up"),
         alreadyAccount: byLanguage(language, "Zaten bir hesabın var mı?", "Already have an account?"),
         signInLink: byLanguage(language, "Giriş yap", "Sign In"),
@@ -61,8 +71,8 @@ export const getAuthScreenCopy = (language?: string | null) => ({
         emailLabel: byLanguage(language, "E-posta adresi", "Email address"),
         helper: byLanguage(
             language,
-            "Link geldikten sonra yeni şifreni e-posta üzerinden belirleyebilirsin.",
-            "After the email arrives, you can set a new password from the link.",
+            "Yeni şifren en az 8 karakter olmalı; en az bir büyük harf, bir küçük harf ve bir sayı içermeli.",
+            "Your new password must be at least 8 characters and include one uppercase letter, one lowercase letter, and one number.",
         ),
         submit: byLanguage(language, "Reset link gönder", "Send reset link"),
         backPrompt: byLanguage(language, "Giriş ekranına dönmek ister misin?", "Want to go back to sign in?"),
@@ -118,7 +128,11 @@ export const getAuthErrorMessage = (language: string | null | undefined, key: st
         case "emailAlreadyInUse":
             return byLanguage(language, "Bu e-posta adresi ile zaten bir hesap var.", "An account already exists for this email address.");
         case "weakPassword":
-            return byLanguage(language, "Şifre çok zayıf. Lütfen daha güçlü bir şifre gir.", "Password is too weak. Please enter a stronger password.");
+            return byLanguage(
+                language,
+                "Şifre en az 8 karakter olmalı; en az bir büyük harf, bir küçük harf ve bir sayı içermeli.",
+                "Password must be at least 8 characters and include one uppercase letter, one lowercase letter, and one number.",
+            );
         case "invalidEmail":
             return byLanguage(language, "Lütfen geçerli bir e-posta adresi gir.", "Please enter a valid email address.");
         case "tooManyRequests":

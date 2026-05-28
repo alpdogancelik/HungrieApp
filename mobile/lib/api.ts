@@ -9,7 +9,7 @@ import {
 import { firebaseConfigured, firestore, FIREBASE_COLLECTIONS } from "./firebase";
 import { unregisterPushToken } from "./registerPushToken";
 import { filterRestaurantMenuForCustomer } from "./menuVisibility";
-import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, onSnapshot, query, where } from "firebase/firestore";
 import { seedMenuByRestaurantId } from "./restaurantSeeds";
 
 const RESTAURANT_LOGO_PATH_BY_KEY: Record<string, string> = {
@@ -229,6 +229,45 @@ export const getRestaurants = async (filters?: { search?: string; category?: str
         const cuisine = String(r.cuisine || "").toLowerCase();
         return name.includes(term) || cuisine.includes(term);
     });
+};
+
+export const subscribeRestaurants = (cb: (restaurants: any[]) => void, onError?: (error: unknown) => void) => {
+    if (!firebaseConfigured || !firestore) {
+        cb([]);
+        return () => {};
+    }
+
+    const restaurantsRef = collection(firestore, FIREBASE_COLLECTIONS.restaurants);
+    return onSnapshot(
+        restaurantsRef,
+        (snapshot) => {
+            const list = snapshot.docs
+                .map((d) => withBundledRestaurantLogo({ id: d.id, ...d.data() }))
+                .filter((restaurant: any) => restaurant.isActive !== false);
+            cb(list);
+        },
+        (error) => {
+            onError?.(error);
+        },
+    );
+};
+
+export const subscribeRestaurant = (restaurantId: string | number, cb: (restaurant: any | null) => void, onError?: (error: unknown) => void) => {
+    if (!firebaseConfigured || !firestore || !restaurantId) {
+        cb(null);
+        return () => {};
+    }
+
+    const ref = doc(firestore, FIREBASE_COLLECTIONS.restaurants, String(restaurantId));
+    return onSnapshot(
+        ref,
+        (snapshot) => {
+            cb(snapshot.exists() ? withBundledRestaurantLogo({ id: snapshot.id, ...snapshot.data() }) : null);
+        },
+        (error) => {
+            onError?.(error);
+        },
+    );
 };
 
 export const getRestaurant = async (restaurantId: string | number) => {

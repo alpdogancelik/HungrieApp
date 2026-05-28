@@ -273,7 +273,7 @@ const MenuEditor = () => {
                                         </Text>
                                     )}
                                     <Text className="text-sm font-ezra-semibold text-primary-dark mt-1">
-                                        TRY {Number(item.price || 0).toFixed(2)}
+                                        ₺{Number(item.price || 0).toFixed(2)}
                                     </Text>
                                 </View>
                                 <TouchableOpacity
@@ -367,4 +367,3 @@ const MenuEditor = () => {
 };
 
 export default MenuEditor;
-

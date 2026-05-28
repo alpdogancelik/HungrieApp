@@ -270,7 +270,9 @@ export function OrderProgressTimer({
     const approvalExpiredNotified = useRef(false);
 
     const createdAtMs = toMillis(createdAt);
-    const approvalDeadlineMs = toMillis(approvalDeadline);
+    const explicitApprovalDeadlineMs = toMillis(approvalDeadline);
+    const approvalDeadlineMs =
+        explicitApprovalDeadlineMs || (createdAtMs ? createdAtMs + totalApprovalSeconds * 1000 : null);
     const cancelAllowedUntilMs = toMillis(cancelAllowedUntil);
 
     const currentStepIndex = getOrderStepIndex(normalizedStatus);

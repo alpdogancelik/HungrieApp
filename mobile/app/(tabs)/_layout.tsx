@@ -9,7 +9,7 @@ import { useCartStore } from "@/store/cart.store";
 import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 import { makeShadow } from "@/src/lib/shadowStyle";
 const WEB_MAX_WIDTH = 960;
-const BAR_HEIGHT = Platform.OS === "android" ? 94 : 88;
+const BAR_HEIGHT = Platform.OS === "android" ? 74 : 70;
 const ACTIVE_ICON_COLOR = "#F28C28";
 const INACTIVE_ICON_COLOR = "#8A8178";
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
@@ -27,17 +27,14 @@ function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
     const effectiveWidth = Platform.OS === "web" ? Math.min(width, WEB_MAX_WIDTH) : width;
     const insets = useSafeAreaInsets();
     const isTurkish = i18n.language?.startsWith("tr");
-    const OUTER_MARGIN = 18;
-    const INNER_PAD = 16;
+    const OUTER_MARGIN = 16;
+    const INNER_PAD = 14;
     const containerW = effectiveWidth - OUTER_MARGIN * 2;
     const normalizeRouteName = (name: string) => name.split("/")[0];
     const routeOrder = ["home", "search", "cart", "profile"];
-    const orderedRoutes = [
-        ...routeOrder
-            .map((name) => state.routes.find((route) => normalizeRouteName(route.name) === name))
-            .filter(Boolean),
-        ...state.routes.filter((route) => !routeOrder.includes(normalizeRouteName(route.name))),
-    ] as typeof state.routes;
+    const orderedRoutes = routeOrder
+        .map((name) => state.routes.find((route) => normalizeRouteName(route.name) === name))
+        .filter(Boolean) as typeof state.routes;
     const measuredBarWidth = useRef(0);
     const fallbackTabW = (containerW - INNER_PAD * 2) / orderedRoutes.length;
     const tabW =
@@ -99,7 +96,7 @@ function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
                         : baseName === "search"
                           ? isTurkish ? "Ara" : "Search"
                           : baseName === "cart"
-                            ? isTurkish ? "Sepet" : "Bag"
+                            ? isTurkish ? "Sepetim" : "Cart"
                             : isTurkish ? "Profil" : "Profile";
                 const cartCount = baseName === "cart" ? cartItems.reduce((sum, item) => sum + item.quantity, 0) : 0;
                 const showCartSummary = baseName === "cart" && cartCount > 0;
@@ -161,15 +158,22 @@ export default function TabLayout() {
                 tabBarHideOnKeyboard: true,
             }}
         >
-            <Tabs.Screen name="home" />
+            <Tabs.Screen name="home" options={{ title: "HungrieApp" }} />
             <Tabs.Screen
                 name="search/index"
                 options={{
-                    title: "Search",
+                    title: "HungrieApp",
                 }}
             />
-            <Tabs.Screen name="cart" />
-            <Tabs.Screen name="profile" />
+            <Tabs.Screen name="cart" options={{ title: "HungrieApp" }} />
+            <Tabs.Screen name="profile" options={{ title: "HungrieApp" }} />
+            <Tabs.Screen
+                name="categories"
+                options={{
+                    title: "HungrieApp",
+                    href: null,
+                }}
+            />
         </Tabs>
     );
 }
@@ -178,7 +182,7 @@ const styles = StyleSheet.create({
     bar: {
         position: "absolute",
         height: BAR_HEIGHT,
-        borderRadius: 40,
+        borderRadius: 34,
         backgroundColor: "#F7EBDD",
         borderWidth: 1,
         borderColor: "#F1DDC6",
@@ -203,32 +207,32 @@ const styles = StyleSheet.create({
         paddingTop: 2,
     },
     iconWrap: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
+        width: 42,
+        height: 42,
+        borderRadius: 21,
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
     },
     iconActiveBubble: {
         position: "absolute",
-        width: 42,
-        height: 42,
-        borderRadius: 21,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         backgroundColor: "#FDE3C6",
         borderWidth: 1,
         borderColor: "#F7C99A",
     },
     iconFrame: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
+        width: 42,
+        height: 42,
+        borderRadius: 21,
         alignItems: "center",
         justifyContent: "center",
     },
     label: {
         fontFamily: "ChairoSans",
-        fontSize: Platform.OS === "android" ? 13 : 12,
+        fontSize: Platform.OS === "android" ? 12 : 11,
         color: "#8D7B6D",
     },
     labelActive: {

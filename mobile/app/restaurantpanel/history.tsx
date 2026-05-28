@@ -66,7 +66,7 @@ const buildCsv = (orders: PanelOrder[], t: (key: string, vars?: Record<string, s
     ];
     const lines = orders.map((order) => {
         const items = order.items
-            .map((item) => `${Number(item.quantity || 0)}x ${item.name || t("common.itemFallback")} (${Number(item.price || 0).toFixed(2)} TRY)`)
+            .map((item) => `${Number(item.quantity || 0)}x ${item.name || t("common.itemFallback")} (₺${Number(item.price || 0).toFixed(2)})`)
             .join(" | ");
         return [
             csvEscape(order.id),

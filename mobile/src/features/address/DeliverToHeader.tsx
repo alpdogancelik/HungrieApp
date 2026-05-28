@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Address } from "@/src/domain/types";
 import { addressStore } from "@/src/features/address/addressStore";
 import { useDefaultAddress } from "@/src/features/address/hooks";
+import { showUserMessage } from "@/src/lib/showUserMessage";
 import useAuthStore from "@/store/auth.store";
 
 const renderAddressLine = (address: Address) =>
@@ -74,6 +75,10 @@ const DeliverToHeader = () => {
     const headerSubtitle = useMemo(() => subtitle || "", [subtitle]);
     const handleHeaderPress = () => {
         if (!isAuthenticated) {
+            showUserMessage(
+                t("authRequired.addressTitle", "Sign in required"),
+                t("authRequired.addressBody", "Please sign in or create an account to manage delivery addresses."),
+            );
             router.push("/sign-in");
             return;
         }

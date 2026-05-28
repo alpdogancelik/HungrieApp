@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { SplashScreen, Stack, useRouter } from "expo-router";
+import { SplashScreen, Stack, usePathname, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import { Asset } from "expo-asset";
 import Constants from "expo-constants";
@@ -39,6 +39,7 @@ void SplashScreen.preventAutoHideAsync().catch(() => null);
 function RootLayoutBase() {
     const { isLoading, isAuthenticated, user, fetchAuthenticatedUser } = useAuthStore();
     const router = useRouter();
+    const pathname = usePathname();
     const pushRegistrationKeyRef = useRef<string | null>(null);
     const didHideNativeSplashRef = useRef(false);
     const [launchSplashVisible, setLaunchSplashVisible] = useState(true);
@@ -80,6 +81,12 @@ function RootLayoutBase() {
     useEffect(() => {
         fetchAuthenticatedUser();
     }, [fetchAuthenticatedUser]);
+
+    useEffect(() => {
+        if (Platform.OS !== "web") return;
+        if (typeof document === "undefined") return;
+        document.title = "HungrieApp";
+    }, [pathname]);
 
     useEffect(() => {
         NotificationManager.ensureNotificationHandler();
@@ -145,22 +152,14 @@ function RootLayoutBase() {
         const resolvedUserId = auth?.currentUser?.uid ?? user?.accountId ?? user?.id ?? user?.$id ?? null;
         if (!resolvedUserId) return;
 
-        let cancelled = false;
-        let stopWatcher: (() => void) | null = null;
+        const stopWatcher = startOrderStatusWatcher(resolvedUserId);
 
-        const bootOrderNotifications = async () => {
-            const granted = await NotificationManager.requestPermissions();
-            if (!granted || cancelled) return;
-            stopWatcher = startOrderStatusWatcher(resolvedUserId);
-        };
-
-        bootOrderNotifications().catch((error) => {
+        NotificationManager.requestPermissions().catch((error) => {
             console.warn("[notifications] Order status watcher failed", error);
         });
 
         return () => {
-            cancelled = true;
-            stopWatcher?.();
+            stopWatcher();
         };
     }, [isAuthenticated, user?.$id, user?.accountId, user?.id]);
 

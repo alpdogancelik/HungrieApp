@@ -1,9 +1,12 @@
 import { Alert } from "react-native";
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { CartCustomization, CartItemType } from "@/src/domain/types";
 import { seedMenusAll } from "@/lib/restaurantSeeds";
 import useAuthStore from "@/store/auth.store";
+import i18n from "@/src/lib/i18n";
 
 const MENU_ID_TO_RESTAURANT: Record<string, string> = seedMenusAll.reduce((acc, entry) => {
     acc[String(entry.id)] = entry.restaurantId;
@@ -69,125 +72,140 @@ const notifyLock = (message: string) => {
     lockListeners.forEach((fn) => fn(message));
 };
 
-export const useCartStore = create<CartStore>((set, get) => ({
-    items: [],
+export const useCartStore = create<CartStore>()(
+    persist(
+        (set, get) => ({
+            items: [],
 
-    addItem: (item) => {
-        const isAuthenticated = useAuthStore.getState().isAuthenticated;
-        if (!isAuthenticated) {
-            Alert.alert("Sign in required", "Please sign in or create an account to add items to your cart.");
-            router.push("/sign-in");
-            return;
-        }
+            addItem: (item) => {
+                const isAuthenticated = useAuthStore.getState().isAuthenticated;
+                if (!isAuthenticated) {
+                    const isTurkish = i18n.language?.toLowerCase().startsWith("tr");
+                    Alert.alert(
+                        isTurkish ? "Giriş gerekli" : "Sign in required",
+                        isTurkish
+                            ? "Sepetine ürün eklemek için lütfen giriş yap veya hesap oluştur."
+                            : "Please sign in or create an account to add items to your cart.",
+                    );
+                    router.push("/sign-in");
+                    return;
+                }
 
-        const customizations = item.customizations ?? [];
-        let items = get().items;
+                const customizations = item.customizations ?? [];
+                let items = get().items;
 
-        const resolveExistingRestaurant = () => {
-            const explicit = items.find((i) => i.restaurantId)?.restaurantId;
-            if (explicit) return normalizeRestaurantKey(explicit);
+                const resolveExistingRestaurant = () => {
+                    const explicit = items.find((i) => i.restaurantId)?.restaurantId;
+                    if (explicit) return normalizeRestaurantKey(explicit);
 
-            const inferred = items
-                .map((i) => normalizeRestaurantKey(MENU_ID_TO_RESTAURANT[String(i.id)] || null))
-                .find((id): id is string => Boolean(id));
-            return inferred || null;
-        };
+                    const inferred = items
+                        .map((i) => normalizeRestaurantKey(MENU_ID_TO_RESTAURANT[String(i.id)] || null))
+                        .find((id): id is string => Boolean(id));
+                    return inferred || null;
+                };
 
-        const resolveIncomingRestaurant = () => {
-            const explicit =
-                (item as any).restaurantId ??
-                (item as any).restaurant_id ??
-                (item as any).restaurant?.id ??
-                null;
-            const mapped = MENU_ID_TO_RESTAURANT[String(item.id)] || null;
-            return normalizeRestaurantKey(explicit || mapped);
-        };
+                const resolveIncomingRestaurant = () => {
+                    const explicit =
+                        (item as any).restaurantId ??
+                        (item as any).restaurant_id ??
+                        (item as any).restaurant?.id ??
+                        null;
+                    const mapped = MENU_ID_TO_RESTAURANT[String(item.id)] || null;
+                    return normalizeRestaurantKey(explicit || mapped);
+                };
 
-        let currentRestaurant = resolveExistingRestaurant();
-        const incomingRestaurant = resolveIncomingRestaurant();
+                let currentRestaurant = resolveExistingRestaurant();
+                const incomingRestaurant = resolveIncomingRestaurant();
 
-        // If cart already has items but none are tagged with a restaurant, tag them with the incoming restaurant
-        // to enforce single-restaurant constraint going forward.
-        if (!currentRestaurant && items.length && incomingRestaurant) {
-            set({ items: items.map((entry) => ({ ...entry, restaurantId: incomingRestaurant })) });
-            items = get().items;
-            currentRestaurant = incomingRestaurant;
-        }
+                // If cart already has items but none are tagged with a restaurant, tag them with the incoming restaurant
+                // to enforce single-restaurant constraint going forward.
+                if (!currentRestaurant && items.length && incomingRestaurant) {
+                    set({ items: items.map((entry) => ({ ...entry, restaurantId: incomingRestaurant })) });
+                    items = get().items;
+                    currentRestaurant = incomingRestaurant;
+                }
 
-        const effectiveRestaurant = incomingRestaurant ?? currentRestaurant ?? undefined;
+                const effectiveRestaurant = incomingRestaurant ?? currentRestaurant ?? undefined;
 
-        const doAdd = () => {
-            const normalizedItem = { ...item, restaurantId: effectiveRestaurant, customizations };
-            const existing = get().items.find(
-                (i) => i.id === normalizedItem.id && areCustomizationsEqual(i.customizations ?? [], customizations),
-            );
-            if (existing) {
+                const doAdd = () => {
+                    const normalizedItem = { ...item, restaurantId: effectiveRestaurant, customizations };
+                    const existing = get().items.find(
+                        (i) => i.id === normalizedItem.id && areCustomizationsEqual(i.customizations ?? [], customizations),
+                    );
+                    if (existing) {
+                        set({
+                            items: get().items.map((i) =>
+                                i.id === normalizedItem.id && areCustomizationsEqual(i.customizations ?? [], customizations)
+                                    ? { ...i, quantity: i.quantity + 1 }
+                                    : i,
+                            ),
+                        });
+                    } else {
+                        set({ items: [...get().items, { ...normalizedItem, quantity: 1 }] });
+                    }
+                };
+
+                const isDifferentRestaurant =
+                    currentRestaurant && incomingRestaurant && currentRestaurant !== incomingRestaurant;
+                const missingRestaurantOnIncoming = currentRestaurant && !incomingRestaurant;
+                const missingIdentity = !incomingRestaurant && !currentRestaurant && items.length > 0;
+
+                if (isDifferentRestaurant || missingRestaurantOnIncoming || missingIdentity) {
+                    const message =
+                        "Sepette başka bir restoranın ürünü var. Önce sepeti temizle, sonra ekleyebilirsin.";
+                    Alert.alert("Sepet kilitli", message);
+                    notifyLock(message);
+                    return;
+                }
+
+                doAdd();
+            },
+
+            removeItem: (id, customizations = []) => {
+                set({
+                    items: get().items.filter(
+                        (i) => !(i.id === id && areCustomizationsEqual(i.customizations ?? [], customizations)),
+                    ),
+                });
+            },
+
+            increaseQty: (id, customizations = []) => {
                 set({
                     items: get().items.map((i) =>
-                        i.id === normalizedItem.id && areCustomizationsEqual(i.customizations ?? [], customizations)
+                        i.id === id && areCustomizationsEqual(i.customizations ?? [], customizations)
                             ? { ...i, quantity: i.quantity + 1 }
                             : i,
                     ),
                 });
-            } else {
-                set({ items: [...get().items, { ...normalizedItem, quantity: 1 }] });
-            }
-        };
+            },
 
-        const isDifferentRestaurant =
-            currentRestaurant && incomingRestaurant && currentRestaurant !== incomingRestaurant;
-        const missingRestaurantOnIncoming = currentRestaurant && !incomingRestaurant;
-        const missingIdentity = !incomingRestaurant && !currentRestaurant && items.length > 0;
+            decreaseQty: (id, customizations = []) => {
+                set({
+                    items: get().items
+                        .map((i) =>
+                            i.id === id && areCustomizationsEqual(i.customizations ?? [], customizations)
+                                ? { ...i, quantity: i.quantity - 1 }
+                                : i,
+                        )
+                        .filter((i) => i.quantity > 0),
+                });
+            },
 
-        if (isDifferentRestaurant || missingRestaurantOnIncoming || missingIdentity) {
-            const message =
-                "Sepette başka bir restoranın ürünü var. Önce sepeti temizle, sonra ekleyebilirsin.";
-            Alert.alert("Sepet kilitli", message);
-            notifyLock(message);
-            return;
-        }
+            clearCart: () => set({ items: [] }),
 
-        doAdd();
-    },
+            getTotalItems: () => get().items.reduce((total, item) => total + item.quantity, 0),
 
-    removeItem: (id, customizations = []) => {
-        set({
-            items: get().items.filter(
-                (i) => !(i.id === id && areCustomizationsEqual(i.customizations ?? [], customizations)),
-            ),
-        });
-    },
-
-    increaseQty: (id, customizations = []) => {
-        set({
-            items: get().items.map((i) =>
-                i.id === id && areCustomizationsEqual(i.customizations ?? [], customizations)
-                    ? { ...i, quantity: i.quantity + 1 }
-                    : i,
-            ),
-        });
-    },
-
-    decreaseQty: (id, customizations = []) => {
-        set({
-            items: get().items
-                .map((i) =>
-                    i.id === id && areCustomizationsEqual(i.customizations ?? [], customizations)
-                        ? { ...i, quantity: i.quantity - 1 }
-                        : i,
-                )
-                .filter((i) => i.quantity > 0),
-        });
-    },
-
-    clearCart: () => set({ items: [] }),
-
-    getTotalItems: () => get().items.reduce((total, item) => total + item.quantity, 0),
-
-    getTotalPrice: () =>
-        get().items.reduce((total, item) => {
-            const base = item.price;
-            const customPrice = item.customizations?.reduce((s: number, c: CartCustomization) => s + c.price, 0) ?? 0;
-            return total + item.quantity * (base + customPrice);
-        }, 0),
-}));
+            getTotalPrice: () =>
+                get().items.reduce((total, item) => {
+                    const base = item.price;
+                    const customPrice = item.customizations?.reduce((s: number, c: CartCustomization) => s + c.price, 0) ?? 0;
+                    return total + item.quantity * (base + customPrice);
+                }, 0),
+        }),
+        {
+            name: "hungrie-cart",
+            storage: createJSONStorage(() => AsyncStorage),
+            partialize: (state) => ({ items: state.items }),
+        },
+    ),
+);
