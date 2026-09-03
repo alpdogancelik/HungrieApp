@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -16,7 +17,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import BrandMotion from "../components/BrandMotion";
-import { getOwnedRestaurantId } from "@/lib/firebaseAuth";
+import { getOwnedRestaurantId } from "@/src/data/restaurantRepository";
 import { makeShadow } from "@/src/lib/shadowStyle";
 import useAuthStore from "@/store/auth.store";
 import { useReducedMotion } from "@/src/lib/useReducedMotion";
@@ -233,7 +234,7 @@ export default function Splash() {
     );
 }
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     safeArea: {
         flex: 1,
         backgroundColor: BACKGROUND_COLOR,

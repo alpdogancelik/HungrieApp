@@ -4,6 +4,8 @@ import Icon from "@/components/Icon";
 import type { CartItemType } from "@/type";
 import { makeShadow } from "@/src/lib/shadowStyle";
 import { formatCurrency, getCustomizationsTotal } from "@/lib/cart.utils";
+import { useTheme } from "@/src/theme/themeContext";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 
 const cardShadow = makeShadow({
     color: "#0F172A",
@@ -12,7 +14,7 @@ const cardShadow = makeShadow({
     opacity: 0.08,
     elevation: 5,
 });
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     card: { backgroundColor: "#FFFFFF", borderRadius: 28, paddingHorizontal: 18, paddingTop: 18, paddingBottom: 14 },
     topRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", columnGap: 12 },
     contentCol: { flex: 1, rowGap: 4, paddingRight: 8, minHeight: 60 },
@@ -36,6 +38,7 @@ type Props = {
 
 const CartItemCard = ({ item, onIncrease, onDecrease, onRemove }: Props) => {
     const { t } = useTranslation();
+    const { theme } = useTheme();
     if (!item) return null;
     const price = Number(item.price ?? 0);
     const quantity = Number(item.quantity ?? 1);
@@ -44,13 +47,13 @@ const CartItemCard = ({ item, onIncrease, onDecrease, onRemove }: Props) => {
     const unitLabel = formatCurrency(price + customizationTotal);
 
     return (
-        <View className="bg-white rounded-[28px]" style={[styles.card, cardShadow]}>
+        <View style={[styles.card, cardShadow, { backgroundColor: theme.colors.surface }]}>
             <View style={styles.topRow}>
                 <View className="flex-1" style={styles.contentCol}>
-                    <Text className="text-lg font-ezra-bold text-dark-100" style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+                    <Text style={[styles.title, { color: theme.colors.ink }]} numberOfLines={1} ellipsizeMode="tail">
                         {item.name}
                     </Text>
-                    <Text className="caption text-dark-40" style={styles.meta}>
+                    <Text style={[styles.meta, { color: theme.colors.textSecondary }]}>
                         {unitLabel} x {quantity}
                     </Text>
                 </View>
@@ -64,16 +67,16 @@ const CartItemCard = ({ item, onIncrease, onDecrease, onRemove }: Props) => {
                 </TouchableOpacity>
             </View>
             <View style={styles.bottomRow}>
-                <View className="flex-row items-center gap-2" style={styles.qtyRow}>
+                <View style={[styles.qtyRow, { borderColor: theme.colors.border }]}>
                     <TouchableOpacity
-                        style={styles.circleLight}
+                        style={[styles.circleLight, { backgroundColor: theme.colors.surfaceMuted }]}
                         onPress={onDecrease}
                         hitSlop={8}
                         accessibilityLabel={t("cart.screen.item.accessibility.decrease")}
                     >
                         <Icon name="minus" size={16} color="#FE8C00" />
                     </TouchableOpacity>
-                    <Text className="paragraph-semibold text-dark-100" style={styles.qtyText}>{item.quantity}</Text>
+                    <Text style={[styles.qtyText, { color: theme.colors.ink }]}>{item.quantity}</Text>
                     <TouchableOpacity
                         style={styles.circlePrimary}
                         onPress={onIncrease}
@@ -83,7 +86,7 @@ const CartItemCard = ({ item, onIncrease, onDecrease, onRemove }: Props) => {
                         <Icon name="plus" size={16} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>
-                <Text className="h4-bold text-dark-100" style={styles.total}>{formatCurrency(total)}</Text>
+                <Text style={[styles.total, { color: theme.colors.ink }]}>{formatCurrency(total)}</Text>
             </View>
         </View>
     );

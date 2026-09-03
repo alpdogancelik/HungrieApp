@@ -1,3 +1,4 @@
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { memo, useEffect, useRef } from "react";
 import { Alert, Animated, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 
@@ -255,7 +256,7 @@ const OrderCard = ({
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     animatedWrap: {
         borderRadius: 16,
     },

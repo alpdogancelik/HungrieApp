@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getCurrentUser } from '@/lib/firebaseAuth';
+import { getCurrentUser } from '@/src/data/profileRepository';
 
 type User = { id?: string; $id?: string; accountId?: string; name: string; email: string; avatar?: string; whatsappNumber?: string } | null;
 

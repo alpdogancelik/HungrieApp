@@ -1,8 +1,10 @@
 import { ReactNode } from "react";
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { panelDesign, panelTypography } from "./panelDesign";
+import { useTheme } from "@/src/theme/themeContext";
 
 type Props = {
     kicker?: string;
@@ -28,6 +30,7 @@ export const PanelShell = ({
     backAccessibilityLabel,
 }: Props) => {
     const { width } = useWindowDimensions();
+    const { theme } = useTheme();
     const isDesktop = width >= 980;
     const isPhone = width < 760;
     const headerTitleSize = isDesktop ? panelTypography.title : panelTypography.titleMobile;
@@ -38,7 +41,7 @@ export const PanelShell = ({
             <View style={[styles.decoA, { pointerEvents: "none" }]} />
             <View style={[styles.decoB, { pointerEvents: "none" }]} />
 
-            <View style={[styles.header, isPhone ? styles.headerPhone : null]}>
+            <View style={[styles.header, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }, isPhone ? styles.headerPhone : null]}>
                 <View style={[styles.headerMain, isPhone ? styles.headerMainPhone : null]}>
                     {onBackPress ? (
                         <Pressable
@@ -47,13 +50,13 @@ export const PanelShell = ({
                             accessibilityLabel={backAccessibilityLabel || backLabel || "Back"}
                             style={({ pressed }) => [styles.backButton, pressed ? { opacity: 0.8 } : null]}
                         >
-                            <Feather name="chevron-left" size={16} color={panelDesign.colors.text} />
-                            <Text style={styles.backLabel}>{backLabel || "Back"}</Text>
+                            <Feather name="chevron-left" size={16} color={theme.colors.ink} />
+                            <Text style={[styles.backLabel, { color: theme.colors.ink }]}>{backLabel || "Back"}</Text>
                         </Pressable>
                     ) : null}
                     {kicker ? <Text style={styles.kicker}>{kicker}</Text> : null}
-                    <Text style={[styles.title, { fontSize: headerTitleSize, lineHeight: headerTitleSize + 6 }]}>{title}</Text>
-                    {subtitle ? <Text style={[styles.subtitle, { fontSize: subtitleSize }]}>{subtitle}</Text> : null}
+                    <Text style={[styles.title, { color: theme.colors.ink, fontSize: headerTitleSize, lineHeight: headerTitleSize + 6 }]}>{title}</Text>
+                    {subtitle ? <Text style={[styles.subtitle, { color: theme.colors.textSecondary, fontSize: subtitleSize }]}>{subtitle}</Text> : null}
                 </View>
                 {right ? <View style={[styles.headerRight, isPhone ? styles.headerRightPhone : null]}>{right}</View> : null}
             </View>
@@ -62,16 +65,34 @@ export const PanelShell = ({
     );
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={["left", "right"]}>
-            {noScroll ? <View style={styles.staticBody}>{body}</View> : <ScrollView contentContainerStyle={styles.scrollContent}>{body}</ScrollView>}
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={["left", "right"]}>
+            <KeyboardAvoidingView
+                style={styles.keyboardAvoiding}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+            >
+                {noScroll ? (
+                    <View style={styles.staticBody}>{body}</View>
+                ) : (
+                    <ScrollView
+                        contentContainerStyle={styles.scrollContent}
+                        keyboardShouldPersistTaps="handled"
+                        keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+                    >
+                        {body}
+                    </ScrollView>
+                )}
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     safeArea: {
         flex: 1,
         backgroundColor: panelDesign.colors.background,
+    },
+    keyboardAvoiding: {
+        flex: 1,
     },
     scrollContent: {
         paddingHorizontal: panelDesign.spacing.md,

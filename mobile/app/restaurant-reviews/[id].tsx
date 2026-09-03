@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import Icon from "@/components/Icon";
-import { getRestaurant } from "@/lib/api";
+import { getRestaurant } from "@/src/data/restaurantRepository";
 import type { OrderReview, RestaurantOrderReviewSummary } from "@/src/domain/types";
-import { calculateRestaurantOrderReviewSummary, fetchRestaurantOrderReviews } from "@/src/services/orderReviews";
+import { calculateRestaurantOrderReviewSummary, fetchRestaurantOrderReviews } from "@/src/data/reviewRepository";
 import { makeShadow } from "@/src/lib/shadowStyle";
 
 type RestaurantDetails = {
@@ -323,7 +324,7 @@ export default function RestaurantReviewsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     safeArea: {
         flex: 1,
         backgroundColor: THEME.bg,

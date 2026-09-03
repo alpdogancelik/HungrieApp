@@ -1,4 +1,5 @@
 import { forwardRef, useState, type ReactNode } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import {
     Pressable,
     StyleSheet,
@@ -12,6 +13,7 @@ import {
     type ViewStyle,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "@/src/theme/themeContext";
 
 type Props = {
     placeholder?: string;
@@ -42,7 +44,7 @@ const toFieldKey = (label: string) =>
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "") || "input";
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     container: { width: "100%" },
     label: {
         paddingLeft: 8,
@@ -113,6 +115,7 @@ const CustomInput = forwardRef<TextInput, Props>(({
     inputStyle,
     inputWrapStyle,
 }, ref) => {
+    const { theme } = useTheme();
     const [isFocused, setIsFocused] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const isPasswordField = Boolean(secureTextEntry);
@@ -120,7 +123,7 @@ const CustomInput = forwardRef<TextInput, Props>(({
 
     return (
         <View style={[styles.container, containerStyle]}>
-            <Text style={[styles.label, labelStyle]}>{label}</Text>
+            <Text style={[styles.label, { color: theme.colors.textSecondary }, labelStyle]}>{label}</Text>
             <View style={[styles.inputWrap, inputWrapStyle]}>
                 <TextInput
                     ref={ref}
@@ -145,12 +148,17 @@ const CustomInput = forwardRef<TextInput, Props>(({
                         onBlur?.(event);
                     }}
                     placeholder={placeholder}
-                    placeholderTextColor="#94A3B8"
+                    placeholderTextColor={theme.colors.muted}
                     style={[
                         styles.input,
                         leftIcon && styles.inputWithLeftIcon,
                         isPasswordField && styles.inputWithToggle,
                         isFocused && styles.focused,
+                        {
+                            color: theme.colors.ink,
+                            backgroundColor: theme.colors.input,
+                            borderColor: isFocused ? theme.colors.primary : theme.colors.border,
+                        },
                         inputStyle,
                     ]}
                 />
@@ -166,7 +174,7 @@ const CustomInput = forwardRef<TextInput, Props>(({
                         <Ionicons
                             name={isPasswordVisible ? "eye-off-outline" : "eye-outline"}
                             size={20}
-                            color="#64748B"
+                            color={theme.colors.textSecondary}
                         />
                     </Pressable>
                 ) : null}

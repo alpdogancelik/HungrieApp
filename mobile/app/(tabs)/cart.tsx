@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import type { ReactNode } from "react";
-import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View, ScrollView } from "react-native";
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, TouchableOpacity, View, ScrollView } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Image } from "expo-image";
@@ -13,7 +14,7 @@ import useAuthStore from "@/store/auth.store";
 import type { CartItemType } from "@/type";
 import Icon from "@/components/Icon";
 import type { PaymentMethod } from "@/src/domain/types";
-import { placeOrder } from "@/src/services/firebaseOrders";
+import { placeOrder } from "@/src/data/orderRepository";
 import { seedMenuByRestaurantId, seedRestaurants, seedMenusAll } from "@/lib/restaurantSeeds";
 import AddressSummary from "@/components/cart/AddressSummary";
 import CartItemCard from "@/components/cart/CartItemCard";
@@ -23,9 +24,10 @@ import SummaryCard from "@/components/cart/SummaryCard";
 import { formatCurrency, getCustomizationsTotal } from "@/lib/cart.utils";
 import { makeShadow } from "@/src/lib/shadowStyle";
 import { showUserMessage } from "@/src/lib/showUserMessage";
+import { useTheme } from "@/src/theme/themeContext";
 import { useWebDocumentTitle } from "@/src/lib/useWebDocumentTitle";
-import { getRestaurantMenu } from "@/lib/firebase";
-import { getRestaurant } from "@/lib/api";
+import { getAdminRestaurantMenu as getRestaurantMenu } from "@/src/data/menuRepository";
+import { getRestaurant } from "@/src/data/restaurantRepository";
 import { getRestaurantImageSource } from "@/lib/assets";
 
 const CONTAINER_PADDING = { paddingLeft: 24, paddingRight: 14 };
@@ -34,7 +36,7 @@ const MINIMUM_ORDER_TOTAL = 250;
 const TAB_BAR_HEIGHT = 80;
 const TAB_BAR_BOTTOM_OFFSET = 40;
 const EXTRA_BOTTOM_SPACE = 8;
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     footer: { paddingLeft: 24, paddingRight: 14, paddingTop: 24, paddingBottom: 40, rowGap: 20 },
     footerCheckoutCard: {
         backgroundColor: "#FFFFFF",
@@ -425,6 +427,7 @@ const extractDrinkItems = (list: any[], restaurantId?: string | null): DrinkSugg
         }));
 
 const Cart = () => {
+    const { theme } = useTheme();
     useWebDocumentTitle();
     const insets = useSafeAreaInsets();
     const { items, getTotalPrice, increaseQty, decreaseQty, removeItem, clearCart, addItem } = useCartStore();
@@ -688,14 +691,14 @@ const Cart = () => {
         return (
             <SafeAreaView
                 className="flex-1 bg-gray-50"
-                style={[styles.emptyRoot, { paddingTop: Math.max(insets.top + 128, 180), paddingBottom: insets.bottom + 120 }]}
+                style={[styles.emptyRoot, { backgroundColor: theme.colors.background, paddingTop: Math.max(insets.top + 128, 180), paddingBottom: insets.bottom + 120 }]}
             >
                 <View style={styles.emptyContent}>
                     <View style={styles.emptyIconWrap}>
                         <Icon name="cart" size={46} color="#FE8C00" />
                     </View>
-                    <Text className="h3-bold text-dark-100" style={styles.emptyTitle}>{t("cart.empty.title")}</Text>
-                    <Text className="body-medium text-center text-dark-60" style={styles.emptySubtitle}>{t("cart.empty.subtitle")}</Text>
+                    <Text style={[styles.emptyTitle, { color: theme.colors.ink }]}>{t("cart.empty.title")}</Text>
+                    <Text style={[styles.emptySubtitle, { color: theme.colors.textSecondary }]}>{t("cart.empty.subtitle")}</Text>
                     <TouchableOpacity className="rounded-full bg-primary" style={styles.emptyCta} onPress={() => router.push("/")}>
                     <Text className="text-white paragraph-semibold" style={styles.checkoutText}>{t("cart.empty.cta")}</Text>
                     </TouchableOpacity>
@@ -895,19 +898,21 @@ const Cart = () => {
     const contentBottomPadding = insets.bottom + TAB_BAR_HEIGHT + TAB_BAR_BOTTOM_OFFSET + EXTRA_BOTTOM_SPACE;
 
     return (
-        <SafeAreaView className="flex-1 bg-[#F8F6F2]" style={styles.screenBg}>
+        <SafeAreaView style={[styles.screenBg, { backgroundColor: theme.colors.background }]}>
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
             <FlatList
                 data={listData}
                 keyExtractor={(entry) => getCartItemKey(entry.item)}
                 contentContainerStyle={{ paddingBottom: contentBottomPadding }}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="always"
-                keyboardDismissMode="interactive"
+                keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
                 ListHeaderComponent={renderHeader}
                 ListFooterComponent={footerComponent}
                 ItemSeparatorComponent={() => <View className="h-4" style={styles.listSeparator} />}
                 renderItem={renderListItem}
             />
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 

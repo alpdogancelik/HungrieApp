@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { subscribeOrder } from "@/src/services/firebaseOrders";
+import { subscribeOrder } from "@/src/data/orderRepository";
 import type { Order } from "@/src/domain/types";
 
 type OrderRealtimePayload = {

@@ -1,3 +1,4 @@
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import React, { type ReactNode } from "react";
 import {
     ActivityIndicator,
@@ -9,6 +10,7 @@ import {
     type TextStyle,
     type ViewStyle,
 } from "react-native";
+import { useTheme } from "@/src/theme/themeContext";
 
 type Props = {
     onPress?: () => void;
@@ -20,7 +22,7 @@ type Props = {
     disabled?: boolean;
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     button: {
         width: "100%",
         minHeight: 52,
@@ -49,12 +51,13 @@ const CustomButton = ({
     isLoading = false,
     disabled = false,
 }: Props) => {
+    const { theme } = useTheme();
     const isBusy = isLoading || disabled;
 
     return (
-        <TouchableOpacity style={[styles.button, isBusy && styles.busy, style]} disabled={isBusy} onPress={onPress}>
+        <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.primary }, isBusy && styles.busy, style]} disabled={isBusy} onPress={onPress}>
             {leftIcon ? <View style={styles.iconWrap}>{leftIcon}</View> : null}
-            {isLoading ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Text style={[styles.text, textStyle]}>{title}</Text>}
+            {isLoading ? <ActivityIndicator size="small" color={theme.colors.onPrimary} /> : <Text style={[styles.text, { color: theme.colors.onPrimary }, textStyle]}>{title}</Text>}
         </TouchableOpacity>
     );
 };

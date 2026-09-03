@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import {
     Alert,
     KeyboardAvoidingView,
@@ -16,6 +17,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Icon from "@/components/Icon";
+import { useTheme } from "@/src/theme/themeContext";
 import type { OrderReviewItemSnapshot, OrderReviewRatingBreakdown } from "@/src/domain/types";
 
 type OrderReviewSheetProps = {
@@ -31,6 +33,7 @@ const STAR_VALUES: Array<1 | 2 | 3 | 4 | 5> = [1, 2, 3, 4, 5];
 
 const OrderReviewSheet = ({ visible, submitting = false, items, errorText, onClose, onSubmit }: OrderReviewSheetProps) => {
     const insets = useSafeAreaInsets();
+    const { theme } = useTheme();
     const { height: screenHeight } = useWindowDimensions();
     const [ratings, setRatings] = useState<Partial<OrderReviewRatingBreakdown>>({});
     const [comment, setComment] = useState("");
@@ -95,14 +98,14 @@ const OrderReviewSheet = ({ visible, submitting = false, items, errorText, onClo
             onRequestClose={handleRequestClose}
         >
             <View style={styles.modalRoot}>
-                <Pressable style={styles.backdrop} onPress={handleRequestClose} />
+                <Pressable style={[styles.backdrop, { backgroundColor: theme.colors.overlay }]} onPress={handleRequestClose} />
                 <KeyboardAvoidingView
                     style={styles.keyboardAvoiding}
                     behavior={Platform.OS === "ios" ? "padding" : "height"}
                     keyboardVerticalOffset={Platform.OS === "ios" ? insets.bottom + 12 : 0}
                 >
                     <SafeAreaView edges={["bottom"]} style={styles.safeArea}>
-                        <Pressable style={[styles.sheet, { maxHeight: Math.max(340, screenHeight * 0.82) }]} onPress={() => undefined}>
+                        <Pressable style={[styles.sheet, { maxHeight: Math.max(340, screenHeight * 0.82), backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]} onPress={() => undefined}>
                             <ScrollView
                                 bounces={false}
                                 keyboardShouldPersistTaps="handled"
@@ -110,7 +113,7 @@ const OrderReviewSheet = ({ visible, submitting = false, items, errorText, onClo
                                 showsVerticalScrollIndicator={false}
                             >
                                 <View style={styles.headerRow}>
-                                    <Text style={styles.title}>Deneyimini değerlendir</Text>
+                                    <Text style={[styles.title, { color: theme.colors.ink }]}>Deneyimini değerlendir</Text>
                                     <TouchableOpacity
                                         onPress={handleRequestClose}
                                         disabled={submitting}
@@ -160,10 +163,10 @@ const OrderReviewSheet = ({ visible, submitting = false, items, errorText, onClo
                                 <TextInput
                                     multiline
                                     placeholder="Sipariş deneyimini kısaca anlat..."
-                                    placeholderTextColor="#94A3B8"
+                                    placeholderTextColor={theme.colors.muted}
                                     value={comment}
                                     onChangeText={(text) => setComment(text.slice(0, 500))}
-                                    style={styles.commentInput}
+                                    style={[styles.commentInput, { color: theme.colors.ink, backgroundColor: theme.colors.input, borderColor: theme.colors.border }]}
                                     textAlignVertical="top"
                                 />
                                 {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
@@ -189,7 +192,7 @@ const OrderReviewSheet = ({ visible, submitting = false, items, errorText, onClo
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     modalRoot: {
         flex: 1,
         justifyContent: "flex-end",
@@ -199,6 +202,7 @@ const styles = StyleSheet.create({
         backgroundColor: "rgba(15,23,42,0.42)",
     },
     keyboardAvoiding: {
+        flex: 1,
         justifyContent: "flex-end",
     },
     safeArea: {

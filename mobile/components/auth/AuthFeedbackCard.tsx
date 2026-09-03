@@ -1,4 +1,5 @@
 import { type ComponentType } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { StyleSheet, Text, View } from "react-native";
 import type { SvgProps } from "react-native-svg";
 
@@ -30,7 +31,7 @@ const TONE_STYLES = {
     },
 } as const;
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     card: {
         borderRadius: 18,
         borderWidth: 1,
@@ -79,4 +80,3 @@ const AuthFeedbackCard = ({ title, message, Illustration, tone = "info" }: AuthF
 };
 
 export default AuthFeedbackCard;
-

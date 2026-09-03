@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from "react-i18next";
 
 import { useTheme, ThemeDefinition } from "@/src/theme/themeContext";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 
 const STORAGE_KEY = "hungrie.language";
 
@@ -96,7 +97,7 @@ const createStyles = (theme: ThemeDefinition, appearance: "default" | "inverse")
     const baseText = inverse ? "rgba(255,255,255,0.8)" : theme.colors.muted;
     const activeText = inverse ? "#0F172A" : theme.colors.ink;
 
-    return StyleSheet.create({
+    return createAdaptiveStyleSheet({
         container: {
             flexDirection: "row",
             alignItems: "center",

@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
 import { images } from "@/constants/mediaCatalog";
@@ -107,7 +108,7 @@ const RestaurantCard = ({ restaurant, onPress, variant = "list" }: Props) => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     listCard: { flexDirection: "row", gap: 12 },
     tileCard: { flexDirection: "column", gap: 10, alignItems: "flex-start", width: "100%" },
     imageShell: { width: 112, height: 112, borderRadius: 24, overflow: "hidden", backgroundColor: "#FEF3E7" },

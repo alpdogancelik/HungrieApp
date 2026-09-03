@@ -1,4 +1,5 @@
 import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { Feather } from "@expo/vector-icons";
 
 type MetricTone = "warning" | "success" | "info";
@@ -93,7 +94,7 @@ const DashboardSummary = ({ title, metrics, links }: Props) => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     wrap: {
         borderWidth: 1,
         borderColor: "#E7DCCF",

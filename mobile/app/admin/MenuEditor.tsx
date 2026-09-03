@@ -11,11 +11,12 @@ import {
 } from "react-native";
 
 import {
-    createMenuItem,
-    getRestaurants,
-    getRestaurantMenu,
+    createAdminMenuItem as createMenuItem,
+    getAdminRestaurants as getRestaurants,
+    getAdminRestaurantMenu as getRestaurantMenu,
     updateMenuItem,
-} from "@/lib/firebase";
+} from "@/src/data/menuRepository";
+import { useTheme } from "@/src/theme/themeContext";
 
 type MenuFormState = {
     name: string;
@@ -32,6 +33,7 @@ const INITIAL_FORM: MenuFormState = {
 };
 
 const MenuEditor = () => {
+    const { theme } = useTheme();
     const [restaurants, setRestaurants] = useState<any[]>([]);
     const [restaurantsLoading, setRestaurantsLoading] = useState(true);
     const [restaurantsError, setRestaurantsError] = useState<string | null>(null);
@@ -161,16 +163,16 @@ const MenuEditor = () => {
     return (
         <View className="gap-5">
             <View className="gap-1">
-                <Text className="text-2xl font-ezra-bold text-dark-100">Menu management</Text>
-                <Text className="text-base text-dark-60">
+                <Text className="text-2xl font-ezra-bold" style={{ color: theme.colors.ink }}>Menu management</Text>
+                <Text className="text-base" style={{ color: theme.colors.textSecondary }}>
                     Curate every restaurant menu, keep pricing accurate, and update hero images from one place.
                 </Text>
             </View>
 
             <View className="gap-3">
-                <Text className="text-xs uppercase tracking-[3px] text-dark-60">Restaurants</Text>
+                <Text className="text-xs uppercase tracking-[3px] text-dark-60 dark:text-slate-300">Restaurants</Text>
                 {restaurantsLoading ? (
-                    <View className="rounded-3xl border border-gray-100 bg-white/90 p-4 items-center justify-center">
+                    <View className="rounded-3xl border border-gray-100 bg-white/90 p-4 items-center justify-center dark:bg-[#0D1B2D] dark:border-[#29405C]">
                         <ActivityIndicator color="#FE8C00" />
                     </View>
                 ) : restaurantsError ? (
@@ -198,18 +200,18 @@ const MenuEditor = () => {
                                     className={`rounded-2xl border px-4 py-3 ${
                                         active
                                             ? "bg-dark-100 border-dark-100"
-                                            : "bg-white/95 border-gray-100"
+                                            : "bg-white/95 border-gray-100 dark:bg-[#13243A] dark:border-[#29405C]"
                                     }`}
                                 >
                                     <Text
                                         className={`text-base font-ezra-semibold ${
-                                            active ? "text-white" : "text-dark-80"
+                                            active ? "text-white" : "text-dark-80 dark:text-slate-100"
                                         }`}
                                     >
                                         {restaurant.name || "Restaurant"}
                                     </Text>
                                     {restaurant.cuisine && (
-                                        <Text className={`text-xs ${active ? "text-white/70" : "text-dark-60"}`}>
+                                        <Text className={`text-xs ${active ? "text-white/70" : "text-dark-60 dark:text-slate-300"}`}>
                                             {restaurant.cuisine}
                                         </Text>
                                     )}
@@ -221,13 +223,13 @@ const MenuEditor = () => {
             </View>
 
             <View className="gap-3">
-                <Text className="text-xs uppercase tracking-[3px] text-dark-60">
+                <Text className="text-xs uppercase tracking-[3px] text-dark-60 dark:text-slate-300">
                     {selectedRestaurant ? selectedRestaurant.name : "Menu"}
                 </Text>
                 {menuLoading ? (
-                    <View className="rounded-3xl border border-gray-100 bg-white/90 p-6 items-center justify-center">
+                    <View className="rounded-3xl border border-gray-100 bg-white/90 p-6 items-center justify-center dark:bg-[#0D1B2D] dark:border-[#29405C]">
                         <ActivityIndicator color="#FE8C00" />
-                        <Text className="mt-2 text-sm text-dark-60">Loading menu items...</Text>
+                        <Text className="mt-2 text-sm text-dark-60 dark:text-slate-300">Loading menu items...</Text>
                     </View>
                 ) : menuError ? (
                     <View className="rounded-3xl border border-red-100 bg-red-50 p-4">
@@ -240,9 +242,9 @@ const MenuEditor = () => {
                         </TouchableOpacity>
                     </View>
                 ) : menuItems.length === 0 ? (
-                    <View className="rounded-3xl border border-dashed border-gray-200 bg-white/80 p-6 items-center">
-                        <Text className="text-base font-ezra-semibold text-dark-80">No menu items yet</Text>
-                        <Text className="mt-1 text-sm text-dark-60">
+                    <View className="rounded-3xl border border-dashed border-gray-200 bg-white/80 p-6 items-center dark:bg-[#0D1B2D] dark:border-[#29405C]">
+                        <Text className="text-base font-ezra-semibold text-dark-80 dark:text-slate-100">No menu items yet</Text>
+                        <Text className="mt-1 text-sm text-dark-60 dark:text-slate-300">
                             Start by adding signature dishes below.
                         </Text>
                     </View>
@@ -251,7 +253,7 @@ const MenuEditor = () => {
                         {menuItems.map((item) => (
                             <View
                                 key={item.id}
-                                className="rounded-3xl border border-gray-100 bg-white/95 p-4 flex-row gap-4 items-center"
+                                className="rounded-3xl border border-gray-100 bg-white/95 p-4 flex-row gap-4 items-center dark:bg-[#0D1B2D] dark:border-[#29405C]"
                             >
                                 {item.imageUrl || item.image_url ? (
                                     <Image
@@ -260,15 +262,15 @@ const MenuEditor = () => {
                                     />
                                 ) : (
                                     <View className="h-16 w-16 rounded-2xl bg-gray-100 items-center justify-center">
-                                        <Text className="text-xs text-dark-60">No image</Text>
+                                        <Text className="text-xs text-dark-60 dark:text-slate-300">No image</Text>
                                     </View>
                                 )}
                                 <View className="flex-1">
-                                    <Text className="text-base font-ezra-semibold text-dark-100">
+                                    <Text className="text-base font-ezra-semibold text-dark-100 dark:text-slate-50">
                                         {item.name || "Menu item"}
                                     </Text>
                                     {item.description && (
-                                        <Text className="text-sm text-dark-60" numberOfLines={2}>
+                                        <Text className="text-sm text-dark-60 dark:text-slate-300" numberOfLines={2}>
                                             {item.description}
                                         </Text>
                                     )}
@@ -280,7 +282,7 @@ const MenuEditor = () => {
                                     onPress={() => handleEditItem(item)}
                                     className="rounded-full border border-dark-100 px-4 py-2"
                                 >
-                                    <Text className="text-sm font-ezra-semibold text-dark-100">Edit</Text>
+                                    <Text className="text-sm font-ezra-semibold text-dark-100 dark:text-slate-50">Edit</Text>
                                 </TouchableOpacity>
                             </View>
                         ))}
@@ -288,13 +290,13 @@ const MenuEditor = () => {
                 )}
             </View>
 
-            <View className="gap-4 rounded-3xl border border-gray-100 bg-white/95 p-5">
+            <View className="gap-4 rounded-3xl border border-gray-100 bg-white/95 p-5 dark:bg-[#0D1B2D] dark:border-[#29405C]">
                 <View className="flex-row items-center justify-between">
                     <View>
-                        <Text className="text-lg font-ezra-bold text-dark-100">
+                        <Text className="text-lg font-ezra-bold text-dark-100 dark:text-slate-50">
                             {editingItemId ? "Update menu item" : "Add menu item"}
                         </Text>
-                        <Text className="text-sm text-dark-60">
+                        <Text className="text-sm text-dark-60 dark:text-slate-300">
                             {editingItemId ? "Edit details and save to update this dish." : "Fill out the details below to add a new dish."}
                         </Text>
                     </View>
@@ -307,47 +309,51 @@ const MenuEditor = () => {
 
                 <View className="gap-3">
                     <View>
-                        <Text className="text-xs uppercase tracking-[3px] text-dark-60">Dish name</Text>
+                        <Text className="text-xs uppercase tracking-[3px] text-dark-60 dark:text-slate-300">Dish name</Text>
                         <TextInput
                             value={form.name}
                             onChangeText={(value) => handleChange("name", value)}
                             placeholder="Campus Smash Burger"
-                            className="mt-1 rounded-2xl border border-gray-100 px-4 py-3 text-dark-100"
-                            placeholderTextColor="#94A3B8"
+                            className="mt-1 rounded-2xl border border-gray-100 px-4 py-3 text-dark-100 dark:text-slate-50 dark:border-[#29405C]"
+                            style={{ backgroundColor: theme.colors.input }}
+                            placeholderTextColor={theme.colors.muted}
                         />
                     </View>
                     <View className="flex-row gap-3">
                         <View className="flex-1">
-                            <Text className="text-xs uppercase tracking-[3px] text-dark-60">Price (TRY)</Text>
+                            <Text className="text-xs uppercase tracking-[3px] text-dark-60 dark:text-slate-300">Price (TRY)</Text>
                             <TextInput
                                 value={form.price}
                                 onChangeText={(value) => handleChange("price", value)}
                                 placeholder="149.90"
                                 keyboardType="decimal-pad"
-                                className="mt-1 rounded-2xl border border-gray-100 px-4 py-3 text-dark-100"
-                                placeholderTextColor="#94A3B8"
+                                className="mt-1 rounded-2xl border border-gray-100 px-4 py-3 text-dark-100 dark:text-slate-50 dark:border-[#29405C]"
+                                style={{ backgroundColor: theme.colors.input }}
+                                placeholderTextColor={theme.colors.muted}
                             />
                         </View>
                     </View>
                     <View>
-                        <Text className="text-xs uppercase tracking-[3px] text-dark-60">Description</Text>
+                        <Text className="text-xs uppercase tracking-[3px] text-dark-60 dark:text-slate-300">Description</Text>
                         <TextInput
                             value={form.description}
                             onChangeText={(value) => handleChange("description", value)}
                             placeholder="Add the hero details students care about."
-                            className="mt-1 rounded-2xl border border-gray-100 px-4 py-3 text-dark-100"
-                            placeholderTextColor="#94A3B8"
+                            className="mt-1 rounded-2xl border border-gray-100 px-4 py-3 text-dark-100 dark:text-slate-50 dark:border-[#29405C]"
+                            style={{ backgroundColor: theme.colors.input }}
+                            placeholderTextColor={theme.colors.muted}
                             multiline
                         />
                     </View>
                     <View>
-                        <Text className="text-xs uppercase tracking-[3px] text-dark-60">Image URL</Text>
+                        <Text className="text-xs uppercase tracking-[3px] text-dark-60 dark:text-slate-300">Image URL</Text>
                         <TextInput
                             value={form.imageUrl}
                             onChangeText={(value) => handleChange("imageUrl", value)}
                             placeholder="https://images.unsplash.com/..."
-                            className="mt-1 rounded-2xl border border-gray-100 px-4 py-3 text-dark-100"
-                            placeholderTextColor="#94A3B8"
+                            className="mt-1 rounded-2xl border border-gray-100 px-4 py-3 text-dark-100 dark:text-slate-50 dark:border-[#29405C]"
+                            style={{ backgroundColor: theme.colors.input }}
+                            placeholderTextColor={theme.colors.muted}
                         />
                     </View>
                 </View>

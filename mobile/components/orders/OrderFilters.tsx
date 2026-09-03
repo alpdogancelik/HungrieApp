@@ -1,3 +1,4 @@
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
 import type { PanelLocale } from "@/src/features/restaurantPanel/panelLocale";
@@ -93,7 +94,7 @@ const OrderFilters = ({
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     wrap: {
         gap: 10,
     },

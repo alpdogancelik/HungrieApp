@@ -12,10 +12,12 @@ import LanguageToggle from "@/components/LanguageToggle";
 import { getAuthScreenCopy, isTurkishLanguage } from "@/src/features/auth/authCopy";
 import DeliveryBoy from "@/assets/illustrations/Delivery Boy.svg";
 import { makeShadow } from "@/src/lib/shadowStyle";
+import { useTheme } from "@/src/theme/themeContext";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 
 const heroPackshot = require("../../assets/Categories/Sign-In Burger Photo1.png");
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     safeArea: { flex: 1, backgroundColor: "#FFF8F2" },
     scrollContent: {
         flexGrow: 1,
@@ -210,6 +212,7 @@ const styles = StyleSheet.create({
 });
 
 const CheckEmailScreen = () => {
+    const { theme } = useTheme();
     const { i18n } = useTranslation();
     const insets = useSafeAreaInsets();
     const copy = getAuthScreenCopy(i18n.language).checkEmail;
@@ -231,7 +234,7 @@ const CheckEmailScreen = () => {
     const cardOverlap = isWide ? -24 : -50;
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={["left", "right", "bottom"]}>
             <ScrollView
                 contentContainerStyle={[
                     styles.scrollContent,
@@ -257,7 +260,7 @@ const CheckEmailScreen = () => {
                     <View style={styles.heroSection}>
                         <View style={styles.heroGrid}>
                             <View style={styles.heroTextCol}>
-                                <Text style={[styles.heroHeading, isWide ? { fontSize: 56, lineHeight: 66 } : null]}>
+                                <Text style={[styles.heroHeading, { color: theme.colors.ink }, isWide ? { fontSize: 56, lineHeight: 66 } : null]}>
                                     {isTurkish ? (
                                         <>
                                             Mailini kontrol et{"\n"}ve hızlıca{"\n"}
@@ -270,7 +273,7 @@ const CheckEmailScreen = () => {
                                         </>
                                     )}
                                 </Text>
-                                <Text style={[styles.heroBody, isWide ? { fontSize: 18, lineHeight: 30, maxWidth: 420 } : null]}>
+                                <Text style={[styles.heroBody, { color: theme.colors.textSecondary }, isWide ? { fontSize: 18, lineHeight: 30, maxWidth: 420 } : null]}>
                                     {copy.heroBody}
                                 </Text>
                             </View>
@@ -317,13 +320,14 @@ const CheckEmailScreen = () => {
                     <View
                         style={[
                             styles.authCard,
+                            { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
                             { marginTop: cardOverlap },
                             makeShadow({ color: "#000000", offsetY: 20, blurRadius: 38, opacity: 0.1, elevation: 12 }),
                         ]}
                     >
                         <View style={styles.authCardHeader}>
-                            <Text style={[styles.cardTitle, isWide ? { fontSize: 46, lineHeight: 54 } : null]}>{copy.title}</Text>
-                            <Text style={styles.cardBody}>{copy.subtitle}</Text>
+                            <Text style={[styles.cardTitle, { color: theme.colors.ink }, isWide ? { fontSize: 46, lineHeight: 54 } : null]}>{copy.title}</Text>
+                            <Text style={[styles.cardBody, { color: theme.colors.textSecondary }]}>{copy.subtitle}</Text>
                         </View>
 
                         <AuthFeedbackCard

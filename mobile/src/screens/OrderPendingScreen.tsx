@@ -15,7 +15,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useTranslation } from "react-i18next";
 import useOrderRealtime from "@/src/hooks/useOrderRealtime";
 import useOrderStatus from "@/src/hooks/useOrderStatus";
-import { transitionOrder } from "@/src/services/firebaseOrders";
+import { transitionOrder } from "@/src/data/orderRepository";
 import { nudgeRestaurant } from "@/src/api/client";
 import useAuthStore from "@/store/auth.store";
 import type { OrderStatus } from "@/src/domain/types";
@@ -423,7 +423,8 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
 
         if (Platform.OS === "web") {
             const g = globalThis as { confirm?: (message?: string) => boolean } | undefined;
-            const confirmMessage = `${t("orderPending.alerts.cancelConfirmTitle")}\n${t("orderPending.alerts.cancelConfirmBody")}`;
+            const confirmMessage = `${t("orderPending.alerts.cancelConfirmTitle")}
+${t("orderPending.alerts.cancelConfirmBody")}`;
             const confirmed = g?.confirm ? g.confirm(confirmMessage) : true;
             if (confirmed) {
                 void handleAutoCancel();

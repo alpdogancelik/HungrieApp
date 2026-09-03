@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import type { DimensionValue } from "react-native";
 import { Image } from "expo-image";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -11,7 +12,7 @@ import "@/src/lib/i18n";
 
 import useAuthStore from "@/store/auth.store";
 import { useCartStore } from "@/store/cart.store";
-import { logout } from "@/lib/api";
+import { logout } from "@/src/data/authRepository";
 import { router, useRouter } from "expo-router";
 import { getRestaurantImageSource } from "@/lib/assets";
 
@@ -19,7 +20,7 @@ import { useDefaultAddress, type ManageAddressesNavigation } from "@/src/feature
 
 import { profileIllustrations, profileImages } from "@/constants/profileMedia";
 
-import { autoCancelExpiredPendingOrders, fetchUserOrders, subscribeUserOrders } from "@/src/services/firebaseOrders";
+import { autoCancelExpiredPendingOrders, fetchUserOrders, subscribeUserOrders } from "@/src/data/orderRepository";
 import { storage } from "@/src/lib/storage";
 import { useTheme } from "@/src/theme/themeContext";
 import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
@@ -28,10 +29,12 @@ import { OrderStatus } from "@/type";
 import { ORDER_STATUS_COLORS } from "@/components/OrderCard";
 import { makeShadow } from "@/src/lib/shadowStyle";
 import { useWebDocumentTitle } from "@/src/lib/useWebDocumentTitle";
-import { deleteCurrentUserProfile, getOwnedRestaurantId, updateUserProfile } from "@/lib/firebaseAuth";
+import { getOwnedRestaurantId } from "@/src/data/restaurantRepository";
+import { deleteCurrentUserProfile, updateUserProfile } from "@/src/data/profileRepository";
 import { NotificationManager } from "@/src/features/notifications/NotificationManager";
 import { seedRestaurants } from "@/lib/restaurantSeeds";
 import { isCancelledStatus, isReviewableStatus } from "@/src/features/reviews/reviewUtils";
+import AppearanceSetting from "@/src/features/settings/AppearanceSetting";
 
 const ORANGE = "#FE8C00";
 const autoCancelingProfileOrderIds = new Set<string>();
@@ -56,7 +59,7 @@ const resolveRestaurantSeed = (order: any) => {
         return (restaurantId && seedId === restaurantId) || (restaurantName && seedName === restaurantName);
     });
 };
-const ui = StyleSheet.create({
+const ui = createAdaptiveStyleSheet({
     pageContent: {
         paddingHorizontal: 20,
         rowGap: 24,
@@ -154,18 +157,30 @@ const ui = StyleSheet.create({
     editButton: {
         flexDirection: "row",
         alignItems: "center",
-        columnGap: 8,
+        justifyContent: "center",
+        columnGap: 4,
+        minWidth: 80,
+        height: 36,
         borderWidth: 1,
         borderColor: "#E5E7EB",
         borderRadius: 999,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
+        paddingHorizontal: 10,
         backgroundColor: "#FFFFFF",
     },
     editButtonText: {
         fontFamily: "ChairoSans",
         fontSize: 13,
+        lineHeight: 18,
+        includeFontPadding: false,
+        textAlign: "center",
         color: "#F97316",
+    },
+    editButtonIcon: {
+        width: 16,
+        height: 16,
+        alignItems: "center",
+        justifyContent: "center",
+        transform: [{ translateY: -1 }],
     },
     profileDivider: {
         height: 1,
@@ -931,8 +946,12 @@ const ui = StyleSheet.create({
     editModalOverlay: {
         flex: 1,
         backgroundColor: "rgba(0,0,0,0.4)",
+    },
+    editModalScrollContent: {
+        flexGrow: 1,
         justifyContent: "center",
         paddingHorizontal: 20,
+        paddingVertical: 20,
     },
     editModalCard: {
         backgroundColor: "#FFFFFF",
@@ -1160,6 +1179,7 @@ const formatProfileOrderDate = (value: any, isTurkish: boolean) => {
 };
 
 const Profile = () => {
+    const { theme } = useTheme();
     useWebDocumentTitle();
     const navigation = useNavigation<ManageAddressesNavigation>();
     const { user, isAuthenticated, setUser, resetAuthState } = useAuthStore();
@@ -1438,7 +1458,7 @@ const Profile = () => {
 
     if (!isAuthenticated) {
         return (
-            <SafeAreaView className="flex-1 bg-gray-50" edges={["left", "right", "bottom"]}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={["left", "right", "bottom"]}>
                 <View
                     style={[
                         ui.guestViewport,
@@ -1452,17 +1472,23 @@ const Profile = () => {
                 >
                     <View
                         className="secondary-card items-center"
-                        style={[ui.sectionCard, ui.sectionCardShadow, ui.guestCard]}
+                        style={[
+                            ui.sectionCard,
+                            ui.sectionCardShadow,
+                            ui.guestCard,
+                            { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                        ]}
                     >
                         {profileIllustrations.courierHero ? <profileIllustrations.courierHero width={120} height={120} /> : null}
-                        <Text style={ui.guestTitle}>{guestCopy.title}</Text>
-                        <Text style={ui.guestBody}>{guestCopy.body}</Text>
+                        <Text style={[ui.guestTitle, { color: theme.colors.ink }]}>{guestCopy.title}</Text>
+                        <Text style={[ui.guestBody, { color: theme.colors.textSecondary }]}>{guestCopy.body}</Text>
                         <TouchableOpacity
                             style={ui.guestButton}
                             onPress={() => router.push("/sign-in")}
                         >
                             <Text style={ui.guestButtonText}>{guestCopy.cta}</Text>
                         </TouchableOpacity>
+                        <AppearanceSetting compact />
                     </View>
                 </View>
             </SafeAreaView>
@@ -1470,22 +1496,28 @@ const Profile = () => {
     }
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50" edges={["left", "right", "bottom"]}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={["left", "right", "bottom"]}>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 160, paddingTop: safeTop }}>
                 <View className="px-5 gap-6" style={ui.pageContent}>
                     <View style={ui.topHeaderRow}>
                         <View>
-                            <Text style={ui.screenTitle}>{isTurkish ? "Profilim" : "My Profile"}</Text>
-                            <Text style={ui.screenSubtitle}>
+                            <Text style={[ui.screenTitle, { color: theme.colors.ink }]}>{isTurkish ? "Profilim" : "My Profile"}</Text>
+                            <Text style={[ui.screenSubtitle, { color: theme.colors.textSecondary }]}>
                                 {isTurkish ? "Hesabını yönet ve siparişlerini takip et." : "Manage your account and track your orders."}
                             </Text>
                         </View>
                         <View style={ui.topHeaderActions}>
-                            <Pressable style={ui.topIconButton} onPress={() => setIsEditingProfile(true)}>
-                                <Ionicons name="settings-outline" size={22} color="#0F172A" />
+                            <Pressable
+                                style={[ui.topIconButton, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}
+                                onPress={() => setIsEditingProfile(true)}
+                            >
+                                <Ionicons name="settings-outline" size={22} color={theme.colors.ink} />
                             </Pressable>
-                            <Pressable style={ui.topIconButton} onPress={() => setNotifModalVisible(true)}>
-                                <Ionicons name="notifications-outline" size={22} color="#0F172A" />
+                            <Pressable
+                                style={[ui.topIconButton, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}
+                                onPress={() => setNotifModalVisible(true)}
+                            >
+                                <Ionicons name="notifications-outline" size={22} color={theme.colors.ink} />
                             </Pressable>
                         </View>
                     </View>
@@ -1500,8 +1532,12 @@ const Profile = () => {
                                 <Text style={ui.profileEmail}>{user?.email || "student@campus.edu"}</Text>
                             </View>
                             <TouchableOpacity style={ui.editButton} onPress={() => setIsEditingProfile(true)}>
-                                <Text style={ui.editButtonText}>{t("profile.header.edit")}</Text>
-                                <Ionicons name="create-outline" size={16} color="#F97316" />
+                                <Text maxFontSizeMultiplier={1.05} numberOfLines={1} style={ui.editButtonText}>
+                                    {t("profile.header.edit")}
+                                </Text>
+                                <View style={ui.editButtonIcon}>
+                                    <Ionicons name="create-outline" size={16} color="#F97316" />
+                                </View>
                             </TouchableOpacity>
                         </View>
 
@@ -1722,8 +1758,10 @@ const Profile = () => {
 
                     <OrderHistorySection orders={orders} />
 
-                    <View style={ui.modernSectionCard}>
-                        <Text style={ui.modernSectionTitle}>{t("profile.accountActions")}</Text>
+                    <AppearanceSetting />
+
+                    <View style={[ui.modernSectionCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                        <Text style={[ui.modernSectionTitle, { color: theme.colors.ink }]}>{t("profile.accountActions")}</Text>
                         <View style={ui.accountList}>
                             {[
                                 ...(ownedRestaurantId
@@ -1812,7 +1850,17 @@ const Profile = () => {
 
             {/* EDIT PROFILE - database (updateUserProfile + whatsapp), design modal */}
             <Modal transparent animationType="fade" visible={isEditingProfile} onRequestClose={() => setIsEditingProfile(false)}>
-                <View className="flex-1 bg-black/40 justify-center px-5" style={ui.editModalOverlay}>
+                <KeyboardAvoidingView
+                    style={{ flex: 1 }}
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                >
+                <ScrollView
+                    style={ui.editModalOverlay}
+                    contentContainerStyle={ui.editModalScrollContent}
+                    keyboardShouldPersistTaps="handled"
+                    keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+                    showsVerticalScrollIndicator={false}
+                >
                     <View className="bg-white rounded-3xl overflow-hidden shadow-2xl" style={ui.editModalCard}>
                         <LinearGradient
                             colors={["#0B1220", "#0E1A36"]}
@@ -1857,7 +1905,7 @@ const Profile = () => {
                                     value={nameDraft}
                                     onChangeText={setNameDraft}
                                     placeholder={t("profileExtras.editModal.namePlaceholder")}
-                                    placeholderTextColor="#94A3B8"
+                                    placeholderTextColor={theme.colors.muted}
                                     className="rounded-2xl border border-gray-200 px-4 py-3 text-dark-100"
                                     style={ui.editFieldInput}
                                 />
@@ -1871,9 +1919,9 @@ const Profile = () => {
                                     keyboardType="email-address"
                                     autoCapitalize="none"
                                     placeholder={t("profileExtras.editModal.emailPlaceholder")}
-                                    placeholderTextColor="#94A3B8"
+                                    placeholderTextColor={theme.colors.muted}
                                     className="rounded-2xl border border-gray-200 px-4 py-3 text-dark-100"
-                                    style={[ui.editFieldInput, { backgroundColor: "#F8FAFC" }]}
+                                    style={[ui.editFieldInput, { backgroundColor: theme.colors.surfaceMuted }]}
                                 />
                             </View>
 
@@ -1886,7 +1934,7 @@ const Profile = () => {
                                     onChangeText={setWhatsappDraft}
                                     keyboardType="phone-pad"
                                     placeholder={t("profileExtras.editModal.whatsappPlaceholder", "Enter WhatsApp number")}
-                                    placeholderTextColor="#94A3B8"
+                                    placeholderTextColor={theme.colors.muted}
                                     className="rounded-2xl border border-gray-200 px-4 py-3 text-dark-100"
                                     style={ui.editFieldInput}
                                 />
@@ -1914,7 +1962,8 @@ const Profile = () => {
                             </View>
                         </View>
                     </View>
-                </View>
+                </ScrollView>
+                </KeyboardAvoidingView>
             </Modal>
 
             <NotificationPreferencesModal visible={notifModalVisible} onClose={() => setNotifModalVisible(false)} />
@@ -1940,7 +1989,7 @@ const defaultPrefs: NotificationPrefs = {
     messages: true,
     reviewReplies: true,
 };
-const notificationUi = StyleSheet.create({
+const notificationUi = createAdaptiveStyleSheet({
     backdrop: {
         flex: 1,
         backgroundColor: "rgba(0, 0, 0, 0.3)",

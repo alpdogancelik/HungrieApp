@@ -7,7 +7,7 @@
     "orientation": "portrait",
     "icon": "./assets/app-icon/app-icon-1024.png",
     "scheme": "fastfood",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "icon": "./assets/app-icon/app-icon-1024.png",
@@ -28,7 +28,8 @@
       },
       "package": "com.hungrie.app",
       "versionCode": 30,
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "softwareKeyboardLayoutMode": "resize"
     },
     "web": {
       "bundler": "metro",
@@ -75,6 +76,18 @@
       "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-DSD4PT8W96",
       "EXPO_PUBLIC_FIREBASE_DATABASE_URL": "",
       "EXPO_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN": "",
+      "EXPO_PUBLIC_SUPABASE_URL": "",
+      "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "",
+      "EXPO_PUBLIC_SUPABASE_ENABLED": "false",
+      "EXPO_PUBLIC_AUTH_REPOSITORY": "firebase",
+      "EXPO_PUBLIC_PROFILE_REPOSITORY": "firebase",
+      "EXPO_PUBLIC_RESTAURANT_REPOSITORY": "firebase",
+      "EXPO_PUBLIC_MENU_REPOSITORY": "firebase",
+      "EXPO_PUBLIC_ORDER_REPOSITORY": "firebase",
+      "EXPO_PUBLIC_REVIEW_REPOSITORY": "firebase",
+      "EXPO_PUBLIC_ADDRESS_REPOSITORY": "firebase",
+      "EXPO_PUBLIC_FAVORITES_REPOSITORY": "firebase",
+      "EXPO_PUBLIC_NOTIFICATION_REPOSITORY": "firebase",
       "EXPO_PUBLIC_USE_MOCK_DATA": "false",
       "EXPO_PUBLIC_REQUIRE_AUTH": "true",
       "EXPO_PUBLIC_API_BASE_URL": "",

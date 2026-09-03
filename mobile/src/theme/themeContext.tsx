@@ -13,6 +13,7 @@ import {
     TypographyScale,
 } from "./tokens";
 import { makeShadow } from "@/src/lib/shadowStyle";
+import { setAdaptiveStyleTheme } from "./adaptiveStyles";
 
 export type ThemeVariant = "light" | "dark";
 
@@ -72,15 +73,47 @@ export const ThemeProvider = ({
     children: ReactNode;
     initialVariant?: ThemeVariant;
 }) => {
-    // Force light-only experience.
-    const [variant, setVariant] = useState<ThemeVariant>("light");
-    const [hydrated, setHydrated] = useState(true);
+    const [variant, setVariantState] = useState<ThemeVariant>(initialVariant ?? "light");
+    const [hydrated, setHydrated] = useState(Boolean(initialVariant));
 
-    const toggleTheme = useCallback(() => {
-        setVariant("light");
+    useEffect(() => {
+        let active = true;
+        if (initialVariant) {
+            Appearance.setColorScheme(initialVariant);
+            return () => {
+                active = false;
+            };
+        }
+
+        readStoredVariant()
+            .then((stored) => {
+                if (!active) return;
+                const resolved = stored ?? "light";
+                setVariantState(resolved);
+                Appearance.setColorScheme(resolved);
+            })
+            .catch(() => null)
+            .finally(() => {
+                if (active) setHydrated(true);
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [initialVariant]);
+
+    const setVariant = useCallback((nextVariant: ThemeVariant) => {
+        setVariantState(nextVariant);
+        Appearance.setColorScheme(nextVariant);
+        void persistVariant(nextVariant);
     }, []);
 
+    const toggleTheme = useCallback(() => {
+        setVariant(variant === "dark" ? "light" : "dark");
+    }, [setVariant, variant]);
+
     const theme = useMemo(() => buildTheme(variant), [variant]);
+    setAdaptiveStyleTheme(theme, variant);
 
     const value = useMemo<ThemeContextValue>(
         () => ({
@@ -132,7 +165,7 @@ export const ThemeButton = ({
         >
             <Text
                 style={{
-                    color: theme.colors.surface,
+                    color: theme.colors.onPrimary,
                     fontSize: theme.typography.body,
                     fontFamily: "ChairoSans",
                 }}
@@ -187,5 +220,3 @@ export const ThemeCard = ({
         </View>
     );
 };
-
-

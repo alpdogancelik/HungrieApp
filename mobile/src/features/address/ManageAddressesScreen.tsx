@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import {
     ActivityIndicator,
     Alert,
@@ -19,12 +20,14 @@ import Icon from "@/components/Icon";
 import AddressCard from "./AddressCard";
 import { useAddressActions, useAddresses } from "./hooks";
 import type { ManageAddressesNavigation } from "./types";
+import { useTheme } from "@/src/theme/themeContext";
 
 const ManageAddressesScreen = () => {
     const navigation = useNavigation<ManageAddressesNavigation>();
     const { addresses, isLoading } = useAddresses();
     const { removeAddress, setDefaultAddress } = useAddressActions();
     const { t } = useTranslation();
+    const { theme } = useTheme();
 
     const navigateToForm = useCallback(
         (addressId?: string) => {
@@ -86,8 +89,8 @@ const ManageAddressesScreen = () => {
         return (
             <View style={styles.emptyState}>
                 <Image source={images.deliveryProcess} style={styles.emptyImage} contentFit="cover" />
-                <Text style={styles.emptyTitle}>{t("address.manage.emptyTitle")}</Text>
-                <Text style={styles.emptySubtitle}>{t("address.manage.emptySubtitle")}</Text>
+                <Text style={[styles.emptyTitle, { color: theme.colors.ink }]}>{t("address.manage.emptyTitle")}</Text>
+                <Text style={[styles.emptySubtitle, { color: theme.colors.textSecondary }]}>{t("address.manage.emptySubtitle")}</Text>
                 <TouchableOpacity style={styles.primaryButton} onPress={() => navigateToForm()}>
                     <Text style={styles.primaryButtonText}>{t("address.manage.addNew")}</Text>
                 </TouchableOpacity>
@@ -96,17 +99,17 @@ const ManageAddressesScreen = () => {
     };
 
     return (
-        <SafeAreaView style={styles.screen}>
-            <View style={styles.header}>
+        <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]}>
+            <View style={[styles.header, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
                 <TouchableOpacity
                     accessibilityRole="button"
                     accessibilityLabel={t("common.goBack")}
-                    style={styles.backButton}
+                    style={[styles.backButton, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}
                     onPress={() => navigation.goBack()}
                 >
-                    <Icon name="arrowBack" size={18} color="#0F172A" />
+                    <Icon name="arrowBack" size={18} color={theme.colors.ink} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t("address.manage.title")}</Text>
+                <Text style={[styles.headerTitle, { color: theme.colors.ink }]}>{t("address.manage.title")}</Text>
                 <View style={styles.headerSpacer} />
             </View>
 
@@ -120,7 +123,7 @@ const ManageAddressesScreen = () => {
             />
 
             {addresses.length ? (
-                <View style={styles.footer}>
+                <View style={[styles.footer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
                     <TouchableOpacity style={[styles.primaryButton, styles.footerButton]} onPress={() => navigateToForm()}>
                         <Text style={styles.primaryButtonText}>{t("address.manage.addNew")}</Text>
                     </TouchableOpacity>
@@ -130,7 +133,7 @@ const ManageAddressesScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     screen: {
         flex: 1,
         backgroundColor: "#F7F8FA",

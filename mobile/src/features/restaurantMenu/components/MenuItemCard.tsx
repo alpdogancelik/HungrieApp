@@ -1,4 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -210,7 +211,7 @@ const MenuItemCard = ({
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     menuCard: {
         flexDirection: "row",
         borderRadius: 22,

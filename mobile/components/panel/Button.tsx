@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle, useWindowDimensions } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { makeShadow } from "@/src/lib/shadowStyle";
@@ -77,7 +78,7 @@ const Button = ({
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     base: {
         minHeight: 44,
         borderRadius: 999,

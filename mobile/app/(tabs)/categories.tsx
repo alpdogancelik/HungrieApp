@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
@@ -11,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { CATEGORY_CARDS } from "@/src/lib/categoryCards";
 import { makeShadow } from "@/src/lib/shadowStyle";
 import { useWebDocumentTitle } from "@/src/lib/useWebDocumentTitle";
+import { useTheme } from "@/src/theme/themeContext";
 
 const COLORS = {
     bgTop: "#FFFAF6",
@@ -36,6 +38,7 @@ export default function CategoriesScreen() {
     const insets = useSafeAreaInsets();
     const tabBarHeight = useBottomTabBarHeight();
     const { i18n } = useTranslation();
+    const { theme, variant } = useTheme();
     const isTurkish = i18n.language?.startsWith("tr");
     const [query, setQuery] = useState("");
 
@@ -64,26 +67,26 @@ export default function CategoriesScreen() {
     };
 
     return (
-        <LinearGradient colors={[COLORS.bgTop, COLORS.bgBottom]} style={styles.screen}>
+        <LinearGradient colors={variant === "dark" ? [theme.colors.background, theme.colors.surface] : [COLORS.bgTop, COLORS.bgBottom]} style={styles.screen}>
             <SafeAreaView style={styles.safe} edges={["top"]}>
                 <View style={styles.header}>
                     <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={31} color={COLORS.ink} />
+                        <Ionicons name="arrow-back" size={31} color={theme.colors.ink} />
                     </Pressable>
-                    <Text maxFontSizeMultiplier={1.05} style={styles.title}>
+                    <Text maxFontSizeMultiplier={1.05} style={[styles.title, { color: theme.colors.ink }]}>
                         {isTurkish ? "Kategoriler" : "Categories"}
                     </Text>
                     <View style={styles.headerSpacer} />
                 </View>
 
-                <View style={styles.searchBar}>
+                <View style={[styles.searchBar, { backgroundColor: theme.colors.input, borderColor: theme.colors.border }]}>
                     <Ionicons name="search-outline" size={28} color="#7D8594" />
                     <TextInput
                         value={query}
                         onChangeText={setQuery}
                         placeholder={isTurkish ? "Kategori ara" : "Search category"}
-                        placeholderTextColor={COLORS.muted}
-                        style={styles.searchInput}
+                        placeholderTextColor={theme.colors.muted}
+                        style={[styles.searchInput, { color: theme.colors.ink }]}
                         returnKeyType="search"
                         autoCorrect={false}
                         maxFontSizeMultiplier={1.05}
@@ -106,7 +109,7 @@ export default function CategoriesScreen() {
                     ]}
                     columnWrapperStyle={styles.gridRow}
                     ListHeaderComponent={
-                        <Text maxFontSizeMultiplier={1.05} style={styles.sectionTitle}>
+                        <Text maxFontSizeMultiplier={1.05} style={[styles.sectionTitle, { color: theme.colors.ink }]}>
                             {isTurkish ? "Tüm kategoriler" : "All categories"}
                         </Text>
                     }
@@ -120,14 +123,14 @@ export default function CategoriesScreen() {
                     renderItem={({ item }) => (
                         <Pressable onPress={() => openCategory(item)} style={styles.cardPressable}>
                             {({ pressed }) => (
-                                <View style={[styles.card, pressed ? styles.cardPressed : null]}>
+                                <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }, pressed ? styles.cardPressed : null]}>
                                     <Image source={item.image} style={styles.categoryImage} contentFit="contain" transition={120} />
                                     <Text
                                         numberOfLines={1}
                                         adjustsFontSizeToFit
                                         minimumFontScale={0.72}
                                         maxFontSizeMultiplier={1}
-                                        style={styles.categoryLabel}
+                                        style={[styles.categoryLabel, { color: theme.colors.ink }]}
                                     >
                                         {item.label}
                                     </Text>
@@ -141,7 +144,7 @@ export default function CategoriesScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     screen: {
         flex: 1,
     },

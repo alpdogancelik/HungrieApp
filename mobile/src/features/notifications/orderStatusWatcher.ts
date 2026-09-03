@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NotificationManager } from "@/src/features/notifications/NotificationManager";
-import { autoCancelExpiredPendingOrders, subscribeUserOrders } from "@/src/services/firebaseOrders";
+import { autoCancelExpiredPendingOrders, subscribeUserOrders } from "@/src/data/orderRepository";
 
 type NormalizedOrderStatus = "pending" | "preparing" | "ready" | "out_for_delivery" | "delivered" | "canceled";
 type StatusMap = Record<string, NormalizedOrderStatus>;

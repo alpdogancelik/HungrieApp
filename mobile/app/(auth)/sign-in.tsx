@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import type { TextInput } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -14,11 +15,13 @@ import CustomInput from "@/components/CustomInput";
 import LanguageToggle from "@/components/LanguageToggle";
 import { getAuthErrorMessage, getAuthScreenCopy, isTurkishLanguage } from "@/src/features/auth/authCopy";
 import { isStrictValidEmail } from "@/src/features/auth/emailValidation";
-import { getCurrentUser, getOwnedRestaurantId, signIn } from "@/lib/firebaseAuth";
+import { getCurrentUser, signIn } from "@/src/data/authRepository";
+import { getOwnedRestaurantId } from "@/src/data/restaurantRepository";
 import useAuthStore from "@/store/auth.store";
 import RobotDelivery from "@/assets/illustrations/Robot Delivery.svg";
-import { addressStore } from "@/src/features/address/addressStore";
+import { addressStore } from "@/src/data/addressRepository";
 import { makeShadow } from "@/src/lib/shadowStyle";
+import { useTheme } from "@/src/theme/themeContext";
 
 type FeedbackState = {
     title: string;
@@ -32,7 +35,7 @@ const readableTurkishFont = Platform.select({
     default: "system-ui",
 });
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     safeArea: { flex: 1, backgroundColor: "#FFF8F2" },
     scrollContent: {
         flexGrow: 1,
@@ -291,6 +294,7 @@ const replaceAfterAuth = (pathname: "/home" | "/restaurantpanel") => {
 };
 
 const SignIn = () => {
+    const { theme } = useTheme();
     const { i18n } = useTranslation();
     const insets = useSafeAreaInsets();
     const copy = getAuthScreenCopy(i18n.language).signIn;
@@ -399,13 +403,15 @@ const SignIn = () => {
           ];
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={["left", "right", "bottom"]}>
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
             <ScrollView
                 contentContainerStyle={[
                     styles.scrollContent,
                     { paddingTop: Math.max(insets.top, 12), paddingBottom: Math.max(insets.bottom + 24, 28) },
                 ]}
                 keyboardShouldPersistTaps="handled"
+                keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
                 showsVerticalScrollIndicator={false}
             >
                 <View style={[styles.shell, { maxWidth: maxShellWidth }]}>
@@ -425,7 +431,7 @@ const SignIn = () => {
                     <View style={styles.heroSection}>
                         <View style={styles.heroGrid}>
                             <View style={styles.heroTextCol}>
-                                <Text style={[styles.heroHeading, isWide ? { fontSize: 56, lineHeight: 72 } : null]}>
+                                <Text style={[styles.heroHeading, { color: theme.colors.ink }, isWide ? { fontSize: 56, lineHeight: 72 } : null]}>
                                     {isTurkish ? (
                                         <>
                                             Hungrie&apos;ye tekrar{"\n"}
@@ -438,7 +444,7 @@ const SignIn = () => {
                                         </>
                                     )}
                                 </Text>
-                                <Text style={[styles.heroBody, isWide ? { fontSize: 18, lineHeight: 32, maxWidth: 420 } : null]}>
+                                <Text style={[styles.heroBody, { color: theme.colors.textSecondary }, isWide ? { fontSize: 18, lineHeight: 32, maxWidth: 420 } : null]}>
                                     {copy.subtitle}
                                 </Text>
                             </View>
@@ -497,12 +503,13 @@ const SignIn = () => {
                     <View
                         style={[
                             styles.authCard,
+                            { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
                             { marginTop: cardOverlap },
                             makeShadow({ color: "#000000", offsetY: 20, blurRadius: 38, opacity: 0.1, elevation: 12 }),
                         ]}
                     >
                         <View style={styles.authCardHeader}>
-                            <Text style={[styles.cardTitle, isWide ? { fontSize: 46, lineHeight: 58 } : null]}>{copy.submit}</Text>
+                            <Text style={[styles.cardTitle, { color: theme.colors.ink }, isWide ? { fontSize: 46, lineHeight: 58 } : null]}>{copy.submit}</Text>
                         </View>
 
                         {feedback ? (
@@ -590,6 +597,7 @@ const SignIn = () => {
                     ) : null}
                 </View>
             </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };

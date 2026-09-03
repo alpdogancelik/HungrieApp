@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { panelDesign } from "./panelDesign";
 
 type StatusTone = {
@@ -28,7 +29,7 @@ export const StatusBadge = ({ status }: { status: string }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     badge: {
         minHeight: 28,
         minWidth: 74,

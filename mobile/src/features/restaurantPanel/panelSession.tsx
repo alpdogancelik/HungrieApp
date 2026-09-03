@@ -4,7 +4,7 @@ import {
     signInRestaurant,
     signOutRestaurant,
     type RestaurantSession,
-} from "@/src/features/restaurantPanel/restaurantAuth";
+} from "@/src/data/restaurantRepository";
 
 type PanelSessionContextValue = {
     session: RestaurantSession | null;

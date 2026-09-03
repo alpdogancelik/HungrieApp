@@ -1,4 +1,5 @@
 import { memo, useCallback, useMemo, useState } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { Alert, Platform, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
 import { useCartStore } from "@/store/cart.store";
@@ -161,7 +162,7 @@ const MenuCard = ({ item, onPress, accentColor = "#FE8C00" }: MenuCardProps) => 
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     card: {
         backgroundColor: "#FFFFFF",
         borderRadius: 18,

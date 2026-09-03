@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getMenu } from "@/lib/firebaseAuth";
-import { getRestaurants } from "@/lib/api";
+import { getMenu } from "@/src/data/menuRepository";
+import { getRestaurants } from "@/src/data/restaurantRepository";
 import { filterMenuForCustomer } from "@/lib/menuVisibility";
 import type { MenuItem } from "@/type";
 

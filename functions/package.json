@@ -8,6 +8,13 @@
   "scripts": {
     "deploy": "firebase deploy --only functions",
     "serve": "firebase emulators:start --only functions",
+    "audit:migration-baseline": "node scripts/auditFirebaseMigrationBaseline.js",
+    "test:audit-migration-baseline": "node --test scripts/auditFirebaseMigrationBaseline.test.js",
+    "test:supabase-auth-claims": "node --test scripts/backfillSupabaseAuthClaims.test.js",
+    "test:supabase-auth-probe": "node --test scripts/probeSupabaseFirebaseBridge.test.js",
+    "auth:claims:dry-run": "node scripts/backfillSupabaseAuthClaims.js",
+    "auth:claims:write": "node scripts/backfillSupabaseAuthClaims.js --write",
+    "auth:supabase-probe": "node scripts/probeSupabaseFirebaseBridge.js",
     "cleanup:push-tokens": "node scripts/cleanupPushTokens.js",
     "sync:firestore-json": "node scripts/syncFirestoreFromJsonAdmin.js",
     "provision:restaurant-panel-accounts": "node scripts/provisionRestaurantPanelAccounts.js"

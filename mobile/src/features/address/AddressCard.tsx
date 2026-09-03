@@ -1,8 +1,10 @@
 import { memo, useMemo, useState } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { Address } from "@/src/domain/types";
 import { makeShadow } from "@/src/lib/shadowStyle";
+import { useTheme } from "@/src/theme/themeContext";
 
 type Props = {
     address: Address;
@@ -13,6 +15,7 @@ type Props = {
 
 const AddressCard = ({ address, onEdit, onDelete, onSetDefault }: Props) => {
     const { t, i18n } = useTranslation();
+    const { theme } = useTheme();
     const isTurkish = i18n.language?.startsWith("tr");
     const [menuVisible, setMenuVisible] = useState(false);
     const resolveCopy = (key: string, tr: string, en: string) => {
@@ -58,27 +61,27 @@ const AddressCard = ({ address, onEdit, onDelete, onSetDefault }: Props) => {
     };
 
     return (
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
             <View style={styles.cardHeader}>
                 <View style={styles.addressContent}>
                     <View style={styles.labelRow}>
-                        <Text style={styles.labelText}>{address.label}</Text>
+                        <Text style={[styles.labelText, { color: theme.colors.ink }]}>{address.label}</Text>
                         {address.isDefault ? (
                             <View style={styles.defaultBadge}>
                                 <Text style={styles.defaultBadgeText}>{copy.defaultBadge}</Text>
                             </View>
                         ) : null}
                     </View>
-                    <Text style={styles.addressLine} numberOfLines={1}>
+                    <Text style={[styles.addressLine, { color: theme.colors.textSecondary }]} numberOfLines={1}>
                         {buildingLine}
                     </Text>
-                    <Text style={styles.addressLine} numberOfLines={1}>
+                    <Text style={[styles.addressLine, { color: theme.colors.textSecondary }]} numberOfLines={1}>
                         {detailLine}
                     </Text>
                 </View>
                 <TouchableOpacity
                     accessibilityLabel={copy.openActions}
-                    style={styles.menuButton}
+                    style={[styles.menuButton, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}
                     onPress={toggleMenu}
                 >
                     <Text style={styles.menuButtonText}>⋮</Text>
@@ -86,10 +89,10 @@ const AddressCard = ({ address, onEdit, onDelete, onSetDefault }: Props) => {
             </View>
 
             <Modal transparent visible={menuVisible} animationType="fade" onRequestClose={closeMenu}>
-                <View style={styles.sheetBackdrop}>
+                <View style={[styles.sheetBackdrop, { backgroundColor: theme.colors.overlay }]}>
                     <Pressable style={styles.sheetDismissArea} onPress={closeMenu} />
-                    <View style={styles.sheet}>
-                        <Text style={styles.sheetTitle}>{copy.actionsTitle}</Text>
+                    <View style={[styles.sheet, { backgroundColor: theme.colors.surfaceElevated }]}>
+                        <Text style={[styles.sheetTitle, { color: theme.colors.ink }]}>{copy.actionsTitle}</Text>
                         <TouchableOpacity style={styles.sheetAction} onPress={handleEdit}>
                             <Text style={styles.sheetActionText}>{copy.edit}</Text>
                         </TouchableOpacity>
@@ -108,7 +111,7 @@ const AddressCard = ({ address, onEdit, onDelete, onSetDefault }: Props) => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     card: {
         backgroundColor: "#FFFFFF",
         borderWidth: 1,

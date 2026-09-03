@@ -1,18 +1,15 @@
 import { Tabs } from "expo-router";
-import React, { useEffect, useRef } from "react";
-import { Animated, LayoutChangeEvent, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import React from "react";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { type BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useTranslation } from "react-i18next";
 import Icon from "@/components/Icon";
 import { useCartStore } from "@/store/cart.store";
-import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 import { makeShadow } from "@/src/lib/shadowStyle";
-const WEB_MAX_WIDTH = 960;
+import { useTheme } from "@/src/theme/themeContext";
 const BAR_HEIGHT = Platform.OS === "android" ? 74 : 70;
-const ACTIVE_ICON_COLOR = "#F28C28";
 const INACTIVE_ICON_COLOR = "#8A8178";
-const USE_NATIVE_DRIVER = Platform.OS !== "web";
 
 const formatCartTotal = (amount: number, isTurkish: boolean) => {
     const rounded = Math.round(amount);
@@ -20,50 +17,25 @@ const formatCartTotal = (amount: number, isTurkish: boolean) => {
 };
 
 function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
+    const { theme, variant } = useTheme();
     const { i18n } = useTranslation();
-    const { width } = useStableWindowDimensions();
     const cartItems = useCartStore((state) => state.items);
     const cartTotal = useCartStore((state) => state.getTotalPrice());
-    const effectiveWidth = Platform.OS === "web" ? Math.min(width, WEB_MAX_WIDTH) : width;
     const insets = useSafeAreaInsets();
     const isTurkish = i18n.language?.startsWith("tr");
     const OUTER_MARGIN = 16;
     const INNER_PAD = 14;
-    const containerW = effectiveWidth - OUTER_MARGIN * 2;
     const normalizeRouteName = (name: string) => name.split("/")[0];
     const routeOrder = ["home", "search", "cart", "profile"];
     const orderedRoutes = routeOrder
         .map((name) => state.routes.find((route) => normalizeRouteName(route.name) === name))
         .filter(Boolean) as typeof state.routes;
-    const measuredBarWidth = useRef(0);
-    const fallbackTabW = (containerW - INNER_PAD * 2) / orderedRoutes.length;
-    const tabW =
-        measuredBarWidth.current > 0
-            ? (measuredBarWidth.current - INNER_PAD * 2) / orderedRoutes.length
-            : fallbackTabW;
-    const translateX = useRef(new Animated.Value(0)).current;
     const activeRouteKey = state.routes[state.index]?.key;
-    const activeIndex = Math.max(
-        0,
-        orderedRoutes.findIndex((route) => route.key === activeRouteKey),
-    );
-
-    useEffect(() => {
-        Animated.timing(translateX, {
-            toValue: tabW * activeIndex,
-            duration: 200,
-            useNativeDriver: USE_NATIVE_DRIVER,
-        }).start();
-    }, [activeIndex, tabW, translateX]);
 
     const bottom = Platform.OS === "android" ? Math.max(insets.bottom, 10) - 0 : Math.max(insets.bottom, 10) - 15;
-    const handleLayout = (event: LayoutChangeEvent) => {
-        measuredBarWidth.current = event.nativeEvent.layout.width;
-    };
 
     return (
         <View
-            onLayout={handleLayout}
             style={[
                 styles.bar,
                 {
@@ -71,22 +43,11 @@ function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
                     right: OUTER_MARGIN,
                     bottom,
                     paddingHorizontal: INNER_PAD,
+                    backgroundColor: theme.colors.surfaceElevated,
+                    borderColor: theme.colors.border,
                 },
             ]}
         >
-            {/* kayan highlight */}
-            <Animated.View
-                style={[
-                    styles.indicator,
-                    {
-                        pointerEvents: "none",
-                        left: INNER_PAD,
-                        width: tabW,
-                        transform: [{ translateX }],
-                    },
-                ]}
-            />
-
             {orderedRoutes.map((route) => {
                 const focused = route.key === activeRouteKey;
                 const baseName = normalizeRouteName(route.name);
@@ -106,7 +67,7 @@ function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
                         navigation.navigate(route.name);
                     }
                 };
-                const color = focused ? ACTIVE_ICON_COLOR : INACTIVE_ICON_COLOR;
+                const color = focused ? theme.colors.primary : variant === "dark" ? theme.colors.textSecondary : INACTIVE_ICON_COLOR;
                 let iconNode;
                 if (baseName === "home") {
                     iconNode = <Icon name="home" size={24} color={color} />;
@@ -122,6 +83,7 @@ function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
                         key={route.key}
                         onPress={onPress}
                         hitSlop={10}
+                        android_ripple={{ color: "transparent" }}
                         style={[styles.tabPressable, showCartSummary ? styles.tabPressableCart : null]}
                     >
                         <View style={styles.iconWrap}>
@@ -129,16 +91,26 @@ function HungrieTabBar({ state, navigation }: BottomTabBarProps) {
                             <View style={styles.iconFrame}>{iconNode}</View>
                             {showCartSummary ? (
                                 <View style={styles.cartCountBadge}>
-                                    <Text style={styles.cartCountBadgeText}>{cartCount}</Text>
+                                    <Text maxFontSizeMultiplier={1} style={styles.cartCountBadgeText}>{cartCount}</Text>
                                 </View>
                             ) : null}
                         </View>
                         {showCartSummary ? (
                             <View style={styles.cartTotalPill}>
-                                <Text style={styles.cartTotalPillText}>{formatCartTotal(cartTotal, isTurkish)}</Text>
+                                <Text maxFontSizeMultiplier={1.05} style={styles.cartTotalPillText}>{formatCartTotal(cartTotal, isTurkish)}</Text>
                             </View>
                         ) : (
-                            <Text style={[styles.label, focused ? styles.labelActive : null]}>{label}</Text>
+                            <Text
+                                maxFontSizeMultiplier={1.05}
+                                numberOfLines={1}
+                                style={[
+                                    styles.label,
+                                    { color: theme.colors.textSecondary },
+                                    focused ? [styles.labelActive, { color: theme.colors.primary }] : null,
+                                ]}
+                            >
+                                {label}
+                            </Text>
                         )}
                     </Pressable>
                 );
@@ -190,16 +162,12 @@ const styles = StyleSheet.create({
         alignItems: "center",
         ...makeShadow({ color: "#C9A778", offsetY: 10, blurRadius: 24, opacity: 0.2, elevation: 12 }),
     },
-    indicator: {
-        position: "absolute",
-        top: 0,
-        bottom: 0,
-    },
     tabPressable: {
         flex: 1,
         alignItems: "center",
         justifyContent: "center",
         gap: 2,
+        backgroundColor: "transparent",
     },
     tabPressableCart: {
         gap: 2,
@@ -213,6 +181,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
+        backgroundColor: "transparent",
     },
     iconActiveBubble: {
         position: "absolute",
@@ -229,6 +198,7 @@ const styles = StyleSheet.create({
         borderRadius: 21,
         alignItems: "center",
         justifyContent: "center",
+        backgroundColor: "transparent",
     },
     label: {
         fontFamily: "ChairoSans",

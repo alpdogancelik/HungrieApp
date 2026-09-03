@@ -1,6 +1,8 @@
 import { Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useTheme } from "@/src/theme/themeContext";
 
-const styles = StyleSheet.create({
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
+const styles = createAdaptiveStyleSheet({
     root: { rowGap: 8 },
     title: { fontFamily: "ChairoSans", fontSize: 18, color: "#0F172A" },
     chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
@@ -19,26 +21,28 @@ type Props = {
     placeholder: string;
 };
 
-const CourierNotes = ({ value, maxLength, suggestions, onChange, title, placeholder }: Props) => (
+const CourierNotes = ({ value, maxLength, suggestions, onChange, title, placeholder }: Props) => {
+    const { theme } = useTheme();
+    return (
     <View className="gap-2" style={styles.root}>
-        <Text className="section-title" style={styles.title}>{title}</Text>
+        <Text style={[styles.title, { color: theme.colors.ink }]}>{title}</Text>
         <View className="flex-row flex-wrap gap-3" style={styles.chipsRow}>
             {suggestions.map((suggestion) => (
                 <TouchableOpacity
                     key={suggestion}
                     className="px-3 py-2 rounded-2xl border border-gray-200 bg-white"
-                    style={styles.chip}
+                    style={[styles.chip, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
                     onPress={() => onChange(suggestion)}
                 >
-                    <Text className="body-medium text-dark-80" style={styles.chipText}>{suggestion}</Text>
+                    <Text style={[styles.chipText, { color: theme.colors.ink }]}>{suggestion}</Text>
                 </TouchableOpacity>
             ))}
         </View>
         <TextInput
             className="rounded-3xl bg-white border border-gray-100 px-4 py-3 text-dark-100"
-            style={styles.input}
+            style={[styles.input, { color: theme.colors.ink, backgroundColor: theme.colors.input, borderColor: theme.colors.border }]}
             placeholder={placeholder}
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={theme.colors.muted}
             nativeID="courier-notes"
             value={value}
             onChangeText={onChange}
@@ -51,10 +55,11 @@ const CourierNotes = ({ value, maxLength, suggestions, onChange, title, placehol
             returnKeyType="done"
             maxLength={maxLength}
         />
-        <Text className="body-medium text-right text-dark-60" style={styles.count}>
+        <Text style={[styles.count, { color: theme.colors.textSecondary }]}>
             {value.length}/{maxLength}
         </Text>
     </View>
-);
+    );
+};
 
 export default CourierNotes;

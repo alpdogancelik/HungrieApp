@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { Asset } from "expo-asset";
 import { Animated, Platform, StyleSheet } from "react-native";
 import { Image } from "expo-image";
@@ -114,7 +115,7 @@ export default function SplashPulse({ visible, onFinished, imageSource, backgrou
     );
 }
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     overlay: {
         ...StyleSheet.absoluteFillObject,
         alignItems: "center",

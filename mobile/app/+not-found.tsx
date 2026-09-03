@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -6,8 +7,10 @@ import { usePathname, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import RobotDelivery from "@/assets/illustrations/Robot Delivery.svg";
 import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
+import { useTheme } from "@/src/theme/themeContext";
 
 const NotFoundScreen = () => {
+    const { theme, variant } = useTheme();
     const router = useRouter();
     const pathname = usePathname();
     const { width } = useStableWindowDimensions();
@@ -62,9 +65,9 @@ const NotFoundScreen = () => {
     );
 
     return (
-        <SafeAreaView style={styles.root}>
+        <SafeAreaView style={[styles.root, { backgroundColor: theme.colors.background }]}>
             <LinearGradient
-                colors={["#FFF7EC", "#FFF1DC", "#FDF5E6"]}
+                colors={variant === "dark" ? [theme.colors.background, theme.colors.surface, theme.colors.background] : ["#FFF7EC", "#FFF1DC", "#FDF5E6"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.gradient}
@@ -73,8 +76,8 @@ const NotFoundScreen = () => {
                     <View style={[styles.copyCol, isWide ? styles.copyColWide : styles.copyColCompact]}>
                         <Text style={styles.eyebrow}>Hungrie</Text>
                         <Text style={styles.title}>404</Text>
-                        <Text style={styles.subtitle}>Page not found.</Text>
-                        <Text style={styles.description}>
+                        <Text style={[styles.subtitle, { color: theme.colors.ink }]}>Page not found.</Text>
+                        <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
                             The link may have changed, or there may be a temporary issue. Go back to the home page and keep exploring restaurants.
                         </Text>
 
@@ -84,14 +87,14 @@ const NotFoundScreen = () => {
                                 <Text style={styles.primaryBtnText}>Go Home</Text>
                             </Pressable>
 
-                            <Pressable style={styles.secondaryBtn} onPress={() => router.back()}>
-                                <Feather name="corner-up-left" size={16} color="#1F2937" />
-                                <Text style={styles.secondaryBtnText}>Go Back</Text>
+                            <Pressable style={[styles.secondaryBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]} onPress={() => router.back()}>
+                                <Feather name="corner-up-left" size={16} color={theme.colors.ink} />
+                                <Text style={[styles.secondaryBtnText, { color: theme.colors.ink }]}>Go Back</Text>
                             </Pressable>
                         </View>
 
-                        <View style={styles.routePill}>
-                            <Text style={styles.routePillText} numberOfLines={1}>
+                        <View style={[styles.routePill, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}>
+                            <Text style={[styles.routePillText, { color: theme.colors.textSecondary }]} numberOfLines={1}>
                                 Path: {pathname || "/unknown"}
                             </Text>
                         </View>
@@ -109,7 +112,7 @@ const NotFoundScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     root: {
         flex: 1,
         backgroundColor: "#FFF7EC",

@@ -1,25 +1,29 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { SplashScreen, Stack, usePathname, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import { Asset } from "expo-asset";
 import Constants from "expo-constants";
+import { StatusBar } from "expo-status-bar";
+import * as SystemUI from "expo-system-ui";
 import * as Sentry from "@sentry/react-native";
-import { AppState, Platform, Text, TextInput, View } from "react-native";
+import { Animated, AppState, Easing, Platform, StyleSheet, Text, TextInput, View } from "react-native";
 import { Image } from "expo-image";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import useAuthStore from "@/store/auth.store";
-import { ThemeProvider } from "@/src/theme/themeContext";
+import { ThemeProvider, useTheme } from "@/src/theme/themeContext";
 import "@/src/lib/i18n";
 import "./globals.css";
 import { isRemotePushSupported, NotificationManager } from "@/src/features/notifications/NotificationManager";
 import { startOrderStatusWatcher } from "@/src/features/notifications/orderStatusWatcher";
-import { auth } from "@/lib/firebase";
+import { getCurrentAuthUserId } from "@/src/data/authRepository";
 import CartLockNotice from "@/components/CartLockNotice";
 import SplashPulse from "@/components/SplashPulse";
-import { registerPushToken, unregisterPushToken } from "@/lib/registerPushToken";
+import InternetConnectionGate from "@/src/features/connectivity/InternetConnectionGate";
+import { registerPushToken, unregisterPushToken } from "@/src/data/notificationRepository";
 import { playOrderNotificationSound, unloadOrderNotificationSound } from "@/src/features/notifications/orderSound";
 import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
+import { useReducedMotion } from "@/src/lib/useReducedMotion";
 import webSplashImage from "../assets/hungriesplash.png";
 import mobileSplashImage from "../assets/hungriesplashmobile.png";
 
@@ -36,7 +40,64 @@ if (enableSentry) {
 
 void SplashScreen.preventAutoHideAsync().catch(() => null);
 
+const THEME_FADE_DURATION_MS = 240;
+const APP_TEXT_SCALE_LIMIT = 1.2;
+const chairoRegular = require("../assets/fonts/ChairoSansRegular-Regular.ttf");
+
+const configureDefaultText = (component: any) => {
+    const existingStyle = component?.defaultProps?.style;
+    const styleArray = Array.isArray(existingStyle) ? existingStyle : existingStyle ? [existingStyle] : [];
+    const hasChairo = styleArray.some((style: any) => style?.fontFamily === "ChairoSans");
+
+    component.defaultProps = {
+        ...(component.defaultProps || {}),
+        maxFontSizeMultiplier: APP_TEXT_SCALE_LIMIT,
+        style: hasChairo ? styleArray : [{ fontFamily: "ChairoSans" }, ...styleArray],
+    };
+};
+
+configureDefaultText(Text);
+configureDefaultText(TextInput);
+
+const ThemeTransitionOverlay = ({ backgroundColor }: { backgroundColor: string }) => {
+    const reduceMotion = useReducedMotion();
+    const previousColorRef = useRef(backgroundColor);
+    const opacity = useRef(new Animated.Value(0)).current;
+    const [overlayColor, setOverlayColor] = useState(backgroundColor);
+
+    useLayoutEffect(() => {
+        const previousColor = previousColorRef.current;
+        previousColorRef.current = backgroundColor;
+        if (previousColor === backgroundColor || reduceMotion) return;
+
+        opacity.stopAnimation();
+        setOverlayColor(previousColor);
+        opacity.setValue(0.42);
+
+        Animated.timing(opacity, {
+            toValue: 0,
+            duration: THEME_FADE_DURATION_MS,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+        }).start();
+
+        return () => {
+            opacity.stopAnimation();
+        };
+    }, [backgroundColor, opacity, reduceMotion]);
+
+    return (
+        <Animated.View
+            pointerEvents="none"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            style={[StyleSheet.absoluteFillObject, { backgroundColor: overlayColor, opacity, zIndex: 10000 }]}
+        />
+    );
+};
+
 function RootLayoutBase() {
+    const { theme, variant, hydrated: themeHydrated } = useTheme();
     const { isLoading, isAuthenticated, user, fetchAuthenticatedUser } = useAuthStore();
     const router = useRouter();
     const pathname = usePathname();
@@ -62,18 +123,6 @@ function RootLayoutBase() {
     );
     const splashPreviewHeight = splashPreviewWidth / splashAspectRatio;
     const shouldUseFullBleedSplash = !isWeb || isCompactWeb;
-    const chairoRegular = require("../assets/fonts/ChairoSansRegular-Regular.ttf");
-    const applyDefaultFont = (component: any) => {
-        const existingStyle = component?.defaultProps?.style;
-        const styleArray = Array.isArray(existingStyle) ? existingStyle : existingStyle ? [existingStyle] : [];
-        const hasChairo = styleArray.some((style: any) => style?.fontFamily === "ChairoSans");
-        const mergedStyle = hasChairo ? styleArray : [{ fontFamily: "ChairoSans" }, ...styleArray];
-
-        component.defaultProps = {
-            ...(component.defaultProps || {}),
-            style: mergedStyle,
-        };
-    };
     const [fontsLoaded, error] = useFonts({
         ChairoSans: chairoRegular,
     });
@@ -149,7 +198,7 @@ function RootLayoutBase() {
 
     useEffect(() => {
         if (!isAuthenticated) return;
-        const resolvedUserId = auth?.currentUser?.uid ?? user?.accountId ?? user?.id ?? user?.$id ?? null;
+        const resolvedUserId = getCurrentAuthUserId() || user?.accountId || user?.id || user?.$id || null;
         if (!resolvedUserId) return;
 
         const stopWatcher = startOrderStatusWatcher(resolvedUserId);
@@ -205,18 +254,21 @@ function RootLayoutBase() {
     }, []);
 
     useEffect(() => {
-        if (!fontsLoaded) return;
+        if (!fontsLoaded || !themeHydrated) return;
         if (didHideNativeSplashRef.current) return;
 
-        // Native splash is kept visible until JS is ready.
-        applyDefaultFont(Text);
-        applyDefaultFont(TextInput);
+        // Native splash is kept visible until fonts and the saved theme are ready.
         didHideNativeSplashRef.current = true;
         SplashScreen.hideAsync().catch(() => null);
-    }, [fontsLoaded]);
+    }, [fontsLoaded, themeHydrated]);
+
+    useEffect(() => {
+        if (!themeHydrated) return;
+        void SystemUI.setBackgroundColorAsync(theme.colors.background).catch(() => null);
+    }, [theme.colors.background, themeHydrated]);
 
     if (error) throw error;
-    if (!fontsLoaded) {
+    if (!fontsLoaded || !themeHydrated) {
         return (
             <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#FFF7EF" }}>
                 {shouldUseFullBleedSplash ? (
@@ -234,14 +286,14 @@ function RootLayoutBase() {
     }
 
     return (
-        <GestureHandlerRootView style={{ flex: 1 }}>
-            <ThemeProvider>
+        <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.colors.background }}>
+                <StatusBar style={variant === "dark" ? "light" : "dark"} />
                 <CartLockNotice />
                 <View
                     style={
                         isWeb
-                            ? { flex: 1, alignSelf: "center", width: "100%", maxWidth: contentWidth }
-                            : { flex: 1 }
+                            ? { flex: 1, alignSelf: "center", width: "100%", maxWidth: contentWidth, backgroundColor: theme.colors.background }
+                            : { flex: 1, backgroundColor: theme.colors.background }
                     }
                 >
                     <Stack screenOptions={{ headerShown: false }} />
@@ -252,11 +304,18 @@ function RootLayoutBase() {
                     imageSource={splashImage}
                     backgroundColor="#FFF7EF"
                 />
-            </ThemeProvider>
+                <InternetConnectionGate />
+                <ThemeTransitionOverlay backgroundColor={theme.colors.background} />
         </GestureHandlerRootView>
     );
 }
 
-const RootLayout = enableSentry ? Sentry.wrap(RootLayoutBase) : RootLayoutBase;
+const ThemedRootLayout = enableSentry ? Sentry.wrap(RootLayoutBase) : RootLayoutBase;
+
+const RootLayout = () => (
+    <ThemeProvider>
+        <ThemedRootLayout />
+    </ThemeProvider>
+);
 
 export default RootLayout;

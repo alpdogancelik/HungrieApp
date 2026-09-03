@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import {
     Alert,
     Keyboard,
@@ -24,6 +25,7 @@ import type { AddressFormNavigation, AddressFormScreenProps } from "./types";
 import Icon from "@/components/Icon";
 import OnlineLocation from "@/assets/illustrations/Online Location.svg";
 import { makeShadow } from "@/src/lib/shadowStyle";
+import { useTheme } from "@/src/theme/themeContext";
 
 const schema = z.object({
     label: z.string().min(2, "Enter a helpful label."),
@@ -51,6 +53,7 @@ const buildInitialState = (options: { editing?: Partial<FormState>; defaultIsDef
 });
 
 const AddressFormScreen = () => {
+    const { theme } = useTheme();
     const insets = useSafeAreaInsets();
     const { width: windowWidth } = useWindowDimensions();
     const navigation = useNavigation<AddressFormNavigation>();
@@ -153,15 +156,15 @@ const AddressFormScreen = () => {
         inputRef?: RefObject<TextInput | null>,
     ) => (
         <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>{label}</Text>
+            <Text style={[styles.fieldLabel, { color: theme.colors.ink }]}>{label}</Text>
             <TextInput
                 ref={inputRef}
                 value={form[field] as string}
                 onChangeText={(text) => handleChange(field, text)}
                 placeholder={placeholder}
                 keyboardType={keyboardType}
-                style={styles.fieldInput}
-                placeholderTextColor={placeholderColor}
+                style={[styles.fieldInput, { color: theme.colors.ink, backgroundColor: theme.colors.input, borderColor: theme.colors.border }]}
+                placeholderTextColor={theme.colors.muted}
                 autoCapitalize="words"
                 returnKeyType={field === "city" ? "done" : "next"}
                 blurOnSubmit={field === "city"}
@@ -181,13 +184,14 @@ const AddressFormScreen = () => {
         <SafeAreaView style={styles.screen}>
             <KeyboardAvoidingView
                 style={styles.flex1}
-                behavior={Platform.select({ ios: "padding", android: undefined })}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
                 keyboardVerticalOffset={0}
             >
                 <ScrollView
                     style={styles.flex1}
                     contentContainerStyle={{ paddingBottom: 24 }}
                     keyboardShouldPersistTaps="handled"
+                    keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
                     showsVerticalScrollIndicator={false}
                 >
                     <LinearGradient
@@ -223,10 +227,10 @@ const AddressFormScreen = () => {
                     </LinearGradient>
 
                     <View style={styles.formContainer}>
-                        <View style={styles.formCard}>
+                        <View style={[styles.formCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
                             <View style={styles.formHeading}>
-                                <Text style={styles.formTitle}>{t("address.form.sectionTitle")}</Text>
-                                <Text style={styles.formSubtitle}>{t("address.form.sectionSubtitle")}</Text>
+                                <Text style={[styles.formTitle, { color: theme.colors.ink }]}>{t("address.form.sectionTitle")}</Text>
+                                <Text style={[styles.formSubtitle, { color: theme.colors.textSecondary }]}>{t("address.form.sectionSubtitle")}</Text>
                             </View>
 
                             <View style={styles.fieldsStack}>
@@ -272,10 +276,10 @@ const AddressFormScreen = () => {
                                 )}
                             </View>
 
-                            <View style={styles.defaultCard}>
+                            <View style={[styles.defaultCard, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}>
                                 <View style={styles.defaultContent}>
-                                    <Text style={styles.defaultTitle}>{t("address.form.makeDefault")}</Text>
-                                    <Text style={styles.defaultHint}>{t("address.form.makeDefaultHint")}</Text>
+                                    <Text style={[styles.defaultTitle, { color: theme.colors.ink }]}>{t("address.form.makeDefault")}</Text>
+                                    <Text style={[styles.defaultHint, { color: theme.colors.textSecondary }]}>{t("address.form.makeDefaultHint")}</Text>
                                 </View>
                                 <Switch
                                     value={form.isDefault}
@@ -310,7 +314,7 @@ const AddressFormScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     screen: {
         flex: 1,
         backgroundColor: "#0B1220",

@@ -1,5 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { makeShadow } from "@/src/lib/shadowStyle";
+import { useTheme } from "@/src/theme/themeContext";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 
 const cardShadow = makeShadow({
     color: "#0F172A",
@@ -8,7 +10,7 @@ const cardShadow = makeShadow({
     opacity: 0.08,
     elevation: 5,
 });
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     card: { backgroundColor: "#FFFFFF", borderRadius: 28, padding: 20, rowGap: 8, borderWidth: 1, borderColor: "#EEE7DE" },
     row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 4 },
     label: { fontFamily: "ChairoSans", fontSize: 14, color: "#475569" },
@@ -37,14 +39,18 @@ type Props = {
     };
 };
 
-const SummaryRow = ({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) => (
-    <View className="flex-row items-center justify-between py-1" style={styles.row}>
-        <Text className={highlight ? "paragraph-semibold text-dark-80" : "body-medium text-dark-60"} style={highlight ? styles.labelStrong : styles.label}>{label}</Text>
-        <Text className={highlight ? "h3-bold text-dark-100" : "paragraph-semibold text-dark-100"} style={highlight ? styles.valueStrong : styles.value}>{value}</Text>
-    </View>
-);
+const SummaryRow = ({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) => {
+    const { theme } = useTheme();
+    return (
+        <View style={styles.row}>
+            <Text style={[highlight ? styles.labelStrong : styles.label, { color: highlight ? theme.colors.ink : theme.colors.textSecondary }]}>{label}</Text>
+            <Text style={[highlight ? styles.valueStrong : styles.value, { color: theme.colors.ink }]}>{value}</Text>
+        </View>
+    );
+};
 
 const SummaryCard = ({ subtotal, serviceFee, serviceNote, deliveryFee, discount, total, labels }: Props) => {
+    const { theme } = useTheme();
     const summaryLabels = labels ?? {
         subtotal: "Sub total",
         delivery: "Delivery",
@@ -54,17 +60,17 @@ const SummaryCard = ({ subtotal, serviceFee, serviceNote, deliveryFee, discount,
         footnote: "You will pay total amount shown above.",
     };
     return (
-        <View className="bg-white rounded-[32px] p-5 gap-2" style={[styles.card, cardShadow]}>
+        <View style={[styles.card, cardShadow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
             <SummaryRow label={summaryLabels.subtotal} value={subtotal} />
             {deliveryFee ? <SummaryRow label={summaryLabels.delivery} value={deliveryFee} /> : null}
             {serviceFee ? (
                 <View className="gap-1" style={styles.serviceBlock}>
                     <SummaryRow label={summaryLabels.serviceFee} value={serviceFee} />
-                    {serviceNote ? <Text className="caption text-dark-60" style={styles.caption}>{serviceNote}</Text> : null}
+                    {serviceNote ? <Text style={[styles.caption, { color: theme.colors.textSecondary }]}>{serviceNote}</Text> : null}
                 </View>
             ) : null}
             {discount ? <SummaryRow label={summaryLabels.discount} value={`-${discount}`} /> : null}
-            <View className="border-t border-gray-100 my-2" style={styles.divider} />
+            <View style={[styles.divider, { borderColor: theme.colors.divider }]} />
             <SummaryRow label={summaryLabels.total} value={total} highlight />
         </View>
     );

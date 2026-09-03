@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { subscribeRestaurantOrders, transitionOrder } from "@/src/services/firebaseOrders";
+import { subscribeRestaurantOrders, transitionOrder } from "@/src/data/orderRepository";
 import type { RestaurantOrder } from "@/type";
 
 export const useRestaurantOrders = (restaurantId?: string) => {

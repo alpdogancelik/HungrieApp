@@ -3,11 +3,13 @@ import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } fr
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 
-import { assignCourier, listenToOrders, updateOrderStatus } from "@/lib/firebaseAuth";
+import { assignCourier, listenToOrders, updateOrderStatus } from "@/src/data/orderRepository";
+import { useTheme } from "@/src/theme/themeContext";
 
 const COURIER_LABELS = ["Courier1", "Courier2", "Courier3", "Courier4"];
 
 const CourierAssignmentScreen = () => {
+    const { theme } = useTheme();
     const { restaurantId } = useLocalSearchParams<{ restaurantId?: string }>();
     const resolvedRestaurantId = restaurantId ? String(restaurantId) : "ada-pizza";
     const [orders, setOrders] = useState<any[]>([]);
@@ -74,17 +76,17 @@ const CourierAssignmentScreen = () => {
         const assignedLabel = order.courierLabel;
 
         return (
-            <View key={orderId} className="rounded-3xl border border-gray-100 bg-white p-4 gap-3">
+            <View key={orderId} className="rounded-3xl border border-gray-100 bg-white p-4 gap-3 dark:bg-[#0D1B2D] dark:border-[#29405C]">
                 <View className="flex-row items-center justify-between">
                     <View>
-                        <Text className="text-xs uppercase tracking-[3px] text-dark-60">Order</Text>
-                        <Text className="text-xl font-ezra-bold text-dark-100">#{orderId.slice(-6)}</Text>
+                        <Text className="text-xs uppercase tracking-[3px] text-dark-60 dark:text-slate-300">Order</Text>
+                        <Text className="text-xl font-ezra-bold text-dark-100 dark:text-slate-50">#{orderId.slice(-6)}</Text>
                     </View>
                     <View className="items-end">
-                        <Text className="text-xs uppercase tracking-[3px] text-dark-60">Customer</Text>
-                        <Text className="text-base font-ezra-semibold text-dark-100">{customerName}</Text>
+                        <Text className="text-xs uppercase tracking-[3px] text-dark-60 dark:text-slate-300">Customer</Text>
+                        <Text className="text-base font-ezra-semibold text-dark-100 dark:text-slate-50">{customerName}</Text>
                         {customerWhatsapp ? (
-                            <Text className="text-sm text-dark-60">WhatsApp: {customerWhatsapp}</Text>
+                            <Text className="text-sm text-dark-60 dark:text-slate-300">WhatsApp: {customerWhatsapp}</Text>
                         ) : null}
                     </View>
                 </View>
@@ -98,12 +100,12 @@ const CourierAssignmentScreen = () => {
                                 onPress={() => handleAssign(orderId, label, order.status)}
                                 disabled={isAssigning(orderId)}
                                 className={`rounded-full border px-4 py-2 ${
-                                    active ? "bg-dark-100 border-dark-100" : "bg-white border-gray-200"
+                                    active ? "bg-dark-100 border-dark-100" : "bg-white border-gray-200 dark:bg-[#13243A] dark:border-[#29405C]"
                                 } ${isAssigning(orderId) ? "opacity-60" : "opacity-100"}`}
                             >
                                 <Text
                                     className={`text-sm font-ezra-semibold ${
-                                        active ? "text-white" : "text-dark-80"
+                                        active ? "text-white" : "text-dark-80 dark:text-slate-100"
                                     }`}
                                 >
                                     {label}
@@ -115,7 +117,7 @@ const CourierAssignmentScreen = () => {
 
                 {assignedLabel && (
                     <View className="flex-row items-center justify-between pt-2">
-                        <Text className="text-sm text-dark-60">Assigned to {assignedLabel}</Text>
+                        <Text className="text-sm text-dark-60 dark:text-slate-300">Assigned to {assignedLabel}</Text>
                         <TouchableOpacity
                             onPress={() => handleDelivered(orderId)}
                             disabled={isAssigning(orderId)}
@@ -130,24 +132,24 @@ const CourierAssignmentScreen = () => {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50">
+        <SafeAreaView className="flex-1" style={{ backgroundColor: theme.colors.background }}>
             <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
                 <View className="gap-1">
-                    <Text className="text-3xl font-ezra-bold text-dark-100">Courier queue</Text>
-                    <Text className="text-base text-dark-60">
+                    <Text className="text-3xl font-ezra-bold" style={{ color: theme.colors.ink }}>Courier queue</Text>
+                    <Text className="text-base" style={{ color: theme.colors.textSecondary }}>
                         Claim preparing orders and close them out when delivered.
                     </Text>
                 </View>
 
-                <View className="rounded-3xl border border-gray-100 bg-white/90 p-4">
-                    <Text className="text-xs uppercase tracking-[3px] text-dark-60">Restaurant</Text>
-                    <Text className="text-2xl font-ezra-bold text-dark-100">#{resolvedRestaurantId}</Text>
+                <View className="rounded-3xl border border-gray-100 bg-white/90 p-4 dark:bg-[#0D1B2D] dark:border-[#29405C]">
+                    <Text className="text-xs uppercase tracking-[3px] text-dark-60 dark:text-slate-300">Restaurant</Text>
+                    <Text className="text-2xl font-ezra-bold text-dark-100 dark:text-slate-50">#{resolvedRestaurantId}</Text>
                 </View>
 
                 {loading ? (
                     <View className="items-center justify-center py-12">
                         <ActivityIndicator size="large" color="#FE8C00" />
-                        <Text className="mt-3 text-dark-60">Loading active orders…</Text>
+                        <Text className="mt-3 text-dark-60 dark:text-slate-300">Loading active orders…</Text>
                     </View>
                 ) : error ? (
                     <View className="rounded-3xl border border-error/40 bg-error/10 p-4">
@@ -160,9 +162,9 @@ const CourierAssignmentScreen = () => {
                         </TouchableOpacity>
                     </View>
                 ) : visibleOrders.length === 0 ? (
-                    <View className="rounded-3xl border border-dashed border-gray-200 bg-white/80 p-6 items-center">
-                        <Text className="text-xl font-ezra-semibold text-dark-80">No active pickups</Text>
-                        <Text className="mt-2 text-center text-dark-60">
+                    <View className="rounded-3xl border border-dashed border-gray-200 bg-white/80 p-6 items-center dark:bg-[#0D1B2D] dark:border-[#29405C]">
+                        <Text className="text-xl font-ezra-semibold text-dark-80 dark:text-slate-100">No active pickups</Text>
+                        <Text className="mt-2 text-center text-dark-60 dark:text-slate-300">
                             Orders appear here when the kitchen moves them to preparing.
                         </Text>
                     </View>
@@ -175,4 +177,3 @@ const CourierAssignmentScreen = () => {
 };
 
 export default CourierAssignmentScreen;
-

@@ -1,3 +1,4 @@
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -30,7 +31,7 @@ const OrderNotificationToast = ({ visible, message, title, dismissHint, dismissA
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     wrap: {
         position: "absolute",
         top: 12,

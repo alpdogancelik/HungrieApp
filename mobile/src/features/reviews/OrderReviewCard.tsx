@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import type { OrderReview, OrderReviewItemSnapshot } from "@/src/domain/types";
-import { submitOrderReview } from "@/src/services/orderReviews";
+import { submitOrderReview } from "@/src/data/reviewRepository";
 import OrderReviewSheet from "@/src/features/reviews/OrderReviewSheet";
 
 type OrderReviewCardProps = {
@@ -135,7 +136,7 @@ const OrderReviewCard = ({ order, reviewed, userName, onReviewSaved }: OrderRevi
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     card: {
         borderRadius: 18,
         padding: 14,

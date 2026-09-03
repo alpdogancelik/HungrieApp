@@ -1,3 +1,4 @@
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -36,7 +37,7 @@ const OrderNote = ({ note, label, expandLabel, collapseLabel, accessibilityLabel
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     wrap: {
         marginTop: 2,
         borderWidth: 1,

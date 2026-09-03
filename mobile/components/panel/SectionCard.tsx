@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { Platform, StyleProp, StyleSheet, Text, View, ViewStyle, useWindowDimensions } from "react-native";
 import { makeShadow } from "@/src/lib/shadowStyle";
 
@@ -37,7 +38,7 @@ const SectionCard = ({ title, subtitle, children, style, compact = false, right,
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     card: {
         backgroundColor: "#FFFFFF",
         borderRadius: 16,

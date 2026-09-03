@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import useAuthStore from "@/store/auth.store";
-import { auth } from "@/lib/firebase";
-import { autoCancelExpiredPendingOrders, subscribeUserOrders } from "@/src/services/firebaseOrders";
+import { getCurrentAuthUserId } from "@/src/data/authRepository";
+import { autoCancelExpiredPendingOrders, subscribeUserOrders } from "@/src/data/orderRepository";
 import { makeShadow } from "@/src/lib/shadowStyle";
 import { cookingScenes } from "@/constants/mediaCatalog";
+import { useTheme } from "@/src/theme/themeContext";
 
 type NormalizedOrderStatus = "pending" | "preparing" | "ready" | "out_for_delivery" | "delivered" | "canceled";
 type ToastTone = "info" | "success" | "danger";
@@ -132,6 +134,7 @@ const buildToast = (order: any): ToastPayload => {
 };
 
 const GlobalOrderStatusToast = () => {
+    const { theme } = useTheme();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const userId = useAuthStore((state) => state.user?.accountId ?? null);
@@ -185,7 +188,7 @@ const GlobalOrderStatusToast = () => {
     );
 
     useEffect(() => {
-        const resolvedUserId = auth?.currentUser?.uid ?? userId ?? null;
+        const resolvedUserId = getCurrentAuthUserId() || userId || null;
         if (!resolvedUserId) {
             setToast(null);
             setVisible(false);
@@ -237,7 +240,7 @@ const GlobalOrderStatusToast = () => {
     if (!visible || !toast) return null;
 
     const accent = toast.tone === "danger" ? "#EF4444" : toast.tone === "success" ? "#10B981" : "#0EA5E9";
-    const bg = toast.tone === "danger" ? "#FEF2F2" : toast.tone === "success" ? "#ECFDF5" : "#F0F9FF";
+    const bg = toast.tone === "danger" ? theme.colors.dangerSurface : toast.tone === "success" ? theme.colors.successSurface : theme.colors.surfaceElevated;
     const border = toast.tone === "danger" ? "#FECACA" : toast.tone === "success" ? "#A7F3D0" : "#BAE6FD";
     const iconName = toast.tone === "danger" ? "x" : toast.tone === "success" ? "check" : "clock";
     const StatusIllustration = toast.tone === "danger" ? cookingScenes.kitchenRush : cookingScenes.orderAccepted;
@@ -263,14 +266,14 @@ const GlobalOrderStatusToast = () => {
                 }
                 style={[styles.card, { backgroundColor: bg, borderColor: border }]}
             >
-                <View style={[styles.iconCircle, { backgroundColor: "#FFFFFF", borderColor: border }]}>
+                <View style={[styles.iconCircle, { backgroundColor: theme.colors.surface, borderColor: border }]}>
                     <Feather name={iconName} size={13} color={accent} />
                 </View>
                 <View style={styles.textWrap}>
-                    <Text style={[styles.title, { color: "#0F172A" }]} numberOfLines={1}>
+                    <Text style={[styles.title, { color: theme.colors.ink }]} numberOfLines={1}>
                         {toast.title}
                     </Text>
-                    <Text style={[styles.subtitle, { color: "#334155" }]} numberOfLines={1}>
+                    <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>
                         {toast.subtitle}
                     </Text>
                 </View>
@@ -282,7 +285,7 @@ const GlobalOrderStatusToast = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     wrap: {
         position: "absolute",
         left: 12,

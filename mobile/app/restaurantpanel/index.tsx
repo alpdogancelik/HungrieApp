@@ -1,18 +1,19 @@
 ﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Redirect, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 
 import useAuthStore from "@/store/auth.store";
-import { logout } from "@/lib/api";
-import { getOwnedRestaurantId } from "@/lib/firebaseAuth";
+import { logout } from "@/src/data/authRepository";
+import { getOwnedRestaurantId } from "@/src/data/restaurantRepository";
 import {
     fetchRestaurantPastOrders,
     subscribeRestaurantOrders,
     subscribeRestaurantReminderOrders,
     transitionOrder,
-} from "@/src/services/firebaseOrders";
+} from "@/src/data/orderRepository";
 import { mapFirestoreOrder, normalizePanelOrderStatus, type PanelOrder, sortOrdersDesc } from "@/src/features/restaurantPanel/model/panelOrders";
 import { DashboardSummary, LanguageSwitch, PageHeader, PanelButton, SectionCard } from "@/components/panel";
 import { OrderFilters, OrderNotificationToast, OrdersList, type OrdersStatusFilter } from "@/components/orders";
@@ -642,7 +643,7 @@ const RestaurantPanel = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     safeArea: {
         flex: 1,
         backgroundColor: "#FDF4E7",

@@ -1,4 +1,5 @@
 import { Children, type ComponentType, type ReactNode, useMemo } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import {
     KeyboardAvoidingView,
     Platform,
@@ -39,7 +40,7 @@ const BACKGROUND_COLOR = "#FFF7EF";
 const CONTENT_MAX_WIDTH = 520;
 const WEB_SAFE_EASING = Platform.OS === "web" ? Easing.linear : Easing.out(Easing.cubic);
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     safeArea: { flex: 1, backgroundColor: BACKGROUND_COLOR },
     scroll: { flex: 1 },
     content: { width: "100%", maxWidth: CONTENT_MAX_WIDTH, paddingHorizontal: 18 },

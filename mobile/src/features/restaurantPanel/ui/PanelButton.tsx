@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, ViewStyle, useWindowDimensions } from "react-native";
 import { panelDesign } from "./panelDesign";
 import { makeShadow } from "@/src/lib/shadowStyle";
+import { useTheme, type ThemeDefinition } from "@/src/theme/themeContext";
 
 type PanelButtonVariant = "primary" | "outline" | "ghost" | "danger" | "success";
 
@@ -15,27 +17,27 @@ type Props = {
     accessibilityLabel?: string;
 };
 
-const getButtonColors = (variant: PanelButtonVariant) => {
+const getButtonColors = (variant: PanelButtonVariant, theme: ThemeDefinition) => {
     if (variant === "primary") {
-        return { backgroundColor: panelDesign.colors.primary, borderColor: panelDesign.colors.primary, textColor: "#FFFFFF" };
+        return { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary, textColor: theme.colors.onPrimary };
     }
     if (variant === "danger") {
-        return { backgroundColor: panelDesign.colors.dangerSoft, borderColor: "#EDC3CD", textColor: panelDesign.colors.danger };
+        return { backgroundColor: theme.colors.dangerSurface, borderColor: theme.colors.danger, textColor: theme.colors.danger };
     }
     if (variant === "success") {
-        return { backgroundColor: panelDesign.colors.successSoft, borderColor: "#B7EAD4", textColor: panelDesign.colors.success };
+        return { backgroundColor: theme.colors.successSurface, borderColor: theme.colors.success, textColor: theme.colors.success };
     }
     if (variant === "outline") {
         return {
-            backgroundColor: panelDesign.colors.primarySoft,
-            borderColor: panelDesign.colors.primary,
-            textColor: "#B94900",
+            backgroundColor: theme.colors.surfaceMuted,
+            borderColor: theme.colors.primary,
+            textColor: theme.colors.primary,
         };
     }
     return {
-        backgroundColor: panelDesign.colors.backgroundSoft,
-        borderColor: panelDesign.colors.border,
-        textColor: panelDesign.colors.text,
+        backgroundColor: theme.colors.surfaceMuted,
+        borderColor: theme.colors.border,
+        textColor: theme.colors.ink,
     };
 };
 
@@ -49,8 +51,9 @@ export const PanelButton = ({
     accessibilityLabel,
 }: Props) => {
     const { width } = useWindowDimensions();
+    const { theme } = useTheme();
     const isPhone = width < 760;
-    const palette = getButtonColors(variant);
+    const palette = getButtonColors(variant, theme);
     const isDisabled = disabled || loading;
     const [focused, setFocused] = useState(false);
 
@@ -79,7 +82,7 @@ export const PanelButton = ({
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     base: {
         minHeight: 46,
         borderRadius: panelDesign.radius.md,

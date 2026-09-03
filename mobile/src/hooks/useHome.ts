@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 
 import useAuthStore from "@/store/auth.store";
 import useAsyncResource from "@/lib/useAsyncResource";
-import { getMenu } from "@/lib/firebaseAuth";
-import { getRestaurants, subscribeRestaurants } from "@/lib/api";
+import { getMenu } from "@/src/data/menuRepository";
+import { getRestaurants, subscribeRestaurants } from "@/src/data/restaurantRepository";
 import type { Category } from "@/type";
 import { CATEGORIES } from "@/constants/mediaCatalog";
 import type { IconName } from "@/components/Icon";

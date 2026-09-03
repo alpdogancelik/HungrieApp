@@ -1,3 +1,4 @@
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     Alert,
@@ -10,9 +11,9 @@ import {
 import { Redirect, useRouter } from "expo-router";
 
 import useAuthStore from "@/store/auth.store";
-import { getOwnedRestaurantId } from "@/lib/firebaseAuth";
+import { getOwnedRestaurantId } from "@/src/data/restaurantRepository";
 import type { OrderReview } from "@/src/domain/types";
-import { fetchRestaurantOrderReviews, moderateOrderReview } from "@/src/services/orderReviews";
+import { fetchRestaurantOrderReviews, moderateOrderReview } from "@/src/data/reviewRepository";
 import { PanelCard, PanelShell, panelDesign } from "@/src/features/restaurantPanel/ui";
 import { LanguageSwitch } from "@/components/panel";
 import { useRestaurantPanelLocale } from "@/src/features/restaurantPanel/panelLocale";
@@ -209,7 +210,7 @@ const RestaurantReviewsScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     list: {
         gap: panelDesign.spacing.sm,
         paddingBottom: panelDesign.spacing.md,

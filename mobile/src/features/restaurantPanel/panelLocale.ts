@@ -1,9 +1,8 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
 
 import tr from "@/locales/tr.json";
 import en from "@/locales/en.json";
-import { firestore } from "@/lib/firebase";
+import { getPanelLocale, setPanelLocale } from "@/src/data/restaurantRepository";
 import { storage } from "@/src/lib/storage";
 
 export type PanelLocale = "tr" | "en";
@@ -104,20 +103,8 @@ export const useRestaurantPanelLocale = (restaurantId?: string | null) => {
                     nextLocale = restaurantLocalLocale;
                 }
 
-                if (firestore) {
-                    const snap = await getDoc(doc(firestore, "restaurants", restaurantId)).catch(() => null);
-                    const data = snap?.data() as Record<string, unknown> | undefined;
-                    const firestoreLocale = parseLocale(
-                        typeof data?.preferredLanguage === "string"
-                            ? data.preferredLanguage
-                            : typeof data?.panelLocale === "string"
-                              ? data.panelLocale
-                              : undefined,
-                    );
-                    if (firestoreLocale) {
-                        nextLocale = firestoreLocale;
-                    }
-                }
+                const remoteLocale = parseLocale(await getPanelLocale(restaurantId).catch(() => null));
+                if (remoteLocale) nextLocale = remoteLocale;
             }
 
             if (!mounted) return;
@@ -144,13 +131,7 @@ export const useRestaurantPanelLocale = (restaurantId?: string | null) => {
             void storage.setItem(GLOBAL_LOCALE_KEY, nextLocale);
             if (restaurantId) {
                 void storage.setItem(restaurantLocaleKey(restaurantId), nextLocale);
-                if (firestore) {
-                    void setDoc(
-                        doc(firestore, "restaurants", restaurantId),
-                        { preferredLanguage: nextLocale, updatedAt: Date.now() },
-                        { merge: true },
-                    ).catch(() => null);
-                }
+                void setPanelLocale(restaurantId, nextLocale).catch(() => null);
             }
         },
         [restaurantId],

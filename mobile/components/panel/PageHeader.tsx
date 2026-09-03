@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 type Props = {
@@ -22,7 +23,7 @@ const PageHeader = ({ title, subtitle, right }: Props) => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     container: {
         borderWidth: 1,
         borderColor: "#E7DCCF",

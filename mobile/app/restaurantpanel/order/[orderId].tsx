@@ -1,10 +1,11 @@
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 
-import { subscribeOrder } from "@/src/services/firebaseOrders";
+import { subscribeOrder } from "@/src/data/orderRepository";
 import { mapFirestoreOrder, type PanelOrder } from "@/src/features/restaurantPanel/model/panelOrders";
 import { LanguageSwitch, PageHeader, SectionCard, StatusPill } from "@/components/panel";
 import { useRestaurantPanelLocale } from "@/src/features/restaurantPanel/panelLocale";
@@ -105,7 +106,7 @@ const RestaurantOrderDetailScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     safeArea: {
         flex: 1,
         backgroundColor: "#FDF4E7",

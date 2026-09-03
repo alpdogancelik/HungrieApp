@@ -1,8 +1,10 @@
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
 import Icon from "../components/Icon";
+import { useTheme } from "@/src/theme/themeContext";
 
 type SupportLine = {
     label: string;
@@ -98,64 +100,65 @@ const openLink = async (href?: string) => {
 };
 
 const SupportScreen = () => {
+    const { theme } = useTheme();
     const { i18n } = useTranslation();
     const content = i18n.language.startsWith("tr") ? SUPPORT_TR : SUPPORT_EN;
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
                 <View style={styles.headerRow}>
-                    <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}>
-                        <Icon name="arrowBack" size={20} color="#0F172A" />
+                    <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.backButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }, pressed && styles.backButtonPressed]}>
+                        <Icon name="arrowBack" size={20} color={theme.colors.ink} />
                     </Pressable>
-                    <Text style={styles.screenTitle}>{content.title}</Text>
+                    <Text style={[styles.screenTitle, { color: theme.colors.ink }]}>{content.title}</Text>
                 </View>
 
-                <View style={styles.heroCard}>
-                    <Text style={styles.subtitle}>{content.subtitle}</Text>
+                <View style={[styles.heroCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                    <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>{content.subtitle}</Text>
                     <View style={styles.metaRow}>
-                        <Text style={styles.metaLabel}>{content.hoursTitle}</Text>
-                        <Text style={styles.metaValue}>{content.hours}</Text>
+                        <Text style={[styles.metaLabel, { color: theme.colors.muted }]}>{content.hoursTitle}</Text>
+                        <Text style={[styles.metaValue, { color: theme.colors.ink }]}>{content.hours}</Text>
                     </View>
                     <View style={styles.metaRow}>
-                        <Text style={styles.metaLabel}>{content.responseTitle}</Text>
-                        <Text style={styles.metaValue}>{content.response}</Text>
+                        <Text style={[styles.metaLabel, { color: theme.colors.muted }]}>{content.responseTitle}</Text>
+                        <Text style={[styles.metaValue, { color: theme.colors.ink }]}>{content.response}</Text>
                     </View>
                 </View>
 
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>{content.contactsTitle}</Text>
+                <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                    <Text style={[styles.cardTitle, { color: theme.colors.ink }]}>{content.contactsTitle}</Text>
                     {content.contacts.map((item) => (
                         <Pressable
                             key={`${item.label}-${item.value}`}
-                            style={({ pressed }) => [styles.contactRow, pressed && styles.rowPressed]}
+                            style={({ pressed }) => [styles.contactRow, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }, pressed && styles.rowPressed]}
                             onPress={() => openLink(item.href)}
                         >
-                            <Text style={styles.contactLabel}>{item.label}</Text>
-                            <Text style={styles.contactValue}>{item.value}</Text>
+                            <Text style={[styles.contactLabel, { color: theme.colors.muted }]}>{item.label}</Text>
+                            <Text style={[styles.contactValue, { color: theme.colors.ink }]}>{item.value}</Text>
                         </Pressable>
                     ))}
                 </View>
 
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>{content.faqTitle}</Text>
+                <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                    <Text style={[styles.cardTitle, { color: theme.colors.ink }]}>{content.faqTitle}</Text>
                     {content.faq.map((item, index) => (
-                        <View key={`${item.q}-${index}`} style={styles.faqItem}>
-                            <Text style={styles.faqQ}>{item.q}</Text>
-                            <Text style={styles.faqA}>{item.a}</Text>
+                        <View key={`${item.q}-${index}`} style={[styles.faqItem, { borderTopColor: theme.colors.divider }]}>
+                            <Text style={[styles.faqQ, { color: theme.colors.ink }]}>{item.q}</Text>
+                            <Text style={[styles.faqA, { color: theme.colors.textSecondary }]}>{item.a}</Text>
                         </View>
                     ))}
                 </View>
 
-                <View style={styles.noteCard}>
-                    <Text style={styles.noteText}>{content.note}</Text>
+                <View style={[styles.noteCard, { backgroundColor: theme.colors.warningSurface, borderColor: theme.colors.warning }]}>
+                    <Text style={[styles.noteText, { color: theme.colors.warning }]}>{content.note}</Text>
                 </View>
             </ScrollView>
         </SafeAreaView>
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     safeArea: { flex: 1, backgroundColor: "#F8FAFC" },
     content: { padding: 20, paddingBottom: 120, gap: 14 },
     headerRow: { flexDirection: "row", alignItems: "center", gap: 12 },

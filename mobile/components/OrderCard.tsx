@@ -74,18 +74,18 @@ const OrderCard = ({ order, variant = "restaurant", onAdvance, disableActions = 
     const contactEmail = order.customerEmail || order.customer?.email;
 
     return (
-        <View className="bg-white rounded-3xl border border-gray-100 p-4 gap-3 shadow-md shadow-black/5">
+        <View className="bg-white dark:bg-[#0D1B2D] rounded-3xl border border-gray-100 dark:border-[#29405C] p-4 gap-3 shadow-md shadow-black/5">
             <View className="flex-row items-center justify-between">
                 <View className="gap-1 flex-1 mr-3">
-                    <Text className="paragraph-semibold text-dark-100">{headerTitle}</Text>
-                    <Text className="body-medium text-dark-60" numberOfLines={2}>{headerSubtitle}</Text>
+                    <Text className="paragraph-semibold text-dark-100 dark:text-slate-50">{headerTitle}</Text>
+                    <Text className="body-medium text-dark-60 dark:text-slate-300" numberOfLines={2}>{headerSubtitle}</Text>
                     {variant === "restaurant" && (
                         <>
                             {contactWhatsapp ? (
-                                <Text className="caption text-dark-60" numberOfLines={1}>WhatsApp: {contactWhatsapp}</Text>
+                                <Text className="caption text-dark-60 dark:text-slate-300" numberOfLines={1}>WhatsApp: {contactWhatsapp}</Text>
                             ) : null}
                             {contactEmail ? (
-                                <Text className="caption text-dark-60" numberOfLines={1}>{contactEmail}</Text>
+                                <Text className="caption text-dark-60 dark:text-slate-300" numberOfLines={1}>{contactEmail}</Text>
                             ) : null}
                         </>
                     )}
@@ -105,7 +105,7 @@ const OrderCard = ({ order, variant = "restaurant", onAdvance, disableActions = 
 
             <View className="gap-1">
                 {items.slice(0, 3).map((item, index) => (
-                    <Text key={`${orderId}-${index}`} className="body-medium text-dark-80">
+                    <Text key={`${orderId}-${index}`} className="body-medium text-dark-80 dark:text-slate-200">
                         {item?.quantity || 1}x {item?.name || "Menu item"}
                     </Text>
                 ))}
@@ -116,8 +116,8 @@ const OrderCard = ({ order, variant = "restaurant", onAdvance, disableActions = 
 
             <View className="flex-row items-center justify-between pt-2">
                 <View>
-                    <Text className="paragraph-semibold text-dark-80">Toplam</Text>
-                    <Text className="h3-bold text-dark-100">₺{total}</Text>
+                    <Text className="paragraph-semibold text-dark-80 dark:text-slate-200">Toplam</Text>
+                    <Text className="h3-bold text-dark-100 dark:text-slate-50">₺{total}</Text>
                 </View>
                 {variant === "restaurant" && nextStatus ? (
                     <TouchableOpacity
@@ -128,7 +128,7 @@ const OrderCard = ({ order, variant = "restaurant", onAdvance, disableActions = 
                         disabled={disableActions}
                         onPress={() => onAdvance?.(orderId, nextStatus)}
                     >
-                        <Text className={cn("paragraph-semibold", disableActions ? "text-dark-60" : "text-primary")}>
+                        <Text className={cn("paragraph-semibold", disableActions ? "text-dark-60 dark:text-slate-300" : "text-primary")}>
                             {ORDER_STATUS_LABELS[nextStatus]} olarak işaretle
                         </Text>
                     </TouchableOpacity>

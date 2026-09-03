@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { DeviceEventEmitter, FlatList, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Address } from "@/src/domain/types";
-import { addressStore } from "@/src/features/address/addressStore";
+import { addressStore } from "@/src/data/addressRepository";
 import { useDefaultAddress } from "@/src/features/address/hooks";
 import { showUserMessage } from "@/src/lib/showUserMessage";
 import useAuthStore from "@/store/auth.store";
@@ -137,7 +138,7 @@ const DeliverToHeader = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     headerTrigger: {
         rowGap: 4,
     },

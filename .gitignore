@@ -38,6 +38,8 @@ android/
 .env
 .env.*
 *.local
+!.env.example
+!mobile/.env.example
 
 # Misc
 *.orig.*
@@ -48,6 +50,12 @@ android/
 keys/
 secure/
 *.log
+
+# Supabase local state and database artifacts
+supabase/.temp/
+supabase/.branches/
+*.dump
+*.sql.gz
 
 # Generated data snapshots/reports
 mobile/data/backups/

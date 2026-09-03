@@ -1,7 +1,9 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { PaymentMethod } from "@/src/domain/types";
 import { Ionicons } from "@expo/vector-icons";
-const styles = StyleSheet.create({
+import { useTheme } from "@/src/theme/themeContext";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
+const styles = createAdaptiveStyleSheet({
     root: { rowGap: 12 },
     title: { fontFamily: "ChairoSans", fontSize: 18, color: "#0F172A" },
     row: { flexDirection: "row", alignItems: "center", columnGap: 14, borderRadius: 24, paddingHorizontal: 18, paddingVertical: 16, borderWidth: 2 },
@@ -26,9 +28,11 @@ type Props = {
     title: string;
 };
 
-const PaymentMethodList = ({ options, selected, onSelect, title }: Props) => (
+const PaymentMethodList = ({ options, selected, onSelect, title }: Props) => {
+    const { theme } = useTheme();
+    return (
     <View className="gap-3" style={styles.root}>
-        <Text className="section-title" style={styles.title}>{title}</Text>
+        <Text style={[styles.title, { color: theme.colors.ink }]}>{title}</Text>
         {options.map((option) => {
             const isActive = selected === option.id;
             const iconName = option.id === "pos" ? "card-outline" : "cash-outline";
@@ -39,8 +43,8 @@ const PaymentMethodList = ({ options, selected, onSelect, title }: Props) => (
                     style={[
                         styles.row,
                         {
-                            borderColor: isActive ? "#FE8C00" : "#E2E8F0",
-                            backgroundColor: isActive ? "#FFF6EF" : "#FFFFFF",
+                            borderColor: isActive ? theme.colors.primary : theme.colors.border,
+                            backgroundColor: isActive ? theme.colors.surfaceMuted : theme.colors.surface,
                         },
                     ]}
                     hitSlop={8}
@@ -53,24 +57,25 @@ const PaymentMethodList = ({ options, selected, onSelect, title }: Props) => (
                         {isActive && <View className="size-2 rounded-full bg-primary" style={styles.radioInner} />}
                     </View>
                     <View style={styles.iconWrap}>
-                        <Ionicons name={iconName} size={24} color={isActive ? "#0F172A" : "#94A3B8"} />
+                        <Ionicons name={iconName} size={24} color={isActive ? theme.colors.ink : theme.colors.muted} />
                     </View>
                     <View className="flex-1 gap-1" style={styles.content}>
                         <View className="flex-row items-center gap-2" style={styles.labelRow}>
-                            <Text className="paragraph-semibold text-dark-100" style={styles.label}>{option.label}</Text>
+                            <Text style={[styles.label, { color: theme.colors.ink }]}>{option.label}</Text>
                             {option.badge ? (
                                 <View className="px-2 py-0.5 rounded-full bg-primary/10" style={styles.badge}>
                                     <Text className="caption text-primary-dark" style={styles.badgeText}>{option.badge}</Text>
                                 </View>
                             ) : null}
                         </View>
-                        <Text className="body-medium text-dark-60" style={styles.description}>{option.description}</Text>
-                        {option.hint ? <Text className="caption text-dark-40" style={styles.hint}>{option.hint}</Text> : null}
+                        <Text style={[styles.description, { color: theme.colors.textSecondary }]}>{option.description}</Text>
+                        {option.hint ? <Text style={[styles.hint, { color: theme.colors.muted }]}>{option.hint}</Text> : null}
                     </View>
                 </TouchableOpacity>
             );
         })}
     </View>
-);
+    );
+};
 
 export default PaymentMethodList;

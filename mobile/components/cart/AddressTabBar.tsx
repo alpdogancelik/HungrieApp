@@ -1,5 +1,7 @@
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { Address } from "@/src/domain/types";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
+import { useTheme } from "@/src/theme/themeContext";
 
 const ADDRESS_SKELETON_COUNT = 3;
 const ADDRESS_SKELETONS = Array.from({ length: ADDRESS_SKELETON_COUNT }, (_, index) => index);
@@ -11,7 +13,7 @@ const ADDRESS_TAB_SKELETON_STYLE = {
     backgroundColor: "#E2E8F0",
     opacity: 0.6,
 };
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     root: { backgroundColor: "#F8F6F2", paddingVertical: 12, paddingHorizontal: 24 },
     tab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, borderWidth: 1 },
     tabText: { fontFamily: "ChairoSans", fontSize: 15, color: "#1E293B" },
@@ -27,6 +29,7 @@ type Props = {
 };
 
 const AddressTabBar = ({ addresses, loading, selectedAddressId, onSelect, onAddAddress }: Props) => {
+    const { theme } = useTheme();
     const list = addresses ?? [];
     const hasAddresses = list.length > 0;
     const tabContent = hasAddresses
@@ -39,8 +42,8 @@ const AddressTabBar = ({ addresses, loading, selectedAddressId, onSelect, onAddA
                     style={[
                         styles.tab,
                         {
-                            borderColor: isActive ? "#FE8C00" : "#CBD5F5",
-                            backgroundColor: isActive ? "#FFF6EF" : "#FFFFFF",
+                            borderColor: isActive ? theme.colors.primary : theme.colors.border,
+                            backgroundColor: isActive ? `${theme.colors.primary}18` : theme.colors.surface,
                         },
                     ]}
                     onPress={() => onSelect(address.id)}
@@ -50,7 +53,7 @@ const AddressTabBar = ({ addresses, loading, selectedAddressId, onSelect, onAddA
             );
         })
         : loading
-            ? ADDRESS_SKELETONS.map((skeleton) => <View key={`address-tab-${skeleton}`} style={ADDRESS_TAB_SKELETON_STYLE} />)
+            ? ADDRESS_SKELETONS.map((skeleton) => <View key={`address-tab-${skeleton}`} style={[ADDRESS_TAB_SKELETON_STYLE, { backgroundColor: theme.colors.surfaceMuted }]} />)
             : [
                 <TouchableOpacity
                     key="address-tab-empty"

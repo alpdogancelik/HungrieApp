@@ -4,6 +4,8 @@ import { Ionicons } from "@expo/vector-icons";
 import type { Address } from "@/src/domain/types";
 import Icon from "@/components/Icon";
 import { makeShadow } from "@/src/lib/shadowStyle";
+import { useTheme } from "@/src/theme/themeContext";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 
 const ADDRESS_SKELETON_COUNT = 3;
 const ADDRESS_SKELETONS = Array.from({ length: ADDRESS_SKELETON_COUNT }, (_, index) => index);
@@ -15,7 +17,7 @@ const ADDRESS_PILL_SKELETON_STYLE = {
     backgroundColor: "#E2E8F0",
     opacity: 0.6,
 };
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     root: { paddingLeft: 24, paddingRight: 14, paddingTop: 8 },
     card: {
         backgroundColor: "#FFFFFF",
@@ -61,6 +63,7 @@ const AddressSummary = ({
     onAddAddress,
 }: Props) => {
     const { t } = useTranslation();
+    const { theme } = useTheme();
     const list = addresses ?? [];
     const hasAddresses = list.length > 0;
 
@@ -73,14 +76,14 @@ const AddressSummary = ({
                       style={[
                           styles.chip,
                           {
-                              borderColor: isActive ? "#FE8C00" : "#E2E8F0",
-                              backgroundColor: isActive ? "#FFF9F2" : "#FFFFFF",
+                              borderColor: isActive ? theme.colors.primary : theme.colors.border,
+                              backgroundColor: isActive ? theme.colors.surfaceMuted : theme.colors.surface,
                           },
                       ]}
                       onPress={() => onSelect(address.id)}
                   >
                       <Icon name={isActive ? "location" : "home"} size={18} color={isActive ? "#FE8C00" : "#94A3B8"} />
-                      <Text className="paragraph-semibold text-dark-80" style={styles.chipText}>{address.label}</Text>
+                      <Text style={[styles.chipText, { color: theme.colors.ink }]}>{address.label}</Text>
                   </TouchableOpacity>
               );
           })
@@ -95,7 +98,7 @@ const AddressSummary = ({
 
     return (
         <View style={styles.root}>
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
                 <View style={styles.chipsWrap}>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
                         {addressChips}

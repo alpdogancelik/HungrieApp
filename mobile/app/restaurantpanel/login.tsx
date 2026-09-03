@@ -1,3 +1,4 @@
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { useEffect, useRef, useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
@@ -65,7 +66,6 @@ export default function RestaurantPanelLogin() {
             title={t("login.title")}
             subtitle={t("login.subtitle")}
             right={<LanguageSwitch locale={locale} onChange={(next) => void setLocale(next)} getAccessibilityLabel={(next) => t("a11y.switchLanguage", { value: next.toUpperCase() })} />}
-            noScroll
         >
             <View style={styles.centerWrap}>
                 <PanelCard title={t("login.welcome")} subtitle={t("login.welcomeSubtitle")}>
@@ -107,7 +107,7 @@ export default function RestaurantPanelLogin() {
     );
 }
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     centerWrap: {
         flex: 1,
         justifyContent: "center",

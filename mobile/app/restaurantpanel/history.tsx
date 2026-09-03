@@ -1,3 +1,4 @@
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { useEffect, useMemo, useState } from "react";
 import {
     Modal,
@@ -16,8 +17,8 @@ import { Redirect, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 
 import useAuthStore from "@/store/auth.store";
-import { getOwnedRestaurantId } from "@/lib/firebaseAuth";
-import { fetchRestaurantPastOrders } from "@/src/services/firebaseOrders";
+import { getOwnedRestaurantId } from "@/src/data/restaurantRepository";
+import { fetchRestaurantPastOrders } from "@/src/data/orderRepository";
 import { mapFirestoreOrder, type PanelOrder, sortOrdersDesc } from "@/src/features/restaurantPanel/model/panelOrders";
 import {
     PanelButton,
@@ -437,7 +438,7 @@ const RestaurantHistory = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     mobileHeaderTools: {
         width: "100%",
         gap: 10,

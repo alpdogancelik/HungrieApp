@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import {
     Alert,
     StyleSheet,
@@ -10,11 +11,9 @@ import {
     View,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { Redirect, useRouter } from "expo-router";
 
-import { firestore } from "@/lib/firebase";
-import { getOwnedRestaurantId } from "@/lib/firebaseAuth";
+import { getOwnedRestaurantDetails, updateOwnedRestaurantDetails } from "@/src/data/restaurantRepository";
 import useAuthStore from "@/store/auth.store";
 import {
     PanelCard,
@@ -51,7 +50,7 @@ const RestaurantDetails = () => {
         let mounted = true;
         const load = async () => {
             if (authLoading) return;
-            if (!isAuthenticated || !firestore) {
+            if (!isAuthenticated) {
                 if (mounted) {
                     setRedirectTo("/sign-in");
                     setLoading(false);
@@ -61,30 +60,15 @@ const RestaurantDetails = () => {
             if (mounted) {
                 setRedirectTo(null);
             }
-            if (!firestore) {
-                setLoading(false);
-                return;
-            }
-            const owned = await getOwnedRestaurantId();
+            const owned = await getOwnedRestaurantDetails();
             if (!mounted) return;
             if (!owned) {
                 setRedirectTo("/sign-in");
                 setLoading(false);
                 return;
             }
-            setRestaurantId(owned);
-            const snap = await getDoc(doc(firestore, "restaurants", owned)).catch(() => null);
-            if (snap?.exists()) {
-                const data = snap.data() || {};
-                setForm({
-                    name: String(data.name || ""),
-                    imageUrl: String(data.imageUrl || data.image_url || ""),
-                    address: String(data.address || ""),
-                    cuisine: String(data.cuisine || ""),
-                    description: String(data.description || ""),
-                    isActive: data.isActive !== false,
-                });
-            }
+            setRestaurantId(owned.restaurantId);
+            setForm(owned.details);
             setLoading(false);
         };
         load();
@@ -101,22 +85,14 @@ const RestaurantDetails = () => {
         setForm((prev) => ({ ...prev, [key]: value }));
 
     const handleSave = async () => {
-        if (!restaurantId || !firestore) return;
+        if (!restaurantId) return;
         if (!canSave) {
             Alert.alert(t("details.saveFailedTitle"), t("details.nameRequired"));
             return;
         }
         try {
             setSaving(true);
-            await updateDoc(doc(firestore, "restaurants", restaurantId), {
-                name: form.name.trim(),
-                imageUrl: form.imageUrl.trim(),
-                address: form.address.trim(),
-                cuisine: form.cuisine.trim(),
-                description: form.description.trim(),
-                isActive: !!form.isActive,
-                updatedAt: Date.now(),
-            });
+            await updateOwnedRestaurantDetails(restaurantId, form);
             Alert.alert(t("details.savedTitle"), t("details.savedBody"));
         } catch (err: any) {
             Alert.alert(t("details.saveFailedTitle"), err?.message || t("common.tryAgain"));
@@ -259,7 +235,7 @@ const RestaurantDetails = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     mobileHeaderTools: {
         width: "100%",
         gap: 10,

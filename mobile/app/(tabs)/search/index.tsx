@@ -1,5 +1,6 @@
 // /(tabs)/search/index.tsx — V3 (Professional: Big 2 buttons + Restaurants 2x2 grid)
 
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { useMemo } from "react";
 import {
     ActivityIndicator,
@@ -27,6 +28,7 @@ import type { SearchResult } from "@/src/hooks/useSearch";
 import { useSearchScreenV3 } from "@/src/hooks/useSearchScreenV3";
 import { makeShadow } from "@/src/lib/shadowStyle";
 import { useWebDocumentTitle } from "@/src/lib/useWebDocumentTitle";
+import { useTheme } from "@/src/theme/themeContext";
 
 //restaurant logos (assets/restaurantlogo)
 import AdaPizzaLogo from "@/assets/restaurantlogo/adapizzalogo.jpg";
@@ -154,15 +156,17 @@ const SearchInput = ({
     loading?: boolean;
     onClear: () => void;
     placeholder: string;
-}) => (
-    <View style={styles.searchBar}>
-        <Ionicons name="search-outline" size={22} color={BRAND.muted} />
+}) => {
+    const { theme } = useTheme();
+    return (
+    <View style={[styles.searchBar, { backgroundColor: theme.colors.input, borderColor: theme.colors.border }]}>
+        <Ionicons name="search-outline" size={22} color={theme.colors.textSecondary} />
         <TextInput
             value={value}
             onChangeText={onChange}
             placeholder={placeholder}
-            placeholderTextColor={"rgba(31,18,11,0.38)"}
-            style={styles.searchInput}
+            placeholderTextColor={theme.colors.muted}
+            style={[styles.searchInput, { color: theme.colors.ink }]}
             autoCorrect={false}
             returnKeyType="search"
             onSubmitEditing={onSubmit}
@@ -171,11 +175,12 @@ const SearchInput = ({
             <ActivityIndicator size="small" color={BRAND.accent} />
         ) : value ? (
             <Pressable onPress={onClear} hitSlop={10} style={styles.searchAction}>
-                <Ionicons name="close-outline" size={18} color={BRAND.muted2} />
+                <Ionicons name="close-outline" size={18} color={theme.colors.muted} />
             </Pressable>
         ) : null}
     </View>
-);
+    );
+};
 
 const SegmentButtons = ({
     value,
@@ -187,7 +192,9 @@ const SegmentButtons = ({
     onChange: (v: "meals" | "restaurants") => void;
     mealsLabel: string;
     restaurantsLabel: string;
-}) => (
+}) => {
+    const { theme } = useTheme();
+    return (
     <View style={styles.segmentRow}>
         {(["meals", "restaurants"] as const).map((k) => {
             const active = value === k;
@@ -203,18 +210,18 @@ const SegmentButtons = ({
                     ]}
                 >
                     <LinearGradient
-                        colors={active ? [BRAND.accent, BRAND.accent2] : [BRAND.surface, BRAND.surface]}
+                        colors={active ? [BRAND.accent, BRAND.accent2] : [theme.colors.surface, theme.colors.surface]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        style={[styles.segmentBtn, !active && { borderColor: "rgba(31,18,11,0.08)" }]}
+                        style={[styles.segmentBtn, !active && { borderColor: theme.colors.border }]}
                     >
                         <View style={styles.segmentInner}>
                             <Ionicons
                                 name={k === "meals" ? "restaurant-outline" : "storefront-outline"}
                                 size={18}
-                                color={active ? "#FFFFFF" : BRAND.ink}
+                                color={active ? "#FFFFFF" : theme.colors.ink}
                             />
-                            <Text style={[styles.segmentText, active ? { color: "#fff" } : { color: BRAND.ink }]}>
+                            <Text style={[styles.segmentText, active ? { color: "#fff" } : { color: theme.colors.ink }]}>
                                 {label}
                             </Text>
                         </View>
@@ -223,9 +230,11 @@ const SegmentButtons = ({
             );
         })}
     </View>
-);
+    );
+};
 
 const LogoCircle = ({ target, size = 46 }: { target: any; size?: number }) => {
+    const { theme } = useTheme();
     const key = resolveRestaurantKey(target);
     const logo = key ? RESTAURANT_LOGOS[key] : null;
 
@@ -240,7 +249,7 @@ const LogoCircle = ({ target, size = 46 }: { target: any; size?: number }) => {
     return (
         <View style={[styles.logoWrap, { width: size, height: size, borderRadius: size / 2 }]}>
             <LinearGradient
-                colors={[BRAND.surface, BRAND.soft]}
+                colors={[theme.colors.surfaceElevated, theme.colors.surfaceMuted]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={[StyleSheet.absoluteFillObject, { borderRadius: size / 2 }]}
@@ -264,6 +273,7 @@ const MealCard = ({
     quantity: number;
     onQuantityChange: (n: number) => void;
 }) => {
+    const { theme } = useTheme();
     const raw =
         (item as any).image_url ||
         (item as any).imageUrl ||
@@ -279,16 +289,16 @@ const MealCard = ({
                 : null;
 
     return (
-        <View style={[styles.card, styles.mealRow]}>
+        <View style={[styles.card, styles.mealRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
             {src ? <Image source={src} style={styles.mealImg} contentFit="cover" /> : <View style={styles.mealImgFallback} />}
 
             <View style={styles.mealContent}>
                 <View style={styles.mealHeaderRow}>
                     <View style={styles.mealCopy}>
-                        <Text style={styles.mealTitle} numberOfLines={1}>
+                        <Text style={[styles.mealTitle, { color: theme.colors.ink }]} numberOfLines={1}>
                             {item.name}
                         </Text>
-                        <Text style={styles.mealSub} numberOfLines={1}>
+                        <Text style={[styles.mealSub, { color: theme.colors.textSecondary }]} numberOfLines={1}>
                             {item.restaurantName || ""}
                         </Text>
                     </View>
@@ -328,15 +338,16 @@ const RestaurantCard = ({
     cuisineFallback: string;
     ctaLabel: string;
 }) => {
+    const { theme } = useTheme();
     return (
-        <Pressable onPress={onPress} style={({ pressed }) => [styles.card, styles.restaurantCard, pressed && { opacity: 0.98 }]}>
+        <Pressable onPress={onPress} style={({ pressed }) => [styles.card, styles.restaurantCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }, pressed && { opacity: 0.98 }]}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                 <LogoCircle target={restaurant} size={46} />
                 <View style={styles.restaurantTextWrap}>
-                    <Text style={styles.rName} numberOfLines={1}>
+                    <Text style={[styles.rName, { color: theme.colors.ink }]} numberOfLines={1}>
                         {restaurant.name}
                     </Text>
-                    <Text style={styles.rCuisine} numberOfLines={2}>
+                    <Text style={[styles.rCuisine, { color: theme.colors.textSecondary }]} numberOfLines={2}>
                         {restaurant.cuisine || cuisineFallback}
                     </Text>
                 </View>
@@ -350,17 +361,21 @@ const RestaurantCard = ({
     );
 };
 
-const EmptyState = ({ title, description }: { title: string; description: string }) => (
-    <View style={[styles.card, styles.empty]}>
-        <View style={styles.emptyIcon}>
-            <Icon name="search" size={18} color={BRAND.muted} />
+const EmptyState = ({ title, description }: { title: string; description: string }) => {
+    const { theme } = useTheme();
+    return (
+        <View style={[styles.card, styles.empty, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <View style={[styles.emptyIcon, { backgroundColor: theme.colors.surfaceMuted }]}>
+                <Icon name="search" size={18} color={theme.colors.textSecondary} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: theme.colors.ink }]}>{title}</Text>
+            <Text style={[styles.emptyDesc, { color: theme.colors.textSecondary }]}>{description}</Text>
         </View>
-        <Text style={styles.emptyTitle}>{title}</Text>
-        <Text style={styles.emptyDesc}>{description}</Text>
-    </View>
-);
+    );
+};
 
 export default function Search() {
+    const { theme, variant } = useTheme();
     useWebDocumentTitle();
     const router = useRouter();
     const { t } = useTranslation();
@@ -408,13 +423,16 @@ const goRestaurant = (restaurant: any, index: number) => {
 };
 
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <LinearGradient colors={[BRAND.bgTop, BRAND.bgBottom]} style={{ flex: 1 }}>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
+            <LinearGradient
+                colors={variant === "dark" ? [theme.colors.background, theme.colors.surface] : [BRAND.bgTop, BRAND.bgBottom]}
+                style={{ flex: 1 }}
+            >
                 {/* ===== Header (clean) ===== */}
                 <View style={styles.header}>
                     <View style={styles.topRow}>
                         <View>
-                            <Text style={styles.topTitle}>{t("search.title")}</Text>
+                            <Text style={[styles.topTitle, { color: theme.colors.ink }]}>{t("search.title")}</Text>
                         </View>
                     </View>
 
@@ -451,7 +469,7 @@ const goRestaurant = (restaurant: any, index: number) => {
                         !query.trim() && recentSearches.length ? (
                             <View style={{ gap: 10, marginBottom: 14 }}>
                                 <View style={styles.sectionHeader}>
-                                    <Text style={styles.sectionTitle}>{t("search.recentLabel")}</Text>
+                                    <Text style={[styles.sectionTitle, { color: theme.colors.ink }]}>{t("search.recentLabel")}</Text>
                                     <Pressable onPress={clearRecents} hitSlop={10}>
                                         <Text style={styles.linkText}>{t("search.clear")}</Text>
                                     </Pressable>
@@ -514,7 +532,7 @@ const goRestaurant = (restaurant: any, index: number) => {
     );
 }
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     safeArea: { flex: 1, backgroundColor: BRAND.bgTop },
 
     header: {

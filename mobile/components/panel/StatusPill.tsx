@@ -1,3 +1,4 @@
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { StyleSheet, Text, View } from "react-native";
 
 type Props = {
@@ -28,7 +29,7 @@ const StatusPill = ({ status, label }: Props) => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     pill: {
         minHeight: 28,
         minWidth: 74,

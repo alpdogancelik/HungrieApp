@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import type { PanelLocale } from "@/src/features/restaurantPanel/panelLocale";
 import { makeShadow } from "@/src/lib/shadowStyle";
 
@@ -34,7 +35,7 @@ const LanguageSwitch = ({ locale, onChange, getAccessibilityLabel }: Props) => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     wrap: {
         flexDirection: "row",
         gap: 6,

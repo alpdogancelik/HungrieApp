@@ -1,11 +1,14 @@
 const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
+const functionsV1 = require("firebase-functions/v1");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const crypto = require("node:crypto");
 const http2 = require("node:http2");
 
 admin.initializeApp();
+
+const SUPABASE_AUTHENTICATED_ROLE = "authenticated";
 
 const USER_NOTIFIABLE_STATUSES = new Set(["preparing", "ready", "out_for_delivery", "delivered", "canceled"]);
 const ORDER_APPROVAL_SLA_MS = 5 * 60 * 1000;
@@ -575,3 +578,19 @@ exports.cancelExpiredPendingOrders = onSchedule(
         });
     },
 );
+
+// Firebase remains the identity provider during the migration. Supabase's
+// Firebase integration maps this fixed custom claim to PostgreSQL's
+// `authenticated` role. Preserve every unrelated claim an account may have.
+exports.assignSupabaseRoleOnUserCreate = functionsV1.auth.user().onCreate(async (user) => {
+    const existingClaims = user.customClaims || {};
+    if (existingClaims.role === SUPABASE_AUTHENTICATED_ROLE) return;
+
+    await admin.auth().setCustomUserClaims(user.uid, {
+        ...existingClaims,
+        role: SUPABASE_AUTHENTICATED_ROLE,
+    });
+    logger.info("Assigned Supabase authenticated role to new Firebase user", {
+        claimsPreserved: Object.keys(existingClaims).length,
+    });
+});

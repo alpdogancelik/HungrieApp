@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { Animated, AppState, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
@@ -8,7 +9,8 @@ import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 
 import Icon from "@/components/Icon";
-import { getRestaurant, getRestaurantCategories, getRestaurantMenu, subscribeRestaurant } from "@/lib/api";
+import { getRestaurant, subscribeRestaurant } from "@/src/data/restaurantRepository";
+import { getRestaurantCategories, getRestaurantMenu } from "@/src/data/menuRepository";
 import { getRestaurantImageSource } from "@/lib/assets";
 import useServerResource from "@/lib/useServerResource";
 import type { OrderReview } from "@/src/domain/types";
@@ -17,10 +19,10 @@ import { makeShadow } from "@/src/lib/shadowStyle";
 import { showUserMessage } from "@/src/lib/showUserMessage";
 import { useWebDocumentTitle } from "@/src/lib/useWebDocumentTitle";
 import MenuItemCard from "@/src/features/restaurantMenu/components/MenuItemCard";
-import { calculateRestaurantOrderReviewSummary, fetchRestaurantOrderReviews } from "@/src/services/orderReviews";
+import { calculateRestaurantOrderReviewSummary, fetchRestaurantOrderReviews } from "@/src/data/reviewRepository";
 import { useCartStore } from "@/store/cart.store";
 import useAuthStore from "@/store/auth.store";
-import { useFavoritesStore } from "@/store/favorites.store";
+import { useFavoritesStore } from "@/src/data/favoritesRepository";
 
 type MenuEntry = {
     id: string;
@@ -1252,7 +1254,7 @@ export default function RestaurantDetailsScreen({ initialId }: { initialId?: str
     );
 }
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     flex: {
         flex: 1,
     },

@@ -1,4 +1,5 @@
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { panelDesign } from "./panelDesign";
 
 type StateProps = {
@@ -21,7 +22,7 @@ export const PanelEmptyState = ({ title, description }: StateProps) => (
     </View>
 );
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     stateWrap: {
         borderWidth: 1,
         borderColor: panelDesign.colors.border,

@@ -5,7 +5,7 @@ import { CartItem, MenuItem, PaymentMethod, Restaurant } from "../domain/types";
 import { transitionOrderStatus, canTransition } from "../domain/orderMachine";
 import { emitOrderEvent } from "../lib/realtime";
 import { firebaseConfigured } from "@/lib/firebase";
-import { requestOrderReminder } from "@/src/services/firebaseOrders";
+import { requestOrderReminder } from "@/src/data/orderRepository";
 
 const restaurants: Restaurant[] = [
     { id: "ada-pizza", name: "Ada Pizza", description: "Ada'nın geç-gece pizzaları ve dürümleri", isActive: true },

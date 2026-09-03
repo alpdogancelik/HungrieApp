@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { Image } from "expo-image";
@@ -10,12 +11,13 @@ import AuthFeedbackCard from "@/components/auth/AuthFeedbackCard";
 import CustomButton from "@/components/CustomButton";
 import CustomInput from "@/components/CustomInput";
 import LanguageToggle from "@/components/LanguageToggle";
-import { sendPasswordReset } from "@/lib/firebaseAuth";
+import { sendPasswordReset } from "@/src/data/authRepository";
 import { getAuthErrorMessage, getAuthScreenCopy, isTurkishLanguage } from "@/src/features/auth/authCopy";
 import { isStrictValidEmail } from "@/src/features/auth/emailValidation";
 import OnlineOrder from "@/assets/illustrations/Online Order.svg";
 import RobotDelivery from "@/assets/illustrations/Robot Delivery.svg";
 import { makeShadow } from "@/src/lib/shadowStyle";
+import { useTheme } from "@/src/theme/themeContext";
 
 type FeedbackState = {
     tone: "error" | "success";
@@ -25,7 +27,7 @@ type FeedbackState = {
 
 const heroPackshot = require("../../assets/Categories/Sign-In Burger Photo1.png");
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     safeArea: { flex: 1, backgroundColor: "#FFF8F2" },
     scrollContent: {
         flexGrow: 1,
@@ -214,6 +216,7 @@ const styles = StyleSheet.create({
 });
 
 const ForgotPasswordScreen = () => {
+    const { theme } = useTheme();
     const { i18n } = useTranslation();
     const insets = useSafeAreaInsets();
     const copy = getAuthScreenCopy(i18n.language).forgotPassword;
@@ -281,13 +284,15 @@ const ForgotPasswordScreen = () => {
     };
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={["left", "right", "bottom"]}>
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
             <ScrollView
                 contentContainerStyle={[
                     styles.scrollContent,
                     { paddingTop: Math.max(insets.top, 12), paddingBottom: Math.max(insets.bottom + 24, 28) },
                 ]}
                 keyboardShouldPersistTaps="handled"
+                keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
                 showsVerticalScrollIndicator={false}
             >
                 <View style={[styles.shell, { maxWidth: maxShellWidth }]}>
@@ -307,7 +312,7 @@ const ForgotPasswordScreen = () => {
                     <View style={styles.heroSection}>
                         <View style={styles.heroGrid}>
                             <View style={styles.heroTextCol}>
-                                <Text style={[styles.heroHeading, isWide ? { fontSize: 56, lineHeight: 66 } : null]}>
+                                <Text style={[styles.heroHeading, { color: theme.colors.ink }, isWide ? { fontSize: 56, lineHeight: 66 } : null]}>
                                     {isTurkish ? (
                                         <>
                                             Şifreni{"\n"}yenile{"\n"}
@@ -320,7 +325,7 @@ const ForgotPasswordScreen = () => {
                                         </>
                                     )}
                                 </Text>
-                                <Text style={[styles.heroBody, isWide ? { fontSize: 18, lineHeight: 30, maxWidth: 420 } : null]}>
+                                <Text style={[styles.heroBody, { color: theme.colors.textSecondary }, isWide ? { fontSize: 18, lineHeight: 30, maxWidth: 420 } : null]}>
                                     {copy.subtitle}
                                 </Text>
                             </View>
@@ -367,12 +372,13 @@ const ForgotPasswordScreen = () => {
                     <View
                         style={[
                             styles.authCard,
+                            { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
                             { marginTop: cardOverlap },
                             makeShadow({ color: "#000000", offsetY: 20, blurRadius: 38, opacity: 0.1, elevation: 12 }),
                         ]}
                     >
                         <View style={styles.authCardHeader}>
-                            <Text style={[styles.cardTitle, isWide ? { fontSize: 46, lineHeight: 54 } : null]}>{copy.title}</Text>
+                            <Text style={[styles.cardTitle, { color: theme.colors.ink }, isWide ? { fontSize: 46, lineHeight: 54 } : null]}>{copy.title}</Text>
                         </View>
 
                         {feedback ? (
@@ -411,6 +417,7 @@ const ForgotPasswordScreen = () => {
                     </View>
                 </View>
             </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };

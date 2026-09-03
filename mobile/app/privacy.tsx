@@ -1,8 +1,10 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
 import Icon from "../components/Icon";
+import { useTheme } from "@/src/theme/themeContext";
 
 type PolicySection = {
     title: string;
@@ -145,43 +147,47 @@ const POLICY_EN: PolicyContent = {
     ],
 };
 
-const SectionBlock = ({ section }: { section: PolicySection }) => (
-    <View style={styles.sectionBlock}>
-        <Text style={styles.sectionTitle}>{section.title}</Text>
+const SectionBlock = ({ section }: { section: PolicySection }) => {
+    const { theme } = useTheme();
+    return (
+    <View style={[styles.sectionBlock, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.ink }]}>{section.title}</Text>
 
         {section.body?.map((line, index) => (
-            <Text key={`${section.title}-body-${index}`} style={styles.bodyText}>
+            <Text key={`${section.title}-body-${index}`} style={[styles.bodyText, { color: theme.colors.textSecondary }]}>
                 {line}
             </Text>
         ))}
 
         {section.bullets?.map((line, index) => (
             <View key={`${section.title}-bullet-${index}`} style={styles.bulletRow}>
-                <Text style={styles.bulletMark}>-</Text>
-                <Text style={styles.bulletText}>{line}</Text>
+                <Text style={[styles.bulletMark, { color: theme.colors.textSecondary }]}>-</Text>
+                <Text style={[styles.bulletText, { color: theme.colors.textSecondary }]}>{line}</Text>
             </View>
         ))}
     </View>
-);
+    );
+};
 
 const PrivacyScreen = () => {
+    const { theme } = useTheme();
     const { i18n } = useTranslation();
     const content = i18n.language.startsWith("tr") ? POLICY_TR : POLICY_EN;
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
                 <View style={styles.headerRow}>
-                    <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}>
-                        <Icon name="arrowBack" size={20} color="#0F172A" />
+                    <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.backButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }, pressed && styles.backButtonPressed]}>
+                        <Icon name="arrowBack" size={20} color={theme.colors.ink} />
                     </Pressable>
-                    <Text style={styles.screenTitle}>{content.title}</Text>
+                    <Text style={[styles.screenTitle, { color: theme.colors.ink }]}>{content.title}</Text>
                 </View>
 
-                <View style={styles.metaCard}>
-                    <Text style={styles.metaHeader}>{content.header}</Text>
+                <View style={[styles.metaCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                    <Text style={[styles.metaHeader, { color: theme.colors.textSecondary }]}>{content.header}</Text>
                     {content.meta.map((line, index) => (
-                        <Text key={`meta-${index}`} style={styles.metaText}>
+                        <Text key={`meta-${index}`} style={[styles.metaText, { color: theme.colors.textSecondary }]}>
                             {line}
                         </Text>
                     ))}
@@ -197,7 +203,7 @@ const PrivacyScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     safeArea: { flex: 1, backgroundColor: "#F8FAFC" },
     content: { padding: 20, paddingBottom: 120 },
     headerRow: { flexDirection: "row", alignItems: "center", marginBottom: 16, gap: 12 },

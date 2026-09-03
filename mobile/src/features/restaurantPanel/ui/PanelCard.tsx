@@ -1,7 +1,9 @@
 import { ReactNode } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { StyleProp, StyleSheet, Text, View, ViewStyle, useWindowDimensions } from "react-native";
 import { panelDesign, panelTypography } from "./panelDesign";
 import { makeShadow } from "@/src/lib/shadowStyle";
+import { useTheme } from "@/src/theme/themeContext";
 
 type Props = {
     title?: string;
@@ -14,15 +16,16 @@ type Props = {
 
 export const PanelCard = ({ title, subtitle, children, style, compact = false, right }: Props) => {
     const { width } = useWindowDimensions();
+    const { theme } = useTheme();
     const isPhone = width < 760;
 
     return (
-        <View style={[styles.card, compact ? styles.compactCard : null, style]}>
+        <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }, compact ? styles.compactCard : null, style]}>
             {(title || subtitle || right) ? (
                 <View style={[styles.header, isPhone ? styles.headerPhone : null]}>
                     <View style={styles.headerMain}>
-                        {title ? <Text style={styles.title}>{title}</Text> : null}
-                        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+                        {title ? <Text style={[styles.title, { color: theme.colors.ink }]}>{title}</Text> : null}
+                        {subtitle ? <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>{subtitle}</Text> : null}
                     </View>
                     {right ? <View style={[styles.headerRight, isPhone ? styles.headerRightPhone : null]}>{right}</View> : null}
                 </View>
@@ -32,7 +35,7 @@ export const PanelCard = ({ title, subtitle, children, style, compact = false, r
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     card: {
         backgroundColor: panelDesign.colors.card,
         borderRadius: panelDesign.radius.lg,

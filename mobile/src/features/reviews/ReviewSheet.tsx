@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import {
     Alert,
     KeyboardAvoidingView,
@@ -17,6 +18,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useTranslation } from "react-i18next";
 
 import Icon from "@/components/Icon";
+import { useTheme } from "@/src/theme/themeContext";
 
 type ReviewSheetProps = {
     visible: boolean;
@@ -40,6 +42,7 @@ const ReviewSheet = ({
     placeholder,
 }: ReviewSheetProps) => {
     const { i18n } = useTranslation();
+    const { theme } = useTheme();
     const insets = useSafeAreaInsets();
     const { height: screenHeight } = useWindowDimensions();
     const isTurkish = i18n.language?.toLowerCase().startsWith("tr");
@@ -119,14 +122,14 @@ const ReviewSheet = ({
             onRequestClose={handleRequestClose}
         >
             <View style={styles.modalRoot}>
-                <Pressable style={styles.backdrop} onPress={handleRequestClose} />
+                <Pressable style={[styles.backdrop, { backgroundColor: theme.colors.overlay }]} onPress={handleRequestClose} />
                 <KeyboardAvoidingView
                     style={styles.keyboardAvoiding}
                     behavior={Platform.OS === "ios" ? "padding" : "height"}
                     keyboardVerticalOffset={Platform.OS === "ios" ? insets.bottom + 12 : 0}
                 >
                     <SafeAreaView edges={["bottom"]} style={styles.safeArea}>
-                        <Pressable style={[styles.sheet, { maxHeight: Math.max(280, screenHeight * 0.8) }]} onPress={() => undefined}>
+                        <Pressable style={[styles.sheet, { maxHeight: Math.max(280, screenHeight * 0.8), backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]} onPress={() => undefined}>
                             <ScrollView
                                 bounces={false}
                                 keyboardShouldPersistTaps="handled"
@@ -134,7 +137,7 @@ const ReviewSheet = ({
                                 showsVerticalScrollIndicator={false}
                             >
                                 <View style={styles.headerRow}>
-                                    <Text style={styles.title}>{copy.title}</Text>
+                                    <Text style={[styles.title, { color: theme.colors.ink }]}>{copy.title}</Text>
                                     <TouchableOpacity
                                         onPress={handleRequestClose}
                                         disabled={submitting}
@@ -149,10 +152,10 @@ const ReviewSheet = ({
                                 <TextInput
                                     multiline
                                     placeholder={placeholder || copy.placeholder}
-                                    placeholderTextColor="#94A3B8"
+                                    placeholderTextColor={theme.colors.muted}
                                     value={comment}
                                     onChangeText={(text) => setComment(text.slice(0, 500))}
-                                    style={styles.commentInput}
+                                    style={[styles.commentInput, { color: theme.colors.ink, backgroundColor: theme.colors.input, borderColor: theme.colors.border }]}
                                     textAlignVertical="top"
                                 />
                                 <View style={styles.actionsRow}>
@@ -183,7 +186,7 @@ const ReviewSheet = ({
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     modalRoot: {
         flex: 1,
         justifyContent: "flex-end",
@@ -193,6 +196,7 @@ const styles = StyleSheet.create({
         backgroundColor: "rgba(15,23,42,0.42)",
     },
     keyboardAvoiding: {
+        flex: 1,
         justifyContent: "flex-end",
     },
     safeArea: {

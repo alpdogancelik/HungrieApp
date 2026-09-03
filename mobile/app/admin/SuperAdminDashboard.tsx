@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    KeyboardAvoidingView,
+    Platform,
     RefreshControl,
     ScrollView,
     Text,
@@ -9,7 +11,8 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { firebaseOrdersEnabled, listenToOrders, updateOrderStatus } from "@/lib/firebaseAuth";
+import { firebaseOrdersEnabled, listenToOrders, updateOrderStatus } from "@/src/data/orderRepository";
+import { useTheme } from "@/src/theme/themeContext";
 import MenuEditor from "./MenuEditor";
 
 type AdminOrder = {
@@ -82,6 +85,7 @@ const mapAdminOrder = (order: any): AdminOrder => {
 };
 
 const SuperAdminDashboard = () => {
+    const { theme } = useTheme();
     const [orders, setOrders] = useState<AdminOrder[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -144,7 +148,7 @@ const SuperAdminDashboard = () => {
         const isUpdating = updatingOrderId === order.id;
         return (
             <View className="mt-3">
-                <Text className="text-xs uppercase tracking-wide text-dark-60">Update status</Text>
+                <Text className="text-xs uppercase tracking-wide text-dark-60 dark:text-slate-300">Update status</Text>
                 <View className="mt-2 flex-row flex-wrap gap-2">
                     {STATUS_OPTIONS.map((option) => {
                         const isActive = order.status === option;
@@ -154,12 +158,12 @@ const SuperAdminDashboard = () => {
                                 disabled={isActive || isUpdating}
                                 onPress={() => handleStatusChange(order.id, option)}
                                 className={`rounded-full border px-4 py-2 ${
-                                    isActive ? "bg-dark-100 border-dark-100" : "border-gray-200 bg-white"
+                                    isActive ? "bg-dark-100 border-dark-100" : "border-gray-200 bg-white dark:bg-[#13243A] dark:border-[#29405C]"
                                 } ${isUpdating ? "opacity-60" : "opacity-100"}`}
                             >
                                 <Text
                                     className={`text-sm font-ezra-semibold ${
-                                        isActive ? "text-white" : "text-dark-80"
+                                        isActive ? "text-white" : "text-dark-80 dark:text-slate-100"
                                     }`}
                                 >
                                     {humanizeStatus(option)}
@@ -171,7 +175,7 @@ const SuperAdminDashboard = () => {
                 {isUpdating && (
                     <View className="mt-3 flex-row items-center gap-2">
                         <ActivityIndicator size="small" color="#FE8C00" />
-                        <Text className="text-sm text-dark-60">Saving latest status...</Text>
+                        <Text className="text-sm text-dark-60 dark:text-slate-300">Saving latest status...</Text>
                     </View>
                 )}
 
@@ -193,13 +197,13 @@ const SuperAdminDashboard = () => {
     };
 
     const renderOrderCard = (order: AdminOrder) => {
-        const badgeClass = STATUS_BADGE_CLASS[order.status] || "bg-gray-100 text-dark-80 border-gray-100";
+        const badgeClass = STATUS_BADGE_CLASS[order.status] || "bg-gray-100 text-dark-80 border-gray-100 dark:bg-[#172A42] dark:text-slate-100 dark:border-[#29405C]";
         return (
-            <View key={order.id} className="rounded-3xl border border-gray-100 bg-white/95 p-5 shadow-sm">
+            <View key={order.id} className="rounded-3xl border border-gray-100 bg-white/95 p-5 shadow-sm dark:bg-[#0D1B2D] dark:border-[#29405C]">
                 <View className="flex-row items-start justify-between gap-3">
                     <View className="flex-1 gap-1">
-                        <Text className="text-xs uppercase tracking-[2px] text-dark-60">Order ID</Text>
-                        <Text className="text-lg font-ezra-bold text-dark-100">{order.id}</Text>
+                        <Text className="text-xs uppercase tracking-[2px] text-dark-60 dark:text-slate-300">Order ID</Text>
+                        <Text className="text-lg font-ezra-bold text-dark-100 dark:text-slate-50">{order.id}</Text>
                     </View>
                     <View className={`items-center rounded-full border px-3 py-1 ${badgeClass}`}>
                         <Text className="text-xs font-ezra-semibold uppercase">{humanizeStatus(order.status)}</Text>
@@ -208,32 +212,32 @@ const SuperAdminDashboard = () => {
 
                 <View className="mt-4 gap-3">
                     <View>
-                        <Text className="text-xs uppercase tracking-wide text-dark-60">Customer</Text>
-                        <Text className="text-base font-ezra-semibold text-dark-100">{order.customerName}</Text>
+                        <Text className="text-xs uppercase tracking-wide text-dark-60 dark:text-slate-300">Customer</Text>
+                        <Text className="text-base font-ezra-semibold text-dark-100 dark:text-slate-50">{order.customerName}</Text>
                         {!!order.customerEmail && (
-                            <Text className="text-sm text-dark-60">{order.customerEmail}</Text>
+                            <Text className="text-sm text-dark-60 dark:text-slate-300">{order.customerEmail}</Text>
                         )}
                         {!!order.customerWhatsapp && (
-                            <Text className="text-sm text-dark-60">WhatsApp: {order.customerWhatsapp}</Text>
+                            <Text className="text-sm text-dark-60 dark:text-slate-300">WhatsApp: {order.customerWhatsapp}</Text>
                         )}
                     </View>
                     {order.restaurantName && (
                         <View>
-                            <Text className="text-xs uppercase tracking-wide text-dark-60">Restaurant</Text>
-                            <Text className="text-base text-dark-80">{order.restaurantName}</Text>
+                            <Text className="text-xs uppercase tracking-wide text-dark-60 dark:text-slate-300">Restaurant</Text>
+                            <Text className="text-base text-dark-80 dark:text-slate-100">{order.restaurantName}</Text>
                         </View>
                     )}
                     <View className="flex-row items-center justify-between">
                         <View>
-                            <Text className="text-xs uppercase tracking-wide text-dark-60">Total</Text>
+                            <Text className="text-xs uppercase tracking-wide text-dark-60 dark:text-slate-300">Total</Text>
                             <Text className="text-xl font-ezra-bold text-primary-dark">
                                 {formatCurrency(order.totalPrice)}
                             </Text>
                         </View>
                         {order.createdAt && (
                             <View className="items-end">
-                                <Text className="text-xs uppercase tracking-wide text-dark-60">Placed</Text>
-                                <Text className="text-sm text-dark-80">
+                                <Text className="text-xs uppercase tracking-wide text-dark-60 dark:text-slate-300">Placed</Text>
+                                <Text className="text-sm text-dark-80 dark:text-slate-100">
                                     {formatPlacedAt(order.createdAt)}
                                 </Text>
                             </View>
@@ -242,9 +246,9 @@ const SuperAdminDashboard = () => {
 
                     {order.courierLabel && (
                         <View className="flex-row items-center gap-2">
-                            <Text className="text-xs uppercase tracking-wide text-dark-60">Courier</Text>
+                            <Text className="text-xs uppercase tracking-wide text-dark-60 dark:text-slate-300">Courier</Text>
                             <View className="rounded-full bg-dark-100/10 px-3 py-1">
-                                <Text className="text-sm font-ezra-semibold text-dark-80">
+                                <Text className="text-sm font-ezra-semibold text-dark-80 dark:text-slate-100">
                                     {order.courierLabel}
                                 </Text>
                             </View>
@@ -264,16 +268,19 @@ const SuperAdminDashboard = () => {
     const showEmptyState = !loading && orders.length === 0 && !errorMessage;
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50">
+        <SafeAreaView className="flex-1" style={{ backgroundColor: theme.colors.background }}>
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
             <ScrollView
                 className="flex-1"
                 refreshControl={refreshControl}
                 contentContainerStyle={{ paddingBottom: 120 }}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
             >
                 <View className="gap-5 px-5 pt-6">
                     <View className="gap-1">
-                        <Text className="text-3xl font-ezra-bold text-dark-100">Super Admin</Text>
-                        <Text className="text-base text-dark-60">Track every order across restaurants in real time.</Text>
+                        <Text className="text-3xl font-ezra-bold" style={{ color: theme.colors.ink }}>Super Admin</Text>
+                        <Text className="text-base" style={{ color: theme.colors.textSecondary }}>Track every order across restaurants in real time.</Text>
                     </View>
 
                     {!firebaseOrdersEnabled && (
@@ -302,14 +309,14 @@ const SuperAdminDashboard = () => {
                     {loading && (
                         <View className="items-center justify-center py-16">
                             <ActivityIndicator size="large" color="#FE8C00" />
-                            <Text className="mt-4 text-base text-dark-60">Loading the latest orders...</Text>
+                            <Text className="mt-4 text-base text-dark-60 dark:text-slate-300">Loading the latest orders...</Text>
                         </View>
                     )}
 
                     {showEmptyState && (
-                        <View className="rounded-3xl border border-gray-100 bg-white/90 p-6 items-center">
-                            <Text className="text-xl font-ezra-semibold text-dark-80">No orders yet</Text>
-                            <Text className="mt-2 text-center text-dark-60">
+                        <View className="rounded-3xl border p-6 items-center" style={{ backgroundColor: theme.colors.surface, borderColor: theme.colors.border }}>
+                            <Text className="text-xl font-ezra-semibold" style={{ color: theme.colors.ink }}>No orders yet</Text>
+                            <Text className="mt-2 text-center" style={{ color: theme.colors.textSecondary }}>
                                 Orders from every restaurant will appear here. Pull down to refresh once the first order
                                 arrives.
                             </Text>
@@ -321,6 +328,7 @@ const SuperAdminDashboard = () => {
                     <MenuEditor />
                 </View>
             </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };

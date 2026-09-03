@@ -1,8 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { doc, getDoc, setDoc } from "firebase/firestore";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { FIREBASE_COLLECTIONS, firestore } from "@/lib/firebase";
+import { useFavoriteStoreBackend } from "@/src/data/favoritesBackend";
 
 type FavoritesState = {
     favoritesByScope: Record<string, string[]>;
@@ -18,17 +17,10 @@ const normalizeFavoriteList = (value: unknown) =>
     Array.isArray(value)
         ? Array.from(new Set(value.map((entry) => normalizeFavoriteId(String(entry))).filter(Boolean)))
         : [];
-const isRemoteScope = (scope: string) => Boolean(scope && scope !== "guest" && firestore);
 const persistScopeFavorites = async (scope: string, ids: string[]) => {
-    if (!isRemoteScope(scope) || !firestore) return;
-    await setDoc(
-        doc(firestore, FIREBASE_COLLECTIONS.users, scope),
-        {
-            favoriteRestaurantIds: ids,
-            favoritesUpdatedAt: Date.now(),
-        },
-        { merge: true },
-    );
+    const backend = useFavoriteStoreBackend();
+    if (!backend.isRemoteScope(scope)) return;
+    await backend.persistFavorites(scope, ids);
 };
 
 export const useFavoritesStore = create<FavoritesState>()(
@@ -94,7 +86,8 @@ export const useFavoritesStore = create<FavoritesState>()(
 
             hydrateFavorites: async (scope) => {
                 const normalizedScope = scope || "guest";
-                if (!isRemoteScope(normalizedScope) || !firestore) {
+                const backend = useFavoriteStoreBackend();
+                if (!backend.isRemoteScope(normalizedScope)) {
                     set((state) => ({
                         loadedScopes: {
                             ...state.loadedScopes,
@@ -104,8 +97,7 @@ export const useFavoritesStore = create<FavoritesState>()(
                     return;
                 }
 
-                const snapshot = await getDoc(doc(firestore, FIREBASE_COLLECTIONS.users, normalizedScope)).catch(() => null);
-                const remoteFavorites = normalizeFavoriteList(snapshot?.data()?.favoriteRestaurantIds);
+                const remoteFavorites = normalizeFavoriteList(await backend.loadFavorites(normalizedScope));
 
                 set((state) => ({
                     favoritesByScope: {

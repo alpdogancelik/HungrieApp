@@ -15,10 +15,31 @@
     "ios": "npm --prefix mobile run ios",
     "web": "npm --prefix mobile run web",
     "lint": "npm --prefix mobile run lint",
-    "test": "npm --prefix mobile run test"
+    "test": "npm --prefix functions run test:audit-migration-baseline && npm --prefix functions run test:supabase-auth-claims && npm --prefix functions run test:supabase-auth-probe && npm --prefix mobile run test:supabase-config && npm --prefix mobile run test:repositories && npm run supabase:test",
+    "typecheck": "npx tsc --project mobile/tsconfig.json --noEmit",
+    "expo:config": "npm --prefix mobile exec expo config -- --type public",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "supabase:reset": "supabase db reset --local",
+    "supabase:lint": "supabase db lint --local --schema public,private,migration --level error --fail-on error",
+    "supabase:test": "supabase test db --local supabase/tests && node scripts/test-supabase-milestone3-concurrency.mjs",
+    "supabase:migration:new": "supabase migration new",
+    "supabase:types": "supabase gen types typescript --local --schema public > mobile/src/types/database.generated.ts",
+    "supabase:provision": "node scripts/provision-supabase-projects.mjs",
+    "supabase:auth:capture": "node scripts/capture-supabase-hungrie-token.mjs",
+    "supabase:environment": "node scripts/supabase-environment.mjs",
+    "supabase:firebase-auth": "node scripts/configure-supabase-firebase-auth.mjs",
+    "supabase:mobile-env": "node scripts/configure-supabase-mobile-env.mjs",
+    "supabase:cloud:verify": "node scripts/verify-supabase-cloud.mjs",
+    "supabase:schema:verify": "node scripts/verify-supabase-milestone2.mjs",
+    "supabase:security:verify": "node scripts/verify-supabase-milestone3.mjs",
+    "supabase:security:test:hosted": "node scripts/test-supabase-milestone3-hosted.mjs",
+    "supabase:security:probe": "node scripts/probe-supabase-milestone3-firebase.mjs"
   },
   "devDependencies": {
     "@types/react": "~18.2.0",
+    "supabase": "2.116.0",
     "typescript": "~5.9.2"
   }
 }

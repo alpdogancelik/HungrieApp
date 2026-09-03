@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { MenuItemReview } from "@/src/domain/types";
-import { auth } from "@/lib/firebase";
-import { fetchMenuItemReviews, submitMenuItemReview } from "@/src/services/menuItemReviews";
+import { getCurrentAuthUserId } from "@/src/data/authRepository";
+import { fetchMenuItemReviews, submitMenuItemReview } from "@/src/data/reviewRepository";
 import useAuthStore from "@/store/auth.store";
 
 type SubmitParams = { rating: 1 | 2 | 3 | 4 | 5; comment?: string };
@@ -20,7 +20,7 @@ const sanitizeComment = (comment?: string) => {
 
 export const useProductReviews = (productId?: string, options: UseProductReviewsOptions = {}) => {
     const { user } = useAuthStore();
-    const authUid = String(auth?.currentUser?.uid || "").trim();
+    const authUid = getCurrentAuthUserId().trim();
     const fallbackUserId = String((user as any)?.$id || (user as any)?.id || (user as any)?.accountId || "").trim();
     const userId = authUid || fallbackUserId;
     const userName = (user as any)?.name || undefined;

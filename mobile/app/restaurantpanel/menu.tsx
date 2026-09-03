@@ -1,8 +1,11 @@
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     Alert,
     FlatList,
+    KeyboardAvoidingView,
     Modal,
+    Platform,
     ScrollView,
     StyleSheet,
     Switch,
@@ -14,12 +17,18 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { useFocusEffect } from "@react-navigation/native";
 import { Redirect, useRouter } from "expo-router";
 
-import { firestore } from "@/lib/firebase";
-import { getOwnedRestaurantId } from "@/lib/firebaseAuth";
+import {
+    createPanelCategory,
+    createPanelMenuItem,
+    deletePanelCategory,
+    deletePanelMenuItem,
+    getOwnedRestaurantMenuManagementData,
+    updatePanelCategory,
+    updatePanelMenuItem,
+} from "@/src/data/menuRepository";
 import useAuthStore from "@/store/auth.store";
 import {
     PanelCard,
@@ -117,7 +126,7 @@ const RestaurantMenuManager = () => {
         let mounted = true;
         const load = async () => {
             if (authLoading) return;
-            if (!isAuthenticated || !firestore) {
+            if (!isAuthenticated) {
                 if (mounted) {
                     setRedirectTo("/sign-in");
                     setLoading(false);
@@ -127,43 +136,18 @@ const RestaurantMenuManager = () => {
             if (mounted) {
                 setRedirectTo(null);
             }
-            if (!firestore) {
-                setLoading(false);
-                return;
-            }
-            const owned = await getOwnedRestaurantId();
+            const owned = await getOwnedRestaurantMenuManagementData();
             if (!mounted) return;
             if (!owned) {
                 setRedirectTo("/sign-in");
                 setLoading(false);
                 return;
             }
-            setRestaurantId(owned);
+            setRestaurantId(owned.restaurantId);
 
             try {
-                const catSnap = await getDocs(
-                    query(collection(firestore, "categories"), where("restaurantId", "==", owned)),
-                );
-                const catList: Category[] = catSnap.docs.map((snapshot) => {
-                    const data = snapshot.data() as any;
-                    const name = String(data.name || snapshot.id);
-                    const slug = slugifyCategory(String(data.slug || name || snapshot.id));
-                    return { id: snapshot.id, name, slug };
-                });
-                setCategories(catList);
-
-                const menuSnap = await getDocs(query(collection(firestore, "menus"), where("restaurantId", "==", owned)));
-                const menuList: MenuItem[] = menuSnap.docs.map((snapshot) => {
-                    const data = snapshot.data() as any;
-                    return {
-                        id: snapshot.id,
-                        name: String(data.name || snapshot.id),
-                        price: Number(data.price || 0),
-                        categories: normalizeAssignedCategories(data.categories, catList),
-                        visible: data.visible !== false,
-                    };
-                });
-                setItems(menuList);
+                setCategories(owned.categories);
+                setItems(owned.items);
             } catch (err) {
                 Alert.alert(
                     t("menu.loadFailedTitle"),
@@ -244,17 +228,10 @@ const RestaurantMenuManager = () => {
     };
 
     const handleSaveItem = async (item: MenuItem) => {
-        if (!firestore || !restaurantId) return;
-        const normalizedCategories = Array.from(new Set((item.categories || []).map((entry) => slugifyCategory(String(entry)))));
+        if (!restaurantId) return;
         try {
             setSavingId(item.id);
-            await updateDoc(doc(firestore, "menus", item.id), {
-                categories: normalizedCategories,
-                name: item.name || "",
-                price: Number(item.price || 0),
-                visible: item.visible !== false,
-                updatedAt: Date.now(),
-            });
+            await updatePanelMenuItem(item);
             Alert.alert(t("menu.savedTitle"), t("menu.savedBody", { name: item.name }));
         } catch (err: any) {
             Alert.alert(
@@ -267,21 +244,15 @@ const RestaurantMenuManager = () => {
     };
 
     const handleAddCategory = async () => {
-        if (!restaurantId || !firestore) return;
+        if (!restaurantId) return;
         const name = newCategoryName.trim();
         if (!name) {
             Alert.alert(t("menu.missingNameTitle"), t("menu.missingNameBody"));
             return;
         }
         try {
-            const ref = await addDoc(collection(firestore, "categories"), {
-                name,
-                slug: slugifyCategory(name),
-                restaurantId,
-                createdAt: Date.now(),
-                updatedAt: Date.now(),
-            });
-            setCategories((prev) => [...prev, { id: ref.id, name, slug: slugifyCategory(name) }]);
+            const created = await createPanelCategory(restaurantId, name);
+            setCategories((prev) => [...prev, created]);
             setNewCategoryName("");
         } catch (err: any) {
             Alert.alert(
@@ -292,7 +263,7 @@ const RestaurantMenuManager = () => {
     };
 
     const handleAddProduct = async () => {
-        if (!restaurantId || !firestore) return;
+        if (!restaurantId) return;
         const name = newItemName.trim();
         if (!name) {
             Alert.alert(t("menu.missingProductNameTitle"), t("menu.missingProductNameBody"));
@@ -301,24 +272,14 @@ const RestaurantMenuManager = () => {
 
         try {
             const price = Number(newItemPrice || 0);
-            const ref = await addDoc(collection(firestore, "menus"), {
-                restaurantId,
+            const created = await createPanelMenuItem(restaurantId, {
                 name,
                 price: Number.isFinite(price) ? price : 0,
-                categories: Array.from(new Set(newItemCategories.map((entry) => slugifyCategory(String(entry))))),
-                visible: true,
-                createdAt: Date.now(),
-                updatedAt: Date.now(),
+                categories: newItemCategories,
             });
 
             setItems((prev) => [
-                {
-                    id: ref.id,
-                    name,
-                    price: Number.isFinite(price) ? price : 0,
-                    categories: newItemCategories,
-                    visible: true,
-                },
+                created,
                 ...prev,
             ]);
             setNewItemName("");
@@ -344,10 +305,9 @@ const RestaurantMenuManager = () => {
                     text: t("orders.confirm"),
                     style: "destructive",
                     onPress: async () => {
-                        if (!firestore) return;
                         try {
                             setDeletingId(item.id);
-                            await deleteDoc(doc(firestore, "menus", item.id));
+                            await deletePanelMenuItem(item.id);
                             setItems((prev) => prev.filter((current) => current.id !== item.id));
                         } catch (err: any) {
                             Alert.alert(t("menu.deleteItemFailedTitle"), err?.message || t("common.tryAgain"));
@@ -361,15 +321,10 @@ const RestaurantMenuManager = () => {
     };
 
     const handleUpdateCategory = async (category: Category, nextName: string) => {
-        if (!firestore) return;
         const trimmedName = nextName.trim() || category.name;
         const nextSlug = slugifyCategory(trimmedName);
         try {
-            await updateDoc(doc(firestore, "categories", category.id), {
-                name: trimmedName,
-                slug: nextSlug,
-                updatedAt: Date.now(),
-            });
+            await updatePanelCategory(category.id, trimmedName);
             setCategories((prev) =>
                 prev.map((current) => (current.id === category.id ? { ...current, name: trimmedName, slug: nextSlug } : current)),
             );
@@ -390,10 +345,9 @@ const RestaurantMenuManager = () => {
     };
 
     const handleDeleteCategory = async (categoryId: string) => {
-        if (!firestore) return;
         const removedCategory = categories.find((category) => category.id === categoryId);
         try {
-            await deleteDoc(doc(firestore, "categories", categoryId));
+            await deletePanelCategory(categoryId);
             setCategories((prev) => prev.filter((category) => category.id !== categoryId));
             setItems((prev) =>
                 prev.map((item) => ({
@@ -737,6 +691,10 @@ const RestaurantMenuManager = () => {
                     setNewItemCategories([]);
                 }}
             >
+                <KeyboardAvoidingView
+                    style={styles.modalKeyboardAvoiding}
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                >
                 <TouchableOpacity
                     activeOpacity={1}
                     onPress={() => {
@@ -841,6 +799,7 @@ const RestaurantMenuManager = () => {
                         </PanelCard>
                     </TouchableOpacity>
                 </TouchableOpacity>
+                </KeyboardAvoidingView>
             </Modal>
 
             {showScrollTop ? (
@@ -859,7 +818,7 @@ const RestaurantMenuManager = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     mobileHeaderTools: {
         width: "100%",
         gap: 10,
@@ -906,6 +865,9 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingBottom: panelDesign.spacing.sm,
         gap: panelDesign.spacing.md,
+    },
+    modalKeyboardAvoiding: {
+        flex: 1,
     },
     modalOverlay: {
         flex: 1,

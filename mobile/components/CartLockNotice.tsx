@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { illustrations } from "@/constants/mediaCatalog";
@@ -80,7 +81,7 @@ const CartLockNotice = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const styles = createAdaptiveStyleSheet({
     container: {
         position: "absolute",
         left: 16,

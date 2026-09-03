@@ -60,18 +60,18 @@ import successImage from "@/assets/images/success.png";
 import deliveryLocationImage from "@/assets/images/Delivery Location.png";
 
 // Category imagery
-import categoryBurgerImage from "@/assets/Categories/Burger1.jpg";
-import categoryDurumImage from "@/assets/Categories/Durum1.jpg";
-import categoryDrinksImage from "@/assets/Categories/Icecekler1.jpg";
-import categoryGrillsImage from "@/assets/Categories/Izgaralar1.jpg";
-import categoryCoffeeImage from "@/assets/Categories/Kahveler1.jpg";
-import categoryKebabImage from "@/assets/Categories/Kebap1.jpg";
+import categoryBurgerImage from "@/assets/Categories/Burger1.png";
+import categoryDurumImage from "@/assets/Categories/Durum1.png";
+import categoryDrinksImage from "@/assets/Categories/Icecekler1.png";
+import categoryGrillsImage from "@/assets/Categories/Izgaralar1.png";
+import categoryCoffeeImage from "@/assets/Categories/Kahveler1.png";
+import categoryKebabImage from "@/assets/Categories/Kebap1.png";
 import categoryLahmacunImage from "@/assets/Categories/Lahmacun1.jpg";
-import categoryPastaImage from "@/assets/Categories/Makarna1.jpg";
-import categoryPizzaImage from "@/assets/Categories/Pizza1.jpg";
-import categorySaladImage from "@/assets/Categories/Salata1.jpg";
-import categorySaucesImage from "@/assets/Categories/Soslar1.jpg";
-import categoryDessertImage from "@/assets/Categories/Tatli1.jpg";
+import categoryPastaImage from "@/assets/Categories/Makarna1.png";
+import categoryPizzaImage from "@/assets/Categories/Pizza1.png";
+import categorySaladImage from "@/assets/Categories/Salata1.png";
+import categorySaucesImage from "@/assets/Categories/Soslar1.png";
+import categoryDessertImage from "@/assets/Categories/Tatli1.png";
 import categoryChickenImage from "@/assets/Categories/Tavuk1.png";
 
 const avatar = foodDeliveryBagImage;

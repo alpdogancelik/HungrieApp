@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { subscribeOrder } from "@/src/services/firebaseOrders";
+import { subscribeOrder } from "@/src/data/orderRepository";
 
 export type PendingOrderStatus = "awaiting_confirmation" | "confirmed" | "rejected";
 

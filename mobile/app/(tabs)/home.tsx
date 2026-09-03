@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import {
     DeviceEventEmitter,
     FlatList,
@@ -27,17 +28,17 @@ import { illustrations } from "@/constants/mediaCatalog";
 import { getRestaurantImageSource } from "@/lib/assets";
 import useHome from "@/src/hooks/useHome";
 import useOrderStatus, { type PendingOrderStatus } from "@/src/hooks/useOrderStatus";
-import { addressStore } from "@/src/features/address/addressStore";
+import { addressStore } from "@/src/data/addressRepository";
 import { useDefaultAddress } from "@/src/features/address/hooks";
 import { makeShadow } from "@/src/lib/shadowStyle";
 import { CATEGORY_CARDS } from "@/src/lib/categoryCards";
 import { showUserMessage } from "@/src/lib/showUserMessage";
 import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 import { useWebDocumentTitle } from "@/src/lib/useWebDocumentTitle";
-import { autoCancelExpiredPendingOrders, getOrderApprovalDeadlineMs, subscribeUserOrders } from "@/src/services/firebaseOrders";
+import { autoCancelExpiredPendingOrders, getOrderApprovalDeadlineMs, subscribeUserOrders } from "@/src/data/orderRepository";
 import { useTheme } from "@/src/theme/themeContext";
 import useAuthStore from "@/store/auth.store";
-import { useFavoritesStore } from "@/store/favorites.store";
+import { useFavoritesStore } from "@/src/data/favoritesRepository";
 import type { Address, Order } from "@/src/domain/types";
 
 const HeroArt = illustrations.rider;
@@ -678,7 +679,7 @@ export function HomeTabScreen() {
                                         <Ionicons
                                             name={isFavorite ? "heart" : "heart-outline"}
                                             size={22}
-                                            color={isFavorite ? "#E5484D" : restaurantIsOpen ? "#111827" : "#94A3B8"}
+                                            color={isFavorite ? theme.colors.danger : restaurantIsOpen ? theme.colors.ink : theme.colors.textSecondary}
                                         />
                                     </Pressable>
 
@@ -865,15 +866,15 @@ const OrderStatusCard = () => {
 };
 
 const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
-    StyleSheet.create({
+    createAdaptiveStyleSheet({
         safeArea: {
             flex: 1,
-            backgroundColor: "#FAF8FB",
+            backgroundColor: theme.colors.background,
         },
         content: {
             paddingHorizontal: 16,
             gap: 14,
-            backgroundColor: "#FAF8FB",
+            backgroundColor: theme.colors.background,
         },
         headerCard: {
             flexDirection: "row",
@@ -882,8 +883,8 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
             paddingHorizontal: 13,
             paddingVertical: 10,
             borderRadius: 26,
-            backgroundColor: "#FFFFFF",
-            ...makeShadow({ color: "#C9D2E3", offsetY: 8, blurRadius: 24, opacity: 0.16, elevation: 10 }),
+            backgroundColor: theme.colors.surface,
+            ...makeShadow({ color: theme.colors.shadow, offsetY: 8, blurRadius: 24, opacity: 0.16, elevation: 10 }),
         },
         headerAddressRow: {
             flex: 1,
@@ -909,7 +910,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
             fontFamily: "ChairoSans",
             fontSize: 10,
             lineHeight: 12,
-            color: "#6B7280",
+            color: theme.colors.textSecondary,
         },
         addressValueRow: {
             flexDirection: "row",
@@ -922,7 +923,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
             fontFamily: "ChairoSans",
             fontSize: 13,
             lineHeight: 16,
-            color: "#111827",
+            color: theme.colors.ink,
         },
         languageShell: {
             flexShrink: 0,
@@ -1038,7 +1039,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
         heroSkeleton: {
             height: 136,
             borderRadius: 24,
-            backgroundColor: "#F3E7DB",
+            backgroundColor: theme.colors.surfaceMuted,
         },
         categoryRow: {
             gap: 10,
@@ -1054,7 +1055,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
             fontFamily: "ChairoSans",
             fontSize: 17,
             lineHeight: 21,
-            color: "#16213E",
+            color: theme.colors.ink,
         },
         categoryCard: {
             width: 72,
@@ -1065,9 +1066,9 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
             width: 62,
             height: 62,
             borderRadius: 18,
-            backgroundColor: "#FFFFFF",
+            backgroundColor: theme.colors.surface,
             borderWidth: 1,
-            borderColor: "#F4F1EC",
+            borderColor: theme.colors.border,
             alignItems: "center",
             justifyContent: "center",
             overflow: "hidden",
@@ -1081,7 +1082,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
             fontFamily: "ChairoSans",
             fontSize: 12,
             lineHeight: 15,
-            color: "#1F2937",
+            color: theme.colors.ink,
             textAlign: "center",
         },
         viewAllButton: {
@@ -1104,7 +1105,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
             fontFamily: "ChairoSans",
             fontSize: 17,
             lineHeight: 21,
-            color: "#16213E",
+            color: theme.colors.ink,
         },
         restaurantGrid: {
             flexDirection: "row",
@@ -1122,14 +1123,14 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
             paddingHorizontal: 14,
             paddingTop: 12,
             paddingBottom: 14,
-            backgroundColor: "#FFFFFF",
+            backgroundColor: theme.colors.surface,
             borderWidth: 1,
-            borderColor: "#EDF1F6",
-            ...makeShadow({ color: "#CDD6E4", offsetY: 10, blurRadius: 26, opacity: 0.15, elevation: 9 }),
+            borderColor: theme.colors.border,
+            ...makeShadow({ color: theme.colors.shadow, offsetY: 10, blurRadius: 26, opacity: 0.15, elevation: 9 }),
         },
         restaurantCardClosed: {
-            backgroundColor: "#F8FAFC",
-            borderColor: "#E5E7EB",
+            backgroundColor: theme.colors.surfaceMuted,
+            borderColor: theme.colors.border,
             opacity: 0.78,
         },
         deliveryTag: {
@@ -1138,12 +1139,12 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
             left: 10,
             zIndex: 2,
             borderRadius: 999,
-            backgroundColor: "#E8F9ED",
+            backgroundColor: theme.colors.successSurface,
             paddingHorizontal: 8,
             paddingVertical: 3,
         },
         deliveryTagClosed: {
-            backgroundColor: "#E5E7EB",
+            backgroundColor: theme.colors.surfaceMuted,
         },
         deliveryTagText: {
             fontFamily: "ChairoSans",
@@ -1164,10 +1165,13 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
             borderRadius: 14,
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: "#FFFFFF",
+            backgroundColor: theme.colors.surfaceMuted,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
         },
         favoriteButtonActive: {
-            backgroundColor: "#FFF1F1",
+            backgroundColor: theme.colors.dangerSurface,
+            borderColor: theme.colors.danger,
         },
         restaurantImageFrame: {
             width: 68,
@@ -1177,10 +1181,10 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
             overflow: "hidden",
             marginTop: 10,
             marginBottom: 10,
-            backgroundColor: "#FFF7EA",
+            backgroundColor: theme.colors.surfaceMuted,
         },
         restaurantImageFrameClosed: {
-            backgroundColor: "#E5E7EB",
+            backgroundColor: theme.colors.surfaceMuted,
         },
         restaurantImage: {
             width: "100%",
@@ -1193,7 +1197,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
             fontFamily: "ChairoSans",
             fontSize: 15,
             lineHeight: 19,
-            color: "#101828",
+            color: theme.colors.ink,
             minHeight: 19,
         },
         restaurantTextClosed: {
@@ -1212,20 +1216,20 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
             fontFamily: "ChairoSans",
             fontSize: 13,
             lineHeight: 16,
-            color: "#111827",
+            color: theme.colors.ink,
         },
         restaurantRatingCount: {
             fontFamily: "ChairoSans",
             fontSize: 13,
             lineHeight: 16,
-            color: "#6B7280",
+            color: theme.colors.textSecondary,
         },
         restaurantMetaText: {
             marginTop: 6,
             fontFamily: "ChairoSans",
             fontSize: 12,
             lineHeight: 16,
-            color: "#5B6475",
+            color: theme.colors.textSecondary,
             minHeight: 16,
         },
         restaurantCuisineRow: {
@@ -1239,19 +1243,19 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
             height: 28,
             paddingHorizontal: 8,
             borderRadius: 999,
-            backgroundColor: "#F6F8FB",
+            backgroundColor: theme.colors.surfaceMuted,
             maxWidth: 84,
             alignItems: "center",
             justifyContent: "center",
         },
         restaurantCuisineChipClosed: {
-            backgroundColor: "#EEF2F7",
+            backgroundColor: theme.colors.surfaceMuted,
         },
         restaurantCuisineChipText: {
             fontFamily: "ChairoSans",
             fontSize: 11,
             lineHeight: 14,
-            color: "#475569",
+            color: theme.colors.textSecondary,
             maxWidth: 68,
             textAlign: "center",
         },
@@ -1259,7 +1263,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
             width: "48%",
             height: 212,
             borderRadius: 22,
-            backgroundColor: "#F3E7DB",
+            backgroundColor: theme.colors.surfaceMuted,
         },
         orderCard: {
             marginTop: 4,
@@ -1284,18 +1288,18 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
         orderTitle: {
             fontSize: 15,
             lineHeight: 19,
-            color: "#111827",
+            color: theme.colors.ink,
             fontFamily: "ChairoSans",
         },
         orderSubtitle: {
             fontSize: 13,
             lineHeight: 17,
-            color: "#475569",
+            color: theme.colors.textSecondary,
             fontFamily: "ChairoSans",
         },
         modalBackdrop: {
             flex: 1,
-            backgroundColor: "rgba(0,0,0,0.4)",
+            backgroundColor: theme.colors.overlay,
             justifyContent: "flex-end",
         },
         modalDismissArea: {
@@ -1303,7 +1307,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
         },
         modalSheet: {
             maxHeight: "75%",
-            backgroundColor: "#FFFFFF",
+            backgroundColor: theme.colors.surfaceElevated,
             borderTopLeftRadius: 32,
             borderTopRightRadius: 32,
             paddingHorizontal: 20,
@@ -1314,13 +1318,13 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
             height: 4,
             width: 64,
             borderRadius: 999,
-            backgroundColor: "#E5E7EB",
+            backgroundColor: theme.colors.border,
             alignSelf: "center",
         },
         modalTitle: {
             fontSize: 21,
             lineHeight: 25,
-            color: "#111827",
+            color: theme.colors.ink,
             fontFamily: "ChairoSans",
         },
         addressItem: {
@@ -1339,7 +1343,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
         },
         addressItemIdle: {
             borderColor: "#E5E7EB",
-            backgroundColor: "#FFFFFF",
+            backgroundColor: theme.colors.surface,
         },
         addressItemContent: {
             flex: 1,
@@ -1347,13 +1351,13 @@ const createStyles = (theme: ReturnType<typeof useTheme>["theme"]) =>
         addressItemLabel: {
             fontSize: 17,
             lineHeight: 23,
-            color: "#111827",
+            color: theme.colors.ink,
             fontFamily: "ChairoSans",
         },
         addressItemLine: {
             fontSize: 15,
             lineHeight: 21,
-            color: "#4B5563",
+            color: theme.colors.textSecondary,
             fontFamily: "ChairoSans",
         },
         addressItemDetail: {

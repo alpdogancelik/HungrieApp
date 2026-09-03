@@ -18,11 +18,12 @@ import { useTranslation } from "react-i18next";
 import { useFocusEffect } from "@react-navigation/native";
 
 import type { OrderStatus, RestaurantOrder } from "@/type";
-import { fetchUserOrders } from "@/src/services/firebaseOrders";
+import { fetchUserOrders } from "@/src/data/orderRepository";
 import ReviewSheet from "@/src/features/reviews/ReviewSheet";
-import { fetchUserReviews, submitMenuItemReview } from "@/src/services/menuItemReviews";
+import { fetchUserReviews, submitMenuItemReview } from "@/src/data/reviewRepository";
 import useAuthStore from "@/store/auth.store";
 import { illustrations } from "@/constants/mediaCatalog";
+import { useTheme } from "@/src/theme/themeContext";
 import { ORDER_STATUS_COLORS } from "@/components/OrderCard";
 import Icon from "@/components/Icon";
 import { seedRestaurants } from "@/lib/restaurantSeeds";
@@ -109,6 +110,7 @@ type ReviewTarget = {
 };
 
 const OrderHistoryScreen = () => {
+    const { theme } = useTheme();
     const params = useLocalSearchParams<{ lang: string; highlight?: string }>();
     const router = useRouter();
     const { user } = useAuthStore();
@@ -315,11 +317,11 @@ const OrderHistoryScreen = () => {
                             paddingVertical: 8,
                             borderRadius: 20,
                             borderWidth: 1,
-                            borderColor: active ? "#FE8C00" : "#E2E8F0",
-                            backgroundColor: active ? "#FFF6EF" : "transparent",
+                            borderColor: active ? theme.colors.primary : theme.colors.border,
+                            backgroundColor: active ? `${theme.colors.primary}18` : "transparent",
                         }}
                     >
-                        <Text style={{ color: active ? "#FE8C00" : "#475569", fontFamily: "ChairoSans" }}>{label}</Text>
+                        <Text style={{ color: active ? theme.colors.primary : theme.colors.textSecondary, fontFamily: "ChairoSans" }}>{label}</Text>
                     </TouchableOpacity>
                 );
             })}
@@ -327,7 +329,7 @@ const OrderHistoryScreen = () => {
     );
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
             <View style={{ paddingHorizontal: 20, paddingVertical: 16, gap: 12 }}>
                 <Pressable
                     onPress={handleBackPress}
@@ -338,22 +340,22 @@ const OrderHistoryScreen = () => {
                         height: 40,
                         width: 40,
                         borderRadius: 999,
-                        backgroundColor: "#FFFFFF",
+                        backgroundColor: theme.colors.surface,
                         borderWidth: 1,
-                        borderColor: "#E2E8F0",
+                        borderColor: theme.colors.border,
                         alignItems: "center",
                         justifyContent: "center",
                     }}
                 >
-                    <Icon name="arrowBack" size={20} color="#0F172A" />
+                    <Icon name="arrowBack" size={20} color={theme.colors.ink} />
                 </Pressable>
 
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                     <View>
-                        <Text style={{ fontSize: 28, fontFamily: "ChairoSans", color: "#0F172A" }}>
+                        <Text style={{ fontSize: 28, fontFamily: "ChairoSans", color: theme.colors.ink }}>
                             {t("cart.screen.ordersHistoryTitle")}
                         </Text>
-                        <Text style={{ color: "#475569", fontFamily: "ChairoSans", marginTop: 4 }}>
+                        <Text style={{ color: theme.colors.textSecondary, fontFamily: "ChairoSans", marginTop: 4 }}>
                             {t("cart.screen.ordersSearchSubtitle")}
                         </Text>
                     </View>
@@ -375,12 +377,13 @@ const OrderHistoryScreen = () => {
                         setVisibleCount(PAGE_SIZE);
                     }}
                     style={{
-                        backgroundColor: "#fff",
+                        backgroundColor: theme.colors.input,
                         borderRadius: 24,
                         paddingHorizontal: 18,
                         paddingVertical: 12,
                         borderWidth: 1,
-                        borderColor: "#E2E8F0",
+                        borderColor: theme.colors.border,
+                        color: theme.colors.ink,
                         fontFamily: "ChairoSans",
                     }}
                 />
@@ -406,21 +409,21 @@ const OrderHistoryScreen = () => {
                     return (
                         <View
                             style={{
-                                backgroundColor: "#fff",
+                                backgroundColor: theme.colors.surface,
                                 borderRadius: 24,
                                 padding: 16,
                                 borderWidth: 1,
-                                borderColor: "#E2E8F0",
+                                borderColor: theme.colors.border,
                             }}
                         >
                             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                                 <View style={{ flex: 1, paddingRight: 10 }}>
-                                    <Text style={{ fontFamily: "ChairoSans", fontSize: 16, color: "#0F172A" }}>
+                                    <Text style={{ fontFamily: "ChairoSans", fontSize: 16, color: theme.colors.ink }}>
                                         {restaurantName}
                                     </Text>
                                     <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2, columnGap: 6, paddingRight: 8 }}>
                                         <Text
-                                            style={{ flex: 1, fontFamily: "ChairoSans", fontSize: 12, color: "#64748B" }}
+                                            style={{ flex: 1, fontFamily: "ChairoSans", fontSize: 12, color: theme.colors.textSecondary }}
                                             numberOfLines={2}
                                         >
                                             {isTurkish ? `Sipariş No: ${orderIdText}` : `Order ID: ${orderIdText}`}
@@ -435,14 +438,14 @@ const OrderHistoryScreen = () => {
                                                 height: 24,
                                                 borderRadius: 12,
                                                 borderWidth: 1,
-                                                borderColor: "#E2E8F0",
+                                                borderColor: theme.colors.border,
                                                 alignItems: "center",
                                                 justifyContent: "center",
-                                                backgroundColor: "#FFFFFF",
+                                                backgroundColor: theme.colors.surfaceElevated,
                                                 flexShrink: 0,
                                             }}
                                         >
-                                            <Ionicons name="copy-outline" size={14} color="#64748B" />
+                                            <Ionicons name="copy-outline" size={14} color={theme.colors.textSecondary} />
                                         </TouchableOpacity>
                                     </View>
                                 </View>
@@ -462,7 +465,7 @@ const OrderHistoryScreen = () => {
                                     </Text>
                                 </View>
                             </View>
-                            <Text style={{ color: "#94A3B8", marginTop: 4, fontFamily: "ChairoSans" }}>
+                            <Text style={{ color: theme.colors.muted, marginTop: 4, fontFamily: "ChairoSans" }}>
                                 {formatTimestamp(item.updatedAt || item.createdAt, locale)}
                             </Text>
                             {summaryItems.length ? (
@@ -484,8 +487,8 @@ const OrderHistoryScreen = () => {
                                                 style={{
                                                     borderRadius: 18,
                                                     borderWidth: 1,
-                                                    borderColor: "#E2E8F0",
-                                                    backgroundColor: "#F8FAFC",
+                                                    borderColor: theme.colors.border,
+                                                    backgroundColor: theme.colors.surfaceMuted,
                                                     paddingHorizontal: 12,
                                                     paddingVertical: 10,
                                                     gap: 8,
@@ -499,7 +502,7 @@ const OrderHistoryScreen = () => {
                                                         columnGap: 12,
                                                     }}
                                                 >
-                                                    <Text style={{ flex: 1, color: "#1E293B", fontFamily: "ChairoSans" }}>
+                                                    <Text style={{ flex: 1, color: theme.colors.ink, fontFamily: "ChairoSans" }}>
                                                         {`${orderItem.quantity}x ${orderItem.name}`}
                                                     </Text>
                                                     {canReviewItem ? (
@@ -529,10 +532,10 @@ const OrderHistoryScreen = () => {
                                                                 borderRadius: 999,
                                                                 paddingHorizontal: 12,
                                                                 paddingVertical: 8,
-                                                                backgroundColor: "#E2E8F0",
+                                                                backgroundColor: theme.colors.surfaceElevated,
                                                             }}
                                                         >
-                                                            <Text style={{ color: "#475569", fontFamily: "ChairoSans", fontSize: 12 }}>
+                                                            <Text style={{ color: theme.colors.textSecondary, fontFamily: "ChairoSans", fontSize: 12 }}>
                                                                 {isTurkish ? "De\u011ferlendirildi" : "Reviewed"}
                                                             </Text>
                                                         </View>
@@ -552,10 +555,10 @@ const OrderHistoryScreen = () => {
                                 }}
                             >
                                 <View>
-                                    <Text style={{ color: "#94A3B8", fontFamily: "ChairoSans" }}>
+                                    <Text style={{ color: theme.colors.muted, fontFamily: "ChairoSans" }}>
                                         {t("cart.screen.summary.total")}
                                     </Text>
-                                    <Text style={{ color: "#0F172A", fontSize: 18, fontFamily: "ChairoSans" }}>
+                                    <Text style={{ color: theme.colors.ink, fontSize: 18, fontFamily: "ChairoSans" }}>
                                         {formatCurrencyValue(item.total)}
                                     </Text>
                                 </View>
@@ -566,7 +569,7 @@ const OrderHistoryScreen = () => {
                 ListEmptyComponent={() =>
                     loading ? null : (
                         <View style={{ padding: 32, alignItems: "center" }}>
-                            <Text style={{ color: "#475569", fontFamily: "ChairoSans" }}>
+                            <Text style={{ color: theme.colors.textSecondary, fontFamily: "ChairoSans" }}>
                                 {t("cart.screen.ordersEmpty")}
                             </Text>
                         </View>
