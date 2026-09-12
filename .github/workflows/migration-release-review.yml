@@ -1,6 +1,7 @@
 name: Database migration review
 
 on:
+  pull_request:
   workflow_dispatch:
     inputs:
       target:
@@ -29,8 +30,8 @@ jobs:
       - run: npm ci
       - name: Validate reviewed target and checksum
         env:
-          REVIEW_TARGET: ${{ inputs.target }}
-          REVIEW_SHA256: ${{ inputs.migration_sha256 }}
+          REVIEW_TARGET: ${{ github.event_name == 'workflow_dispatch' && inputs.target || 'staging' }}
+          REVIEW_SHA256: ${{ github.event_name == 'workflow_dispatch' && inputs.migration_sha256 || '07c8e6867f01b03390ff89a90f384172bfda68b4c52da7ca1dc762406d4ad268' }}
         run: node scripts/check-phase1-migration-review.mjs
       - run: npx supabase start
       - run: npx supabase db reset --local
