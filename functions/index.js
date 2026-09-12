@@ -14,8 +14,6 @@ admin.initializeApp();
 const SUPABASE_AUTHENTICATED_ROLE = "authenticated";
 const SUPABASE_URL = defineSecret("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = defineSecret("SUPABASE_SERVICE_ROLE_KEY");
-const SUPABASE_DEVELOPMENT_URL = defineSecret("SUPABASE_DEVELOPMENT_URL");
-const SUPABASE_DEVELOPMENT_SERVICE_ROLE_KEY = defineSecret("SUPABASE_DEVELOPMENT_SERVICE_ROLE_KEY");
 const SUPABASE_STAGING_URL = defineSecret("SUPABASE_STAGING_URL");
 const SUPABASE_STAGING_SERVICE_ROLE_KEY = defineSecret("SUPABASE_STAGING_SERVICE_ROLE_KEY");
 const ORDER_AUTOMATION_BACKEND = defineString("ORDER_AUTOMATION_BACKEND", { default: "firebase" });
@@ -682,9 +680,9 @@ const makeRecoverAdminMfa = (urlSecret, keySecret) => onCall(
         try { const result=await callSupabaseUserRpc("admin_record_mfa_recovery_v1",{p_profile_id:profileId,p_evidence_reference:evidenceReference,p_operation_id:operationId},authorization,urlSecret,keySecret);const uid=await callSupabaseAdminRpc("server_get_firebase_uid_v1",{p_profile_id:profileId},urlSecret,keySecret);await admin.auth().updateUser(uid,{multiFactor:{enrolledFactors:[]}});await admin.auth().revokeRefreshTokens(uid);return result; }
         catch(error){logger.error("Admin MFA recovery orchestration failed",{operationId,code:error?.code||"unknown"});throw new HttpsError("failed-precondition","MFA recovery could not be completed.")}
     });
-exports.recordAdminMfaEnrollmentDevelopment=makeRecordAdminMfaEnrollment(SUPABASE_DEVELOPMENT_URL,SUPABASE_DEVELOPMENT_SERVICE_ROLE_KEY);
-exports.setAdminAccountStatusDevelopment=makeSetAdminAccountStatus(SUPABASE_DEVELOPMENT_URL,SUPABASE_DEVELOPMENT_SERVICE_ROLE_KEY);
-exports.recoverAdminMfaDevelopment=makeRecoverAdminMfa(SUPABASE_DEVELOPMENT_URL,SUPABASE_DEVELOPMENT_SERVICE_ROLE_KEY);
+exports.recordAdminMfaEnrollmentDevelopment=makeRecordAdminMfaEnrollment(SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY);
+exports.setAdminAccountStatusDevelopment=makeSetAdminAccountStatus(SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY);
+exports.recoverAdminMfaDevelopment=makeRecoverAdminMfa(SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY);
 exports.recordAdminMfaEnrollmentStaging=makeRecordAdminMfaEnrollment(SUPABASE_STAGING_URL,SUPABASE_STAGING_SERVICE_ROLE_KEY);
 exports.setAdminAccountStatusStaging=makeSetAdminAccountStatus(SUPABASE_STAGING_URL,SUPABASE_STAGING_SERVICE_ROLE_KEY);
 exports.recoverAdminMfaStaging=makeRecoverAdminMfa(SUPABASE_STAGING_URL,SUPABASE_STAGING_SERVICE_ROLE_KEY);
