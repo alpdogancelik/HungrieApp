@@ -40,6 +40,12 @@ select is((public.admin_list_accounts_v1(null,null,null,500,-20)->>'limit')::int
   'page limit is bounded');
 select is((public.admin_list_accounts_v1(null,null,null,500,-20)->>'offset')::integer,0,
   'negative offset is normalized');
+select ok(not has_schema_privilege('authenticated','private','usage'),
+  'Admin clients retain no private-schema usage');
+set local role authenticated;
+select is((public.admin_list_accounts_v1(null,null,null,25,0)->>'limit')::integer,25,
+  'authenticated Admin can call public wrapper without private-schema usage');
+reset role;
 
 select is((public.admin_create_restaurant_v1('Phase 4 Restaurant',
   '44444444-0000-4000-8000-000000000001')->>'status'),'pending',

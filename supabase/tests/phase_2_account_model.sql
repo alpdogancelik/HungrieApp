@@ -15,7 +15,7 @@ select ok(not has_function_privilege('authenticated',
   'public.bootstrap_my_customer_account_v1(uuid)','execute'),
   'new Customer bootstrap is not yet client-callable');
 select ok(has_function_privilege('authenticated',
-  'public.admin_set_account_status_v1(text,private.account_status,text,uuid)','execute'),
+  'public.admin_set_account_status_v1(text,text,text,uuid)','execute'),
   'Phase 4 exposes status mutation through its canonical guard');
 select ok(has_function_privilege('authenticated',
   'public.get_my_access_context_v1()','execute'),

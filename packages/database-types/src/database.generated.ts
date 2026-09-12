@@ -1485,7 +1485,7 @@ export type Database = {
       }
       admin_change_admin_role_v1: {
         Args: {
-          p_admin_role: "admin" | "super_admin"
+          p_admin_role: string
           p_operation_id: string
           p_profile_id: string
         }
@@ -1503,7 +1503,7 @@ export type Database = {
       }
       admin_invite_admin_account_v1: {
         Args: {
-          p_admin_role: "admin" | "super_admin"
+          p_admin_role: string
           p_email: string
           p_operation_id: string
           p_token_digest: string
@@ -1525,7 +1525,7 @@ export type Database = {
           p_limit?: number
           p_offset?: number
           p_search?: string
-          p_status?: "pending" | "active" | "suspended" | "revoked"
+          p_status?: string
           p_type?: Database["public"]["Enums"]["account_type"]
         }
         Returns: Json
@@ -1540,11 +1540,7 @@ export type Database = {
         Returns: Json
       }
       admin_list_incidents_v1: {
-        Args: {
-          p_limit?: number
-          p_offset?: number
-          p_state?: "open" | "acknowledged" | "resolved"
-        }
+        Args: { p_limit?: number; p_offset?: number; p_state?: string }
         Returns: Json
       }
       admin_list_orders_v1: {
@@ -1596,7 +1592,7 @@ export type Database = {
           p_operation_id: string
           p_profile_id: string
           p_reason_code: string
-          p_status: "pending" | "active" | "suspended" | "revoked"
+          p_status: string
         }
         Returns: Json
       }
@@ -1605,7 +1601,7 @@ export type Database = {
           p_incident_id: string
           p_operation_id: string
           p_resolution_note: string
-          p_state: "open" | "acknowledged" | "resolved"
+          p_state: string
         }
         Returns: Json
       }
