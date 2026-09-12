@@ -52,6 +52,38 @@ const exchange = async (customToken) => {
   if (!response.ok) throw new Error(`Firebase token exchange failed (${response.status}).`);
   return (await response.json()).idToken;
 };
+const firebaseRequest = async (version, method, body, expectedStatus = 200) => {
+  const response = await fetch(`https://identitytoolkit.googleapis.com/${version}/${method}?key=${encodeURIComponent(apiKey)}`, {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body)
+  });
+  const payload = await response.json().catch(() => null);
+  if (response.status !== expectedStatus) {
+    const code = String(payload?.error?.message || "unknown_error").replace(/[^A-Z0-9_:-]/gi, "");
+    throw new Error(`Firebase ${method} returned ${response.status} (${code}).`);
+  }
+  return payload;
+};
+const base32Decode = (value) => {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let bits = "";
+  for (const character of value.replaceAll("=", "").toUpperCase()) {
+    const index = alphabet.indexOf(character);
+    if (index < 0) throw new Error("Firebase returned an invalid TOTP secret.");
+    bits += index.toString(2).padStart(5, "0");
+  }
+  return Buffer.from(bits.match(/.{8}/g)?.map((byte) => Number.parseInt(byte, 2)) ?? []);
+};
+const totp = (secret, period = 30, digits = 6, algorithm = "SHA1") => {
+  const counter = Math.floor(Date.now() / 1000 / period);
+  const input = Buffer.alloc(8);
+  input.writeBigUInt64BE(BigInt(counter));
+  const digest = crypto.createHmac(algorithm.toLowerCase().replace("hmac", ""),
+    base32Decode(secret)).update(input).digest();
+  const offset = digest[digest.length - 1] & 15;
+  const number = (digest.readUInt32BE(offset) & 0x7fffffff) % (10 ** digits);
+  return number.toString().padStart(digits, "0");
+};
+const tokenClaims = (jwt) => JSON.parse(Buffer.from(jwt.split(".")[1], "base64url").toString("utf8"));
 const app = admin.initializeApp({ credential: admin.credential.cert(credential), projectId: firebaseProject },
   `phase2-probe-${Date.now()}`);
 const auth = app.auth();
@@ -63,7 +95,8 @@ let profileCreated = false;
 try {
   const [before] = await query("select (select count(*) from private.account_access)::integer account_rows,(select count(*) from public.profiles)::integer profiles");
   if (Number(before.account_rows) !== 0) throw new Error("Development is already classified; stopping hosted probe.");
-  user = await auth.createUser({ email, emailVerified: true });
+  const password = `P2!${crypto.randomBytes(24).toString("base64url")}`;
+  user = await auth.createUser({ email, emailVerified: true, password });
   const jwt = await exchange(await auth.createCustomToken(user.uid, { role: "authenticated" }));
   const unmapped = await rest("rpc/get_my_access_context_v1", jwt);
   if (!unmapped.ok || unmapped.body?.state !== "unmapped") {
@@ -91,6 +124,72 @@ try {
       resolved.body.accountType !== "customer" || resolved.body.accountStatus !== "active") {
     throw new Error(`Database account classification did not ignore stale role claim (${resolved.status}).`);
   }
+  const firstFactor = await firebaseRequest("v1", "accounts:signInWithPassword",
+    { email, password, returnSecureToken: true });
+  const enrollment = await firebaseRequest("v2", "accounts/mfaEnrollment:start",
+    { idToken: firstFactor.idToken, totpEnrollmentInfo: {} });
+  const session = enrollment?.totpSessionInfo;
+  if (!session?.sharedSecretKey || !session.sessionInfo) {
+    throw new Error("Firebase did not return TOTP enrollment details.");
+  }
+  const enrollmentCode = totp(session.sharedSecretKey, session.periodSec,
+    session.verificationCodeLength, session.hashingAlgorithm);
+  await firebaseRequest("v2", "accounts/mfaEnrollment:finalize", {
+    idToken: firstFactor.idToken, displayName: "Phase 2 probe",
+    totpVerificationInfo: {
+      sessionInfo: session.sessionInfo,
+      verificationCode: enrollmentCode
+    }
+  });
+  const signInResponse = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${encodeURIComponent(apiKey)}`, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email, password, returnSecureToken: true })
+  });
+  const challenge = await signInResponse.json().catch(() => null);
+  const detail = challenge?.mfaPendingCredential ? challenge : challenge?.error?.details?.[0];
+  if (!detail?.mfaPendingCredential) {
+    throw new Error("Firebase password sign-in did not require the enrolled TOTP factor.");
+  }
+  const enrollmentId = detail.mfaInfo?.[0]?.mfaEnrollmentId;
+  if (!enrollmentId) throw new Error("Firebase MFA challenge omitted its enrollment ID.");
+  if (totp(session.sharedSecretKey, session.periodSec,
+      session.verificationCodeLength, session.hashingAlgorithm) === enrollmentCode) {
+    const periodMs = session.periodSec * 1000;
+    await new Promise((resolve) => setTimeout(resolve,
+      Math.ceil(Date.now() / periodMs) * periodMs - Date.now() + 500));
+  }
+  const mfaResult = await firebaseRequest("v2", "accounts/mfaSignIn:finalize", {
+    mfaPendingCredential: detail.mfaPendingCredential,
+    mfaEnrollmentId: enrollmentId,
+    totpVerificationInfo: {
+      verificationCode: totp(session.sharedSecretKey, session.periodSec,
+        session.verificationCodeLength, session.hashingAlgorithm)
+    }
+  });
+  const mfaClaims = tokenClaims(mfaResult.idToken);
+  if (mfaClaims.firebase?.sign_in_second_factor !== "totp" ||
+      mfaClaims.email_verified !== true || !Number.isInteger(mfaClaims.auth_time)) {
+    throw new Error("Firebase MFA token omitted required TOTP, email, or auth-time evidence.");
+  }
+  await query(`delete from private.account_access where profile_id=${quote(profileId)};
+    insert into private.account_access(profile_id,account_type,status,activated_at,
+      admin_role,admin_mfa_enrolled_at)
+    values(${quote(profileId)},'admin','active',statement_timestamp(),
+      'admin',statement_timestamp())`);
+  const firstFactorContext = await rest("rpc/get_my_access_context_v1", firstFactor.idToken);
+  const mfaContext = await rest("rpc/get_my_access_context_v1", mfaResult.idToken);
+  if (!firstFactorContext.ok || firstFactorContext.body?.emailVerified !== true ||
+      firstFactorContext.body?.currentSessionMfaVerified !== false || !mfaContext.ok ||
+      mfaContext.body?.emailVerified !== true || mfaContext.body?.currentSessionMfaVerified !== true) {
+    throw new Error("Hosted Admin context did not distinguish first-factor and TOTP sessions.");
+  }
+  await auth.updateUser(user.uid, { emailVerified: false });
+  const unverifiedJwt = await exchange(await auth.createCustomToken(user.uid, { role: "authenticated" }));
+  const unverifiedContext = await rest("rpc/get_my_access_context_v1", unverifiedJwt);
+  if (!unverifiedContext.ok || unverifiedContext.body?.emailVerified !== false ||
+      unverifiedContext.body?.currentSessionMfaVerified !== false) {
+    throw new Error("Hosted Admin context accepted an unverified first-factor session.");
+  }
   const forbiddenBootstrap = await rest("rpc/bootstrap_my_customer_account_v1", jwt);
   if (forbiddenBootstrap.ok) throw new Error("Phase 2 mutation RPC was client-callable.");
   const [after] = await query("select (select count(*) from private.account_access)::integer account_rows,(select count(*) from public.profiles)::integer profiles");
@@ -99,7 +198,9 @@ try {
   }
   console.log(JSON.stringify({ target: "development", validFirebaseToken: true,
     unmapped: true, mappedWithoutAccountFailsClosed: true, roleClaimIgnored: true,
-    anonymousDenied: true, invalidTokenDenied: true, mutationGrantDisabled: true }));
+    anonymousDenied: true, invalidTokenDenied: true, adminFirstFactorDenied: true,
+    adminTotpSessionVerified: true, adminUnverifiedEmailDenied: true,
+    authTimePresent: true, mutationGrantDisabled: true }));
 } finally {
   if (profileCreated) {
     const quote = (s) => `'${String(s).replaceAll("'", "''")}'`;
