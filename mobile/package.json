@@ -8,9 +8,13 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "expo:config": "expo config --type public",
     "test:supabase-config": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test lib/supabaseConfig.test.mjs",
-    "test:repositories": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test src/data/repositoryContracts.test.mjs",
+    "test:repositories": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --import ./src/data/registerTestModuleHooks.mjs --test src/data/repositoryContracts.test.mjs src/features/auth/adminAuthorization.test.mjs src/features/auth/authHydration.test.mjs",
+    "test:cart": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test store/cartModel.test.mjs",
     "seed:pexels-images": "node ./scripts/assign-pexels-menu-images.mjs",
+    "assets:optimize": "node ./scripts/optimize-assets.mjs",
+    "assets:optimize:write": "node ./scripts/optimize-assets.mjs --write",
     "build:configure": "npx eas build:configure",
     "build:ios": "npx eas build -p ios --profile production",
     "submit:ios": "npx eas submit -p ios --profile production --latest",
@@ -18,6 +22,7 @@
     "build:android:preview": "npx eas build -p android --profile preview"
   },
   "dependencies": {
+    "@expo-google-fonts/inter": "^0.4.2",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/bottom-tabs": "^7.4.0",
@@ -89,6 +94,7 @@
     "postcss": "^8.5.14",
     "prettier-plugin-tailwindcss": "^0.5.14",
     "react-native-svg-transformer": "^1.3.0",
+    "sharp": "0.34.4",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.9.2"
   },

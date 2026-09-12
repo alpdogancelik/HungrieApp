@@ -34,7 +34,7 @@ type AuthScreenLayoutProps = {
 };
 
 const brandWordmark = require("../../assets/images/hungrie-wordmark.png");
-const defaultHeroPackshot = require("../../assets/images/vecteezy_fast-food-meal-with_25065315.png");
+const defaultHeroPackshot = require("../../assets/images/view-3d-burger-meal-with-french-fries.jpg");
 
 const BACKGROUND_COLOR = "#FFF7EF";
 const CONTENT_MAX_WIDTH = 520;

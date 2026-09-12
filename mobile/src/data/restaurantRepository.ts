@@ -15,14 +15,17 @@ import {
 import { firestore } from "@/lib/firebase";
 import { getOwnedRestaurantId as firebaseGetOwnedRestaurantId } from "@/lib/restaurantOwnership";
 import * as firebaseRestaurantAuth from "@/src/data/firebase/restaurantSessionRepository";
+import { signIn, signOut } from "@/src/data/authRepository";
+import { getCurrentMembership, listenCurrentMembership } from "@/src/data/membershipRepository";
 import { selectRepository } from "./backendFlags";
 import type { RestaurantRepository, RestaurantDetailsForm } from "./contracts";
 import { supabaseRestaurantRepository } from "./supabase/restaurantRepository";
+import { catalogRepository } from "./catalogRepository";
 export type { RestaurantSession } from "./contracts";
 
 const firebaseGetOwnedRestaurantDetails = async (): Promise<{ restaurantId: string; details: RestaurantDetailsForm } | null> => {
     if (!firestore) return null;
-    const restaurantId = await firebaseGetOwnedRestaurantId();
+    const restaurantId = (await getCurrentMembership())?.restaurantId || null;
     if (!restaurantId) return null;
     const snap = await getDoc(doc(firestore, "restaurants", restaurantId)).catch(() => null);
     if (!snap?.exists()) {
@@ -104,21 +107,26 @@ export const restaurantRepository = selectRepository<RestaurantRepository>("rest
     supabase: supabaseRestaurantRepository,
 });
 
-export const getRestaurants = restaurantRepository.getRestaurants;
-export const subscribeRestaurants = restaurantRepository.subscribeRestaurants;
-export const subscribeRestaurant = restaurantRepository.subscribeRestaurant;
-export const getRestaurant = restaurantRepository.getRestaurant;
+export const getRestaurants = catalogRepository.getRestaurants;
+export const subscribeRestaurants = catalogRepository.subscribeRestaurants;
+export const subscribeRestaurant = catalogRepository.subscribeRestaurant;
+export const getRestaurant = catalogRepository.getRestaurant;
 export const updateRestaurant = restaurantRepository.updateRestaurant;
 export const createRestaurant = restaurantRepository.createRestaurant;
 export const getOwnerRestaurants = restaurantRepository.getOwnerRestaurants;
 export const getRestaurantOrders = restaurantRepository.getRestaurantOrders;
 export const updateOrderStatus = restaurantRepository.updateOrderStatus;
 export const getCourierRoster = restaurantRepository.getCourierRoster;
-export const getOwnedRestaurantId = restaurantRepository.getOwnedRestaurantId;
+export const getOwnedRestaurantId = async () => (await getCurrentMembership())?.restaurantId || null;
 export const getOwnedRestaurantDetails = restaurantRepository.getOwnedRestaurantDetails;
 export const updateOwnedRestaurantDetails = restaurantRepository.updateOwnedRestaurantDetails;
-export const signInRestaurant = restaurantRepository.signInRestaurant;
-export const signOutRestaurant = restaurantRepository.signOutRestaurant;
-export const listenRestaurantSession = restaurantRepository.listenRestaurantSession;
+export const signInRestaurant = async (email: string, password: string) => {
+    await signIn({ email, password });
+    const membership = await getCurrentMembership();
+    if (!membership) throw new Error("This account does not have restaurant access.");
+    return membership;
+};
+export const signOutRestaurant = signOut;
+export const listenRestaurantSession = listenCurrentMembership;
 export const getPanelLocale = restaurantRepository.getPanelLocale;
 export const setPanelLocale = restaurantRepository.setPanelLocale;

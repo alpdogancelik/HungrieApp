@@ -12,7 +12,7 @@
     "ios": {
       "icon": "./assets/app-icon/app-icon-1024.png",
       "supportsTablet": true,
-      "buildNumber": "27",
+      "buildNumber": "28",
       "bundleIdentifier": "com.hungrie.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -22,6 +22,7 @@
       }
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/app-icon/app-icon-1024.png",
         "backgroundColor": "#ffffff"
@@ -38,6 +39,7 @@
     },
     "plugins": [
       "expo-router",
+      "@sentry/react-native/expo",
       [
         "expo-notifications",
         {
@@ -80,7 +82,9 @@
       "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "",
       "EXPO_PUBLIC_SUPABASE_ENABLED": "false",
       "EXPO_PUBLIC_AUTH_REPOSITORY": "firebase",
+      "EXPO_PUBLIC_CATALOG_REPOSITORY": "firebase",
       "EXPO_PUBLIC_PROFILE_REPOSITORY": "firebase",
+      "EXPO_PUBLIC_MEMBERSHIP_REPOSITORY": "firebase",
       "EXPO_PUBLIC_RESTAURANT_REPOSITORY": "firebase",
       "EXPO_PUBLIC_MENU_REPOSITORY": "firebase",
       "EXPO_PUBLIC_ORDER_REPOSITORY": "firebase",
@@ -92,7 +96,9 @@
       "EXPO_PUBLIC_REQUIRE_AUTH": "true",
       "EXPO_PUBLIC_API_BASE_URL": "",
       "EXPO_PUBLIC_PEXELS_API_KEY": "",
+      "EXPO_PUBLIC_SENTRY_ENABLED": "false",
       "EXPO_PUBLIC_SENTRY_DSN": "",
+      "EXPO_PUBLIC_APP_ENV": "development",
       "router": {},
       "eas": {
         "projectId": "be624db8-7de1-4b8b-bd86-605431679967"

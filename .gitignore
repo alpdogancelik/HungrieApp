@@ -63,3 +63,6 @@ mobile/scripts/output/
 mobile/data/image-assignment-report.json
 mobile/data/restaurant-panel-accounts.generated.json
 mobile/data/restaurant-panel-accounts*.json
+
+/docs/
+/design/

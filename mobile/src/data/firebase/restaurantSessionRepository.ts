@@ -60,7 +60,9 @@ export const signInRestaurant = async (email: string, password: string): Promise
 
 export const signOutRestaurant = async () => {
     ensureFirebase();
-    await unregisterPushToken().catch(() => null);
+    // Keep the authenticated session until token ownership has been revoked.
+    // This mirrors the unified account logout contract used by the app shell.
+    await unregisterPushToken();
     await signOut(auth!);
 };
 

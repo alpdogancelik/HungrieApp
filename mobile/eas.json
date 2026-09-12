@@ -5,16 +5,29 @@
   },
   "build": {
     "development": {
+      "environment": "development",
       "developmentClient": true,
       "distribution": "internal"
     },
     "preview": {
+      "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "staging",
+        "EXPO_PUBLIC_SENTRY_ENABLED": "false",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
       "distribution": "internal",
       "android": {
         "buildType": "app-bundle"
       }
     },
     "production": {
+      "environment": "production",
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "EXPO_PUBLIC_SENTRY_ENABLED": "false",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"

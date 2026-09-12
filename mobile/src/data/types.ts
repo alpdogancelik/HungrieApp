@@ -4,7 +4,9 @@ export type Unsubscribe = () => void;
 
 export type RepositoryDomain =
     | "auth"
+    | "catalog"
     | "profile"
+    | "membership"
     | "restaurant"
     | "menu"
     | "order"

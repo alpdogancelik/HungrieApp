@@ -260,6 +260,11 @@ export const subscribeOrder = (orderId: string, cb: (order: any | null) => void)
         },
     );
 
+export const fetchOrder = async (orderId: string) => {
+    const snapshot = await getDoc(doc(ensureDb(), "orders", orderId));
+    return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+};
+
 export const subscribeUserOrders = (userId: string, cb: (orders: any[]) => void) => {
     const normalizedUserId = String(userId || "").trim();
     if (!normalizedUserId) {

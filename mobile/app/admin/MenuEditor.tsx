@@ -172,7 +172,7 @@ const MenuEditor = () => {
             <View className="gap-3">
                 <Text className="text-xs uppercase tracking-[3px] text-dark-60 dark:text-slate-300">Restaurants</Text>
                 {restaurantsLoading ? (
-                    <View className="rounded-3xl border border-gray-100 bg-white/90 p-4 items-center justify-center dark:bg-[#0D1B2D] dark:border-[#29405C]">
+                    <View className="rounded-3xl border border-gray-100 bg-white/90 p-4 items-center justify-center dark:bg-[#171A20] dark:border-[#2A2E35]">
                         <ActivityIndicator color="#FE8C00" />
                     </View>
                 ) : restaurantsError ? (
@@ -200,7 +200,7 @@ const MenuEditor = () => {
                                     className={`rounded-2xl border px-4 py-3 ${
                                         active
                                             ? "bg-dark-100 border-dark-100"
-                                            : "bg-white/95 border-gray-100 dark:bg-[#13243A] dark:border-[#29405C]"
+                                            : "bg-white/95 border-gray-100 dark:bg-[#1C2027] dark:border-[#2A2E35]"
                                     }`}
                                 >
                                     <Text
@@ -227,7 +227,7 @@ const MenuEditor = () => {
                     {selectedRestaurant ? selectedRestaurant.name : "Menu"}
                 </Text>
                 {menuLoading ? (
-                    <View className="rounded-3xl border border-gray-100 bg-white/90 p-6 items-center justify-center dark:bg-[#0D1B2D] dark:border-[#29405C]">
+                    <View className="rounded-3xl border border-gray-100 bg-white/90 p-6 items-center justify-center dark:bg-[#171A20] dark:border-[#2A2E35]">
                         <ActivityIndicator color="#FE8C00" />
                         <Text className="mt-2 text-sm text-dark-60 dark:text-slate-300">Loading menu items...</Text>
                     </View>
@@ -242,7 +242,7 @@ const MenuEditor = () => {
                         </TouchableOpacity>
                     </View>
                 ) : menuItems.length === 0 ? (
-                    <View className="rounded-3xl border border-dashed border-gray-200 bg-white/80 p-6 items-center dark:bg-[#0D1B2D] dark:border-[#29405C]">
+                    <View className="rounded-3xl border border-dashed border-gray-200 bg-white/80 p-6 items-center dark:bg-[#171A20] dark:border-[#2A2E35]">
                         <Text className="text-base font-ezra-semibold text-dark-80 dark:text-slate-100">No menu items yet</Text>
                         <Text className="mt-1 text-sm text-dark-60 dark:text-slate-300">
                             Start by adding signature dishes below.
@@ -253,7 +253,7 @@ const MenuEditor = () => {
                         {menuItems.map((item) => (
                             <View
                                 key={item.id}
-                                className="rounded-3xl border border-gray-100 bg-white/95 p-4 flex-row gap-4 items-center dark:bg-[#0D1B2D] dark:border-[#29405C]"
+                                className="rounded-3xl border border-gray-100 bg-white/95 p-4 flex-row gap-4 items-center dark:bg-[#171A20] dark:border-[#2A2E35]"
                             >
                                 {item.imageUrl || item.image_url ? (
                                     <Image
@@ -290,7 +290,7 @@ const MenuEditor = () => {
                 )}
             </View>
 
-            <View className="gap-4 rounded-3xl border border-gray-100 bg-white/95 p-5 dark:bg-[#0D1B2D] dark:border-[#29405C]">
+            <View className="gap-4 rounded-3xl border border-gray-100 bg-white/95 p-5 dark:bg-[#171A20] dark:border-[#2A2E35]">
                 <View className="flex-row items-center justify-between">
                     <View>
                         <Text className="text-lg font-ezra-bold text-dark-100 dark:text-slate-50">
@@ -314,7 +314,7 @@ const MenuEditor = () => {
                             value={form.name}
                             onChangeText={(value) => handleChange("name", value)}
                             placeholder="Campus Smash Burger"
-                            className="mt-1 rounded-2xl border border-gray-100 px-4 py-3 text-dark-100 dark:text-slate-50 dark:border-[#29405C]"
+                            className="mt-1 rounded-2xl border border-gray-100 px-4 py-3 text-dark-100 dark:text-slate-50 dark:border-[#2A2E35]"
                             style={{ backgroundColor: theme.colors.input }}
                             placeholderTextColor={theme.colors.muted}
                         />
@@ -327,7 +327,7 @@ const MenuEditor = () => {
                                 onChangeText={(value) => handleChange("price", value)}
                                 placeholder="149.90"
                                 keyboardType="decimal-pad"
-                                className="mt-1 rounded-2xl border border-gray-100 px-4 py-3 text-dark-100 dark:text-slate-50 dark:border-[#29405C]"
+                                className="mt-1 rounded-2xl border border-gray-100 px-4 py-3 text-dark-100 dark:text-slate-50 dark:border-[#2A2E35]"
                                 style={{ backgroundColor: theme.colors.input }}
                                 placeholderTextColor={theme.colors.muted}
                             />
@@ -339,7 +339,7 @@ const MenuEditor = () => {
                             value={form.description}
                             onChangeText={(value) => handleChange("description", value)}
                             placeholder="Add the hero details students care about."
-                            className="mt-1 rounded-2xl border border-gray-100 px-4 py-3 text-dark-100 dark:text-slate-50 dark:border-[#29405C]"
+                            className="mt-1 rounded-2xl border border-gray-100 px-4 py-3 text-dark-100 dark:text-slate-50 dark:border-[#2A2E35]"
                             style={{ backgroundColor: theme.colors.input }}
                             placeholderTextColor={theme.colors.muted}
                             multiline
@@ -351,7 +351,7 @@ const MenuEditor = () => {
                             value={form.imageUrl}
                             onChangeText={(value) => handleChange("imageUrl", value)}
                             placeholder="https://images.unsplash.com/..."
-                            className="mt-1 rounded-2xl border border-gray-100 px-4 py-3 text-dark-100 dark:text-slate-50 dark:border-[#29405C]"
+                            className="mt-1 rounded-2xl border border-gray-100 px-4 py-3 text-dark-100 dark:text-slate-50 dark:border-[#2A2E35]"
                             style={{ backgroundColor: theme.colors.input }}
                             placeholderTextColor={theme.colors.muted}
                         />

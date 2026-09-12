@@ -3,12 +3,11 @@ import {
     Alert,
     Platform,
     ScrollView,
+    StyleSheet,
     Text,
     TouchableOpacity,
-    useWindowDimensions,
     View,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,11 +19,14 @@ import { nudgeRestaurant } from "@/src/api/client";
 import useAuthStore from "@/store/auth.store";
 import type { OrderStatus } from "@/src/domain/types";
 import { OrderProgressTimer } from "@/src/components/order/OrderProgressTimer";
+import { formatCurrency } from "@/lib/cart.utils";
+import { useTheme } from "@/src/theme/themeContext";
 
 type Props = {
     orderId: string;
     restaurantName: string;
     etaSeconds?: number;
+    onBack?: () => void;
     onConfirmed?: (orderId: string) => void;
     onRejected?: (orderId: string) => void;
 };
@@ -41,11 +43,6 @@ const colors = {
     danger: "#FF6B6B",
     warning: "#FFD166",
     border: "#262A33",
-};
-
-const radius = {
-    md: 16,
-    lg: 24,
 };
 
 const CANCEL_WINDOW_SECONDS = 60;
@@ -119,11 +116,17 @@ const StepRow = ({
     title,
     subtitle,
     status,
+    tone,
+    dark,
+    isLast,
 }: {
     icon: ReactNode;
     title: string;
     subtitle?: string;
     status: "done" | "active" | "pending" | "danger";
+    tone: "green" | "blue" | "orange" | "neutral";
+    dark: boolean;
+    isLast: boolean;
 }) => {
     const tint =
         status === "done"
@@ -134,43 +137,36 @@ const StepRow = ({
                 ? colors.danger
                 : colors.sub;
 
+    const text = dark ? "#F5F7FA" : "#111318";
+    const secondary = dark ? "#98A2B3" : status === "pending" ? "#98A2B3" : "#667085";
+    const border = dark ? "#2A2E35" : "#EAECF0";
+    const backgrounds = dark
+        ? { green: "#183128", blue: "#172C35", orange: "#352319", neutral: "#22262E" }
+        : { green: "#ECFDF3", blue: "#EFF8FF", orange: "#FFF3EC", neutral: "#F5F6F8" };
+
     return (
-        <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}>
-            <View
-                style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: radius.md,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    backgroundColor: colors.elevated,
-                }}
-            >
-                {icon}
+        <View
+            accessibilityLabel={`${title}, ${status}. ${subtitle || ""}`}
+            style={[pendingStyles.stepRow, !isLast && { borderBottomColor: border, borderBottomWidth: StyleSheet.hairlineWidth }]}
+        >
+            <View style={[pendingStyles.stepIcon, { backgroundColor: backgrounds[tone] }]}>{icon}</View>
+            <View style={pendingStyles.stepCopy}>
+                <Text style={[pendingStyles.stepTitle, { color: text }, status === "active" && pendingStyles.stepTitleActive]}>{title}</Text>
+                {subtitle ? <Text style={[pendingStyles.stepSubtitle, { color: secondary }]}>{subtitle}</Text> : null}
             </View>
-            <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.text, fontFamily: "ChairoSans", fontSize: 16 }}>{title}</Text>
-                {subtitle ? <Text style={{ color: colors.sub, marginTop: 2, fontSize: 14 }}>{subtitle}</Text> : null}
-            </View>
-            <View
-                style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 999,
-                    backgroundColor: tint,
-                }}
-            />
+            <View style={[pendingStyles.statusDot, { backgroundColor: tint }]} />
         </View>
     );
 };
 
-const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfirmed, onRejected }: Props) => {
-    const { t } = useTranslation();
+const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onBack, onConfirmed, onRejected }: Props) => {
+    const { t, i18n } = useTranslation();
+    const { variant } = useTheme();
+    const dark = variant === "dark";
+    const isTurkish = i18n.language?.toLowerCase().startsWith("tr");
+    const screenStyles = useMemo(() => createScreenStyles(dark), [dark]);
     const { user } = useAuthStore();
     const insets = useSafeAreaInsets();
-    const { height: windowHeight } = useWindowDimensions();
     const { order } = useOrderRealtime(orderId);
     const { status: pendingStatus } = useOrderStatus(orderId);
     const localCreatedAtMsRef = useRef(Date.now());
@@ -228,7 +224,6 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onConfi
     const isCancelWindowActive = orderStatus === "pending" && cancelWindowRemaining > 0 && !autoCanceled;
     const isReminderLocked = orderStatus === "pending" && reminderUnlockRemaining > 0;
     const safeTop = Math.max(insets.top, 16);
-    const isCompactPhone = Platform.OS === "android" || windowHeight < 860;
 
     const handleAutoCancel = useCallback(async () => {
         if (autoCanceled || !orderId) return;
@@ -442,24 +437,6 @@ ${t("orderPending.alerts.cancelConfirmBody")}`;
         ]);
     };
 
-    const headerTitle = useMemo(() => {
-        switch (orderStatus) {
-            case "preparing":
-                return t("orderPending.header.preparing");
-            case "ready":
-                return t("orderPending.header.ready");
-            case "out_for_delivery":
-                return t("orderPending.header.outForDelivery");
-            case "delivered":
-                return t("orderPending.header.delivered");
-            case "canceled":
-                return t("orderPending.header.canceled");
-            case "pending":
-            default:
-                return t("orderPending.header.pending");
-        }
-    }, [orderStatus, t]);
-
     const nudgeDisabled = sendingNudge || orderStatus !== "pending" || cooldown > 0 || isReminderLocked;
     const nudgeLabel = sendingNudge
         ? t("orderPending.remind.sending")
@@ -479,154 +456,147 @@ ${t("orderPending.alerts.cancelConfirmBody")}`;
             ].join("\n"),
         [t],
     );
+    const orderTotal = Number((order as any)?.total ?? (order as any)?.totalPrice);
+    const orderEta = Number((order as any)?.etaMinutes ?? (order as any)?.eta);
+    const restaurantMeta = String((order as any)?.restaurant?.cuisine || (order as any)?.restaurantCuisine || "").trim();
+    const showOrderSummary = Number.isFinite(orderTotal) || restaurantMeta || (Number.isFinite(orderEta) && orderEta > 0);
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["left", "right", "bottom"]}>
-            <LinearGradient
-                colors={["#15171C", "#0E0F12"]}
-                style={{ paddingHorizontal: 20, paddingBottom: 16, paddingTop: safeTop + 12 }}
-            >
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                    <TouchableOpacity
-                        onPress={() => onRejected?.(orderId)}
-                        accessibilityRole="button"
-                        accessibilityLabel={t("orderPending.a11y.back")}
-                        hitSlop={12}
-                    >
-                        <Feather name="chevron-left" size={28} color={colors.text} />
-                    </TouchableOpacity>
-                    <Text style={{ color: colors.text, fontSize: 16, fontFamily: "ChairoSans" }}>{headerTitle}</Text>
-                    <TouchableOpacity
-                        onPress={() => Alert.alert(t("orderPending.helpTitle"), helpMessage)}
-                        accessibilityRole="button"
-                        accessibilityLabel={t("orderPending.a11y.help")}
-                        hitSlop={12}
-                    >
-                        <Feather name="help-circle" size={24} color={colors.text} />
-                    </TouchableOpacity>
-                </View>
-            </LinearGradient>
+        <SafeAreaView style={screenStyles.screen} edges={["left", "right", "bottom"]}>
+            <View style={[screenStyles.header, { paddingTop: safeTop }]}>
+                <TouchableOpacity onPress={onBack} accessibilityRole="button" accessibilityLabel={t("orderPending.a11y.back")} style={screenStyles.headerButton}>
+                    <Feather name="chevron-left" size={22} color={screenStyles.primary.color} />
+                </TouchableOpacity>
+                <Text style={screenStyles.headerTitle}>{isTurkish ? "Sipariş durumu" : "Order status"}</Text>
+                <TouchableOpacity
+                    onPress={() => Alert.alert(t("orderPending.helpTitle"), helpMessage)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("orderPending.a11y.help")}
+                    style={screenStyles.headerButton}
+                >
+                    <Feather name="help-circle" size={22} color={screenStyles.primary.color} />
+                </TouchableOpacity>
+            </View>
 
             <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{
-                    padding: 20,
-                    paddingBottom: 24 + insets.bottom,
-                    gap: isCompactPhone ? 16 : 24,
-                }}
+                contentContainerStyle={[screenStyles.content, { paddingBottom: 24 + insets.bottom }]}
             >
-                <View
-                    style={{
-                        backgroundColor: colors.card,
-                        borderRadius: radius.lg,
-                        padding: isCompactPhone ? 10 : 12,
-                        borderWidth: 1,
-                        borderColor: colors.border,
+                <OrderProgressTimer
+                    currentStatus={String(order?.status ?? orderStatus)}
+                    createdAt={(order as any)?.createdAtMs ?? order?.createdAt ?? createdAtMs}
+                    approvalDeadline={
+                        (order as any)?.restaurantApprovalDeadline ??
+                        (order as any)?.approvalDeadline ??
+                        (order as any)?.slaDeadline ??
+                        (approvalDeadlineMs || undefined)
+                    }
+                    cancelAllowedUntil={(order as any)?.cancelAllowedUntil ?? (cancelAllowedUntilMs || undefined)}
+                    totalApprovalSeconds={APPROVAL_SLA_SECONDS}
+                    restaurantName={restaurantName}
+                    onCancel={isCancelWindowActive ? handleCancel : undefined}
+                    onApprovalExpired={() => {
+                        if (orderStatus === "pending") void handleAutoCancel();
                     }}
-                >
-                    <OrderProgressTimer
-                        currentStatus={String(order?.status ?? orderStatus)}
-                        createdAt={(order as any)?.createdAtMs ?? order?.createdAt ?? createdAtMs}
-                        approvalDeadline={
-                            (order as any)?.restaurantApprovalDeadline ??
-                            (order as any)?.approvalDeadline ??
-                            (order as any)?.slaDeadline ??
-                            (approvalDeadlineMs || undefined)
-                        }
-                        cancelAllowedUntil={(order as any)?.cancelAllowedUntil ?? (cancelAllowedUntilMs || undefined)}
-                        totalApprovalSeconds={APPROVAL_SLA_SECONDS}
-                        restaurantName={restaurantName}
-                        onApprovalExpired={() => {
-                            if (orderStatus === "pending") {
-                                void handleAutoCancel();
-                            }
-                        }}
-                    />
-                </View>
+                />
 
-                <View
-                    style={{
-                        backgroundColor: colors.card,
-                        borderRadius: radius.lg,
-                        padding: isCompactPhone ? 16 : 20,
-                        borderWidth: 1,
-                        borderColor: colors.border,
-                        gap: isCompactPhone ? 14 : 20,
-                    }}
-                >
-                    {steps.map((step) => (
+                <View style={screenStyles.section}>
+                    <Text style={screenStyles.sectionTitle}>{isTurkish ? "Sipariş süreci" : "Order progress"}</Text>
+                    <View style={screenStyles.progressCard}>
+                    {steps.slice(0, 5).map((step, index) => (
                         <StepRow
                             key={step.id}
                             icon={step.icon}
                             title={step.title}
                             subtitle={step.subtitle}
                             status={step.status as "done" | "active" | "pending" | "danger"}
+                            tone={index === 0 ? "green" : index === 1 ? "blue" : index === 2 ? "orange" : "neutral"}
+                            dark={dark}
+                            isLast={index === 4}
                         />
                     ))}
+                    </View>
                 </View>
 
-                <View style={{ gap: 12 }}>
+                {showOrderSummary ? <View style={screenStyles.summaryCard}>
+                    <View style={screenStyles.summaryHeader}>
+                        <View style={screenStyles.restaurantMark}><Ionicons name="restaurant-outline" size={22} color="#FF5A00" /></View>
+                        <View style={screenStyles.summaryNameWrap}>
+                            <Text numberOfLines={1} style={screenStyles.summaryName}>{restaurantName}</Text>
+                            {restaurantMeta ? <Text numberOfLines={1} style={screenStyles.summaryMeta}>{restaurantMeta}</Text> : null}
+                        </View>
+                    </View>
+                    {(Number.isFinite(orderTotal) || (Number.isFinite(orderEta) && orderEta > 0)) ? <>
+                        <View style={screenStyles.summaryDivider} />
+                        <View style={screenStyles.summaryStats}>
+                            {Number.isFinite(orderTotal) ? <View style={screenStyles.summaryStat}><Text style={screenStyles.summaryLabel}>{isTurkish ? "Toplam" : "Total"}</Text><Text style={screenStyles.summaryValue}>{formatCurrency(orderTotal)}</Text></View> : null}
+                            {Number.isFinite(orderEta) && orderEta > 0 ? <View style={[screenStyles.summaryStat, screenStyles.etaStat]}><Ionicons name="time-outline" size={20} color="#FF5A00" /><View><Text style={screenStyles.summaryLabel}>{isTurkish ? "Tahmini teslimat" : "Estimated delivery"}</Text><Text style={screenStyles.summaryEta}>{Math.round(orderEta)} {isTurkish ? "dk" : "min"}</Text></View></View> : null}
+                        </View>
+                    </> : null}
+                </View> : null}
+
+                {orderStatus === "pending" ? <View style={screenStyles.secondaryActions}>
                     <TouchableOpacity
                         onPress={handleNudge}
                         disabled={nudgeDisabled}
                         accessibilityLabel={t("orderPending.a11y.remind")}
                         accessibilityRole="button"
-                        style={{ borderRadius: radius.lg, overflow: "hidden" }}
+                        style={[screenStyles.reminderButton, nudgeDisabled && screenStyles.reminderButtonDisabled]}
                     >
-                        <LinearGradient
-                            colors={["#63E6FF", "#B98CFF"]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={{
-                                paddingVertical: 16,
-                                justifyContent: "center",
-                                alignItems: "center",
-                                opacity: nudgeDisabled ? 0.6 : 1,
-                            }}
-                        >
-                            <Text style={{ color: "#0E0F12", fontFamily: "ChairoSans", fontSize: 16 }}>{nudgeLabel}</Text>
-                        </LinearGradient>
+                        <Text style={screenStyles.reminderText}>{nudgeLabel}</Text>
                     </TouchableOpacity>
-
-                    {isCancelWindowActive ? (
-                        <TouchableOpacity
-                            onPress={handleCancel}
-                            accessibilityRole="button"
-                            accessibilityLabel={t("orderPending.a11y.cancel")}
-                            style={{
-                                borderRadius: radius.lg,
-                                borderWidth: 1,
-                                borderColor: colors.border,
-                                paddingVertical: 14,
-                                alignItems: "center",
-                            }}
-                        >
-                            <Text style={{ color: colors.text, fontFamily: "ChairoSans" }}>
-                                {t("orderPending.cancel.cta", { seconds: cancelWindowRemaining })}
-                            </Text>
-                        </TouchableOpacity>
-                    ) : (
-                        <View
-                            style={{
-                                borderRadius: radius.lg,
-                                borderWidth: 1,
-                                borderColor: colors.border,
-                                paddingVertical: 14,
-                                alignItems: "center",
-                                opacity: 0.4,
-                            }}
-                        >
-                            <Text style={{ color: colors.sub, fontFamily: "ChairoSans" }}>{t("orderPending.cancel.closed")}</Text>
-                        </View>
-                    )}
-
-                    <Text style={{ color: colors.sub, fontSize: 13, lineHeight: 18 }}>
-                        {t("orderPending.footnote.cancelWindow")}
-                    </Text>
-                </View>
+                    <Text style={screenStyles.footnote}>{t("orderPending.footnote.cancelWindow")}</Text>
+                </View> : null}
             </ScrollView>
         </SafeAreaView>
     );
+};
+
+const pendingStyles = StyleSheet.create({
+    stepRow: { minHeight: 68, flexDirection: "row", alignItems: "center", gap: 14 },
+    stepIcon: { width: 48, height: 48, borderRadius: 13, alignItems: "center", justifyContent: "center" },
+    stepCopy: { flex: 1, minWidth: 0 },
+    stepTitle: { fontSize: 15, lineHeight: 20, fontWeight: "600" },
+    stepTitleActive: { fontWeight: "700" },
+    stepSubtitle: { marginTop: 1, fontSize: 13, lineHeight: 18 },
+    statusDot: { width: 12, height: 12, borderRadius: 999, flexShrink: 0 },
+});
+
+const createScreenStyles = (dark: boolean) => {
+    const page = dark ? "#0F1115" : "#FAFBFC";
+    const surface = dark ? "#171A20" : "#FFFFFF";
+    const primary = dark ? "#F5F7FA" : "#111318";
+    const secondary = dark ? "#98A2B3" : "#667085";
+    const border = dark ? "#2A2E35" : "#EAECF0";
+    return StyleSheet.create({
+        screen: { flex: 1, backgroundColor: page },
+        primary: { color: primary },
+        header: { minHeight: 54, paddingHorizontal: 22, paddingBottom: 5, flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: page },
+        headerButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+        headerTitle: { color: primary, fontSize: 21, lineHeight: 26, fontWeight: "700" },
+        content: { width: "100%", maxWidth: 620, alignSelf: "center", paddingHorizontal: 22, paddingTop: 12, gap: 22 },
+        section: { gap: 12 },
+        sectionTitle: { color: primary, fontSize: 18, lineHeight: 23, fontWeight: "700" },
+        progressCard: { borderRadius: 16, borderWidth: 1, borderColor: border, backgroundColor: surface, paddingHorizontal: 14, overflow: "hidden" },
+        summaryCard: { borderRadius: 16, borderWidth: 1, borderColor: border, backgroundColor: surface, padding: 14 },
+        summaryHeader: { minHeight: 48, flexDirection: "row", alignItems: "center", gap: 12 },
+        restaurantMark: { width: 48, height: 48, borderRadius: 12, backgroundColor: dark ? "#352319" : "#FFF3EC", alignItems: "center", justifyContent: "center" },
+        summaryNameWrap: { flex: 1, minWidth: 0 },
+        summaryName: { color: primary, fontSize: 16, lineHeight: 20, fontWeight: "700" },
+        summaryMeta: { marginTop: 2, color: secondary, fontSize: 13, lineHeight: 18 },
+        summaryDivider: { height: StyleSheet.hairlineWidth, backgroundColor: border, marginVertical: 12 },
+        summaryStats: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 18 },
+        summaryStat: { flex: 1, minWidth: 0 },
+        etaStat: { flexDirection: "row", alignItems: "center", gap: 8, borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: border, paddingLeft: 18 },
+        summaryLabel: { color: secondary, fontSize: 13, lineHeight: 18 },
+        summaryValue: { marginTop: 2, color: primary, fontSize: 20, lineHeight: 24, fontWeight: "700" },
+        summaryEta: { color: primary, fontSize: 15, lineHeight: 20, fontWeight: "700" },
+        secondaryActions: { gap: 10 },
+        reminderButton: { minHeight: 46, borderRadius: 14, borderWidth: 1, borderColor: "#FF5A00", backgroundColor: surface, alignItems: "center", justifyContent: "center", paddingHorizontal: 14 },
+        reminderButtonDisabled: { borderColor: border, opacity: 0.65 },
+        reminderText: { color: dark ? "#FF9A62" : "#C2410C", fontSize: 14, lineHeight: 18, fontWeight: "600", textAlign: "center" },
+        footnote: { color: secondary, fontSize: 13, lineHeight: 18 },
+    });
 };
 
 export default OrderPendingScreen;

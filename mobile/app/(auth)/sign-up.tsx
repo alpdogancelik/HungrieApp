@@ -1,15 +1,20 @@
 import { useRef, useState } from "react";
 import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import type { TextInput } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
+import {
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    useFonts,
+} from "@expo-google-fonts/inter";
 import { useTranslation } from "react-i18next";
 
 import AuthFeedbackCard from "@/components/auth/AuthFeedbackCard";
-import CustomButton from "@/components/CustomButton";
 import CustomInput from "@/components/CustomInput";
 import LanguageToggle from "@/components/LanguageToggle";
 import { createUser } from "@/src/data/authRepository";
@@ -182,25 +187,35 @@ const styles = createAdaptiveStyleSheet({
         gap: 6,
     },
     cardTitle: {
-        color: "#0F172A",
-        fontSize: 31,
-        lineHeight: 38,
-        fontFamily: "ChairoSans",
+        color: "#111318",
+        fontSize: 28,
+        lineHeight: 34,
+        letterSpacing: -0.3,
     },
     fieldLabel: {
-        color: "#6B7280",
-        fontSize: 13,
+        color: "#667085",
+        fontSize: 14,
+        lineHeight: 18,
         marginBottom: 6,
         paddingLeft: 0,
     },
     fieldInput: {
-        minHeight: 50,
-        borderRadius: 16,
-        borderColor: "#D9E1EC",
-        paddingHorizontal: 14,
+        height: 54,
+        minHeight: 54,
+        borderRadius: 17,
+        borderColor: "#DDE2EA",
+        paddingHorizontal: 16,
+        paddingVertical: 0,
         fontSize: 16,
-        color: "#0F172A",
+        lineHeight: 20,
+        color: "#111318",
         backgroundColor: "#FFFFFF",
+    },
+    fieldInputFocused: {
+        borderColor: "#FF5A00",
+    },
+    feedbackWrap: {
+        marginBottom: 0,
     },
     passwordChecklist: {
         gap: 6,
@@ -213,22 +228,27 @@ const styles = createAdaptiveStyleSheet({
         gap: 7,
     },
     passwordHelperText: {
-        color: "#6B7280",
+        color: "#667085",
         fontSize: 12,
-        lineHeight: 18,
-        fontFamily: "ChairoSans",
+        lineHeight: 16,
     },
     passwordHelperTextMet: {
-        color: "#FF6A00",
+        color: "#FF5A00",
     },
     submitButton: {
-        minHeight: 56,
-        borderRadius: 999,
+        width: "100%",
+        height: 52,
+        minHeight: 52,
+        borderRadius: 26,
         marginTop: 0,
-        backgroundColor: "#FF6A00",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#FF5A00",
     },
     submitText: {
-        fontSize: 18,
+        color: "#FFFFFF",
+        fontSize: 16,
+        lineHeight: 20,
     },
     footerRow: {
         flexDirection: "row",
@@ -239,24 +259,24 @@ const styles = createAdaptiveStyleSheet({
         flexWrap: "wrap",
     },
     footerText: {
-        color: "#6B7280",
-        fontSize: 17,
-        fontFamily: "ChairoSans",
+        color: "#667085",
+        fontSize: 15,
+        lineHeight: 20,
     },
     footerLink: {
-        color: "#FF6A00",
-        fontSize: 17,
-        fontFamily: "ChairoSans",
+        color: "#FF5A00",
+        fontSize: 15,
+        lineHeight: 20,
     },
     closeButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: "#F1895E",
         alignItems: "center",
         justifyContent: "center",
         borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.32)",
+        borderColor: "#E4E7EC",
+        ...makeShadow({ color: "#101828", offsetY: 1, blurRadius: 3, opacity: 0.04, elevation: 1 }),
     },
 });
 
@@ -269,13 +289,27 @@ const SignUp = () => {
     const { width } = useWindowDimensions();
     const isWide = width >= 700;
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSubmitPressed, setIsSubmitPressed] = useState(false);
     const [feedback, setFeedback] = useState<FeedbackState>(null);
     const [form, setForm] = useState({ name: "", email: "", password: "", whatsappNumber: "" });
     const [passwordFocused, setPasswordFocused] = useState(false);
+    const [focusedField, setFocusedField] = useState<"name" | "whatsappNumber" | "email" | "password" | null>(null);
+    const [interLoaded] = useFonts({
+        Inter_400Regular,
+        Inter_500Medium,
+        Inter_600SemiBold,
+        Inter_700Bold,
+    });
     const nameRef = useRef<TextInput>(null);
     const whatsappRef = useRef<TextInput>(null);
     const emailRef = useRef<TextInput>(null);
     const passwordRef = useRef<TextInput>(null);
+    const scrollViewRef = useRef<ScrollView>(null);
+
+    const interRegular = interLoaded ? "Inter_400Regular" : readableTurkishFont;
+    const interMedium = interLoaded ? "Inter_500Medium" : readableTurkishFont;
+    const interSemiBold = interLoaded ? "Inter_600SemiBold" : readableTurkishFont;
+    const interBold = interLoaded ? "Inter_700Bold" : readableTurkishFont;
 
     const heroVisualWidth = isWide ? 360 : Math.min(266, Math.max(210, width * 0.43));
     const heroVisualHeight = isWide ? 320 : Math.min(224, Math.max(230, width * 0.36));
@@ -283,6 +317,12 @@ const SignUp = () => {
     const heroGlowHeight = isWide ? 250 : Math.min(168, Math.max(124, width * 0.22));
     const maxShellWidth = isWide ? 860 : 520;
     const cardOverlap = isWide ? -24 : -70;
+
+    const revealPasswordRequirements = () => {
+        setPasswordFocused(true);
+        setFocusedField("password");
+        setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), Platform.OS === "ios" ? 320 : 180);
+    };
 
     const setField = (field: "name" | "email" | "password" | "whatsappNumber", value: string) => {
         setForm((prev) => ({ ...prev, [field]: value }));
@@ -346,6 +386,7 @@ const SignUp = () => {
         <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={["left", "right", "bottom"]}>
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
             <ScrollView
+                ref={scrollViewRef}
                 contentContainerStyle={[
                     styles.scrollContent,
                     { paddingTop: Math.max(insets.top, 12), paddingBottom: Math.max(insets.bottom + 24, 28) },
@@ -362,8 +403,15 @@ const SignUp = () => {
                         </View>
                         <View style={styles.topRightActions}>
                             <LanguageToggle appearance="default" showLabel={false} />
-                            <Pressable style={styles.closeButton} onPress={() => router.replace("/home")} hitSlop={8}>
-                                <Ionicons name="close" size={24} color="#FFFFFF" />
+                            <Pressable
+                                style={({ pressed }) => [
+                                    styles.closeButton,
+                                    { backgroundColor: pressed ? theme.colors.surfaceMuted : theme.colors.surface },
+                                ]}
+                                onPress={() => router.replace("/home")}
+                                hitSlop={8}
+                            >
+                                <Ionicons name="close" size={18} color={theme.colors.ink} />
                             </Pressable>
                         </View>
                     </View>
@@ -420,8 +468,7 @@ const SignUp = () => {
                                                 ],
                                             },
                                         ]}
-                                        contentFit="cover"
-                                        cachePolicy="memory-disk"
+                                        resizeMode="cover"
                                     />
                                 </View>
                             </View>
@@ -437,16 +484,18 @@ const SignUp = () => {
                         ]}
                     >
                         <View style={styles.authCardHeader}>
-                            <Text style={[styles.cardTitle, { color: theme.colors.ink }, isWide ? { fontSize: 46, lineHeight: 54 } : null]}>{copy.submit}</Text>
+                            <Text style={[styles.cardTitle, { color: theme.colors.ink, fontFamily: interBold }, isWide ? { fontSize: 46, lineHeight: 54 } : null]}>{copy.submit}</Text>
                         </View>
 
                         {feedback ? (
-                            <AuthFeedbackCard
-                                tone="error"
-                                title={feedback.title}
-                                message={feedback.message}
-                                Illustration={DeliveryGuy}
-                            />
+                            <View style={styles.feedbackWrap}>
+                                <AuthFeedbackCard
+                                    tone="error"
+                                    title={feedback.title}
+                                    message={feedback.message}
+                                    Illustration={DeliveryGuy}
+                                />
+                            </View>
                         ) : null}
 
                         <CustomInput
@@ -458,9 +507,21 @@ const SignUp = () => {
                             returnKeyType="next"
                             blurOnSubmit={false}
                             onSubmitEditing={() => whatsappRef.current?.focus()}
-                            leftIcon={<Ionicons name="person-outline" size={22} color="#FF6A00" />}
-                            labelStyle={styles.fieldLabel}
-                            inputStyle={styles.fieldInput}
+                            onFocus={() => setFocusedField("name")}
+                            onBlur={() => setFocusedField((current) => current === "name" ? null : current)}
+                            placeholderTextColor={theme.colors.muted}
+                            leftIcon={<Ionicons name="person-outline" size={20} color="#FF5A00" />}
+                            labelStyle={[styles.fieldLabel, { fontFamily: interMedium }]}
+                            inputStyle={[
+                                styles.fieldInput,
+                                focusedField === "name" && styles.fieldInputFocused,
+                                {
+                                    color: theme.colors.ink,
+                                    backgroundColor: theme.colors.input,
+                                    borderColor: focusedField === "name" ? "#FF5A00" : theme.colors.border,
+                                    fontFamily: form.name ? interMedium : interRegular,
+                                },
+                            ]}
                         />
                         <CustomInput
                             ref={whatsappRef}
@@ -472,9 +533,21 @@ const SignUp = () => {
                             returnKeyType="next"
                             blurOnSubmit={false}
                             onSubmitEditing={() => emailRef.current?.focus()}
-                            leftIcon={<Ionicons name="logo-whatsapp" size={22} color="#FF6A00" />}
-                            labelStyle={styles.fieldLabel}
-                            inputStyle={styles.fieldInput}
+                            onFocus={() => setFocusedField("whatsappNumber")}
+                            onBlur={() => setFocusedField((current) => current === "whatsappNumber" ? null : current)}
+                            placeholderTextColor={theme.colors.muted}
+                            leftIcon={<Ionicons name="logo-whatsapp" size={20} color="#FF5A00" />}
+                            labelStyle={[styles.fieldLabel, { fontFamily: interMedium }]}
+                            inputStyle={[
+                                styles.fieldInput,
+                                focusedField === "whatsappNumber" && styles.fieldInputFocused,
+                                {
+                                    color: theme.colors.ink,
+                                    backgroundColor: theme.colors.input,
+                                    borderColor: focusedField === "whatsappNumber" ? "#FF5A00" : theme.colors.border,
+                                    fontFamily: form.whatsappNumber ? interMedium : interRegular,
+                                },
+                            ]}
                         />
                         <CustomInput
                             ref={emailRef}
@@ -486,9 +559,21 @@ const SignUp = () => {
                             returnKeyType="next"
                             blurOnSubmit={false}
                             onSubmitEditing={() => passwordRef.current?.focus()}
-                            leftIcon={<Ionicons name="mail-outline" size={22} color="#FF6A00" />}
-                            labelStyle={styles.fieldLabel}
-                            inputStyle={styles.fieldInput}
+                            onFocus={() => setFocusedField("email")}
+                            onBlur={() => setFocusedField((current) => current === "email" ? null : current)}
+                            placeholderTextColor={theme.colors.muted}
+                            leftIcon={<Ionicons name="mail-outline" size={20} color="#FF5A00" />}
+                            labelStyle={[styles.fieldLabel, { fontFamily: interMedium }]}
+                            inputStyle={[
+                                styles.fieldInput,
+                                focusedField === "email" && styles.fieldInputFocused,
+                                {
+                                    color: theme.colors.ink,
+                                    backgroundColor: theme.colors.input,
+                                    borderColor: focusedField === "email" ? "#FF5A00" : theme.colors.border,
+                                    fontFamily: form.email ? interMedium : interRegular,
+                                },
+                            ]}
                         />
                         <CustomInput
                             ref={passwordRef}
@@ -499,11 +584,25 @@ const SignUp = () => {
                             secureTextEntry
                             returnKeyType="done"
                             onSubmitEditing={submit}
-                            onFocus={() => setPasswordFocused(true)}
-                            onBlur={() => setTimeout(() => setPasswordFocused(false), 120)}
-                            leftIcon={<Ionicons name="lock-closed-outline" size={22} color="#FF6A00" />}
-                            labelStyle={styles.fieldLabel}
-                            inputStyle={styles.fieldInput}
+                            onFocus={revealPasswordRequirements}
+                            onBlur={() => {
+                                setFocusedField((current) => current === "password" ? null : current);
+                                setTimeout(() => setPasswordFocused(false), 120);
+                            }}
+                            placeholderTextColor={theme.colors.muted}
+                            secureToggleColor={theme.colors.textSecondary}
+                            leftIcon={<Ionicons name="lock-closed-outline" size={20} color="#FF5A00" />}
+                            labelStyle={[styles.fieldLabel, { fontFamily: interMedium }]}
+                            inputStyle={[
+                                styles.fieldInput,
+                                focusedField === "password" && styles.fieldInputFocused,
+                                {
+                                    color: theme.colors.ink,
+                                    backgroundColor: theme.colors.input,
+                                    borderColor: focusedField === "password" ? "#FF5A00" : theme.colors.border,
+                                    fontFamily: form.password ? interMedium : interRegular,
+                                },
+                            ]}
                         />
                         {passwordFocused ? (
                             <View style={styles.passwordChecklist}>
@@ -514,7 +613,7 @@ const SignUp = () => {
                                             size={15}
                                             color={check.met ? "#FF6A00" : "#9CA3AF"}
                                         />
-                                        <Text style={[styles.passwordHelperText, check.met ? styles.passwordHelperTextMet : null]}>
+                                        <Text style={[styles.passwordHelperText, { fontFamily: interMedium }, check.met ? styles.passwordHelperTextMet : null]}>
                                             {check.label}
                                         </Text>
                                     </View>
@@ -522,12 +621,30 @@ const SignUp = () => {
                             </View>
                         ) : null}
 
-                        <CustomButton title={copy.submit} isLoading={isSubmitting} disabled={isSubmitting} onPress={submit} style={styles.submitButton} textStyle={styles.submitText} />
+                        <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={copy.submit}
+                            disabled={isSubmitting}
+                            onPress={submit}
+                            onPressIn={() => setIsSubmitPressed(true)}
+                            onPressOut={() => setIsSubmitPressed(false)}
+                            style={[
+                                styles.submitButton,
+                                isSubmitPressed && !isSubmitting ? { backgroundColor: "#E94F00" } : null,
+                                isSubmitting ? { backgroundColor: "#E4E7EC" } : null,
+                            ]}
+                        >
+                            {isSubmitting ? (
+                                <ActivityIndicator size="small" color="#FFFFFF" />
+                            ) : (
+                                <Text style={[styles.submitText, { fontFamily: interSemiBold }]}>{copy.submit}</Text>
+                            )}
+                        </Pressable>
 
                         <View style={styles.footerRow}>
-                            <Text style={styles.footerText}>{copy.alreadyAccount}</Text>
-                            <Pressable onPress={() => router.push("/sign-in")} hitSlop={6}>
-                                <Text style={styles.footerLink}>{copy.signInLink}</Text>
+                            <Text style={[styles.footerText, { fontFamily: interRegular }]}>{copy.alreadyAccount}</Text>
+                            <Pressable onPress={() => router.push("/sign-in")} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
+                                <Text style={[styles.footerLink, { fontFamily: interSemiBold }]}>{copy.signInLink}</Text>
                             </Pressable>
                         </View>
                     </View>

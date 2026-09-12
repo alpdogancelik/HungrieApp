@@ -44,6 +44,11 @@ const claim = () =>
 
 try {
   runSql(`
+    delete from private.notification_deliveries
+    where event_id in (
+      select id from private.notification_events where order_id = '${orderId}'
+    );
+    delete from private.notification_events where order_id = '${orderId}';
     delete from private.audit_log where target_id = '${orderId}';
     delete from private.order_status_history where order_id = '${orderId}';
     delete from private.order_contacts where order_id = '${orderId}';
@@ -80,6 +85,11 @@ try {
   process.stdout.write("Milestone 3 courier concurrency test passed.\n");
 } finally {
   runSql(`
+    delete from private.notification_deliveries
+    where event_id in (
+      select id from private.notification_events where order_id = '${orderId}'
+    );
+    delete from private.notification_events where order_id = '${orderId}';
     delete from private.audit_log where target_id = '${orderId}';
     delete from private.order_status_history where order_id = '${orderId}';
     delete from private.order_contacts where order_id = '${orderId}';

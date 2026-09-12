@@ -7,11 +7,17 @@ const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const STATE_PATH = path.join(ROOT_DIR, "secure", "supabase-projects.local.json");
 const CLI_HOME = path.join(ROOT_DIR, "secure", "supabase-cli-hungrie");
 const CLI_TOKEN_PATH = path.join(CLI_HOME, "access-token");
-const MOBILE_ENV_PATH = path.join(ROOT_DIR, "mobile", ".env.local");
 const environment = process.argv[2] || "development";
+const confirmation = process.argv.find((value) => value.startsWith("--confirm="))?.split("=")[1];
+const firebaseEnvFile = process.argv.find((value) => value.startsWith("--firebase-env-file="))?.slice("--firebase-env-file=".length);
+const sentryDsnFile = process.argv.find((value) => value.startsWith("--sentry-dsn-file="))?.slice("--sentry-dsn-file=".length);
 
 if (!new Set(["development", "staging", "production"]).has(environment)) {
   throw new Error("Usage: npm run supabase:mobile-env -- <development|staging|production>");
+}
+if (confirmation !== environment) throw new Error(`Refusing environment generation without --confirm=${environment}.`);
+if (environment === "production" && !firebaseEnvFile && !process.argv.includes("--internal-test-auth")) {
+  throw new Error("Production requires an external production Firebase env file; use --internal-test-auth only for unpublished internal validation.");
 }
 if (!fs.existsSync(STATE_PATH)) throw new Error("Missing ignored secure/supabase-projects.local.json.");
 if (!fs.existsSync(CLI_TOKEN_PATH)) throw new Error("Missing ignored Hungrie Supabase access token. Run npm run supabase:auth:capture.");
@@ -45,15 +51,43 @@ project.url = `https://${project.ref}.supabase.co`;
 project.publishableKey = publishableKey;
 fs.writeFileSync(STATE_PATH, `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 });
 fs.chmodSync(STATE_PATH, 0o600);
+const outputPath = path.join(ROOT_DIR, "secure", `eas-${environment}.env`);
+const assertExternalFile = (filePath, label) => {
+  if (!filePath || !path.isAbsolute(filePath) || !fs.existsSync(filePath)) throw new Error(`${label} must be an existing absolute file.`);
+  const relative = path.relative(ROOT_DIR, filePath);
+  if (!relative.startsWith("..") && !path.isAbsolute(relative)) throw new Error(`${label} must stay outside the repository.`);
+};
+let firebaseLines;
+if (firebaseEnvFile) {
+  assertExternalFile(firebaseEnvFile, "Firebase env file");
+  firebaseLines = fs.readFileSync(firebaseEnvFile, "utf8").split(/\r?\n/).filter((line) => line.startsWith("EXPO_PUBLIC_FIREBASE_"));
+  if (!firebaseLines.some((line) => line.startsWith("EXPO_PUBLIC_FIREBASE_PROJECT_ID="))) throw new Error("Firebase env file is incomplete.");
+} else {
+  const firebaseExtra = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, "mobile", "app.json"), "utf8")).expo.extra;
+  firebaseLines = Object.entries(firebaseExtra).filter(([name]) => name.startsWith("EXPO_PUBLIC_FIREBASE_")).map(([name, value]) => `${name}=${String(value ?? "")}`);
+}
+let sentryDsn = "";
+if (sentryDsnFile) {
+  assertExternalFile(sentryDsnFile, "Sentry DSN file");
+  sentryDsn = fs.readFileSync(sentryDsnFile, "utf8").trim();
+  if (!/^https:\/\//.test(sentryDsn)) throw new Error("Sentry DSN file is malformed.");
+}
+const repositoryLines = ["CATALOG", "PROFILE", "MEMBERSHIP", "RESTAURANT", "MENU", "ORDER", "REVIEW", "ADDRESS", "FAVORITES", "NOTIFICATION"]
+  .map((domain) => `EXPO_PUBLIC_${domain}_REPOSITORY=supabase`);
 fs.writeFileSync(
-  MOBILE_ENV_PATH,
+  outputPath,
   [
+    `EXPO_PUBLIC_APP_ENV=${environment}`,
     `EXPO_PUBLIC_SUPABASE_URL=${project.url}`,
     `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${publishableKey}`,
-    "EXPO_PUBLIC_SUPABASE_ENABLED=false",
+    "EXPO_PUBLIC_SUPABASE_ENABLED=true",
+    "EXPO_PUBLIC_AUTH_REPOSITORY=firebase",
+    ...repositoryLines,
+    ...firebaseLines,
+    `EXPO_PUBLIC_SENTRY_DSN=${sentryDsn}`,
     "",
   ].join("\n"),
   { mode: 0o600 },
 );
-fs.chmodSync(MOBILE_ENV_PATH, 0o600);
-console.log(`Configured ignored mobile environment for ${environment}; Supabase remains disabled.`);
+fs.chmodSync(outputPath, 0o600);
+console.log(`Generated ignored EAS environment file for ${environment}; secret values were not logged.`);

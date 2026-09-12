@@ -8,7 +8,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import Icon from "@/components/Icon";
 import { getRestaurant } from "@/src/data/restaurantRepository";
 import type { OrderReview, RestaurantOrderReviewSummary } from "@/src/domain/types";
-import { calculateRestaurantOrderReviewSummary, fetchRestaurantOrderReviews } from "@/src/data/reviewRepository";
+import { fetchRestaurantOrderReviewSummary, fetchRestaurantOrderReviews } from "@/src/data/reviewRepository";
 import { makeShadow } from "@/src/lib/shadowStyle";
 
 type RestaurantDetails = {
@@ -151,18 +151,18 @@ export default function RestaurantReviewsScreen() {
         setLoading(true);
         setErrorText(null);
         try {
-            const [restaurantData, fetchedReviews] = await Promise.all([
+            const [restaurantData, fetchedReviews, repositorySummary] = await Promise.all([
                 getRestaurant(restaurantId),
                 fetchRestaurantOrderReviews(restaurantId, { limit: 20 }),
+                fetchRestaurantOrderReviewSummary(restaurantId),
             ]);
 
             const resolvedRestaurant = (restaurantData as RestaurantDetails | null) || null;
             setRestaurant(resolvedRestaurant);
             setReviews(fetchedReviews);
 
-            const computed = calculateRestaurantOrderReviewSummary(fetchedReviews);
             const aggregateFallback = summaryFromRestaurantDoc(resolvedRestaurant);
-            setSummary(computed.count > 0 ? computed : aggregateFallback || computed);
+            setSummary(repositorySummary.count > 0 ? repositorySummary : aggregateFallback || repositorySummary);
         } catch (error: any) {
             setErrorText(error?.message || "Yorumlar alınamadı.");
         } finally {

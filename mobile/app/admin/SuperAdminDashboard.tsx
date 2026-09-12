@@ -11,7 +11,7 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { firebaseOrdersEnabled, listenToOrders, updateOrderStatus } from "@/src/data/orderRepository";
+import { listenToOrders, ordersRepositoryEnabled, updateOrderStatus } from "@/src/data/orderRepository";
 import { useTheme } from "@/src/theme/themeContext";
 import MenuEditor from "./MenuEditor";
 
@@ -158,7 +158,7 @@ const SuperAdminDashboard = () => {
                                 disabled={isActive || isUpdating}
                                 onPress={() => handleStatusChange(order.id, option)}
                                 className={`rounded-full border px-4 py-2 ${
-                                    isActive ? "bg-dark-100 border-dark-100" : "border-gray-200 bg-white dark:bg-[#13243A] dark:border-[#29405C]"
+                                    isActive ? "bg-dark-100 border-dark-100" : "border-gray-200 bg-white dark:bg-[#1C2027] dark:border-[#2A2E35]"
                                 } ${isUpdating ? "opacity-60" : "opacity-100"}`}
                             >
                                 <Text
@@ -197,9 +197,9 @@ const SuperAdminDashboard = () => {
     };
 
     const renderOrderCard = (order: AdminOrder) => {
-        const badgeClass = STATUS_BADGE_CLASS[order.status] || "bg-gray-100 text-dark-80 border-gray-100 dark:bg-[#172A42] dark:text-slate-100 dark:border-[#29405C]";
+        const badgeClass = STATUS_BADGE_CLASS[order.status] || "bg-gray-100 text-dark-80 border-gray-100 dark:bg-[#22262E] dark:text-slate-100 dark:border-[#2A2E35]";
         return (
-            <View key={order.id} className="rounded-3xl border border-gray-100 bg-white/95 p-5 shadow-sm dark:bg-[#0D1B2D] dark:border-[#29405C]">
+            <View key={order.id} className="rounded-3xl border border-gray-100 bg-white/95 p-5 shadow-sm dark:bg-[#171A20] dark:border-[#2A2E35]">
                 <View className="flex-row items-start justify-between gap-3">
                     <View className="flex-1 gap-1">
                         <Text className="text-xs uppercase tracking-[2px] text-dark-60 dark:text-slate-300">Order ID</Text>
@@ -283,7 +283,7 @@ const SuperAdminDashboard = () => {
                         <Text className="text-base" style={{ color: theme.colors.textSecondary }}>Track every order across restaurants in real time.</Text>
                     </View>
 
-                    {!firebaseOrdersEnabled && (
+                    {!ordersRepositoryEnabled && (
                         <View className="rounded-3xl border border-amber-200 bg-amber-50 p-4">
                             <Text className="text-base font-ezra-semibold text-amber-900">
                                 Firebase has not been configured.

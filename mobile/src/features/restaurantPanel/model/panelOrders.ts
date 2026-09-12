@@ -2,11 +2,13 @@ export type PanelOrderItem = {
     name?: string;
     quantity?: number;
     price?: number;
+    customizations?: Array<{ price?: number }>;
 };
 
 export type PanelOrderStatus =
     | "pending"
     | "accepted"
+    | "ready"
     | "out_for_delivery"
     | "canceled"
     | "rejected"
@@ -25,6 +27,11 @@ export type PanelOrder = {
     note?: string;
     paymentMethod?: string;
     total: number;
+    subtotal: number;
+    deliveryFee: number;
+    serviceFee: number;
+    discount: number;
+    tip: number;
     reminderPending?: boolean;
     reminderRequestedAtMs?: number;
 };
@@ -55,7 +62,8 @@ export const normalizePanelOrderStatus = (status: unknown): PanelOrderStatus => 
     if (raw === "pending approval" || raw === "awaiting_confirmation") return "pending";
     if (raw === "declined") return "rejected";
     if (raw === "cancelled") return "canceled";
-    if (raw === "preparing" || raw === "ready") return "accepted";
+    if (raw === "preparing") return "accepted";
+    if (raw === "ready") return "ready";
     if (raw === "rejected") return "rejected";
     if (
         raw === "accepted" ||
@@ -131,6 +139,11 @@ export const mapFirestoreOrder = (order: any): PanelOrder => {
         note: resolvedNote,
         paymentMethod: order?.paymentMethod || "N/A",
         total: Number(order?.total || 0),
+        subtotal: Number(order?.subtotal || 0),
+        deliveryFee: Number(order?.deliveryFee || 0),
+        serviceFee: Number(order?.serviceFee || 0),
+        discount: Number(order?.discount || 0),
+        tip: Number(order?.tip || 0),
         reminderPending: Boolean(order?.reminderPending),
         reminderRequestedAtMs: toMillis(order?.reminderRequestedAt) || Number(order?.reminderRequestedAtMs || 0),
     };
@@ -150,7 +163,7 @@ export const filterOrders = (
         const statusMatch =
             statusFilter === "all" ||
             orderStatus === statusFilter ||
-            (statusFilter === "accepted" && orderStatus === "out_for_delivery") ||
+            (statusFilter === "accepted" && (orderStatus === "ready" || orderStatus === "out_for_delivery")) ||
             (statusFilter === "canceled" && orderStatus === "rejected");
         if (!statusMatch) return false;
         if (!normalized) return true;

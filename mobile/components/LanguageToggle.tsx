@@ -11,9 +11,10 @@ const STORAGE_KEY = "hungrie.language";
 type LanguageToggleProps = {
     appearance?: "default" | "inverse";
     showLabel?: boolean;
+    compact?: boolean;
 };
 
-const LanguageToggle = ({ appearance = "default", showLabel = true }: LanguageToggleProps) => {
+const LanguageToggle = ({ appearance = "default", showLabel = true, compact = false }: LanguageToggleProps) => {
     const { theme } = useTheme();
     const { i18n } = useTranslation();
     const [hydrated, setHydrated] = useState(false);
@@ -59,9 +60,9 @@ const LanguageToggle = ({ appearance = "default", showLabel = true }: LanguageTo
         <View style={[styles.container, { opacity: hydrated ? 1 : 0.75 }]}>
             {showLabel ? <Text style={styles.helper}>{current === "tr" ? "Dil" : "Language"}</Text> : null}
 
-            <View style={styles.segmentedControl}>
+            <View style={[styles.segmentedControl, compact && styles.segmentedControlCompact]}>
                 {!hydrated ? (
-                    <View style={styles.loaderWrap}>
+                    <View style={[styles.loaderWrap, compact && styles.loaderWrapCompact]}>
                         <ActivityIndicator size="small" color={appearance === "inverse" ? "#FFFFFF" : theme.colors.ink} />
                     </View>
                 ) : (
@@ -70,17 +71,17 @@ const LanguageToggle = ({ appearance = "default", showLabel = true }: LanguageTo
                             accessibilityRole="button"
                             accessibilityLabel="Switch language to Turkish"
                             onPress={() => selectLanguage("tr")}
-                            style={[styles.option, current === "tr" && styles.optionActive]}
+                            style={[styles.option, compact && styles.optionCompact, current === "tr" && styles.optionActive]}
                         >
-                            <Text style={[styles.optionLabel, current === "tr" && styles.optionLabelActive]}>TR</Text>
+                            <Text style={[styles.optionLabel, compact && styles.optionLabelCompact, current === "tr" && styles.optionLabelActive]}>TR</Text>
                         </Pressable>
                         <Pressable
                             accessibilityRole="button"
                             accessibilityLabel="Switch language to English"
                             onPress={() => selectLanguage("en")}
-                            style={[styles.option, current === "en" && styles.optionActive]}
+                            style={[styles.option, compact && styles.optionCompact, current === "en" && styles.optionActive]}
                         >
-                            <Text style={[styles.optionLabel, current === "en" && styles.optionLabelActive]}>EN</Text>
+                            <Text style={[styles.optionLabel, compact && styles.optionLabelCompact, current === "en" && styles.optionLabelActive]}>EN</Text>
                         </Pressable>
                     </>
                 )}
@@ -118,10 +119,19 @@ const createStyles = (theme: ThemeDefinition, appearance: "default" | "inverse")
             padding: 4,
             minHeight: 40,
         },
+        segmentedControlCompact: {
+            width: 90,
+            height: 40,
+            minHeight: 40,
+            padding: 3,
+        },
         loaderWrap: {
             width: 88,
             alignItems: "center",
             justifyContent: "center",
+        },
+        loaderWrapCompact: {
+            width: 82,
         },
         option: {
             minWidth: 40,
@@ -131,6 +141,13 @@ const createStyles = (theme: ThemeDefinition, appearance: "default" | "inverse")
             alignItems: "center",
             justifyContent: "center",
         },
+        optionCompact: {
+            flex: 1,
+            minWidth: 0,
+            height: 32,
+            paddingHorizontal: 0,
+            paddingVertical: 0,
+        },
         optionActive: {
             backgroundColor: activeSurface,
         },
@@ -139,6 +156,10 @@ const createStyles = (theme: ThemeDefinition, appearance: "default" | "inverse")
             fontFamily: "ChairoSans",
             fontSize: 12,
             letterSpacing: 0.5,
+        },
+        optionLabelCompact: {
+            fontSize: 14,
+            fontWeight: "600",
         },
         optionLabelActive: {
             color: activeText,

@@ -33,7 +33,11 @@ export const useHome = (): UseHomeResult => {
     const { user } = useAuthStore();
     const { t, i18n } = useTranslation();
     const featuredMenuParams = useMemo(() => ({ limit: 6 }), []);
-    const { data: menu, loading: menuLoading } = useAsyncResource({ fn: getMenu, params: featuredMenuParams });
+    const { data: menu, loading: menuLoading } = useAsyncResource({
+        fn: getMenu,
+        params: featuredMenuParams,
+        skipAlert: true,
+    });
     const [restaurants, setRestaurants] = useState<any[] | null>(null);
     const [restaurantsLoading, setRestaurantsLoading] = useState(true);
 
@@ -52,6 +56,7 @@ export const useHome = (): UseHomeResult => {
                         if (!active) return;
                         setRestaurants(nextRestaurants);
                     })
+                    .catch(() => undefined)
                     .finally(() => {
                         if (active) setRestaurantsLoading(false);
                     });

@@ -43,10 +43,10 @@ const styles = createAdaptiveStyleSheet({
     toast: {
         width: "100%",
         maxWidth: 540,
-        backgroundColor: "#1E2433",
+        backgroundColor: "#171A20",
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: "#2E3A54",
+        borderColor: "#2A2E35",
         paddingHorizontal: 14,
         paddingVertical: 11,
     },

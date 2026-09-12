@@ -1,9 +1,15 @@
 import { useMemo } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
-import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
+import {
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    useFonts,
+} from "@expo-google-fonts/inter";
 import { useTranslation } from "react-i18next";
 
 import AuthFeedbackCard from "@/components/auth/AuthFeedbackCard";
@@ -16,6 +22,7 @@ import { useTheme } from "@/src/theme/themeContext";
 import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 
 const heroPackshot = require("../../assets/Categories/Sign-In Burger Photo1.png");
+const readableHeroFont = Platform.select({ ios: "System", android: "sans-serif", default: "system-ui" });
 
 const styles = createAdaptiveStyleSheet({
     safeArea: { flex: 1, backgroundColor: "#FFF8F2" },
@@ -63,11 +70,12 @@ const styles = createAdaptiveStyleSheet({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: "#F1895E",
+        backgroundColor: "#FFFFFF",
         alignItems: "center",
         justifyContent: "center",
         borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.32)",
+        borderColor: "#E4E7EC",
+        ...makeShadow({ color: "#101828", offsetY: 1, blurRadius: 3, opacity: 0.04, elevation: 1 }),
     },
     heroSection: {
         position: "relative",
@@ -87,19 +95,12 @@ const styles = createAdaptiveStyleSheet({
     heroHeading: {
         color: "#111827",
         fontSize: 30,
-        lineHeight: 37,
-        fontFamily: "ChairoSans",
+        lineHeight: 40,
+        fontFamily: readableHeroFont,
+        fontWeight: "500",
     },
     heroAccent: {
         color: "#FF5A14",
-    },
-    heroBody: {
-        color: "#6B7280",
-        fontSize: 15,
-        lineHeight: 23,
-        fontFamily: "ChairoSans",
-        marginTop: 14,
-        maxWidth: 255,
     },
     heroVisualWrap: {
         justifyContent: "flex-start",
@@ -110,7 +111,7 @@ const styles = createAdaptiveStyleSheet({
     },
     heroVisualCard: {
         overflow: "hidden",
-        borderRadius: 28,
+        borderRadius: 18,
         backgroundColor: "#FFF8F2",
     },
     heroVisualGlow: {
@@ -139,26 +140,29 @@ const styles = createAdaptiveStyleSheet({
         borderWidth: 1,
         borderColor: "rgba(15,23,42,0.06)",
         paddingHorizontal: 22,
-        paddingTop: 20,
-        paddingBottom: 20,
-        gap: 12,
+        paddingTop: 24,
+        paddingBottom: 26,
+        gap: 0,
         position: "relative",
         zIndex: 2,
     },
     authCardHeader: {
         gap: 6,
+        marginBottom: 20,
     },
     cardTitle: {
-        color: "#0F172A",
-        fontSize: 31,
-        lineHeight: 38,
-        fontFamily: "ChairoSans",
+        color: "#111318",
+        fontSize: 28,
+        lineHeight: 34,
+        letterSpacing: -0.3,
     },
     cardBody: {
-        color: "#475569",
+        color: "#667085",
         fontSize: 15,
         lineHeight: 22,
-        fontFamily: "ChairoSans",
+    },
+    feedbackWrap: {
+        marginBottom: 12,
     },
     emailBadge: {
         borderRadius: 18,
@@ -167,47 +171,48 @@ const styles = createAdaptiveStyleSheet({
         backgroundColor: "#F8FAFC",
         paddingHorizontal: 16,
         paddingVertical: 14,
+        marginBottom: 12,
     },
     emailLabel: {
         color: "#64748B",
         fontSize: 13,
         lineHeight: 18,
-        fontFamily: "ChairoSans",
         marginBottom: 4,
     },
     emailValue: {
-        color: "#0F172A",
+        color: "#111318",
         fontSize: 16,
-        lineHeight: 22,
-        fontFamily: "ChairoSans",
+        lineHeight: 20,
     },
     submitButton: {
-        minHeight: 56,
-        borderRadius: 999,
+        minHeight: 52,
+        height: 52,
+        borderRadius: 26,
         marginTop: 0,
-        backgroundColor: "#FF6A00",
+        backgroundColor: "#FF5A00",
     },
     submitText: {
-        fontSize: 18,
+        fontSize: 16,
+        lineHeight: 20,
     },
     footerRow: {
         flexDirection: "row",
         justifyContent: "center",
         alignItems: "center",
         columnGap: 8,
-        marginTop: 0,
+        marginTop: 22,
         flexWrap: "wrap",
     },
     footerText: {
-        color: "#6B7280",
-        fontSize: 17,
-        fontFamily: "ChairoSans",
+        color: "#667085",
+        fontSize: 15,
+        lineHeight: 20,
         textAlign: "center",
     },
     footerLink: {
-        color: "#FF6A00",
-        fontSize: 17,
-        fontFamily: "ChairoSans",
+        color: "#FF5A00",
+        fontSize: 15,
+        lineHeight: 20,
     },
 });
 
@@ -220,6 +225,16 @@ const CheckEmailScreen = () => {
     const params = useLocalSearchParams<{ email?: string | string[] }>();
     const { width } = useWindowDimensions();
     const isWide = width >= 700;
+    const [interLoaded] = useFonts({
+        Inter_400Regular,
+        Inter_500Medium,
+        Inter_600SemiBold,
+        Inter_700Bold,
+    });
+    const interRegular = interLoaded ? "Inter_400Regular" : readableHeroFont;
+    const interMedium = interLoaded ? "Inter_500Medium" : readableHeroFont;
+    const interSemiBold = interLoaded ? "Inter_600SemiBold" : readableHeroFont;
+    const interBold = interLoaded ? "Inter_700Bold" : readableHeroFont;
     const email = useMemo(() => {
         if (typeof params.email === "string") return params.email;
         if (Array.isArray(params.email)) return params.email[0] || "";
@@ -231,7 +246,7 @@ const CheckEmailScreen = () => {
     const heroGlowWidth = isWide ? 312 : Math.min(194, Math.max(148, width * 0.26));
     const heroGlowHeight = isWide ? 250 : Math.min(168, Math.max(124, width * 0.22));
     const maxShellWidth = isWide ? 860 : 520;
-    const cardOverlap = isWide ? -24 : -50;
+    const cardOverlap = isWide ? -24 : -88;
 
     return (
         <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={["left", "right", "bottom"]}>
@@ -251,8 +266,15 @@ const CheckEmailScreen = () => {
                         </View>
                         <View style={styles.topRightActions}>
                             <LanguageToggle appearance="default" showLabel={false} />
-                            <Pressable style={styles.closeButton} onPress={() => router.replace("/home")} hitSlop={8}>
-                                <Ionicons name="close" size={24} color="#FFFFFF" />
+                            <Pressable
+                                style={({ pressed }) => [
+                                    styles.closeButton,
+                                    { backgroundColor: pressed ? theme.colors.surfaceMuted : theme.colors.surface },
+                                ]}
+                                onPress={() => router.replace("/home")}
+                                hitSlop={8}
+                            >
+                                <Ionicons name="close" size={18} color={theme.colors.ink} />
                             </Pressable>
                         </View>
                     </View>
@@ -272,9 +294,6 @@ const CheckEmailScreen = () => {
                                             <Text style={styles.heroAccent}>fast.</Text>
                                         </>
                                     )}
-                                </Text>
-                                <Text style={[styles.heroBody, { color: theme.colors.textSecondary }, isWide ? { fontSize: 18, lineHeight: 30, maxWidth: 420 } : null]}>
-                                    {copy.heroBody}
                                 </Text>
                             </View>
 
@@ -309,8 +328,7 @@ const CheckEmailScreen = () => {
                                                 ],
                                             },
                                         ]}
-                                        contentFit="cover"
-                                        cachePolicy="memory-disk"
+                                        resizeMode="cover"
                                     />
                                 </View>
                             </View>
@@ -326,21 +344,23 @@ const CheckEmailScreen = () => {
                         ]}
                     >
                         <View style={styles.authCardHeader}>
-                            <Text style={[styles.cardTitle, { color: theme.colors.ink }, isWide ? { fontSize: 46, lineHeight: 54 } : null]}>{copy.title}</Text>
-                            <Text style={[styles.cardBody, { color: theme.colors.textSecondary }]}>{copy.subtitle}</Text>
+                            <Text style={[styles.cardTitle, { color: theme.colors.ink, fontFamily: interBold }, isWide ? { fontSize: 46, lineHeight: 54 } : null]}>{copy.title}</Text>
+                            <Text style={[styles.cardBody, { color: theme.colors.textSecondary, fontFamily: interRegular }]}>{copy.subtitle}</Text>
                         </View>
 
-                        <AuthFeedbackCard
-                            tone="success"
-                            title={copy.cardTitle}
-                            message={copy.cardBody}
-                            Illustration={DeliveryBoy}
-                        />
+                        <View style={styles.feedbackWrap}>
+                            <AuthFeedbackCard
+                                tone="success"
+                                title={copy.cardTitle}
+                                message={copy.cardBody}
+                                Illustration={DeliveryBoy}
+                            />
+                        </View>
 
                         {email ? (
-                            <View style={styles.emailBadge}>
-                                <Text style={styles.emailLabel}>{copy.sentAddress}</Text>
-                                <Text style={styles.emailValue}>{email}</Text>
+                            <View style={[styles.emailBadge, { backgroundColor: theme.colors.input, borderColor: theme.colors.border }]}>
+                                <Text style={[styles.emailLabel, { fontFamily: interMedium }]}>{copy.sentAddress}</Text>
+                                <Text style={[styles.emailValue, { color: theme.colors.ink, fontFamily: interMedium }]}>{email}</Text>
                             </View>
                         ) : null}
 
@@ -348,13 +368,13 @@ const CheckEmailScreen = () => {
                             title={copy.backToSignIn}
                             onPress={() => router.replace("/sign-in")}
                             style={styles.submitButton}
-                            textStyle={styles.submitText}
+                            textStyle={[styles.submitText, { fontFamily: interSemiBold }]}
                         />
 
                         <View style={styles.footerRow}>
-                            <Text style={styles.footerText}>{copy.editPrompt}</Text>
+                            <Text style={[styles.footerText, { fontFamily: interRegular }]}>{copy.editPrompt}</Text>
                             <Pressable onPress={() => router.replace("/sign-up")} hitSlop={6}>
-                                <Text style={styles.footerLink}>{copy.editLink}</Text>
+                                <Text style={[styles.footerLink, { fontFamily: interSemiBold }]}>{copy.editLink}</Text>
                             </Pressable>
                         </View>
                     </View>

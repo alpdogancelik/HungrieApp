@@ -2,10 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 
 import useSearch, { SearchResult } from "@/src/hooks/useSearch";
+import { CATEGORY_CARDS } from "@/src/lib/categoryCards";
+import { RECENT_SEARCHES_KEY, clearStoredRecentSearches } from "@/src/lib/recentSearchesStorage";
 import { storage } from "@/src/lib/storage";
 import { useCartStore } from "@/store/cart.store";
 
-const RECENT_SEARCHES_KEY = "hungrie_search_recents_v3";
+const MAX_RECENT_SEARCHES = 5;
 
 export type SearchSegment = "meals" | "restaurants";
 
@@ -108,7 +110,8 @@ export const useSearchScreenV3 = () => {
         initialCategory: routeCategory || undefined,
     });
 
-    const { items, addItem, decreaseQty, removeItem } = useCartStore();
+    const items = useCartStore((state) => state.items);
+    const setItemQuantity = useCartStore((state) => state.setItemQuantity);
 
     const [segment, setSegment] = useState<SearchSegment>("meals");
     const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -123,7 +126,7 @@ export const useSearchScreenV3 = () => {
                 const cleaned = parsed
                     .map((x) => String(x ?? "").trim())
                     .filter(Boolean)
-                    .slice(0, 8);
+                    .slice(0, MAX_RECENT_SEARCHES);
                 setRecentSearches(cleaned);
             } catch {
                 // ignore
@@ -147,7 +150,17 @@ export const useSearchScreenV3 = () => {
         if (!normalized) return;
 
         setRecentSearches((prev) => {
-            const next = [normalized, ...prev.filter((entry) => entry !== normalized)].slice(0, 8);
+            const normalizedKey = normalizeText(normalized);
+            const next = [normalized, ...prev.filter((entry) => normalizeText(entry) !== normalizedKey)].slice(0, MAX_RECENT_SEARCHES);
+            void storage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
+            return next;
+        });
+    }, []);
+
+    const removeRecent = useCallback((term: string) => {
+        const normalizedKey = normalizeText(term);
+        setRecentSearches((prev) => {
+            const next = prev.filter((entry) => normalizeText(entry) !== normalizedKey);
             void storage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
             return next;
         });
@@ -155,7 +168,7 @@ export const useSearchScreenV3 = () => {
 
     const clearRecents = useCallback(() => {
         setRecentSearches([]);
-        void storage.setItem(RECENT_SEARCHES_KEY, JSON.stringify([]));
+        void clearStoredRecentSearches();
     }, []);
 
     const submitQuery = useCallback(() => {
@@ -177,73 +190,63 @@ export const useSearchScreenV3 = () => {
         const q = normalizeText(query).replace(/[^a-z0-9ğüşıöç \-]+/gi, "").trim();
         if (!q) return restaurants;
 
+        const requestedCategory = normalizeText(category);
+        const searchTerms = new Set([q, requestedCategory].filter(Boolean));
+        CATEGORY_CARDS.forEach((card) => {
+            const aliases = [card.searchKey, card.tr, card.en].map(normalizeText);
+            const categoryMatch = requestedCategory === normalizeText(card.searchKey);
+            const queryMatch = q.length >= 2 && aliases.some((alias) => alias.startsWith(q) || q === alias);
+            if (categoryMatch || queryMatch) aliases.forEach((alias) => searchTerms.add(alias));
+        });
+        const matchingMenuRestaurantIds = new Set(
+            mealsFlat.map((item) => getRestaurantKeyFromItem(item)).filter((id) => id !== "unknown"),
+        );
+
         return restaurants.filter((r: any) => {
             const name = normalizeText(r?.name);
             const cuisine = normalizeText(r?.cuisine);
             const cats = Array.isArray(r?.categories) ? normalizeText(r.categories.join(" ")) : "";
             const slug = normalizeText(r?.slug ?? r?.code ?? r?.id ?? r?.$id ?? "");
-            return (
-                (name && name.includes(q)) ||
-                (cuisine && cuisine.includes(q)) ||
-                (cats && cats.includes(q)) ||
-                (slug && slug.includes(q))
+            const restaurantKey = normalizeText(r?.id ?? r?.$id ?? r?.name).replace(/[^a-z0-9]+/g, "");
+            return matchingMenuRestaurantIds.has(restaurantKey) || Array.from(searchTerms).some((term) =>
+                (name && name.includes(term)) ||
+                (cuisine && cuisine.includes(term)) ||
+                (cats && cats.includes(term)) ||
+                (slug && slug.includes(term)),
             );
         });
-    }, [query, restaurants]);
+    }, [category, mealsFlat, query, restaurants]);
 
     const getCartId = useCallback((item: SearchResult) => makeCartId(item), []);
 
-    const getQuantity = useCallback(
-        (cartId: string) =>
-            items.filter((entry) => entry.id === cartId).reduce((total, entry) => total + entry.quantity, 0),
-        [items],
-    );
+    const quantityById = useMemo(() => {
+        const quantities = new Map<string, number>();
+        items.forEach((entry) => quantities.set(entry.id, (quantities.get(entry.id) ?? 0) + entry.quantity));
+        return quantities;
+    }, [items]);
+
+    const getQuantity = useCallback((cartId: string) => quantityById.get(cartId) ?? 0, [quantityById]);
 
     const handleQuantityChange = useCallback(
         (item: SearchResult, nextValue: number) => {
             const id = makeCartId(item);
 
-            const current = items
-                .filter((entry) => entry.id === id)
-                .reduce((total, entry) => total + entry.quantity, 0);
-
-            if (nextValue === current) return;
-
-            if (nextValue > current) {
-                const diff = nextValue - current;
-                for (let i = 0; i < diff; i += 1) {
-                    addItem({
-                        id,
-                        name: item.name,
-                        price: Number(item.price || 0),
-                        image_url: safeImageUrl(
-                            (item as any).image_url ||
-                                (item as any).imageUrl ||
-                                (item as any).image ||
-                                (item as any).photo ||
-                                "",
-                        ),
-                        restaurantId: (item as any).restaurantId ? String((item as any).restaurantId) : undefined,
-                        customizations: [],
-                    });
-                }
-                return;
-            }
-
-            const diff = current - nextValue;
-            let remaining = current;
-
-            for (let i = 0; i < diff; i += 1) {
-                if (remaining <= 1) {
-                    removeItem(id, []);
-                    remaining = 0;
-                } else {
-                    decreaseQty(id, []);
-                    remaining -= 1;
-                }
-            }
+            setItemQuantity({
+                id,
+                name: item.name,
+                price: Number(item.price || 0),
+                image_url: safeImageUrl(
+                    (item as any).image_url ||
+                        (item as any).imageUrl ||
+                        (item as any).image ||
+                        (item as any).photo ||
+                        "",
+                ),
+                restaurantId: (item as any).restaurantId ? String((item as any).restaurantId) : undefined,
+                customizations: [],
+            }, nextValue);
         },
-        [addItem, decreaseQty, items, removeItem],
+        [setItemQuantity],
     );
 
     const handleRefresh = useCallback(async () => {
@@ -273,6 +276,7 @@ export const useSearchScreenV3 = () => {
         clearAll,
         recentSearches,
         persistRecent,
+        removeRecent,
         clearRecents,
         getCartId,
         getQuantity,

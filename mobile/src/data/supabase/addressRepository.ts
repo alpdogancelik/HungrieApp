@@ -2,10 +2,12 @@ import { nanoid } from "nanoid/non-secure";
 
 import type { AddressRepository } from "@/src/data/contracts";
 import type { Address } from "@/src/domain/types";
-import { requireSupabase, throwIfError } from "./utils";
+import { requireSupabase, throwIfError, withSupabaseAuthRetry } from "./utils";
 
 const listeners = new Set<(addresses: Address[]) => void>();
 let cache: Address[] = [];
+let cacheGeneration = 0;
+const ADDRESS_COLUMNS = "id,label,line1,block,room,city,country,is_default,created_at";
 
 const mapAddress = (row: any): Address => ({
     id: String(row.id || ""),
@@ -25,62 +27,51 @@ const notify = (addresses: Address[]) => {
 };
 
 export const list: AddressRepository["list"] = async () => {
-    const rows = throwIfError(await requireSupabase().from("addresses").select("*").order("is_default", { ascending: false }));
+    const requestGeneration = cacheGeneration;
+    const rows = await withSupabaseAuthRetry(async () => throwIfError(await requireSupabase().from("addresses").select(ADDRESS_COLUMNS).order("is_default", { ascending: false })));
     const addresses = rows.map(mapAddress);
+    if (requestGeneration !== cacheGeneration) return [];
     notify(addresses);
     return addresses;
 };
 
 export const create: AddressRepository["create"] = async (payload) => {
-    const currentProfile = throwIfError(await requireSupabase().from("profiles").select("id").limit(1).maybeSingle());
+    const existing = await list();
     const address: Address = {
         ...payload,
         id: payload.id || nanoid(),
-        isDefault: payload.isDefault ?? false,
+        isDefault: existing.length === 0 || Boolean(payload.isDefault),
         createdAt: new Date().toISOString(),
     };
-    throwIfError(
-        await requireSupabase().from("addresses").insert({
-            id: address.id,
-            profile_id: currentProfile?.id || "",
-            label: address.label,
-            line1: address.line1,
-            block: address.block || null,
-            room: address.room || null,
-            city: address.city,
-            country: address.country,
-            is_default: address.isDefault,
-        }),
-    );
-    if (address.isDefault) await setDefault(address.id);
-    await list();
-    return address;
+    await withSupabaseAuthRetry(async () => throwIfError(await requireSupabase().rpc("create_my_address", {
+        p_id: address.id, p_label: address.label, p_line1: address.line1,
+        p_block: address.block || undefined, p_room: address.room || undefined,
+        p_city: address.city, p_country: address.country, p_is_default: address.isDefault,
+    })));
+    const saved = await list();
+    return saved.find((item) => item.id === address.id) ?? address;
 };
 
 export const update: AddressRepository["update"] = async (payload) => {
-    throwIfError(
-        await requireSupabase().from("addresses").update({
-            label: payload.label,
-            line1: payload.line1,
-            block: payload.block || null,
-            room: payload.room || null,
-            city: payload.city,
-            country: payload.country,
-            is_default: payload.isDefault,
-        }).eq("id", payload.id),
-    );
-    if (payload.isDefault) await setDefault(payload.id);
-    await list();
-    return payload;
+    const existing = await list();
+    const previous = existing.find((address) => address.id === payload.id);
+    if (!previous) throw new Error("Address not found.");
+    await withSupabaseAuthRetry(async () => throwIfError(await requireSupabase().rpc("update_my_address", {
+        p_id: payload.id, p_label: payload.label, p_line1: payload.line1,
+        p_block: payload.block || undefined, p_room: payload.room || undefined,
+        p_city: payload.city, p_country: payload.country, p_is_default: payload.isDefault,
+    })));
+    const saved = await list();
+    return saved.find((item) => item.id === payload.id) ?? { ...payload, isDefault: previous.isDefault };
 };
 
 export const remove: AddressRepository["remove"] = async (id) => {
-    throwIfError(await requireSupabase().from("addresses").delete().eq("id", id));
+    await withSupabaseAuthRetry(async () => throwIfError(await requireSupabase().rpc("delete_my_address", { p_id: id })));
     await list();
 };
 
 export const setDefault: AddressRepository["setDefault"] = async (id) => {
-    await requireSupabase().rpc("set_default_address", { p_address_id: id }).then(throwIfError);
+    await withSupabaseAuthRetry(async () => requireSupabase().rpc("set_default_address", { p_address_id: id }).then(throwIfError));
     await list();
 };
 
@@ -88,6 +79,10 @@ export const syncUp: AddressRepository["syncUp"] = async () => {
     await list();
 };
 export const syncDown = syncUp;
+export const clearSessionCache: AddressRepository["clearSessionCache"] = () => {
+    cacheGeneration += 1;
+    notify([]);
+};
 export const subscribe: AddressRepository["subscribe"] = (listener) => {
     listeners.add(listener);
     listener(cache);
@@ -105,5 +100,6 @@ export const supabaseAddressRepository: AddressRepository = {
     setDefault,
     syncUp,
     syncDown,
+    clearSessionCache,
     subscribe,
 };

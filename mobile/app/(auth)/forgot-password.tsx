@@ -1,14 +1,19 @@
 import { useMemo, useState } from "react";
 import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
-import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
+import {
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    useFonts,
+} from "@expo-google-fonts/inter";
 import { useTranslation } from "react-i18next";
 
 import AuthFeedbackCard from "@/components/auth/AuthFeedbackCard";
-import CustomButton from "@/components/CustomButton";
 import CustomInput from "@/components/CustomInput";
 import LanguageToggle from "@/components/LanguageToggle";
 import { sendPasswordReset } from "@/src/data/authRepository";
@@ -141,77 +146,93 @@ const styles = createAdaptiveStyleSheet({
         paddingHorizontal: 22,
         paddingTop: 24,
         paddingBottom: 26,
-        gap: 18,
+        gap: 0,
         position: "relative",
         zIndex: 2,
     },
     authCardHeader: {
         gap: 6,
+        marginBottom: 23,
     },
     cardTitle: {
-        color: "#0F172A",
-        fontSize: 31,
-        lineHeight: 38,
-        fontFamily: "ChairoSans",
+        color: "#111318",
+        fontSize: 28,
+        lineHeight: 34,
+        letterSpacing: -0.3,
     },
     fieldLabel: {
-        color: "#6B7280",
+        color: "#667085",
         fontSize: 14,
-        marginBottom: 10,
+        lineHeight: 18,
+        marginBottom: 8,
         paddingLeft: 0,
     },
     fieldInput: {
-        minHeight: 58,
-        borderRadius: 18,
-        borderColor: "#D9E1EC",
+        height: 54,
+        minHeight: 54,
+        borderRadius: 17,
+        borderColor: "#DDE2EA",
         paddingHorizontal: 16,
-        fontSize: 17,
-        color: "#0F172A",
+        paddingVertical: 0,
+        fontSize: 16,
+        lineHeight: 20,
+        color: "#111318",
         backgroundColor: "#FFFFFF",
     },
+    fieldInputFocused: {
+        borderColor: "#FF5A00",
+    },
+    feedbackWrap: {
+        marginBottom: 12,
+    },
     helperText: {
-        color: "#6B7280",
+        color: "#667085",
         fontSize: 13,
         lineHeight: 20,
-        fontFamily: "ChairoSans",
-        marginTop: -6,
+        marginTop: 12,
     },
     submitButton: {
-        minHeight: 64,
-        borderRadius: 999,
-        marginTop: 4,
-        backgroundColor: "#FF6A00",
+        width: "100%",
+        height: 52,
+        minHeight: 52,
+        borderRadius: 26,
+        marginTop: 12,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#FF5A00",
     },
     submitText: {
-        fontSize: 18,
+        color: "#FFFFFF",
+        fontSize: 16,
+        lineHeight: 20,
     },
     footerRow: {
         flexDirection: "row",
         justifyContent: "center",
         alignItems: "center",
         columnGap: 8,
-        marginTop: 2,
+        marginTop: 22,
         flexWrap: "wrap",
     },
     footerText: {
-        color: "#6B7280",
-        fontSize: 17,
-        fontFamily: "ChairoSans",
+        color: "#667085",
+        fontSize: 15,
+        lineHeight: 20,
     },
     footerLink: {
-        color: "#FF6A00",
-        fontSize: 17,
-        fontFamily: "ChairoSans",
+        color: "#FF5A00",
+        fontSize: 15,
+        lineHeight: 20,
     },
     closeButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: "#F1895E",
         alignItems: "center",
         justifyContent: "center",
         borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.32)",
+        borderColor: "#E4E7EC",
+        ...makeShadow({ color: "#101828", offsetY: 1, blurRadius: 3, opacity: 0.04, elevation: 1 }),
     },
 });
 
@@ -232,14 +253,27 @@ const ForgotPasswordScreen = () => {
 
     const [email, setEmail] = useState(initialEmail);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSubmitPressed, setIsSubmitPressed] = useState(false);
+    const [emailFocused, setEmailFocused] = useState(false);
     const [feedback, setFeedback] = useState<FeedbackState>(null);
+    const [interLoaded] = useFonts({
+        Inter_400Regular,
+        Inter_500Medium,
+        Inter_600SemiBold,
+        Inter_700Bold,
+    });
+
+    const interRegular = interLoaded ? "Inter_400Regular" : Platform.select({ ios: "System", android: "sans-serif", default: "system-ui" });
+    const interMedium = interLoaded ? "Inter_500Medium" : Platform.select({ ios: "System", android: "sans-serif", default: "system-ui" });
+    const interSemiBold = interLoaded ? "Inter_600SemiBold" : Platform.select({ ios: "System", android: "sans-serif", default: "system-ui" });
+    const interBold = interLoaded ? "Inter_700Bold" : Platform.select({ ios: "System", android: "sans-serif", default: "system-ui" });
 
     const heroVisualWidth = isWide ? 360 : Math.min(266, Math.max(210, width * 0.43));
     const heroVisualHeight = isWide ? 320 : Math.min(224, Math.max(230, width * 0.36));
     const heroGlowWidth = isWide ? 312 : Math.min(194, Math.max(148, width * 0.26));
     const heroGlowHeight = isWide ? 250 : Math.min(168, Math.max(124, width * 0.22));
     const maxShellWidth = isWide ? 860 : 520;
-    const cardOverlap = isWide ? -24 : -50;
+    const cardOverlap = isWide ? -24 : -38;
 
     const submit = async () => {
         const trimmedEmail = email.trim();
@@ -303,8 +337,15 @@ const ForgotPasswordScreen = () => {
                         </View>
                         <View style={styles.topRightActions}>
                             <LanguageToggle appearance="default" showLabel={false} />
-                            <Pressable style={styles.closeButton} onPress={() => router.replace("/home")} hitSlop={8}>
-                                <Ionicons name="close" size={24} color="#FFFFFF" />
+                            <Pressable
+                                style={({ pressed }) => [
+                                    styles.closeButton,
+                                    { backgroundColor: pressed ? theme.colors.surfaceMuted : theme.colors.surface },
+                                ]}
+                                onPress={() => router.replace("/home")}
+                                hitSlop={8}
+                            >
+                                <Ionicons name="close" size={18} color={theme.colors.ink} />
                             </Pressable>
                         </View>
                     </View>
@@ -315,13 +356,13 @@ const ForgotPasswordScreen = () => {
                                 <Text style={[styles.heroHeading, { color: theme.colors.ink }, isWide ? { fontSize: 56, lineHeight: 66 } : null]}>
                                     {isTurkish ? (
                                         <>
-                                            Şifreni{"\n"}yenile{"\n"}
-                                            <Text style={styles.heroAccent}>ve devam et.</Text>
+                                            Şifreni{"\n"}
+                                            <Text style={styles.heroAccent}>yenile.</Text>
                                         </>
                                     ) : (
                                         <>
-                                            Reset{"\n"}your password{"\n"}
-                                            <Text style={styles.heroAccent}>and continue.</Text>
+                                            Reset{"\n"}
+                                            <Text style={styles.heroAccent}>your password.</Text>
                                         </>
                                     )}
                                 </Text>
@@ -361,8 +402,7 @@ const ForgotPasswordScreen = () => {
                                                 ],
                                             },
                                         ]}
-                                        contentFit="cover"
-                                        cachePolicy="memory-disk"
+                                        resizeMode="cover"
                                     />
                                 </View>
                             </View>
@@ -378,20 +418,23 @@ const ForgotPasswordScreen = () => {
                         ]}
                     >
                         <View style={styles.authCardHeader}>
-                            <Text style={[styles.cardTitle, { color: theme.colors.ink }, isWide ? { fontSize: 46, lineHeight: 54 } : null]}>{copy.title}</Text>
+                            <Text style={[styles.cardTitle, { color: theme.colors.ink, fontFamily: interBold }, isWide ? { fontSize: 46, lineHeight: 54 } : null]}>{copy.title}</Text>
                         </View>
 
                         {feedback ? (
-                            <AuthFeedbackCard
-                                tone={feedback.tone}
-                                title={feedback.title}
-                                message={feedback.message}
-                                Illustration={feedback.tone === "success" ? OnlineOrder : RobotDelivery}
-                            />
+                            <View style={styles.feedbackWrap}>
+                                <AuthFeedbackCard
+                                    tone={feedback.tone}
+                                    title={feedback.title}
+                                    message={feedback.message}
+                                    Illustration={feedback.tone === "success" ? OnlineOrder : RobotDelivery}
+                                />
+                            </View>
                         ) : null}
 
                         <CustomInput
                             placeholder="ahmet@metumail.edu.tr"
+                            placeholderTextColor={theme.colors.muted}
                             value={email}
                             onChangeText={(text) => {
                                 setEmail(text);
@@ -399,19 +442,48 @@ const ForgotPasswordScreen = () => {
                             }}
                             label={copy.emailLabel}
                             keyboardType="email-address"
-                            leftIcon={<Ionicons name="mail-outline" size={22} color="#FF6A00" />}
-                            labelStyle={styles.fieldLabel}
-                            inputStyle={styles.fieldInput}
+                            onFocus={() => setEmailFocused(true)}
+                            onBlur={() => setEmailFocused(false)}
+                            leftIcon={<Ionicons name="mail-outline" size={20} color="#FF5A00" />}
+                            labelStyle={[styles.fieldLabel, { fontFamily: interMedium }]}
+                            inputStyle={[
+                                styles.fieldInput,
+                                emailFocused && styles.fieldInputFocused,
+                                {
+                                    color: theme.colors.ink,
+                                    backgroundColor: theme.colors.input,
+                                    borderColor: emailFocused ? "#FF5A00" : theme.colors.border,
+                                    fontFamily: email ? interMedium : interRegular,
+                                },
+                            ]}
                         />
 
-                        <Text style={styles.helperText}>{copy.helper}</Text>
+                        <Text style={[styles.helperText, { fontFamily: interRegular }]}>{copy.helper}</Text>
 
-                        <CustomButton title={copy.submit} isLoading={isSubmitting} disabled={isSubmitting} onPress={submit} style={styles.submitButton} textStyle={styles.submitText} />
+                        <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={copy.submit}
+                            disabled={isSubmitting}
+                            onPress={submit}
+                            onPressIn={() => setIsSubmitPressed(true)}
+                            onPressOut={() => setIsSubmitPressed(false)}
+                            style={[
+                                styles.submitButton,
+                                isSubmitPressed && !isSubmitting ? { backgroundColor: "#E94F00" } : null,
+                                isSubmitting ? { backgroundColor: "#E4E7EC" } : null,
+                            ]}
+                        >
+                            {isSubmitting ? (
+                                <ActivityIndicator size="small" color="#FFFFFF" />
+                            ) : (
+                                <Text style={[styles.submitText, { fontFamily: interSemiBold }]}>{copy.submit}</Text>
+                            )}
+                        </Pressable>
 
                         <View style={styles.footerRow}>
-                            <Text style={styles.footerText}>{copy.backPrompt}</Text>
-                            <Pressable onPress={() => router.replace("/sign-in")} hitSlop={6}>
-                                <Text style={styles.footerLink}>{copy.backLink}</Text>
+                            <Text style={[styles.footerText, { fontFamily: interRegular }]}>{copy.backPrompt}</Text>
+                            <Pressable onPress={() => router.replace("/sign-in")} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
+                                <Text style={[styles.footerLink, { fontFamily: interSemiBold }]}>{copy.backLink}</Text>
                             </Pressable>
                         </View>
                     </View>

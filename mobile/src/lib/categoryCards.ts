@@ -1,6 +1,7 @@
 import { images } from "@/constants/mediaCatalog";
 
 export const CATEGORY_CARDS = [
+    { id: "doner", searchKey: "doner", tr: "Döner", en: "Doner", image: images.categoryKebab },
     { id: "burger", searchKey: "burger", tr: "Burger", en: "Burger", image: images.categoryBurger },
     { id: "pizza", searchKey: "pizza", tr: "Pizza", en: "Pizza", image: images.categoryPizza },
     { id: "kebap", searchKey: "kebap", tr: "Kebap", en: "Kebab", image: images.categoryKebab },

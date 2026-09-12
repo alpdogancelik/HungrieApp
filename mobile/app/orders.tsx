@@ -1,134 +1,236 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
-    Alert,
     ActivityIndicator,
-    Clipboard,
+    Alert,
     FlatList,
+    Platform,
     Pressable,
     RefreshControl,
+    ScrollView,
+    StyleSheet,
     Text,
     TextInput,
-    TouchableOpacity,
     View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useTranslation } from "react-i18next";
-import { useFocusEffect } from "@react-navigation/native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { fetchUserOrdersPage } from "@/src/data/orderRepository";
+import type { OrderCursor } from "@/src/data/contracts";
 import type { OrderStatus, RestaurantOrder } from "@/type";
-import { fetchUserOrders } from "@/src/data/orderRepository";
-import ReviewSheet from "@/src/features/reviews/ReviewSheet";
-import { fetchUserReviews, submitMenuItemReview } from "@/src/data/reviewRepository";
-import useAuthStore from "@/store/auth.store";
-import { illustrations } from "@/constants/mediaCatalog";
+import { ProtectedRoute } from "@/src/features/auth/routeGuards";
+import { ReorderError, resolveOrderForReorder } from "@/src/features/orders/reorder";
+import { isCancelledStatus, isReviewableStatus } from "@/src/features/reviews/reviewUtils";
 import { useTheme } from "@/src/theme/themeContext";
-import { ORDER_STATUS_COLORS } from "@/components/OrderCard";
-import Icon from "@/components/Icon";
+import { formatCurrency } from "@/lib/cart.utils";
 import { seedRestaurants } from "@/lib/restaurantSeeds";
-import { getProductReviewId, isCancelledStatus, isReviewableStatus } from "@/src/features/reviews/reviewUtils";
+import useAuthStore from "@/store/auth.store";
+import { normalizeCartRestaurantKey, useCartStore } from "@/store/cart.store";
 
-type FilterId = "all" | OrderStatus;
+type FilterId = "all" | "active" | "delivered" | "canceled";
 
-const FILTERS: { id: FilterId; label: string }[] = [
-    { id: "all", label: "ordersAll" },
-    { id: "preparing", label: "status.preparing" },
-    { id: "ready", label: "status.ready" },
-    { id: "delivered", label: "status.delivered" },
-    { id: "canceled", label: "status.canceled" },
-];
-
-const PAGE_SIZE = 4;
-const formatCurrencyValue = (value?: number | string) => {
-    const amount = Number(value ?? 0);
-    return `₺${Number.isNaN(amount) ? "0.00" : amount.toFixed(2)}`;
+type OrderItemPreview = {
+    itemId?: string;
+    name: string;
+    quantity: number;
 };
 
-const formatTimestamp = (value: any, locale?: string) => {
-    if (!value) return "";
-    if (typeof value === "string" || typeof value === "number") {
-        const date = new Date(value);
-        return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString(locale);
-    }
-    if (typeof value === "object" && "seconds" in value) {
-        const millis = value.seconds * 1000 + (value.nanoseconds || 0) / 1_000_000;
-        return new Date(millis).toLocaleString(locale);
-    }
-    return "";
+type StatusPresentation = {
+    background: string;
+    color: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    label: string;
 };
 
-const getMillis = (value: any) => {
-    if (!value) return 0;
-    if (typeof value === "object" && "seconds" in value) {
-        return value.seconds * 1000 + (value.nanoseconds || 0) / 1_000_000;
-    }
-    const asDate = new Date(value);
-    const ms = asDate.getTime();
-    return Number.isNaN(ms) ? 0 : ms;
-};
+const PAGE_SIZE = 20;
+const ORANGE = "#FF5A00";
+const ORANGE_PRESSED = "#E94F00";
+const ACTIVE_STATUSES = new Set<OrderStatus>(["pending", "accepted", "preparing", "ready", "out_for_delivery"]);
+
+const normalizeId = (value: unknown) => (value === null || value === undefined ? "" : String(value));
+
+const restaurantNamesById = seedRestaurants.reduce<Record<string, string>>((names, restaurant: any) => {
+    const id = normalizeId(restaurant?.id);
+    if (id) names[id] = restaurant?.name || id;
+    return names;
+}, {});
+
+const resolveRestaurantName = (order: any) =>
+    String(
+        order?.restaurant?.name ||
+        order?.restaurantName ||
+        restaurantNamesById[normalizeId(order?.restaurantId)] ||
+        "Restaurant",
+    );
 
 const normalizeStatus = (status?: string): OrderStatus => {
     const raw = String(status || "").trim().toLowerCase();
-    if (isCancelledStatus(raw)) return "canceled";
-    if (isReviewableStatus(raw)) return "delivered";
-    if (raw === "accepted") return "preparing";
-    if (raw === "hazir" || raw === "hazirlandi" || raw === "hazirlandı" || raw === "hazırlandı" || raw === "hazır") return "ready";
+    if (isCancelledStatus(raw) || raw === "rejected") return "canceled";
+    if (isReviewableStatus(raw) || raw === "completed") return "delivered";
+    if (["accepted", "restaurant_accepted"].includes(raw)) return "accepted";
+    if (["hazir", "hazirlandi", "hazirlandı", "hazırlandı", "hazır", "ready_for_pickup"].includes(raw)) return "ready";
+    if (["on_the_way", "picked_up", "delivering"].includes(raw)) return "out_for_delivery";
     if (["pending", "preparing", "ready", "out_for_delivery", "delivered", "canceled"].includes(raw)) {
         return raw as OrderStatus;
     }
     return "pending";
 };
 
-const resolveItems = (order: any) => {
+const filterGroupForStatus = (status?: string): Exclude<FilterId, "all"> => {
+    const normalized = normalizeStatus(status);
+    if (normalized === "delivered") return "delivered";
+    if (normalized === "canceled" || normalized === "rejected") return "canceled";
+    return "active";
+};
+
+const resolveItems = (order: any): OrderItemPreview[] => {
     const raw = Array.isArray(order?.orderItems) ? order.orderItems : Array.isArray(order?.items) ? order.items : [];
     return raw.map((item: any) => ({
         itemId: String(item?.menuItemId ?? item?.itemId ?? item?.id ?? "").trim() || undefined,
-        name: item?.name ?? "-",
-        quantity: Math.max(1, Number(item?.quantity ?? 1)),
+        name: String(item?.name || "-").trim() || "-",
+        quantity: Math.max(1, Number(item?.quantity ?? 1) || 1),
     }));
 };
 
-const normalizeId = (value: unknown) => (value === null || value === undefined ? "" : String(value));
-const restaurantNamesById = seedRestaurants.reduce<Record<string, string>>((acc, restaurant: any) => {
-    const id = normalizeId(restaurant?.id);
-    if (!id) return acc;
-    acc[id] = restaurant?.name || id;
-    return acc;
-}, {});
-const resolveRestaurantName = (order: any) =>
-    order?.restaurant?.name ||
-    order?.restaurantName ||
-    restaurantNamesById[normalizeId(order?.restaurantId)] ||
-    "Restaurant";
+const getMillis = (value: any) => {
+    if (!value) return 0;
+    if (typeof value?.toDate === "function") return value.toDate().getTime();
+    if (typeof value === "object" && typeof value.seconds === "number") {
+        return value.seconds * 1000 + Number(value.nanoseconds || 0) / 1_000_000;
+    }
+    const millis = new Date(value).getTime();
+    return Number.isNaN(millis) ? 0 : millis;
+};
 
-type ReviewTarget = {
-    orderId: string;
-    restaurantId: string;
-    itemId: string;
-    itemName: string;
+const formatOrderDate = (value: unknown, locale: string, todayLabel: string, yesterdayLabel: string) => {
+    const millis = getMillis(value);
+    if (!millis) return "";
+
+    const date = new Date(millis);
+    const now = new Date();
+    const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startOrderDay = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+    const dayDifference = Math.round((startToday - startOrderDay) / 86_400_000);
+    const time = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
+
+    if (dayDifference === 0) return `${todayLabel} · ${time}`;
+    if (dayDifference === 1) return `${yesterdayLabel} · ${time}`;
+
+    const dayAndMonth = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(date).replace(/\.$/, "");
+    return `${dayAndMonth} · ${time}`;
+};
+
+const confirmAction = (title: string, message: string, cancelLabel: string, confirmLabel: string) => {
+    if (Platform.OS === "web") {
+        const browserConfirm = (globalThis as { confirm?: (copy?: string) => boolean }).confirm;
+        return Promise.resolve(browserConfirm ? browserConfirm(`${title}\n\n${message}`) : false);
+    }
+
+    return new Promise<boolean>((resolve) => {
+        let settled = false;
+        const finish = (value: boolean) => {
+            if (settled) return;
+            settled = true;
+            resolve(value);
+        };
+        Alert.alert(title, message, [
+            { text: cancelLabel, style: "cancel", onPress: () => finish(false) },
+            { text: confirmLabel, onPress: () => finish(true) },
+        ], { cancelable: true, onDismiss: () => finish(false) });
+    });
 };
 
 const OrderHistoryScreen = () => {
-    const { theme } = useTheme();
-    const params = useLocalSearchParams<{ lang: string; highlight?: string }>();
+    const { variant } = useTheme();
+    const isDark = variant === "dark";
+    const colors = useMemo(() => ({
+        page: isDark ? "#0F1115" : "#FAFBFC",
+        surface: isDark ? "#171A20" : "#FFFFFF",
+        pressed: isDark ? "#1E222A" : "#F9FAFB",
+        primary: isDark ? "#F5F7FA" : "#111318",
+        secondary: isDark ? "#AAB2C0" : "#667085",
+        tertiary: isDark ? "#7F8999" : "#98A2B3",
+        border: isDark ? "#2A2E35" : "#EAECF0",
+        skeleton: isDark ? "#23272E" : "#F0F2F5",
+    }), [isDark]);
+    const styles = useMemo(() => createStyles(colors), [colors]);
+    const insets = useSafeAreaInsets();
+    const params = useLocalSearchParams<{ highlight?: string }>();
     const router = useRouter();
     const { user } = useAuthStore();
     const { t, i18n } = useTranslation();
-    const locale = i18n.language?.startsWith("tr") ? "tr-TR" : "en-US";
     const isTurkish = i18n.language?.toLowerCase().startsWith("tr");
+    const locale = isTurkish ? "tr-TR" : "en-US";
     const userId = String(user?.id ?? user?.$id ?? user?.accountId ?? "").trim();
-    const userName = String(user?.name || "").trim() || undefined;
 
     const [orders, setOrders] = useState<RestaurantOrder[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [filter, setFilter] = useState<FilterId>("all");
     const [search, setSearch] = useState("");
-    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-    const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set());
-    const [reviewTarget, setReviewTarget] = useState<ReviewTarget | null>(null);
-    const [isSubmittingReview, setIsSubmittingReview] = useState(false);
-    const [reviewLookupLoading, setReviewLookupLoading] = useState(false);
+    const [searchFocused, setSearchFocused] = useState(false);
+    const [reorderLoadingId, setReorderLoadingId] = useState<string | null>(null);
+    const [nextCursor, setNextCursor] = useState<OrderCursor | null>(null);
+    const [hasMoreOrders, setHasMoreOrders] = useState(false);
+
+    const copy = useMemo(() => ({
+        title: isTurkish ? "Siparişler" : "Orders",
+        back: isTurkish ? "Geri" : "Back",
+        subtitle: isTurkish ? "Aktif ve geçmiş siparişlerini görüntüle." : "Track current and past orders.",
+        search: isTurkish ? "Siparişlerde ara" : "Search orders",
+        filters: {
+            all: isTurkish ? "Tümü" : "All",
+            active: isTurkish ? "Aktif" : "Active",
+            delivered: isTurkish ? "Teslim edildi" : "Delivered",
+            canceled: isTurkish ? "İptal edildi" : "Canceled",
+        } satisfies Record<FilterId, string>,
+        today: isTurkish ? "Bugün" : "Today",
+        yesterday: isTurkish ? "Dün" : "Yesterday",
+        items: (count: number) => isTurkish ? `${count} ürün` : `${count} ${count === 1 ? "item" : "items"}`,
+        moreItems: (count: number) => isTurkish ? `+${count} ürün daha` : `+${count} more ${count === 1 ? "item" : "items"}`,
+        track: isTurkish ? "Siparişi takip et" : "Track order",
+        reorder: isTurkish ? "Tekrarla" : "Reorder",
+        reorderA11y: isTurkish ? "Siparişi tekrarla" : "Reorder this order",
+        adding: isTurkish ? "Ekleniyor..." : "Adding...",
+        cancel: isTurkish ? "Vazgeç" : "Cancel",
+        partialTitle: isTurkish ? "Bazı ürünler değişti" : "Some items have changed",
+        partialBody: (count: number) => isTurkish
+            ? `${count} ürün artık kullanılamıyor. Kalan ürünleri sepetine ekleyebilirsin.`
+            : `${count} ${count === 1 ? "item is" : "items are"} no longer available. You can add the remaining items to your cart.`,
+        addAvailable: isTurkish ? "Uygun ürünleri ekle" : "Add available items",
+        noneTitle: isTurkish ? "Tekrar sipariş verilemiyor" : "Unable to reorder",
+        noneBody: isTurkish ? "Bu siparişteki ürünler şu anda tekrar sipariş edilemiyor." : "Items from this order are currently unavailable.",
+        restaurantBody: isTurkish ? "Bu restoran şu anda sipariş kabul etmiyor." : "This restaurant is not accepting orders right now.",
+        errorBody: isTurkish ? "Menü yüklenemedi. Lütfen tekrar dene." : "The menu could not be loaded. Please try again.",
+        conflictTitle: isTurkish ? "Yeni bir sepet başlatılsın mı?" : "Start a new cart?",
+        conflictBody: isTurkish
+            ? "Sepetinde başka bir restorandan ürünler var. Bu ürünleri kaldırıp bu siparişi tekrar eklemek ister misin?"
+            : "Your cart contains items from another restaurant. Remove them and add this order instead?",
+        replaceCart: isTurkish ? "Yeni sepet başlat" : "Start new cart",
+        noOrders: isTurkish ? "Henüz sipariş yok" : "No orders yet",
+        noOrdersBody: isTurkish ? "Siparişlerin burada görünecek." : "Your orders will appear here.",
+        noMatches: isTurkish ? "Sipariş bulunamadı" : "No matching orders",
+        noMatchesBody: isTurkish ? "Farklı bir arama deneyin." : "Try another search.",
+        noActive: isTurkish ? "Aktif sipariş yok" : "No active orders",
+        noActiveBody: isTurkish ? "Aktif siparişlerin burada görünecek." : "Your active orders will appear here.",
+        noDelivered: isTurkish ? "Teslim edilmiş sipariş yok" : "No delivered orders",
+        noCanceled: isTurkish ? "İptal edilmiş sipariş yok" : "No canceled orders",
+        browse: isTurkish ? "Restoranlara göz at" : "Browse restaurants",
+        status: {
+            pending: isTurkish ? "Bekliyor" : "Pending",
+            accepted: isTurkish ? "Hazırlanıyor" : "Preparing",
+            preparing: isTurkish ? "Hazırlanıyor" : "Preparing",
+            ready: isTurkish ? "Hazır" : "Ready",
+            out_for_delivery: isTurkish ? "Yolda" : "On the way",
+            delivered: isTurkish ? "Teslim edildi" : "Delivered",
+            canceled: isTurkish ? "İptal edildi" : "Canceled",
+            rejected: isTurkish ? "İptal edildi" : "Canceled",
+        } satisfies Record<OrderStatus, string>,
+    }), [isTurkish]);
 
     const loadOrders = useCallback(async () => {
         if (!userId) {
@@ -139,461 +241,421 @@ const OrderHistoryScreen = () => {
 
         try {
             setLoading(true);
-            const list = await fetchUserOrders(userId);
-            setOrders((list as RestaurantOrder[]) || []);
+            const page = await fetchUserOrdersPage(userId, { limit: PAGE_SIZE });
+            setOrders((page.items as RestaurantOrder[]) || []);
+            setNextCursor(page.nextCursor);
+            setHasMoreOrders(page.hasMore);
         } catch {
             setOrders([]);
+            setNextCursor(null);
+            setHasMoreOrders(false);
         } finally {
             setLoading(false);
         }
     }, [userId]);
 
-    const loadReviewedIds = useCallback(async () => {
-        if (!userId) {
-            setReviewedIds(new Set());
-            setReviewLookupLoading(false);
-            return;
-        }
-
-        try {
-            setReviewLookupLoading(true);
-            const reviews = await fetchUserReviews(userId);
-            const nextIds = new Set<string>();
-            for (const review of reviews) {
-                if (review.id) nextIds.add(String(review.id));
-                const reviewOrderId = String(review.orderId || "");
-                const reviewItemId = String(review.itemId || review.menuItemId || "");
-                if (reviewOrderId && reviewItemId) {
-                    nextIds.add(getProductReviewId(reviewOrderId, reviewItemId, userId));
-                }
-            }
-            setReviewedIds(nextIds);
-        } catch {
-            setReviewedIds(new Set());
-        } finally {
-            setReviewLookupLoading(false);
-        }
-    }, [userId]);
-
-    const handleBackPress = () => {
-        if (router.canGoBack()) {
-            router.back();
-            return;
-        }
-        router.replace("/profile");
-    };
-
-    useFocusEffect(
-        useCallback(() => {
-            void loadOrders();
-            void loadReviewedIds();
-            return () => {
-                setReviewTarget(null);
-                setIsSubmittingReview(false);
-            };
-        }, [loadOrders, loadReviewedIds]),
-    );
-
-    useEffect(() => {
+    useFocusEffect(useCallback(() => {
         void loadOrders();
+    }, [loadOrders]));
+
+    const refreshOrders = useCallback(async () => {
+        setRefreshing(true);
+        try {
+            await loadOrders();
+        } finally {
+            setRefreshing(false);
+        }
     }, [loadOrders]);
 
-    useEffect(() => {
-        void loadReviewedIds();
-    }, [loadReviewedIds]);
+    const visibleOrders = useMemo(() => {
+        const query = search.trim().toLocaleLowerCase(locale);
+        const normalizedQuery = query.replace(/^#/, "");
 
-    const filtered = useMemo(() => {
-        const normalizedSearch = search.trim().toLowerCase();
         return orders
             .filter((order) => {
-                const matchesFilter = filter === "all" || normalizeStatus(order.status) === filter;
-                const restaurantName = resolveRestaurantName(order).toLowerCase();
-                const orderId = String(order.id ?? order.$id ?? "").toLowerCase();
-                const normalizedOrderId = orderId.replace(/^#/, "");
-                const normalizedQuery = normalizedSearch.replace(/^#/, "");
-                const matchesSearch = normalizedSearch
-                    ? restaurantName.includes(normalizedSearch) ||
-                      orderId.includes(normalizedSearch) ||
-                      normalizedOrderId.includes(normalizedQuery)
-                    : true;
-                return matchesFilter && matchesSearch;
+                if (filter !== "all" && filterGroupForStatus(order.status) !== filter) return false;
+                if (!query) return true;
+
+                const restaurant = resolveRestaurantName(order).toLocaleLowerCase(locale);
+                const orderId = String(order.id ?? order.$id ?? "").toLocaleLowerCase(locale);
+                const itemNames = resolveItems(order).map((item) => item.name.toLocaleLowerCase(locale)).join(" ");
+                return restaurant.includes(query) || orderId.includes(query) || orderId.replace(/^#/, "").includes(normalizedQuery) || itemNames.includes(query);
             })
-            .sort((a, b) => {
-                const da = getMillis(a.updatedAt || a.createdAt || 0);
-                const db = getMillis(b.updatedAt || b.createdAt || 0);
-                return db - da;
+            .sort((left, right) => getMillis(right.updatedAt || right.createdAt) - getMillis(left.updatedAt || left.createdAt));
+    }, [filter, locale, orders, search]);
+
+    const handleLoadMore = useCallback(async () => {
+        if (!userId || !hasMoreOrders || !nextCursor || loadingMore) return;
+        setLoadingMore(true);
+        try {
+            const page = await fetchUserOrdersPage(userId, { cursor: nextCursor, limit: PAGE_SIZE });
+            setOrders((current) => {
+                const byId = new Map(current.map((order) => [String(order.id ?? order.$id), order]));
+                for (const order of page.items as RestaurantOrder[]) byId.set(String(order.id ?? order.$id), order);
+                return [...byId.values()];
             });
-    }, [orders, filter, search]);
+            setNextCursor(page.nextCursor);
+            setHasMoreOrders(page.hasMore);
+        } finally {
+            setLoadingMore(false);
+        }
+    }, [hasMoreOrders, loadingMore, nextCursor, userId]);
 
-    const visibleData = filtered.slice(0, visibleCount);
+    const openOrderDetails = useCallback((order: RestaurantOrder) => {
+        const orderId = String(order.id ?? order.$id ?? "").trim();
+        if (!orderId) return;
+        router.push({ pathname: "/orders/[id]", params: { id: orderId } });
+    }, [router]);
 
-    const handleLoadMore = useCallback(() => {
-        if (visibleData.length >= filtered.length) return;
-        setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filtered.length));
-    }, [visibleData.length, filtered.length]);
+    const trackOrder = useCallback((order: RestaurantOrder) => {
+        const orderId = String(order.id ?? order.$id ?? "").trim();
+        if (!orderId) return;
+        router.push({
+            pathname: "/order/pending",
+            params: {
+                orderId,
+                restaurantName: resolveRestaurantName(order),
+                eta: String((order as any).eta ?? (order as any).etaMinutes ?? 120),
+            },
+        });
+    }, [router]);
 
-    const handleRefresh = async () => {
-        setVisibleCount(PAGE_SIZE);
-        await Promise.all([loadOrders(), loadReviewedIds()]);
-    };
+    const handleReorder = useCallback(async (order: RestaurantOrder) => {
+        const orderId = String(order.id ?? order.$id ?? "").trim();
+        if (!orderId || reorderLoadingId) return;
+        setReorderLoadingId(orderId);
 
-    const handleCopyOrderId = (orderId: string) => {
-        if (!orderId || orderId === "-") return;
-        Clipboard.setString(orderId);
-        Alert.alert(isTurkish ? "Kopyalandı" : "Copied", isTurkish ? "Sipariş numarası kopyalandı." : "Order ID copied.");
-    };
-
-    const openReviewModal = (target: ReviewTarget) => {
-        setReviewTarget(target);
-    };
-
-    const closeReviewModal = () => {
-        setReviewTarget(null);
-    };
-
-    const handleSubmitReview = useCallback(
-        async ({ rating, comment }: { rating: 1 | 2 | 3 | 4 | 5; comment?: string }) => {
-            if (!reviewTarget) return;
-            if (!userId) {
-                Alert.alert(isTurkish ? "Yorum kullanılamıyor" : "Review unavailable", isTurkish ? "Lütfen giriş yapın." : "Please sign in.");
+        try {
+            const resolution = await resolveOrderForReorder(order);
+            if (!resolution.cartItems.length) {
+                Alert.alert(copy.noneTitle, copy.noneBody);
                 return;
             }
-            if (rating < 1 || rating > 5) {
-                Alert.alert(isTurkish ? "Gecersiz puan" : "Invalid rating", isTurkish ? "Puan 1-5 arasinda olmali." : "Rating must be 1-5.");
+
+            if (resolution.unavailableItems.length) {
+                const continuePartial = await confirmAction(
+                    copy.partialTitle,
+                    copy.partialBody(resolution.unavailableItems.length),
+                    copy.cancel,
+                    copy.addAvailable,
+                );
+                if (!continuePartial) return;
+            }
+
+            const cart = useCartStore.getState();
+            const targetRestaurant = normalizeCartRestaurantKey(resolution.restaurantId);
+            const existingRestaurant = normalizeCartRestaurantKey(cart.restaurantId);
+            const hasConflict = cart.items.length > 0 && (!targetRestaurant || existingRestaurant !== targetRestaurant);
+            let replaceExisting = false;
+
+            if (hasConflict) {
+                replaceExisting = await confirmAction(
+                    copy.conflictTitle,
+                    copy.conflictBody,
+                    copy.cancel,
+                    copy.replaceCart,
+                );
+                if (!replaceExisting) return;
+            }
+
+            const committed = useCartStore.getState().addItems(resolution.cartItems, { replaceExisting });
+            if (!committed) {
+                Alert.alert(copy.noneTitle, copy.errorBody);
                 return;
             }
+            router.push("/(tabs)/cart");
+        } catch (error) {
+            Alert.alert(
+                copy.noneTitle,
+                error instanceof ReorderError && error.code === "restaurant_unavailable" ? copy.restaurantBody : copy.errorBody,
+            );
+        } finally {
+            setReorderLoadingId(null);
+        }
+    }, [copy, reorderLoadingId, router]);
 
-            try {
-                setIsSubmittingReview(true);
-                await submitMenuItemReview({
-                    orderId: reviewTarget.orderId,
-                    restaurantId: reviewTarget.restaurantId,
-                    itemId: reviewTarget.itemId,
-                    itemName: reviewTarget.itemName,
-                    userId,
-                    userName,
-                    rating,
-                    comment,
-                });
+    const statusPresentation = useCallback((status: OrderStatus): StatusPresentation => {
+        if (status === "delivered") return { background: isDark ? "#173526" : "#EBF9F1", color: isDark ? "#62D99A" : "#3DBD78", icon: "checkmark-circle-outline", label: copy.status.delivered };
+        if (status === "canceled" || status === "rejected") return { background: isDark ? "#3A2021" : "#FFF1F1", color: isDark ? "#FF8B83" : "#D92D20", icon: "close-circle-outline", label: copy.status[status] };
+        if (status === "ready") return { background: isDark ? "#173526" : "#EEF8F1", color: isDark ? "#62D99A" : "#138A45", icon: "checkmark-circle-outline", label: copy.status.ready };
+        return { background: isDark ? "#382C19" : "#FFF4E5", color: isDark ? "#FFB44D" : "#F79009", icon: "time-outline", label: copy.status[status] };
+    }, [copy.status, isDark]);
 
-                const submittedId = getProductReviewId(reviewTarget.orderId, reviewTarget.itemId, userId);
-                setReviewedIds((prev) => {
-                    const next = new Set(prev);
-                    next.add(submittedId);
-                    return next;
-                });
-                await loadReviewedIds();
-                closeReviewModal();
-                Alert.alert(
-                    isTurkish ? "Yorum kaydedildi" : "Review saved",
-                    isTurkish ? "Ürün yorumu başarıyla kaydedildi." : "Your product review was saved.",
-                );
-            } catch (error: any) {
-                Alert.alert(
-                    isTurkish ? "Yorum kaydedilemedi" : "Unable to save review",
-                    error?.message || (isTurkish ? "Lütfen tekrar deneyin." : "Please try again."),
-                );
-            } finally {
-                setIsSubmittingReview(false);
-            }
-        },
-        [isTurkish, loadReviewedIds, reviewTarget, userId, userName],
-    );
+    const renderHeader = () => (
+        <View style={styles.header}>
+            <View style={styles.headerTop}>
+                <Pressable
+                    accessibilityLabel={copy.back}
+                    accessibilityRole="button"
+                    hitSlop={8}
+                    onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)/home")}
+                    style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
+                >
+                    <Ionicons color={colors.primary} name="chevron-back" size={20} />
+                </Pressable>
+                <Text style={styles.title}>{copy.title}</Text>
+                <View style={styles.headerSpacer} />
+            </View>
+            <Text style={styles.subtitle}>{copy.subtitle}</Text>
+            {params.highlight ? <Text style={styles.highlight}>{isTurkish ? `Sipariş #${params.highlight} onaylandı.` : `Order #${params.highlight} was confirmed.`}</Text> : null}
 
-    const renderFilter = () => (
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
-            {FILTERS.map((item) => {
-                const active = filter === item.id;
-                const label = item.id === "all" ? t("cart.screen.ordersAll") : t(item.label as any);
-                return (
-                    <TouchableOpacity
-                        key={item.id}
-                        onPress={() => {
-                            setFilter(item.id);
-                            setVisibleCount(PAGE_SIZE);
-                        }}
-                        style={{
-                            paddingHorizontal: 16,
-                            paddingVertical: 8,
-                            borderRadius: 20,
-                            borderWidth: 1,
-                            borderColor: active ? theme.colors.primary : theme.colors.border,
-                            backgroundColor: active ? `${theme.colors.primary}18` : "transparent",
-                        }}
-                    >
-                        <Text style={{ color: active ? theme.colors.primary : theme.colors.textSecondary, fontFamily: "ChairoSans" }}>{label}</Text>
-                    </TouchableOpacity>
-                );
-            })}
+            <View style={[styles.searchField, searchFocused && styles.searchFieldFocused]}>
+                <Ionicons name="search-outline" size={18} color={colors.secondary} />
+                <TextInput
+                    accessibilityLabel={copy.search}
+                    onBlur={() => setSearchFocused(false)}
+                    onChangeText={setSearch}
+                    onFocus={() => setSearchFocused(true)}
+                    placeholder={copy.search}
+                    placeholderTextColor={colors.tertiary}
+                    returnKeyType="search"
+                    style={styles.searchInput}
+                    value={search}
+                />
+                {search ? (
+                    <Pressable accessibilityLabel={isTurkish ? "Aramayı temizle" : "Clear search"} accessibilityRole="button" hitSlop={12} onPress={() => setSearch("")} style={styles.clearSearch}>
+                        <Ionicons name="close-circle" size={18} color={colors.tertiary} />
+                    </Pressable>
+                ) : null}
+            </View>
+
+            <ScrollView contentContainerStyle={styles.filters} horizontal showsHorizontalScrollIndicator={false}>
+                {(Object.keys(copy.filters) as FilterId[]).map((id) => {
+                    const active = filter === id;
+                    return (
+                        <Pressable accessibilityRole="tab" accessibilityState={{ selected: active }} key={id} onPress={() => setFilter(id)} style={styles.filterTab}>
+                            <Text style={[styles.filterText, active && styles.filterTextActive]}>{copy.filters[id]}</Text>
+                            <View style={[styles.filterUnderline, active && styles.filterUnderlineActive]} />
+                        </Pressable>
+                    );
+                })}
+            </ScrollView>
         </View>
     );
 
-    return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
-            <View style={{ paddingHorizontal: 20, paddingVertical: 16, gap: 12 }}>
-                <Pressable
-                    onPress={handleBackPress}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel={t("common.goBack")}
-                    style={{
-                        height: 40,
-                        width: 40,
-                        borderRadius: 999,
-                        backgroundColor: theme.colors.surface,
-                        borderWidth: 1,
-                        borderColor: theme.colors.border,
-                        alignItems: "center",
-                        justifyContent: "center",
-                    }}
-                >
-                    <Icon name="arrowBack" size={20} color={theme.colors.ink} />
-                </Pressable>
+    const renderOrder = ({ item }: { item: RestaurantOrder }) => {
+        const status = normalizeStatus(item.status);
+        const statusUi = statusPresentation(status);
+        const items = resolveItems(item);
+        const shownItems = items.slice(0, 2);
+        const hiddenCount = Math.max(0, items.length - shownItems.length);
+        const itemCount = items.reduce((sum, orderItem) => sum + orderItem.quantity, 0);
+        const restaurantName = resolveRestaurantName(item);
+        const orderDate = formatOrderDate(item.updatedAt || item.createdAt, locale, copy.today, copy.yesterday);
+        const isActive = ACTIVE_STATUSES.has(status);
+        const canReorder = status === "delivered";
+        const reordering = reorderLoadingId === String(item.id ?? item.$id ?? "");
 
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                    <View>
-                        <Text style={{ fontSize: 28, fontFamily: "ChairoSans", color: theme.colors.ink }}>
-                            {t("cart.screen.ordersHistoryTitle")}
-                        </Text>
-                        <Text style={{ color: theme.colors.textSecondary, fontFamily: "ChairoSans", marginTop: 4 }}>
-                            {t("cart.screen.ordersSearchSubtitle")}
-                        </Text>
+        return (
+            <Pressable
+                accessibilityHint={isActive ? copy.track : undefined}
+                accessibilityLabel={`${restaurantName}, ${statusUi.label}, ${orderDate}, ${copy.items(itemCount)}, ${formatCurrency(Number(item.total || 0))}`}
+                accessibilityRole="button"
+                onPress={() => openOrderDetails(item)}
+                style={({ pressed }) => [styles.orderCard, pressed && styles.orderCardPressed]}
+            >
+                <View style={styles.cardHeader}>
+                    <View style={styles.cardHeadingCopy}>
+                        <Text ellipsizeMode="tail" numberOfLines={1} style={styles.restaurantName}>{restaurantName}</Text>
+                        {orderDate ? <Text numberOfLines={1} style={styles.orderDate}>{orderDate}</Text> : null}
                     </View>
-                    <illustrations.courierHero width={64} height={64} />
+                    <View style={styles.statusAndChevron}>
+                        <View style={[styles.statusBadge, { backgroundColor: statusUi.background }]}>
+                            <Ionicons color={statusUi.color} name={statusUi.icon} size={15} />
+                            <Text numberOfLines={1} style={[styles.statusText, { color: statusUi.color }]}>{statusUi.label}</Text>
+                        </View>
+                        <Ionicons color={colors.tertiary} name="chevron-forward" size={16} />
+                    </View>
                 </View>
 
-                {params.highlight ? (
-                    <Text style={{ color: "#059669", fontFamily: "ChairoSans" }}>
-                        {t("cart.screen.ordersHighlight", { id: params.highlight })}
+                <View style={styles.divider} />
+
+                <View style={styles.itemsPreview}>
+                    {shownItems.length ? shownItems.map((orderItem, index) => (
+                        <Text ellipsizeMode="tail" key={`${String(item.id ?? item.$id)}-${orderItem.itemId || orderItem.name}-${index}`} numberOfLines={1} style={styles.productLine}>
+                            {orderItem.quantity}× {orderItem.name}
+                        </Text>
+                    )) : <Text style={styles.productLine}>{isTurkish ? "Ürün bilgisi bulunmuyor" : "Item details unavailable"}</Text>}
+                    {hiddenCount > 0 ? <Text style={styles.moreItems}>{copy.moreItems(hiddenCount)}</Text> : null}
+                </View>
+
+                <View style={styles.divider} />
+
+                <View style={styles.cardFooter}>
+                    <Text numberOfLines={1} style={styles.footerMeta}>
+                        {copy.items(itemCount)} · <Text style={styles.price}>{formatCurrency(Number(item.total || 0))}</Text>
                     </Text>
-                ) : null}
-
-                <TextInput
-                    placeholder={t("cart.screen.ordersSearchPlaceholder")}
-                    placeholderTextColor="#94A3B8"
-                    value={search}
-                    onChangeText={(text) => {
-                        setSearch(text);
-                        setVisibleCount(PAGE_SIZE);
-                    }}
-                    style={{
-                        backgroundColor: theme.colors.input,
-                        borderRadius: 24,
-                        paddingHorizontal: 18,
-                        paddingVertical: 12,
-                        borderWidth: 1,
-                        borderColor: theme.colors.border,
-                        color: theme.colors.ink,
-                        fontFamily: "ChairoSans",
-                    }}
-                />
-
-                {renderFilter()}
-            </View>
-
-            <FlatList
-                data={visibleData}
-                keyExtractor={(item) => String(item.id)}
-                contentContainerStyle={{ gap: 16, paddingHorizontal: 20, paddingBottom: 40 }}
-                renderItem={({ item }) => {
-                    const normStatus = normalizeStatus(item.status);
-                    const badge = ORDER_STATUS_COLORS[normStatus];
-                    const label = t(`status.${normStatus}` as any);
-                    const summaryItems = resolveItems(item);
-                    const restaurantName = resolveRestaurantName(item);
-                    const rawOrderId = String(item.id ?? "-");
-                    const orderIdText = `#${rawOrderId}`;
-                    const restaurantId = String(item.restaurantId ?? "");
-                    const canReviewDeliveredItems = isReviewableStatus(String(item.status || ""));
-
-                    return (
-                        <View
-                            style={{
-                                backgroundColor: theme.colors.surface,
-                                borderRadius: 24,
-                                padding: 16,
-                                borderWidth: 1,
-                                borderColor: theme.colors.border,
+                    {isActive ? (
+                        <Pressable
+                            accessibilityLabel={copy.track}
+                            accessibilityRole="button"
+                            hitSlop={10}
+                            onPress={(event) => {
+                                event.stopPropagation();
+                                trackOrder(item);
                             }}
+                            style={({ pressed }) => styles.contextAction}
                         >
-                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                                <View style={{ flex: 1, paddingRight: 10 }}>
-                                    <Text style={{ fontFamily: "ChairoSans", fontSize: 16, color: theme.colors.ink }}>
-                                        {restaurantName}
-                                    </Text>
-                                    <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2, columnGap: 6, paddingRight: 8 }}>
-                                        <Text
-                                            style={{ flex: 1, fontFamily: "ChairoSans", fontSize: 12, color: theme.colors.textSecondary }}
-                                            numberOfLines={2}
-                                        >
-                                            {isTurkish ? `Sipariş No: ${orderIdText}` : `Order ID: ${orderIdText}`}
-                                        </Text>
-                                        <TouchableOpacity
-                                            onPress={() => handleCopyOrderId(rawOrderId)}
-                                            hitSlop={8}
-                                            accessibilityRole="button"
-                                            accessibilityLabel={isTurkish ? "Sipariş numarasını kopyala" : "Copy order ID"}
-                                            style={{
-                                                width: 24,
-                                                height: 24,
-                                                borderRadius: 12,
-                                                borderWidth: 1,
-                                                borderColor: theme.colors.border,
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                backgroundColor: theme.colors.surfaceElevated,
-                                                flexShrink: 0,
-                                            }}
-                                        >
-                                            <Ionicons name="copy-outline" size={14} color={theme.colors.textSecondary} />
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
-                                <View
-                                    style={{
-                                        paddingHorizontal: 10,
-                                        paddingVertical: 6,
-                                        borderRadius: 999,
-                                        backgroundColor: badge.bg,
-                                        flexDirection: "row",
-                                        alignItems: "center",
-                                    }}
-                                >
-                                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: badge.dot }} />
-                                    <Text style={{ color: badge.text, fontFamily: "ChairoSans", marginLeft: 6 }}>
-                                        {label}
-                                    </Text>
-                                </View>
-                            </View>
-                            <Text style={{ color: theme.colors.muted, marginTop: 4, fontFamily: "ChairoSans" }}>
-                                {formatTimestamp(item.updatedAt || item.createdAt, locale)}
-                            </Text>
-                            {summaryItems.length ? (
-                                <View style={{ marginTop: 10, gap: 8 }}>
-                                    {summaryItems.map((orderItem: { itemId?: string; name: string; quantity: number }, index: number) => {
-                                        const reviewId =
-                                            userId && orderItem.itemId ? getProductReviewId(rawOrderId, orderItem.itemId, userId) : "";
-                                        const isReviewed = reviewId ? reviewedIds.has(reviewId) : false;
-                                        const canReviewItem =
-                                            !reviewLookupLoading &&
-                                            canReviewDeliveredItems &&
-                                            Boolean(restaurantId) &&
-                                            Boolean(orderItem.itemId) &&
-                                            !isReviewed;
+                            {({ pressed }) => (
+                                <>
+                                    <Text numberOfLines={1} style={[styles.contextActionText, pressed && { color: ORANGE_PRESSED }]}>{copy.track}</Text>
+                                    <Ionicons color={pressed ? ORANGE_PRESSED : ORANGE} name="arrow-forward" size={16} />
+                                </>
+                            )}
+                        </Pressable>
+                    ) : canReorder ? (
+                        <Pressable
+                            accessibilityLabel={copy.reorderA11y}
+                            accessibilityRole="button"
+                            disabled={Boolean(reorderLoadingId)}
+                            hitSlop={10}
+                            onPress={(event) => {
+                                event.stopPropagation();
+                                void handleReorder(item);
+                            }}
+                            style={styles.contextAction}
+                        >
+                            {reordering ? (
+                                <><ActivityIndicator color={ORANGE} size={15} /><Text style={styles.contextActionText}>{copy.adding}</Text></>
+                            ) : (
+                                <><Text style={styles.contextActionText}>{copy.reorder}</Text><Ionicons color={ORANGE} name="arrow-forward" size={16} /></>
+                            )}
+                        </Pressable>
+                    ) : null}
+                </View>
+            </Pressable>
+        );
+    };
 
-                                        return (
-                                            <View
-                                                key={`${rawOrderId}-${String(orderItem.itemId || orderItem.name)}-${index}`}
-                                                style={{
-                                                    borderRadius: 18,
-                                                    borderWidth: 1,
-                                                    borderColor: theme.colors.border,
-                                                    backgroundColor: theme.colors.surfaceMuted,
-                                                    paddingHorizontal: 12,
-                                                    paddingVertical: 10,
-                                                    gap: 8,
-                                                }}
-                                            >
-                                                <View
-                                                    style={{
-                                                        flexDirection: "row",
-                                                        alignItems: "center",
-                                                        justifyContent: "space-between",
-                                                        columnGap: 12,
-                                                    }}
-                                                >
-                                                    <Text style={{ flex: 1, color: theme.colors.ink, fontFamily: "ChairoSans" }}>
-                                                        {`${orderItem.quantity}x ${orderItem.name}`}
-                                                    </Text>
-                                                    {canReviewItem ? (
-                                                        <TouchableOpacity
-                                                            onPress={() =>
-                                                                openReviewModal({
-                                                                    orderId: rawOrderId,
-                                                                    restaurantId,
-                                                                    itemId: String(orderItem.itemId),
-                                                                    itemName: orderItem.name,
-                                                                })
-                                                            }
-                                                            style={{
-                                                                borderRadius: 999,
-                                                                paddingHorizontal: 12,
-                                                                paddingVertical: 8,
-                                                                backgroundColor: "#FE8C00",
-                                                            }}
-                                                        >
-                                                            <Text style={{ color: "#FFFFFF", fontFamily: "ChairoSans", fontSize: 12 }}>
-                                                                {isTurkish ? "\u00dcr\u00fcn\u00fc de\u011ferlendir" : "Review item"}
-                                                            </Text>
-                                                        </TouchableOpacity>
-                                                    ) : isReviewed ? (
-                                                        <View
-                                                            style={{
-                                                                borderRadius: 999,
-                                                                paddingHorizontal: 12,
-                                                                paddingVertical: 8,
-                                                                backgroundColor: theme.colors.surfaceElevated,
-                                                            }}
-                                                        >
-                                                            <Text style={{ color: theme.colors.textSecondary, fontFamily: "ChairoSans", fontSize: 12 }}>
-                                                                {isTurkish ? "De\u011ferlendirildi" : "Reviewed"}
-                                                            </Text>
-                                                        </View>
-                                                    ) : null}
-                                                </View>
-                                            </View>
-                                        );
-                                    })}
-                                </View>
-                            ) : null}
-                            <View
-                                style={{
-                                    flexDirection: "row",
-                                    justifyContent: "space-between",
-                                    alignItems: "center",
-                                    marginTop: 12,
-                                }}
-                            >
-                                <View>
-                                    <Text style={{ color: theme.colors.muted, fontFamily: "ChairoSans" }}>
-                                        {t("cart.screen.summary.total")}
-                                    </Text>
-                                    <Text style={{ color: theme.colors.ink, fontSize: 18, fontFamily: "ChairoSans" }}>
-                                        {formatCurrencyValue(item.total)}
-                                    </Text>
-                                </View>
-                            </View>
-                        </View>
-                    );
-                }}
-                ListEmptyComponent={() =>
-                    loading ? null : (
-                        <View style={{ padding: 32, alignItems: "center" }}>
-                            <Text style={{ color: theme.colors.textSecondary, fontFamily: "ChairoSans" }}>
-                                {t("cart.screen.ordersEmpty")}
-                            </Text>
-                        </View>
-                    )
-                }
-                refreshControl={<RefreshControl refreshing={loading} onRefresh={handleRefresh} tintColor="#FE8C00" />}
+    const emptyCopy = search.trim()
+        ? { title: copy.noMatches, body: copy.noMatchesBody, browse: false }
+        : filter === "active"
+          ? { title: copy.noActive, body: copy.noActiveBody, browse: false }
+          : filter === "delivered"
+            ? { title: copy.noDelivered, body: copy.noOrdersBody, browse: false }
+            : filter === "canceled"
+              ? { title: copy.noCanceled, body: copy.noOrdersBody, browse: false }
+              : { title: copy.noOrders, body: copy.noOrdersBody, browse: true };
+
+    const renderEmpty = () => {
+        if (loading && !orders.length) {
+            return <View style={styles.skeletonList}>{[0, 1, 2].map((index) => <OrderSkeleton key={index} styles={styles} />)}</View>;
+        }
+
+        return (
+            <View style={styles.emptyState}>
+                <View style={styles.emptyIcon}><Ionicons color={ORANGE} name="receipt-outline" size={29} /></View>
+                <Text style={styles.emptyTitle}>{emptyCopy.title}</Text>
+                <Text style={styles.emptyBody}>{emptyCopy.body}</Text>
+                {emptyCopy.browse ? (
+                    <Pressable accessibilityRole="button" onPress={() => router.push("/search")} style={styles.browseAction}>
+                        <Text style={styles.browseText}>{copy.browse}</Text><Ionicons color={ORANGE} name="arrow-forward" size={16} />
+                    </Pressable>
+                ) : null}
+            </View>
+        );
+    };
+
+    return (
+        <SafeAreaView edges={["top", "left", "right"]} style={styles.safeArea}>
+            <FlatList
+                contentContainerStyle={[styles.listContent, { paddingBottom: Math.max(insets.bottom, 18) + 22 }]}
+                data={visibleOrders}
+                ItemSeparatorComponent={() => <View style={styles.cardGap} />}
+                keyExtractor={(item) => String(item.id ?? item.$id)}
+                keyboardShouldPersistTaps="handled"
+                ListEmptyComponent={renderEmpty}
+                ListFooterComponent={loadingMore ? <ActivityIndicator color={ORANGE} style={styles.loader} /> : null}
+                ListHeaderComponent={renderHeader}
                 onEndReached={handleLoadMore}
                 onEndReachedThreshold={0.4}
-                ListFooterComponent={
-                    visibleData.length < filtered.length ? (
-                        <ActivityIndicator color="#FE8C00" style={{ marginVertical: 16 }} />
-                    ) : null
-                }
-            />
-
-            <ReviewSheet
-                visible={Boolean(reviewTarget)}
-                submitting={isSubmittingReview}
-                onClose={closeReviewModal}
-                onSubmit={handleSubmitReview}
-                placeholder={isTurkish ? "Teslimattan sonra bu \u00fcr\u00fcn nas\u0131ld\u0131?" : "Tell others how this item was after delivery..."}
+                refreshControl={<RefreshControl onRefresh={() => void refreshOrders()} refreshing={refreshing} tintColor={ORANGE} />}
+                renderItem={renderOrder}
+                showsVerticalScrollIndicator={false}
+                stickyHeaderIndices={[0]}
             />
         </SafeAreaView>
     );
 };
 
-export default OrderHistoryScreen;
+const OrderSkeleton = ({ styles }: { styles: ReturnType<typeof createStyles> }) => (
+    <View style={styles.skeletonCard}>
+        <View style={styles.skeletonHeader}><View style={styles.skeletonTitle} /><View style={styles.skeletonBadge} /></View>
+        <View style={styles.skeletonDate} /><View style={styles.divider} />
+        <View style={styles.skeletonLine} /><View style={styles.skeletonLineShort} />
+        <View style={styles.divider} /><View style={styles.skeletonFooter} />
+    </View>
+);
+
+type Colors = {
+    page: string;
+    surface: string;
+    pressed: string;
+    primary: string;
+    secondary: string;
+    tertiary: string;
+    border: string;
+    skeleton: string;
+};
+
+const createStyles = (colors: Colors) => StyleSheet.create({
+    safeArea: { flex: 1, backgroundColor: colors.page },
+    listContent: { flexGrow: 1, paddingHorizontal: 22 },
+    header: { paddingBottom: 16, backgroundColor: colors.page, zIndex: 2, elevation: 2 },
+    headerTop: { width: "100%", height: 54, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    backButton: { width: 44, height: 44, marginLeft: -10, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+    backButtonPressed: { backgroundColor: colors.pressed },
+    headerSpacer: { width: 34, height: 44 },
+    title: { color: colors.primary, fontFamily: "ChairoSans", fontSize: 21, lineHeight: 26, fontWeight: "700" },
+    subtitle: { color: colors.secondary, fontFamily: "ChairoSans", fontSize: 14, lineHeight: 19, marginTop: 2, textAlign: "center" },
+    highlight: { color: "#138A45", fontFamily: "ChairoSans", fontSize: 13, lineHeight: 18, marginTop: 7 },
+    searchField: { height: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, marginTop: 16, paddingLeft: 14, paddingRight: 5, flexDirection: "row", alignItems: "center", gap: 10 },
+    searchFieldFocused: { borderColor: ORANGE },
+    searchInput: { flex: 1, height: "100%", paddingVertical: 0, color: colors.primary, fontFamily: "ChairoSans", fontSize: 14, lineHeight: 19 },
+    clearSearch: { width: 38, height: 44, alignItems: "center", justifyContent: "center" },
+    filters: { minWidth: "100%", height: 44, flexDirection: "row", alignItems: "stretch", gap: 25 },
+    filterTab: { minHeight: 44, flexShrink: 0, justifyContent: "flex-end", alignItems: "center", paddingHorizontal: 1 },
+    filterText: { color: colors.secondary, fontFamily: "ChairoSans", fontSize: 13, lineHeight: 18, fontWeight: "500", paddingBottom: 9 },
+    filterTextActive: { color: ORANGE, fontWeight: "600" },
+    filterUnderline: { height: 2, alignSelf: "stretch", backgroundColor: "transparent" },
+    filterUnderlineActive: { backgroundColor: ORANGE },
+    cardGap: { height: 12 },
+    orderCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 14 },
+    orderCardPressed: { backgroundColor: colors.pressed },
+    cardHeader: { minHeight: 39, flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 8 },
+    cardHeadingCopy: { flex: 1, minWidth: 0 },
+    restaurantName: { color: colors.primary, fontFamily: "ChairoSans", fontSize: 16, lineHeight: 21, fontWeight: "700" },
+    orderDate: { color: colors.secondary, fontFamily: "ChairoSans", fontSize: 13, lineHeight: 17, marginTop: 2 },
+    statusAndChevron: { flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 7 },
+    statusBadge: { height: 28, borderRadius: 999, paddingHorizontal: 9, flexDirection: "row", alignItems: "center", gap: 5 },
+    statusText: { fontFamily: "ChairoSans", fontSize: 12.5, lineHeight: 16, fontWeight: "600" },
+    divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginVertical: 11 },
+    itemsPreview: { gap: 3 },
+    productLine: { color: colors.secondary, fontFamily: "ChairoSans", fontSize: 13.5, lineHeight: 18, fontWeight: "500" },
+    moreItems: { color: colors.tertiary, fontFamily: "ChairoSans", fontSize: 13, lineHeight: 17, fontWeight: "500" },
+    cardFooter: { minHeight: 28, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+    footerMeta: { flex: 1, minWidth: 0, color: colors.secondary, fontFamily: "ChairoSans", fontSize: 13, lineHeight: 20 },
+    price: { color: colors.primary, fontSize: 16, fontWeight: "700" },
+    contextAction: { minHeight: 44, marginVertical: -8, flexShrink: 0, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
+    contextActionText: { color: ORANGE, fontFamily: "ChairoSans", fontSize: 13.5, lineHeight: 18, fontWeight: "600" },
+    emptyState: { paddingTop: 48, paddingHorizontal: 20, alignItems: "center" },
+    emptyIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.pressed, alignItems: "center", justifyContent: "center" },
+    emptyTitle: { color: colors.primary, fontFamily: "ChairoSans", fontSize: 16, lineHeight: 21, fontWeight: "600", marginTop: 12 },
+    emptyBody: { color: colors.secondary, fontFamily: "ChairoSans", fontSize: 14, lineHeight: 19, textAlign: "center", marginTop: 3 },
+    browseAction: { minHeight: 44, flexDirection: "row", alignItems: "center", gap: 6, marginTop: 3 },
+    browseText: { color: ORANGE, fontFamily: "ChairoSans", fontSize: 14, lineHeight: 19, fontWeight: "600" },
+    loader: { marginVertical: 18 },
+    skeletonList: { gap: 12 },
+    skeletonCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 14 },
+    skeletonHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    skeletonTitle: { width: "42%", height: 18, borderRadius: 5, backgroundColor: colors.skeleton },
+    skeletonBadge: { width: 86, height: 28, borderRadius: 14, backgroundColor: colors.skeleton },
+    skeletonDate: { width: 84, height: 12, borderRadius: 4, backgroundColor: colors.skeleton, marginTop: 7 },
+    skeletonLine: { width: "72%", height: 13, borderRadius: 4, backgroundColor: colors.skeleton },
+    skeletonLineShort: { width: "55%", height: 13, borderRadius: 4, backgroundColor: colors.skeleton, marginTop: 6 },
+    skeletonFooter: { width: "35%", height: 18, borderRadius: 4, backgroundColor: colors.skeleton },
+});
+
+export default function OrderHistoryRoute() {
+    return <ProtectedRoute><OrderHistoryScreen /></ProtectedRoute>;
+}

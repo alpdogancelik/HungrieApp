@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { NotificationManager } from "@/src/features/notifications/NotificationManager";
-import { autoCancelExpiredPendingOrders, subscribeUserOrders } from "@/src/data/orderRepository";
+import { isRemotePushSupported, NotificationManager } from "@/src/features/notifications/NotificationManager";
+import { autoCancelExpiredPendingOrders, subscribeLatestOrderSummary } from "@/src/data/orderRepository";
+import { getRepositoryBackend } from "@/src/data/backendFlags";
 
 type NormalizedOrderStatus = "pending" | "preparing" | "ready" | "out_for_delivery" | "delivered" | "canceled";
 type StatusMap = Record<string, NormalizedOrderStatus>;
@@ -99,15 +100,18 @@ export const startOrderStatusWatcher = (userId: string) => {
         if (!active) return;
         statusMap = parseStoredMap(raw);
 
-        const unsubscribe = subscribeUserOrders(userId, (orders: any[]) => {
+        const unsubscribe = subscribeLatestOrderSummary(userId, (latestOrder: any | null) => {
+            const orders = latestOrder ? [latestOrder] : [];
             if (!active) return;
             const list = Array.isArray(orders) ? orders : [];
-            void autoCancelExpiredPendingOrders(list, {
-                inFlightIds: autoCancelingIds,
-                onError: (error) => {
-                    console.warn("[orders] Failed to auto-cancel expired pending order", error);
-                },
-            });
+            if (getRepositoryBackend("order") === "firebase") {
+                void autoCancelExpiredPendingOrders(list, {
+                    inFlightIds: autoCancelingIds,
+                    onError: (error) => {
+                        console.warn("[orders] Failed to auto-cancel expired pending order", error);
+                    },
+                });
+            }
 
             if (!primed) {
                 const initialMap = { ...statusMap };
@@ -137,7 +141,7 @@ export const startOrderStatusWatcher = (userId: string) => {
                     return;
                 }
 
-                if (prevStatus !== nextStatus) {
+                if (prevStatus !== nextStatus && !isRemotePushSupported()) {
                     const payload = toNotification(order, nextStatus);
                     void NotificationManager.notifyLocal(payload.title, payload.body, {
                         withSound: true,

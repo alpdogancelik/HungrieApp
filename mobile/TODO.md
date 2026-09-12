@@ -6,7 +6,7 @@ Bu dosya “store’a gönderime hazır mıyız?” sorusuna net cevap vermek i�
 
 - Font standardı: Uygulama genelinde `ChairoSans` kullanımı var.
 - Onboarding: `hungrie.onboarding.seen = "1"` ile tek seferlik akış.
-- Splash route (`/splash`): logo + wordmark + iştah açıcı arka plan görselleri.
+- Açılış: native splash ve kısa otomatik geçişten doğrudan ana ekrana gider.
 - Lint: `npm run lint` çalışıyor (bazı uyarılar kalabilir).
 
 ## 1) Hesaplar ve erişimler
@@ -136,9 +136,9 @@ Dosya: `eas.json`
 ## 9) QA (release öncesi minimum test)
 
 ### Akışlar
-- [ ] İlk açılış: `/splash` → onboarding → home
+- [ ] İlk açılış: native splash → home
 - [ ] Onboarding görüldüyse tekrar göstermiyor
-- [ ] Auth required senaryosu: `/splash` → `/sign-in`
+- [ ] Auth required senaryosu: korumalı ekran → `/sign-in`
 - [ ] Dil değişimi (TR/EN) ana ekran + kritik ekranlarda doğru
 - [ ] Restoran listeleme → restoran detay → menü → sepete ekle
 - [ ] Sepet: artır/azalt/sil
@@ -174,4 +174,3 @@ Dosya: `eas.json`
 - [ ] Sentry release/tag entegrasyonu
 - [ ] Uygulama içi “Hesabı sil” (gerekiyorsa)
 - [ ] Daha güçlü offline cache stratejisi
-

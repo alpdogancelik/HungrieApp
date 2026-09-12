@@ -74,7 +74,7 @@ const OrderCard = ({ order, variant = "restaurant", onAdvance, disableActions = 
     const contactEmail = order.customerEmail || order.customer?.email;
 
     return (
-        <View className="bg-white dark:bg-[#0D1B2D] rounded-3xl border border-gray-100 dark:border-[#29405C] p-4 gap-3 shadow-md shadow-black/5">
+        <View className="bg-white dark:bg-[#171A20] rounded-3xl border border-gray-100 dark:border-[#2A2E35] p-4 gap-3 shadow-md shadow-black/5">
             <View className="flex-row items-center justify-between">
                 <View className="gap-1 flex-1 mr-3">
                     <Text className="paragraph-semibold text-dark-100 dark:text-slate-50">{headerTitle}</Text>

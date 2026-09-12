@@ -7,6 +7,12 @@
     },
     "android": {
       "package": "com.hungrie.app"
+    },
+    "ios": {
+      "bundleIdentifier": "com.hungrie.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     }
   }
 }

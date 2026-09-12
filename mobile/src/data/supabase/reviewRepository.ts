@@ -1,8 +1,16 @@
 import type { ReviewRepository } from "@/src/data/contracts";
 import type { MenuItemReview, OrderReview, RestaurantOrderReviewSummary, RestaurantReviewSummary } from "@/src/domain/types";
-import { requireSupabase, throwIfError } from "./utils";
+import { createInitialFetchSubscription, requireSupabase, throwIfError } from "./utils";
 
 const normalizeLimit = (value?: number) => Math.min(Math.max(Math.floor(Number(value || 30)), 1), 100);
+const PRODUCT_REVIEW_COLUMNS = [
+    "id", "restaurant_id", "menu_item_id", "user_name_snapshot", "menu_item_name_snapshot", "rating",
+    "comment", "reply", "replied_at", "created_at", "updated_at",
+].join(",");
+const ORDER_REVIEW_COLUMNS = [
+    "id", "restaurant_id", "user_name_snapshot", "restaurant_name_snapshot", "speed_rating", "taste_rating",
+    "value_rating", "price_performance_rating", "average_rating", "comment", "items_snapshot", "created_at", "updated_at",
+].join(",");
 
 const mapProductReview = (row: any): MenuItemReview => ({
     id: String(row.id || ""),
@@ -80,38 +88,50 @@ export const fetchMenuItemReviews: ReviewRepository["fetchMenuItemReviews"] = as
     throwIfError(
         await requireSupabase()
             .from("published_product_reviews")
-            .select("*")
+            .select(PRODUCT_REVIEW_COLUMNS)
             .eq("menu_item_id", menuItemId)
             .order("created_at", { ascending: false })
             .limit(normalizeLimit(options?.limit)),
     ).map(mapProductReview);
 
 export const fetchRestaurantReviews: ReviewRepository["fetchRestaurantReviews"] = async (restaurantId, options) => {
-    const source = options?.includeHidden ? "product_reviews" : "published_product_reviews";
+    const limit = normalizeLimit(options?.limit);
+    if (options?.includeHidden) {
+        return throwIfError(
+            await requireSupabase().rpc("list_restaurant_product_reviews", { p_restaurant_id: restaurantId, p_limit: limit }),
+        ).map(mapProductReview);
+    }
     return throwIfError(
-        await requireSupabase().from(source).select("*").eq("restaurant_id", restaurantId).order("created_at", { ascending: false }).limit(normalizeLimit(options?.limit)),
+        await requireSupabase().from("published_product_reviews").select(PRODUCT_REVIEW_COLUMNS).eq("restaurant_id", restaurantId).order("created_at", { ascending: false }).limit(limit),
     ).map(mapProductReview);
 };
 
 export const fetchRestaurantReviewSummary: ReviewRepository["fetchRestaurantReviewSummary"] = async (restaurantId) =>
-    buildRestaurantReviewSummary(await fetchRestaurantReviews(restaurantId));
+    Promise.all([
+        requireSupabase().rpc("get_restaurant_product_review_summary", { p_restaurant_id: restaurantId }).then(throwIfError),
+        fetchRestaurantReviews(restaurantId, { limit: 100 }),
+    ]).then(([metrics, reviews]) => {
+        const recent = buildRestaurantReviewSummary(reviews);
+        return {
+            average: Number(metrics?.rating_average || 0),
+            count: Number(metrics?.rating_count || 0),
+            distribution: {
+                1: Number(metrics?.distribution?.["1"] || 0),
+                2: Number(metrics?.distribution?.["2"] || 0),
+                3: Number(metrics?.distribution?.["3"] || 0),
+                4: Number(metrics?.distribution?.["4"] || 0),
+                5: Number(metrics?.distribution?.["5"] || 0),
+            },
+            recentReviews: recent.recentReviews,
+            latestByMenuItem: recent.latestByMenuItem,
+        };
+    });
 
 export const fetchUserReviews: ReviewRepository["fetchUserReviews"] = async (_userId, options) =>
-    throwIfError(
-        await requireSupabase().from("product_reviews").select("*").order("created_at", { ascending: false }).limit(normalizeLimit(options?.limit)),
-    ).map(mapProductReview);
+    throwIfError(await requireSupabase().rpc("list_my_product_reviews", { p_limit: normalizeLimit(options?.limit) })).map(mapProductReview);
 
 export const subscribeUserReviews: ReviewRepository["subscribeUserReviews"] = (userId, cb, options) => {
-    void fetchUserReviews(userId, options).then(cb).catch(() => cb([]));
-    const channel = requireSupabase()
-        .channel("product-reviews")
-        .on("postgres_changes", { event: "*", schema: "public", table: "product_reviews" }, () => {
-            void fetchUserReviews(userId, options).then(cb).catch(() => cb([]));
-        })
-        .subscribe();
-    return () => {
-        void requireSupabase().removeChannel(channel);
-    };
+    return createInitialFetchSubscription(() => fetchUserReviews(userId, options), cb, () => cb([]));
 };
 
 export const submitMenuItemReview: ReviewRepository["submitMenuItemReview"] = async (input) => {
@@ -123,7 +143,7 @@ export const submitMenuItemReview: ReviewRepository["submitMenuItemReview"] = as
             p_comment: input.comment || "",
         }),
     );
-    const row = throwIfError(await requireSupabase().from("product_reviews").select("*").eq("id", id).maybeSingle());
+    const row = throwIfError(await requireSupabase().rpc("get_my_product_review", { p_review_id: id }));
     return mapProductReview(row);
 };
 
@@ -144,29 +164,43 @@ export const submitOrderReview: ReviewRepository["submitOrderReview"] = async (i
             p_comment: input.comment || "",
         }),
     );
-    const row = throwIfError(await requireSupabase().from("order_reviews").select("*").eq("id", id).maybeSingle());
+    const row = throwIfError(await requireSupabase().rpc("get_my_order_review", { p_review_id: id }));
     return mapOrderReview(row);
 };
 
 export const fetchOrderReviewByOrder: ReviewRepository["fetchOrderReviewByOrder"] = async (orderId) => {
-    const row = throwIfError(await requireSupabase().from("order_reviews").select("*").eq("order_id", orderId).maybeSingle());
+    const row = throwIfError(await requireSupabase().rpc("get_my_order_review_by_order", { p_order_id: orderId }));
     return row ? mapOrderReview(row) : null;
 };
 
 export const fetchUserOrderReviews: ReviewRepository["fetchUserOrderReviews"] = async (_userId, options) =>
-    throwIfError(
-        await requireSupabase().from("order_reviews").select("*").order("created_at", { ascending: false }).limit(normalizeLimit(options?.limit)),
-    ).map(mapOrderReview);
+    throwIfError(await requireSupabase().rpc("list_my_order_reviews", { p_limit: normalizeLimit(options?.limit) })).map(mapOrderReview);
 
 export const fetchRestaurantOrderReviews: ReviewRepository["fetchRestaurantOrderReviews"] = async (restaurantId, options) => {
-    const source = options?.includeHidden ? "order_reviews" : "published_order_reviews";
+    const limit = normalizeLimit(options?.limit);
+    if (options?.includeHidden) {
+        return throwIfError(
+            await requireSupabase().rpc("list_restaurant_order_reviews", { p_restaurant_id: restaurantId, p_limit: limit }),
+        ).map(mapOrderReview);
+    }
     return throwIfError(
-        await requireSupabase().from(source).select("*").eq("restaurant_id", restaurantId).order("created_at", { ascending: false }).limit(normalizeLimit(options?.limit)),
+        await requireSupabase().from("published_order_reviews").select(ORDER_REVIEW_COLUMNS).eq("restaurant_id", restaurantId).order("created_at", { ascending: false }).limit(limit),
     ).map(mapOrderReview);
 };
 
 export const fetchRestaurantOrderReviewSummary: ReviewRepository["fetchRestaurantOrderReviewSummary"] = async (restaurantId) =>
-    calculateRestaurantOrderReviewSummary(await fetchRestaurantOrderReviews(restaurantId));
+    Promise.all([
+        requireSupabase().rpc("get_restaurant_order_review_summary", { p_restaurant_id: restaurantId }).then(throwIfError),
+        fetchRestaurantOrderReviews(restaurantId, { limit: 8 }),
+    ]).then(([metrics, latestComments]) => ({
+        averageRating: Number(metrics?.average_rating || 0),
+        count: Number(metrics?.review_count || 0),
+        speedAverage: Number(metrics?.speed_average || 0),
+        tasteAverage: Number(metrics?.taste_average || 0),
+        valueAverage: Number(metrics?.value_average || 0),
+        pricePerformanceAverage: Number(metrics?.price_performance_average || 0),
+        latestComments,
+    }));
 
 export const moderateOrderReview: ReviewRepository["moderateOrderReview"] = async (reviewId, status) => {
     await requireSupabase().rpc("moderate_review", { p_review_type: "order", p_review_id: reviewId, p_status: status }).then(throwIfError);

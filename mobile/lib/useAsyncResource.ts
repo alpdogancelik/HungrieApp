@@ -7,6 +7,7 @@ interface UseAsyncResourceOptions<T, P extends ParamRecord | undefined = ParamRe
     fn: (params: P extends undefined ? Record<string, never> : P) => Promise<T>;
     params?: P;
     skip?: boolean;
+    skipAlert?: boolean;
 }
 
 interface UseAsyncResourceReturn<T, P> {
@@ -20,6 +21,7 @@ const useAsyncResource = <T, P extends ParamRecord | undefined = ParamRecord>({
     fn,
     params,
     skip = false,
+    skipAlert = false,
 }: UseAsyncResourceOptions<T, P>): UseAsyncResourceReturn<T, P | undefined> => {
     const [data, setData] = useState<T | null>(null);
     const [loading, setLoading] = useState(!skip);
@@ -53,12 +55,12 @@ const useAsyncResource = <T, P extends ParamRecord | undefined = ParamRecord>({
                 const errorMessage =
                     err instanceof Error ? err.message : "An unknown error occurred";
                 setError(errorMessage);
-                Alert.alert("Error", errorMessage);
+                if (!skipAlert) Alert.alert("Error", errorMessage);
             } finally {
                 setLoading(false);
             }
         },
-        [fn, resolveParams],
+        [fn, resolveParams, skipAlert],
     );
 
     useEffect(() => {

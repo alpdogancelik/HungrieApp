@@ -18,7 +18,8 @@ import { Feather } from "@expo/vector-icons";
 
 import useAuthStore from "@/store/auth.store";
 import { getOwnedRestaurantId } from "@/src/data/restaurantRepository";
-import { fetchRestaurantPastOrders } from "@/src/data/orderRepository";
+import { fetchRestaurantOrdersPage } from "@/src/data/orderRepository";
+import type { OrderCursor } from "@/src/data/contracts";
 import { mapFirestoreOrder, type PanelOrder, sortOrdersDesc } from "@/src/features/restaurantPanel/model/panelOrders";
 import {
     PanelButton,
@@ -92,6 +93,9 @@ const RestaurantHistory = () => {
     const [orders, setOrders] = useState<PanelOrder[]>([]);
     const [restaurantId, setRestaurantId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [nextCursor, setNextCursor] = useState<OrderCursor | null>(null);
+    const [hasMore, setHasMore] = useState(false);
     const [redirectTo, setRedirectTo] = useState<"/sign-in" | null>(null);
 
     const [search, setSearch] = useState("");
@@ -143,9 +147,11 @@ const RestaurantHistory = () => {
 
         const loadPastOrders = async () => {
             try {
-                const list = await fetchRestaurantPastOrders(restaurantId);
+                const page = await fetchRestaurantOrdersPage(restaurantId, { statuses: ["delivered", "canceled"], limit: 20 });
                 if (!active) return;
-                setOrders(sortOrdersDesc(list.map(mapFirestoreOrder)));
+                setOrders(sortOrdersDesc(page.items.map(mapFirestoreOrder)));
+                setNextCursor(page.nextCursor);
+                setHasMore(page.hasMore);
             } finally {
                 if (active) setLoading(false);
             }
@@ -156,6 +162,21 @@ const RestaurantHistory = () => {
             active = false;
         };
     }, [restaurantId]);
+
+    const loadMoreOrders = async () => {
+        if (!restaurantId || !nextCursor || !hasMore || loadingMore) return;
+        setLoadingMore(true);
+        try {
+            const page = await fetchRestaurantOrdersPage(restaurantId, {
+                statuses: ["delivered", "canceled"], cursor: nextCursor, limit: 20,
+            });
+            setOrders((current) => sortOrdersDesc([...current, ...page.items.map(mapFirestoreOrder)]));
+            setNextCursor(page.nextCursor);
+            setHasMore(page.hasMore);
+        } finally {
+            setLoadingMore(false);
+        }
+    };
 
     const filtered = useMemo(() => {
         const now = Date.now();
@@ -368,6 +389,15 @@ const RestaurantHistory = () => {
                             </View>
                         </PanelCard>
                     ))}
+                    {hasMore ? (
+                        <PanelButton
+                            label={loadingMore ? t("common.loading") : t("common.loadMore")}
+                            variant="outline"
+                            onPress={() => void loadMoreOrders()}
+                            disabled={loadingMore}
+                            accessibilityLabel={t("common.loadMore")}
+                        />
+                    ) : null}
                 </View>
             )}
 

@@ -1,32 +1,29 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
+import { useTranslation } from "react-i18next";
 import {
+    ActivityIndicator,
     Alert,
     Keyboard,
     KeyboardAvoidingView,
     Platform,
+    Pressable,
     ScrollView,
     StyleSheet,
-    Switch,
     Text,
     TextInput,
-    TouchableOpacity,
     View,
-    useWindowDimensions,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import { LinearGradient } from "expo-linear-gradient";
-import { useTranslation } from "react-i18next";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { z } from "zod";
+
+import { useTheme } from "@/src/theme/themeContext";
 import { useAddressActions, useAddresses } from "./hooks";
 import type { AddressFormNavigation, AddressFormScreenProps } from "./types";
-import Icon from "@/components/Icon";
-import OnlineLocation from "@/assets/illustrations/Online Location.svg";
-import { makeShadow } from "@/src/lib/shadowStyle";
-import { useTheme } from "@/src/theme/themeContext";
 
+const ORANGE = "#FF5A00";
+const FOOTER_HEIGHT = 82;
 const schema = z.object({
     label: z.string().min(2, "Enter a helpful label."),
     line1: z.string().min(3, "Address line is required."),
@@ -39,6 +36,7 @@ const schema = z.object({
 
 type FormState = z.infer<typeof schema>;
 type FormErrors = Partial<Record<keyof FormState, string>>;
+type TextField = Exclude<keyof FormState, "isDefault">;
 
 const DEFAULT_COUNTRY = "TRNC";
 
@@ -53,41 +51,31 @@ const buildInitialState = (options: { editing?: Partial<FormState>; defaultIsDef
 });
 
 const AddressFormScreen = () => {
-    const { theme } = useTheme();
+    const { variant } = useTheme();
     const insets = useSafeAreaInsets();
-    const { width: windowWidth } = useWindowDimensions();
     const navigation = useNavigation<AddressFormNavigation>();
     const route = useRoute<AddressFormScreenProps["route"]>();
     const { addresses } = useAddresses();
     const { createAddress, updateAddress, isMutating } = useAddressActions();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const dark = variant === "dark";
+    const styles = useMemo(() => createStyles(dark), [dark]);
+    const isTurkish = i18n.language?.startsWith("tr");
     const addressId = route.params?.addressId;
     const editingAddress = useMemo(() => addresses.find((address) => address.id === addressId), [addressId, addresses]);
 
-    const [form, setForm] = useState<FormState>(() =>
-        buildInitialState({
-            editing: editingAddress,
-            defaultIsDefault: addresses.length === 0,
-        }),
-    );
+    const [form, setForm] = useState<FormState>(() => buildInitialState({ editing: editingAddress, defaultIsDefault: addresses.length === 0 }));
     const [errors, setErrors] = useState<FormErrors>({});
+    const [focusedField, setFocusedField] = useState<TextField | null>(null);
     const [keyboardVisible, setKeyboardVisible] = useState(false);
     const labelRef = useRef<TextInput>(null);
     const line1Ref = useRef<TextInput>(null);
     const blockRef = useRef<TextInput>(null);
     const roomRef = useRef<TextInput>(null);
     const cityRef = useRef<TextInput>(null);
-    const isCompactMobile = windowWidth < 380;
-    const heroIsStacked = isCompactMobile;
-    const heroImageSize = heroIsStacked ? 72 : 110;
 
     useEffect(() => {
-        setForm(
-            buildInitialState({
-                editing: editingAddress,
-                defaultIsDefault: addresses.length === 0,
-            }),
-        );
+        setForm(buildInitialState({ editing: editingAddress, defaultIsDefault: addresses.length === 0 }));
     }, [editingAddress, addresses.length]);
 
     useEffect(() => {
@@ -102,14 +90,12 @@ const AddressFormScreen = () => {
     }, []);
 
     const handleChange = (field: keyof FormState, value: string | boolean) => {
-        setForm((prev) => ({
-            ...prev,
-            [field]: value,
-        }));
-        setErrors((prev) => ({ ...prev, [field]: undefined }));
+        setForm((previous) => ({ ...previous, [field]: value }));
+        setErrors((previous) => ({ ...previous, [field]: undefined }));
     };
 
     const handleSubmit = async () => {
+        if (isMutating) return;
         const parsed = schema.safeParse(form);
         if (!parsed.success) {
             const nextErrors: FormErrors = {};
@@ -127,397 +113,185 @@ const AddressFormScreen = () => {
             return;
         }
         try {
-            if (editingAddress) {
-                await updateAddress({ ...editingAddress, ...parsed.data });
-            } else {
-                await createAddress(parsed.data);
-            }
+            if (editingAddress) await updateAddress({ ...editingAddress, ...parsed.data });
+            else await createAddress(parsed.data);
             navigation.goBack();
-        } catch (error: any) {
-            Alert.alert(t("address.form.saveError", "Unable to save address"), error?.message ?? t("misc.manageSoon"));
+        } catch {
+            Alert.alert(t("address.form.saveError", "Unable to save address"), t("misc.manageSoon"));
         }
     };
 
     const screenTitle = editingAddress ? t("address.form.titleEdit") : t("address.form.titleAdd");
-
-    const nextFieldRefByName: Partial<Record<keyof FormState, RefObject<TextInput | null>>> = {
+    const saveLabel = editingAddress
+        ? t("address.form.saveChanges", { defaultValue: isTurkish ? "Değişiklikleri kaydet" : "Save changes" })
+        : t("address.form.save");
+    const optionalLabel = t("address.form.optional", { defaultValue: isTurkish ? "İsteğe bağlı" : "Optional" });
+    const nextFieldRefByName: Partial<Record<TextField, RefObject<TextInput | null>>> = {
         label: line1Ref,
         line1: blockRef,
         block: roomRef,
         room: cityRef,
     };
 
-    const renderField = (
-        label: string,
-        field: keyof FormState,
-        placeholder: string,
-        keyboardType: "default" | "numeric" | "email-address" = "default",
-        placeholderColor = "#94A3B8",
-        inputRef?: RefObject<TextInput | null>,
-    ) => (
+    const renderField = ({
+        field,
+        inputRef,
+        label,
+        optional,
+        placeholder,
+    }: {
+        field: TextField;
+        inputRef: RefObject<TextInput | null>;
+        label: string;
+        optional?: boolean;
+        placeholder: string;
+    }) => (
         <View style={styles.fieldGroup}>
-            <Text style={[styles.fieldLabel, { color: theme.colors.ink }]}>{label}</Text>
+            <View style={styles.fieldLabelRow}>
+                <Text numberOfLines={1} style={styles.fieldLabel}>{label}</Text>
+                {optional ? <Text numberOfLines={1} style={styles.optionalLabel}>{optionalLabel}</Text> : null}
+            </View>
             <TextInput
-                ref={inputRef}
-                value={form[field] as string}
-                onChangeText={(text) => handleChange(field, text)}
-                placeholder={placeholder}
-                keyboardType={keyboardType}
-                style={[styles.fieldInput, { color: theme.colors.ink, backgroundColor: theme.colors.input, borderColor: theme.colors.border }]}
-                placeholderTextColor={theme.colors.muted}
+                accessibilityLabel={label}
                 autoCapitalize="words"
-                returnKeyType={field === "city" ? "done" : "next"}
                 blurOnSubmit={field === "city"}
+                keyboardType="default"
+                onBlur={() => setFocusedField((current) => current === field ? null : current)}
+                onChangeText={(text) => handleChange(field, text)}
+                onFocus={() => setFocusedField(field)}
                 onSubmitEditing={() => {
                     if (field === "city") {
-                        handleSubmit();
+                        Keyboard.dismiss();
+                        void handleSubmit();
                         return;
                     }
                     nextFieldRefByName[field]?.current?.focus();
                 }}
+                placeholder={placeholder}
+                placeholderTextColor={styles.placeholder.color}
+                ref={inputRef}
+                returnKeyType={field === "city" ? "done" : "next"}
+                style={[styles.fieldInput, focusedField === field && styles.fieldInputFocused, errors[field] && styles.fieldInputError]}
+                value={form[field]}
             />
             {errors[field] ? <Text style={styles.fieldError}>{errors[field]}</Text> : null}
         </View>
     );
 
     return (
-        <SafeAreaView style={styles.screen}>
-            <KeyboardAvoidingView
-                style={styles.flex1}
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                keyboardVerticalOffset={0}
-            >
+        <SafeAreaView edges={["top", "left", "right"]} style={styles.screen}>
+            <View style={styles.header}>
+                <Pressable accessibilityLabel={t("common.goBack")} accessibilityRole="button" hitSlop={4} onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <Ionicons color={styles.primary.color} name="chevron-back" size={20} />
+                </Pressable>
+                <Text numberOfLines={1} style={styles.headerTitle}>{screenTitle}</Text>
+                <View style={styles.headerSpacer} />
+            </View>
+
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={0} style={styles.flex}>
                 <ScrollView
-                    style={styles.flex1}
-                    contentContainerStyle={{ paddingBottom: 24 }}
-                    keyboardShouldPersistTaps="handled"
+                    contentContainerStyle={[styles.content, { paddingBottom: keyboardVisible ? 24 : FOOTER_HEIGHT + insets.bottom + 20 }]}
                     keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+                    keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
-                    <LinearGradient
-                        colors={["#0B1220", "#0E1A36"]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0.6 }}
-                        style={[styles.hero, heroIsStacked ? styles.heroCompact : null]}
-                    >
-                        <TouchableOpacity
-                            style={styles.backButton}
-                            onPress={() => navigation.goBack()}
-                            accessibilityRole="button"
-                            accessibilityLabel={t("common.goBack")}
-                        >
-                            <Icon name="arrowBack" size={18} color="#FFFFFF" />
-                        </TouchableOpacity>
-
-                        <View style={[styles.heroRow, heroIsStacked ? styles.heroRowCompact : null]}>
-                            <View style={[styles.heroHeader, heroIsStacked ? styles.heroHeaderCompact : null]}>
-                                <OnlineLocation
-                                    width={heroImageSize}
-                                    height={heroImageSize}
-                                    style={[styles.heroImage, heroIsStacked ? styles.heroImageCompact : null]}
-                                />
-                            </View>
-
-                            <View style={[styles.heroContent, heroIsStacked ? styles.heroContentCompact : null]}>
-                                <Text style={styles.heroEyebrow}>{screenTitle}</Text>
-                                <Text style={[styles.heroTitle, heroIsStacked ? styles.heroTitleCompact : null]}>{t("address.form.heroTitle")}</Text>
-                                <Text style={[styles.heroSubtitle, heroIsStacked ? styles.heroSubtitleCompact : null]}>{t("address.form.heroSubtitle")}</Text>
-                            </View>
-                        </View>
-                    </LinearGradient>
-
-                    <View style={styles.formContainer}>
-                        <View style={[styles.formCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-                            <View style={styles.formHeading}>
-                                <Text style={[styles.formTitle, { color: theme.colors.ink }]}>{t("address.form.sectionTitle")}</Text>
-                                <Text style={[styles.formSubtitle, { color: theme.colors.textSecondary }]}>{t("address.form.sectionSubtitle")}</Text>
-                            </View>
-
-                            <View style={styles.fieldsStack}>
-                                {renderField(
-                                    t("address.form.fields.label"),
-                                    "label",
-                                    t("address.form.fields.labelPlaceholder"),
-                                    "default",
-                                    "#94A3B8",
-                                    labelRef,
-                                )}
-                                {renderField(
-                                    t("address.form.fields.line1"),
-                                    "line1",
-                                    t("address.form.fields.line1Placeholder"),
-                                    "default",
-                                    "#94A3B8",
-                                    line1Ref,
-                                )}
-                                {renderField(
-                                    t("address.form.fields.block"),
-                                    "block",
-                                    t("address.form.fields.blockPlaceholder"),
-                                    "default",
-                                    "#94A3B8",
-                                    blockRef,
-                                )}
-                                {renderField(
-                                    t("address.form.fields.room"),
-                                    "room",
-                                    t("address.form.fields.roomPlaceholder"),
-                                    "default",
-                                    "#94A3B8",
-                                    roomRef,
-                                )}
-                                {renderField(
-                                    t("address.form.fields.city"),
-                                    "city",
-                                    t("address.form.fields.cityPlaceholder"),
-                                    "default",
-                                    "#A7B0C2",
-                                    cityRef,
-                                )}
-                            </View>
-
-                            <View style={[styles.defaultCard, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}>
-                                <View style={styles.defaultContent}>
-                                    <Text style={[styles.defaultTitle, { color: theme.colors.ink }]}>{t("address.form.makeDefault")}</Text>
-                                    <Text style={[styles.defaultHint, { color: theme.colors.textSecondary }]}>{t("address.form.makeDefaultHint")}</Text>
-                                </View>
-                                <Switch
-                                    value={form.isDefault}
-                                    onValueChange={(value) => handleChange("isDefault", value)}
-                                    trackColor={{ false: "#CBD5E1", true: "#FE8C00" }}
-                                    thumbColor="#fff"
-                                />
-                            </View>
+                    <View accessibilityLabel={t("address.form.sectionTitle")} style={styles.helperCard}>
+                        <View style={styles.helperIcon}><Ionicons color={ORANGE} name="location-outline" size={19} /></View>
+                        <View style={styles.helperCopy}>
+                            <Text style={styles.helperTitle}>{t("address.form.sectionTitle")}</Text>
+                            <Text numberOfLines={2} style={styles.helperDescription}>{t("address.form.sectionSubtitle")}</Text>
                         </View>
                     </View>
-                </ScrollView>
 
-                <View
-                    style={[
-                        styles.footer,
-                        { paddingBottom: keyboardVisible ? 0 : Math.max(insets.bottom - 30, 4) },
-                    ]}
-                >
-                    <TouchableOpacity
-                        disabled={isMutating}
-                        style={[styles.saveButton, isMutating ? styles.saveButtonDisabled : styles.saveButtonEnabled]}
-                        onPress={handleSubmit}
-                        activeOpacity={0.9}
+                    <View style={styles.fieldsStack}>
+                        {renderField({ field: "label", inputRef: labelRef, label: t("address.form.fields.label"), placeholder: t("address.form.fields.labelPlaceholder") })}
+                        {renderField({ field: "line1", inputRef: line1Ref, label: t("address.form.fields.line1"), placeholder: t("address.form.fields.line1Placeholder") })}
+                        {renderField({ field: "block", inputRef: blockRef, label: t("address.form.fields.block"), optional: true, placeholder: t("address.form.fields.blockPlaceholder") })}
+                        {renderField({ field: "room", inputRef: roomRef, label: t("address.form.fields.room"), optional: true, placeholder: t("address.form.fields.roomPlaceholder") })}
+                        {renderField({ field: "city", inputRef: cityRef, label: t("address.form.fields.city"), placeholder: t("address.form.fields.cityPlaceholder") })}
+                    </View>
+
+                    <Pressable
+                        accessibilityLabel={t("address.form.makeDefault")}
+                        accessibilityRole="switch"
+                        accessibilityState={{ checked: form.isDefault }}
+                        onPress={() => handleChange("isDefault", !form.isDefault)}
+                        style={styles.defaultCard}
                     >
-                        <Text style={styles.saveButtonText}>
-                            {isMutating ? t("address.form.saving") : t("address.form.save")}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
+                        <View style={styles.defaultContent}>
+                            <Text style={styles.defaultTitle}>{t("address.form.makeDefault")}</Text>
+                            <Text numberOfLines={2} style={styles.defaultHint}>{t("address.form.makeDefaultHint")}</Text>
+                        </View>
+                        <View style={styles.switchHitbox}>
+                            <View style={[styles.switchTrack, form.isDefault && styles.switchTrackActive]}>
+                                <View style={[styles.switchThumb, form.isDefault && styles.switchThumbActive]} />
+                            </View>
+                        </View>
+                    </Pressable>
+                </ScrollView>
             </KeyboardAvoidingView>
+
+            {!keyboardVisible ? <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+                <Pressable accessibilityRole="button" disabled={isMutating} onPress={() => void handleSubmit()} style={[styles.saveButton, isMutating && styles.saveButtonDisabled]}>
+                    {isMutating ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
+                    <Text style={[styles.saveButtonText, isMutating && styles.saveButtonDisabledText]}>{isMutating ? t("address.form.saving") : saveLabel}</Text>
+                </Pressable>
+            </View> : null}
         </SafeAreaView>
     );
 };
 
-const styles = createAdaptiveStyleSheet({
-    screen: {
-        flex: 1,
-        backgroundColor: "#0B1220",
-    },
-    flex1: {
-        flex: 1,
-    },
-    hero: {
-        paddingHorizontal: 20,
-        paddingTop: 18,
-        paddingBottom: 86,
-        borderBottomLeftRadius: 28,
-        borderBottomRightRadius: 28,
-    },
-    heroCompact: {
-        paddingBottom: 72,
-    },
-    heroRow: {
-        flexDirection: "row",
-        alignItems: "flex-start",
-        columnGap: 16,
-        marginTop: 12,
-    },
-    heroRowCompact: {
-        flexDirection: "column",
-        rowGap: 12,
-    },
-    heroHeader: {
-        width: 110,
-        alignItems: "center",
-    },
-    heroHeaderCompact: {
-        width: "100%",
-        alignItems: "flex-start",
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: "rgba(255, 255, 255, 0.1)",
-        borderWidth: 1,
-        borderColor: "rgba(255, 255, 255, 0.25)",
-        alignItems: "center",
-        justifyContent: "center",
-        alignSelf: "flex-start",
-    },
-    heroContent: {
-        flex: 1,
-        rowGap: 4,
-        paddingTop: 4,
-    },
-    heroContentCompact: {
-        maxWidth: "100%",
-        paddingRight: 8,
-    },
-    heroEyebrow: {
-        color: "rgba(255, 255, 255, 0.6)",
-        letterSpacing: 3.5,
-        textTransform: "uppercase",
-        fontSize: 11,
-        lineHeight: 14,
-        fontFamily: "ChairoSans-SemiBold",
-    },
-    heroTitle: {
-        color: "#FFFFFF",
-        fontSize: 21,
-        lineHeight: 27,
-        fontFamily: "ChairoSans-Bold",
-    },
-    heroTitleCompact: {
-        fontSize: 19,
-        lineHeight: 25,
-    },
-    heroSubtitle: {
-        color: "rgba(255, 255, 255, 0.75)",
-        fontSize: 14,
-        lineHeight: 20,
-        fontFamily: "ChairoSans",
-    },
-    heroSubtitleCompact: {
-        maxWidth: 220,
-    },
-    heroImage: {
-        opacity: 0.95,
-        marginTop: -2,
-    },
-    heroImageCompact: {
-        marginTop: 0,
-        flexShrink: 0,
-    },
-    formContainer: {
-        marginTop: -40,
-        paddingHorizontal: 20,
-        paddingBottom: 16,
-    },
-    formCard: {
-        backgroundColor: "#FFFFFF",
-        borderRadius: 24,
-        padding: 20,
-        borderWidth: 1,
-        borderColor: "#E5E7EB",
-        rowGap: 24,
-        ...makeShadow({ color: "#FE8C00", offsetY: 6, blurRadius: 16, opacity: 0.1, elevation: 3 }),
-        elevation: 3,
-    },
-    formHeading: {
-        rowGap: 4,
-    },
-    formTitle: {
-        fontSize: 22,
-        lineHeight: 28,
-        color: "#111827",
-        fontFamily: "ChairoSans-Bold",
-    },
-    formSubtitle: {
-        fontSize: 15,
-        lineHeight: 22,
-        color: "#6B7280",
-        fontFamily: "ChairoSans",
-    },
-    fieldsStack: {
-        rowGap: 20,
-    },
-    fieldGroup: {
-        rowGap: 8,
-    },
-    fieldLabel: {
-        fontSize: 16,
-        lineHeight: 22,
-        color: "#111827",
-        fontFamily: "ChairoSans-SemiBold",
-    },
-    fieldInput: {
-        backgroundColor: "#F8FAFC",
-        borderRadius: 16,
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-        borderWidth: 1,
-        borderColor: "#E5E7EB",
-        color: "#111827",
-        fontSize: 16,
-        lineHeight: 22,
-        fontFamily: "ChairoSans",
-    },
-    fieldError: {
-        fontSize: 12,
-        lineHeight: 16,
-        color: "#EF4444",
-        fontFamily: "ChairoSans",
-    },
-    defaultCard: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        backgroundColor: "#F8FAFC",
-        borderRadius: 16,
-        paddingHorizontal: 16,
-        paddingVertical: 16,
-        borderWidth: 1,
-        borderColor: "#E5E7EB",
-    },
-    defaultContent: {
-        flex: 1,
-        paddingRight: 16,
-    },
-    defaultTitle: {
-        fontSize: 16,
-        lineHeight: 22,
-        color: "#111827",
-        fontFamily: "ChairoSans-SemiBold",
-    },
-    defaultHint: {
-        marginTop: 2,
-        fontSize: 14,
-        lineHeight: 20,
-        color: "#6B7280",
-        fontFamily: "ChairoSans",
-    },
-    footer: {
-        paddingHorizontal: 24,
-        paddingTop: 8,
-        backgroundColor: "#0B1220",
-    },
-    saveButton: {
-        borderRadius: 999,
-        paddingVertical: 16,
-        alignItems: "center",
-        justifyContent: "center",
-        ...makeShadow({ color: "#FE8C00", offsetY: 4, blurRadius: 10, opacity: 0.3, elevation: 4 }),
-        elevation: 4,
-    },
-    saveButtonEnabled: {
-        backgroundColor: "#FE8C00",
-    },
-    saveButtonDisabled: {
-        backgroundColor: "#D1D5DB",
-    },
-    saveButtonText: {
-        color: "#FFFFFF",
-        fontSize: 16,
-        lineHeight: 22,
-        fontFamily: "ChairoSans-SemiBold",
-    },
-});
+const createStyles = (dark: boolean) => {
+    const colors = {
+        page: dark ? "#0F1115" : "#FAFBFC",
+        surface: dark ? "#171A20" : "#FFFFFF",
+        primary: dark ? "#F5F7FA" : "#111318",
+        secondary: dark ? "#98A2B3" : "#667085",
+        tertiary: dark ? "#778293" : "#98A2B3",
+        border: dark ? "#2A2E35" : "#EAECF0",
+        inputBorder: dark ? "#343942" : "#DDE2EA",
+        disabled: dark ? "#343942" : "#E4E7EC",
+    };
+
+    return StyleSheet.create({
+        screen: { flex: 1, backgroundColor: colors.page },
+        flex: { flex: 1 },
+        primary: { color: colors.primary },
+        placeholder: { color: colors.tertiary },
+        header: { height: 54, paddingHorizontal: 22, flexDirection: "row", alignItems: "center", backgroundColor: colors.page },
+        backButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+        headerTitle: { flex: 1, color: colors.primary, fontSize: 21, lineHeight: 26, fontWeight: "700", textAlign: "center" },
+        headerSpacer: { width: 44, height: 44 },
+        content: { paddingHorizontal: 22, paddingTop: 20 },
+        helperCard: { minHeight: 74, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 14, flexDirection: "row", alignItems: "center", backgroundColor: colors.surface },
+        helperIcon: { width: 42, height: 42, borderRadius: 21, flexShrink: 0, alignItems: "center", justifyContent: "center", backgroundColor: dark ? "#3A251C" : "#FFF1E7" },
+        helperCopy: { flex: 1, minWidth: 0, marginLeft: 12 },
+        helperTitle: { color: colors.primary, fontSize: 15, lineHeight: 19, fontWeight: "600" },
+        helperDescription: { marginTop: 2, color: colors.secondary, fontSize: 13, lineHeight: 18 },
+        fieldsStack: { marginTop: 22, gap: 16 },
+        fieldGroup: { gap: 6 },
+        fieldLabelRow: { height: 18, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+        fieldLabel: { flexShrink: 1, color: colors.primary, fontSize: 13.5, lineHeight: 18, fontWeight: "600" },
+        optionalLabel: { flexShrink: 0, color: colors.tertiary, fontSize: 12, lineHeight: 16 },
+        fieldInput: { height: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.inputBorder, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: colors.surface, color: colors.primary, fontSize: 14, fontWeight: "400" },
+        fieldInputFocused: { borderColor: ORANGE },
+        fieldInputError: { borderColor: "#D92D20" },
+        fieldError: { marginTop: -2, color: "#D92D20", fontSize: 11.5, lineHeight: 16, fontWeight: "500" },
+        defaultCard: { minHeight: 66, marginTop: 22, borderRadius: 14, borderWidth: 1, borderColor: colors.border, paddingLeft: 14, paddingRight: 7, paddingVertical: 9, flexDirection: "row", alignItems: "center", backgroundColor: colors.surface },
+        defaultContent: { flex: 1, minWidth: 0, paddingRight: 8 },
+        defaultTitle: { color: colors.primary, fontSize: 14.5, lineHeight: 19, fontWeight: "600" },
+        defaultHint: { marginTop: 2, color: colors.secondary, fontSize: 12.5, lineHeight: 17 },
+        switchHitbox: { width: 44, height: 44, flexShrink: 0, alignItems: "center", justifyContent: "center" },
+        switchTrack: { width: 44, height: 26, borderRadius: 13, padding: 2, justifyContent: "center", backgroundColor: "#D0D5DD" },
+        switchTrackActive: { backgroundColor: ORANGE },
+        switchThumb: { width: 22, height: 22, borderRadius: 11, backgroundColor: "#FFFFFF", transform: [{ translateX: 0 }] },
+        switchThumbActive: { transform: [{ translateX: 18 }] },
+        footer: { position: "absolute", left: 0, right: 0, bottom: 0, minHeight: FOOTER_HEIGHT, paddingTop: 14, paddingHorizontal: 22, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, backgroundColor: colors.page },
+        saveButton: { height: 54, borderRadius: 17, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: ORANGE },
+        saveButtonDisabled: { backgroundColor: colors.disabled },
+        saveButtonText: { color: "#FFFFFF", fontSize: 16, lineHeight: 20, fontWeight: "600" },
+        saveButtonDisabledText: { color: colors.tertiary },
+    });
+};
 
 export default AddressFormScreen;

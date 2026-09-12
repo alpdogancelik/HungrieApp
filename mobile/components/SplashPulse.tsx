@@ -9,17 +9,19 @@ import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 
 type SplashPulseProps = {
     visible: boolean;
+    ready?: boolean;
     onFinished: () => void;
     imageSource: any;
     backgroundColor?: string;
 };
 
-export default function SplashPulse({ visible, onFinished, imageSource, backgroundColor = "#FFF7EF" }: SplashPulseProps) {
+export default function SplashPulse({ visible, ready = false, onFinished, imageSource, backgroundColor = "#FFF7EF" }: SplashPulseProps) {
     const reduceMotion = useReducedMotion();
     const { width, height } = useStableWindowDimensions();
     const scale = useRef(new Animated.Value(1)).current;
     const opacity = useRef(new Animated.Value(1)).current;
     const finishedRef = useRef(false);
+    const onFinishedRef = useRef(onFinished);
     const isWeb = Platform.OS === "web";
     const useNativeDriver = !isWeb;
     const safeWidth = width > 0 ? width : isWeb ? 1440 : 390;
@@ -35,6 +37,10 @@ export default function SplashPulse({ visible, onFinished, imageSource, backgrou
     const imageWidth = Math.min(maxImageWidth, maxImageHeight * imageAspectRatio);
     const imageHeight = imageWidth / imageAspectRatio;
     const imageFit = useFullScreenSplash ? "cover" : "contain";
+
+    useEffect(() => {
+        onFinishedRef.current = onFinished;
+    }, [onFinished]);
 
     const pulseAnimation = useMemo(() => {
         // A "heartbeat" feel: quick up-down-up, then a short rest.
@@ -70,19 +76,20 @@ export default function SplashPulse({ visible, onFinished, imageSource, backgrou
 
             Animated.timing(opacity, { toValue: 0, duration: 260, useNativeDriver }).start(({ finished }) => {
                 // Even if the animation is interrupted, we should continue into the app.
-                onFinished();
+                onFinishedRef.current();
             });
         };
 
         if (reduceMotion) {
             // Accessibility: Reduce Motion skips the pulse. Keep the image visible briefly,
             // then fade out to avoid a "hard cut".
-            finishTimer = setTimeout(finish, 600);
+            finishTimer = setTimeout(finish, ready ? 40 : 240);
         } else {
             loop = Animated.loop(pulseAnimation);
             loop.start();
-            // Robustness: never block the app longer than ~1.6s.
-            finishTimer = setTimeout(finish, 1600);
+            // The native splash already covers initialization. This branded
+            // transition is adaptive and never blocks usable UI beyond 600ms.
+            finishTimer = setTimeout(finish, ready ? 80 : 340);
         }
 
         return () => {
@@ -93,7 +100,7 @@ export default function SplashPulse({ visible, onFinished, imageSource, backgrou
                 // ignore
             }
         };
-    }, [imageSource, onFinished, opacity, pulseAnimation, reduceMotion, scale, useNativeDriver, visible]);
+    }, [opacity, pulseAnimation, ready, reduceMotion, scale, useNativeDriver, visible]);
 
     if (!visible) return null;
 

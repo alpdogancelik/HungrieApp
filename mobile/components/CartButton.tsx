@@ -5,8 +5,7 @@ import { useCartStore } from "@/store/cart.store";
 import Icon from "./Icon";
 
 const CartButton = () => {
-    const { getTotalItems } = useCartStore();
-    const totalItems = getTotalItems();
+    const totalItems = useCartStore((state) => state.totalItems);
     const router = useRouter();
 
     return (

@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
-import { StyleSheet, Text, View } from "react-native";
-import Svg, { Circle, Defs, LinearGradient, Path, Stop } from "react-native-svg";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
+import Svg, { Circle, Path } from "react-native-svg";
+
+import { useTheme } from "@/src/theme/themeContext";
 
 export type OrderStatus =
     | "received"
@@ -28,6 +31,7 @@ type OrderProgressTimerProps = {
     cancelAllowedUntil?: TimestampInput;
     totalApprovalSeconds?: number;
     restaurantName?: string;
+    onCancel?: () => void;
     onApprovalExpired?: () => void;
 };
 
@@ -264,8 +268,14 @@ export function OrderProgressTimer({
     cancelAllowedUntil,
     totalApprovalSeconds = 5 * 60,
     restaurantName,
+    onCancel,
     onApprovalExpired,
 }: OrderProgressTimerProps) {
+    const { i18n } = useTranslation();
+    const { variant } = useTheme();
+    const dark = variant === "dark";
+    const isTurkish = i18n.language?.toLowerCase().startsWith("tr");
+    const styles = useMemo(() => createStyles(dark), [dark]);
     const nowMs = useNowMs(250);
     const normalizedStatus = normalizeStatus(String(currentStatus));
     const approvalExpiredNotified = useRef(false);
@@ -330,36 +340,52 @@ export function OrderProgressTimer({
         onApprovalExpired?.();
     }, [normalizedStatus, approvalDeadlineMs, nowMs, onApprovalExpired]);
 
-    const size = 176;
+    const size = 148;
     const strokeWidth = 10;
     const center = size / 2;
-    const radius = 68;
+    const radius = 59;
     const segmentGap = 8;
     const segmentAngle = 360 / ORDER_STEPS.length;
     const activeEndAngle = animatedProgress * 360;
 
-    const label = getStatusLabel(normalizedStatus);
-    const description = getStatusDescription(normalizedStatus, restaurantName);
+    const label = normalizedStatus === "awaiting_restaurant_approval"
+        ? isTurkish ? "Restoran onayı bekleniyor" : "Restaurant approval pending"
+        : normalizedStatus === "preparing"
+          ? isTurkish ? "Hazırlanıyor" : "Preparing"
+          : normalizedStatus === "ready_for_pickup"
+            ? isTurkish ? "Teslimata hazır" : "Ready for pickup"
+            : normalizedStatus === "on_the_way"
+              ? isTurkish ? "Yolda" : "On the way"
+              : normalizedStatus === "delivered"
+                ? isTurkish ? "Teslim edildi" : "Delivered"
+                : isTurkish ? "Sipariş iptal edildi" : "Order canceled";
+    const description = normalizedStatus === "awaiting_restaurant_approval"
+        ? restaurantName
+            ? isTurkish ? `${restaurantName} siparişinizi inceliyor.` : `${restaurantName} is reviewing your order.`
+            : isTurkish ? "Restoran siparişinizi inceliyor." : "The restaurant is reviewing your order."
+        : normalizedStatus === "preparing"
+          ? isTurkish ? "Mutfak siparişinizi hazırlıyor." : "The kitchen is preparing your order."
+          : normalizedStatus === "ready_for_pickup"
+            ? isTurkish ? "Siparişiniz kurye için hazır." : "Your order is ready for the courier."
+            : normalizedStatus === "on_the_way"
+              ? isTurkish ? "Kurye adresinize geliyor." : "The courier is heading to you."
+              : normalizedStatus === "delivered"
+                ? isTurkish ? "Siparişiniz başarıyla teslim edildi." : "Your order was delivered successfully."
+                : isTurkish ? "Bu sipariş artık aktif değil." : "This order is no longer active.";
 
     const mainTime =
         normalizedStatus === "awaiting_restaurant_approval"
             ? formatRemainingTime(approvalRemainingSeconds)
             : normalizedStatus === "delivered"
-              ? "OK"
-              : "--";
+              ? "✓"
+              : normalizedStatus === "cancelled"
+                ? "!"
+                : "✓";
 
     return (
         <View style={styles.card}>
             <View style={styles.ringWrap}>
                 <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-                    <Defs>
-                        <LinearGradient id="activeGradient" x1="0" y1="0" x2="1" y2="1">
-                            <Stop offset="0" stopColor="#68D8F2" />
-                            <Stop offset="0.55" stopColor="#35D0A3" />
-                            <Stop offset="1" stopColor="#8C6EF2" />
-                        </LinearGradient>
-                    </Defs>
-
                     {ORDER_STEPS.map((step, index) => {
                         const start = index * segmentAngle + segmentGap / 2;
                         const end = (index + 1) * segmentAngle - segmentGap / 2;
@@ -369,7 +395,7 @@ export function OrderProgressTimer({
                             <Path
                                 key={step.key}
                                 d={describeArc(center, center, radius, start, end)}
-                                stroke={completed ? "#35D0A3" : "#29303B"}
+                                stroke={completed ? "#FF5A00" : styles.ringTrack.color}
                                 strokeWidth={strokeWidth}
                                 strokeLinecap="round"
                                 fill="none"
@@ -377,23 +403,27 @@ export function OrderProgressTimer({
                         );
                     })}
 
-                    {activeEndAngle > 2 ? (
+                    {activeEndAngle >= 359 ? (
+                        <Circle cx={center} cy={center} r={radius} stroke="#FF5A00" strokeWidth={strokeWidth} fill="none" />
+                    ) : activeEndAngle > 2 ? (
                         <Path
                             d={describeArc(center, center, radius, 0, activeEndAngle)}
-                            stroke="url(#activeGradient)"
+                            stroke="#FF5A00"
                             strokeWidth={strokeWidth}
                             strokeLinecap="round"
                             fill="none"
                         />
                     ) : null}
 
-                    <Circle cx={center} cy={center} r={48} stroke="#242A35" strokeWidth={1} fill="#131821" />
+                    <Circle cx={center} cy={center} r={43} stroke={styles.innerRing.borderColor} strokeWidth={1} fill={styles.innerRing.backgroundColor} />
                 </Svg>
 
                 <View style={styles.centerContent}>
                     <Text style={styles.timeText}>{mainTime}</Text>
                     <Text style={styles.centerLabel} numberOfLines={2}>
-                        {normalizedStatus === "awaiting_restaurant_approval" ? "Onay bekleniyor" : label}
+                        {normalizedStatus === "awaiting_restaurant_approval"
+                            ? isTurkish ? "Onay bekleniyor" : "Waiting for approval"
+                            : label}
                     </Text>
                 </View>
             </View>
@@ -403,33 +433,42 @@ export function OrderProgressTimer({
                 <Text style={styles.description}>{description}</Text>
 
                 {normalizedStatus === "awaiting_restaurant_approval" ? (
-                    <Text style={styles.hint}>Genellikle birkaç dakika içinde onaylanır.</Text>
+                    <Text style={styles.hint}>{isTurkish ? "Genellikle birkaç dakika içinde onaylanır." : "Usually approved within a few minutes."}</Text>
                 ) : null}
 
                 {cancelRemainingSeconds > 0 ? (
-                    <View style={styles.cancelBadge}>
-                        <Text style={styles.cancelBadgeText}>İptal hakkı: {cancelRemainingSeconds} sn</Text>
-                    </View>
+                    <Pressable
+                        accessibilityRole={onCancel ? "button" : undefined}
+                        accessibilityLabel={isTurkish ? `İptal hakkı ${cancelRemainingSeconds} saniye` : `Cancel window ${cancelRemainingSeconds} seconds`}
+                        disabled={!onCancel}
+                        onPress={onCancel}
+                        style={styles.cancelBadge}
+                    >
+                        <Ionicons color="#FF5A00" name="time-outline" size={16} />
+                        <Text numberOfLines={1} style={styles.cancelBadgeText}>
+                            {isTurkish ? "İptal hakkı:" : "Cancel window:"} <Text style={styles.cancelBadgeTime}>{cancelRemainingSeconds} {isTurkish ? "sn" : "sec"}</Text>
+                        </Text>
+                    </Pressable>
                 ) : null}
             </View>
         </View>
     );
 }
 
-const styles = createAdaptiveStyleSheet({
+const createStyles = (dark: boolean) => StyleSheet.create({
     card: {
-        backgroundColor: "#11141C",
-        borderRadius: 24,
+        backgroundColor: dark ? "#171A20" : "#FFFFFF",
+        borderRadius: 16,
         borderWidth: 1,
-        borderColor: "#242A35",
-        padding: 18,
+        borderColor: dark ? "#2A2E35" : "#EAECF0",
+        padding: 16,
         flexDirection: "row",
         alignItems: "center",
-        gap: 16,
+        gap: 14,
     },
     ringWrap: {
-        width: 176,
-        height: 176,
+        width: 148,
+        height: 148,
         alignItems: "center",
         justifyContent: "center",
     },
@@ -437,19 +476,21 @@ const styles = createAdaptiveStyleSheet({
         position: "absolute",
         alignItems: "center",
         justifyContent: "center",
-        width: 108,
+        width: 88,
     },
     timeText: {
-        color: "#F7F8FA",
-        fontSize: 28,
-        fontWeight: "800",
+        color: dark ? "#F5F7FA" : "#111318",
+        fontSize: 30,
+        lineHeight: 36,
+        fontWeight: "700",
         letterSpacing: -0.8,
     },
     centerLabel: {
         marginTop: 4,
-        color: "#9DA6B7",
-        fontSize: 11,
-        fontWeight: "600",
+        color: dark ? "#98A2B3" : "#667085",
+        fontSize: 12.5,
+        lineHeight: 17,
+        fontWeight: "500",
         textAlign: "center",
     },
     copy: {
@@ -457,36 +498,46 @@ const styles = createAdaptiveStyleSheet({
         minWidth: 0,
     },
     title: {
-        color: "#F7F8FA",
-        fontSize: 16,
-        fontWeight: "800",
+        color: dark ? "#F5F7FA" : "#111318",
+        fontSize: 18,
+        lineHeight: 23,
+        fontWeight: "700",
         letterSpacing: -0.2,
     },
     description: {
         marginTop: 6,
-        color: "#A8B0BE",
-        fontSize: 13,
-        lineHeight: 18,
+        color: dark ? "#98A2B3" : "#667085",
+        fontSize: 13.5,
+        lineHeight: 19,
     },
     hint: {
         marginTop: 10,
-        color: "#5FD7EA",
-        fontSize: 12,
-        fontWeight: "600",
+        color: dark ? "#AAB2C0" : "#667085",
+        fontSize: 13,
+        lineHeight: 18,
+        fontWeight: "500",
     },
     cancelBadge: {
         marginTop: 12,
         alignSelf: "flex-start",
-        borderRadius: 999,
-        backgroundColor: "rgba(104, 216, 242, 0.1)",
+        minHeight: 42,
+        borderRadius: 12,
+        backgroundColor: dark ? "#30231D" : "#FFF3EC",
         borderWidth: 1,
-        borderColor: "rgba(104, 216, 242, 0.28)",
-        paddingHorizontal: 10,
-        paddingVertical: 6,
+        borderColor: dark ? "#603620" : "#FFE1D2",
+        paddingHorizontal: 8,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
     },
     cancelBadgeText: {
-        color: "#8FEAFF",
-        fontSize: 12,
-        fontWeight: "700",
+        flexShrink: 1,
+        color: dark ? "#FF9A62" : "#C2410C",
+        fontSize: 11.5,
+        lineHeight: 16,
+        fontWeight: "500",
     },
+    cancelBadgeTime: { color: "#FF5A00", fontWeight: "700" },
+    ringTrack: { color: dark ? "#2A2E35" : "#EAECF0" },
+    innerRing: { borderColor: dark ? "#2A2E35" : "#EAECF0", backgroundColor: dark ? "#171A20" : "#FFFFFF" },
 });

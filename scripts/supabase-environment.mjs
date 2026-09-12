@@ -8,12 +8,14 @@ const STATE_PATH = path.join(ROOT_DIR, "secure", "supabase-projects.local.json")
 const CLI_HOME = path.join(ROOT_DIR, "secure", "supabase-cli-hungrie");
 const CLI_TOKEN_PATH = path.join(CLI_HOME, "access-token");
 const [action, environment = "development"] = process.argv.slice(2);
+const confirmation = process.argv.find((value) => value.startsWith("--confirm="))?.split("=")[1];
 const allowedActions = new Set(["link", "push", "config", "types"]);
 const allowedEnvironments = new Set(["development", "staging", "production"]);
 
 if (!allowedActions.has(action) || !allowedEnvironments.has(environment)) {
   throw new Error("Usage: npm run supabase:environment -- <link|push|config|types> <development|staging|production>");
 }
+if (confirmation !== environment) throw new Error(`Refusing ${action} without --confirm=${environment}.`);
 if (!fs.existsSync(STATE_PATH)) throw new Error("Missing ignored secure/supabase-projects.local.json.");
 if (!fs.existsSync(CLI_TOKEN_PATH)) throw new Error("Missing ignored Hungrie Supabase access token. Run npm run supabase:auth:capture.");
 

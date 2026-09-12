@@ -1,5 +1,7 @@
 const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { defineSecret, defineString } = require("firebase-functions/params");
 const functionsV1 = require("firebase-functions/v1");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
@@ -9,6 +11,10 @@ const http2 = require("node:http2");
 admin.initializeApp();
 
 const SUPABASE_AUTHENTICATED_ROLE = "authenticated";
+const SUPABASE_URL = defineSecret("SUPABASE_URL");
+const SUPABASE_SERVICE_ROLE_KEY = defineSecret("SUPABASE_SERVICE_ROLE_KEY");
+const ORDER_AUTOMATION_BACKEND = defineString("ORDER_AUTOMATION_BACKEND", { default: "firebase" });
+const firebaseOrderAutomationEnabled = () => ORDER_AUTOMATION_BACKEND.value() === "firebase";
 
 const USER_NOTIFIABLE_STATUSES = new Set(["preparing", "ready", "out_for_delivery", "delivered", "canceled"]);
 const ORDER_APPROVAL_SLA_MS = 5 * 60 * 1000;
@@ -498,12 +504,14 @@ const sendUserOrderStatusPush = async ({ orderId, before, after }) => {
 };
 
 exports.notifyRestaurantOnNewOrder = onDocumentCreated("orders/{orderId}", async (event) => {
+    if (!firebaseOrderAutomationEnabled()) return;
     const orderId = String(event.params?.orderId || "");
     const data = event.data?.data() || {};
     await sendRestaurantNewOrderPush({ orderId, data, trigger: "create" });
 });
 
 exports.notifyRestaurantOnPendingTransition = onDocumentUpdated("orders/{orderId}", async (event) => {
+    if (!firebaseOrderAutomationEnabled()) return;
     const orderId = String(event.params?.orderId || "");
     const before = event.data?.before?.data() || {};
     const after = event.data?.after?.data() || {};
@@ -514,6 +522,7 @@ exports.notifyRestaurantOnPendingTransition = onDocumentUpdated("orders/{orderId
 });
 
 exports.notifyUserOnOrderStatusTransition = onDocumentUpdated("orders/{orderId}", async (event) => {
+    if (!firebaseOrderAutomationEnabled()) return;
     const orderId = String(event.params?.orderId || "");
     const before = event.data?.before?.data() || {};
     const after = event.data?.after?.data() || {};
@@ -526,6 +535,7 @@ exports.cancelExpiredPendingOrders = onSchedule(
         timeZone: "Asia/Famagusta",
     },
     async () => {
+        if (!firebaseOrderAutomationEnabled()) return;
         const db = admin.firestore();
         const nowMs = Date.now();
         const snap = await db.collection("orders").where("status", "==", "pending").limit(200).get();
@@ -594,3 +604,107 @@ exports.assignSupabaseRoleOnUserCreate = functionsV1.auth.user().onCreate(async 
         claimsPreserved: Object.keys(existingClaims).length,
     });
 });
+
+const callSupabaseAdminRpc = async (name, body = {}) => {
+    const url = SUPABASE_URL.value().replace(/\/$/, "");
+    const key = SUPABASE_SERVICE_ROLE_KEY.value();
+    if (!url || !key) throw new Error("Supabase account-deletion secrets are not configured.");
+    const response = await fetch(`${url}/rest/v1/rpc/${name}`, {
+        method: "POST",
+        headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+        const error = new Error(String(payload?.message || `Supabase RPC ${name} failed.`));
+        error.code = payload?.code;
+        throw error;
+    }
+    return payload;
+};
+
+const deleteFirestoreCollection = async (reference) => {
+    while (true) {
+        const snapshot = await reference.limit(250).get();
+        if (snapshot.empty) return;
+        const batch = admin.firestore().batch();
+        snapshot.docs.forEach((document) => batch.delete(document.ref));
+        await batch.commit();
+    }
+};
+
+const scrubFirebaseIdentity = async (uid) => {
+    const db = admin.firestore();
+    const userRef = db.collection("users").doc(uid);
+    await deleteFirestoreCollection(userRef.collection("addresses"));
+    await deleteFirestoreCollection(userRef.collection("pushTokens"));
+    const orders = await db.collection("orders").where("userId", "==", uid).get();
+    for (let offset = 0; offset < orders.docs.length; offset += 250) {
+        const batch = db.batch();
+        orders.docs.slice(offset, offset + 250).forEach((document) => batch.update(document.ref, {
+            userId: `deleted:${document.id}`,
+            customerName: "Deleted user",
+            customerEmail: admin.firestore.FieldValue.delete(),
+            customerWhatsapp: admin.firestore.FieldValue.delete(),
+            customer: { name: "Deleted user" },
+            deliveryAddress: admin.firestore.FieldValue.delete(),
+            deliveryAddressText: admin.firestore.FieldValue.delete(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }));
+        await batch.commit();
+    }
+    await userRef.delete().catch((error) => {
+        if (error?.code !== 5) throw error;
+    });
+};
+
+exports.deleteHungrieAccount = onCall(
+    { secrets: [SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY] },
+    async (request) => {
+        if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Please sign in before deleting your account.");
+        const authTime = Number(request.auth.token.auth_time || 0) * 1000;
+        if (!authTime || Date.now() - authTime > 5 * 60 * 1000) {
+            throw new HttpsError("failed-precondition", "For security, sign in again before deleting your account.");
+        }
+        const uid = request.auth.uid;
+        let begun;
+        try {
+            begun = await callSupabaseAdminRpc("begin_account_anonymization", { p_firebase_uid: uid });
+        } catch (error) {
+            if (error?.message === "LAST_RESTAURANT_OWNER") {
+                throw new HttpsError("failed-precondition", "Transfer restaurant ownership before deleting this account.");
+            }
+            logger.error("Account anonymization could not begin", { code: error?.code || "unknown" });
+            throw new HttpsError("internal", "Account deletion could not be started.");
+        }
+        const profileId = begun?.profile_id;
+        await scrubFirebaseIdentity(uid);
+        await admin.auth().deleteUser(uid);
+        if (profileId) {
+            await callSupabaseAdminRpc("finalize_account_anonymization", { p_profile_id: profileId, p_firebase_uid: uid });
+        }
+        logger.info("Account deletion completed", { hadSupabaseProfile: Boolean(profileId) });
+        return { deleted: true };
+    },
+);
+
+exports.reconcilePendingAccountAnonymizations = onSchedule(
+    { schedule: "every 60 minutes", secrets: [SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY] },
+    async () => {
+        const pending = await callSupabaseAdminRpc("pending_account_anonymizations");
+        let finalized = 0;
+        for (const row of Array.isArray(pending) ? pending : []) {
+            try {
+                await admin.auth().getUser(row.firebase_uid);
+            } catch (error) {
+                if (error?.code !== "auth/user-not-found") continue;
+                await callSupabaseAdminRpc("finalize_account_anonymization", {
+                    p_profile_id: row.profile_id,
+                    p_firebase_uid: row.firebase_uid,
+                });
+                finalized += 1;
+            }
+        }
+        logger.info("Pending account anonymization reconciliation completed", { checked: pending?.length || 0, finalized });
+    },
+);

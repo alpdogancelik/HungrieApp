@@ -21,7 +21,7 @@ type Props = {
     onToggle: (orderId: string) => void;
     onStatusChange: (
         orderId: string,
-        nextStatus: "pending" | "accepted" | "out_for_delivery" | "canceled" | "rejected" | "delivered",
+        nextStatus: "pending" | "accepted" | "ready" | "out_for_delivery" | "canceled" | "rejected" | "delivered",
     ) => Promise<void> | void;
 };
 
@@ -56,10 +56,12 @@ const OrderCard = ({
         }).start();
     }, [bgAnim, isNew]);
 
-    const confirmAction = (nextStatus: "accepted" | "out_for_delivery" | "rejected" | "delivered") => {
+    const confirmAction = (nextStatus: "accepted" | "ready" | "out_for_delivery" | "rejected" | "delivered") => {
         const actionName =
             nextStatus === "accepted"
                 ? t("orders.action.accept")
+                : nextStatus === "ready"
+                  ? t("orders.action.ready")
                 : nextStatus === "out_for_delivery"
                   ? t("orders.action.handover")
                 : nextStatus === "rejected"
@@ -148,15 +150,25 @@ const OrderCard = ({
                                     <Text style={styles.itemName} numberOfLines={isCompact ? 2 : 1}>
                                         {item.name || t("common.itemFallback")}
                                     </Text>
-                                    <Text style={styles.itemPrice}>
-                                        {formatCurrency(Number(item.price || 0) * Number(item.quantity || 1))}
-                                    </Text>
+                                    <Text style={styles.itemPrice}>{formatCurrency(
+                                        (Number(item.price || 0) +
+                                            (item.customizations || []).reduce((sum, customization) => sum + Number(customization.price || 0), 0)) *
+                                            Number(item.quantity || 1),
+                                    )}</Text>
                                 </View>
                             ))
                         ) : (
                             <Text style={styles.orderMeta}>{t("common.noItemsAvailable")}</Text>
                         )}
                     </View>
+
+                    {order.deliveryFee > 0 ? (
+                        <View style={styles.itemRow}>
+                            <Text style={styles.itemQty} />
+                            <Text style={styles.itemName}>{t("orders.deliveryFee")}</Text>
+                            <Text style={styles.itemPrice}>{formatCurrency(order.deliveryFee)}</Text>
+                        </View>
+                    ) : null}
 
                     {expanded ? <Text style={styles.orderMeta}>{t("orders.paymentMethod", { value: order.paymentMethod || t("common.na") })}</Text> : null}
                 </Pressable>
@@ -208,6 +220,27 @@ const OrderCard = ({
                             </TouchableOpacity>
                         </>
                     ) : normalizedStatus === "accepted" ? (
+                        <View style={styles.singleActionRow}>
+                            <TouchableOpacity
+                                onPress={() => confirmAction("out_for_delivery")}
+                                activeOpacity={0.82}
+                                style={[
+                                    styles.actionButtonBase,
+                                    styles.primaryActionButton,
+                                    styles.actionButton,
+                                    isCompact ? styles.actionButtonCompact : null,
+                                    actionsDisabled ? styles.actionButtonDisabled : null,
+                                ]}
+                                disabled={actionsDisabled}
+                            >
+                                <Text style={[styles.actionButtonText, styles.primaryActionButtonText]}>
+                                    {actionLoadingStatus === "out_for_delivery"
+                                        ? `${t("orders.handoverCourier")}...`
+                                        : t("orders.handoverCourier")}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : normalizedStatus === "ready" ? (
                         <View style={styles.singleActionRow}>
                             <TouchableOpacity
                                 onPress={() => confirmAction("out_for_delivery")}

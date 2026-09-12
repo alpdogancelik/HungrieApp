@@ -7,77 +7,11 @@ import {
     signOut as firebaseSignOut,
 } from "./firebaseAuth";
 import { firebaseConfigured, firestore, FIREBASE_COLLECTIONS } from "./firebase";
-import { unregisterPushToken } from "./registerPushToken";
 import { filterRestaurantMenuForCustomer } from "./menuVisibility";
 import { collection, doc, getDoc, getDocs, onSnapshot, query, where } from "firebase/firestore";
-import { seedMenuByRestaurantId } from "./restaurantSeeds";
-
-const RESTAURANT_LOGO_PATH_BY_KEY: Record<string, string> = {
-    adapizza: "@/assets/restaurantlogo/adapizzalogo.jpg",
-    alacarte: "@/assets/restaurantlogo/alacartelogo.jpg",
-    alacartecafe: "@/assets/restaurantlogo/alacartelogo.jpg",
-    lavish: "@/assets/restaurantlogo/lavishlogo.jpg",
-    munchies: "@/assets/restaurantlogo/munchieslogo.jpg",
-    root: "@/assets/restaurantlogo/rootlogo.jpg",
-    rootkitchencoffee: "@/assets/restaurantlogo/rootlogo.jpg",
-    lombard: "@/assets/restaurantlogo/lombardlogo.jpg",
-    lombardkitchen: "@/assets/restaurantlogo/lombardlogo.jpg",
-    burgerhouse: "@/assets/restaurantlogo/burgerhouselogo.jpg",
-    voy: "@/assets/restaurantlogo/voylogo.jpg",
-    erto: "@/assets/restaurantlogo/ertologo.jpg",
-    ertocafe: "@/assets/restaurantlogo/ertologo.jpg",
-};
-
-const normalizeLogoKey = (value: unknown) =>
-    String(value || "")
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "");
-
-const normalizeMenuTextKey = (value: unknown) =>
-    String(value || "")
-        .toLowerCase()
-        .normalize("NFKD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z0-9]+/g, " ")
-        .trim();
-
-const resolveSeedMenuImageUrl = (restaurantId: string, item: any) => {
-    const seedMenu = seedMenuByRestaurantId(String(restaurantId));
-    if (!Array.isArray(seedMenu) || !seedMenu.length) return "";
-
-    const itemId = String(item?.id ?? item?.$id ?? "").trim();
-    const byId = itemId ? seedMenu.find((entry: any) => String(entry?.id || "").trim() === itemId) : null;
-    if (byId?.imageUrl) return String(byId.imageUrl);
-
-    const itemName = normalizeMenuTextKey(item?.name);
-    if (!itemName) return "";
-    const byName = seedMenu.find((entry: any) => normalizeMenuTextKey(entry?.name) === itemName);
-    return byName?.imageUrl ? String(byName.imageUrl) : "";
-};
-
-const resolveBundledRestaurantLogoPath = (restaurant: any) => {
-    // Prefer stable semantic fields first; some datasets have duplicated `id` values.
-    const candidates = [
-        restaurant?.slug,
-        restaurant?.code,
-        restaurant?.handle,
-        restaurant?.name,
-        restaurant?.id,
-        restaurant?.$id,
-    ];
-
-    for (const candidate of candidates) {
-        const key = normalizeLogoKey(candidate);
-        if (!key) continue;
-
-        if (RESTAURANT_LOGO_PATH_BY_KEY[key]) return RESTAURANT_LOGO_PATH_BY_KEY[key];
-
-        const containsMatch = Object.entries(RESTAURANT_LOGO_PATH_BY_KEY).find(([lookup]) => key.includes(lookup));
-        if (containsMatch) return containsMatch[1];
-    }
-
-    return undefined;
-};
+import { resolveSeedMenuImageUrl, withBundledRestaurantLogo } from "./catalogNormalization";
+import { seedCategoriesByRestaurantId, seedMenuByRestaurantId } from "./restaurantSeeds";
+export { resolveSeedMenuImageUrl, withBundledRestaurantLogo } from "./catalogNormalization";
 
 const slugifyCategory = (value: unknown) =>
     String(value || "")
@@ -86,13 +20,26 @@ const slugifyCategory = (value: unknown) =>
         .replace(/[^a-z0-9çğıöşü]+/gi, "-")
         .replace(/^-+|-+$/g, "");
 
-const withBundledRestaurantLogo = (restaurant: any) => {
-    const bundledLogoPath = resolveBundledRestaurantLogoPath(restaurant);
-    if (!bundledLogoPath) return restaurant;
-    return {
-        ...restaurant,
-        imageUrl: bundledLogoPath,
+const sortCatalogRows = (rows: any[], localRows: any[]) => {
+    const localOrder = new Map<string, number>();
+    localRows.forEach((row, index) => {
+        localOrder.set(String(row.id || ""), index);
+        localOrder.set(String(row.name || "").trim().toLocaleLowerCase("tr-TR"), index);
+    });
+    const rank = (row: any) => {
+        const explicit = Number(row.sortOrder ?? row.sort_order ?? row.order);
+        if (Number.isSafeInteger(explicit) && explicit >= 0) return explicit;
+        const id = String(row.id || "");
+        const baseId = String(row.restaurantId || "") && id.startsWith(`${row.restaurantId}_`)
+            ? id.slice(String(row.restaurantId).length + 1)
+            : id;
+        return localOrder.get(baseId)
+            ?? localOrder.get(String(row.name || "").trim().toLocaleLowerCase("tr-TR"))
+            ?? 1_000_000;
     };
+    return [...rows].sort((left, right) => rank(left) - rank(right)
+        || String(left.name || "").localeCompare(String(right.name || ""), "tr")
+        || String(left.id || "").localeCompare(String(right.id || "")));
 };
 
 const extra: any = Constants.expoConfig?.extra || {};
@@ -190,8 +137,6 @@ export const signIn = async ({ email, password }: { email: string; password: str
 };
 
 export const logout = async () => {
-    await unregisterPushToken().catch(() => null);
-
     if (!shouldBypassNetwork) {
         try {
             await jsonFetch('/api/logout', { method: 'POST' });
@@ -222,9 +167,10 @@ export const getRestaurants = async (filters?: { search?: string; category?: str
         .map((d) => withBundledRestaurantLogo({ id: d.id, ...d.data() }))
         .filter((r: any) => r.isActive !== false); // keep hidden ones filtered out if explicitly false
 
-    if (!filters?.search) return list;
+    const ordered = sortCatalogRows(list, []);
+    if (!filters?.search) return ordered;
     const term = filters.search.toLowerCase();
-    return list.filter((r: any) => {
+    return ordered.filter((r: any) => {
         const name = String(r.name || "").toLowerCase();
         const cuisine = String(r.cuisine || "").toLowerCase();
         return name.includes(term) || cuisine.includes(term);
@@ -244,7 +190,7 @@ export const subscribeRestaurants = (cb: (restaurants: any[]) => void, onError?:
             const list = snapshot.docs
                 .map((d) => withBundledRestaurantLogo({ id: d.id, ...d.data() }))
                 .filter((restaurant: any) => restaurant.isActive !== false);
-            cb(list);
+            cb(sortCatalogRows(list, []));
         },
         (error) => {
             onError?.(error);
@@ -262,7 +208,8 @@ export const subscribeRestaurant = (restaurantId: string | number, cb: (restaura
     return onSnapshot(
         ref,
         (snapshot) => {
-            cb(snapshot.exists() ? withBundledRestaurantLogo({ id: snapshot.id, ...snapshot.data() }) : null);
+            const restaurant = snapshot.exists() ? withBundledRestaurantLogo({ id: snapshot.id, ...snapshot.data() }) : null;
+            cb(restaurant?.isActive === false ? null : restaurant);
         },
         (error) => {
             onError?.(error);
@@ -275,7 +222,8 @@ export const getRestaurant = async (restaurantId: string | number) => {
     const ref = doc(firestore, FIREBASE_COLLECTIONS.restaurants, String(restaurantId));
     const snap = await getDoc(ref).catch(() => null);
     if (!snap || !snap.exists()) return null;
-    return withBundledRestaurantLogo({ id: snap.id, ...snap.data() });
+    const restaurant = withBundledRestaurantLogo({ id: snap.id, ...snap.data() });
+    return restaurant?.isActive === false ? null : restaurant;
 };
 
 async function getDefaultRestaurantId(): Promise<number | null> {
@@ -322,14 +270,15 @@ export const getRestaurantCategories = async (restaurantId: string | number) => 
     if (!firebaseConfigured || !firestore) return [];
     const categoriesRef = collection(firestore, FIREBASE_COLLECTIONS.categories);
     const snap = await getDocs(query(categoriesRef, where("restaurantId", "==", String(restaurantId))));
-    return snap.docs.map((d) => {
+    const rows = snap.docs.map((d) => {
         const data = d.data() as any;
         return {
             id: d.id,
             ...data,
-            slug: slugifyCategory(data.slug || data.name || d.id),
+            slug: slugifyCategory(data.slug || data.id || data.name || d.id),
         };
-    });
+    }).filter((category: any) => category.visible !== false && category.isActive !== false);
+    return sortCatalogRows(rows, seedCategoriesByRestaurantId(String(restaurantId)));
 };
 
 export const getRestaurantMenu = async ({
@@ -345,7 +294,7 @@ export const getRestaurantMenu = async ({
     let items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
     // Hide items explicitly marked invisible
-    items = items.filter((item: any) => item.visible !== false);
+    items = items.filter((item: any) => item.visible !== false && item.isActive !== false);
 
     if (categoryId !== undefined && categoryId !== null) {
         const categoryKey = String(categoryId);
@@ -364,7 +313,10 @@ export const getRestaurantMenu = async ({
         price: Number(item.price),
         image_url: item.imageUrl || item.image_url || resolveSeedMenuImageUrl(String(restaurantId), item) || "",
     }));
-    return filterRestaurantMenuForCustomer(String(restaurantId), normalized);
+    return filterRestaurantMenuForCustomer(
+        String(restaurantId),
+        sortCatalogRows(normalized, seedMenuByRestaurantId(String(restaurantId))),
+    );
 };
 
 export const getRestaurantReviews = async (restaurantId: string | number) => {

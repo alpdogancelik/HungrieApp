@@ -3,12 +3,14 @@ import { useEffect, useRef, useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 
-import { usePanelSession } from "@/src/features/restaurantPanel/panelSession";
 import { PanelButton, PanelCard, PanelShell, panelDesign } from "@/src/features/restaurantPanel/ui";
 import { LanguageSwitch } from "@/components/panel";
 import { useRestaurantPanelLocale } from "@/src/features/restaurantPanel/panelLocale";
 import { getAuthErrorMessage } from "@/src/features/auth/authCopy";
 import { isStrictValidEmail } from "@/src/features/auth/emailValidation";
+import useAuthStore from "@/store/auth.store";
+import { getCurrentMembership } from "@/src/data/membershipRepository";
+import { signInRestaurant, signOutRestaurant, type RestaurantSession } from "@/src/data/restaurantRepository";
 
 const replaceAfterAuth = (router: ReturnType<typeof useRouter>, pathname: "/restaurantpanel") => {
     try {
@@ -23,8 +25,11 @@ const replaceAfterAuth = (router: ReturnType<typeof useRouter>, pathname: "/rest
 
 export default function RestaurantPanelLogin() {
     const router = useRouter();
-    const { session, login } = usePanelSession();
+    const { isAuthenticated, isLoading: authLoading } = useAuthStore();
+    const [session, setSession] = useState<RestaurantSession | null>(null);
+    const [membershipChecked, setMembershipChecked] = useState(false);
     const { locale, setLocale, t } = useRestaurantPanelLocale(null);
+    const isTurkish = locale === "tr";
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
@@ -39,12 +44,29 @@ export default function RestaurantPanelLogin() {
             return;
         }
         setLoading(true);
-        login(trimmedEmail, trimmedPassword)
+        signInRestaurant(trimmedEmail, trimmedPassword)
+            .then(setSession)
             .catch((err: any) => {
                 Alert.alert(t("login.failedTitle"), err?.message || t("login.failedBody"));
             })
             .finally(() => setLoading(false));
     };
+
+    useEffect(() => {
+        if (authLoading) return;
+        if (!isAuthenticated) {
+            setSession(null);
+            setMembershipChecked(true);
+            return;
+        }
+        let active = true;
+        setMembershipChecked(false);
+        void getCurrentMembership()
+            .then((next) => { if (active) setSession(next); })
+            .catch(() => { if (active) setSession(null); })
+            .finally(() => { if (active) setMembershipChecked(true); });
+        return () => { active = false; };
+    }, [authLoading, isAuthenticated]);
 
     useEffect(() => {
         if (!session) return;
@@ -58,7 +80,31 @@ export default function RestaurantPanelLogin() {
         return () => cancelAnimationFrame(frame);
     }, [session, router]);
 
-    if (session) return null;
+    if (session || authLoading || !membershipChecked) return null;
+
+    if (isAuthenticated) {
+        return (
+            <PanelShell
+                kicker={t("common.restaurantHub")}
+                title={locale === "tr" ? "Restoran erişimi yok" : "No restaurant access"}
+                subtitle={locale === "tr" ? "Bu hesap bir restorana bağlı değil." : "This account is not linked to a restaurant."}
+                right={<LanguageSwitch locale={locale} onChange={(next) => void setLocale(next)} getAccessibilityLabel={(next) => `${isTurkish ? "Dili degistir" : "Switch language"} ${next.toUpperCase()}`} />}
+            >
+                <View style={styles.centerWrap}>
+                    <PanelCard
+                        title={locale === "tr" ? "Başka hesap kullan" : "Use another account"}
+                        subtitle={locale === "tr" ? "Devam etmek mevcut hesaptan çıkış yapar." : "Continuing signs out the current account."}
+                    >
+                        <PanelButton
+                            label={locale === "tr" ? "Hesap değiştir" : "Switch account"}
+                            onPress={() => void signOutRestaurant()}
+                            accessibilityLabel={locale === "tr" ? "Restoran hesabına geç" : "Switch restaurant account"}
+                        />
+                    </PanelCard>
+                </View>
+            </PanelShell>
+        );
+    }
 
     return (
         <PanelShell

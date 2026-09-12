@@ -9,4 +9,5 @@ export const addressRepository = selectRepository<AddressRepository>("address", 
 });
 
 export const addressStore = addressRepository;
+export const clearAddressSessionCache = addressRepository.clearSessionCache;
 export type AddressStore = AddressRepository;

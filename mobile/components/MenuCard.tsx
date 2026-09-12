@@ -41,7 +41,7 @@ const MenuCard = ({ item, onPress, accentColor = "#FE8C00" }: MenuCardProps) => 
         typeof resolvedImage === "string" && resolvedImage.trim().toLowerCase().startsWith("http")
             ? resolvedImage.trim()
             : undefined;
-    const { addItem } = useCartStore();
+    const addItem = useCartStore((state) => state.addItem);
     const numericPrice = Number(price || 0);
     const productId = toStableMenuId(item);
     const { average, count, currentUserReview, submitReview, isSubmitting } = useProductReviews(productId);

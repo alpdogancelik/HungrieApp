@@ -362,6 +362,12 @@ export const syncDown = async () => {
     await list();
 };
 
+export const clearSessionCache = () => {
+    cacheOwnerId = null;
+    cache = [];
+    notify([]);
+};
+
 export const subscribe = (listener: Listener) => {
     listeners.add(listener);
     const userId = getCurrentUserId();
@@ -382,6 +388,7 @@ export const addressStore = {
     setDefault,
     syncUp,
     syncDown,
+    clearSessionCache,
     subscribe,
 };
 

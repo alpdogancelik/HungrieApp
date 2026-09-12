@@ -250,6 +250,9 @@ export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptio
                 ]);
 
                 if (requestRef.current !== requestId) return;
+                if (menuResult.status === "rejected" && restaurantResult.status === "rejected") {
+                    throw menuResult.reason || restaurantResult.reason || new Error("Search is unavailable.");
+                }
 
                 const apiMenus =
                     menuResult.status === "fulfilled" && Array.isArray(menuResult.value) ? menuResult.value : [];

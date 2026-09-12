@@ -5,12 +5,17 @@ import { fileURLToPath } from "node:url";
 const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const STATE_PATH = path.join(ROOT_DIR, "secure", "supabase-projects.local.json");
 const TOKEN_PATH = path.join(ROOT_DIR, "secure", "supabase-cli-hungrie", "access-token");
-const FIREBASE_ISSUER = "https://securetoken.google.com/hungrieapp-a2288";
 const environment = process.argv[2] || "development";
+const firebaseProjectId = process.argv.find((value) => value.startsWith("--firebase-project-id="))?.split("=")[1] || (environment === "development" ? "hungrieapp-a2288" : "");
+const confirmation = process.argv.find((value) => value.startsWith("--confirm="))?.split("=")[1];
 
 if (!new Set(["development", "staging", "production"]).has(environment)) {
   throw new Error("Usage: npm run supabase:firebase-auth -- <development|staging|production>");
 }
+if (!/^[a-z][a-z0-9-]{4,29}$/.test(firebaseProjectId) || confirmation !== `${environment}:${firebaseProjectId}`) {
+  throw new Error("Provide --firebase-project-id=<id> and --confirm=<environment>:<id>.");
+}
+const FIREBASE_ISSUER = `https://securetoken.google.com/${firebaseProjectId}`;
 if (!fs.existsSync(STATE_PATH) || !fs.existsSync(TOKEN_PATH)) {
   throw new Error("Missing ignored Supabase project state or access token.");
 }

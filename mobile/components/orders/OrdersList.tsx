@@ -26,7 +26,7 @@ type Props = {
     onToggleOrder: (orderId: string) => void;
     onStatusChange: (
         orderId: string,
-        nextStatus: "pending" | "accepted" | "out_for_delivery" | "canceled" | "rejected" | "delivered",
+        nextStatus: "pending" | "accepted" | "ready" | "out_for_delivery" | "canceled" | "rejected" | "delivered",
     ) => Promise<void> | void;
 };
 

@@ -33,7 +33,6 @@ import {
     createMenuItem as createMenuItemCore,
 } from "./firebase";
 import { filterMenuForCustomer, filterRestaurantMenuForCustomer } from "./menuVisibility";
-import { unregisterPushToken } from "./registerPushToken";
 import { transitionOrder as transitionFirebaseOrder } from "@/src/services/firebaseOrders";
 import i18n from "@/src/lib/i18n";
 import { getAuthErrorMessage } from "@/src/features/auth/authCopy";
@@ -263,7 +262,6 @@ export const getCurrentUser = async () => {
 };
 
 export const signOut = async () => {
-    await unregisterPushToken().catch(() => null);
     return firebaseSignOut(requireAuth());
 };
 
@@ -317,7 +315,6 @@ export const deleteCurrentUserProfile = async () => {
     const db = requireDB();
     const userId = authUser.uid;
 
-    await unregisterPushToken().catch(() => null);
     await deleteCollectionDocs([FIREBASE_COLLECTIONS.users, userId, "pushTokens"]).catch(() => null);
     await deleteCollectionDocs([FIREBASE_COLLECTIONS.users, userId, "addresses"]).catch(() => null);
     await scrubUserOrders(userId).catch(() => null);

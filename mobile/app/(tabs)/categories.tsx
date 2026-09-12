@@ -1,11 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
-import { FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlatList, Pressable, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
+import { Image, type ImageSource } from "expo-image";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
@@ -24,13 +24,23 @@ const COLORS = {
     accent: "#F28C28",
 };
 
-const cardShadow = makeShadow({
-    color: "#8B6D55",
-    offsetY: 10,
-    blurRadius: 22,
-    opacity: Platform.OS === "ios" ? 0.08 : 0.12,
-    elevation: 4,
-});
+const cardShadow = makeShadow({ color: "#8B6D55", offsetY: 6, blurRadius: 14, opacity: 0.06, elevation: 2 });
+const CATEGORY_IMAGES: Record<string, ImageSource> = {
+    doner: require("../../assets/Categories/Doner_Resized.png"),
+    burger: require("../../assets/Categories/Hamburger_Resized.png"),
+    pizza: require("../../assets/Categories/Pizza_Resized.png"),
+    kebap: require("../../assets/Categories/Kebap_Resized.png"),
+    durum: require("../../assets/Categories/Durum_Resized.png"),
+    izgara: require("../../assets/Categories/Kofte_Resized.png"),
+    kahve: require("../../assets/Categories/Kahve_Resized.png"),
+    lahmacun: require("../../assets/Categories/Lahmacun_Pide_Resized.png"),
+    tatli: require("../../assets/Categories/Tatli_Resized.png"),
+    salata: require("../../assets/Categories/Salata_Resized.png"),
+    makarna: require("../../assets/Categories/Makarna_Resized.png"),
+    icecek: require("../../assets/Categories/Icecekler_Resized.png"),
+    tavuk: require("../../assets/Categories/Tavuk_Resized.png"),
+    sos: require("../../assets/Categories/Soslar_Resized.png"),
+};
 
 export default function CategoriesScreen() {
     useWebDocumentTitle();
@@ -40,24 +50,16 @@ export default function CategoriesScreen() {
     const { i18n } = useTranslation();
     const { theme, variant } = useTheme();
     const isTurkish = i18n.language?.startsWith("tr");
-    const [query, setQuery] = useState("");
 
     const categories = useMemo(
         () =>
             CATEGORY_CARDS.map((item) => ({
                 ...item,
                 label: isTurkish ? item.tr : item.en,
+                displayImage: CATEGORY_IMAGES[item.id],
             })),
         [isTurkish],
     );
-
-    const visibleCategories = useMemo(() => {
-        const normalizedQuery = query.trim().toLocaleLowerCase(isTurkish ? "tr-TR" : "en-US");
-        if (!normalizedQuery) return categories;
-        return categories.filter((category) =>
-            category.label.toLocaleLowerCase(isTurkish ? "tr-TR" : "en-US").includes(normalizedQuery),
-        );
-    }, [categories, isTurkish, query]);
 
     const openCategory = (category: (typeof categories)[number]) => {
         router.push({
@@ -67,11 +69,12 @@ export default function CategoriesScreen() {
     };
 
     return (
-        <LinearGradient colors={variant === "dark" ? [theme.colors.background, theme.colors.surface] : [COLORS.bgTop, COLORS.bgBottom]} style={styles.screen}>
+        <View style={[styles.screen, { backgroundColor: variant === "dark" ? theme.colors.background : "#FAFBFC" }]}>
+            <StatusBar style={variant === "dark" ? "light" : "dark"} />
             <SafeAreaView style={styles.safe} edges={["top"]}>
                 <View style={styles.header}>
                     <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={31} color={theme.colors.ink} />
+                        <Ionicons name="arrow-back" size={24} color={theme.colors.ink} />
                     </Pressable>
                     <Text maxFontSizeMultiplier={1.05} style={[styles.title, { color: theme.colors.ink }]}>
                         {isTurkish ? "Kategoriler" : "Categories"}
@@ -79,29 +82,11 @@ export default function CategoriesScreen() {
                     <View style={styles.headerSpacer} />
                 </View>
 
-                <View style={[styles.searchBar, { backgroundColor: theme.colors.input, borderColor: theme.colors.border }]}>
-                    <Ionicons name="search-outline" size={28} color="#7D8594" />
-                    <TextInput
-                        value={query}
-                        onChangeText={setQuery}
-                        placeholder={isTurkish ? "Kategori ara" : "Search category"}
-                        placeholderTextColor={theme.colors.muted}
-                        style={[styles.searchInput, { color: theme.colors.ink }]}
-                        returnKeyType="search"
-                        autoCorrect={false}
-                        maxFontSizeMultiplier={1.05}
-                    />
-                    {query ? (
-                        <Pressable onPress={() => setQuery("")} hitSlop={10}>
-                            <Ionicons name="close-circle" size={22} color={COLORS.muted} />
-                        </Pressable>
-                    ) : null}
-                </View>
-
                 <FlatList
-                    data={visibleCategories}
+                    data={categories}
+                    key="categories-four-column"
                     keyExtractor={(item) => item.id}
-                    numColumns={3}
+                    numColumns={4}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={[
                         styles.listContent,
@@ -113,34 +98,27 @@ export default function CategoriesScreen() {
                             {isTurkish ? "Tüm kategoriler" : "All categories"}
                         </Text>
                     }
-                    ListEmptyComponent={
-                        <View style={styles.emptyState}>
-                            <Text maxFontSizeMultiplier={1.05} style={styles.emptyText}>
-                                {isTurkish ? "Kategori bulunamadı" : "No categories found"}
-                            </Text>
-                        </View>
-                    }
                     renderItem={({ item }) => (
                         <Pressable onPress={() => openCategory(item)} style={styles.cardPressable}>
                             {({ pressed }) => (
-                                <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }, pressed ? styles.cardPressed : null]}>
-                                    <Image source={item.image} style={styles.categoryImage} contentFit="contain" transition={120} />
-                                    <Text
-                                        numberOfLines={1}
-                                        adjustsFontSizeToFit
-                                        minimumFontScale={0.72}
-                                        maxFontSizeMultiplier={1}
-                                        style={[styles.categoryLabel, { color: theme.colors.ink }]}
-                                    >
-                                        {item.label}
-                                    </Text>
+                                <View style={[styles.card, { backgroundColor: "transparent", borderColor: theme.colors.border }, pressed ? styles.cardPressed : null]}>
+                                    <Image cachePolicy="memory-disk" contentFit="cover" source={item.displayImage} style={styles.categoryImage} transition={120} />
+                                    <View style={styles.cardFooter}>
+                                        <Text
+                                            numberOfLines={2}
+                                            maxFontSizeMultiplier={1}
+                                            style={[styles.categoryLabel, { color: theme.colors.ink }]}
+                                        >
+                                            {item.label}
+                                        </Text>
+                                    </View>
                                 </View>
                             )}
                         </Pressable>
                     )}
                 />
             </SafeAreaView>
-        </LinearGradient>
+        </View>
     );
 }
 
@@ -152,14 +130,14 @@ const styles = createAdaptiveStyleSheet({
         flex: 1,
     },
     header: {
-        height: 72,
+        height: 58,
         paddingHorizontal: 22,
         flexDirection: "row",
         alignItems: "center",
     },
     backButton: {
-        width: 46,
-        height: 46,
+        width: 40,
+        height: 40,
         justifyContent: "center",
     },
     title: {
@@ -167,62 +145,44 @@ const styles = createAdaptiveStyleSheet({
         textAlign: "center",
         color: COLORS.ink,
         fontFamily: "ChairoSans",
-        fontSize: 28,
+        fontSize: 20,
+        lineHeight: 25,
         fontWeight: "700",
+        letterSpacing: -0.2,
     },
     headerSpacer: {
-        width: 46,
-    },
-    searchBar: {
-        minHeight: 62,
-        marginHorizontal: 22,
-        marginTop: 10,
-        borderRadius: 25,
-        borderWidth: 1,
-        borderColor: COLORS.line,
-        backgroundColor: "rgba(255,255,255,0.92)",
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 18,
-        gap: 12,
-    },
-    searchInput: {
-        flex: 1,
-        color: COLORS.ink,
-        fontFamily: "ChairoSans",
-        fontSize: 18,
-        paddingVertical: 10,
+        width: 40,
     },
     listContent: {
         paddingHorizontal: 22,
-        paddingTop: 28,
+        paddingTop: 18,
     },
     sectionTitle: {
         color: COLORS.ink,
         fontFamily: "ChairoSans",
-        fontSize: 26,
+        fontSize: 18,
+        lineHeight: 22,
         fontWeight: "700",
-        marginBottom: 18,
+        letterSpacing: -0.2,
+        marginBottom: 12,
     },
     gridRow: {
         justifyContent: "space-between",
-        marginBottom: 16,
+        gap: 8,
+        marginBottom: 12,
     },
     cardPressable: {
-        width: "30.6%",
+        width: "23.2%",
+        flexGrow: 0,
+        minWidth: 0,
     },
     card: {
         width: "100%",
-        aspectRatio: 0.84,
-        borderRadius: 16,
+        height: 112,
+        borderRadius: 15,
         backgroundColor: "#FFFFFF",
         borderWidth: 1,
         borderColor: "#E8EDF5",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingTop: 20,
-        paddingHorizontal: 8,
-        paddingBottom: 16,
         overflow: "hidden",
         ...cardShadow,
     },
@@ -231,24 +191,24 @@ const styles = createAdaptiveStyleSheet({
         transform: [{ scale: 0.98 }],
     },
     categoryImage: {
-        width: "82%",
-        height: "58%",
+        width: "100%",
+        height: 78,
+    },
+    cardFooter: {
+        flex: 1,
+        minHeight: 34,
+        paddingHorizontal: 4,
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6,
     },
     categoryLabel: {
         width: "100%",
         textAlign: "center",
         color: COLORS.ink,
         fontFamily: "ChairoSans",
-        fontSize: 18,
+        fontSize: 11.5,
+        lineHeight: 13,
         fontWeight: "600",
-    },
-    emptyState: {
-        paddingVertical: 48,
-        alignItems: "center",
-    },
-    emptyText: {
-        color: COLORS.muted,
-        fontFamily: "ChairoSans",
-        fontSize: 17,
     },
 });

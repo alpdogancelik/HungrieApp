@@ -10,4 +10,6 @@ export const notificationRepository = selectRepository<NotificationRepository>("
 
 export const registerPushToken = notificationRepository.registerPushToken;
 export const unregisterPushToken = notificationRepository.unregisterPushToken;
+export const getNotificationPreferences = notificationRepository.getPreferences;
+export const updateNotificationPreferences = notificationRepository.updatePreferences;
 export default registerPushToken;

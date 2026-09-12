@@ -28,7 +28,12 @@ const options = {
   organizationId: valueFor("--organization-id"),
   region: valueFor("--region") || "eu-central-1",
   output: valueFor("--output") || "secure/supabase-projects.local.json",
+  environments: (valueFor("--environments") || "development,staging,production").split(",").filter(Boolean),
 };
+
+const invalidEnvironment = options.environments.find((environment) => !PROJECTS.some((entry) => entry.environment === environment));
+if (invalidEnvironment) throw new Error(`Unsupported environment: ${invalidEnvironment}.`);
+const desiredProjects = PROJECTS.filter((entry) => options.environments.includes(entry.environment));
 
 const runSupabase = (commandArgs) => {
   if (options.profile !== "hungrie") throw new Error("Only the isolated hungrie CLI profile is supported.");
@@ -76,6 +81,8 @@ const saveState = (outputPath, state) => {
 };
 
 const password = () => crypto.randomBytes(32).toString("base64url");
+const projectOrganizationId = (project) => project.organization_id || project.organizationId || project.organization?.id || null;
+const belongsToTargetOrganization = (project) => projectOrganizationId(project) === options.organizationId;
 
 const main = () => {
   if (!options.organizationId) throw new Error("--organization-id is required.");
@@ -83,9 +90,15 @@ const main = () => {
   const outputPath = assertSafeOutput();
   const existing = runSupabase(["projects", "list"]);
   const projects = Array.isArray(existing) ? existing : [];
+  const targetOrganizationProjects = projects.filter(belongsToTargetOrganization);
+  const expectedNames = new Set(desiredProjects.map((project) => project.name));
+  const unexpected = targetOrganizationProjects.filter((project) => !expectedNames.has(project.name));
+  if (options.write && options.environments.includes("staging") && options.environments.includes("production") && unexpected.length) {
+    throw new Error("The selected Milestone 11 organization contains projects other than staging and production; refusing to modify it.");
+  }
 
-  for (const desired of PROJECTS) {
-    const match = projects.find((project) => project.name === desired.name);
+  for (const desired of desiredProjects) {
+    const match = projects.find((project) => project.name === desired.name && belongsToTargetOrganization(project));
     if (match && match.region !== options.region) {
       throw new Error(`${desired.name} exists outside ${options.region}; refusing to modify it.`);
     }
@@ -93,22 +106,26 @@ const main = () => {
 
   if (!options.write) {
     console.log("Dry run. Projects that would be created:");
-    for (const desired of PROJECTS) {
-      const match = projects.find((project) => project.name === desired.name && project.region === options.region);
+    for (const desired of desiredProjects) {
+      const match = projects.find((project) => project.name === desired.name && project.region === options.region && belongsToTargetOrganization(project));
       console.log(`- ${desired.name}: ${match ? "already exists" : "create"}`);
     }
     return;
   }
 
   const state = loadState(outputPath);
-  for (const desired of PROJECTS) {
-    const match = projects.find((project) => project.name === desired.name && project.region === options.region);
+  for (const desired of desiredProjects) {
+    const match = projects.find((project) => project.name === desired.name && project.region === options.region && belongsToTargetOrganization(project));
     if (match) {
+      if (!state.projects?.[desired.environment]?.databasePassword) {
+        throw new Error(`${desired.name} already exists but its database password is not in the ignored state file; refusing an incomplete adoption.`);
+      }
       state.projects[desired.environment] = {
         ...state.projects[desired.environment],
         name: desired.name,
         ref: match.ref || match.id,
         region: match.region,
+        organizationId: options.organizationId,
       };
       saveState(outputPath, state);
       console.log(`${desired.name}: retained existing project.`);
@@ -130,11 +147,14 @@ const main = () => {
     ]);
     const project = created?.project || created?.created_project || created;
     if (!project?.ref && !project?.id) throw new Error(`Supabase did not return a project reference for ${desired.name}.`);
+    const reportedMajor = String(project.database?.version || project.database_version || "17").match(/\d+/)?.[0];
+    if (reportedMajor !== "17") throw new Error(`${desired.name} was not provisioned on PostgreSQL 17.`);
     state.projects[desired.environment] = {
       name: desired.name,
       ref: project.ref || project.id,
       region: project.region || options.region,
       databasePassword,
+      organizationId: options.organizationId,
     };
     saveState(outputPath, state);
     projects.push(project);

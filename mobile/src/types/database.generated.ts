@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   public: {
     Tables: {
       addresses: {
@@ -258,6 +253,7 @@ export type Database = {
           name_snapshot: string
           order_id: string
           quantity: number
+          source_menu_item_id: string | null
           unit_price_kurus: number
         }
         Insert: {
@@ -270,6 +266,7 @@ export type Database = {
           name_snapshot: string
           order_id: string
           quantity: number
+          source_menu_item_id?: string | null
           unit_price_kurus: number
         }
         Update: {
@@ -282,6 +279,7 @@ export type Database = {
           name_snapshot?: string
           order_id?: string
           quantity?: number
+          source_menu_item_id?: string | null
           unit_price_kurus?: number
         }
         Relationships: [
@@ -614,6 +612,8 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          deleted_at: string | null
+          deletion_pending_at: string | null
           email: string
           firebase_uid: string | null
           id: string
@@ -626,6 +626,8 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deletion_pending_at?: string | null
           email: string
           firebase_uid?: string | null
           id: string
@@ -638,6 +640,8 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deletion_pending_at?: string | null
           email?: string
           firebase_uid?: string | null
           id?: string
@@ -668,6 +672,7 @@ export type Database = {
           preferred_language: string
           rating_average: number
           rating_count: number
+          sort_order: number
           updated_at: string
         }
         Insert: {
@@ -688,6 +693,7 @@ export type Database = {
           preferred_language?: string
           rating_average?: number
           rating_count?: number
+          sort_order?: number
           updated_at?: string
         }
         Update: {
@@ -708,6 +714,7 @@ export type Database = {
           preferred_language?: string
           rating_average?: number
           rating_count?: number
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []
@@ -808,6 +815,7 @@ export type Database = {
           preferred_language: string | null
           rating_average: number | null
           rating_count: number | null
+          sort_order: number | null
           updated_at: string | null
         }
         Insert: {
@@ -825,6 +833,7 @@ export type Database = {
           preferred_language?: string | null
           rating_average?: number | null
           rating_count?: number | null
+          sort_order?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -842,6 +851,7 @@ export type Database = {
           preferred_language?: string | null
           rating_average?: number | null
           rating_count?: number | null
+          sort_order?: number | null
           updated_at?: string | null
         }
         Relationships: []
@@ -1086,6 +1096,31 @@ export type Database = {
           },
         ]
       }
+      menu_item_review_metrics: {
+        Row: {
+          distribution: Json | null
+          menu_item_id: string | null
+          rating_average: number | null
+          rating_count: number | null
+          restaurant_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_reviews_menu_item_id_restaurant_id_fkey"
+            columns: ["menu_item_id", "restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "active_menu_items"
+            referencedColumns: ["id", "restaurant_id"]
+          },
+          {
+            foreignKeyName: "product_reviews_menu_item_id_restaurant_id_fkey"
+            columns: ["menu_item_id", "restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id", "restaurant_id"]
+          },
+        ]
+      }
       my_orders: {
         Row: {
           approval_deadline_at: string | null
@@ -1299,6 +1334,18 @@ export type Database = {
           },
         ]
       }
+      restaurant_order_review_metrics: {
+        Row: {
+          average_rating: number | null
+          price_performance_average: number | null
+          restaurant_id: string | null
+          review_count: number | null
+          speed_average: number | null
+          taste_average: number | null
+          value_average: number | null
+        }
+        Relationships: []
+      }
       restaurant_orders: {
         Row: {
           approval_deadline_at: string | null
@@ -1398,9 +1445,58 @@ export type Database = {
           },
         ]
       }
+      restaurant_product_review_metrics: {
+        Row: {
+          distribution: Json | null
+          rating_average: number | null
+          rating_count: number | null
+          restaurant_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      begin_account_anonymization: {
+        Args: { p_firebase_uid: string }
+        Returns: Json
+      }
       claim_delivery: { Args: { p_order_id: string }; Returns: string }
+      claim_notification_deliveries: {
+        Args: { p_limit?: number }
+        Returns: {
+          delivery_id: string
+          event_id: string
+          event_type: string
+          expected_status: Database["public"]["Enums"]["order_status"]
+          order_id: string
+          platform: Database["public"]["Enums"]["notification_platform"]
+          preferred_language: string
+          restaurant_name: string
+          review_id: string
+          token: string
+        }[]
+      }
+      claim_notification_receipts: {
+        Args: { p_limit?: number }
+        Returns: {
+          delivery_id: string
+          ticket_id: string
+          token_id: string
+        }[]
+      }
+      create_my_address: {
+        Args: {
+          p_block: string
+          p_city: string
+          p_country: string
+          p_id: string
+          p_is_default?: boolean
+          p_label: string
+          p_line1: string
+          p_room: string
+        }
+        Returns: string
+      }
       create_order: {
         Args: {
           p_address_id: string
@@ -1411,6 +1507,8 @@ export type Database = {
         }
         Returns: string
       }
+      create_restaurant: { Args: { p_payload: Json }; Returns: string }
+      delete_my_address: { Args: { p_id: string }; Returns: undefined }
       ensure_my_profile: {
         Args: {
           p_avatar_url?: string
@@ -1419,6 +1517,92 @@ export type Database = {
           p_whatsapp_number?: string
         }
         Returns: string
+      }
+      finalize_account_anonymization: {
+        Args: { p_firebase_uid: string; p_profile_id: string }
+        Returns: boolean
+      }
+      get_active_restaurant_bundle: {
+        Args: { p_restaurant_id: string }
+        Returns: Json
+      }
+      get_admin_orders_page: {
+        Args: {
+          p_cursor?: string
+          p_limit?: number
+          p_restaurant_id?: string
+          p_statuses?: Database["public"]["Enums"]["order_status"][]
+        }
+        Returns: Json
+      }
+      get_my_admin_authorization: { Args: never; Returns: Json }
+      get_authorized_order: { Args: { p_order_id: string }; Returns: Json }
+      get_featured_catalog_items: { Args: { p_limit?: number }; Returns: Json }
+      get_menu_item_review_summary: {
+        Args: { p_menu_item_id: string }
+        Returns: Json
+      }
+      get_my_active_order_summary: { Args: never; Returns: Json }
+      get_my_latest_order_summary: { Args: never; Returns: Json }
+      get_my_notification_preferences: { Args: never; Returns: Json }
+      get_my_order_review: { Args: { p_review_id: string }; Returns: Json }
+      get_my_order_review_by_order: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
+      get_my_orders_page: {
+        Args: { p_cursor?: string; p_limit?: number }
+        Returns: Json
+      }
+      get_my_product_review: { Args: { p_review_id: string }; Returns: Json }
+      get_order_items: { Args: { p_order_id: string }; Returns: Json }
+      get_restaurant_management_details: {
+        Args: { p_restaurant_id: string }
+        Returns: Json
+      }
+      get_restaurant_menu_management_data: {
+        Args: { p_restaurant_id: string }
+        Returns: Json
+      }
+      get_restaurant_order_review_summary: {
+        Args: { p_restaurant_id: string }
+        Returns: Json
+      }
+      get_restaurant_orders_page: {
+        Args: {
+          p_cursor?: string
+          p_limit?: number
+          p_restaurant_id: string
+          p_statuses?: Database["public"]["Enums"]["order_status"][]
+        }
+        Returns: Json
+      }
+      get_restaurant_product_review_summary: {
+        Args: { p_restaurant_id: string }
+        Returns: Json
+      }
+      get_runtime_status: {
+        Args: never
+        Returns: {
+          checked_at: string
+          environment: string
+          mode: string
+          writes_enabled: boolean
+        }[]
+      }
+      list_my_order_reviews: { Args: { p_limit?: number }; Returns: Json }
+      list_my_product_reviews: { Args: { p_limit?: number }; Returns: Json }
+      list_restaurant_couriers: {
+        Args: { p_restaurant_id: string }
+        Returns: Json
+      }
+      list_restaurant_order_reviews: {
+        Args: { p_limit?: number; p_restaurant_id: string }
+        Returns: Json
+      }
+      list_restaurant_product_reviews: {
+        Args: { p_limit?: number; p_restaurant_id: string }
+        Returns: Json
       }
       moderate_review: {
         Args: {
@@ -1429,13 +1613,67 @@ export type Database = {
         }
         Returns: undefined
       }
+      my_order_realtime_topics: {
+        Args: never
+        Returns: {
+          resource_id: string
+          topic: string
+          topic_kind: string
+        }[]
+      }
+      pending_account_anonymizations: {
+        Args: never
+        Returns: {
+          firebase_uid: string
+          profile_id: string
+        }[]
+      }
       quote_order: {
         Args: { p_items: Json; p_restaurant_id: string }
         Returns: Json
       }
+      record_notification_delivery_result: {
+        Args: {
+          p_delivery_id: string
+          p_error_code?: string
+          p_error_message?: string
+          p_outcome: string
+          p_ticket_id?: string
+        }
+        Returns: undefined
+      }
+      record_notification_receipt: {
+        Args: {
+          p_delivery_id: string
+          p_error_code?: string
+          p_error_message?: string
+          p_outcome: string
+        }
+        Returns: undefined
+      }
+      register_my_push_token: {
+        Args: {
+          p_platform: Database["public"]["Enums"]["notification_platform"]
+          p_token: string
+        }
+        Returns: string
+      }
+      replace_my_favorites: {
+        Args: { p_restaurant_ids: string[] }
+        Returns: number
+      }
       request_order_reminder: {
         Args: { p_order_id: string }
         Returns: undefined
+      }
+      search_active_catalog: {
+        Args: {
+          p_category?: string
+          p_limit?: number
+          p_offset?: number
+          p_query?: string
+        }
+        Returns: Json
       }
       set_category_active: {
         Args: { p_category_id: string; p_is_active: boolean }
@@ -1493,6 +1731,16 @@ export type Database = {
         }
         Returns: string
       }
+      system_health: {
+        Args: never
+        Returns: {
+          checked_at: string
+          environment: string
+          healthy: boolean
+          mode: string
+          schema_version: string
+        }[]
+      }
       transition_order: {
         Args: {
           p_new_status: Database["public"]["Enums"]["order_status"]
@@ -1500,6 +1748,40 @@ export type Database = {
           p_reason?: string
         }
         Returns: Database["public"]["Enums"]["order_status"]
+      }
+      unregister_my_push_token: {
+        Args: { p_token: string }
+        Returns: undefined
+      }
+      update_my_address: {
+        Args: {
+          p_block: string
+          p_city: string
+          p_country: string
+          p_id: string
+          p_is_default?: boolean
+          p_label: string
+          p_line1: string
+          p_room: string
+        }
+        Returns: string
+      }
+      update_my_notification_preferences: {
+        Args: {
+          p_order_status: boolean
+          p_restaurant_orders: boolean
+          p_review_replies: boolean
+        }
+        Returns: Json
+      }
+      update_my_profile: {
+        Args: {
+          p_avatar_url?: string
+          p_name: string
+          p_preferred_language?: string
+          p_whatsapp_number?: string
+        }
+        Returns: string
       }
       update_restaurant_details: {
         Args: { p_changes: Json; p_restaurant_id: string }
@@ -1539,7 +1821,7 @@ export type Database = {
     }
     Enums: {
       notification_platform: "ios" | "android" | "web" | "unknown"
-      notification_provider: "apns" | "fcm" | "web" | "unknown"
+      notification_provider: "apns" | "fcm" | "web" | "unknown" | "expo"
       order_status:
         | "pending"
         | "preparing"
@@ -1566,12 +1848,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1595,11 +1877,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1620,11 +1902,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1645,11 +1927,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1662,11 +1944,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never) = never,
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1679,7 +1961,7 @@ export const Constants = {
   public: {
     Enums: {
       notification_platform: ["ios", "android", "web", "unknown"],
-      notification_provider: ["apns", "fcm", "web", "unknown"],
+      notification_provider: ["apns", "fcm", "web", "unknown", "expo"],
       order_status: [
         "pending",
         "preparing",

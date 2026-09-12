@@ -3,7 +3,7 @@ import { Platform } from "react-native";
 import * as Device from "expo-device";
 
 type PushPlatform = "ios" | "android" | "web" | "unknown";
-type PushProvider = "apns" | "fcm" | "web" | "unknown";
+type PushProvider = "apns" | "fcm" | "expo" | "web" | "unknown";
 
 export type PushTokenInfo = {
     token: string;
@@ -56,7 +56,6 @@ const getWebNotification = (): WebNotificationCtor | null => {
 
 const notificationHandler = {
     handleNotification: async () => ({
-        shouldShowAlert: true,
         shouldSetBadge: false,
         shouldPlaySound: true,
         shouldShowBanner: true,
@@ -153,6 +152,19 @@ export const getPushToken = async (): Promise<PushTokenInfo | null> => {
     return { token: String(response.data || ""), platform, provider };
 };
 
+export const getExpoPushToken = async (): Promise<PushTokenInfo | null> => {
+    if (!isRemotePushSupported()) return null;
+    const Notifications = getNotificationsModule();
+    if (!Notifications) return null;
+    const permissions = await Notifications.getPermissionsAsync();
+    if (permissions.status !== "granted") return null;
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+    if (!projectId) throw new Error("Expo EAS project ID is required for push registration.");
+    const response = await Notifications.getExpoPushTokenAsync({ projectId });
+    const platform: PushPlatform = Platform.OS === "ios" ? "ios" : Platform.OS === "android" ? "android" : "unknown";
+    return { token: String(response.data || ""), platform, provider: "expo" };
+};
+
 export const notifyLocal = async (title: string, body: string, options: LocalNotificationOptions = {}) => {
     const {
         withSound = true,
@@ -226,6 +238,12 @@ export const getLastNotificationResponsePayload = async (): Promise<Notification
     return payload;
 };
 
+export const clearLastNotificationResponse = async (): Promise<void> => {
+    const Notifications = getNotificationsModule();
+    if (!Notifications || isWeb) return;
+    await Notifications.clearLastNotificationResponseAsync();
+};
+
 export const NotificationManager = {
     DEFAULT_CHANNEL_ID,
     NEW_ORDER_CHANNEL_ID,
@@ -237,10 +255,12 @@ export const NotificationManager = {
     ensureNotificationChannels,
     requestPermissions,
     getPushToken,
+    getExpoPushToken,
     notifyLocal,
     subscribeToReceived,
     subscribeToResponses,
     getLastNotificationResponsePayload,
+    clearLastNotificationResponse,
 };
 
 export default NotificationManager;

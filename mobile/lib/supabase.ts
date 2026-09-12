@@ -32,3 +32,16 @@ export const supabase: SupabaseClient<Database> | null = supabaseEnabled
           },
       })
     : null;
+
+// Public catalog reads must remain anonymous even when a Firebase user is
+// signed in. This prevents an unrelated Firebase token issue from blocking
+// data that the database intentionally exposes to anon clients.
+export const supabaseCatalog: SupabaseClient<Database> | null = supabaseEnabled
+    ? createClient<Database>(runtime.url, runtime.publishableKey, {
+          auth: {
+              persistSession: false,
+              autoRefreshToken: false,
+              detectSessionInUrl: false,
+          },
+      })
+    : null;

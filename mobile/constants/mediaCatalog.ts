@@ -55,24 +55,25 @@ import orderBillImage from "@/assets/images/Order Bill.png";
 import view3dBurgerImage from "@/assets/images/view-3d-burger-meal-with-french-fries.jpg";
 import flatLayBurgerImage from "@/assets/images/flat-lay-burger-with-fries-ketchup.jpg";
 import lifestyleOneImage from "@/assets/images/1.jpeg";
-import vecteezyFastFoodImage from "@/assets/images/vecteezy_fast-food-meal-with_25065315.png";
 import successImage from "@/assets/images/success.png";
 import deliveryLocationImage from "@/assets/images/Delivery Location.png";
 
-// Category imagery
-import categoryBurgerImage from "@/assets/Categories/Burger1.png";
-import categoryDurumImage from "@/assets/Categories/Durum1.png";
-import categoryDrinksImage from "@/assets/Categories/Icecekler1.png";
-import categoryGrillsImage from "@/assets/Categories/Izgaralar1.png";
-import categoryCoffeeImage from "@/assets/Categories/Kahveler1.png";
-import categoryKebabImage from "@/assets/Categories/Kebap1.png";
-import categoryLahmacunImage from "@/assets/Categories/Lahmacun1.jpg";
-import categoryPastaImage from "@/assets/Categories/Makarna1.png";
-import categoryPizzaImage from "@/assets/Categories/Pizza1.png";
-import categorySaladImage from "@/assets/Categories/Salata1.png";
-import categorySaucesImage from "@/assets/Categories/Soslar1.png";
-import categoryDessertImage from "@/assets/Categories/Tatli1.png";
-import categoryChickenImage from "@/assets/Categories/Tavuk1.png";
+// Keep bundled category images as static Metro module references. Importing these
+// through the TypeScript asset declaration can produce a relative string in a
+// development client, which expo-image then incorrectly treats as a network URI.
+const categoryBurgerImage = require("../assets/Categories/Burger1.png");
+const categoryDurumImage = require("../assets/Categories/Durum1.png");
+const categoryDrinksImage = require("../assets/Categories/Icecekler1.png");
+const categoryGrillsImage = require("../assets/Categories/Izgaralar1.png");
+const categoryCoffeeImage = require("../assets/Categories/Kahveler1.png");
+const categoryKebabImage = require("../assets/Categories/Kebap1.png");
+const categoryLahmacunImage = require("../assets/Categories/Lahmacun1.jpg");
+const categoryPastaImage = require("../assets/Categories/Makarna1.png");
+const categoryPizzaImage = require("../assets/Categories/Pizza1.png");
+const categorySaladImage = require("../assets/Categories/Salata1.png");
+const categorySaucesImage = require("../assets/Categories/Soslar1.png");
+const categoryDessertImage = require("../assets/Categories/Tatli1.png");
+const categoryChickenImage = require("../assets/Categories/Tavuk1.png");
 
 const avatar = foodDeliveryBagImage;
 const avocado = foodOrderImage;
@@ -85,7 +86,7 @@ const cucumber = foodOrderImage;
 const emptyState = emptyStateImage;
 const fries = foodReviewImage;
 const logo = deliveryLocationImage;
-const mozarellaSticks = vecteezyFastFoodImage;
+const mozarellaSticks = view3dBurgerImage;
 const mushrooms = flatLayBurgerImage;
 const onionRings = lifestyleOneImage;
 const onions = foodOrderImage;

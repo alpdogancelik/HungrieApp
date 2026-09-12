@@ -16,4 +16,9 @@ export const profileRepository = selectRepository<ProfileRepository>("profile", 
 
 export const getCurrentUser = profileRepository.getCurrentUser;
 export const updateUserProfile = profileRepository.updateUserProfile;
-export const deleteCurrentUserProfile = profileRepository.deleteCurrentUserProfile;
+export const deleteCurrentUserProfile = async () => {
+    const result = await profileRepository.deleteCurrentUserProfile();
+    const { clearAddressSessionCache } = await import("./addressRepository");
+    clearAddressSessionCache();
+    return result;
+};

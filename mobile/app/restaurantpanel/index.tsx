@@ -49,7 +49,7 @@ const RestaurantPanel = () => {
     const { isAuthenticated, isLoading: authLoading, user, resetAuthState } = useAuthStore();
     const [loading, setLoading] = useState(true);
     const [authorized, setAuthorized] = useState(false);
-    const [redirectTo, setRedirectTo] = useState<"/" | "/sign-in" | null>(null);
+    const [redirectTo, setRedirectTo] = useState<"/restaurantpanel/login" | "/sign-in" | null>(null);
     const [restaurantId, setRestaurantId] = useState<string | null>(null);
     const [restaurantName, setRestaurantName] = useState<string | null>(null);
 
@@ -98,7 +98,7 @@ const RestaurantPanel = () => {
 
             if (!isAuthenticated) {
                 if (!mounted) return;
-                setRedirectTo("/sign-in");
+                setRedirectTo("/restaurantpanel/login");
                 setLoading(false);
                 return;
             }
@@ -107,7 +107,7 @@ const RestaurantPanel = () => {
             if (!mounted) return;
 
             if (!ownedRestaurantId) {
-                setRedirectTo("/");
+                setRedirectTo("/restaurantpanel/login");
                 setLoading(false);
                 return;
             }
@@ -168,7 +168,7 @@ const RestaurantPanel = () => {
     );
 
     const updateOrderStatus = useCallback(
-        async (orderId: string, status: "pending" | "accepted" | "out_for_delivery" | "canceled" | "rejected" | "delivered") => {
+        async (orderId: string, status: "pending" | "accepted" | "ready" | "out_for_delivery" | "canceled" | "rejected" | "delivered") => {
             const previousOrder = orders.find((order) => order.id === orderId);
             const previousStatus = previousOrder?.status;
             setOrders((prev) => prev.map((order) => (order.id === orderId ? { ...order, status } : order)));
@@ -188,7 +188,7 @@ const RestaurantPanel = () => {
     );
 
     const handleOrderAction = useCallback(
-        async (orderId: string, status: "pending" | "accepted" | "out_for_delivery" | "canceled" | "rejected" | "delivered") => {
+        async (orderId: string, status: "pending" | "accepted" | "ready" | "out_for_delivery" | "canceled" | "rejected" | "delivered") => {
             setActionLoadingByOrder((prev) => ({ ...prev, [orderId]: status }));
             try {
                 await updateOrderStatus(orderId, status);
@@ -204,7 +204,7 @@ const RestaurantPanel = () => {
         const pendingToday = todayOrders.filter((order) => normalizePanelOrderStatus(order.status) === "pending").length;
         const acceptedToday = todayOrders.filter((order) => {
             const status = normalizePanelOrderStatus(order.status);
-            return status === "accepted" || status === "out_for_delivery";
+            return status === "accepted" || status === "ready" || status === "out_for_delivery";
         }).length;
         const deliveredToday = todayOrders.filter((order) => normalizePanelOrderStatus(order.status) === "delivered").length;
         const today = todayOrders.length;
@@ -217,7 +217,7 @@ const RestaurantPanel = () => {
         for (const order of orders) {
             const status = normalizePanelOrderStatus(order.status);
             if (status === "pending") pending += 1;
-            else if (status === "accepted" || status === "out_for_delivery") accepted += 1;
+            else if (status === "accepted" || status === "ready" || status === "out_for_delivery") accepted += 1;
         }
         const delivered = pastOrders.filter((order) => normalizePanelOrderStatus(order.status) === "delivered").length;
         const canceled = pastOrders.filter((order) => {
@@ -315,25 +315,24 @@ const RestaurantPanel = () => {
     const sessionIdentity = user?.email || user?.name || t("common.na");
     const systemMessage = notificationsEnabled ? t("notifications.systemMessagesEnabled") : t("notifications.systemMessagesDisabled");
     const handleSignOut = useCallback(async () => {
-        setOrders([]);
-        setPastOrders([]);
-        setReminderOrders([]);
-        setRestaurantId(null);
-        setRestaurantName(null);
-        setAuthorized(false);
-        setRedirectTo("/sign-in");
-        setStatusFilter("all");
-        setSearchTerm("");
-        setExpandedOrderId(null);
-        setActionLoadingByOrder({});
-
         try {
             await logout();
-        } catch {
-            // Best effort; still clear local auth state below.
-        } finally {
+            setOrders([]);
+            setPastOrders([]);
+            setReminderOrders([]);
+            setRestaurantId(null);
+            setRestaurantName(null);
+            setAuthorized(false);
+            setRedirectTo("/sign-in");
+            setStatusFilter("all");
+            setSearchTerm("");
+            setExpandedOrderId(null);
+            setActionLoadingByOrder({});
             resetAuthState();
             router.replace("/sign-in");
+        } catch (error) {
+            console.warn("[restaurant-panel] Secure sign out failed", error);
+            Alert.alert("Unable to sign out", error instanceof Error ? error.message : "Please try again.");
         }
     }, [resetAuthState, router]);
 

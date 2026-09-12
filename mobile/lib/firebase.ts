@@ -3,6 +3,7 @@ import ReactNativeAsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import { FirebaseApp, getApp, getApps, initializeApp } from "firebase/app";
 import { Auth, getAuth, initializeAuth } from "firebase/auth";
+import { Functions, getFunctions } from "firebase/functions";
 import {
     DocumentData,
     Firestore,
@@ -89,6 +90,7 @@ if (firebaseApp) {
     }
 }
 const firestore: Firestore | undefined = firebaseApp ? getFirestore(firebaseApp) : undefined;
+const functions: Functions | undefined = firebaseApp ? getFunctions(firebaseApp) : undefined;
 
 const FIREBASE_COLLECTIONS = {
     users: "users",
@@ -174,4 +176,4 @@ export const updateMenuItem = async (itemId: string, updates: Partial<MenuPayloa
     return response;
 };
 
-export { firebaseConfig, firebaseConfigured, firebaseApp, auth, firestore, FIREBASE_COLLECTIONS };
+export { firebaseConfig, firebaseConfigured, firebaseApp, auth, firestore, functions, FIREBASE_COLLECTIONS };

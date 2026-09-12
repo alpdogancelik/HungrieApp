@@ -1,6 +1,6 @@
 begin;
 
-select plan(49);
+select plan(50);
 
 update public.menu_items set customizations =
   '[{"id":"extra","name":"Synthetic extra","price_kurus":200}]'::jsonb
@@ -11,8 +11,8 @@ select set_config('request.jwt.claims', '{"role":"authenticated","iss":"https://
 
 select is(
   (public.quote_order('fixture_restaurant_a', '[{"menu_item_id":"fixture_menu_a","quantity":2,"customization_ids":[]}]') ->> 'total_kurus')::bigint,
-  5500::bigint,
-  'quote uses catalog price and restaurant delivery fee'
+  5000::bigint,
+  'quote uses catalog price with delivery temporarily free'
 );
 select is(
   (public.quote_order('fixture_restaurant_a', '[{"menu_item_id":"fixture_menu_a","quantity":1,"customization_ids":[]}]') ->> 'service_fee_kurus')::bigint,
@@ -21,7 +21,7 @@ select is(
 );
 select is(
   (public.quote_order('fixture_restaurant_a', '[{"menu_item_id":"fixture_menu_a","quantity":1,"customization_ids":["extra"]}]') ->> 'total_kurus')::bigint,
-  3200::bigint,
+  2700::bigint,
   'quote validates customization IDs and uses server customization price'
 );
 select throws_ok(
@@ -45,7 +45,7 @@ select public.create_order(
   'Synthetic order'
 );
 select ok((select id ~ '^[0-9a-f-]{36}$' from m3_created_order), 'create_order returns UUID text');
-select is((select total_kurus from public.orders where id = (select id from m3_created_order)), 3000::bigint, 'created total is server calculated');
+select is((select total_kurus from public.orders where id = (select id from m3_created_order)), 2500::bigint, 'created total is server calculated with free delivery');
 reset role;
 select is((select count(*)::integer from private.order_contacts where order_id = (select id from m3_created_order)), 1, 'order contact snapshot is created privately');
 select is((select count(*)::integer from public.order_items where order_id = (select id from m3_created_order)), 1, 'order item snapshot is created atomically');
@@ -83,8 +83,8 @@ values ('m3_review_item', 'm3_review_order', 'fixture_menu_a', 'Fixture Meal', 2
 set local role authenticated;
 select set_config('request.jwt.claims', '{"role":"authenticated","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_manager"}', true);
 select lives_ok($$select public.transition_order('m3_flow_order', 'preparing')$$, 'manager can accept a restaurant order');
-select lives_ok($$select public.transition_order('m3_flow_order', 'ready')$$, 'manager can mark a preparing order ready');
-select throws_ok($$select public.transition_order('m3_flow_order', 'out_for_delivery')$$, '42501', null, 'manager cannot claim courier delivery');
+select lives_ok($$select public.transition_order('m3_flow_order', 'out_for_delivery')$$, 'manager hands an accepted order to the restaurant courier');
+select lives_ok($$select public.transition_order('m3_flow_order', 'delivered')$$, 'manager completes the restaurant-managed delivery');
 select throws_ok($$select public.set_restaurant_member('fixture_restaurant_a', 'fixture_outsider', 'manager')$$, '42501', null, 'manager cannot manage memberships');
 select lives_ok($$select public.update_restaurant_details('fixture_restaurant_a', '{"description":"Updated synthetic description"}')$$, 'manager can update safe restaurant details');
 select throws_ok($$select public.update_restaurant_details('fixture_restaurant_a', '{"rating_average":5}')$$, '22023', null, 'restaurant details reject protected computed fields');
@@ -118,12 +118,13 @@ select throws_ok($$select public.set_restaurant_member('fixture_restaurant_a', '
 select lives_ok($$select public.set_restaurant_courier('fixture_restaurant_a', 'fixture_unscoped_courier', true)$$, 'owner can scope an existing platform courier');
 select throws_ok($$select public.set_restaurant_courier('fixture_restaurant_a', 'fixture_outsider', true)$$, '22023', null, 'owner cannot scope a non-courier');
 
-select set_config('request.jwt.claims', '{"role":"authenticated","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_super_admin"}', true);
+select set_config('request.jwt.claims', '{"role":"authenticated","platform_role":"super_admin","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_super_admin"}', true);
 select lives_ok($$select public.set_platform_role('fixture_outsider', 'admin', true)$$, 'super-admin can grant platform role');
+select lives_ok($$select public.set_restaurant_member('fixture_restaurant_a', 'fixture_outsider', null)$$, 'super-admin clears the prior membership before ownership transfer');
 select lives_ok($$select public.set_restaurant_member('fixture_restaurant_b', 'fixture_outsider', 'owner')$$, 'super-admin can grant restaurant ownership');
 select throws_ok($$select public.set_platform_role('fixture_super_admin', 'super_admin', false)$$, '22023', null, 'last super-admin cannot remove itself');
 
-select set_config('request.jwt.claims', '{"role":"authenticated","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_admin"}', true);
+select set_config('request.jwt.claims', '{"role":"authenticated","platform_role":"admin","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_admin"}', true);
 select lives_ok($$select public.transition_order('m3_admin_cancel', 'canceled', 'Synthetic support cancellation')$$, 'admin can cancel after courier pickup');
 select throws_ok($$select public.set_platform_role('fixture_outsider', 'admin', false)$$, '42501', null, 'admin cannot manage platform roles');
 

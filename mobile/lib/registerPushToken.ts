@@ -2,9 +2,10 @@ import { collection, deleteDoc, doc, serverTimestamp, setDoc } from "firebase/fi
 import { Platform } from "react-native";
 
 import { auth, firestore } from "@/lib/firebase";
-import { getOwnedRestaurantId } from "@/lib/restaurantOwnership";
+import { getCurrentMembership } from "@/src/data/membershipRepository";
 import { storage } from "@/src/lib/storage";
 import { NotificationManager } from "@/src/features/notifications/NotificationManager";
+import type { NotificationPreferences, PushRegistration } from "@/src/data/contracts";
 
 type PushScope = "user" | "restaurant";
 type TokenScope = {
@@ -22,8 +23,8 @@ type StoredTokenBinding = {
 
 type RegisterPushTokenResult = {
     token: string;
-    platform: string;
-    provider: string;
+    platform: PushRegistration["platform"];
+    provider: PushRegistration["provider"];
     scopes: PushScope[];
     userId: string | null;
     restaurantId: string | null;
@@ -34,6 +35,12 @@ const toTokenId = (token: string) => {
     return sanitized.slice(0, 180);
 };
 const ACTIVE_BINDING_KEY = "push_token_active_binding_v1";
+const NOTIFICATION_PREFERENCES_KEY = "hungrie_notification_prefs_v2";
+const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+    orderStatus: true,
+    restaurantOrders: true,
+    reviewReplies: true,
+};
 
 const readStoredBinding = async (): Promise<StoredTokenBinding | null> => {
     const raw = await storage.getItem(ACTIVE_BINDING_KEY);
@@ -108,7 +115,7 @@ export const registerPushToken = async (): Promise<RegisterPushTokenResult | nul
     if (!pushToken?.token) return null;
 
     const userId = auth?.currentUser?.uid ?? null;
-    const restaurantId = await getOwnedRestaurantId();
+    const restaurantId = (await getCurrentMembership())?.restaurantId || null;
     const scopes: TokenScope[] = [];
 
     if (userId) {
@@ -159,6 +166,26 @@ export const registerPushToken = async (): Promise<RegisterPushTokenResult | nul
         userId,
         restaurantId,
     };
+};
+
+export const getPreferences = async (): Promise<NotificationPreferences> => {
+    const raw = await storage.getItem(NOTIFICATION_PREFERENCES_KEY);
+    if (!raw) return DEFAULT_NOTIFICATION_PREFERENCES;
+    try {
+        return { ...DEFAULT_NOTIFICATION_PREFERENCES, ...(JSON.parse(raw) as Partial<NotificationPreferences>) };
+    } catch {
+        return DEFAULT_NOTIFICATION_PREFERENCES;
+    }
+};
+
+export const updatePreferences = async (preferences: NotificationPreferences): Promise<NotificationPreferences> => {
+    const normalized = {
+        orderStatus: Boolean(preferences.orderStatus),
+        restaurantOrders: Boolean(preferences.restaurantOrders),
+        reviewReplies: Boolean(preferences.reviewReplies),
+    };
+    await storage.setItem(NOTIFICATION_PREFERENCES_KEY, JSON.stringify(normalized));
+    return normalized;
 };
 
 export default registerPushToken;

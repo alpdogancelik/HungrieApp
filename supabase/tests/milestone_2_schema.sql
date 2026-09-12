@@ -70,7 +70,7 @@ select ok(
 
 select ok(
   (
-    select count(*) = 12
+    select count(*) = 15
     from pg_catalog.pg_trigger t
     join pg_catalog.pg_class c on c.oid = t.tgrelid
     join pg_catalog.pg_proc p on p.oid = t.tgfoid

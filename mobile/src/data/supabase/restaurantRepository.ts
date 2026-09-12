@@ -1,16 +1,29 @@
 import {
     onAuthStateChanged,
     signInWithEmailAndPassword,
-    signOut,
     type User as FirebaseUser,
 } from "firebase/auth";
 
 import { auth } from "@/lib/firebase";
-import { unregisterPushToken } from "@/src/data/notificationRepository";
 import type { RestaurantRepository, RestaurantSession, RestaurantDetailsForm } from "@/src/data/contracts";
-import { fromKurus, requireSupabase, throwIfError } from "./utils";
+import { createInitialFetchSubscription, fromKurus, requireCatalogSupabase, requireSupabase, throwIfError, toSupabaseOrderStatus } from "./utils";
+import { invalidateCatalogCache, readCatalogCached } from "./publicCatalogCache";
 
-const mapRestaurant = (row: any) => ({
+const ACTIVE_RESTAURANT_COLUMNS = [
+    "id", "name", "description", "cuisine", "image_url", "delivery_eta_min_minutes",
+    "delivery_eta_max_minutes", "delivery_fee_kurus", "minimum_order_kurus", "opening_hours",
+    "preferred_language", "rating_average", "rating_count", "created_at", "updated_at",
+    "sort_order",
+].join(",");
+const RESTAURANT_ORDER_COLUMNS = [
+    "id", "restaurant_id", "status", "payment_method", "subtotal_kurus", "delivery_fee_kurus",
+    "service_fee_kurus", "discount_kurus", "tip_kurus", "total_kurus", "eta_minutes",
+    "approval_deadline_at", "reminder_pending", "reminder_requested_at", "preparing_at", "ready_at",
+    "out_for_delivery_at", "delivered_at", "canceled_at", "created_at", "updated_at", "customer_name",
+    "customer_email", "customer_whatsapp", "delivery_address_snapshot",
+].join(",");
+
+export const mapCatalogRestaurant = (row: any) => ({
     id: String(row.id || ""),
     name: row.name || "",
     description: row.description || "",
@@ -49,53 +62,46 @@ const fetchRestaurantSession = async (user: FirebaseUser): Promise<RestaurantSes
 };
 
 export const getRestaurants: RestaurantRepository["getRestaurants"] = async (filters) => {
-    const client = requireSupabase();
-    let query = client.from("active_restaurants").select("*").order("name", { ascending: true });
-    if (filters?.search) {
-        const term = `%${filters.search}%`;
-        query = query.or(`name.ilike.${term},cuisine.ilike.${term}`);
-    }
-    return throwIfError(await query).map(mapRestaurant);
+    const rows = await readCatalogCached(`restaurants:${filters?.search || ""}:${filters?.category || ""}`, async () => {
+        const client = requireCatalogSupabase();
+        let query = client.from("active_restaurants").select(ACTIVE_RESTAURANT_COLUMNS).order("sort_order", { ascending: true }).order("name", { ascending: true }).order("id", { ascending: true });
+        if (filters?.search) {
+            const term = `%${filters.search}%`;
+            query = query.or(`name.ilike.${term},cuisine.ilike.${term}`);
+        }
+        return throwIfError(await query);
+    });
+    return rows.map(mapCatalogRestaurant);
 };
 
 export const subscribeRestaurants: RestaurantRepository["subscribeRestaurants"] = (cb, onError) => {
-    void getRestaurants().then(cb).catch((error) => {
-        cb([]);
-        onError?.(error);
-    });
-    const channel = requireSupabase()
-        .channel("restaurants")
-        .on("postgres_changes", { event: "*", schema: "public", table: "restaurants" }, () => {
-            void getRestaurants().then(cb).catch(onError);
-        })
-        .subscribe();
-    return () => {
-        void requireSupabase().removeChannel(channel);
-    };
+    return createInitialFetchSubscription(
+        getRestaurants,
+        cb,
+        (error) => {
+            cb([]);
+            onError?.(error);
+        },
+    );
 };
 
 export const getRestaurant: RestaurantRepository["getRestaurant"] = async (restaurantId) => {
-    const client = requireSupabase();
-    const row = throwIfError(
-        await client.from("active_restaurants").select("*").eq("id", String(restaurantId)).maybeSingle(),
-    );
-    return row ? mapRestaurant(row) : null;
+    const row = await readCatalogCached(`restaurant:${String(restaurantId)}`, async () => {
+        const client = requireCatalogSupabase();
+        return throwIfError(await client.from("active_restaurants").select(ACTIVE_RESTAURANT_COLUMNS).eq("id", String(restaurantId)).maybeSingle());
+    });
+    return row ? mapCatalogRestaurant(row) : null;
 };
 
 export const subscribeRestaurant: RestaurantRepository["subscribeRestaurant"] = (restaurantId, cb, onError) => {
-    void getRestaurant(restaurantId).then(cb).catch((error) => {
-        cb(null);
-        onError?.(error);
-    });
-    const channel = requireSupabase()
-        .channel(`restaurant:${restaurantId}`)
-        .on("postgres_changes", { event: "*", schema: "public", table: "restaurants", filter: `id=eq.${restaurantId}` }, () => {
-            void getRestaurant(restaurantId).then(cb).catch(onError);
-        })
-        .subscribe();
-    return () => {
-        void requireSupabase().removeChannel(channel);
-    };
+    return createInitialFetchSubscription(
+        () => getRestaurant(restaurantId),
+        cb,
+        (error) => {
+            cb(null);
+            onError?.(error);
+        },
+    );
 };
 
 export const updateRestaurant: RestaurantRepository["updateRestaurant"] = async (restaurantId, payload) => {
@@ -103,11 +109,29 @@ export const updateRestaurant: RestaurantRepository["updateRestaurant"] = async 
         p_restaurant_id: String(restaurantId),
         p_changes: payload,
     }).then(throwIfError);
+    invalidateCatalogCache();
     return { id: restaurantId, ...payload };
 };
 
-export const createRestaurant: RestaurantRepository["createRestaurant"] = async () => {
-    throw new Error("Supabase restaurant creation is not exposed to the mobile repository.");
+export const createRestaurant: RestaurantRepository["createRestaurant"] = async (payload) => {
+    const normalized = {
+        name: String(payload.name || ""),
+        description: String(payload.description || ""),
+        cuisine: String(payload.cuisine || ""),
+        address: String(payload.address || ""),
+        phone: String(payload.phone || ""),
+        image_url: String(payload.imageUrl || payload.image_url || ""),
+        is_active: payload.isActive ?? payload.is_active ?? false,
+        delivery_eta_min_minutes: payload.deliveryEtaMinMinutes ?? payload.delivery_eta_min_minutes ?? null,
+        delivery_eta_max_minutes: payload.deliveryEtaMaxMinutes ?? payload.delivery_eta_max_minutes ?? null,
+        delivery_fee_kurus: payload.deliveryFeeKurus ?? payload.delivery_fee_kurus ?? 0,
+        minimum_order_kurus: payload.minimumOrderKurus ?? payload.minimum_order_kurus ?? 0,
+        opening_hours: payload.openingHours ?? payload.opening_hours ?? {},
+        preferred_language: payload.preferredLanguage ?? payload.preferred_language ?? "tr",
+    };
+    const id = throwIfError(await requireSupabase().rpc("create_restaurant", { p_payload: normalized }));
+    invalidateCatalogCache();
+    return { id, ...payload };
 };
 
 export const getOwnerRestaurants: RestaurantRepository["getOwnerRestaurants"] = async () => {
@@ -116,15 +140,30 @@ export const getOwnerRestaurants: RestaurantRepository["getOwnerRestaurants"] = 
     return restaurant ? [restaurant] : [];
 };
 
-export const getRestaurantOrders: RestaurantRepository["getRestaurantOrders"] = async () => [];
-export const updateOrderStatus: RestaurantRepository["updateOrderStatus"] = async (orderId, status) => ({ id: orderId, status });
-export const getCourierRoster: RestaurantRepository["getCourierRoster"] = async () => [];
+export const getRestaurantOrders: RestaurantRepository["getRestaurantOrders"] = async (restaurantId, status) => {
+    let query = requireSupabase()
+        .from("restaurant_orders")
+        .select(RESTAURANT_ORDER_COLUMNS)
+        .eq("restaurant_id", String(restaurantId))
+        .order("created_at", { ascending: false });
+    if (status) query = query.eq("status", toSupabaseOrderStatus(status));
+    return throwIfError(await query);
+};
+export const updateOrderStatus: RestaurantRepository["updateOrderStatus"] = async (orderId, status) => {
+    await requireSupabase().rpc("transition_order", { p_order_id: String(orderId), p_new_status: toSupabaseOrderStatus(status) }).then(throwIfError);
+    return { id: orderId, status };
+};
+export const getCourierRoster: RestaurantRepository["getCourierRoster"] = async () => {
+    const restaurantId = await getOwnedRestaurantId();
+    if (!restaurantId) return [];
+    return throwIfError(await requireSupabase().rpc("list_restaurant_couriers", { p_restaurant_id: restaurantId }));
+};
 
 export const getOwnedRestaurantDetails: RestaurantRepository["getOwnedRestaurantDetails"] = async () => {
     const restaurantId = await getOwnedRestaurantId();
     if (!restaurantId) return null;
     const client = requireSupabase();
-    const row = throwIfError(await client.from("restaurants").select("*").eq("id", restaurantId).maybeSingle());
+    const row = throwIfError(await client.rpc("get_restaurant_management_details", { p_restaurant_id: restaurantId }));
     if (!row) return null;
     return {
         restaurantId,
@@ -162,9 +201,8 @@ export const signInRestaurant: RestaurantRepository["signInRestaurant"] = async 
 };
 
 export const signOutRestaurant: RestaurantRepository["signOutRestaurant"] = async () => {
-    if (!auth) throw new Error("Firebase authentication is not configured.");
-    await unregisterPushToken().catch(() => null);
-    await signOut(auth);
+    const { signOut } = await import("@/src/data/authRepository");
+    await signOut();
 };
 
 export const listenRestaurantSession: RestaurantRepository["listenRestaurantSession"] = (cb) => {

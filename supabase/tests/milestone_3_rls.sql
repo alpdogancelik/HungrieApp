@@ -40,9 +40,9 @@ select is((select count(*)::integer from public.my_orders), 2, 'customer sees co
 select is((select count(*)::integer from public.orders), 2, 'base order RLS exposes only customer orders');
 select is((select count(*)::integer from public.order_items), 2, 'child RLS follows customer order access');
 select is((select count(*)::integer from public.profiles where id = 'fixture_outsider'), 0, 'customer cannot select another profile');
-select lives_ok($$update public.profiles set name = 'Fixture Customer Updated' where id = 'fixture_customer'$$, 'customer can update safe own profile columns');
+select throws_ok($$update public.profiles set name = 'Fixture Customer Updated' where id = 'fixture_customer'$$, '42501', null, 'Milestone 6 requires profile mutations through RPCs');
 select throws_ok($$update public.profiles set email = 'changed@example.invalid' where id = 'fixture_customer'$$, '42501', null, 'customer cannot update protected email');
-select lives_ok($$insert into public.addresses (id, profile_id, label, line1, city, country) values ('m3_address', 'fixture_customer', 'Other', 'Line', 'City', 'Country')$$, 'customer can create own address');
+select throws_ok($$insert into public.addresses (id, profile_id, label, line1, city, country) values ('m3_address', 'fixture_customer', 'Other', 'Line', 'City', 'Country')$$, '42501', null, 'Milestone 6 requires address mutations through RPCs');
 select throws_ok($$insert into public.addresses (id, profile_id, label, line1, city, country) values ('m3_bad_address', 'fixture_outsider', 'Other', 'Line', 'City', 'Country')$$, '42501', null, 'customer cannot create another profile address');
 
 select set_config('request.jwt.claims', '{"role":"authenticated","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_outsider"}', true);
@@ -68,7 +68,7 @@ select set_config('request.jwt.claims', '{"role":"authenticated","iss":"https://
 select is((select count(*)::integer from public.courier_available_orders), 0, 'unscoped courier sees no ready queue');
 select is((select count(*)::integer from public.orders), 0, 'unscoped courier sees no orders');
 
-select set_config('request.jwt.claims', '{"role":"authenticated","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_admin"}', true);
+select set_config('request.jwt.claims', '{"role":"authenticated","platform_role":"admin","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_admin"}', true);
 select is((select count(*)::integer from public.admin_orders), 3, 'admin sees all orders through support view');
 select is((select customer_email from public.admin_orders where id = 'fixture_order'), 'customer@example.invalid', 'admin support view retains terminal contact');
 select is((select count(*)::integer from public.profiles), 8, 'admin profile RLS is global');

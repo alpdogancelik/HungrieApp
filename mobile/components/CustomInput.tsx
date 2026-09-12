@@ -31,6 +31,8 @@ type Props = {
     blurOnSubmit?: TextInputProps["blurOnSubmit"];
     autoFocus?: boolean;
     leftIcon?: ReactNode;
+    placeholderTextColor?: string;
+    secureToggleColor?: string;
     containerStyle?: StyleProp<ViewStyle>;
     labelStyle?: StyleProp<TextStyle>;
     inputStyle?: StyleProp<TextStyle>;
@@ -110,6 +112,8 @@ const CustomInput = forwardRef<TextInput, Props>(({
     blurOnSubmit,
     autoFocus,
     leftIcon,
+    placeholderTextColor,
+    secureToggleColor,
     containerStyle,
     labelStyle,
     inputStyle,
@@ -148,7 +152,7 @@ const CustomInput = forwardRef<TextInput, Props>(({
                         onBlur?.(event);
                     }}
                     placeholder={placeholder}
-                    placeholderTextColor={theme.colors.muted}
+                    placeholderTextColor={placeholderTextColor ?? theme.colors.muted}
                     style={[
                         styles.input,
                         leftIcon && styles.inputWithLeftIcon,
@@ -174,7 +178,7 @@ const CustomInput = forwardRef<TextInput, Props>(({
                         <Ionicons
                             name={isPasswordVisible ? "eye-off-outline" : "eye-outline"}
                             size={20}
-                            color={theme.colors.textSecondary}
+                            color={secureToggleColor ?? theme.colors.textSecondary}
                         />
                     </Pressable>
                 ) : null}

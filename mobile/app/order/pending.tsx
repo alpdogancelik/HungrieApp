@@ -1,5 +1,6 @@
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import OrderPendingScreen from "@/src/screens/OrderPendingScreen";
+import { ProtectedRoute } from "@/src/features/auth/routeGuards";
 
 const PendingRoute = () => {
     const router = useRouter();
@@ -12,13 +13,16 @@ const PendingRoute = () => {
     const etaSeconds = params.eta ? Number(params.eta) : undefined;
 
     return (
-        <OrderPendingScreen
-            orderId={params.orderId}
-            restaurantName={params.restaurantName || "Restoran"}
-            etaSeconds={Number.isFinite(etaSeconds || NaN) ? etaSeconds : undefined}
-            //onConfirmed={() => router.replace({ pathname: "/order", params: { highlight: params.orderId } })}
-            onRejected={() => router.replace("/(tabs)/cart")}
-        />
+        <ProtectedRoute>
+            <OrderPendingScreen
+                orderId={params.orderId}
+                restaurantName={params.restaurantName || "Restoran"}
+                etaSeconds={Number.isFinite(etaSeconds || NaN) ? etaSeconds : undefined}
+                onBack={() => router.replace("/(tabs)/profile")}
+                //onConfirmed={() => router.replace({ pathname: "/order", params: { highlight: params.orderId } })}
+                onRejected={() => router.replace("/(tabs)/cart")}
+            />
+        </ProtectedRoute>
     );
 };
 

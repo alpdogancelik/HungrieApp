@@ -31,15 +31,15 @@ const DeliverToHeader = () => {
 
     const subtitle = defaultAddress ? renderAddressLine(defaultAddress) : t("deliverTo.subtitle");
 
-    const handleUseAddress = useCallback(async () => {
-        if (!selectedId) return;
-        await addressStore.setDefault(selectedId);
-        const updated = addresses.find((address) => address.id === selectedId);
+    const handleSelectAddress = useCallback(async (addressId: string) => {
+        setSelectedId(addressId);
+        await addressStore.setDefault(addressId);
+        const updated = addresses.find((address) => address.id === addressId);
         if (updated) {
             DeviceEventEmitter.emit("app/addressChanged", updated);
         }
         setSheetVisible(false);
-    }, [addresses, selectedId]);
+    }, [addresses]);
 
     const openManageAddresses = () => {
         setSheetVisible(false);
@@ -50,7 +50,7 @@ const DeliverToHeader = () => {
         ({ item }: { item: Address }) => {
             const isSelected = item.id === selectedId;
             return (
-                <Pressable onPress={() => setSelectedId(item.id)} style={[styles.addressItem, isSelected ? styles.addressItemSelected : styles.addressItemIdle]}>
+                <Pressable onPress={() => void handleSelectAddress(item.id)} style={[styles.addressItem, isSelected ? styles.addressItemSelected : styles.addressItemIdle]}>
                     <View style={styles.addressItemContent}>
                         <Text style={styles.addressLabel}>{item.label}</Text>
                         <Text style={styles.addressLine} numberOfLines={1}>
@@ -68,7 +68,7 @@ const DeliverToHeader = () => {
                 </Pressable>
             );
         },
-        [selectedId],
+        [handleSelectAddress, selectedId],
     );
 
     const keyExtractor = useCallback((item: Address) => item.id, []);
@@ -122,13 +122,6 @@ const DeliverToHeader = () => {
                             onPress={openManageAddresses}
                         >
                             <Text style={styles.manageButtonText}>{t("deliverTo.manage")}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            disabled={!selectedId}
-                            style={[styles.useButton, selectedId ? styles.useButtonEnabled : styles.useButtonDisabled]}
-                            onPress={handleUseAddress}
-                        >
-                            <Text style={styles.useButtonText}>{t("deliverTo.useThis")}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -273,24 +266,6 @@ const styles = createAdaptiveStyleSheet({
         fontSize: 16,
         lineHeight: 22,
         color: "#1F2937",
-        fontFamily: "ChairoSans-SemiBold",
-    },
-    useButton: {
-        flex: 1,
-        borderRadius: 999,
-        paddingVertical: 12,
-        alignItems: "center",
-    },
-    useButtonEnabled: {
-        backgroundColor: "#FE8C00",
-    },
-    useButtonDisabled: {
-        backgroundColor: "#E5E7EB",
-    },
-    useButtonText: {
-        fontSize: 16,
-        lineHeight: 22,
-        color: "#FFFFFF",
         fontFamily: "ChairoSans-SemiBold",
     },
 });
