@@ -1,0 +1,4 @@
+"use client";
+import Link from "next/link";import{usePathname}from"next/navigation";import{signOut}from"firebase/auth";import{auth}from"@/lib/firebase";import{useLocale}from"./AdminProviders";
+const links=[["/dashboard","dashboard"],["/restaurants","restaurants"],["/accounts","accounts"],["/orders","orders"],["/incidents","incidents"],["/audit","audit"],["/security","security"]] as const;
+export function AdminShell({children}:{children:React.ReactNode}){const path=usePathname(),{locale,setLocale,t}=useLocale();return <div className="app-shell"><aside><h1>{t.brand}</h1><nav>{links.map(([href,key])=><Link className={path.startsWith(href)?"active":""} href={href} key={href}>{t[key]}</Link>)}</nav><div className="aside-actions"><button onClick={()=>setLocale(locale==="en"?"tr":"en")}>{t.language}</button><button onClick={()=>void signOut(auth)}>{t.signOut}</button></div></aside><main>{children}</main></div>}

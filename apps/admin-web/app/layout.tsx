@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
+import "./styles.css";
+import { AdminProviders } from "@/components/AdminProviders";
 
-export const metadata: Metadata = { title: "Hungrie Admin proof" };
+export const metadata: Metadata = { title: "Hungrie Admin" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, fontFamily: "system-ui, sans-serif", background: "#f8f7f4", color: "#26221c" }}>
-        {children}
-      </body>
+      <body><AdminProviders>{children}</AdminProviders></body>
     </html>
   );
 }

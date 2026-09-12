@@ -20,6 +20,7 @@
     "test:identity-migration": "node --test scripts/identityMigration.test.js",
     "test:review-migration": "node --test scripts/reviewMigration.test.js",
     "test:order-migration": "node --test scripts/orderMigration.test.js",
+    "test:phase4-admin": "node --test phase4AdminLogic.test.js",
     "identity:migrate": "node scripts/migrateFirebaseIdentity.js",
     "review:migrate": "node scripts/migrateFirebaseReviews.js",
     "order:migrate": "node scripts/migrateFirebaseOrders.js",
