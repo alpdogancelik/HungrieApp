@@ -26,7 +26,7 @@ export function AdminControls({ kind, onDone }: { kind: Kind; onDone: () => void
     cancel: tr ? "İptal et" : "Cancel", delivered: tr ? "Teslim edildiğini doğrula" : "Confirm delivered",
     acknowledge: tr ? "Kabul et" : "Acknowledge", resolve: tr ? "Çöz" : "Resolve", confirm: tr ? "Onayla" : "Confirm",
     confirmPrompt: tr ? "Bu yetkili işlemi onaylıyor musunuz?" : "Confirm this privileged operation?",
-    completed: tr ? "Tamamlandı" : "Completed", failed: tr ? "İşlem tamamlanamadı" : "Operation failed", copyOnce: tr ? "Bir kez kopyala" : "Copy once", evidence: tr ? "vaka:referans" : "case:reference",
+    completed: tr ? "Tamamlandı" : "Completed", failed: tr ? "İşlem tamamlanamadı" : "Operation failed", recentAuth: tr ? "Bu işlem için çıkış yapın, tekrar giriş yapın ve beş dakika içinde yeniden deneyin" : "Sign out, sign in again, and retry within five minutes for this operation", copyOnce: tr ? "Bir kez kopyala" : "Copy once", evidence: tr ? "vaka:referans" : "case:reference",
   };
   const [values, setValues] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
@@ -68,8 +68,9 @@ export function AdminControls({ kind, onDone }: { kind: Kind; onDone: () => void
       if (kind === "incidents") result = await supabase.rpc("admin_set_incident_state_v1" as never, { p_incident_id: values.incidentId, p_state: values.state || "acknowledged", p_resolution_note: values.note || null, p_operation_id: operationId } as never);
       if (result?.error) throw result.error;
       setInviteUrl(oneTimeUrl); setMessage(oneTimeUrl ? "" : labels.completed); onDone();
-    } catch {
-      setMessage(`${labels.failed}. Ref: ${crypto.randomUUID()}`);
+    } catch (value) {
+      const detail = typeof value === "object" && value && "message" in value ? String(value.message) : "";
+      setMessage(detail.includes("Recent authentication required") ? labels.recentAuth : `${labels.failed}. Ref: ${crypto.randomUUID()}`);
     } finally { setBusy(false); }
   }
 
