@@ -1,0 +1,45 @@
+name: Phase 1 validation
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  workspace:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix functions
+      - run: npm run build:packages
+      - run: npm run typecheck
+      - run: npm run typecheck:proof
+      - run: npm run lint
+      - run: npm run export:web --workspace mobile
+      - run: npm run export:web --workspace @hungrie/restaurant
+      - run: npm run build --workspace @hungrie/admin-web
+      - run: node scripts/check-phase1-web-output.mjs
+      - run: node scripts/check-phase1-hosting.mjs
+      - run: npm run test:js
+
+  database:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx supabase start
+      - run: npx supabase db reset --local
+      - run: npm run phase1:operations:local
+      - run: npm run supabase:lint
+      - run: npm run supabase:test

@@ -1,0 +1,40 @@
+name: Database migration review
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Review target; this workflow cannot apply migrations
+        required: true
+        type: choice
+        options:
+          - staging
+      migration_sha256:
+        description: Reviewed SHA-256 of the Phase 1 SQL migration
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  validate-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Validate reviewed target and checksum
+        env:
+          REVIEW_TARGET: ${{ inputs.target }}
+          REVIEW_SHA256: ${{ inputs.migration_sha256 }}
+        run: node scripts/check-phase1-migration-review.mjs
+      - run: npx supabase start
+      - run: npx supabase db reset --local
+      - run: npm run supabase:lint
+      - run: npx supabase test db --local supabase/tests/phase_1_client_release_policy.sql
+      # There is deliberately no apply job. Protected reviewer enforcement must
+      # be verified before any future workflow can receive database credentials.

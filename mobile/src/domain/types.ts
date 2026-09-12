@@ -1,3 +1,5 @@
+export type { AccountType, PortalId } from "@hungrie/domain";
+
 export type BaseDocument = {
     $id?: string;
     id?: string | number;
