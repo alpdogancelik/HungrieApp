@@ -1,0 +1,27 @@
+name: Phase 2 database validation
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node scripts/check-phase2-migration-review.mjs
+      - run: npx supabase start
+      - run: npm run supabase:reset
+      - run: npm run supabase:lint
+      - run: npx supabase test db --local supabase/tests/phase_2_account_model.sql
+      - run: node scripts/test-phase2-invitation-concurrency.mjs
+      - run: npm run build --workspace @hungrie/database-types
+      # This workflow has no hosted credentials or migration apply job.

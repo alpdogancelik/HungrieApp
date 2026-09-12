@@ -655,6 +655,7 @@ export type Database = {
       }
       restaurants: {
         Row: {
+          accepting_orders: boolean
           address: string
           created_at: string
           cuisine: string
@@ -665,6 +666,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean
+          lifecycle_status: Database["public"]["Enums"]["restaurant_lifecycle_status"]
           minimum_order_kurus: number
           name: string
           opening_hours: Json
@@ -673,9 +675,13 @@ export type Database = {
           rating_average: number
           rating_count: number
           sort_order: number
+          suspended_at: string | null
+          suspended_by_profile_id: string | null
+          suspension_reason_code: string | null
           updated_at: string
         }
         Insert: {
+          accepting_orders?: boolean
           address?: string
           created_at?: string
           cuisine?: string
@@ -686,6 +692,7 @@ export type Database = {
           id: string
           image_url?: string | null
           is_active?: boolean
+          lifecycle_status?: Database["public"]["Enums"]["restaurant_lifecycle_status"]
           minimum_order_kurus?: number
           name: string
           opening_hours?: Json
@@ -694,9 +701,13 @@ export type Database = {
           rating_average?: number
           rating_count?: number
           sort_order?: number
+          suspended_at?: string | null
+          suspended_by_profile_id?: string | null
+          suspension_reason_code?: string | null
           updated_at?: string
         }
         Update: {
+          accepting_orders?: boolean
           address?: string
           created_at?: string
           cuisine?: string
@@ -707,6 +718,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          lifecycle_status?: Database["public"]["Enums"]["restaurant_lifecycle_status"]
           minimum_order_kurus?: number
           name?: string
           opening_hours?: Json
@@ -715,9 +727,20 @@ export type Database = {
           rating_average?: number
           rating_count?: number
           sort_order?: number
+          suspended_at?: string | null
+          suspended_by_profile_id?: string | null
+          suspension_reason_code?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "restaurants_suspended_by_profile_id_fkey"
+            columns: ["suspended_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -1456,8 +1479,78 @@ export type Database = {
       }
     }
     Functions: {
+      accept_my_account_invitation_v1: {
+        Args: { p_operation_id: string; p_token: string }
+        Returns: Json
+      }
+      admin_change_admin_role_v1: {
+        Args: {
+          p_admin_role: "admin" | "super_admin"
+          p_operation_id: string
+          p_profile_id: string
+        }
+        Returns: Json
+      }
+      admin_invite_admin_account_v1: {
+        Args: {
+          p_admin_role: "admin" | "super_admin"
+          p_email: string
+          p_operation_id: string
+          p_token_digest: string
+        }
+        Returns: Json
+      }
+      admin_invite_restaurant_account_v1: {
+        Args: {
+          p_email: string
+          p_operation_id: string
+          p_restaurant_id: string
+          p_restaurant_role: Database["public"]["Enums"]["restaurant_role"]
+          p_token_digest: string
+        }
+        Returns: Json
+      }
+      admin_reassign_restaurant_account_v1: {
+        Args: {
+          p_operation_id: string
+          p_profile_id: string
+          p_restaurant_id: string
+          p_restaurant_role: Database["public"]["Enums"]["restaurant_role"]
+        }
+        Returns: Json
+      }
+      admin_record_mfa_recovery_v1: {
+        Args: {
+          p_evidence_reference: string
+          p_operation_id: string
+          p_profile_id: string
+        }
+        Returns: Json
+      }
+      admin_set_account_status_v1: {
+        Args: {
+          p_operation_id: string
+          p_profile_id: string
+          p_reason_code: string
+          p_status: "pending" | "active" | "suspended" | "revoked"
+        }
+        Returns: Json
+      }
+      admin_set_restaurant_status_v1: {
+        Args: {
+          p_operation_id: string
+          p_reason_code: string
+          p_restaurant_id: string
+          p_status: Database["public"]["Enums"]["restaurant_lifecycle_status"]
+        }
+        Returns: Json
+      }
       begin_account_anonymization: {
         Args: { p_firebase_uid: string }
+        Returns: Json
+      }
+      bootstrap_my_customer_account_v1: {
+        Args: { p_operation_id: string }
         Returns: Json
       }
       claim_delivery: { Args: { p_order_id: string }; Returns: string }
@@ -1483,6 +1576,10 @@ export type Database = {
           ticket_id: string
           token_id: string
         }[]
+      }
+      complete_my_admin_onboarding_v1: {
+        Args: { p_operation_id: string }
+        Returns: Json
       }
       create_my_address: {
         Args: {
@@ -1550,6 +1647,7 @@ export type Database = {
         Args: { p_menu_item_id: string }
         Returns: Json
       }
+      get_my_access_context_v1: { Args: never; Returns: Json }
       get_my_active_order_summary: { Args: never; Returns: Json }
       get_my_admin_authorization: { Args: never; Returns: Json }
       get_my_latest_order_summary: { Args: never; Returns: Json }
@@ -1829,6 +1927,7 @@ export type Database = {
       }
     }
     Enums: {
+      account_type: "customer" | "restaurant" | "admin"
       notification_platform: "ios" | "android" | "web" | "unknown"
       notification_provider: "apns" | "fcm" | "web" | "unknown" | "expo"
       order_status:
@@ -1840,6 +1939,7 @@ export type Database = {
         | "canceled"
       payment_method: "cash" | "pos"
       platform_role: "admin" | "super_admin" | "courier"
+      restaurant_lifecycle_status: "pending" | "active" | "suspended" | "closed"
       restaurant_role: "owner" | "manager"
       review_status: "published" | "hidden"
     }
@@ -1969,6 +2069,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_type: ["customer", "restaurant", "admin"],
       notification_platform: ["ios", "android", "web", "unknown"],
       notification_provider: ["apns", "fcm", "web", "unknown", "expo"],
       order_status: [
@@ -1981,6 +2082,7 @@ export const Constants = {
       ],
       payment_method: ["cash", "pos"],
       platform_role: ["admin", "super_admin", "courier"],
+      restaurant_lifecycle_status: ["pending", "active", "suspended", "closed"],
       restaurant_role: ["owner", "manager"],
       review_status: ["published", "hidden"],
     },

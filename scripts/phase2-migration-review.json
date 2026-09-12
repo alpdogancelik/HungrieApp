@@ -1,0 +1,18 @@
+{
+  "target": "development",
+  "migrations": [
+    {
+      "file": "20260912160000_phase2_account_model_expand.sql",
+      "sha256": "ea5d83400c28b87d4a5583886eb8f97768866be5ef590fa21e3b3a8c06878b0c"
+    },
+    {
+      "file": "20260912161000_phase2_account_helpers.sql",
+      "sha256": "6db270f62837b4b9bf42ccf2736439612b792b74adedcf5169ea974a1454104c"
+    },
+    {
+      "file": "20260912162000_phase2_account_rpcs.sql",
+      "sha256": "08f34b64b09c69cf53e1b718953bc9707d3b1c4ebdfc5f29516f50c5a89fcd35"
+    }
+  ],
+  "combinedSha256": "3fccc82522d0c369db03b428cf5b7d0e9d8709e0737d7f04377f6c7df1da7294"
+}
