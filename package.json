@@ -55,6 +55,7 @@
     "phase4:development:migration": "node scripts/apply-phase4-development-migration.mjs",
     "phase4:staging:review": "node scripts/review-phase4-staging.mjs",
     "phase4:staging:migration": "node scripts/apply-phase4-staging-migration.mjs",
+    "phase4:staging:rpc-boundary": "node scripts/apply-phase4-staging-rpc-boundary.mjs",
     "phase4:staging:functions": "node scripts/deploy-phase4-staging-functions.mjs",
     "phase4:admin:check": "node scripts/check-phase4-admin.mjs",
     "phase4:staging:bootstrap-admin": "node scripts/bootstrap-phase4-first-super-admin.mjs",
