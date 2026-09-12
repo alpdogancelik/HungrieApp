@@ -1,21 +1,31 @@
 #!/usr/bin/env node
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cert, getApps, initializeApp } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const secure=path.join(root,'secure');
 const arg=name=>process.argv.find(value=>value.startsWith(`${name}=`))?.slice(name.length+1);
 if(arg('--target')!=='staging')throw new Error('Only staging bootstrap planning is supported.');
 const email=String(arg('--email')||'').trim().toLowerCase();
 if(!/^[^@\s]+@[^@\s]+$/.test(email))throw new Error('A valid dedicated staging email is required.');
-const credentialPath=path.resolve(arg('--firebase-credential')||'');
-if(!credentialPath||credentialPath.startsWith(root+path.sep)||!fs.existsSync(credentialPath)||((fs.statSync(credentialPath).mode&0o777)!==0o600))throw new Error('Firebase credential must be an external mode-0600 file.');
 const state=JSON.parse(fs.readFileSync(path.join(secure,'supabase-projects.local.json'),'utf8'));const project=state.projects?.staging;if(project?.name!=='HungrieApp Staging'||!project.ref||project.ref===state.projects?.development?.ref)throw new Error('Staging project identity is invalid.');
-const service=JSON.parse(fs.readFileSync(credentialPath,'utf8'));if(service.project_id!=='hungrieapp-a2288')throw new Error('Expected the approved shared non-production Firebase project.');
-const app=getApps()[0]||initializeApp({credential:cert(service)});const user=await getAuth(app).getUserByEmail(email);if(!user.emailVerified||user.disabled)throw new Error('Bootstrap identity must be enabled and email-verified.');
+const firebaseProject='hungrieapp-a2288';
+const lookupWithCliSession=async()=>{
+  if(!process.argv.includes('--firebase-cli-session'))throw new Error('Use --firebase-cli-session with the authenticated operator session.');
+  const cliConfigPath=path.join(os.homedir(),'.config','configstore','firebase-tools.json');
+  if(!fs.existsSync(cliConfigPath))throw new Error('Firebase CLI operator session is unavailable.');
+  const cliConfig=JSON.parse(fs.readFileSync(cliConfigPath,'utf8'));
+  const accessToken=cliConfig.tokens?.access_token;
+  if(!accessToken)throw new Error('Firebase CLI operator access token is unavailable.');
+  const response=await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${firebaseProject}/accounts:lookup`,{method:'POST',headers:{authorization:`Bearer ${accessToken}`,'content-type':'application/json','x-goog-user-project':firebaseProject},body:JSON.stringify({email:[email]})});
+  if(!response.ok)throw new Error(`Firebase identity lookup failed (${response.status}).`);
+  const matches=(await response.json()).users?.filter(candidate=>candidate.email?.trim().toLowerCase()===email)||[];
+  if(matches.length!==1)throw new Error('Bootstrap identity lookup must return exactly one email match.');
+  return {uid:matches[0].localId,emailVerified:matches[0].emailVerified===true,disabled:matches[0].disabled===true};
+};
+const user=await lookupWithCliSession();if(!user.emailVerified||user.disabled)throw new Error('Bootstrap identity must be enabled and email-verified.');
 const token=fs.readFileSync(path.join(secure,'supabase-cli-hungrie/access-token'),'utf8').trim();const query=async sql=>{const response=await fetch(`https://api.supabase.com/v1/projects/${project.ref}/database/query`,{method:'POST',headers:{authorization:`Bearer ${token}`,'content-type':'application/json'},body:JSON.stringify({query:sql})});if(!response.ok)throw new Error(`Staging bootstrap query failed (${response.status}).`);return response.json()};
 const b64=value=>Buffer.from(value).toString('base64');const [check]=await query(`select (select count(*) from private.account_access where account_type='admin')::int admins,(select count(*) from public.profiles where firebase_uid=convert_from(decode('${b64(user.uid)}','base64'),'utf8') or lower(btrim(email))=convert_from(decode('${b64(email)}','base64'),'utf8'))::int conflicts`);if(check?.admins!==0||check?.conflicts!==0)throw new Error('Bootstrap requires zero existing Admins and no identity conflict.');
 const operationId=arg('--operation-id');if(!/^[0-9a-f-]{36}$/i.test(operationId||''))throw new Error('A reviewed operation UUID is required.');const planDigest=crypto.createHash('sha256').update(`${project.ref}:${user.uid}:${email}:${operationId}:super_admin`).digest('hex');
