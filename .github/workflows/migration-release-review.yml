@@ -34,7 +34,7 @@ jobs:
           REVIEW_SHA256: ${{ github.event_name == 'workflow_dispatch' && inputs.migration_sha256 || '07c8e6867f01b03390ff89a90f384172bfda68b4c52da7ca1dc762406d4ad268' }}
         run: node scripts/check-phase1-migration-review.mjs
       - run: npx supabase start
-      - run: npx supabase db reset --local
+      - run: npm run supabase:reset
       - run: npm run supabase:lint
       - run: npx supabase test db --local supabase/tests/phase_1_client_release_policy.sql
       # There is deliberately no apply job. Protected reviewer enforcement must

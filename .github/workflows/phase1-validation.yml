@@ -39,7 +39,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx supabase start
-      - run: npx supabase db reset --local
+      - run: npm run supabase:reset
       - run: npm run phase1:operations:local
       - run: npm run supabase:lint
       - run: npm run supabase:test
