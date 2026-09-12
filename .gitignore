@@ -20,6 +20,7 @@ node_modules/
 **/.expo/
 .metro-health-check*
 dist/
+.next/
 web-build/
 *.tsbuildinfo
 expo-env.d.ts

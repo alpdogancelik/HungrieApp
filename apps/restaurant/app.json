@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Hungrie Restaurant",
+    "slug": "hungrie-restaurant",
+    "scheme": "hungrie-restaurant",
+    "version": "0.0.1",
+    "orientation": "default",
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "name": "Hungrie Restaurant",
+      "shortName": "Restaurant"
+    },
+    "ios": {
+      "bundleIdentifier": "app.hungrie.restaurant",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "app.hungrie.restaurant"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a2d5538b-bd0c-4205-8153-ba08a3a9b2b1"
+      }
+    },
+    "owner": "alpdogancelik1"
+  }
+}

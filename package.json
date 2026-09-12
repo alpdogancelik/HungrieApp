@@ -2,7 +2,9 @@
   "name": "hungrieapp",
   "private": true,
   "workspaces": [
-    "mobile"
+    "mobile",
+    "apps/*",
+    "packages/*"
   ],
   "overrides": {
     "react": "19.1.0",
@@ -24,11 +26,20 @@
     "ios": "npm --prefix mobile run ios",
     "web": "npm --prefix mobile run web",
     "lint": "npm --prefix mobile run lint",
-    "test": "npm run test:admin-role-verification && npm --prefix functions run test:audit-migration-baseline && npm --prefix functions run test:supabase-auth-claims && npm --prefix functions run test:supabase-auth-probe && npm --prefix functions run test:catalog-migration && npm --prefix functions run test:identity-migration && npm --prefix functions run test:review-migration && npm --prefix functions run test:order-migration && npm run notification-worker:test && npm --prefix mobile run test:supabase-config && npm --prefix mobile run test:repositories && npm --prefix mobile run test:cart && npm run supabase:test",
+    "test": "npm run test:js && npm run supabase:test",
+    "test:js": "npm run test:admin-role-verification && npm --prefix functions run test:audit-migration-baseline && npm --prefix functions run test:supabase-auth-claims && npm --prefix functions run test:supabase-auth-probe && npm --prefix functions run test:catalog-migration && npm --prefix functions run test:identity-migration && npm --prefix functions run test:review-migration && npm --prefix functions run test:order-migration && npm run notification-worker:test && npm --prefix mobile run test:supabase-config && npm --prefix mobile run test:repositories && npm --prefix mobile run test:cart",
     "test:admin-role-verification": "node --test scripts/verify-admin-role.test.mjs scripts/provision-admin-role.test.mjs",
     "notification-worker:test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test supabase/functions/notification-worker/logic.test.mjs",
     "typecheck": "npx tsc --project mobile/tsconfig.json --noEmit",
     "expo:config": "npm --prefix mobile run expo:config",
+    "build:packages": "npm run build --workspace @hungrie/config && npm run build --workspace @hungrie/domain && npm run build --workspace @hungrie/database-types",
+    "build:proof": "npm run build:packages && npm run export:web --workspace @hungrie/restaurant && npm run build --workspace @hungrie/admin-web",
+    "test:proof-output": "node scripts/check-phase1-web-output.mjs",
+    "test:proof-hosting": "node scripts/check-phase1-hosting.mjs",
+    "phase1:operations:local": "node scripts/check-phase1-operations.mjs",
+    "phase1:development:migration": "node scripts/apply-phase1-development-migration.mjs",
+    "phase1:development:policy-probe": "node scripts/probe-phase1-development-release-policy.mjs",
+    "typecheck:proof": "npm run typecheck --workspace @hungrie/restaurant && npm run typecheck --workspace @hungrie/admin-web",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "supabase:status": "supabase status",
@@ -36,7 +47,9 @@
     "supabase:lint": "supabase db lint --local --schema public,private,migration --level error --fail-on error",
     "supabase:test": "supabase test db --local supabase/tests && node scripts/test-supabase-milestone3-concurrency.mjs && node scripts/test-admin-role-concurrency.mjs",
     "supabase:migration:new": "supabase migration new",
-    "supabase:types": "supabase gen types typescript --local --schema public > mobile/src/types/database.generated.ts",
+    "supabase:types": "supabase gen types typescript --local --schema public > packages/database-types/src/database.generated.ts",
+    "phase1:staging:migration": "node scripts/apply-phase1-staging-migration.mjs",
+    "phase1:staging:policy-probe": "node scripts/probe-phase1-staging-release-policy.mjs",
     "supabase:provision": "node scripts/provision-supabase-projects.mjs",
     "supabase:auth:capture": "node scripts/capture-supabase-hungrie-token.mjs",
     "supabase:environment": "node scripts/supabase-environment.mjs",
@@ -86,7 +99,7 @@
     "admin:provision": "node scripts/provision-admin-role.mjs"
   },
   "devDependencies": {
-    "@types/react": "~18.2.0",
+    "@types/react": "19.1.10",
     "supabase": "2.116.0",
     "typescript": "~5.9.2"
   }

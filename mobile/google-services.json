@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "405094874808",
+    "project_id": "hungrieapp-a2288",
+    "storage_bucket": "hungrieapp-a2288.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:405094874808:android:81160493f83ef410a6fe4d",
+        "android_client_info": {
+          "package_name": "com.hungrie.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCCUaWR8S6DUYxvlejLeCwfz5yXQLgSaH0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

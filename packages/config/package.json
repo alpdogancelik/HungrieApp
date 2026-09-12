@@ -1,0 +1,9 @@
+{
+  "name": "@hungrie/config",
+  "version": "1.0.0",
+  "private": true,
+  "files": ["tsconfig.base.json", "tsconfig.expo.json", "tsconfig.next.json"],
+  "scripts": {
+    "build": "node -e \"for (const file of ['tsconfig.base.json', 'tsconfig.expo.json', 'tsconfig.next.json']) JSON.parse(require('fs').readFileSync(file, 'utf8'))\""
+  }
+}

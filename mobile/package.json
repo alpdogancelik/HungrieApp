@@ -7,6 +7,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
+    "export:web": "expo export --platform web",
     "lint": "expo lint",
     "expo:config": "expo config --type public",
     "test:supabase-config": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test lib/supabaseConfig.test.mjs",
@@ -22,6 +23,8 @@
     "build:android:preview": "npx eas build -p android --profile preview"
   },
   "dependencies": {
+    "@hungrie/database-types": "1.0.0",
+    "@hungrie/domain": "1.0.0",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",
