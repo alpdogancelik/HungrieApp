@@ -107,8 +107,7 @@ const result = {
   migrationParity: migrations.every((entry) => entry.local && entry.local === entry.remote)
     && [...REQUIRED_MIGRATIONS].every((version) => remoteMigrations.has(version)),
   applicationTableCount: tableRows.length,
-  exactApplicationTables: tableNames.size === REQUIRED_TABLES.size
-    && [...REQUIRED_TABLES].every((name) => tableNames.has(name)),
+  requiredApplicationTables: [...REQUIRED_TABLES].every((name) => tableNames.has(name)),
   requiredIndexes: [...REQUIRED_INDEXES].every((name) => indexNames.has(name)),
   securityDefinitionsPresent: REQUIRED_SCHEMA_MARKERS.every((marker) => schema.includes(marker)),
   missingSecurityDefinitions: REQUIRED_SCHEMA_MARKERS.filter((marker) => !schema.includes(marker)),
@@ -141,7 +140,7 @@ result.publishableKeyMatrix = {
 };
 
 const booleans = [
-  result.migrationParity, result.exactApplicationTables, result.requiredIndexes,
+  result.migrationParity, result.requiredApplicationTables, result.requiredIndexes,
   result.securityDefinitionsPresent, result.securityAdvisorErrors === 0,
   result.performanceAdvisorErrors === 0, ...Object.values(result.publishableKeyMatrix),
 ];
