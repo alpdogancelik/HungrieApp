@@ -34,7 +34,7 @@ export default function Login() {
 
   useEffect(() => {
     const reason = new URLSearchParams(window.location.search).get("reason");
-    if (reason === "denied") setError(t.denied);
+    if (reason === "sign-in-failed" || reason === "denied") setError(t.invalidCredentials);
     if (reason === "mfa") setError(t.mfaAgain);
   }, [t]);
 
@@ -73,7 +73,7 @@ export default function Login() {
         setResolver(null);
         setPassword("");
         setCode("");
-        setError(t.denied);
+        setError(t.invalidCredentials);
         return;
       }
       if (context.accountStatus === "suspended") {

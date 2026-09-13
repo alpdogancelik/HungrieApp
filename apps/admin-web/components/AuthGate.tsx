@@ -42,7 +42,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           await signOut(auth);
           if (!active) return;
           if (path === "/login") setState({ path, status: "ready" });
-          else router.replace("/login?reason=denied");
+          else router.replace("/login?reason=sign-in-failed");
           return;
         }
         if (context.accountStatus === "suspended") {
@@ -66,7 +66,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         }
         if (context.accountStatus !== "active" || context.onboardingStep !== "none") {
           await signOut(auth);
-          if (active) router.replace("/login?reason=denied");
+          if (active) router.replace("/login?reason=sign-in-failed");
           return;
         }
         if (publicPath(path) || path === "/onboarding/mfa" || path === "/suspended") router.replace("/dashboard");
