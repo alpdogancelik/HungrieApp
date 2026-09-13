@@ -36,14 +36,14 @@ Use only Staging test records. Return the Restaurant to its original state after
 
 | ID | Action | Expected result | Owner | Manager |
 |---|---|---|---|---|
-| CAP-01 | Change a Restaurant detail, save it, refresh, then restore it. | The saved value appears after refresh and restoration succeeds. |  |  |
-| CAP-02 | Turn order acceptance on, refresh, then turn it off. | The setting persists; it can be enabled only while the account, Restaurant, connection, and initial order sync are healthy. |  |  |
-| CAP-03 | Create a temporary category and item with a valid JPEG/PNG/WebP image. | The image uploads inside this Restaurant's folder and the item appears after refresh. |  |  |
-| CAP-04 | Add ingredients, a removable ingredient, a required option group, selection limits, and a paid option. | Valid settings save and reload unchanged. |  |  |
-| CAP-05 | Try a negative price or inconsistent minimum/maximum selection count. | Save is blocked with a safe validation message; no invalid item is created. |  |  |
-| CAP-06 | Reorder categories/items with the move controls and refresh. | The new order persists. |  |  |
-| CAP-07 | Select multiple items and change availability. | All selected items change together; refresh shows the same state. |  |  |
-| CAP-08 | Try to alter a record belonging to another Restaurant through the guarded API test. | The operation is denied and the other Restaurant is unchanged. | Automated/technical probe | Automated/technical probe |
+| CAP-01 | Change a Restaurant detail, save it, refresh, then restore it. | The saved value appears after refresh and restoration succeeds. | Pass | Pass |
+| CAP-02 | Turn order acceptance on, refresh, then turn it off. | The setting persists; it can be enabled only while the account, Restaurant, connection, and initial order sync are healthy. | Pass | Pass |
+| CAP-03 | Create a temporary category and item with a valid JPEG/PNG/WebP image. | The image uploads inside this Restaurant's folder and the item appears after refresh. | Pass | Pass |
+| CAP-04 | Add ingredients, a removable ingredient, a required option group, selection limits, and a paid option. | Valid settings save and reload unchanged. | Pass | Pass |
+| CAP-05 | Try a negative price or inconsistent minimum/maximum selection count. | Save is blocked with a safe validation message; no invalid item is created. | Pass | Pass |
+| CAP-06 | Reorder categories/items with the move controls and refresh. | The new order persists. | Pass | Pass |
+| CAP-07 | Select multiple items and change availability. | All selected items change together; refresh shows the same state. | Pass | Pass |
+| CAP-08 | Try to alter a record belonging to another Restaurant through the guarded API test. | The operation is denied and the other Restaurant is unchanged. | Pass (automated) | Pass (authenticated Staging probe) |
 
 ## 3. Connected order workflow
 
