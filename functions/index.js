@@ -7,7 +7,7 @@ const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const crypto = require("node:crypto");
 const http2 = require("node:http2");
-const { isOperationId, hasTotpFactor, hasTotpSession } = require("./phase4AdminLogic");
+const { isOperationId, hasTotpFactor, hasTotpSession, accountStatusFailureReason } = require("./phase4AdminLogic");
 
 admin.initializeApp();
 
@@ -672,7 +672,11 @@ const makeSetAdminAccountStatus = (urlSecret, keySecret) => onCall(
         const authorization=requireAdminBridgeRequest(request),profileId=String(request.data?.profileId||""),status=String(request.data?.status||""),reasonCode=String(request.data?.reasonCode||""),operationId=String(request.data?.operationId||"");
         if(!profileId||!["active","suspended","revoked"].includes(status))throw new HttpsError("invalid-argument","Valid account status input is required.");
         try { const result=await callSupabaseUserRpc("admin_set_account_status_v1",{p_profile_id:profileId,p_status:status,p_reason_code:reasonCode,p_operation_id:operationId},authorization,urlSecret,keySecret); if(status!=="active"){const uid=await callSupabaseAdminRpc("server_get_firebase_uid_v1",{p_profile_id:profileId},urlSecret,keySecret);await admin.auth().revokeRefreshTokens(uid)} return result; }
-        catch(error){logger.error("Admin account status orchestration failed",{operationId,status,code:error?.code||"unknown"});throw new HttpsError("failed-precondition","Account status could not be changed.")}
+        catch(error){
+            const reason=accountStatusFailureReason(error);
+            logger.error("Admin account status orchestration failed",{operationId,status,code:error?.code||"unknown",reason:reason||"unknown"});
+            throw new HttpsError("failed-precondition","Account status could not be changed.",reason?{reason}:undefined);
+        }
     });
 const makeRecoverAdminMfa = (urlSecret, keySecret) => onCall(
     { secrets: [urlSecret, keySecret] }, async (request) => {

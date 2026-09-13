@@ -31,7 +31,7 @@ export function AdminControls({ kind, onDone }: { kind: Kind; onDone: () => void
     cancel: tr ? "İptal et" : "Cancel", delivered: tr ? "Teslim edildiğini doğrula" : "Confirm delivered",
     acknowledge: tr ? "Kabul et" : "Acknowledge", resolve: tr ? "Çöz" : "Resolve", confirm: tr ? "Onayla" : "Confirm",
     confirmPrompt: tr ? "Bu yetkili işlemi onaylıyor musunuz?" : "Confirm this privileged operation?",
-    completed: tr ? "Tamamlandı" : "Completed", failed: tr ? "İşlem tamamlanamadı" : "Operation failed", recentAuth: tr ? "Bu işlem için çıkış yapın, tekrar giriş yapın ve beş dakika içinde yeniden deneyin" : "Sign out, sign in again, and retry within five minutes for this operation", copyLink: tr ? "Bağlantıyı kopyala" : "Copy link", inviteReady: tr ? "Davet oluşturuldu" : "Invitation created", copyBeforeLeaving: tr ? "Bu sayfadan ayrılmadan önce bağlantıyı kopyalayın. Daha sonra tekrar gösterilemez." : "Copy this link before leaving the page. It cannot be shown again later.", evidence: tr ? "vaka:referans" : "case:reference",
+    completed: tr ? "Tamamlandı" : "Completed", failed: tr ? "İşlem tamamlanamadı" : "Operation failed", recentAuth: tr ? "Bu işlem için çıkış yapın, tekrar giriş yapın ve beş dakika içinde yeniden deneyin" : "Sign out, sign in again, and retry within five minutes for this operation", lastRestaurantOwner: tr ? "Bu restoranın tek etkin sahibi bu hesap. Askıya almadan veya erişimini iptal etmeden önce başka bir sahibi etkinleştirin." : "This is the restaurant's only active owner. Activate another owner before suspending or revoking this account.", lastSuperAdmin: tr ? "En az bir etkin, MFA'ya hazır süper yönetici kalmalıdır." : "At least one active, MFA-ready super-admin must remain.", copyLink: tr ? "Bağlantıyı kopyala" : "Copy link", inviteReady: tr ? "Davet oluşturuldu" : "Invitation created", copyBeforeLeaving: tr ? "Bu sayfadan ayrılmadan önce bağlantıyı kopyalayın. Daha sonra tekrar gösterilemez." : "Copy this link before leaving the page. It cannot be shown again later.", evidence: tr ? "vaka:referans" : "case:reference",
   };
   const [values, setValues] = useState<Record<string, string>>({
     restaurantStatus: "suspended",
@@ -83,7 +83,12 @@ export function AdminControls({ kind, onDone }: { kind: Kind; onDone: () => void
       setInviteUrl(oneTimeUrl); setMessage(oneTimeUrl ? "" : labels.completed); onDone();
     } catch (value) {
       const detail = typeof value === "object" && value && "message" in value ? String(value.message) : "";
-      setMessage(detail.includes("Recent authentication required") || detail.includes("RECENT_AUTH_REQUIRED") ? labels.recentAuth : `${labels.failed}. Ref: ${crypto.randomUUID()}`);
+      const details = typeof value === "object" && value && "details" in value ? value.details : null;
+      const reason = typeof details === "object" && details && "reason" in details ? details.reason : null;
+      setMessage(reason === "last_restaurant_owner" ? labels.lastRestaurantOwner
+        : reason === "last_super_admin" ? labels.lastSuperAdmin
+        : detail.includes("Recent authentication required") || detail.includes("RECENT_AUTH_REQUIRED") ? labels.recentAuth
+        : `${labels.failed}. Ref: ${crypto.randomUUID()}`);
     } finally { setBusy(false); }
   }
 
