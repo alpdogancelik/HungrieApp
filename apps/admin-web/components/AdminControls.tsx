@@ -31,7 +31,7 @@ export function AdminControls({ kind, onDone }: { kind: Kind; onDone: () => void
     cancel: tr ? "İptal et" : "Cancel", delivered: tr ? "Teslim edildiğini doğrula" : "Confirm delivered",
     acknowledge: tr ? "Kabul et" : "Acknowledge", resolve: tr ? "Çöz" : "Resolve", confirm: tr ? "Onayla" : "Confirm",
     confirmPrompt: tr ? "Bu yetkili işlemi onaylıyor musunuz?" : "Confirm this privileged operation?",
-    completed: tr ? "Tamamlandı" : "Completed", failed: tr ? "İşlem tamamlanamadı" : "Operation failed", recentAuth: tr ? "Bu işlem için çıkış yapın, tekrar giriş yapın ve beş dakika içinde yeniden deneyin" : "Sign out, sign in again, and retry within five minutes for this operation", lastRestaurantOwner: tr ? "Bu restoranın tek etkin sahibi bu hesap. Askıya almadan veya erişimini iptal etmeden önce başka bir sahibi etkinleştirin." : "This is the restaurant's only active owner. Activate another owner before suspending or revoking this account.", lastSuperAdmin: tr ? "En az bir etkin, MFA'ya hazır süper yönetici kalmalıdır." : "At least one active, MFA-ready super-admin must remain.", copyLink: tr ? "Bağlantıyı kopyala" : "Copy link", inviteReady: tr ? "Davet oluşturuldu" : "Invitation created", copyBeforeLeaving: tr ? "Bu sayfadan ayrılmadan önce bağlantıyı kopyalayın. Daha sonra tekrar gösterilemez." : "Copy this link before leaving the page. It cannot be shown again later.", evidence: tr ? "vaka:referans" : "case:reference",
+    completed: tr ? "Tamamlandı" : "Completed", failed: tr ? "İşlem tamamlanamadı" : "Operation failed", statusRetry: tr ? "Hesap durumunu değiştiremedik. Profil kimliğini kontrol edin; yeniden giriş yapıp beş dakika içinde tekrar deneyin." : "Account status could not be changed. Check the Profile ID, then sign in again and retry within five minutes.", recentAuth: tr ? "Bu işlem için çıkış yapın, tekrar giriş yapın ve beş dakika içinde yeniden deneyin" : "Sign out, sign in again, and retry within five minutes for this operation", lastRestaurantOwner: tr ? "Bu restoranın tek etkin sahibi bu hesap. Askıya almadan veya erişimini iptal etmeden önce başka bir sahibi etkinleştirin." : "This is the restaurant's only active owner. Activate another owner before suspending or revoking this account.", lastSuperAdmin: tr ? "En az bir etkin, MFA'ya hazır süper yönetici kalmalıdır." : "At least one active, MFA-ready super-admin must remain.", copyLink: tr ? "Bağlantıyı kopyala" : "Copy link", inviteReady: tr ? "Davet oluşturuldu" : "Invitation created", copyBeforeLeaving: tr ? "Bu sayfadan ayrılmadan önce bağlantıyı kopyalayın. Daha sonra tekrar gösterilemez." : "Copy this link before leaving the page. It cannot be shown again later.", evidence: tr ? "vaka:referans" : "case:reference",
   };
   const [values, setValues] = useState<Record<string, string>>({
     restaurantStatus: "suspended",
@@ -50,9 +50,11 @@ export function AdminControls({ kind, onDone }: { kind: Kind; onDone: () => void
     event.preventDefault();
     if (!confirm(labels.confirmPrompt)) return;
     setBusy(true); setMessage(""); setInviteUrl("");
+    // This is the same operation ID recorded by the audited RPC and callable
+    // logs, so an error reference can be investigated without exposing data.
+    const operationId = crypto.randomUUID();
     try {
       if (kind !== "incidents") await requireRecentAuth();
-      const operationId = crypto.randomUUID();
       let result: { error?: unknown; data?: unknown } | undefined;
       let oneTimeUrl = "";
       if (kind === "restaurants" && (values.restaurantAction || "create") === "create") result = await supabase.rpc("admin_create_restaurant_v1" as never, { p_name: values.name, p_operation_id: operationId } as never);
@@ -88,7 +90,8 @@ export function AdminControls({ kind, onDone }: { kind: Kind; onDone: () => void
       setMessage(reason === "last_restaurant_owner" ? labels.lastRestaurantOwner
         : reason === "last_super_admin" ? labels.lastSuperAdmin
         : detail.includes("Recent authentication required") || detail.includes("RECENT_AUTH_REQUIRED") ? labels.recentAuth
-        : `${labels.failed}. Ref: ${crypto.randomUUID()}`);
+        : kind === "accounts" && values.action === "status" ? `${labels.statusRetry} Ref: ${operationId}`
+        : `${labels.failed}. Ref: ${operationId}`);
     } finally { setBusy(false); }
   }
 
