@@ -30,10 +30,16 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         return;
       }
       try {
-        const { data, error } = await supabase.rpc("get_my_access_context_v1");
+        let response: Awaited<ReturnType<typeof supabase.rpc<"get_my_access_context_v1">>> | undefined;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          response = await supabase.rpc("get_my_access_context_v1");
+          if (!active || !response.error) break;
+          if (attempt === 2 || (response.status !== 0 && response.status < 500)) break;
+          await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
+        }
         if (!active) return;
-        if (error) throw error;
-        const context = data as unknown as AccessContext;
+        if (!response || response.error) throw response?.error || new Error("Access check unavailable");
+        const context = response.data as unknown as AccessContext;
         if (context.state !== "resolved" || context.accountType !== "admin" || context.accountStatus === "revoked") {
           if (path.startsWith("/invite/") && context.state === "resolved" && context.accountType === "restaurant") {
             setState({ path, status: "ready" });
