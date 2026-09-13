@@ -1,6 +1,6 @@
 import { onIdTokenChanged, signOut } from "firebase/auth";
 import { usePathname, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { auth, ensureSessionPersistence } from "./firebase";
 import { supabase } from "./supabase";
 import type { AccessContext } from "./contracts";
@@ -18,6 +18,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [restaurantId, setRestaurantId] = useState("");
   const [retry, setRetry] = useState(0);
+  const verified = useRef(false);
+  const verifiedUid = useRef("");
 
   useEffect(() => {
     void ensureSessionPersistence();
@@ -33,6 +35,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     // restart at / and redirect to Dashboard instead of opening the route.
     const unsubscribe = onIdTokenChanged(auth, async (user) => {
       if (!live) return;
+      if (user?.uid !== verifiedUid.current) {
+        verified.current = false;
+        verifiedUid.current = "";
+        setRestaurantId("");
+        setState("loading");
+      }
       if (path === "/invite" || path.startsWith("/invite/")) {
         setState("ready");
         return;
@@ -70,13 +78,18 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         }
         if (!context.restaurantId) throw new Error("Restaurant scope is unavailable");
         setRestaurantId(context.restaurantId);
+        verified.current = true;
+        verifiedUid.current = user.uid;
         if (publicPath(path) || path === "/pending" || path === "/suspended") {
           router.replace("/dashboard");
         } else {
           setState("ready");
         }
       } catch {
-        if (live) setState("error");
+        // Protected database operations still recheck live authorization. Once
+        // this browser has resolved active Restaurant access, a transient
+        // context/network failure must not unmount the whole operational UI.
+        if (live && !verified.current) setState("error");
       }
     });
 

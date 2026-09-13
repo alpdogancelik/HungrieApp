@@ -72,6 +72,7 @@ export default function Order() {
   const [error, setError] = useState("");
   const [reason, setReason] = useState("too_busy");
   const [note, setNote] = useState("");
+  const [transitioning, setTransitioning] = useState(false);
   const money = (kurus: number | undefined) => new Intl.NumberFormat(locale === "tr" ? "tr-TR" : "en-GB", {
     style: "currency", currency: "TRY",
   }).format(Number(kurus || 0) / 100);
@@ -100,15 +101,26 @@ export default function Order() {
   useEffect(() => { void load(); }, [load]);
 
   async function transition(status: string) {
-    if (!data) return;
+    if (!data || transitioning) return;
+    setTransitioning(true);
     setError("");
-    const result = await supabase.rpc("restaurant_transition_order_v1" as never, {
-      p_order_id: String(orderId), p_expected_version: data.updated_at, p_new_status: status,
-      p_reason_code: status === "canceled" ? reason : null, p_note: status === "canceled" ? note : null,
-      p_operation_id: crypto.randomUUID(),
-    } as never);
-    if (result.error) setError(result.error.code === "40001" ? t.changed : `${t.unavailable} Ref: ${crypto.randomUUID().slice(0, 8)}`);
-    await load();
+    try {
+      const result = await supabase.rpc("restaurant_transition_order_v1" as never, {
+        p_order_id: String(orderId), p_expected_version: data.updated_at, p_new_status: status,
+        p_reason_code: status === "canceled" ? reason : null, p_note: status === "canceled" ? note : null,
+        p_operation_id: crypto.randomUUID(),
+      } as never);
+      if (result.error) {
+        await load();
+        setError(result.error.code === "40001" ? t.changed : `${t.unavailable} Ref: ${crypto.randomUUID().slice(0, 8)}`);
+        return;
+      }
+      await load();
+    } catch {
+      setError(`${t.unavailable} Ref: ${crypto.randomUUID().slice(0, 8)}`);
+    } finally {
+      setTransitioning(false);
+    }
   }
 
   const next = data?.status === "pending" ? "preparing"
@@ -156,12 +168,12 @@ export default function Order() {
         </dl>
       </section>
 
-      {next && <p><button className="button" onClick={() => void transition(next)}>{t.confirm}: {statusLabel(next, locale)}</button></p>}
+      {next && <p><button className="button" disabled={transitioning} onClick={() => void transition(next)}>{t.confirm}: {statusLabel(next, locale)}</button></p>}
       {!['delivered', 'canceled'].includes(data.status) && <section className="card cancel-card">
         <h2>{labels.cancel}</h2>
         <label className="field">{t.reason}<select value={reason} onChange={(event) => setReason(event.target.value)}>{reasons.map((value) => <option key={value}>{value.replaceAll("_", " ")}</option>)}</select></label>
         <label className="field">{t.note}<textarea maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} /></label>
-        <button onClick={() => void transition("canceled")}>{labels.cancel}</button>
+        <button disabled={transitioning} onClick={() => void transition("canceled")}>{labels.cancel}</button>
       </section>}
     </>}
   </Shell>;
