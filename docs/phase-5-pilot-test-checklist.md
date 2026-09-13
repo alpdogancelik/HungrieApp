@@ -75,14 +75,14 @@ Run this section for W-C, W-E, M-C, and M-E. “Closed page” means all Hungrie
 
 | ID | Action | Expected result | W-C | W-E | M-C | M-E |
 |---|---|---|---|---|---|---|
-| PUSH-01 | Install/open the PWA, choose **Enable notifications**, and allow the browser prompt. | The Alerts page reports that FCM Web Push is registered, with no simultaneous registration error. |  |  |  |  |
-| PUSH-02 | Select **Test notification** while the app is foregrounded. | One visible notification and audible alert are produced. |  |  |  |  |
-| PUSH-03 | Create an order while the Restaurant tab is foregrounded. | The order appears and a foreground alert is produced. |  |  |  |  |
-| PUSH-04 | Create an order while the tab is backgrounded. | An operating-system notification appears; selecting it opens the authenticated order route and current data is fetched. |  |  |  |  |
-| PUSH-05 | Close all Restaurant pages, then create an order. | A generic new-order notification appears without Customer PII; selecting it reopens the app and fetches the order after authentication. |  |  |  |  |
-| PUSH-06 | Deny notification permission in a fresh browser profile. | The app explains that notifications are unavailable and continues to require the staffed connected screen. |  |  |  |  |
-| PUSH-07 | Revoke previously granted permission and reload. | The UI no longer claims registration is healthy; Live orders still recover through the connected app. |  |  |  |  |
-| PUSH-08 | Trigger the same order through foreground/Realtime and FCM close together. | Only one user-facing alert is produced within the deduplication window. |  |  |  |  |
+| PUSH-01 | Install/open the PWA, choose **Enable notifications**, and allow the browser prompt. | The Alerts page reports that FCM Web Push is registered, with no simultaneous registration error. | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) |
+| PUSH-02 | Select **Test notification** while the app is foregrounded. | One visible notification and audible alert are produced. | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) |
+| PUSH-03 | Create an order while the Restaurant tab is foregrounded. | The order appears and a foreground alert is produced. | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) |
+| PUSH-04 | Create an order while the tab is backgrounded. | An operating-system notification appears; selecting it opens the authenticated order route and current data is fetched. | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) |
+| PUSH-05 | Close all Restaurant pages, then create an order. | A generic new-order notification appears without Customer PII; selecting it reopens the app and fetches the order after authentication. | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) |
+| PUSH-06 | Deny notification permission in a fresh browser profile. | The app explains that notifications are unavailable and continues to require the staffed connected screen. | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) |
+| PUSH-07 | Revoke previously granted permission and reload. | The UI no longer claims registration is healthy; Live orders still recover through the connected app. | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) |
+| PUSH-08 | Trigger the same order through foreground/Realtime and FCM close together. | Only one user-facing alert is produced within the deduplication window. | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) | Pass (pilot report, 2026-09-14) |
 
 ## 6. PWA cache and privacy
 
