@@ -1,6 +1,7 @@
 {
   "name": "Hungrie Restaurant",
   "short_name": "Restaurant",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

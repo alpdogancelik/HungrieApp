@@ -5,7 +5,13 @@ import { supabase } from "./supabase";
 import { useLocale } from "./providers";
 import { playOrderAlert, restaurantDeviceId, showRestaurantNotification, unlockOrderAlert, unregisterRestaurantPush } from "./push";
 
-type PushState = "idle" | "registering" | "registered" | "denied" | "unsupported" | "error";
+type PushState = "idle" | "registering" | "registered" | "denied" | "unsupported" | "ios_install_required" | "error";
+
+const isIosDevice = () => /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+const isStandaloneApp = () => window.matchMedia("(display-mode: standalone)").matches
+  || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
 
 export function NotificationCard() {
   const { locale, t } = useLocale();
@@ -54,6 +60,10 @@ export function NotificationCard() {
 
   useEffect(() => {
     let live = true;
+    if (isIosDevice() && !isStandaloneApp()) {
+      setState("ios_install_required");
+      return () => { live = false; };
+    }
     void isSupported().then((supported) => {
       if (!live) return;
       if (!supported) setState("unsupported");
@@ -68,6 +78,10 @@ export function NotificationCard() {
   async function enable() {
     setError("");
     await unlockOrderAlert();
+    if (isIosDevice() && !isStandaloneApp()) {
+      setState("ios_install_required");
+      return;
+    }
     if (!await isSupported()) {
       setState("unsupported");
       return;
@@ -97,6 +111,7 @@ export function NotificationCard() {
 
   const status = state === "registered" ? "✓ FCM Web Push"
     : state === "registering" ? t.pushRegistering
+      : state === "ios_install_required" ? t.pushIosInstall
       : state === "error" ? t.pushPermissionOnly
         : state === "denied" || state === "unsupported" ? t.pushDenied
           : t.pushDisabled;
@@ -106,7 +121,7 @@ export function NotificationCard() {
     <p>{status}</p>
     {error && <p className="danger">{error}</p>}
     <div className="row">
-      <button className="button" disabled={state === "registering"} onClick={() => void enable()}>{t.enablePush}</button>
+      {state !== "ios_install_required" && <button className="button" disabled={state === "registering"} onClick={() => void enable()}>{t.enablePush}</button>}
       {state === "registered" && <button onClick={() => void testAlert()}>{t.testPush}</button>}
       {state === "registered" && <button onClick={() => void disable()}>Disable</button>}
     </div>
