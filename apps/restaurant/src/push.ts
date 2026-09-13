@@ -1,6 +1,9 @@
+import type { MessagePayload } from "firebase/messaging";
 import { deleteToken, getMessaging, isSupported } from "firebase/messaging";
 import { firebaseApp } from "./firebase";
 import { supabase } from "./supabase";
+
+type RestaurantAlertPayload = Pick<MessagePayload, "data" | "notification">;
 
 export const restaurantDeviceId = () => {
   let id = localStorage.getItem("hungrie-restaurant-device");
@@ -21,10 +24,25 @@ export const unregisterRestaurantPush = async () => {
   if (await isSupported()) await deleteToken(getMessaging(firebaseApp)).catch(() => false);
 };
 
-export const playOrderAlert = () => {
+let alertContext: AudioContext | null = null;
+
+const getAlertContext = () => {
   const Context = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!Context) return;
-  const context = new Context();
+  if (!Context) return null;
+  alertContext ||= new Context();
+  return alertContext;
+};
+
+export const unlockOrderAlert = async () => {
+  const context = getAlertContext();
+  if (context?.state === "suspended") await context.resume();
+};
+
+export const playOrderAlert = async () => {
+  const context = getAlertContext();
+  if (!context) return;
+  if (context.state === "suspended") await context.resume().catch(() => undefined);
+  if (context.state !== "running") return;
   const oscillator = context.createOscillator();
   const gain = context.createGain();
   oscillator.frequency.value = 880;
@@ -33,4 +51,31 @@ export const playOrderAlert = () => {
   oscillator.connect(gain).connect(context.destination);
   oscillator.start();
   oscillator.stop(context.currentTime + 0.35);
+};
+
+export const showRestaurantNotification = async (payload?: RestaurantAlertPayload) => {
+  if (typeof Notification === "undefined" || Notification.permission !== "granted" || !("serviceWorker" in navigator)) return;
+  const orderId = String(payload?.data?.orderId || "");
+  const title = String(payload?.data?.title || payload?.notification?.title || "Hungrie Restaurant");
+  const body = String(payload?.data?.body || payload?.notification?.body || "A new order update is ready.");
+  const registration = await navigator.serviceWorker.ready;
+  await registration.showNotification(title, {
+    body,
+    tag: String(payload?.data?.eventId || orderId || `restaurant-alert-${Date.now()}`),
+    data: { url: orderId ? `/orders/${encodeURIComponent(orderId)}` : "/orders" },
+  });
+};
+
+const recentAlerts = new Map<string, number>();
+
+export const alertRestaurantOrder = async (payload: RestaurantAlertPayload) => {
+  const orderId = String(payload.data?.orderId || "");
+  const eventId = String(payload.data?.eventId || "");
+  const eventType = String(payload.data?.eventType || "restaurant_new_order");
+  const key = orderId && eventType === "restaurant_new_order" ? `new:${orderId}` : eventId ? `event:${eventId}` : "";
+  const now = Date.now();
+  for (const [storedKey, alertedAt] of recentAlerts) if (now - alertedAt > 10 * 60_000) recentAlerts.delete(storedKey);
+  if (key && recentAlerts.has(key)) return;
+  if (key) recentAlerts.set(key, now);
+  await Promise.all([playOrderAlert(), showRestaurantNotification(payload)]);
 };

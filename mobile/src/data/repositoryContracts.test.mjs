@@ -17,6 +17,7 @@ import { supabaseFavoritesRepository } from "./supabase/favoritesRepository.ts";
 import { getMembershipForFirebaseUser } from "./supabase/membershipQueries.ts";
 import { OrderRealtimeCoordinator } from "./supabase/orderRealtimeCoordinator.ts";
 import { createBoundedRetry } from "../features/notifications/boundedRetry.ts";
+import { createMenuSections } from "../features/restaurantMenu/menuUtils.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const readDataFile = (relativePath) => readFileSync(join(here, relativePath), "utf8");
@@ -259,6 +260,24 @@ test("Supabase repository source files contain concrete domain implementations",
         const source = readDataFile(path);
         for (const snippet of snippets) assert.ok(source.includes(snippet), `${path} should include ${snippet}`);
     }
+});
+
+test("Supabase catalog categories use their names instead of UUIDs as display slugs", () => {
+    const category = supabaseMenu.mapCatalogCategory({
+        id: "29dfb214-e1ff-4522-8379-d7e11142b7c4",
+        restaurant_id: "31fdf62e-a49e-41c4-b519-712c7dcd095f",
+        name: "Dürüm",
+    });
+
+    assert.equal(category.name, "Dürüm");
+    assert.equal(category.slug, "dürüm");
+
+    const sections = createMenuSections([
+        { id: "item-1", name: "Dürüm Büyük", price: 460, categories: [category.id] },
+    ], [category], "en");
+    assert.deepEqual(sections.map(({ key, label }) => ({ key, label })), [
+        { key: "wraps", label: "Wraps" },
+    ]);
 });
 
 test("Supabase adapters never request wildcard columns", () => {

@@ -5,6 +5,7 @@ import { auth, ensureSessionPersistence } from "./firebase";
 import { supabase } from "./supabase";
 import type { AccessContext } from "./contracts";
 import { useLocale } from "./providers";
+import { RestaurantNotificationListener } from "./RestaurantNotificationListener";
 
 // Invite acceptance must be reachable before an account_access row exists.
 const publicPath = (path: string) =>
@@ -15,6 +16,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { t } = useLocale();
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  const [restaurantId, setRestaurantId] = useState("");
   const [retry, setRetry] = useState(0);
 
   useEffect(() => {
@@ -66,6 +68,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           if (live) router.replace("/login?reason=failed");
           return;
         }
+        if (!context.restaurantId) throw new Error("Restaurant scope is unavailable");
+        setRestaurantId(context.restaurantId);
         if (publicPath(path) || path === "/pending" || path === "/suspended") {
           router.replace("/dashboard");
         } else {
@@ -82,7 +86,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     };
   }, [path, retry, router]);
 
-  if (state === "ready") return children;
+  if (state === "ready") return <>{restaurantId && <RestaurantNotificationListener restaurantId={restaurantId} />}{children}</>;
   return <div className="center"><p>{state === "error" ? t.unavailable : t.loading}</p>
     {state === "error" && <button className="button" onClick={() => { setState("loading"); setRetry(value => value + 1); }}>{t.retry}</button>}
   </div>;

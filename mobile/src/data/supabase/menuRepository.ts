@@ -22,8 +22,8 @@ export const mapCatalogCategory = (row: any) => ({
     id: String(row.id || ""),
     name: row.name || "",
     slug: slugifyCategory(
-        String(row.id || "").replace(new RegExp(`^${String(row.restaurant_id || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[-_]`), "")
-        || row.name,
+        row.name
+        || String(row.id || "").replace(new RegExp(`^${String(row.restaurant_id || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[-_]`), ""),
     ),
     description: row.description || "",
     icon: row.icon || undefined,

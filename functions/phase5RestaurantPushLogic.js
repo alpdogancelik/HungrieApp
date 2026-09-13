@@ -16,18 +16,15 @@ const classifyMessagingFailure = (error) => {
 
 const restaurantWakeMessage = (delivery) => ({
     token: delivery.token,
-    notification: {
-        title: delivery.language === "tr" ? "Hungrie Restoran" : "Hungrie Restaurant",
-        body: delivery.language === "tr" ? "Yeni bir sipariş güncellemesi hazır." : "A new order update is ready.",
-    },
     data: {
         eventId: String(delivery.eventId),
         eventType: String(delivery.eventType),
         orderId: String(delivery.orderId || ""),
         route: delivery.orderId ? `/orders/${delivery.orderId}` : "/orders",
+        title: delivery.language === "tr" ? "Hungrie Restoran" : "Hungrie Restaurant",
+        body: delivery.language === "tr" ? "Yeni bir sipariş güncellemesi hazır." : "A new order update is ready.",
     },
     webpush: {
-        fcmOptions: { link: delivery.orderId ? `/orders/${delivery.orderId}` : "/orders" },
         headers: { Urgency: "high" },
     },
 });

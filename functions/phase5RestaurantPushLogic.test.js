@@ -5,6 +5,10 @@ const { classifyMessagingFailure, restaurantWakeMessage } = require("./phase5Res
 test("wake messages contain routing metadata but no customer data", () => {
     const message = restaurantWakeMessage({ token: "secret-token", eventId: "event", eventType: "restaurant_new_order", orderId: "order", language: "en" });
     assert.equal(message.data.route, "/orders/order");
+    assert.equal(message.data.title, "Hungrie Restaurant");
+    assert.equal(message.data.body, "A new order update is ready.");
+    assert.equal(message.notification, undefined);
+    assert.equal(message.webpush.fcmOptions, undefined);
     assert.equal(JSON.stringify(message).includes("customer"), false);
 });
 

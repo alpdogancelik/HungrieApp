@@ -7,8 +7,8 @@ self.addEventListener("activate",event=>event.waitUntil(self.clients.claim()));
 firebase.initializeApp(self.HUNGRIE_FIREBASE_CONFIG);
 firebase.messaging().onBackgroundMessage(payload=>{
   const orderId=String(payload?.data?.orderId||"");
-  return self.registration.showNotification("Hungrie Restaurant",{
-    body:"A new order update is ready.",tag:String(payload?.data?.eventId||orderId||"restaurant-order"),
+  return self.registration.showNotification(String(payload?.data?.title||"Hungrie Restaurant"),{
+    body:String(payload?.data?.body||"A new order update is ready."),tag:String(payload?.data?.eventId||orderId||"restaurant-order"),
     data:{url:orderId?`/orders/${encodeURIComponent(orderId)}`:"/orders"}
   });
 });

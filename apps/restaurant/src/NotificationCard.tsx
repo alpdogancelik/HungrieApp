@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { getMessaging, getToken, isSupported, onMessage } from "firebase/messaging";
+import { useCallback, useEffect, useState } from "react";
+import { getMessaging, getToken, isSupported } from "firebase/messaging";
 import { firebaseApp } from "./firebase";
 import { supabase } from "./supabase";
 import { useLocale } from "./providers";
-import { playOrderAlert, restaurantDeviceId, unregisterRestaurantPush } from "./push";
+import { playOrderAlert, restaurantDeviceId, showRestaurantNotification, unlockOrderAlert, unregisterRestaurantPush } from "./push";
 
 type PushState = "idle" | "registering" | "registered" | "denied" | "unsupported" | "error";
 
@@ -11,7 +11,6 @@ export function NotificationCard() {
   const { locale, t } = useLocale();
   const [state, setState] = useState<PushState>("idle");
   const [error, setError] = useState("");
-  const unsubscribeForeground = useRef<ReturnType<typeof onMessage> | null>(null);
 
   const report = useCallback((message: string) => {
     setState("error");
@@ -50,8 +49,6 @@ export function NotificationCard() {
       return;
     }
 
-    unsubscribeForeground.current?.();
-    unsubscribeForeground.current = onMessage(messaging, playOrderAlert);
     setState("registered");
   }, [locale, report, t.pushRegistrationFailed, t.pushTokenFailed]);
 
@@ -65,13 +62,12 @@ export function NotificationCard() {
     });
     return () => {
       live = false;
-      unsubscribeForeground.current?.();
-      unsubscribeForeground.current = null;
     };
   }, [register]);
 
   async function enable() {
     setError("");
+    await unlockOrderAlert();
     if (!await isSupported()) {
       setState("unsupported");
       return;
@@ -88,12 +84,15 @@ export function NotificationCard() {
     setError("");
     try {
       await unregisterRestaurantPush();
-      unsubscribeForeground.current?.();
-      unsubscribeForeground.current = null;
       setState("idle");
     } catch {
       report(t.pushDisableFailed);
     }
+  }
+
+  async function testAlert() {
+    await unlockOrderAlert();
+    await Promise.all([playOrderAlert(), showRestaurantNotification()]);
   }
 
   const status = state === "registered" ? "✓ FCM Web Push"
@@ -106,7 +105,10 @@ export function NotificationCard() {
     <h2>{t.settings}</h2>
     <p>{status}</p>
     {error && <p className="danger">{error}</p>}
-    <button className="button" disabled={state === "registering"} onClick={() => void enable()}>{t.enablePush}</button>
-    {state === "registered" && <button onClick={() => void disable()}>Disable</button>}
+    <div className="row">
+      <button className="button" disabled={state === "registering"} onClick={() => void enable()}>{t.enablePush}</button>
+      {state === "registered" && <button onClick={() => void testAlert()}>{t.testPush}</button>}
+      {state === "registered" && <button onClick={() => void disable()}>Disable</button>}
+    </div>
   </section>;
 }
