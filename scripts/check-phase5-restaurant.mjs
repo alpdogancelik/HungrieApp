@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import fs from"node:fs";import path from"node:path";import{root}from"./phase5-batch.mjs";
-const required=["login","invite","pending","suspended","dashboard","orders","orders/[orderId]","history","menu","restaurant","reviews","settings","security"];
+const required=["login","invite","pending","suspended","dashboard","orders","orders/[orderId]","orders/detail","history","menu","restaurant","reviews","settings","security"];
 for(const route of required){const file=path.join(root,"apps/restaurant/app",`${route}.tsx`);if(!fs.existsSync(file))throw new Error(`Missing Restaurant route: ${route}`)}
 const sw=fs.readFileSync(path.join(root,"apps/restaurant/public/sw.js"),"utf8");if(/addEventListener\(["']fetch|caches\.|CacheStorage/.test(sw))throw new Error("Restaurant service worker must not cache requests or responses.");if(!sw.includes("onBackgroundMessage")||/customer(Name|Email|Address)|delivery_address/i.test(sw))throw new Error("Service worker messaging contract is missing or contains private fields.");
 const config=JSON.parse(fs.readFileSync(path.join(root,"apps/restaurant/app.json"),"utf8")),headers=config.expo.plugins.find(x=>Array.isArray(x)&&x[0]==="expo-router")?.[1]?.headers||{};for(const name of["Cache-Control","Content-Security-Policy","Strict-Transport-Security","X-Content-Type-Options","X-Frame-Options","Referrer-Policy","Permissions-Policy"])if(!headers[name])throw new Error(`Missing security header: ${name}`);if(!String(headers["Cache-Control"]).includes("no-store"))throw new Error("Authenticated HTML must be no-store.");

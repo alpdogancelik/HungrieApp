@@ -61,7 +61,7 @@ export function HistoryPage() {
       <div className="table"><table>
         <thead><tr><th>{labels.order}</th><th>{labels.customer}</th><th>{labels.status}</th><th>{labels.total}</th><th>{labels.date}</th></tr></thead>
         <tbody>{orders.map(order => <tr key={order.id}>
-          <td><Link href={`/orders/${order.id}` as any}>#{String(order.id).slice(0, 8)}</Link></td>
+          <td><Link href={`/orders/detail?orderId=${encodeURIComponent(String(order.id))}` as any}>#{String(order.id).slice(0, 8)}</Link></td>
           <td>{order.customer_name || "—"}</td><td><span className="badge">{order.status}</span></td>
           <td>{formatMoney(order.total_kurus, locale)}</td><td>{formatDate(order.created_at, locale)}</td>
         </tr>)}</tbody>

@@ -24,7 +24,7 @@ Run these tests with both the pilot **owner** and **manager** accounts.
 | ID | Action | Expected result | Owner | Manager |
 |---|---|---|---|---|
 | NAV-01 | Sign in, then open Dashboard, Live orders, History, Menu, Restaurant, Reviews, Alerts, and Security. | Every route opens and remains on the selected page; the app does not jump back to Dashboard. | Pass | Pass |
-| NAV-02 | Refresh the browser directly on `/orders`, `/menu`, and one `/orders/<id>` page. | The same route reloads after access verification; there is no 404 or redirect loop. | Pass | Pass |
+| NAV-02 | Refresh the browser directly on `/orders`, `/menu`, and one `/orders/detail?orderId=<id>` page. | The same route reloads after access verification; there is no 404 or redirect loop. | Retest static detail URL | Retest static detail URL |
 | NAV-03 | Change EN to TR and back to EN. Navigate and refresh. | Labels change language and the app remains usable. | Pass | Pass |
 | NAV-04 | Open an order and History. | Readable fields, item names, options, totals, and states appear; raw API JSON is absent. | Pass | Pass |
 | NAV-05 | Open a long menu form and reach its final controls. | The full page scrolls vertically without horizontal page overflow. | Pass | Pass |
@@ -54,7 +54,7 @@ Keep the Live orders screen staffed while order acceptance is enabled. Create ea
 | ORD-01 | Create a new order while Live orders is open and online. | The order appears without manual refresh, with one prominent foreground alert and sound after audio has been enabled by user interaction. |  |
 | ORD-02 | Open the order, confirm `pending -> preparing`, then complete the supported delivery transitions. | Each transition succeeds once, displays the authoritative state, and appears correctly in History. |  |
 | ORD-03 | Reject a pending order with an allowed reason and internal note. | The order is cancelled once with the selected reason; it leaves Live orders and appears in History. |  |
-| ORD-04 | Open the same pending order in two browser sessions before either responds, then submit Preparing from both without refreshing the second session. | One transition succeeds; the other displays the current order and an order-changed message. Neither browser loses the Restaurant shell. | Retest required after Staging REST pool recovery and CSP deployment; the first Chrome/Brave attempt coincided with site-wide 504s. |
+| ORD-04 | Open the same pending order in two browser sessions before either responds, then submit Preparing from both without refreshing the second session. | One transition succeeds; the other displays the current order and an order-changed message. Neither browser loses the Restaurant shell. | Partial on 2026-09-14: the site stayed available, but the second browser did not explain the changed status and its Cancel control stayed disabled. Retest required after the order-detail reconciliation fix. |
 | ORD-05 | Leave a pending order unanswered until its five-minute server deadline passes, then try to accept it. | Late acceptance is rejected and the order becomes cancelled for deadline expiry. |  |
 | ORD-06 | Create one order while Realtime, polling, focus reconciliation, and push can all observe it. | The order appears once and remains one order; duplicate triggers do not duplicate its state or transition. |  |
 

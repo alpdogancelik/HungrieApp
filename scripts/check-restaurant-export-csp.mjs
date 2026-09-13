@@ -10,6 +10,7 @@ assert.ok(csp, "Restaurant hosting CSP is missing");
 const scriptSrc = csp.split(";").map(part => part.trim()).find(part => part.startsWith("script-src "));
 assert.ok(scriptSrc, "Restaurant script-src is missing");
 const dist = path.join(root, "dist");
+assert.ok(fs.existsSync(path.join(dist, "orders", "detail.html")), "Static order-detail URL is missing from the export");
 let htmlCount = 0;
 function check(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {

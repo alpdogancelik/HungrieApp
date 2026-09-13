@@ -62,7 +62,7 @@ export const showRestaurantNotification = async (payload?: RestaurantAlertPayloa
   await registration.showNotification(title, {
     body,
     tag: String(payload?.data?.eventId || orderId || `restaurant-alert-${Date.now()}`),
-    data: { url: orderId ? `/orders/${encodeURIComponent(orderId)}` : "/orders" },
+    data: { url: orderId ? `/orders/detail?orderId=${encodeURIComponent(orderId)}` : "/orders" },
   });
 };
 

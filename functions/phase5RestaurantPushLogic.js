@@ -20,7 +20,7 @@ const restaurantWakeMessage = (delivery) => ({
         eventId: String(delivery.eventId),
         eventType: String(delivery.eventType),
         orderId: String(delivery.orderId || ""),
-        route: delivery.orderId ? `/orders/${delivery.orderId}` : "/orders",
+        route: delivery.orderId ? `/orders/detail?orderId=${encodeURIComponent(delivery.orderId)}` : "/orders",
         title: delivery.language === "tr" ? "Hungrie Restoran" : "Hungrie Restaurant",
         body: delivery.language === "tr" ? "Yeni bir sipariş güncellemesi hazır." : "A new order update is ready.",
     },

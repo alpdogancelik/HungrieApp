@@ -697,7 +697,7 @@ Initial web/PWA routes:
 /suspended
 /dashboard
 /orders
-/orders/[orderId]
+/orders/detail?orderId=<id>
 /history
 /menu
 /restaurant
@@ -705,6 +705,8 @@ Initial web/PWA routes:
 /settings
 /security
 ```
+
+The static Restaurant web deployment uses a fixed order-detail page with the order ID in the query string, so a notification click or direct browser refresh can load the page before authenticated data is fetched. Order access is still checked by the guarded Supabase RPC.
 
 Build order:
 

@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { Shell } from "../../src/Shell";
 import { supabase } from "../../src/supabase";
 import { useLocale } from "../../src/providers";
 
 const reasons = ["too_busy", "item_unavailable", "closing", "equipment_issue", "delivery_unavailable", "other"];
+const requestTimeoutMs = 12000;
+const pollMs = Math.min(60000, Math.max(10000, Number(process.env.EXPO_PUBLIC_RESTAURANT_POLL_MS || 15000)));
 
 type OrderItem = {
   id: string;
@@ -70,9 +72,13 @@ export default function Order() {
   const { locale, t } = useLocale();
   const [data, setData] = useState<OrderDetail | null>(null);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [reason, setReason] = useState("too_busy");
   const [note, setNote] = useState("");
   const [transitioning, setTransitioning] = useState(false);
+  const version = useRef("");
+  const latestOrder = useRef<OrderDetail | null>(null);
+  const inFlight = useRef(false);
   const money = (kurus: number | undefined) => new Intl.NumberFormat(locale === "tr" ? "tr-TR" : "en-GB", {
     style: "currency", currency: "TRY",
   }).format(Number(kurus || 0) / 100);
@@ -89,36 +95,83 @@ export default function Order() {
     tip: "Tip", total: "Total", notes: "Customer note", cancel: "Cancel order",
   };
 
-  const load = useCallback(async () => {
-    const result = await supabase.rpc("restaurant_get_order_v1" as never, { p_order_id: String(orderId) } as never);
-    if (result.error) setError(t.unavailable);
-    else {
-      setData(result.data as unknown as OrderDetail);
-      setError("");
-    }
-  }, [orderId, t.unavailable]);
+  const changedNotice = useCallback((status: string) => locale === "tr"
+    ? `Bu sipariş değişti. Güncel durum: ${statusLabel(status, locale)}.`
+    : `This order changed. Current status: ${statusLabel(status, locale)}.`, [locale]);
 
-  useEffect(() => { void load(); }, [load]);
+  const load = useCallback(async (notifyChange = true): Promise<OrderDetail | null> => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
+    try {
+      const result = await supabase.rpc("restaurant_get_order_v1" as never, { p_order_id: String(orderId) } as never)
+        .abortSignal(controller.signal) as { data: unknown; error: Error | null };
+      if (result.error || !result.data) throw result.error || new Error("Order unavailable");
+      const current = result.data as unknown as OrderDetail;
+      if (latestOrder.current && Date.parse(current.updated_at) < Date.parse(latestOrder.current.updated_at)) {
+        return latestOrder.current;
+      }
+      if (notifyChange && version.current && version.current !== current.updated_at) setNotice(changedNotice(current.status));
+      version.current = current.updated_at;
+      latestOrder.current = current;
+      setData(current);
+      setError("");
+      return current;
+    } catch {
+      setError(t.unavailable);
+      return null;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }, [orderId, t.unavailable, changedNotice]);
+
+  useEffect(() => {
+    version.current = "";
+    latestOrder.current = null;
+    setData(null);
+    setNotice("");
+    void load();
+    const reconcile = () => { if (document.visibilityState === "visible" && navigator.onLine) void load(); };
+    const timer = setInterval(reconcile, pollMs);
+    window.addEventListener("focus", reconcile);
+    window.addEventListener("online", reconcile);
+    document.addEventListener("visibilitychange", reconcile);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", reconcile);
+      window.removeEventListener("online", reconcile);
+      document.removeEventListener("visibilitychange", reconcile);
+    };
+  }, [load]);
 
   async function transition(status: string) {
-    if (!data || transitioning) return;
+    if (!data || inFlight.current) return;
+    inFlight.current = true;
     setTransitioning(true);
     setError("");
+    setNotice("");
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
     try {
       const result = await supabase.rpc("restaurant_transition_order_v1" as never, {
         p_order_id: String(orderId), p_expected_version: data.updated_at, p_new_status: status,
         p_reason_code: status === "canceled" ? reason : null, p_note: status === "canceled" ? note : null,
         p_operation_id: crypto.randomUUID(),
-      } as never);
+      } as never).abortSignal(controller.signal);
       if (result.error) {
-        await load();
-        setError(result.error.code === "40001" ? t.changed : `${t.unavailable} Ref: ${crypto.randomUUID().slice(0, 8)}`);
+        const current = await load();
+        if (result.error.code === "40001" && current) setNotice(changedNotice(current.status));
+        else if (current && current.updated_at !== data.updated_at) setNotice(changedNotice(current.status));
+        else if (result.error.code !== "40001") setError(`${t.unavailable} Ref: ${crypto.randomUUID().slice(0, 8)}`);
         return;
       }
-      await load();
+      const current = await load(false);
+      if (current && current.status !== status) setNotice(changedNotice(current.status));
     } catch {
-      setError(`${t.unavailable} Ref: ${crypto.randomUUID().slice(0, 8)}`);
+      const current = await load();
+      if (!current || current.updated_at === data.updated_at) setError(`${t.unavailable} Ref: ${crypto.randomUUID().slice(0, 8)}`);
     } finally {
+      clearTimeout(timeout);
+      inFlight.current = false;
       setTransitioning(false);
     }
   }
@@ -134,6 +187,8 @@ export default function Order() {
       {data && <span className={`order-status status-${data.status}`}>{statusLabel(data.status, locale)}</span>}
     </div>
     {error && <p className="danger" role="alert">{error}</p>}
+    {notice && <p className="banner" role="status" aria-live="polite">{notice}</p>}
+    <p><button type="button" disabled={transitioning} onClick={() => void load()}>{t.refresh}</button></p>
     {!data ? <section className="card"><p>{t.loading}</p></section> : <>
       <section className="card order-meta">
         <div><span>{labels.placed}</span><strong>{date(data.created_at)}</strong></div>

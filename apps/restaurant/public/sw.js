@@ -9,7 +9,7 @@ firebase.messaging().onBackgroundMessage(payload=>{
   const orderId=String(payload?.data?.orderId||"");
   return self.registration.showNotification(String(payload?.data?.title||"Hungrie Restaurant"),{
     body:String(payload?.data?.body||"A new order update is ready."),tag:String(payload?.data?.eventId||orderId||"restaurant-order"),
-    data:{url:orderId?`/orders/${encodeURIComponent(orderId)}`:"/orders"}
+    data:{url:orderId?`/orders/detail?orderId=${encodeURIComponent(orderId)}`:"/orders"}
   });
 });
 self.addEventListener("notificationclick",event=>{
