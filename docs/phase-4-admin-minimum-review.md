@@ -1,6 +1,6 @@
 # Phase 4 Admin production minimum review
 
-**Status:** Phase 4 implementation and non-production staging qualification are complete. All automated, hosted isolation, Admin capability, MFA/recovery, cache, and audit gates have evidence. Formal app-owner acceptance is the only remaining Phase 4 gate. Legacy Customer/Restaurant authorization is unchanged; no Hungrie production environment was touched.
+**Status:** Accepted by the app owner on 2026-09-13. Phase 4 implementation and non-production staging qualification are complete. All automated, hosted isolation, Admin capability, MFA/recovery, cache, and audit gates have evidence. Legacy Customer/Restaurant authorization is unchanged; no Hungrie production environment was touched.
 
 ## Current review decision (2026-09-13)
 
@@ -26,10 +26,10 @@
 | Restaurant and account operations | Owner-reported invitation, acceptance, activation, Restaurant suspension/restoration, manager suspension/reactivation, and sole-active-owner protection pass; lifecycle audit confirms suspension and activation transitions | Complete |
 | Order and incident support | Local 29-assertion transactional test passes. Hosted cancellation, delivered verification, incident acknowledgement/resolution, history, and audit records were verified directly after app-owner testing | Complete |
 | Wrong portal and tenant isolation | Simulated Restaurant denial, hosted unmapped identity denial, anonymous denial, plus direct hosted Customer/Restaurant matrix: 12 calls, 12 HTTP `403`, zero successful access; stale role claim ignored | Complete |
-| Cache and deployment | Live no-store/CSP headers; route checks and PR CI pass | No open exposure or unexplained authorization difference |
-| Release review | PR #4 and this review contain the completed matrix | Explicit app-owner Phase 4 acceptance |
+| Cache and deployment | Live no-store/CSP headers; route checks and PR CI pass | Complete; no open exposure or unexplained authorization difference |
+| Release review | PR #4 and this review contain the completed matrix; the app owner explicitly accepted Phase 4 on 2026-09-13 | Complete |
 
-Do not mark Phase 4 accepted or begin Phase 5 as an accepted successor until the remaining records are complete. No production project or platform-wide canonical enforcement change is part of Phase 4.
+The app owner's acceptance closes Phase 4 and permits Phase 5 to begin as a separately scoped phase. It does not authorize a production project, production deployment, platform-wide canonical enforcement, or migration of non-production test data.
 
 ### Completed hosted UI fixture tests
 
