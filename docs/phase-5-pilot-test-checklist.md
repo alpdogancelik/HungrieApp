@@ -51,12 +51,12 @@ Keep the Live orders screen staffed while order acceptance is enabled. Create ea
 
 | ID | Action | Expected result | Result |
 |---|---|---|---|
-| ORD-01 | Create a new order while Live orders is open and online. | The order appears without manual refresh, with one prominent foreground alert and sound after audio has been enabled by user interaction. |  |
-| ORD-02 | Open the order, confirm `pending -> preparing`, then complete the supported delivery transitions. | Each transition succeeds once, displays the authoritative state, and appears correctly in History. |  |
-| ORD-03 | Reject a pending order with an allowed reason and internal note. | The order is cancelled once with the selected reason; it leaves Live orders and appears in History. |  |
-| ORD-04 | Open the same pending order in two browser sessions before either responds, then submit Preparing from both without refreshing the second session. | One transition succeeds; the other displays the current order and an order-changed message. Neither browser loses the Restaurant shell. | Partial on 2026-09-14: the site stayed available, but the second browser did not explain the changed status and its Cancel control stayed disabled. Retest required after the order-detail reconciliation fix. |
-| ORD-05 | Leave a pending order unanswered until its five-minute server deadline passes, then try to accept it. | Late acceptance is rejected and the order becomes cancelled for deadline expiry. |  |
-| ORD-06 | Create one order while Realtime, polling, focus reconciliation, and push can all observe it. | The order appears once and remains one order; duplicate triggers do not duplicate its state or transition. |  |
+| ORD-01 | Create a new order while Live orders is open and online. | The order appears without manual refresh, with one prominent foreground alert and sound after audio has been enabled by user interaction. | Pass (pilot report, 2026-09-14) |
+| ORD-02 | Open the order, confirm `pending -> preparing`, then complete the supported delivery transitions. | Each transition succeeds once, displays the authoritative state, and appears correctly in History. | Pass (pilot report, 2026-09-14) |
+| ORD-03 | Reject a pending order with an allowed reason and internal note. | The order is cancelled once with the selected reason; it leaves Live orders and appears in History. | Pass (pilot report, 2026-09-14) |
+| ORD-04 | Open the same pending order in two browser sessions before either responds, then submit Preparing from both without refreshing the second session. | One transition succeeds; the other displays the current order and an order-changed message. Neither browser loses the Restaurant shell. | Pass (pilot retest, 2026-09-14; earlier partial result resolved) |
+| ORD-05 | Leave a pending order unanswered until its five-minute server deadline passes, then try to accept it. | Late acceptance is rejected and the order becomes cancelled for deadline expiry. | Pass (pilot report, 2026-09-14) |
+| ORD-06 | Create one order while Realtime, polling, focus reconciliation, and push can all observe it. | The order appears once and remains one order; duplicate triggers do not duplicate its state or transition. | Pass (pilot report, 2026-09-14) |
 
 ## 4. Recovery and connectivity
 
