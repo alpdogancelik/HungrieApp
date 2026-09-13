@@ -60,7 +60,7 @@ export function AdminControls({ kind, onDone }: { kind: Kind; onDone: () => void
       if (kind === "restaurants" && values.restaurantAction === "invite") {
         const plainToken = invitationToken();
         result = await supabase.rpc("admin_invite_restaurant_account_v1" as never, { p_email: values.email, p_restaurant_id: values.restaurantId, p_restaurant_role: values.restaurantRole || "manager", p_token_digest: await sha256(plainToken), p_operation_id: operationId } as never);
-        if (!result.error) oneTimeUrl = `${process.env.NEXT_PUBLIC_RESTAURANT_PORTAL_URL || location.origin}/invite/${plainToken}`;
+        if (!result.error) oneTimeUrl = `${process.env.NEXT_PUBLIC_RESTAURANT_PORTAL_URL || location.origin}/invite?token=${encodeURIComponent(plainToken)}`;
       }
       if (kind === "accounts" && (values.action || "invite") === "invite") {
         const plainToken = invitationToken();
