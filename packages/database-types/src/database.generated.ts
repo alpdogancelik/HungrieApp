@@ -2070,6 +2070,10 @@ export type Database = {
         }
         Returns: Json
       }
+      restaurant_can_manage_media_object_v1: {
+        Args: { p_object_name: string }
+        Returns: boolean
+      }
       restaurant_get_dashboard_v1: { Args: never; Returns: Json }
       restaurant_get_menu_v2: { Args: never; Returns: Json }
       restaurant_get_order_v1: { Args: { p_order_id: string }; Returns: Json }

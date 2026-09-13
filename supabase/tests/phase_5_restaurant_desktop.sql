@@ -6,11 +6,16 @@ values('fixture_owner','restaurant','active',statement_timestamp(),'fixture_rest
 select set_config('request.jwt.claims','{"role":"authenticated","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_owner"}',true);
 
 select ok(has_function_privilege('authenticated','public.restaurant_get_dashboard_v1()','execute'),'guarded Restaurant dashboard is reachable');
+select ok(has_function_privilege('authenticated','public.restaurant_can_manage_media_object_v1(text)','execute'),'Restaurant media predicate is callable by Storage RLS');
+select ok(not has_function_privilege('authenticated','private.current_restaurant_id()','execute'),'canonical Restaurant helper remains private');
 select ok(not has_table_privilege('authenticated','private.restaurant_operations','select'),'operation ledger is private');
 select ok(not has_table_privilege('authenticated','public.menu_option_groups','select'),'menu definition tables are not directly exposed');
 select is((public.restaurant_get_dashboard_v1()->>'restaurantId'),'fixture_restaurant_a','dashboard derives canonical scope');
 select ok(private.can_subscribe_restaurant_v1_topic('restaurant-orders:v1:fixture_restaurant_a'),'canonical topic allows own Restaurant');
 select ok(not private.can_subscribe_restaurant_v1_topic('restaurant-orders:v1:fixture_restaurant_b'),'canonical topic denies another Restaurant');
+select ok(public.restaurant_can_manage_media_object_v1('fixture_restaurant_a/item.png'),'Restaurant media predicate allows its canonical folder');
+select ok(not public.restaurant_can_manage_media_object_v1('fixture_restaurant_b/item.png'),'Restaurant media predicate denies another folder');
+select ok(not public.restaurant_can_manage_media_object_v1('fixture_restaurant_a'),'Restaurant media predicate requires an object below the folder');
 
 select is((public.restaurant_set_accepting_orders_v1(false,'55555555-0000-4000-8000-000000000001')->>'acceptingOrders')::boolean,false,'Restaurant can close order acceptance');
 select is((public.restaurant_set_accepting_orders_v1(false,'55555555-0000-4000-8000-000000000001')->>'acceptingOrders')::boolean,false,'acceptance retry is idempotent');

@@ -1,27 +1,61 @@
 import { FormEvent, useState } from "react";
 import { supabase } from "./supabase";
+import { useLocale } from "./providers";
 
 type Ingredient = { name: string; removable: boolean };
 type Option = { name: string; price: string };
 type Group = { name: string; kind: "size" | "modifier" | "extra"; minimum: number; maximum: number; options: Option[] };
+type SaveError = "invalidMenu" | "invalidMedia" | "mediaUploadFailed" | "menuSaveFailed";
 
-export function MenuItemEditor({ restaurantId, categoryId, reload, fail }: { restaurantId: string; categoryId: string; reload: () => Promise<void>; fail: () => void }) {
+export function MenuItemEditor({ restaurantId, categoryId, reload, fail }: { restaurantId: string; categoryId: string; reload: () => Promise<void>; fail: (message: string) => void }) {
+  const { t } = useLocale();
   const [name, setName] = useState("");
   const [price, setPrice] = useState("0");
   const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  function report(kind: SaveError) {
+    fail(`${t[kind]} Ref: ${crypto.randomUUID().slice(0, 8)}`);
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    const numericPrice = Number(price);
+    const menuIsValid = name.trim().length > 0
+      && Number.isFinite(numericPrice) && numericPrice >= 0
+      && ingredients.every((item) => item.name.trim().length > 0 && item.name.trim().length <= 120)
+      && groups.every((group) => {
+        const validOptions = group.options.filter((item) => item.name.trim());
+        return group.name.trim().length > 0 && group.name.trim().length <= 120
+          && Number.isInteger(group.minimum) && Number.isInteger(group.maximum)
+          && group.minimum >= 0 && group.maximum >= 1 && group.minimum <= group.maximum
+          && validOptions.length >= group.maximum
+          && validOptions.every((item) => {
+            const optionPrice = Number(item.price);
+            return item.name.trim().length <= 120 && Number.isFinite(optionPrice) && optionPrice >= 0;
+          });
+      });
+    if (!menuIsValid) {
+      report("invalidMenu");
+      return;
+    }
+    if (file && (file.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(file.type))) {
+      report("invalidMedia");
+      return;
+    }
+    setSaving(true);
     try {
       let imageUrl = "";
       if (file) {
-        if (file.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new Error("Invalid media");
         const objectPath = `${restaurantId}/${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
         const upload = await supabase.storage.from("restaurant-media").upload(objectPath, file, { contentType: file.type });
-        if (upload.error) throw upload.error;
+        if (upload.error) {
+          report("mediaUploadFailed");
+          return;
+        }
         imageUrl = supabase.storage.from("restaurant-media").getPublicUrl(objectPath).data.publicUrl;
       }
       const definition = {
@@ -33,10 +67,17 @@ export function MenuItemEditor({ restaurantId, categoryId, reload, fail }: { res
         })),
       };
       const result = await supabase.rpc("restaurant_save_menu_item_v2" as any, { p_definition: definition, p_operation_id: crypto.randomUUID() });
-      if (result.error) throw result.error;
+      if (result.error) {
+        report("menuSaveFailed");
+        return;
+      }
       setName(""); setDescription(""); setFile(null); setIngredients([]); setGroups([]);
       await reload();
-    } catch { fail(); }
+    } catch {
+      report("menuSaveFailed");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return <form className="compact-form card-subsection" onSubmit={submit}>
@@ -58,7 +99,7 @@ export function MenuItemEditor({ restaurantId, categoryId, reload, fail }: { res
       {groups.map((group, index) => <GroupEditor key={index} group={group} change={(next) => setGroups((items) => items.map((item, itemIndex) => itemIndex === index ? next : item))} remove={() => setGroups((items) => items.filter((_, itemIndex) => itemIndex !== index))} />)}
       <button type="button" onClick={() => setGroups((items) => [...items, { name: "", kind: "modifier", minimum: 0, maximum: 1, options: [] }])}>Add option group / Seçenek grubu ekle</button>
     </fieldset>
-    <button className="button">Save item / Ürünü kaydet</button>
+    <button className="button" disabled={saving}>{saving ? t.saving : "Save item / Ürünü kaydet"}</button>
   </form>;
 }
 
