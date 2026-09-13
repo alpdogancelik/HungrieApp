@@ -1,9 +1,89 @@
-import{onIdTokenChanged,signOut}from"firebase/auth";import{usePathname,useRouter}from"expo-router";import{useEffect,useState}from"react";import{auth,ensureSessionPersistence}from"./firebase";import{supabase}from"./supabase";import type{AccessContext}from"./contracts";import{useLocale}from"./providers";
-// A pending invitation has no account_access row until it is accepted. Its
-// route must render for both a new Firebase identity and a signed-in invitee.
-const publicPath=(p:string)=>p==="/login"||p==="/invite"||p.startsWith("/invite/");
-export function AuthGate({children}:{children:React.ReactNode}){const path=usePathname(),router=useRouter(),{t}=useLocale();const[state,setState]=useState<"loading"|"ready"|"error">("loading"),[retry,setRetry]=useState(0);useEffect(()=>{let live=true;setState("loading");void ensureSessionPersistence();if(typeof navigator!=="undefined"&&"serviceWorker"in navigator)void navigator.serviceWorker.register("/sw.js",{scope:"/"});const off=onIdTokenChanged(auth,async user=>{if(!live)return;
-// Invite acceptance performs its own caller-bound verification. Checking
-// access context here would sign out an unmapped invitee before acceptance.
-if(path==="/invite"||path.startsWith("/invite/")){setState("ready");return}
-if(!user){if(publicPath(path))setState("ready");else router.replace("/login");return}try{const{data,error}=await supabase.rpc("get_my_access_context_v1");if(error)throw error;const c=data as unknown as AccessContext;if(c.state!=="resolved"||c.accountType!=="restaurant"||c.accountStatus==="revoked"){await signOut(auth);router.replace("/login?reason=failed");return}if(c.accountStatus==="pending"){path==="/pending"?setState("ready"):router.replace("/pending");return}if(c.accountStatus==="suspended"||c.restaurantStatus==="suspended"){path==="/suspended"?setState("ready"):router.replace("/suspended");return}if(c.accountStatus!=="active"||c.restaurantStatus!=="active"){await signOut(auth);router.replace("/login?reason=failed");return}if(publicPath(path)||path==="/pending"||path==="/suspended")router.replace("/dashboard");else setState("ready")}catch{setState("error")}});return()=>{live=false;off()}},[path,retry,router]);if(state==="ready")return children;return <div className="center"><p>{state==="error"?t.unavailable:t.loading}</p>{state==="error"&&<button className="button" onClick={()=>setRetry(x=>x+1)}>{t.retry}</button>}</div>}
+import { onIdTokenChanged, signOut } from "firebase/auth";
+import { usePathname, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { auth, ensureSessionPersistence } from "./firebase";
+import { supabase } from "./supabase";
+import type { AccessContext } from "./contracts";
+import { useLocale } from "./providers";
+
+// Invite acceptance must be reachable before an account_access row exists.
+const publicPath = (path: string) =>
+  path === "/login" || path === "/invite" || path.startsWith("/invite/");
+
+export function AuthGate({ children }: { children: React.ReactNode }) {
+  const path = usePathname();
+  const router = useRouter();
+  const { t } = useLocale();
+  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  const [retry, setRetry] = useState(0);
+
+  useEffect(() => {
+    void ensureSessionPersistence();
+    if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+      void navigator.serviceWorker.register("/sw.js", { scope: "/" });
+    }
+  }, []);
+
+  useEffect(() => {
+    let live = true;
+
+    // A route change must not unmount the Stack. Otherwise Expo Router can
+    // restart at / and redirect to Dashboard instead of opening the route.
+    const unsubscribe = onIdTokenChanged(auth, async (user) => {
+      if (!live) return;
+      if (path === "/invite" || path.startsWith("/invite/")) {
+        setState("ready");
+        return;
+      }
+      if (!user) {
+        if (publicPath(path)) setState("ready");
+        else router.replace("/login");
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.rpc("get_my_access_context_v1");
+        if (error) throw error;
+        if (!live) return;
+        const context = data as unknown as AccessContext;
+        if (context.state !== "resolved" || context.accountType !== "restaurant" || context.accountStatus === "revoked") {
+          await signOut(auth);
+          if (live) router.replace("/login?reason=failed");
+          return;
+        }
+        if (context.accountStatus === "pending") {
+          if (path === "/pending") setState("ready");
+          else router.replace("/pending");
+          return;
+        }
+        if (context.accountStatus === "suspended" || context.restaurantStatus === "suspended") {
+          if (path === "/suspended") setState("ready");
+          else router.replace("/suspended");
+          return;
+        }
+        if (context.accountStatus !== "active" || context.restaurantStatus !== "active") {
+          await signOut(auth);
+          if (live) router.replace("/login?reason=failed");
+          return;
+        }
+        if (publicPath(path) || path === "/pending" || path === "/suspended") {
+          router.replace("/dashboard");
+        } else {
+          setState("ready");
+        }
+      } catch {
+        if (live) setState("error");
+      }
+    });
+
+    return () => {
+      live = false;
+      unsubscribe();
+    };
+  }, [path, retry, router]);
+
+  if (state === "ready") return children;
+  return <div className="center"><p>{state === "error" ? t.unavailable : t.loading}</p>
+    {state === "error" && <button className="button" onClick={() => { setState("loading"); setRetry(value => value + 1); }}>{t.retry}</button>}
+  </div>;
+}
