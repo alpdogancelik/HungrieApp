@@ -62,7 +62,7 @@ Keep the Live orders screen staffed while order acceptance is enabled. Create ea
 
 | ID | Action | Expected result | Result |
 |---|---|---|---|
-| REC-01 | Disconnect the Restaurant device from the network, create an order, then reconnect. | The UI shows the disconnected state, prevents unsafe readiness, and fetches the missed order after reconnection. |  |
+| REC-01 | Disconnect the Restaurant device from the network, create an order, then reconnect. | The UI shows the disconnected state, prevents unsafe readiness, and fetches the missed order after reconnection. | Retest required: first attempt showed only a generic service error; global offline warning added. |
 | REC-02 | Put the tab in the background, create an order, then focus it. | The order is reconciled when the tab regains focus. |  |
 | REC-03 | Put the computer to sleep, create an order from another device, then wake it. | The connection recovers and the missed order appears. |  |
 | REC-04 | Temporarily block or interrupt the private Realtime connection while leaving HTTP available. | The bounded polling path recovers the order and Realtime reconnects later. |  |
