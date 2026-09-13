@@ -90,10 +90,10 @@ Run once in Chrome and once in Edge on each operating system.
 
 | ID | Action | Expected result | Result |
 |---|---|---|---|
-| CACHE-01 | In browser developer tools, inspect the service worker and Cache Storage after visiting private routes. | The worker is active, but Cache Storage contains no access context, API response, order, Customer, or token-bearing request. |  |
-| CACHE-02 | Inspect network responses for authenticated HTML/API requests and reload a private route. | Private responses are not served from a shared/public cache and use the expected no-store/private behavior. |  |
-| CACHE-03 | Sign out, go offline, and revisit previously opened private URLs. | Previously viewed order or Customer data is not available from the service worker/cache. |  |
-| CACHE-04 | Select a notification after the session has expired or after sign-out. | The app requires authentication before fetching order details; the notification itself contains no private order data. |  |
+| CACHE-01 | In browser developer tools, inspect the service worker and Cache Storage after visiting private routes. | The worker is active, but Cache Storage contains no access context, API response, order, Customer, or token-bearing request. | Technical pass (automated Staging probe, macOS 26.3 Chrome 153, 2026-09-14): worker activated and Cache Storage was empty. W-C, W-E, and M-E confirmation remains. |
+| CACHE-02 | Inspect network responses for authenticated HTML/API requests and reload a private route. | Private responses are not served from a shared/public cache and use the expected no-store/private behavior. | Technical pass (live Staging probe, 2026-09-14): `/orders` and `/orders/detail` returned `private, no-cache, no-store`; required browser-matrix confirmation remains. |
+| CACHE-03 | Sign out, go offline, and revisit previously opened private URLs. | Previously viewed order or Customer data is not available from the service worker/cache. | Technical pass (automated Staging probe, macOS 26.3 Chrome 153, 2026-09-14): the signed-out route redirected to Login; offline reload exposed only the browser offline page and no order data. W-C, W-E, and M-E confirmation remains. |
+| CACHE-04 | Select a notification after the session has expired or after sign-out. | The app requires authentication before fetching order details; the notification itself contains no private order data. | Technical pass (automated Staging probe, macOS 26.3 Chrome 153, 2026-09-14): a generic synthetic worker notification click ended at Login. Physical notification-click confirmation on all four combinations remains. |
 
 ## 7. Completion record
 
