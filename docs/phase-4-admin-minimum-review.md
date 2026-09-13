@@ -1,12 +1,14 @@
 # Phase 4 Admin production minimum review
 
-**Status:** Phase 4 is implemented and deployed in non-production staging. The app owner reports that the manual tests supplied during the Restaurant/account QA session passed. Formal Phase 4 acceptance remains pending because the complete hosted wrong-portal/cross-tenant and order/incident support matrix has not been recorded case by case. Legacy Customer/Restaurant authorization is unchanged; no Hungrie production environment was touched.
+**Status:** Phase 4 is implemented and deployed in non-production staging. The app owner reports that the manual tests supplied during the Restaurant/account QA session passed, and the direct hosted wrong-portal matrix now passes. Formal Phase 4 acceptance remains pending only on the staged order/incident fixture actions, their audit verification, and app-owner acceptance. Legacy Customer/Restaurant authorization is unchanged; no Hungrie production environment was touched.
 
 ## Current review decision (2026-09-13)
 
 - The live Admin site is `https://hungrie-admin-web-phase1.vercel.app`, deployment `dpl_7dzvomFsLG2KoiNgbrJffe3Q14y2` from commit `01099d0`. This Vercel production-target alias is Hungrie **staging**, not a Hungrie Production environment. The latest staging callable bundle was checksum-pinned at SHA-256 `a40b9698104a00b8d261ae17f7882c1440117dd1c9e95e7976847f0dfd60b3dd` and deployed successfully.
 - The owner reports that all manual tests supplied during the interactive QA session passed. The Restaurant was activated; attempting to suspend its sole active owner was rejected by the database, and the Admin UI now explains why in English and Turkish. The manager account was suspended and reactivated while the Restaurant was suspended. Account activation in that state is permitted; canonical Restaurant operations still require an active Restaurant lifecycle state. This report records the owner's observation, not an independently replayed hosted identity test.
 - The PR checks for functional commit `01099d0` passed: migration review, workspace, and database validation. On 2026-09-13 the targeted Firebase logic tests and Admin route/auth/cache check passed again. The live `/accounts` response returned `private, no-cache, no-store`, CSP, HSTS, and frame-denial headers with `x-vercel-cache: MISS`.
+- A checksum-pinned hosted isolation probe created transient Customer and Restaurant-manager identities, assigned each a deliberately stale `platform_role: super_admin` claim, and called six Admin RPCs directly. Dashboard, account, order, incident, audit, and Restaurant-creation calls all returned HTTP `403` for both identities. The probe removed both Firebase identities and every related Supabase row in `finally`. Probe source SHA-256: `4cd9cf59d444965975ab7f2c3b40f489aec622a7ba5b8e7522ddf94b7cf941d1`.
+- A fresh restricted staging backup was taken before creating synthetic support fixtures at `secure/phase4-staging-backup/2026-09-13T10-52-36-680Z/manifest.json`. The checksum-pinned fixture tool created one synthetic Customer, two synthetic orders, and one open non-response incident for the existing Phase 4 QA Restaurant. No password was persisted or reported. The fixture IDs are listed below for app-owner testing.
 
 - Staging has 32 applied migrations. The original Phase 4 migration and the public RPC type-boundary correction were checksum-pinned and applied after restricted backups. The latest backup manifest is `secure/phase4-staging-backup/2026-09-12T23-40-12-381Z/manifest.json`.
 - Two dedicated canonical Admin accounts are active `super_admin` accounts with completed MFA onboarding. Both Firebase identities are verified, enabled, and have one TOTP factor. No invitation remains pending.
@@ -19,13 +21,25 @@
 | Gate | Current evidence | Remaining record |
 |---|---|
 | Admin MFA and recoverability | Two active, TOTP-ready super-admins; one audited recovery followed by re-enrollment and new MFA sign-in | App-owner acceptance of this evidence |
-| Restaurant and account operations | Owner-reported manual pass; sole-owner guard observed; manager status changes observed | A case-by-case pass/fail record for invitation, activation, account/Restaurant suspension and restoration |
-| Order and incident support | Guarded read paths pass. A local transactional test now covers pending-order cancellation, dispatched-order delivery, incident acknowledgement/resolution, idempotent retries, denial of invalid transitions, and audit/history records (29 Phase 4 assertions pass). A 2026-09-13 read-only staging query found **zero orders and zero incidents**. | Hosted UI/action results require suitable staging-only fixtures; none currently exist. Do not count the owner's Restaurant/account QA as an order/incident support test. |
-| Wrong portal and tenant isolation | Simulated Restaurant denial, hosted unmapped identity denial, and anonymous denial | Hosted identity-by-action/tenant matrix, including Customer and Restaurant identities calling Admin RPCs directly; record zero successful access |
+| Restaurant and account operations | Owner-reported invitation, acceptance, activation, Restaurant suspension, manager suspension/reactivation, and sole-active-owner protection pass | Confirm whether Restaurant restoration was tested; otherwise record it as deferred without treating it as an authorization defect |
+| Order and incident support | Guarded read paths pass. A local transactional test covers pending-order cancellation, dispatched-order delivery, incident acknowledgement/resolution, idempotent retries, invalid-transition denial, and audit/history records (29 assertions pass). Suitable staging fixtures now exist. | Complete the four hosted UI transitions below and verify their audit entries |
+| Wrong portal and tenant isolation | Simulated Restaurant denial, hosted unmapped identity denial, anonymous denial, plus direct hosted Customer/Restaurant matrix: 12 calls, 12 HTTP `403`, zero successful access; stale role claim ignored | Complete |
 | Cache and deployment | Live no-store/CSP headers; route checks and PR CI pass | No open exposure or unexplained authorization difference |
 | Release review | Draft PR #4 and this review | Explicit app-owner Phase 4 acceptance after the matrix is recorded |
 
 Do not mark Phase 4 accepted or begin Phase 5 as an accepted successor until the remaining records are complete. No production project or platform-wide canonical enforcement change is part of Phase 4.
+
+### Remaining hosted UI fixture tests
+
+Use only the staged Admin site and the IDs below. Sign out and complete a fresh MFA sign-in first because order support requires the five-minute recent-auth window.
+
+1. In **Orders**, cancel `phase4_qa_cancel_5079253ff8080c` with a test reason. Expect `canceled`.
+2. In **Orders**, confirm delivery for `phase4_qa_deliver_5079253ff8080c` with a test reason. It is already `out_for_delivery`; expect `delivered`.
+3. In **Incidents**, acknowledge `ce8024ae-fa53-4e4a-bd23-b2099f7da484`. Expect `acknowledged`.
+4. Resolve the same incident with a non-empty resolution note. Expect `resolved`.
+5. In **Audit**, verify two `order.support_resolved` events and one each of `incident.acknowledged` and `incident.resolved` for those IDs.
+
+Do not paste Customer details, credentials, MFA codes, or secrets into the review. Report only pass/fail and any support-safe reference shown by the app.
 
 ## Implementation and staging history
 
