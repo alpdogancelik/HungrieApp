@@ -79,5 +79,70 @@ select throws_ok($$select public.server_record_admin_mfa_enrollment_v1(
   'fixture_firebase_super_admin','44444444-0000-4000-8000-000000000003')$$,
   '42501',null,'spoofed browser call cannot record MFA enrollment');
 
+select set_config('request.jwt.claims',
+  jsonb_build_object('role','authenticated',
+    'iss','https://securetoken.google.com/hungrieapp-a2288',
+    'aud','hungrieapp-a2288','sub','fixture_firebase_super_admin',
+    'email_verified',true,'auth_time',extract(epoch from statement_timestamp())::bigint,
+    'firebase',jsonb_build_object('sign_in_second_factor','totp'))::text,true);
+
+insert into public.orders(id,profile_id,restaurant_id,status,payment_method,
+  subtotal_kurus,total_kurus)
+values
+  ('phase4_support_pending','fixture_customer','fixture_restaurant_a','pending','cash',1000,1000),
+  ('phase4_support_dispatched','fixture_customer','fixture_restaurant_a','out_for_delivery','cash',1000,1000);
+
+select throws_ok($$select public.admin_resolve_order_v1(
+  'phase4_support_pending','confirm_delivered','verified by support',
+  '44444444-0000-4000-8000-000000000004')$$,'22023',null,
+  'support cannot mark a pending order delivered');
+select is((public.admin_resolve_order_v1(
+  'phase4_support_pending','cancel','customer requested cancellation',
+  '44444444-0000-4000-8000-000000000005')->>'status'),'canceled',
+  'support can cancel a pending order');
+select is((public.admin_resolve_order_v1(
+  'phase4_support_dispatched','confirm_delivered','delivery verified by support',
+  '44444444-0000-4000-8000-000000000006')->>'status'),'delivered',
+  'support can confirm delivery only after dispatch');
+select is((public.admin_resolve_order_v1(
+  'phase4_support_dispatched','confirm_delivered','delivery verified by support',
+  '44444444-0000-4000-8000-000000000006')->>'status'),'delivered',
+  'support retry returns the original delivered result');
+select is((select count(*)::integer from private.order_status_history
+  where order_id in ('phase4_support_pending','phase4_support_dispatched')
+    and source='admin_support'),2,
+  'support creates one order transition per operation');
+select is((select count(*)::integer from private.audit_log
+  where action='order.support_resolved'
+    and target_id in ('phase4_support_pending','phase4_support_dispatched')),2,
+  'both support resolutions are audited once');
+
+insert into private.restaurant_operational_incidents(id,restaurant_id,
+  incident_type,window_started_at,window_ended_at,ignored_order_count,
+  eligible_order_count,threshold_snapshot)
+values('44444444-0000-4000-8000-000000000010','fixture_restaurant_a',
+  'repeated_order_non_response',statement_timestamp()-interval '1 hour',
+  statement_timestamp(),2,3,'{}'::jsonb);
+select throws_ok($$select public.admin_set_incident_state_v1(
+  '44444444-0000-4000-8000-000000000010','resolved',null,
+  '44444444-0000-4000-8000-000000000011')$$,'22023',null,
+  'incident resolution requires a note');
+select is((public.admin_set_incident_state_v1(
+  '44444444-0000-4000-8000-000000000010','acknowledged',null,
+  '44444444-0000-4000-8000-000000000012')->>'state'),'acknowledged',
+  'Admin acknowledges an open incident');
+select is((public.admin_set_incident_state_v1(
+  '44444444-0000-4000-8000-000000000010','resolved','restaurant contacted',
+  '44444444-0000-4000-8000-000000000013')->>'state'),'resolved',
+  'Admin resolves an acknowledged incident');
+select is((public.admin_set_incident_state_v1(
+  '44444444-0000-4000-8000-000000000010','resolved','restaurant contacted',
+  '44444444-0000-4000-8000-000000000013')->>'state'),'resolved',
+  'incident retry returns the original result');
+select is((select count(*)::integer from private.audit_log
+  where action in ('incident.acknowledged','incident.resolved')
+    and target_id='44444444-0000-4000-8000-000000000010'),2,
+  'acknowledgement and resolution are each audited once');
+
 select * from finish();
 rollback;
