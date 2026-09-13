@@ -63,7 +63,7 @@ returns void language plpgsql security definer set search_path='' as $$
 begin insert into pg_temp.m9_broadcast_capture values (target_topic,payload); end
 $$;
 update public.orders set updated_at=statement_timestamp() where id='fixture_order';
-select is((select count(*)::integer from m9_broadcast_capture), 4, 'assigned order broadcasts minimal invalidations to four role topics');
+select is((select count(*)::integer from m9_broadcast_capture), 5, 'assigned order broadcasts legacy topics plus one canonical Restaurant topic');
 select ok(not exists(select 1 from m9_broadcast_capture where (select array_agg(key order by key) from jsonb_object_keys(payload) key) <> array['operation','order_id','version']), 'payload contains only order ID, operation, and version');
 
 create or replace function private.send_order_realtime_invalidation(target_topic text, payload jsonb)

@@ -1,0 +1,4 @@
+import{createContext,useContext,useEffect,useMemo,useState}from"react";import type{Locale}from"./contracts";import{translations}from"./i18n";
+type Value={locale:Locale;setLocale:(v:Locale)=>void;t:ReturnType<typeof translations>};const Context=createContext<Value|null>(null);
+export function RestaurantProviders({children}:{children:React.ReactNode}){const[locale,setValue]=useState<Locale>("en");useEffect(()=>{const x=localStorage.getItem("hungrie-restaurant-locale");setValue(x==="tr"||x==="en"?x:navigator.language.startsWith("tr")?"tr":"en")},[]);const setLocale=(v:Locale)=>{localStorage.setItem("hungrie-restaurant-locale",v);setValue(v)};return <Context.Provider value={useMemo(()=>({locale,setLocale,t:translations(locale)}),[locale])}>{children}</Context.Provider>}
+export const useLocale=()=>{const value=useContext(Context);if(!value)throw new Error("Locale missing");return value};

@@ -150,6 +150,71 @@ export type Database = {
           },
         ]
       }
+      menu_item_ingredients: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          menu_item_id: string
+          name: string
+          removable: boolean
+          restaurant_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          menu_item_id: string
+          name: string
+          removable?: boolean
+          restaurant_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          menu_item_id?: string
+          name?: string
+          removable?: boolean
+          restaurant_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_item_ingredients_menu_item_id_restaurant_id_fkey"
+            columns: ["menu_item_id", "restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "active_menu_items"
+            referencedColumns: ["id", "restaurant_id"]
+          },
+          {
+            foreignKeyName: "menu_item_ingredients_menu_item_id_restaurant_id_fkey"
+            columns: ["menu_item_id", "restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id", "restaurant_id"]
+          },
+          {
+            foreignKeyName: "menu_item_ingredients_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "active_restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_item_ingredients_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_items: {
         Row: {
           calories: number | null
@@ -157,6 +222,7 @@ export type Database = {
           cost_kurus: number | null
           created_at: string
           customizations: Json
+          definition_revision: number
           description: string
           eta_minutes: number | null
           id: string
@@ -177,6 +243,7 @@ export type Database = {
           cost_kurus?: number | null
           created_at?: string
           customizations?: Json
+          definition_revision?: number
           description?: string
           eta_minutes?: number | null
           id: string
@@ -197,6 +264,7 @@ export type Database = {
           cost_kurus?: number | null
           created_at?: string
           customizations?: Json
+          definition_revision?: number
           description?: string
           eta_minutes?: number | null
           id?: string
@@ -235,6 +303,135 @@ export type Database = {
           },
           {
             foreignKeyName: "menu_items_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_option_groups: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          kind: Database["public"]["Enums"]["menu_option_group_kind"]
+          maximum_selections: number
+          menu_item_id: string
+          minimum_selections: number
+          name: string
+          restaurant_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind: Database["public"]["Enums"]["menu_option_group_kind"]
+          maximum_selections?: number
+          menu_item_id: string
+          minimum_selections?: number
+          name: string
+          restaurant_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind?: Database["public"]["Enums"]["menu_option_group_kind"]
+          maximum_selections?: number
+          menu_item_id?: string
+          minimum_selections?: number
+          name?: string
+          restaurant_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_option_groups_menu_item_id_restaurant_id_fkey"
+            columns: ["menu_item_id", "restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "active_menu_items"
+            referencedColumns: ["id", "restaurant_id"]
+          },
+          {
+            foreignKeyName: "menu_option_groups_menu_item_id_restaurant_id_fkey"
+            columns: ["menu_item_id", "restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id", "restaurant_id"]
+          },
+          {
+            foreignKeyName: "menu_option_groups_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "active_restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_option_groups_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_option_values: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          is_active: boolean
+          name: string
+          price_delta_kurus: number
+          restaurant_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          is_active?: boolean
+          name: string
+          price_delta_kurus?: number
+          restaurant_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_delta_kurus?: number
+          restaurant_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_option_values_group_id_restaurant_id_fkey"
+            columns: ["group_id", "restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "menu_option_groups"
+            referencedColumns: ["id", "restaurant_id"]
+          },
+          {
+            foreignKeyName: "menu_option_values_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "active_restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_option_values_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
             referencedRelation: "restaurants"
@@ -1673,6 +1870,17 @@ export type Database = {
         }
         Returns: string
       }
+      create_order_v2: {
+        Args: {
+          p_address_id: string
+          p_items: Json
+          p_notes?: string
+          p_operation_id?: string
+          p_payment_method: Database["public"]["Enums"]["payment_method"]
+          p_restaurant_id: string
+        }
+        Returns: Json
+      }
       create_restaurant: { Args: { p_payload: Json }; Returns: string }
       delete_my_address: { Args: { p_id: string }; Returns: undefined }
       ensure_my_profile: {
@@ -1808,6 +2016,10 @@ export type Database = {
         Args: { p_items: Json; p_restaurant_id: string }
         Returns: Json
       }
+      quote_order_v2: {
+        Args: { p_items: Json; p_restaurant_id: string }
+        Returns: Json
+      }
       record_notification_delivery_result: {
         Args: {
           p_delivery_id: string
@@ -1842,6 +2054,100 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: undefined
       }
+      restaurant_acknowledge_order_seen_v1: {
+        Args: {
+          p_operation_id: string
+          p_order_id: string
+          p_order_version: string
+        }
+        Returns: Json
+      }
+      restaurant_bulk_set_item_availability_v1: {
+        Args: {
+          p_active: boolean
+          p_item_ids: string[]
+          p_operation_id: string
+        }
+        Returns: Json
+      }
+      restaurant_get_dashboard_v1: { Args: never; Returns: Json }
+      restaurant_get_menu_v2: { Args: never; Returns: Json }
+      restaurant_get_order_v1: { Args: { p_order_id: string }; Returns: Json }
+      restaurant_get_settings_v1: { Args: never; Returns: Json }
+      restaurant_list_orders_v1: {
+        Args: { p_cursor?: string; p_limit?: number; p_queue?: string }
+        Returns: Json
+      }
+      restaurant_list_reviews_v1: { Args: { p_limit?: number }; Returns: Json }
+      restaurant_moderate_review_v1: {
+        Args: {
+          p_operation_id: string
+          p_reply: string
+          p_review_id: string
+          p_review_type: string
+          p_status: string
+        }
+        Returns: Json
+      }
+      restaurant_register_web_push_v1: {
+        Args: {
+          p_device_id: string
+          p_language: string
+          p_operation_id: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      restaurant_reorder_categories_v1: {
+        Args: { p_category_ids: string[]; p_operation_id: string }
+        Returns: Json
+      }
+      restaurant_reorder_menu_items_v1: {
+        Args: {
+          p_category_id: string
+          p_item_ids: string[]
+          p_operation_id: string
+        }
+        Returns: Json
+      }
+      restaurant_save_category_v1: {
+        Args: {
+          p_active?: boolean
+          p_category_id: string
+          p_description?: string
+          p_icon?: string
+          p_name: string
+          p_operation_id?: string
+        }
+        Returns: Json
+      }
+      restaurant_save_menu_item_v2: {
+        Args: { p_definition: Json; p_operation_id: string }
+        Returns: Json
+      }
+      restaurant_set_accepting_orders_v1: {
+        Args: { p_accepting: boolean; p_operation_id: string }
+        Returns: Json
+      }
+      restaurant_transition_order_v1: {
+        Args: {
+          p_expected_version: string
+          p_new_status: string
+          p_note?: string
+          p_operation_id?: string
+          p_order_id: string
+          p_reason_code?: string
+        }
+        Returns: Json
+      }
+      restaurant_unregister_web_push_v1: {
+        Args: { p_device_id: string; p_operation_id: string }
+        Returns: Json
+      }
+      restaurant_update_settings_v1: {
+        Args: { p_changes: Json; p_operation_id: string }
+        Returns: Json
+      }
       search_active_catalog: {
         Args: {
           p_category?: string
@@ -1850,6 +2156,19 @@ export type Database = {
           p_query?: string
         }
         Returns: Json
+      }
+      server_claim_restaurant_web_push_v1: {
+        Args: { p_limit?: number }
+        Returns: Json
+      }
+      server_complete_restaurant_web_push_v1: {
+        Args: {
+          p_delivery_id: string
+          p_error_code?: string
+          p_retryable?: boolean
+          p_success: boolean
+        }
+        Returns: undefined
       }
       server_get_firebase_uid_v1: {
         Args: { p_profile_id: string }
@@ -2005,6 +2324,7 @@ export type Database = {
     }
     Enums: {
       account_type: "customer" | "restaurant" | "admin"
+      menu_option_group_kind: "size" | "modifier" | "extra"
       notification_platform: "ios" | "android" | "web" | "unknown"
       notification_provider: "apns" | "fcm" | "web" | "unknown" | "expo"
       order_status:
@@ -2147,6 +2467,7 @@ export const Constants = {
   public: {
     Enums: {
       account_type: ["customer", "restaurant", "admin"],
+      menu_option_group_kind: ["size", "modifier", "extra"],
       notification_platform: ["ios", "android", "web", "unknown"],
       notification_provider: ["apns", "fcm", "web", "unknown", "expo"],
       order_status: [

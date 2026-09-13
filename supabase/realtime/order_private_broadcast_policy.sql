@@ -6,5 +6,8 @@ for select
 to authenticated
 using (
   realtime.messages.extension = 'broadcast'
-  and private.can_subscribe_order_topic((select realtime.topic()))
+  and (
+    private.can_subscribe_order_topic((select realtime.topic()))
+    or private.can_subscribe_restaurant_v1_topic((select realtime.topic()))
+  )
 );

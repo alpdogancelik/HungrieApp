@@ -8,6 +8,7 @@ const admin = require("firebase-admin");
 const crypto = require("node:crypto");
 const http2 = require("node:http2");
 const { isOperationId, hasTotpFactor, hasTotpSession, accountStatusFailureReason } = require("./phase4AdminLogic");
+const { classifyMessagingFailure, restaurantWakeMessage } = require("./phase5RestaurantPushLogic");
 
 admin.initializeApp();
 
@@ -690,6 +691,31 @@ exports.recoverAdminMfaDevelopment=makeRecoverAdminMfa(SUPABASE_URL,SUPABASE_SER
 exports.recordAdminMfaEnrollmentStaging=makeRecordAdminMfaEnrollment(SUPABASE_STAGING_URL,SUPABASE_STAGING_SERVICE_ROLE_KEY);
 exports.setAdminAccountStatusStaging=makeSetAdminAccountStatus(SUPABASE_STAGING_URL,SUPABASE_STAGING_SERVICE_ROLE_KEY);
 exports.recoverAdminMfaStaging=makeRecoverAdminMfa(SUPABASE_STAGING_URL,SUPABASE_STAGING_SERVICE_ROLE_KEY);
+
+const makeRestaurantWebPushDispatcher = (urlSecret, keySecret) => onSchedule(
+    { schedule: "every 1 minutes", secrets: [urlSecret, keySecret] }, async () => {
+        const deliveries = await callSupabaseAdminRpc("server_claim_restaurant_web_push_v1", { p_limit: 100 }, urlSecret, keySecret);
+        for (const delivery of Array.isArray(deliveries) ? deliveries : []) {
+            try {
+                await admin.messaging().send(restaurantWakeMessage(delivery));
+                await callSupabaseAdminRpc("server_complete_restaurant_web_push_v1", {
+                    p_delivery_id: delivery.deliveryId, p_success: true, p_error_code: null, p_retryable: false,
+                }, urlSecret, keySecret);
+            } catch (error) {
+                const failure = classifyMessagingFailure(error);
+                logger.error("Restaurant Web Push delivery failed", {
+                    deliveryId: delivery.deliveryId, eventId: delivery.eventId, code: failure.code, retryable: failure.retryable,
+                });
+                await callSupabaseAdminRpc("server_complete_restaurant_web_push_v1", {
+                    p_delivery_id: delivery.deliveryId, p_success: false, p_error_code: failure.code, p_retryable: failure.retryable,
+                }, urlSecret, keySecret);
+            }
+        }
+        logger.info("Restaurant Web Push dispatch completed", { claimed: Array.isArray(deliveries) ? deliveries.length : 0 });
+    });
+
+exports.dispatchRestaurantWebPushDevelopment=makeRestaurantWebPushDispatcher(SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY);
+exports.dispatchRestaurantWebPushStaging=makeRestaurantWebPushDispatcher(SUPABASE_STAGING_URL,SUPABASE_STAGING_SERVICE_ROLE_KEY);
 
 const deleteFirestoreCollection = async (reference) => {
     while (true) {
