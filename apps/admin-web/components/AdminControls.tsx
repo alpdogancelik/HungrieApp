@@ -3,12 +3,17 @@
 import { FormEvent, useState } from "react";
 import { httpsCallable } from "firebase/functions";
 import { useLocale } from "@/components/AdminProviders";
-import { adminFunctionNames, functions } from "@/lib/firebase";
+import { adminFunctionNames, auth, functions } from "@/lib/firebase";
 import { supabase } from "@/lib/supabase";
 
 type Kind = "restaurants" | "accounts" | "orders" | "incidents";
 const invitationToken = () => Array.from(crypto.getRandomValues(new Uint8Array(32)), (byte) => byte.toString(16).padStart(2, "0")).join("");
 const sha256 = async (value: string) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value))), (byte) => byte.toString(16).padStart(2, "0")).join("");
+const requireRecentAuth = async () => {
+  const token = await auth.currentUser?.getIdTokenResult(true);
+  const authenticatedAt = Date.parse(token?.authTime || "");
+  if (!Number.isFinite(authenticatedAt) || Date.now() - authenticatedAt > 4 * 60 * 1000) throw new Error("RECENT_AUTH_REQUIRED");
+};
 
 export function AdminControls({ kind, onDone }: { kind: Kind; onDone: () => void }) {
   const { locale } = useLocale();
@@ -39,6 +44,7 @@ export function AdminControls({ kind, onDone }: { kind: Kind; onDone: () => void
     if (!confirm(labels.confirmPrompt)) return;
     setBusy(true); setMessage(""); setInviteUrl("");
     try {
+      if (kind !== "incidents") await requireRecentAuth();
       const operationId = crypto.randomUUID();
       let result: { error?: unknown; data?: unknown } | undefined;
       let oneTimeUrl = "";
@@ -70,7 +76,7 @@ export function AdminControls({ kind, onDone }: { kind: Kind; onDone: () => void
       setInviteUrl(oneTimeUrl); setMessage(oneTimeUrl ? "" : labels.completed); onDone();
     } catch (value) {
       const detail = typeof value === "object" && value && "message" in value ? String(value.message) : "";
-      setMessage(detail.includes("Recent authentication required") ? labels.recentAuth : `${labels.failed}. Ref: ${crypto.randomUUID()}`);
+      setMessage(detail.includes("Recent authentication required") || detail.includes("RECENT_AUTH_REQUIRED") ? labels.recentAuth : `${labels.failed}. Ref: ${crypto.randomUUID()}`);
     } finally { setBusy(false); }
   }
 
