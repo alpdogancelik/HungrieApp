@@ -24,7 +24,7 @@ Run these tests with both the pilot **owner** and **manager** accounts.
 | ID | Action | Expected result | Owner | Manager |
 |---|---|---|---|---|
 | NAV-01 | Sign in, then open Dashboard, Live orders, History, Menu, Restaurant, Reviews, Alerts, and Security. | Every route opens and remains on the selected page; the app does not jump back to Dashboard. | Pass | Pass |
-| NAV-02 | Refresh the browser directly on `/orders`, `/menu`, and one `/orders/detail?orderId=<id>` page. | The same route reloads after access verification; there is no 404 or redirect loop. | Retest static detail URL | Retest static detail URL |
+| NAV-02 | Refresh the browser directly on `/orders`, `/menu`, and one `/orders/detail?orderId=<id>` page. | The same route reloads after access verification; there is no 404 or redirect loop. | Pass (pilot retest, 2026-09-14) | Pass (pilot retest, 2026-09-14) |
 | NAV-03 | Change EN to TR and back to EN. Navigate and refresh. | Labels change language and the app remains usable. | Pass | Pass |
 | NAV-04 | Open an order and History. | Readable fields, item names, options, totals, and states appear; raw API JSON is absent. | Pass | Pass |
 | NAV-05 | Open a long menu form and reach its final controls. | The full page scrolls vertically without horizontal page overflow. | Pass | Pass |
@@ -90,10 +90,10 @@ Run once in Chrome and once in Edge on each operating system.
 
 | ID | Action | Expected result | Result |
 |---|---|---|---|
-| CACHE-01 | In browser developer tools, inspect the service worker and Cache Storage after visiting private routes. | The worker is active, but Cache Storage contains no access context, API response, order, Customer, or token-bearing request. | M-C and M-E technical pass (authenticated automated Staging probes, macOS 26.3, Chrome 153 and Edge 153, 2026-09-14): worker activated and Cache Storage remained empty before and after sign-out. W-C and W-E confirmation remains. |
-| CACHE-02 | Inspect network responses for authenticated HTML/API requests and reload a private route. | Private responses are not served from a shared/public cache and use the expected no-store/private behavior. | M-C and M-E technical pass (authenticated automated Staging probes, 2026-09-14): private HTML was `private, no-cache, no-store`; each browser observed 11 dynamic Supabase responses, with none served from disk or the service worker. W-C and W-E confirmation remains. |
-| CACHE-03 | Sign out, go offline, and revisit previously opened private URLs. | Previously viewed order or Customer data is not available from the service worker/cache. | M-C and M-E technical pass (authenticated automated Staging probes, macOS 26.3, Chrome 153 and Edge 153, 2026-09-14): after visiting `/orders` and signing out, offline revisit exposed only the browser offline page and no Restaurant shell or private data. W-C and W-E confirmation remains. |
-| CACHE-04 | Select a notification after the session has expired or after sign-out. | The app requires authentication before fetching order details; the notification itself contains no private order data. | M-C and M-E technical pass (authenticated automated Staging probes, macOS 26.3, Chrome 153 and Edge 153, 2026-09-14): a generic synthetic worker notification click ended at Login. Physical notification-click confirmation on all four combinations remains. |
+| CACHE-01 | In browser developer tools, inspect the service worker and Cache Storage after visiting private routes. | The worker is active, but Cache Storage contains no access context, API response, order, Customer, or token-bearing request. | Pass on W-C, W-E, M-C, and M-E (pilot report, 2026-09-14; authenticated macOS technical probes also passed) |
+| CACHE-02 | Inspect network responses for authenticated HTML/API requests and reload a private route. | Private responses are not served from a shared/public cache and use the expected no-store/private behavior. | Pass on W-C, W-E, M-C, and M-E (pilot report, 2026-09-14; authenticated macOS technical probes also passed) |
+| CACHE-03 | Sign out, go offline, and revisit previously opened private URLs. | Previously viewed order or Customer data is not available from the service worker/cache. | Pass on W-C, W-E, M-C, and M-E (pilot report, 2026-09-14; authenticated macOS technical probes also passed) |
+| CACHE-04 | Select a notification after the session has expired or after sign-out. | The app requires authentication before fetching order details; the notification itself contains no private order data. | Pass on W-C, W-E, M-C, and M-E (physical pilot report, 2026-09-14; authenticated macOS technical probes also passed) |
 
 ## 7. Completion record
 
@@ -110,5 +110,5 @@ Record final outcome:
 - Tester(s):
 - Test date(s):
 - Failed test IDs and resolution references:
-- Staffed connected-screen readiness: Pass / Fail
+- Staffed connected-screen readiness: Pass (pilot report, 2026-09-14)
 - App-owner decision: Accepted / Not accepted
