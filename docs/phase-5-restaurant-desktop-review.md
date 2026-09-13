@@ -70,6 +70,8 @@ The app owner approved this exact Staging batch on 2026-09-13 and supplied the p
 
 Remaining Staging sequence:
 
+Use the executable [Phase 5 pilot test checklist](phase-5-pilot-test-checklist.md) to record the required browser, device, workflow, notification, recovery, and cache evidence.
+
 1. Retest owner and manager navigation on the updated Staging alias, including Live orders, Menu, language changes, and direct route refreshes.
 2. Run owner/manager capability, cross-tenant, suspension, deadline race, duplicate transition, Realtime/poll/focus recovery, FCM foreground/background/closed-page, and cache tests.
 3. Record Windows and Mac device models, OS versions, Chrome/Edge versions, PWA installation state, permission state, sleep/background recovery, and staffed connected-screen readiness.
