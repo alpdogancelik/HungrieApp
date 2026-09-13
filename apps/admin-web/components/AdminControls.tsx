@@ -33,7 +33,14 @@ export function AdminControls({ kind, onDone }: { kind: Kind; onDone: () => void
     confirmPrompt: tr ? "Bu yetkili işlemi onaylıyor musunuz?" : "Confirm this privileged operation?",
     completed: tr ? "Tamamlandı" : "Completed", failed: tr ? "İşlem tamamlanamadı" : "Operation failed", recentAuth: tr ? "Bu işlem için çıkış yapın, tekrar giriş yapın ve beş dakika içinde yeniden deneyin" : "Sign out, sign in again, and retry within five minutes for this operation", copyLink: tr ? "Bağlantıyı kopyala" : "Copy link", inviteReady: tr ? "Davet oluşturuldu" : "Invitation created", copyBeforeLeaving: tr ? "Bu sayfadan ayrılmadan önce bağlantıyı kopyalayın. Daha sonra tekrar gösterilemez." : "Copy this link before leaving the page. It cannot be shown again later.", evidence: tr ? "vaka:referans" : "case:reference",
   };
-  const [values, setValues] = useState<Record<string, string>>({});
+  const [values, setValues] = useState<Record<string, string>>({
+    restaurantStatus: "suspended",
+    status: "suspended",
+    role: "admin",
+    restaurantRole: "manager",
+    resolution: "cancel",
+    state: "acknowledged",
+  });
   const [message, setMessage] = useState("");
   const [inviteUrl, setInviteUrl] = useState("");
   const [busy, setBusy] = useState(false);
