@@ -74,6 +74,8 @@ The app owner approved this exact Staging batch on 2026-09-13 and supplied the p
 
 Remaining Staging sequence:
 
+On 2026-09-13, the ORD-04 pilot interruption exposed two separate faults. The generated Expo HTML included `globalThis.__EXPO_ROUTER_HYDRATE__=true;`, but the Restaurant CSP blocked that inline script. The Staging Supabase REST service also returned `PGRST003`/504 (PostgREST connection-pool acquisition timeout) across Restaurant, Customer, and notification-worker RPCs; the browser displayed a secondary CORS error because the 504 gateway response lacked CORS headers. Firebase Auth and direct database management queries remained responsive. A read-only check found zero pending orders, one preparing order, and no lock waiters. The Staging project was restarted to recover REST availability, and the Restaurant CSP now permits only the exact SHA-256 of Expo's generated inline script. The Staging deploy command checks every exported HTML page against that CSP before publishing. Hosted `/orders` confirms the hash is present in the served CSP. ORD-04 and signed-in recovery remain unpassed until REST health and pilot browser retest are confirmed.
+
 Use the executable [Phase 5 pilot test checklist](phase-5-pilot-test-checklist.md) to record the required browser, device, workflow, notification, recovery, and cache evidence.
 
 1. Retest owner and manager navigation on the updated Staging alias, including Live orders, Menu, language changes, and direct route refreshes.

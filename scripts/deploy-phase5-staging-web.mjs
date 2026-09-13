@@ -3,6 +3,7 @@ import fs from"node:fs";import path from"node:path";import{spawnSync}from"node:c
 if(!process.argv.includes("--apply")||!process.argv.includes("--confirm=staging:phase5-restaurant-web")||!process.argv.includes(`--expect-sha256=${sha}`))throw new Error(`Reviewed staging web confirmation and checksum required. Current SHA-256: ${sha}`);
 const appRoot=`${root}/apps/restaurant`;
 const exported=spawnSync("npx",["eas-cli@16.32.0","env:exec","preview","npm run prepare:web && npx expo export --platform web --clear","--non-interactive"],{cwd:appRoot,stdio:"inherit"});if(exported.status!==0)throw new Error("Restaurant staging export failed.");
+const checkedCsp=spawnSync(process.execPath,[path.join(root,"scripts/check-restaurant-export-csp.mjs")],{cwd:root,stdio:"inherit"});if(checkedCsp.status!==0)throw new Error("Restaurant export CSP check failed.");
 const inspected=spawnSync("npx",["eas-cli@16.32.0","env:exec","preview",`node -e 'console.log(JSON.stringify({projectId:process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,vapidKey:process.env.EXPO_PUBLIC_FIREBASE_VAPID_KEY,supabaseUrl:process.env.EXPO_PUBLIC_SUPABASE_URL}))'`,"--non-interactive"],{cwd:appRoot,encoding:"utf8"});if(inspected.status!==0)throw new Error("Could not inspect the EAS Preview environment.");
 const configuration=JSON.parse(inspected.stdout.trim().split("\n").findLast(line=>line.startsWith("{"))||"{}");
 for(const name of["projectId","vapidKey","supabaseUrl"])if(!configuration[name])throw new Error(`EAS Preview is missing ${name}.`);

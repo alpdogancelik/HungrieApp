@@ -20,7 +20,7 @@
     },
     "plugins": [["expo-router", {"headers": {
       "Cache-Control": "private, no-cache, no-store, max-age=0, must-revalidate",
-      "Content-Security-Policy": "default-src 'self'; script-src 'self' https://www.gstatic.com; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com https://fcmregistrations.googleapis.com https://firebaseinstallations.googleapis.com https://*.firebaseio.com https://*.firebase.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self' https://www.gstatic.com 'sha256-67fhrP0+BkBqmgGGXTtgiVO/9EQs3QruYNU/7fnRkI8='; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com https://fcmregistrations.googleapis.com https://firebaseinstallations.googleapis.com https://*.firebaseio.com https://*.firebase.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
       "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
       "X-Content-Type-Options": "nosniff",
       "X-Frame-Options": "DENY",
