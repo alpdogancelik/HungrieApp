@@ -13,10 +13,11 @@ export const restaurantDeviceId = () => {
 
 export const unregisterRestaurantPush = async () => {
   const deviceId = restaurantDeviceId();
-  await supabase.rpc("restaurant_unregister_web_push_v1" as never, {
+  const result = await supabase.rpc("restaurant_unregister_web_push_v1" as never, {
     p_device_id: deviceId,
     p_operation_id: crypto.randomUUID(),
   } as never);
+  if (result.error) throw result.error;
   if (await isSupported()) await deleteToken(getMessaging(firebaseApp)).catch(() => false);
 };
 
