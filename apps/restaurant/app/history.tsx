@@ -1,1 +1,5 @@
-import{DataPage}from"../src/DataPage";export default function Page(){return <DataPage kind="history"/>}
+import { HistoryPage } from "../src/HistoryPage";
+
+export default function Page() {
+  return <HistoryPage />;
+}
