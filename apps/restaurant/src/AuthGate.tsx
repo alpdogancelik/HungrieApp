@@ -11,6 +11,18 @@ import { RestaurantNotificationListener } from "./RestaurantNotificationListener
 const publicPath = (path: string) =>
   path === "/login" || path === "/invite" || path.startsWith("/invite/");
 
+const accessContextTimeoutMs = 12000;
+
+async function fetchAccessContext() {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), accessContextTimeoutMs);
+  try {
+    return await supabase.rpc("get_my_access_context_v1").abortSignal(controller.signal);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
@@ -22,11 +34,17 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const verifiedUid = useRef("");
 
   useEffect(() => {
-    void ensureSessionPersistence();
+    void ensureSessionPersistence().catch(() => setState("error"));
     if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
       void navigator.serviceWorker.register("/sw.js", { scope: "/" });
     }
   }, []);
+
+  useEffect(() => {
+    if (state !== "loading") return;
+    const timeout = setTimeout(() => setState(current => current === "loading" ? "error" : current), 15000);
+    return () => clearTimeout(timeout);
+  }, [state, retry, path]);
 
   useEffect(() => {
     let live = true;
@@ -52,7 +70,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const { data, error } = await supabase.rpc("get_my_access_context_v1");
+        const { data, error } = await fetchAccessContext();
         if (error) throw error;
         if (!live) return;
         const context = data as unknown as AccessContext;
@@ -99,8 +117,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     };
   }, [path, retry, router]);
 
-  if (state === "ready") return <>{restaurantId && <RestaurantNotificationListener restaurantId={restaurantId} />}{children}</>;
-  return <div className="center"><p>{state === "error" ? t.unavailable : t.loading}</p>
-    {state === "error" && <button className="button" onClick={() => { setState("loading"); setRetry(value => value + 1); }}>{t.retry}</button>}
-  </div>;
+  return <>
+    {state === "ready" && restaurantId && <RestaurantNotificationListener restaurantId={restaurantId} />}
+    {children}
+    {state !== "ready" && <div className="access-overlay center" role="status" aria-live="polite">
+      <p>{state === "error" ? t.unavailable : t.loading}</p>
+      {state === "error" && <button className="button" onClick={() => { setState("loading"); setRetry(value => value + 1); }}>{t.retry}</button>}
+    </div>}
+  </>;
 }
