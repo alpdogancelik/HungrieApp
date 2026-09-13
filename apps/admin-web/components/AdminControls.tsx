@@ -31,7 +31,7 @@ export function AdminControls({ kind, onDone }: { kind: Kind; onDone: () => void
     cancel: tr ? "İptal et" : "Cancel", delivered: tr ? "Teslim edildiğini doğrula" : "Confirm delivered",
     acknowledge: tr ? "Kabul et" : "Acknowledge", resolve: tr ? "Çöz" : "Resolve", confirm: tr ? "Onayla" : "Confirm",
     confirmPrompt: tr ? "Bu yetkili işlemi onaylıyor musunuz?" : "Confirm this privileged operation?",
-    completed: tr ? "Tamamlandı" : "Completed", failed: tr ? "İşlem tamamlanamadı" : "Operation failed", recentAuth: tr ? "Bu işlem için çıkış yapın, tekrar giriş yapın ve beş dakika içinde yeniden deneyin" : "Sign out, sign in again, and retry within five minutes for this operation", copyOnce: tr ? "Bir kez kopyala" : "Copy once", evidence: tr ? "vaka:referans" : "case:reference",
+    completed: tr ? "Tamamlandı" : "Completed", failed: tr ? "İşlem tamamlanamadı" : "Operation failed", recentAuth: tr ? "Bu işlem için çıkış yapın, tekrar giriş yapın ve beş dakika içinde yeniden deneyin" : "Sign out, sign in again, and retry within five minutes for this operation", copyLink: tr ? "Bağlantıyı kopyala" : "Copy link", inviteReady: tr ? "Davet oluşturuldu" : "Invitation created", copyBeforeLeaving: tr ? "Bu sayfadan ayrılmadan önce bağlantıyı kopyalayın. Daha sonra tekrar gösterilemez." : "Copy this link before leaving the page. It cannot be shown again later.", evidence: tr ? "vaka:referans" : "case:reference",
   };
   const [values, setValues] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
@@ -80,7 +80,7 @@ export function AdminControls({ kind, onDone }: { kind: Kind; onDone: () => void
     } finally { setBusy(false); }
   }
 
-  return <details className="controls"><summary>{kind === "restaurants" ? labels.createRestaurant : labels.action}</summary><form onSubmit={submit}>
+  return <><details className="controls"><summary>{kind === "restaurants" ? labels.createRestaurant : labels.action}</summary><form onSubmit={submit}>
     {kind === "restaurants" && <><select value={values.restaurantAction || "create"} onChange={set("restaurantAction")}><option value="create">{labels.createRestaurant}</option><option value="status">{labels.lifecycle}</option><option value="invite">{labels.inviteRestaurant}</option></select>
       {(values.restaurantAction || "create") === "create" ? <input required value={values.name || ""} onChange={set("name")} placeholder={labels.restaurantName} /> : values.restaurantAction === "status" ? <><input required placeholder={labels.restaurantId} value={values.restaurantId || ""} onChange={set("restaurantId")} /><select value={values.restaurantStatus || "suspended"} onChange={set("restaurantStatus")}><option value="pending">{labels.pending}</option><option value="active">{labels.active}</option><option value="suspended">{labels.suspended}</option><option value="closed">{labels.closed}</option></select><input required placeholder={labels.reasonCode} value={values.reason || ""} onChange={set("reason")} /></> : <><input required placeholder={labels.restaurantId} value={values.restaurantId || ""} onChange={set("restaurantId")} /><input type="email" required placeholder="Email" value={values.email || ""} onChange={set("email")} /><select value={values.restaurantRole || "manager"} onChange={set("restaurantRole")}><option value="manager">{labels.manager}</option><option value="owner">{labels.owner}</option></select></>}
     </>}
@@ -89,5 +89,7 @@ export function AdminControls({ kind, onDone }: { kind: Kind; onDone: () => void
     </>}
     {kind === "orders" && <><input required placeholder={labels.orderId} value={values.orderId || ""} onChange={set("orderId")} /><select value={values.resolution || "cancel"} onChange={set("resolution")}><option value="cancel">{labels.cancel}</option><option value="confirm_delivered">{labels.delivered}</option></select><input required placeholder={labels.reason} value={values.reason || ""} onChange={set("reason")} /></>}
     {kind === "incidents" && <><input required placeholder={labels.incidentId} value={values.incidentId || ""} onChange={set("incidentId")} /><select value={values.state || "acknowledged"} onChange={set("state")}><option value="acknowledged">{labels.acknowledge}</option><option value="resolved">{labels.resolve}</option></select>{values.state === "resolved" && <input required placeholder={labels.resolutionNote} value={values.note || ""} onChange={set("note")} />}</>}
-    <button className="primary" disabled={busy}>{labels.confirm}</button></form>{message && <output className="operation-output">{message}</output>}{inviteUrl && <output className="operation-output"><code>{inviteUrl}</code><button type="button" onClick={() => void navigator.clipboard.writeText(inviteUrl)}>{labels.copyOnce}</button></output>}</details>;
+    <button className="primary" disabled={busy}>{labels.confirm}</button></form>{message && <output className="operation-output">{message}</output>}</details>
+    {inviteUrl && <div className="invite-link-panel" role="status"><strong>{labels.inviteReady}</strong><p>{labels.copyBeforeLeaving}</p><code>{inviteUrl}</code><button type="button" onClick={() => void navigator.clipboard.writeText(inviteUrl)}>{labels.copyLink}</button></div>}
+  </>;
 }
