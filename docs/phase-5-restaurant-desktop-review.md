@@ -1,6 +1,6 @@
 # Phase 5 Restaurant desktop web/PWA review
 
-**Status:** Development implementation and rehearsal completed on 2026-09-13. The exact Staging batch is prepared for separate app-owner review. No Staging Phase 5 migration, Realtime policy, Firebase Function, VAPID setting, EAS update, or pilot identity was created by this implementation step. No Production environment was touched, and legacy authorization remains live.
+**Status:** Development implementation and rehearsal completed on 2026-09-13. The app owner approved the exact Staging batch on 2026-09-13. The restricted backup was taken, the three checksum-pinned migrations and reviewed Realtime policy were applied, and the Staging Web Push sender was deployed. Restaurant web deployment, pilot onboarding, and device qualification remain in progress. No Production environment was touched, and legacy authorization remains live.
 
 ## Development result
 
@@ -45,17 +45,26 @@ The complete Restaurant route/source/service-worker/EAS configuration checksum, 
 
 Read-only review on 2026-09-13 found 32 applied Staging migrations and exactly the three Phase 5 migrations pending. Staging currently has 14 profiles, 14 canonical accounts, and 11 canonical Restaurant accounts. The managed Realtime policy SHA-256 is `11d60aebcfde9ee2656afd3ad2efa0bb7ecbc4929d9d0aca79641067e9eb3815`. Restricted review record: `secure/phase5-staging/review-1789303276365.json`.
 
-After separate app-owner approval, the Staging sequence is:
+The app owner approved this exact Staging batch on 2026-09-13 and supplied the pilot owner and manager addresses out of band. The addresses are not persisted in this review. Execution evidence so far:
 
-1. Take a fresh restricted Staging schema/data backup.
-2. Dry-run and apply only the three migrations using their checksum.
-3. Apply the reviewed receive-only Realtime policy containing legacy and canonical topic predicates.
-4. Configure the dedicated non-production Web Push VAPID key without recording its private material.
-5. Deploy only `dispatchRestaurantWebPushStaging`, pinned to function checksum `8e873b7206454a54942b33a9131250c38b7ca3faca991fa618d2d6db6ddd97a2`.
-6. Deploy the Restaurant app to EAS project `a2d5538b-bd0c-4205-8153-ba08a3a9b2b1` on the Staging branch/alias. Do not connect `restaurant.hungrie.app`.
-7. Create a fresh pilot Restaurant and invite one stable owner and one stable manager through the Admin app. The app owner supplies both email addresses at this step.
-8. Run owner/manager capability, cross-tenant, suspension, deadline race, duplicate transition, Realtime/poll/focus recovery, FCM foreground/background/closed-page, and cache tests.
-9. Record Windows and Mac device models, OS versions, Chrome/Edge versions, PWA installation state, permission state, sleep/background recovery, and staffed connected-screen readiness.
+- Restricted backup: `secure/phase5-staging-backup/2026-09-13T12-49-08-704Z/manifest.json`.
+- Backup schema SHA-256: `0b975e548ac7575bf6e2b59d636645c0a811bca4369ac4e21af71df63b53e409`.
+- Backup data SHA-256: `0ea2ad34e9f42d4a9884714e7fcbb07fc47f4edce68a8b743089a40ed5f74c63`.
+- The migration dry-run passed, and only the three reviewed Phase 5 migrations were applied in order.
+- Hosted verification found 35 applied migrations, 14 canonical accounts, 11 canonical Restaurant accounts, nine unchanged legacy memberships, an authenticated canonical dashboard RPC, private delivery ledgers, service-only delivery claims, and one canonical Realtime policy.
+- The reviewed receive-only Realtime policy was applied with SHA-256 `11d60aebcfde9ee2656afd3ad2efa0bb7ecbc4929d9d0aca79641067e9eb3815`.
+- `dispatchRestaurantWebPushStaging` was deployed successfully in `us-central1` with its one-minute scheduler and the existing Staging Supabase secrets. No secret value was recorded in this review.
+- The dedicated non-production VAPID public key and the remaining public Firebase/Supabase browser configuration were added to the EAS Preview environment. The VAPID value is intentionally omitted here.
+- The first EAS upload exposed a deployment-procedure defect: `eas deploy --environment preview` did not inject Preview values into the preceding local Expo export. That deployment was never used for a pilot. The deployment script now runs a cache-cleared export through `eas env:exec preview` and refuses an export that lacks the reviewed Firebase project, VAPID key, or Supabase URL.
+- The corrected EAS deployment is `https://hungrie-restaurant--dzcrems18v.expo.app`, assigned to the Staging alias `https://hungrie-restaurant--staging.expo.app`. Hosted inspection confirms the real Staging Firebase project, VAPID key, and Supabase URL are in the bundle, `/sw.js` is available, and the worker has no fetch handler or Cache API use.
+- The Staging Admin portal was configured to generate Restaurant invitation links for the EAS Staging alias and redeployed as Vercel deployment `dpl_6qAVaAHNwkkuZaxKg5Y9FiwpN18o`, retaining `https://hungrie-admin-web-phase1.vercel.app` as its alias.
+- Hosted Restaurant HTML is `private, no-store`, includes CSP `frame-ancestors 'none'`, HSTS, `nosniff`, referrer policy, and permissions policy. EAS Hosting did not emit the configured legacy `X-Frame-Options` response header; the effective CSP frame denial remains present. This hosting behavior is recorded for review rather than weakening the CSP.
+
+Remaining Staging sequence:
+
+1. Create the fresh pilot Restaurant and invite the supplied owner and manager through the Admin app.
+2. Run owner/manager capability, cross-tenant, suspension, deadline race, duplicate transition, Realtime/poll/focus recovery, FCM foreground/background/closed-page, and cache tests.
+3. Record Windows and Mac device models, OS versions, Chrome/Edge versions, PWA installation state, permission state, sleep/background recovery, and staffed connected-screen readiness.
 
 The Staging apply and browser/device qualification remain required for the Phase 5 exit gate. Development completion does not authorize those writes or qualify Phase 5 for acceptance.
 
