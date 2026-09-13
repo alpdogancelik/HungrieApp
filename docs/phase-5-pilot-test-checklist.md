@@ -62,12 +62,12 @@ Keep the Live orders screen staffed while order acceptance is enabled. Create ea
 
 | ID | Action | Expected result | Result |
 |---|---|---|---|
-| REC-01 | Disconnect the Restaurant device from the network, create an order, then reconnect. | The UI shows the disconnected state, prevents unsafe readiness, and fetches the missed order after reconnection. | Retest required: first attempt showed only a generic service error; global offline warning added. |
-| REC-02 | Put the tab in the background, create an order, then focus it. | The order is reconciled when the tab regains focus. |  |
-| REC-03 | Put the computer to sleep, create an order from another device, then wake it. | The connection recovers and the missed order appears. |  |
-| REC-04 | Temporarily block or interrupt the private Realtime connection while leaving HTTP available. | The bounded polling path recovers the order and Realtime reconnects later. |  |
-| REC-05 | Suspend the pilot Restaurant account while its app is open, then attempt a read and mutation. | Normal access and mutations are denied promptly and the suspended/support state appears. Restore the test account afterward. |  |
-| REC-06 | Suspend the Restaurant entity while an order is open. | Restaurant staff cannot mutate it, new checkout is denied, and Admin support handling remains available. Restore the test Restaurant afterward. |  |
+| REC-01 | Disconnect the Restaurant device from the network, create an order, then reconnect. | The UI shows the disconnected state, prevents unsafe readiness, and fetches the missed order after reconnection. | Pass (pilot retest, 2026-09-14; earlier warning issue resolved) |
+| REC-02 | Put the tab in the background, create an order, then focus it. | The order is reconciled when the tab regains focus. | Pass (pilot report, 2026-09-14) |
+| REC-03 | Put the computer to sleep, create an order from another device, then wake it. | The connection recovers and the missed order appears. | Pass (pilot report, 2026-09-14) |
+| REC-04 | Temporarily block or interrupt the private Realtime connection while leaving HTTP available. | The bounded polling path recovers the order and Realtime reconnects later. | Pass (pilot report, 2026-09-14) |
+| REC-05 | Suspend the pilot Restaurant account while its app is open, then attempt a read and mutation. | Normal access and mutations are denied promptly and the suspended/support state appears. Restore the test account afterward. | Pass (pilot report and account restoration verified, 2026-09-14) |
+| REC-06 | Suspend the Restaurant entity while an order is open. | Restaurant staff cannot mutate it, new checkout is denied, and Admin support handling remains available. Restore the test Restaurant afterward. | Behavior pass (pilot report, 2026-09-14); cleanup pending—the pilot Restaurant remains suspended. |
 
 ## 5. Notifications
 
