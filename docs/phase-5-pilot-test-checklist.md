@@ -23,12 +23,12 @@ Run these tests with both the pilot **owner** and **manager** accounts.
 
 | ID | Action | Expected result | Owner | Manager |
 |---|---|---|---|---|
-| NAV-01 | Sign in, then open Dashboard, Live orders, History, Menu, Restaurant, Reviews, Alerts, and Security. | Every route opens and remains on the selected page; the app does not jump back to Dashboard. |  |  |
-| NAV-02 | Refresh the browser directly on `/orders`, `/menu`, and one `/orders/<id>` page. | The same route reloads after access verification; there is no 404 or redirect loop. |  |  |
-| NAV-03 | Change EN to TR and back to EN. Navigate and refresh. | Labels change language and the app remains usable. |  |  |
-| NAV-04 | Open an order and History. | Readable fields, item names, options, totals, and states appear; raw API JSON is absent. |  |  |
-| NAV-05 | Open a long menu form and reach its final controls. | The full page scrolls vertically without horizontal page overflow. |  |  |
-| NAV-06 | Sign out, press Back, and try a copied private route URL. | No private Restaurant or order data is visible; sign-in is required. |  |  |
+| NAV-01 | Sign in, then open Dashboard, Live orders, History, Menu, Restaurant, Reviews, Alerts, and Security. | Every route opens and remains on the selected page; the app does not jump back to Dashboard. | Pass | Pass |
+| NAV-02 | Refresh the browser directly on `/orders`, `/menu`, and one `/orders/<id>` page. | The same route reloads after access verification; there is no 404 or redirect loop. | Pass | Pass |
+| NAV-03 | Change EN to TR and back to EN. Navigate and refresh. | Labels change language and the app remains usable. | Pass | Pass |
+| NAV-04 | Open an order and History. | Readable fields, item names, options, totals, and states appear; raw API JSON is absent. | Pass | Pass |
+| NAV-05 | Open a long menu form and reach its final controls. | The full page scrolls vertically without horizontal page overflow. | Pass | Pass |
+| NAV-06 | Sign out, press Back, and try a copied private route URL. | No private Restaurant or order data is visible; sign-in is required. | Pass | Pass |
 
 ## 2. Owner and manager operations
 
