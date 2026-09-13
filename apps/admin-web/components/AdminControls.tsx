@@ -10,7 +10,7 @@ type Kind = "restaurants" | "accounts" | "orders" | "incidents";
 const invitationToken = () => Array.from(crypto.getRandomValues(new Uint8Array(32)), (byte) => byte.toString(16).padStart(2, "0")).join("");
 const sha256 = async (value: string) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value))), (byte) => byte.toString(16).padStart(2, "0")).join("");
 const requireRecentAuth = async () => {
-  const token = await auth.currentUser?.getIdTokenResult(true);
+  const token = await auth.currentUser?.getIdTokenResult();
   const authenticatedAt = Date.parse(token?.authTime || "");
   if (!Number.isFinite(authenticatedAt) || Date.now() - authenticatedAt > 4 * 60 * 1000) throw new Error("RECENT_AUTH_REQUIRED");
 };
