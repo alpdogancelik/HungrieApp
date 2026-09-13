@@ -4,11 +4,11 @@
 
 **Business decisions:** Locked by the app owner; see [Phase 0 decision record](phase-0-architecture-decisions.md)
 
-**Implementation status:** Phase 1, the development-only Phase 2 additive account model, and Phase 3 classification/backfill were separately accepted by the app owner on 2026-09-12. Phase 4 implementation and non-production staging qualification were accepted on 2026-09-13. Phase 5 development implementation and rehearsal are complete; its separately approved Staging migrations, Realtime policy, Firebase sender, and Restaurant/Admin web configuration are deployed. Pilot owner and manager onboarding is complete; desktop workflow and device qualification remain. Legacy Customer/Restaurant authorization remains live. See [Phase 4 review](phase-4-admin-minimum-review.md) and [Phase 5 review](phase-5-restaurant-desktop-review.md).
+**Implementation status:** Phase 1, the development-only Phase 2 additive account model, and Phase 3 classification/backfill were separately accepted by the app owner on 2026-09-12. Phase 4 implementation and non-production staging qualification were accepted on 2026-09-13. Phase 5 development implementation, rehearsal, Staging deployment, pilot onboarding, desktop workflow, and browser/device qualification were accepted by the app owner on 2026-09-14. The app owner waived transcription of detailed device-model/version metadata after confirming all required browser combinations passed. Legacy Customer/Restaurant authorization remains live. See [Phase 4 review](phase-4-admin-minimum-review.md) and [Phase 5 review](phase-5-restaurant-desktop-review.md).
 
 **Current release status:** Hungrie has no live production Customer application or production user base. Development and Staging intentionally share the current non-production Firebase Auth project while using separate Supabase projects. Production will use new, clean Firebase and Supabase projects; no non-production test identities or application data will be copied into them. This plan prepares the first production Customer release, not an upgrade of existing production users.
 
-**Phase status:** Phase 0 through Phase 4 are complete and accepted. The Phase 5 Staging batch is deployed under its approved non-production aliases; pilot browser/workflow and device qualification are still required, so Phase 5 is not yet accepted.
+**Phase status:** Phase 0 through Phase 5 are complete and accepted. Phase 6 is next.
 
 **Scope:** Separate Customer, Restaurant, and Admin applications while retaining Firebase Authentication and one shared Supabase database per environment.
 

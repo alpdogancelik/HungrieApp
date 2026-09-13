@@ -17,6 +17,8 @@ Run the desktop tests on all four supported combinations.
 
 iPhone/iPad results may be recorded as additional evidence, but they do not replace the four desktop combinations required by the Phase 5 gate.
 
+**App-owner evidence decision (2026-09-14):** The app owner confirmed that all required tests passed on W-C, W-E, M-C, and M-E, waived transcription of the detailed device-model/version fields above, and accepted the Phase 5 Staging pilot evidence. The blank metadata cells are therefore an approved documentation waiver, not an untested combination.
+
 ## 1. Login, navigation, and presentation
 
 Run these tests with both the pilot **owner** and **manager** accounts.
@@ -102,13 +104,13 @@ Phase 5 can be accepted when:
 - Every applicable row above is marked passed on the required desktop combinations.
 - Both owner and manager workflows pass.
 - Any failure has been fixed and retested.
-- The actual device, OS, browser, PWA, permission, sleep/recovery, and staffed-screen results are recorded.
+- The actual device, OS, browser, PWA, permission, sleep/recovery, and staffed-screen results are recorded, or the app owner explicitly waives detailed metadata after confirming the required matrix passed.
 - The app owner explicitly accepts the Phase 5 Staging pilot evidence.
 
 Record final outcome:
 
-- Tester(s):
-- Test date(s):
-- Failed test IDs and resolution references:
+- Tester(s): App owner; authenticated automated Staging probes by Codex
+- Test date(s): 2026-09-13 through 2026-09-14
+- Failed test IDs and resolution references: All observed pilot issues were fixed and retested; see [Phase 5 review](phase-5-restaurant-desktop-review.md).
 - Staffed connected-screen readiness: Pass (pilot report, 2026-09-14)
-- App-owner decision: Accepted / Not accepted
+- App-owner decision: **Accepted on 2026-09-14**
