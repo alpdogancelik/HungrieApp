@@ -7,12 +7,15 @@ const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const crypto = require("node:crypto");
 const http2 = require("node:http2");
+const { isOperationId, hasTotpFactor, hasTotpSession, accountStatusFailureReason } = require("./phase4AdminLogic");
 
 admin.initializeApp();
 
 const SUPABASE_AUTHENTICATED_ROLE = "authenticated";
 const SUPABASE_URL = defineSecret("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = defineSecret("SUPABASE_SERVICE_ROLE_KEY");
+const SUPABASE_STAGING_URL = defineSecret("SUPABASE_STAGING_URL");
+const SUPABASE_STAGING_SERVICE_ROLE_KEY = defineSecret("SUPABASE_STAGING_SERVICE_ROLE_KEY");
 const ORDER_AUTOMATION_BACKEND = defineString("ORDER_AUTOMATION_BACKEND", { default: "firebase" });
 const firebaseOrderAutomationEnabled = () => ORDER_AUTOMATION_BACKEND.value() === "firebase";
 
@@ -605,9 +608,9 @@ exports.assignSupabaseRoleOnUserCreate = functionsV1.auth.user().onCreate(async 
     });
 });
 
-const callSupabaseAdminRpc = async (name, body = {}) => {
-    const url = SUPABASE_URL.value().replace(/\/$/, "");
-    const key = SUPABASE_SERVICE_ROLE_KEY.value();
+const callSupabaseAdminRpc = async (name, body = {}, urlSecret = SUPABASE_URL, keySecret = SUPABASE_SERVICE_ROLE_KEY) => {
+    const url = urlSecret.value().replace(/\/$/, "");
+    const key = keySecret.value();
     if (!url || !key) throw new Error("Supabase account-deletion secrets are not configured.");
     const response = await fetch(`${url}/rest/v1/rpc/${name}`, {
         method: "POST",
@@ -622,6 +625,71 @@ const callSupabaseAdminRpc = async (name, body = {}) => {
     }
     return payload;
 };
+
+const callSupabaseUserRpc = async (name, body, authorization, urlSecret, keySecret) => {
+    const url = urlSecret.value().replace(/\/$/, "");
+    const key = keySecret.value();
+    const token = String(authorization || "").replace(/^Bearer\s+/i, "");
+    if (!url || !key || !token) throw new Error("Authenticated Supabase bridge is not configured.");
+    const response = await fetch(`${url}/rest/v1/rpc/${name}`, {
+        method: "POST",
+        headers: { apikey: key, Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+        const error = new Error(String(payload?.message || `Supabase RPC ${name} failed.`));
+        error.code = payload?.code;
+        throw error;
+    }
+    return payload;
+};
+
+const requireAdminBridgeRequest = (request) => {
+    if (!request.auth?.uid || !hasTotpSession(request.auth.token)) {
+        throw new HttpsError("permission-denied", "A verified TOTP Admin session is required.");
+    }
+    const authorization = request.rawRequest?.headers?.authorization;
+    if (!authorization) throw new HttpsError("unauthenticated", "The current ID token is required.");
+    return authorization;
+};
+
+const makeRecordAdminMfaEnrollment = (urlSecret, keySecret) => onCall(
+    { secrets: [urlSecret, keySecret] }, async (request) => {
+        if (!request.auth?.uid || request.auth.token.email_verified !== true) throw new HttpsError("permission-denied", "A verified signed-in identity is required.");
+        const operationId = String(request.data?.operationId || "");
+        if (!isOperationId(operationId)) throw new HttpsError("invalid-argument", "A valid operation ID is required.");
+        const user = await admin.auth().getUser(request.auth.uid);
+        if (!hasTotpFactor(user)) throw new HttpsError("failed-precondition", "A TOTP factor must be enrolled first.");
+        try {
+            const result = await callSupabaseAdminRpc("server_record_admin_mfa_enrollment_v1", { p_firebase_uid: request.auth.uid, p_operation_id: operationId }, urlSecret, keySecret);
+            await admin.auth().revokeRefreshTokens(request.auth.uid);
+            logger.info("Admin TOTP enrollment recorded", { operationId }); return result;
+        } catch (error) { logger.error("Admin TOTP enrollment could not be recorded", { operationId, code: error?.code || "unknown" }); throw new HttpsError("internal", "Admin MFA enrollment could not be recorded."); }
+    });
+const makeSetAdminAccountStatus = (urlSecret, keySecret) => onCall(
+    { secrets: [urlSecret, keySecret] }, async (request) => {
+        const authorization=requireAdminBridgeRequest(request),profileId=String(request.data?.profileId||""),status=String(request.data?.status||""),reasonCode=String(request.data?.reasonCode||""),operationId=String(request.data?.operationId||"");
+        if(!profileId||!["active","suspended","revoked"].includes(status))throw new HttpsError("invalid-argument","Valid account status input is required.");
+        try { const result=await callSupabaseUserRpc("admin_set_account_status_v1",{p_profile_id:profileId,p_status:status,p_reason_code:reasonCode,p_operation_id:operationId},authorization,urlSecret,keySecret); if(status!=="active"){const uid=await callSupabaseAdminRpc("server_get_firebase_uid_v1",{p_profile_id:profileId},urlSecret,keySecret);await admin.auth().revokeRefreshTokens(uid)} return result; }
+        catch(error){
+            const reason=accountStatusFailureReason(error);
+            logger.error("Admin account status orchestration failed",{operationId,status,code:error?.code||"unknown",reason:reason||"unknown"});
+            throw new HttpsError("failed-precondition","Account status could not be changed.",reason?{reason}:undefined);
+        }
+    });
+const makeRecoverAdminMfa = (urlSecret, keySecret) => onCall(
+    { secrets: [urlSecret, keySecret] }, async (request) => {
+        const authorization=requireAdminBridgeRequest(request),profileId=String(request.data?.profileId||""),evidenceReference=String(request.data?.evidenceReference||""),operationId=String(request.data?.operationId||"");
+        try { const result=await callSupabaseUserRpc("admin_record_mfa_recovery_v1",{p_profile_id:profileId,p_evidence_reference:evidenceReference,p_operation_id:operationId},authorization,urlSecret,keySecret);const uid=await callSupabaseAdminRpc("server_get_firebase_uid_v1",{p_profile_id:profileId},urlSecret,keySecret);await admin.auth().updateUser(uid,{multiFactor:{enrolledFactors:[]}});await admin.auth().revokeRefreshTokens(uid);return result; }
+        catch(error){logger.error("Admin MFA recovery orchestration failed",{operationId,code:error?.code||"unknown"});throw new HttpsError("failed-precondition","MFA recovery could not be completed.")}
+    });
+exports.recordAdminMfaEnrollmentDevelopment=makeRecordAdminMfaEnrollment(SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY);
+exports.setAdminAccountStatusDevelopment=makeSetAdminAccountStatus(SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY);
+exports.recoverAdminMfaDevelopment=makeRecoverAdminMfa(SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY);
+exports.recordAdminMfaEnrollmentStaging=makeRecordAdminMfaEnrollment(SUPABASE_STAGING_URL,SUPABASE_STAGING_SERVICE_ROLE_KEY);
+exports.setAdminAccountStatusStaging=makeSetAdminAccountStatus(SUPABASE_STAGING_URL,SUPABASE_STAGING_SERVICE_ROLE_KEY);
+exports.recoverAdminMfaStaging=makeRecoverAdminMfa(SUPABASE_STAGING_URL,SUPABASE_STAGING_SERVICE_ROLE_KEY);
 
 const deleteFirestoreCollection = async (reference) => {
     while (true) {

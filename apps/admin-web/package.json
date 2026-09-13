@@ -1,6 +1,6 @@
 {
   "name": "@hungrie/admin-web",
-  "version": "0.0.0-phase1",
+  "version": "0.4.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,12 +11,16 @@
   "dependencies": {
     "@hungrie/database-types": "1.0.0",
     "@hungrie/domain": "1.0.0",
+    "@supabase/supabase-js": "^2.114.0",
+    "firebase": "^11.10.0",
     "next": "16.3.5",
+    "qrcode": "^1.5.4",
     "react": "19.1.0",
     "react-dom": "19.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "19.1.10",
     "@types/react-dom": "19.1.11",
     "typescript": "~5.9.2"

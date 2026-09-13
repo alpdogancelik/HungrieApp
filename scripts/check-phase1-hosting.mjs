@@ -55,7 +55,7 @@ try {
   for (let attempt = 0; attempt < 40; attempt += 1) {
     if (admin.exitCode !== null) throw new Error("Admin local hosting process exited");
     try {
-      privateResponse = await fetch(`http://127.0.0.1:${adminPort}/private`);
+      privateResponse = await fetch(`http://127.0.0.1:${adminPort}/dashboard`, { redirect: "manual" });
       break;
     } catch {
       await new Promise((resolve) => setTimeout(resolve, 250));

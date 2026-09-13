@@ -1485,15 +1485,25 @@ export type Database = {
       }
       admin_change_admin_role_v1: {
         Args: {
-          p_admin_role: "admin" | "super_admin"
+          p_admin_role: string
           p_operation_id: string
           p_profile_id: string
         }
         Returns: Json
       }
+      admin_create_restaurant_v1: {
+        Args: { p_name: string; p_operation_id: string }
+        Returns: Json
+      }
+      admin_get_dashboard_v1: { Args: never; Returns: Json }
+      admin_get_order_v1: { Args: { p_order_id: string }; Returns: Json }
+      admin_get_restaurant_v1: {
+        Args: { p_restaurant_id: string }
+        Returns: Json
+      }
       admin_invite_admin_account_v1: {
         Args: {
-          p_admin_role: "admin" | "super_admin"
+          p_admin_role: string
           p_email: string
           p_operation_id: string
           p_token_digest: string
@@ -1507,6 +1517,47 @@ export type Database = {
           p_restaurant_id: string
           p_restaurant_role: Database["public"]["Enums"]["restaurant_role"]
           p_token_digest: string
+        }
+        Returns: Json
+      }
+      admin_list_accounts_v1: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_status?: string
+          p_type?: Database["public"]["Enums"]["account_type"]
+        }
+        Returns: Json
+      }
+      admin_list_audit_v1: {
+        Args: {
+          p_action?: string
+          p_limit?: number
+          p_offset?: number
+          p_target_type?: string
+        }
+        Returns: Json
+      }
+      admin_list_incidents_v1: {
+        Args: { p_limit?: number; p_offset?: number; p_state?: string }
+        Returns: Json
+      }
+      admin_list_orders_v1: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_restaurant_id?: string
+          p_status?: Database["public"]["Enums"]["order_status"]
+        }
+        Returns: Json
+      }
+      admin_list_restaurants_v1: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_status?: Database["public"]["Enums"]["restaurant_lifecycle_status"]
         }
         Returns: Json
       }
@@ -1527,12 +1578,30 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_resolve_order_v1: {
+        Args: {
+          p_operation_id: string
+          p_order_id: string
+          p_reason: string
+          p_resolution: string
+        }
+        Returns: Json
+      }
       admin_set_account_status_v1: {
         Args: {
           p_operation_id: string
           p_profile_id: string
           p_reason_code: string
-          p_status: "pending" | "active" | "suspended" | "revoked"
+          p_status: string
+        }
+        Returns: Json
+      }
+      admin_set_incident_state_v1: {
+        Args: {
+          p_incident_id: string
+          p_operation_id: string
+          p_resolution_note: string
+          p_state: string
         }
         Returns: Json
       }
@@ -1780,6 +1849,14 @@ export type Database = {
           p_offset?: number
           p_query?: string
         }
+        Returns: Json
+      }
+      server_get_firebase_uid_v1: {
+        Args: { p_profile_id: string }
+        Returns: string
+      }
+      server_record_admin_mfa_enrollment_v1: {
+        Args: { p_firebase_uid: string; p_operation_id: string }
         Returns: Json
       }
       set_category_active: {

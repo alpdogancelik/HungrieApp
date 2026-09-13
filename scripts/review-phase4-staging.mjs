@@ -1,0 +1,22 @@
+#!/usr/bin/env node
+import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
+const secure=path.join(root,"secure");
+const migration="20260913100000_phase4_admin_minimum.sql";
+const state=JSON.parse(fs.readFileSync(path.join(secure,"supabase-projects.local.json"),"utf8"));
+const project=state.projects?.staging;
+if(project?.name!=="HungrieApp Staging"||!project.ref||project.ref===state.projects?.development?.ref||project.ref===state.projects?.production?.ref)throw new Error("Staging identity is incomplete or overlaps another environment.");
+const token=fs.readFileSync(path.join(secure,"supabase-cli-hungrie/access-token"),"utf8").trim();
+const query=async sql=>{const response=await fetch(`https://api.supabase.com/v1/projects/${project.ref}/database/query`,{method:"POST",headers:{authorization:`Bearer ${token}`,"content-type":"application/json"},body:JSON.stringify({query:sql})});if(!response.ok)throw new Error(`Staging review failed (${response.status}).`);return response.json()};
+const metadataResponse=await fetch(`https://api.supabase.com/v1/projects/${project.ref}`,{headers:{authorization:`Bearer ${token}`}});if(!metadataResponse.ok)throw new Error("Staging metadata failed.");const metadata=await metadataResponse.json();if(metadata.name!==project.name||metadata.status!=="ACTIVE_HEALTHY")throw new Error("Staging identity or health changed.");
+const history=await query("select version from supabase_migrations.schema_migrations order by version");const applied=new Set(history.map(row=>String(row.version)));const pending=fs.readdirSync(path.join(root,"supabase/migrations")).filter(name=>/^\d{14}_.+\.sql$/.test(name)&&!applied.has(name.slice(0,14))).sort();if(history.length!==30||pending.length!==1||pending[0]!==migration)throw new Error("Expected exactly the Phase 4 migration after 30 staging migrations.");
+const bytes=fs.readFileSync(path.join(root,"supabase/migrations",migration));const sha256=crypto.createHash("sha256").update(bytes).digest("hex");const [counts]=await query("select (select count(*) from public.profiles)::int profiles,(select count(*) from private.account_access)::int accounts,(select count(*) from private.user_roles)::int legacy_admin_roles,(select count(*) from private.account_access where account_type='admin')::int canonical_admins");
+const functionFiles=["functions/index.js","functions/phase4AdminLogic.js","functions/package.json","functions/package-lock.json"];
+const functionHash=crypto.createHash("sha256");
+for(const name of functionFiles)functionHash.update(name).update("\0").update(fs.readFileSync(path.join(root,name))).update("\0");
+const functionSourceSha256=functionHash.digest("hex");
+const bootstrapSha256=crypto.createHash("sha256").update(fs.readFileSync(path.join(root,"scripts/bootstrap-phase4-first-super-admin.mjs"))).digest("hex");
+const directory=path.join(secure,"phase4-staging");fs.mkdirSync(directory,{recursive:true,mode:0o700});fs.chmodSync(directory,0o700);const reportPath=path.join(directory,`migration-review-${Date.now()}.json`);fs.writeFileSync(reportPath,JSON.stringify({environment:"staging",recordedAt:new Date().toISOString(),appliedMigrations:history.length,pendingMigration:migration,bytes:bytes.length,sha256,counts,functionFiles,functionSourceSha256,bootstrapSha256,firebaseProject:"hungrieapp-a2288",firebaseChanges:["enable Identity Platform TOTP","create SUPABASE_STAGING_URL and SUPABASE_STAGING_SERVICE_ROLE_KEY secret versions","deploy recordAdminMfaEnrollmentStaging","deploy setAdminAccountStatusStaging","deploy recoverAdminMfaStaging"],identityPlan:"bootstrap first dedicated pending super-admin; invite second through normal flow"},null,2),{mode:0o600,flag:"wx"});console.log(JSON.stringify({environment:"staging",appliedMigrations:history.length,pendingMigration:migration,sha256,counts,functionSourceSha256,bootstrapSha256,reportPath}));
