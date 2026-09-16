@@ -23,10 +23,10 @@ import type { OrderCursor } from "@/src/data/contracts";
 import type { OrderStatus, RestaurantOrder } from "@/type";
 import { ProtectedRoute } from "@/src/features/auth/routeGuards";
 import { ReorderError, resolveOrderForReorder } from "@/src/features/orders/reorder";
+import { getCancellationReasonText } from "@/src/features/orders/cancellationReason";
 import { isCancelledStatus, isReviewableStatus } from "@/src/features/reviews/reviewUtils";
 import { useTheme } from "@/src/theme/themeContext";
 import { formatCurrency } from "@/lib/cart.utils";
-import { seedRestaurants } from "@/lib/restaurantSeeds";
 import useAuthStore from "@/store/auth.store";
 import { normalizeCartRestaurantKey, useCartStore } from "@/store/cart.store";
 
@@ -52,17 +52,10 @@ const ACTIVE_STATUSES = new Set<OrderStatus>(["pending", "accepted", "preparing"
 
 const normalizeId = (value: unknown) => (value === null || value === undefined ? "" : String(value));
 
-const restaurantNamesById = seedRestaurants.reduce<Record<string, string>>((names, restaurant: any) => {
-    const id = normalizeId(restaurant?.id);
-    if (id) names[id] = restaurant?.name || id;
-    return names;
-}, {});
-
 const resolveRestaurantName = (order: any) =>
     String(
         order?.restaurant?.name ||
         order?.restaurantName ||
-        restaurantNamesById[normalizeId(order?.restaurantId)] ||
         "Restaurant",
     );
 
@@ -154,6 +147,8 @@ const OrderHistoryScreen = () => {
         secondary: isDark ? "#AAB2C0" : "#667085",
         tertiary: isDark ? "#7F8999" : "#98A2B3",
         border: isDark ? "#2A2E35" : "#EAECF0",
+        cardBorder: isDark ? "#343A45" : "#DDE3EA",
+        cardShadow: isDark ? "#000000" : "#101828",
         skeleton: isDark ? "#23272E" : "#F0F2F5",
     }), [isDark]);
     const styles = useMemo(() => createStyles(colors), [colors]);
@@ -219,6 +214,7 @@ const OrderHistoryScreen = () => {
         noActiveBody: isTurkish ? "Aktif siparişlerin burada görünecek." : "Your active orders will appear here.",
         noDelivered: isTurkish ? "Teslim edilmiş sipariş yok" : "No delivered orders",
         noCanceled: isTurkish ? "İptal edilmiş sipariş yok" : "No canceled orders",
+        cancellationReason: isTurkish ? "İptal nedeni" : "Cancellation reason",
         browse: isTurkish ? "Restoranlara göz at" : "Browse restaurants",
         status: {
             pending: isTurkish ? "Bekliyor" : "Pending",
@@ -445,6 +441,9 @@ const OrderHistoryScreen = () => {
         const isActive = ACTIVE_STATUSES.has(status);
         const canReorder = status === "delivered";
         const reordering = reorderLoadingId === String(item.id ?? item.$id ?? "");
+        const cancellationReason = status === "canceled"
+            ? getCancellationReasonText(item.cancellationReasonCode, Boolean(isTurkish))
+            : "";
 
         return (
             <Pressable
@@ -478,6 +477,8 @@ const OrderHistoryScreen = () => {
                     )) : <Text style={styles.productLine}>{isTurkish ? "Ürün bilgisi bulunmuyor" : "Item details unavailable"}</Text>}
                     {hiddenCount > 0 ? <Text style={styles.moreItems}>{copy.moreItems(hiddenCount)}</Text> : null}
                 </View>
+
+                {cancellationReason ? <View style={styles.cancellationRow}><Ionicons color="#D92D20" name="information-circle-outline" size={16} /><Text numberOfLines={2} style={styles.cancellationText}><Text style={styles.cancellationLabel}>{copy.cancellationReason}: </Text>{cancellationReason}</Text></View> : null}
 
                 <View style={styles.divider} />
 
@@ -595,6 +596,8 @@ type Colors = {
     secondary: string;
     tertiary: string;
     border: string;
+    cardBorder: string;
+    cardShadow: string;
     skeleton: string;
 };
 
@@ -619,8 +622,25 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     filterTextActive: { color: ORANGE, fontWeight: "600" },
     filterUnderline: { height: 2, alignSelf: "stretch", backgroundColor: "transparent" },
     filterUnderlineActive: { backgroundColor: ORANGE },
-    cardGap: { height: 12 },
-    orderCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 14 },
+    cardGap: { height: 14 },
+    orderCard: {
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.cardBorder,
+        borderRadius: 18,
+        padding: 15,
+        ...Platform.select({
+            ios: {
+                shadowColor: colors.cardShadow,
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.08,
+                shadowRadius: 7,
+            },
+            android: { elevation: 2 },
+            web: { boxShadow: `0 3px 12px ${colors.cardShadow}14` },
+            default: {},
+        }),
+    },
     orderCardPressed: { backgroundColor: colors.pressed },
     cardHeader: { minHeight: 39, flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 8 },
     cardHeadingCopy: { flex: 1, minWidth: 0 },
@@ -633,6 +653,7 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     itemsPreview: { gap: 3 },
     productLine: { color: colors.secondary, fontFamily: "ChairoSans", fontSize: 13.5, lineHeight: 18, fontWeight: "500" },
     moreItems: { color: colors.tertiary, fontFamily: "ChairoSans", fontSize: 13, lineHeight: 17, fontWeight: "500" },
+    cancellationRow: { marginTop: 9, borderRadius: 11, backgroundColor: colors.pressed, paddingHorizontal: 10, paddingVertical: 8, flexDirection: "row", alignItems: "flex-start", gap: 7 }, cancellationText: { flex: 1, color: colors.secondary, fontFamily: "ChairoSans", fontSize: 12.5, lineHeight: 17 }, cancellationLabel: { color: colors.primary, fontWeight: "700" },
     cardFooter: { minHeight: 28, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
     footerMeta: { flex: 1, minWidth: 0, color: colors.secondary, fontFamily: "ChairoSans", fontSize: 13, lineHeight: 20 },
     price: { color: colors.primary, fontSize: 16, fontWeight: "700" },
@@ -645,8 +666,8 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     browseAction: { minHeight: 44, flexDirection: "row", alignItems: "center", gap: 6, marginTop: 3 },
     browseText: { color: ORANGE, fontFamily: "ChairoSans", fontSize: 14, lineHeight: 19, fontWeight: "600" },
     loader: { marginVertical: 18 },
-    skeletonList: { gap: 12 },
-    skeletonCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 14 },
+    skeletonList: { gap: 14 },
+    skeletonCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 18, padding: 15 },
     skeletonHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
     skeletonTitle: { width: "42%", height: 18, borderRadius: 5, backgroundColor: colors.skeleton },
     skeletonBadge: { width: 86, height: 28, borderRadius: 14, backgroundColor: colors.skeleton },

@@ -1,20 +1,16 @@
 import type { RepositoryBackend, RepositoryDomain, RepositoryRuntimeFlags, RepositorySelection } from "./types";
 
-const normalizeBackend = (value: RepositoryBackend | boolean | string | undefined): RepositoryBackend => {
-    if (value === true) return "supabase";
-    if (String(value || "").trim().toLowerCase() === "supabase") return "supabase";
-    return "firebase";
-};
-
 export const resolveRepositoryBackend = (
     domain: RepositoryDomain,
     flags: RepositoryRuntimeFlags = {},
 ): RepositorySelection => {
-    const requested = normalizeBackend(flags.domains?.[domain]);
     const enabled = Boolean(flags.supabaseEnabled);
     return {
         domain,
-        backend: enabled && requested === "supabase" ? "supabase" : "firebase",
+        // Firebase is an identity provider only. Selecting the Supabase
+        // adapter even when configuration is missing makes data access fail
+        // closed in requireSupabase() instead of silently reading Firestore.
+        backend: domain === "auth" ? "firebase" : "supabase",
         supabaseEnabled: enabled,
     };
 };

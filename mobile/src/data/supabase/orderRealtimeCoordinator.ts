@@ -145,7 +145,7 @@ export class OrderRealtimeCoordinator {
     private resolveTopics() {
         if (!this.topicsPromise) {
             this.topicsPromise = withSupabaseAuthRetry(async () => {
-                const result: any = await this.dependencies.client().rpc("my_order_realtime_topics");
+                const result: any = await this.dependencies.client().rpc("my_customer_order_realtime_topics_v1");
                 if (result.error) throw result.error;
                 return (Array.isArray(result.data) ? result.data : []) as OrderRealtimeTopic[];
             }).catch((error) => {

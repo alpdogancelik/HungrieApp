@@ -10,6 +10,7 @@ import * as Sentry from "@sentry/react-native";
 import { Animated, AppState, Easing, Platform, StyleSheet, Text, TextInput, View } from "react-native";
 import { Image } from "expo-image";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { onIdTokenChanged } from "firebase/auth";
 
 import useAuthStore from "@/store/auth.store";
 import { ThemeProvider, useTheme } from "@/src/theme/themeContext";
@@ -24,11 +25,14 @@ import SplashPulse from "@/components/SplashPulse";
 import { markDevelopment } from "@/src/lib/performanceMetrics";
 import InternetConnectionGate from "@/src/features/connectivity/InternetConnectionGate";
 import MaintenanceGate from "@/src/features/runtime/MaintenanceGate";
+import CustomerReleaseGate from "@/src/features/runtime/CustomerReleaseGate";
+import CustomerAccessGate from "@/src/features/auth/CustomerAccessGate";
 import { registerPushToken, unregisterPushToken } from "@/src/data/notificationRepository";
 import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 import { useReducedMotion } from "@/src/lib/useReducedMotion";
 import webSplashImage from "../assets/hungriesplash.png";
 import mobileSplashImage from "../assets/hungriesplashmobile.png";
+import { auth } from "@/lib/firebase";
 
 const extra = Constants.expoConfig?.extra ?? {};
 const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN || extra.EXPO_PUBLIC_SENTRY_DSN;
@@ -125,17 +129,29 @@ const ThemeTransitionOverlay = ({ backgroundColor }: { backgroundColor: string }
 
 function RootLayoutBase() {
     const { theme, variant, hydrated: themeHydrated } = useTheme();
-    const { isLoading, isAuthenticated, user, fetchAuthenticatedUser } = useAuthStore();
+    const { isLoading, isAuthenticated, user, fetchAuthenticatedUser, syncAuthenticatedUser } = useAuthStore();
     const router = useRouter();
     const rootNavigationState = useRootNavigationState();
     const pathname = usePathname();
+    const isLegacyPrivilegedRoute = pathname === "/courier" || pathname.startsWith("/admin") || pathname.startsWith("/restaurantpanel");
     const pushRegistrationKeyRef = useRef<string | null>(null);
     const authStateHydratedRef = useRef(false);
     const authRecoveryInFlightRef = useRef(false);
     const handledNotificationResponsesRef = useRef(new Set<string>());
     const didHideNativeSplashRef = useRef(false);
     const [launchSplashVisible, setLaunchSplashVisible] = useState(true);
+    const [releaseReady, setReleaseReady] = useState(false);
+    const [customerAccessReadyFor, setCustomerAccessReadyFor] = useState<string | null>(null);
+    const customerIdentityKey = isAuthenticated ? String(getCurrentAuthUserId() || "authenticated") : "guest";
+    const customerAccessReady = customerAccessReadyFor === customerIdentityKey;
     const finishLaunchSplash = useCallback(() => setLaunchSplashVisible(false), []);
+    const handleReleaseReadyChange = useCallback((ready: boolean) => {
+        setReleaseReady(ready);
+        if (!ready) setCustomerAccessReadyFor(null);
+    }, []);
+    const handleCustomerAccessReadyChange = useCallback((ready: boolean, identityKey: string) => {
+        setCustomerAccessReadyFor(ready ? identityKey : null);
+    }, []);
     const { width: windowWidth, height: windowHeight } = useStableWindowDimensions();
     const isWeb = Platform.OS === "web";
     const safeWindowWidth = windowWidth > 0 ? windowWidth : isWeb ? 1440 : 390;
@@ -160,8 +176,26 @@ function RootLayoutBase() {
     });
 
     useEffect(() => {
-        fetchAuthenticatedUser();
-    }, [fetchAuthenticatedUser]);
+        if (rootNavigationState?.key && isLegacyPrivilegedRoute) router.replace("/home");
+    }, [isLegacyPrivilegedRoute, rootNavigationState?.key, router]);
+
+    useEffect(() => {
+        if (!auth) return;
+        // onIdTokenChanged emits the persisted Firebase identity once initial
+        // restoration finishes. Let this single callback own cold-start auth
+        // hydration; starting fetchAuthenticatedUser in parallel can invalidate
+        // it and leave the root loading gate waiting indefinitely.
+        const unsubscribe = onIdTokenChanged(auth, () => {
+            void syncAuthenticatedUser(false);
+        });
+        const appStateSubscription = AppState.addEventListener("change", (state) => {
+            if (state === "active") void syncAuthenticatedUser(true);
+        });
+        return () => {
+            unsubscribe();
+            appStateSubscription.remove();
+        };
+    }, [syncAuthenticatedUser]);
 
     useEffect(() => {
         let active = true;
@@ -218,7 +252,7 @@ function RootLayoutBase() {
     }, []);
 
     useEffect(() => {
-        if (!isAuthenticated) return;
+        if (!isAuthenticated || !customerAccessReady) return;
         if (!isRemotePushSupported()) return;
         let cancelled = false;
 
@@ -226,7 +260,7 @@ function RootLayoutBase() {
             task: async () => {
                 const registered = await registerPushToken();
                 if (!registered || cancelled) return;
-                const registrationKey = `restaurant::${registered.token}`;
+                const registrationKey = `customer::${registered.token}`;
                 if (pushRegistrationKeyRef.current === registrationKey) return;
                 pushRegistrationKeyRef.current = registrationKey;
             },
@@ -246,7 +280,7 @@ function RootLayoutBase() {
             appStateSubscription.remove();
             networkSubscription.remove();
         };
-    }, [isAuthenticated, user]);
+    }, [customerAccessReady, isAuthenticated, user]);
 
     useEffect(() => {
         if (isLoading) return;
@@ -263,7 +297,7 @@ function RootLayoutBase() {
     }, [isAuthenticated, isLoading]);
 
     useEffect(() => {
-        if (!isAuthenticated) return;
+        if (!isAuthenticated || !customerAccessReady) return;
         // Native development/production builds receive remote Expo pushes.
         // Avoid a second full-history listener and duplicate foreground alerts.
         if (isRemotePushSupported()) return;
@@ -279,10 +313,10 @@ function RootLayoutBase() {
         return () => {
             stopWatcher();
         };
-    }, [isAuthenticated, user?.$id, user?.accountId, user?.id]);
+    }, [customerAccessReady, isAuthenticated, user?.$id, user?.accountId, user?.id]);
 
     useEffect(() => {
-        if (!rootNavigationState?.key || isLoading || !isAuthenticated) return;
+        if (!rootNavigationState?.key || isLoading || !isAuthenticated || !customerAccessReady) return;
 
         let cancelled = false;
         let responsePollTimer: ReturnType<typeof setTimeout> | null = null;
@@ -302,21 +336,12 @@ function RootLayoutBase() {
                 router.push("/orders");
                 return true;
             }
-            if (type === "restaurant_new_order" || type === "restaurant_reminder") {
-                router.push({
-                    pathname: "/restaurantpanel/order/[orderId]",
-                    params: { orderId },
-                });
-                return true;
-            }
-            // Remote status notifications can refer to any lifecycle state. The
-            // pending route is checkout-only and assumes the restaurant has not
-            // accepted the order yet, so routing every push there can show a
-            // terminal order as "Waiting for approval". Order History performs
-            // an authorized repository fetch and renders the current state.
+            if (type === "restaurant_new_order" || type === "restaurant_reminder") return false;
+            // Resolve the notification against the guarded detail contract so
+            // the Customer sees the current authoritative order immediately.
             router.push({
-                pathname: "/orders",
-                params: { highlight: orderId },
+                pathname: "/orders/[id]",
+                params: { id: orderId },
             });
             return true;
         };
@@ -345,7 +370,7 @@ function RootLayoutBase() {
             if (responsePollTimer) clearTimeout(responsePollTimer);
             unsubscribe();
         };
-    }, [isAuthenticated, isLoading, pathname, rootNavigationState?.key, router]);
+    }, [customerAccessReady, isAuthenticated, isLoading, pathname, rootNavigationState?.key, router]);
 
     useEffect(() => {
         if (!fontsLoaded || !themeHydrated) return;
@@ -395,7 +420,7 @@ function RootLayoutBase() {
                             : { flex: 1, backgroundColor: theme.colors.background }
                     }
                 >
-                    <Stack screenOptions={{ headerShown: false }} />
+                    {!isLegacyPrivilegedRoute && releaseReady && customerAccessReady ? <Stack screenOptions={{ headerShown: false }} /> : null}
                 </View>
                 <SplashPulse
                     visible={launchSplashVisible}
@@ -406,6 +431,8 @@ function RootLayoutBase() {
                 />
                 <InternetConnectionGate />
                 <MaintenanceGate />
+                <CustomerReleaseGate onReadyChange={handleReleaseReadyChange} />
+                {releaseReady ? <CustomerAccessGate onReadyChange={handleCustomerAccessReadyChange} /> : null}
                 <ThemeTransitionOverlay backgroundColor={theme.colors.background} />
         </GestureHandlerRootView>
     );

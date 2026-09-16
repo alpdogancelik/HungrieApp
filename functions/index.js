@@ -9,6 +9,7 @@ const crypto = require("node:crypto");
 const http2 = require("node:http2");
 const { isOperationId, hasTotpFactor, hasTotpSession, accountStatusFailureReason } = require("./phase4AdminLogic");
 const { classifyMessagingFailure, restaurantWakeMessage } = require("./phase5RestaurantPushLogic");
+const { deleteSharedNonProductionAccount } = require("./phase6CustomerDeletionLogic");
 
 admin.initializeApp();
 
@@ -752,8 +753,13 @@ const scrubFirebaseIdentity = async (uid) => {
     });
 };
 
+const sharedNonProductionSupabaseEnvironments = [
+    { name: "development", urlSecret: SUPABASE_URL, keySecret: SUPABASE_SERVICE_ROLE_KEY },
+    { name: "staging", urlSecret: SUPABASE_STAGING_URL, keySecret: SUPABASE_STAGING_SERVICE_ROLE_KEY },
+];
+
 exports.deleteHungrieAccount = onCall(
-    { secrets: [SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY] },
+    { secrets: [SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_STAGING_URL, SUPABASE_STAGING_SERVICE_ROLE_KEY] },
     async (request) => {
         if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Please sign in before deleting your account.");
         const authTime = Number(request.auth.token.auth_time || 0) * 1000;
@@ -761,44 +767,70 @@ exports.deleteHungrieAccount = onCall(
             throw new HttpsError("failed-precondition", "For security, sign in again before deleting your account.");
         }
         const uid = request.auth.uid;
-        let begun;
+        let deletion;
         try {
-            begun = await callSupabaseAdminRpc("begin_account_anonymization", { p_firebase_uid: uid });
+            deletion = await deleteSharedNonProductionAccount({
+                uid,
+                environments: sharedNonProductionSupabaseEnvironments,
+                begin: (environment, firebaseUid) => callSupabaseAdminRpc(
+                    "begin_account_anonymization",
+                    { p_firebase_uid: firebaseUid },
+                    environment.urlSecret,
+                    environment.keySecret,
+                ),
+                scrub: scrubFirebaseIdentity,
+                deleteIdentity: (firebaseUid) => admin.auth().deleteUser(firebaseUid),
+                finalize: (environment, profileId, firebaseUid) => callSupabaseAdminRpc(
+                    "finalize_account_anonymization",
+                    { p_profile_id: profileId, p_firebase_uid: firebaseUid },
+                    environment.urlSecret,
+                    environment.keySecret,
+                ),
+            });
         } catch (error) {
             if (error?.message === "LAST_RESTAURANT_OWNER") {
                 throw new HttpsError("failed-precondition", "Transfer restaurant ownership before deleting this account.");
             }
-            logger.error("Account anonymization could not begin", { code: error?.code || "unknown" });
+            logger.error("Account deletion orchestration failed before completion", { code: error?.code || "unknown" });
             throw new HttpsError("internal", "Account deletion could not be started.");
         }
-        const profileId = begun?.profile_id;
-        await scrubFirebaseIdentity(uid);
-        await admin.auth().deleteUser(uid);
-        if (profileId) {
-            await callSupabaseAdminRpc("finalize_account_anonymization", { p_profile_id: profileId, p_firebase_uid: uid });
+        if (deletion.finalizationFailures.length) {
+            logger.error("Account deletion requires database finalization reconciliation", {
+                environments: deletion.finalizationFailures.map((failure) => failure.environment),
+            });
         }
-        logger.info("Account deletion completed", { hadSupabaseProfile: Boolean(profileId) });
-        return { deleted: true };
+        logger.info("Account deletion completed", {
+            environments: deletion.begun.map((entry) => entry.environment.name),
+            pendingFinalization: deletion.finalizationFailures.length,
+        });
+        return { deleted: true, pendingFinalization: deletion.finalizationFailures.length > 0 };
     },
 );
 
-exports.reconcilePendingAccountAnonymizations = onSchedule(
-    { schedule: "every 60 minutes", secrets: [SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY] },
+const makeAccountAnonymizationReconciler = (environment, urlSecret, keySecret) => onSchedule(
+    { schedule: "every 60 minutes", secrets: [urlSecret, keySecret] },
     async () => {
-        const pending = await callSupabaseAdminRpc("pending_account_anonymizations");
+        const pending = await callSupabaseAdminRpc("pending_account_anonymizations", {}, urlSecret, keySecret);
         let finalized = 0;
         for (const row of Array.isArray(pending) ? pending : []) {
             try {
                 await admin.auth().getUser(row.firebase_uid);
             } catch (error) {
                 if (error?.code !== "auth/user-not-found") continue;
-                await callSupabaseAdminRpc("finalize_account_anonymization", {
+                const completed = await callSupabaseAdminRpc("finalize_account_anonymization", {
                     p_profile_id: row.profile_id,
                     p_firebase_uid: row.firebase_uid,
-                });
-                finalized += 1;
+                }, urlSecret, keySecret);
+                if (completed === true) finalized += 1;
             }
         }
-        logger.info("Pending account anonymization reconciliation completed", { checked: pending?.length || 0, finalized });
+        logger.info("Pending account anonymization reconciliation completed", { environment, checked: pending?.length || 0, finalized });
     },
+);
+
+exports.reconcilePendingAccountAnonymizationsDevelopment = makeAccountAnonymizationReconciler(
+    "development", SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+);
+exports.reconcilePendingAccountAnonymizationsStaging = makeAccountAnonymizationReconciler(
+    "staging", SUPABASE_STAGING_URL, SUPABASE_STAGING_SERVICE_ROLE_KEY,
 );

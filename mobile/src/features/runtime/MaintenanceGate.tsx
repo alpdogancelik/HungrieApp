@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Modal, Platform, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -13,9 +13,9 @@ const MaintenanceGate = () => {
     const [status, setStatus] = useState<RuntimeStatus | null>(null);
     const isTurkish = i18n.language?.toLowerCase().startsWith("tr");
     useEffect(() => subscribeRuntimeStatus(setStatus), []);
+    if (status?.mode !== "maintenance") return null;
     return (
-        <Modal visible={status?.mode === "maintenance"} transparent animationType="fade" statusBarTranslucent>
-            <SafeAreaView style={[styles.overlay, { backgroundColor: theme.colors.overlay }]}>
+        <SafeAreaView style={[styles.overlay, { backgroundColor: theme.colors.overlay }]}>
                 <View style={[styles.card, { backgroundColor: theme.colors.surfaceElevated }]} accessibilityRole="alert">
                     <View style={[styles.iconWrap, { backgroundColor: theme.colors.surfaceMuted }]}>
                         <Ionicons name="construct-outline" size={38} color="#FE8C00" />
@@ -29,13 +29,12 @@ const MaintenanceGate = () => {
                             : "Hungrie is undergoing a safe update. Please try again in a few minutes."}
                     </Text>
                 </View>
-            </SafeAreaView>
-        </Modal>
+        </SafeAreaView>
     );
 };
 
 const styles = createAdaptiveStyleSheet({
-    overlay: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 },
+    overlay: { ...StyleSheet.absoluteFillObject, zIndex: 20020, elevation: 20, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 },
     card: {
         width: "100%", maxWidth: 420, alignItems: "center", borderRadius: 28, paddingHorizontal: 24, paddingVertical: 30,
         ...Platform.select({

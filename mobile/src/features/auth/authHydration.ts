@@ -6,6 +6,7 @@ export type AuthHydrationUser = {
     email: string;
     avatar?: string;
     whatsappNumber?: string;
+    firebaseUid?: string;
 };
 
 type AuthIdentity = {
@@ -13,6 +14,10 @@ type AuthIdentity = {
     name: string;
     email: string;
     avatar?: string;
+};
+
+export type AuthSyncState = {
+    user: AuthHydrationUser | null;
 };
 
 const mapUser = (source: AuthHydrationUser | AuthIdentity): AuthHydrationUser => {
@@ -25,6 +30,7 @@ const mapUser = (source: AuthHydrationUser | AuthIdentity): AuthHydrationUser =>
         email: source.email,
         avatar: source.avatar,
         whatsappNumber: "whatsappNumber" in source ? source.whatsappNumber : undefined,
+        firebaseUid: "uid" in source ? source.uid : source.firebaseUid,
     };
 };
 
@@ -33,7 +39,23 @@ export const resolveAuthHydration = (
     persistedIdentity: AuthIdentity | null,
 ) => {
     const source = profile || persistedIdentity;
-    return source
-        ? { isAuthenticated: true as const, user: mapUser(source) }
+    const user = source ? mapUser(source) : null;
+    if (user && persistedIdentity) user.firebaseUid = persistedIdentity.uid;
+    return user
+        ? { isAuthenticated: true as const, user }
         : { isAuthenticated: false as const, user: null };
+};
+
+export const resolveAuthSyncHydration = (
+    state: AuthSyncState,
+    identity: AuthIdentity,
+) => {
+    const currentFirebaseUid = state.user?.firebaseUid
+        || state.user?.accountId
+        || state.user?.id
+        || state.user?.$id;
+    return {
+        ...resolveAuthHydration(currentFirebaseUid === identity.uid ? state.user : null, identity),
+        isLoading: false as const,
+    };
 };

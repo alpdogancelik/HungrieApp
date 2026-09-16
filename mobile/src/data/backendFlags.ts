@@ -11,9 +11,9 @@ const extra = (Constants.expoConfig?.extra || {}) as Record<string, string | und
 
 // Expo replaces only statically referenced EXPO_PUBLIC_* expressions while
 // bundling. Dynamic access such as process.env[name] is undefined in a
-// standalone build and would silently fall back to app.json's safe Firebase
-// defaults even when EAS supplied Supabase flags.
-const domainFlags: Record<RepositoryDomain, string | undefined> = {
+// standalone build. Every application-data value therefore has an explicit
+// checked-in Supabase default and is validated again before startup.
+export const domainFlags: Record<RepositoryDomain, string | undefined> = {
     auth: process.env.EXPO_PUBLIC_AUTH_REPOSITORY || extra.EXPO_PUBLIC_AUTH_REPOSITORY,
     catalog: process.env.EXPO_PUBLIC_CATALOG_REPOSITORY || extra.EXPO_PUBLIC_CATALOG_REPOSITORY,
     profile: process.env.EXPO_PUBLIC_PROFILE_REPOSITORY || extra.EXPO_PUBLIC_PROFILE_REPOSITORY,
@@ -35,6 +35,12 @@ export const getRepositoryBackend = (domain: RepositoryDomain): RepositoryBacken
         },
     }).backend;
 };
+
+export const customerDataConfigurationError = !supabaseEnabled
+    ? "Customer data services are not configured."
+    : Object.entries(domainFlags).some(([domain, backend]) => domain !== "auth" && String(backend || "").toLowerCase() !== "supabase")
+      ? "Every Customer application-data repository must be configured for Supabase."
+      : null;
 
 export const selectRepository = <T>(domain: RepositoryDomain, implementations: Record<RepositoryBackend, T>): T =>
     implementations[getRepositoryBackend(domain)];

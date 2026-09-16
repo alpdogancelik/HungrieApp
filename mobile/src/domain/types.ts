@@ -49,6 +49,20 @@ export type CartCustomization = {
     name: string;
     price: number;
     type?: string;
+    groupId?: string;
+    groupKind?: "single" | "multiple";
+    minimumSelections?: number;
+    maximumSelections?: number;
+};
+
+export type MenuIngredient = { id: string; name: string; removable: boolean };
+export type MenuOptionGroup = {
+    id: string;
+    name: string;
+    kind: "single" | "multiple";
+    minimumSelections: number;
+    maximumSelections: number;
+    options: CartCustomization[];
 };
 
 export type Restaurant = BaseDocument & {
@@ -93,6 +107,9 @@ export type MenuItem = BaseDocument & {
     category_name?: string;
     visible?: boolean;
     customizations?: CartCustomization[];
+    ingredients?: MenuIngredient[];
+    optionGroups?: MenuOptionGroup[];
+    menuDefinitionRevision?: number;
 };
 
 export type CartItem = {
@@ -100,7 +117,7 @@ export type CartItem = {
     name: string;
     quantity: number;
     price: number;
-    customizations?: { id: string; name: string; price: number }[];
+    customizations?: CartCustomization[];
 };
 
 export type CartItemType = {
@@ -172,6 +189,7 @@ export type RestaurantOrder = BaseDocument & {
     address?: string;
     total?: string | number;
     status?: OrderStatus | string;
+    cancellationReasonCode?: string;
     paymentMethod?: string;
     orderItems?: { menuItemId?: string; name?: string; quantity?: number }[];
 };

@@ -63,6 +63,14 @@ export default function SplashPulse({ visible, ready = false, onFinished, imageS
 
         let loop: Animated.CompositeAnimation | null = null;
         let finishTimer: ReturnType<typeof setTimeout> | null = null;
+        let removalTimer: ReturnType<typeof setTimeout> | null = null;
+        let removed = false;
+
+        const removeOverlay = () => {
+            if (removed) return;
+            removed = true;
+            onFinishedRef.current();
+        };
 
         const finish = () => {
             if (finishedRef.current) return;
@@ -76,7 +84,7 @@ export default function SplashPulse({ visible, ready = false, onFinished, imageS
 
             Animated.timing(opacity, { toValue: 0, duration: 260, useNativeDriver }).start(({ finished }) => {
                 // Even if the animation is interrupted, we should continue into the app.
-                onFinishedRef.current();
+                removeOverlay();
             });
         };
 
@@ -92,8 +100,13 @@ export default function SplashPulse({ visible, ready = false, onFinished, imageS
             finishTimer = setTimeout(finish, ready ? 80 : 340);
         }
 
+        // An interrupted native animation must never leave an invisible
+        // full-screen view mounted above the app indefinitely.
+        removalTimer = setTimeout(removeOverlay, 1500);
+
         return () => {
             if (finishTimer) clearTimeout(finishTimer);
+            if (removalTimer) clearTimeout(removalTimer);
             try {
                 loop?.stop?.();
             } catch {
@@ -105,7 +118,7 @@ export default function SplashPulse({ visible, ready = false, onFinished, imageS
     if (!visible) return null;
 
     return (
-        <Animated.View style={[styles.overlay, { backgroundColor, opacity, pointerEvents: "auto" }]}>
+        <Animated.View pointerEvents="none" style={[styles.overlay, { backgroundColor, opacity }]}>
             <Animated.View
                 style={[
                     useFullScreenSplash ? styles.mobileFrame : styles.posterFrame,

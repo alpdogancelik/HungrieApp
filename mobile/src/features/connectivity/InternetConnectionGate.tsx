@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
-import { AppState, Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { AppState, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Network from "expo-network";
 import { useTranslation } from "react-i18next";
@@ -45,14 +45,9 @@ const InternetConnectionGate = () => {
         };
     }, [checkConnection]);
 
+    if (!isOffline) return null;
+
     return (
-        <Modal
-            visible={isOffline}
-            transparent
-            animationType="fade"
-            statusBarTranslucent
-            onRequestClose={() => undefined}
-        >
             <SafeAreaView style={[styles.overlay, { backgroundColor: theme.colors.overlay }]}>
                 <View style={[styles.card, { backgroundColor: theme.colors.surfaceElevated }]} accessibilityRole="alert">
                     <View style={[styles.iconWrap, { backgroundColor: theme.colors.surfaceMuted }]}>
@@ -88,13 +83,14 @@ const InternetConnectionGate = () => {
                     </Pressable>
                 </View>
             </SafeAreaView>
-        </Modal>
     );
 };
 
 const styles = createAdaptiveStyleSheet({
     overlay: {
-        flex: 1,
+        ...StyleSheet.absoluteFillObject,
+        zIndex: 20030,
+        elevation: 30,
         alignItems: "center",
         justifyContent: "center",
         paddingHorizontal: 24,

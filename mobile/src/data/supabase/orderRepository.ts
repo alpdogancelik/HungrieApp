@@ -34,6 +34,7 @@ const normalizeOrder = (row: any) => ({
     userId: String(row.profile_id || ""),
     restaurantId: String(row.restaurant_id || ""),
     status: row.status || "pending",
+    cancellationReasonCode: row.cancellation_reason_code || undefined,
     paymentMethod: row.payment_method || "pos",
     subtotal: fromKurus(row.subtotal_kurus),
     deliveryFee: fromKurus(row.delivery_fee_kurus),
@@ -71,7 +72,7 @@ const normalizePage = (value: any): OrderPage => ({
 
 const fetchOrderById = async (orderId: string) => {
     const row = await measureDevelopment("repository.order.detail", async () =>
-        throwIfError(await requireSupabase().rpc("get_authorized_order", { p_order_id: orderId })),
+        throwIfError(await requireSupabase().rpc("get_my_customer_order_v1", { p_order_id: orderId })),
     );
     return row ? hydrateOrder(row) : null;
 };
@@ -83,22 +84,32 @@ export const getOrderApprovalDeadlineMs: OrderRepository["getOrderApprovalDeadli
 export const isExpiredPendingOrder: OrderRepository["isExpiredPendingOrder"] = (order, nowMs = Date.now()) =>
     String(order?.status || "").toLowerCase() === "pending" && Boolean(getOrderApprovalDeadlineMs(order) <= nowMs);
 
-export const placeOrder: OrderRepository["placeOrder"] = async ({ restaurantId, items, paymentMethod = "pos", deliveryAddress, notes }) => {
+export const placeOrder: OrderRepository["placeOrder"] = async ({ restaurantId, items, paymentMethod = "pos", deliveryAddress, notes, operationId }) => {
     const orderItems = items.map((item) => ({
-        menu_item_id: item.menuItemId,
+        menuItemId: item.menuItemId,
         quantity: item.quantity,
-        customization_ids: (item.customizations || []).map((customization) => customization.id),
+        optionValueIds: (item.customizations || []).filter((entry) => entry.type !== "removed_ingredient").map((entry) => entry.id),
+        removedIngredientIds: (item.customizations || []).filter((entry) => entry.type === "removed_ingredient").map((entry) => entry.id),
     }));
-    return measureDevelopment("repository.order.action", async () => throwIfError(
-        await requireSupabase().rpc("create_order", {
+    return measureDevelopment("repository.order.action", async () => {
+        const result = throwIfError(await requireSupabase().rpc("create_order_v2", {
             p_restaurant_id: restaurantId,
             p_address_id: String(deliveryAddress?.id || ""),
             p_payment_method: paymentMethod,
             p_items: orderItems,
             p_notes: notes || "",
-        }),
-    ));
+            p_operation_id: operationId,
+        }));
+        return String(result?.orderId || "");
+    });
 };
+
+export const quoteOrder = async (restaurantId: string, items: any[]) => throwIfError(await requireSupabase().rpc("quote_order_v2", {
+    p_restaurant_id: restaurantId,
+    p_items: items.map((item) => ({ menuItemId: String(item.menuItemId || item.id), quantity: Number(item.quantity || 0),
+        optionValueIds: (item.customizations || []).filter((entry: any) => entry.type !== "removed_ingredient").map((entry: any) => entry.id),
+        removedIngredientIds: (item.customizations || []).filter((entry: any) => entry.type === "removed_ingredient").map((entry: any) => entry.id) })),
+}));
 
 export const subscribeOrder: OrderRepository["subscribeOrder"] = (orderId, cb) => {
     return orderRealtimeCoordinator.subscribeShared(`order:${orderId}`, () => fetchOrderById(orderId), cb, () => cb(null));
@@ -107,7 +118,7 @@ export const subscribeOrder: OrderRepository["subscribeOrder"] = (orderId, cb) =
 export const fetchAuthorizedOrder: OrderRepository["fetchAuthorizedOrder"] = fetchOrderById;
 
 export const fetchUserOrdersPage: OrderRepository["fetchUserOrdersPage"] = async (_userId, options = {}) => normalizePage(
-    await measureDevelopment("repository.order.page", async () => throwIfError(await requireSupabase().rpc("get_my_orders_page", {
+    await measureDevelopment("repository.order.page", async () => throwIfError(await requireSupabase().rpc("get_my_customer_orders_page_v1", {
         p_cursor: options.cursor || null,
         p_limit: options.limit || 20,
     }))),
@@ -132,12 +143,12 @@ export const fetchAdminOrdersPage: OrderRepository["fetchAdminOrdersPage"] = asy
 );
 
 export const fetchActiveOrderSummary: OrderRepository["fetchActiveOrderSummary"] = async () => {
-    const row = throwIfError(await requireSupabase().rpc("get_my_active_order_summary"));
+    const row = throwIfError(await requireSupabase().rpc("get_my_customer_active_order_summary_v1"));
     return row ? normalizeOrder(row) : null;
 };
 
 export const fetchLatestOrderSummary: OrderRepository["fetchLatestOrderSummary"] = async () => {
-    const row = throwIfError(await requireSupabase().rpc("get_my_latest_order_summary"));
+    const row = throwIfError(await requireSupabase().rpc("get_my_customer_latest_order_summary_v1"));
     return row ? hydrateOrder(row) : null;
 };
 
@@ -171,7 +182,7 @@ export const subscribeRestaurantReminderOrders: OrderRepository["subscribeRestau
 };
 
 export const requestOrderReminder: OrderRepository["requestOrderReminder"] = async (orderId) => {
-    await measureDevelopment("repository.order.action", () => requireSupabase().rpc("request_order_reminder", { p_order_id: orderId }).then(throwIfError));
+    await measureDevelopment("repository.order.action", () => requireSupabase().rpc("request_my_customer_order_reminder_v1", { p_order_id: orderId }).then(throwIfError));
 };
 
 export const transitionOrder: OrderRepository["transitionOrder"] = async (orderId, status) => {

@@ -125,7 +125,7 @@ export type RepositoryOrderItem = {
     imageUrl?: string;
     price: number;
     quantity: number;
-    customizations?: Array<{ id?: string; name: string; price: number }>;
+    customizations?: Array<{ id?: string; name: string; price: number; type?: string }>;
     [key: string]: unknown;
 };
 
@@ -134,6 +134,7 @@ export type RepositoryOrder = {
     userId?: string;
     restaurantId: string;
     status: OrderStatus | string;
+    cancellationReasonCode?: string;
     paymentMethod?: PaymentMethod | string;
     subtotal?: number;
     deliveryFee?: number;
@@ -184,6 +185,7 @@ export type OrderRepository = {
         customer?: { name?: string | null; email?: string | null; whatsappNumber?: string | null };
         deliveryAddress?: Partial<Address> | null;
         notes?: string | null;
+        operationId?: string;
     }) => Promise<string>;
     subscribeOrder: (orderId: string, cb: (order: any | null) => void) => Unsubscribe;
     fetchAuthorizedOrder: (orderId: string) => Promise<RepositoryOrder | null>;
@@ -215,6 +217,7 @@ export type ReviewRepository = {
     fetchRestaurantReviews: (restaurantId: string, options?: { includeHidden?: boolean; limit?: number }) => Promise<MenuItemReview[]>;
     fetchRestaurantReviewSummary: (restaurantId: string) => Promise<RestaurantReviewSummary>;
     fetchUserReviews: (userId: string, options?: { limit?: number }) => Promise<MenuItemReview[]>;
+    fetchReviewedMenuItemIdsForOrder: (orderId: string, userId?: string) => Promise<string[]>;
     subscribeUserReviews: (userId: string, cb: (reviews: MenuItemReview[]) => void, options?: { limit?: number }) => Unsubscribe;
     submitMenuItemReview: (input: any) => Promise<MenuItemReview>;
     moderateMenuItemReview: (input: any) => Promise<void>;

@@ -11,9 +11,9 @@ select ok(not has_table_privilege('authenticated','private.account_access','sele
   'authenticated clients cannot read account rows');
 select ok(not has_table_privilege('service_role','private.account_invitations','select'),
   'service role has no direct invitation access');
-select ok(not has_function_privilege('authenticated',
+select ok(has_function_privilege('authenticated',
   'public.bootstrap_my_customer_account_v1(uuid)','execute'),
-  'new Customer bootstrap is not yet client-callable');
+  'Phase 6 enables the caller-bound Customer bootstrap');
 select ok(has_function_privilege('authenticated',
   'public.admin_set_account_status_v1(text,text,text,uuid)','execute'),
   'Phase 4 exposes status mutation through its canonical guard');

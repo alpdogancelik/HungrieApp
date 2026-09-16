@@ -2,6 +2,7 @@ import * as firebaseAuthRepository from "@/lib/firebaseAuth";
 import { auth } from "@/lib/firebase";
 import { selectRepository } from "./backendFlags";
 import type { AuthRepository } from "./contracts";
+import { withRequestDeadline } from "@/src/lib/requestDeadline";
 
 const firebaseAuth: AuthRepository = {
     ...firebaseAuthRepository,
@@ -15,10 +16,18 @@ export const authRepository = selectRepository<AuthRepository>("auth", {
 
 export const firebaseOrdersEnabled = firebaseAuthRepository.firebaseOrdersEnabled;
 export const getCurrentAuthUserId = () => String(auth?.currentUser?.uid || "");
-export const getCurrentAuthIdentity = async () => {
-    await auth?.authStateReady?.().catch(() => null);
-    const user = auth?.currentUser;
-    if (!user || !user.emailVerified) return null;
+export const getCurrentAuthIdentity = async (forceServerValidation = false) => {
+    const firebaseAuth = auth;
+    if (firebaseAuth?.authStateReady) {
+        await withRequestDeadline(() => firebaseAuth.authStateReady(), 10000);
+    }
+    const user = firebaseAuth?.currentUser;
+    if (!user) return null;
+    if (forceServerValidation) {
+        await withRequestDeadline(() => user.reload(), 10000);
+        await withRequestDeadline(() => user.getIdToken(true), 10000);
+    }
+    if (!user.emailVerified) return null;
     return {
         uid: user.uid,
         name: user.displayName || user.email || "Hungrie User",

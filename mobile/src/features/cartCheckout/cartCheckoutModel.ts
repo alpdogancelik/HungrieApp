@@ -1,15 +1,9 @@
-import { seedMenusAll, seedRestaurants } from "@/lib/restaurantSeeds";
-import type { CartItemType, Restaurant } from "@/src/domain/types";
+import type { CartItemType } from "@/src/domain/types";
 
 export const ORANGE = "#FF5A00";
 export const MINIMUM_ORDER_TOTAL = 250;
 export const MAX_NOTES = 200;
 export const FOOTER_CONTENT_HEIGHT = 82;
-
-const MENU_ID_TO_RESTAURANT = seedMenusAll.reduce<Record<string, string>>((result, item) => {
-    result[String(item.id)] = String(item.restaurantId);
-    return result;
-}, {});
 
 const RESTAURANT_ALIASES: Record<string, string> = {
     adapizza: "ada-pizza", "ada-pizza": "ada-pizza",
@@ -33,11 +27,8 @@ export const normalizeRestaurantId = (value: unknown) => {
 export const resolveCartRestaurantId = (items: CartItemType[]) => {
     const explicit = items.find((item) => item.restaurantId)?.restaurantId;
     if (explicit) return normalizeRestaurantId(explicit);
-    return items.map((item) => normalizeRestaurantId(MENU_ID_TO_RESTAURANT[String(item.id)])).find(Boolean) || null;
+    return null;
 };
-
-export const resolveSeedRestaurant = (restaurantId: string | null) =>
-    seedRestaurants.find((restaurant) => stringifyId(restaurant.id) === stringifyId(restaurantId)) as Restaurant | undefined;
 
 export const cartLineKey = (item: CartItemType) => {
     const customizations = (item.customizations || []).map((option) => String(option.id)).sort().join("_");

@@ -8,7 +8,6 @@ import { useCartStore } from "@/store/cart.store";
 import { logout } from "@/src/data/authRepository";
 import { useDefaultAddress } from "@/src/features/address/addressFeature";
 import { autoCancelExpiredPendingOrders, fetchUserOrdersPage, subscribeLatestOrderSummary } from "@/src/data/orderRepository";
-import { getOwnedRestaurantId } from "@/src/data/restaurantRepository";
 import { deleteCurrentUserProfile, updateUserProfile } from "@/src/data/profileRepository";
 import { isCancelledStatus, isReviewableStatus } from "@/src/features/reviews/reviewUtils";
 const autoCancelingProfileOrderIds = new Set<string>();
@@ -29,7 +28,6 @@ export function useProfile() {
     const { defaultAddress } = useDefaultAddress();
     const { t, i18n } = useTranslation();
     const [orders, setOrders] = useState<any[]>([]);
-    const [ownedRestaurantId, setOwnedRestaurantId] = useState<string | null>(null);
     const [signingOut, setSigningOut] = useState(false);
     const [deletingProfile, setDeletingProfile] = useState(false);
 
@@ -133,25 +131,6 @@ export function useProfile() {
         }, [loadUserOrders]),
     );
 
-    const loadOwnedRestaurant = useCallback(async () => {
-        if (!userId) {
-            setOwnedRestaurantId(null);
-            return;
-        }
-        const owned = await getOwnedRestaurantId().catch(() => null);
-        setOwnedRestaurantId(owned ? String(owned) : null);
-    }, [userId]);
-
-    useEffect(() => {
-        void loadOwnedRestaurant();
-    }, [loadOwnedRestaurant]);
-
-    useFocusEffect(
-        useCallback(() => {
-            void loadOwnedRestaurant();
-            return undefined;
-        }, [loadOwnedRestaurant]),
-    );
 
     const handleSaveProfile = async () => {
         const trimmedName = nameDraft.trim();
@@ -194,7 +173,6 @@ export function useProfile() {
             setSigningOut(true);
             await logout();
             setOrders([]);
-            setOwnedRestaurantId(null);
             setNotifModalVisible(false);
             setIsEditingProfile(false);
             setSavingProfile(false);
@@ -203,7 +181,10 @@ export function useProfile() {
             setWhatsappDraft("");
             clearCart();
             resetAuthState();
-            router.replace("/sign-in");
+            // The root Customer gate briefly remounts its navigator after the
+            // identity changes to guest. Queue navigation until that commit so
+            // Expo Router has an auth navigator ready to handle the action.
+            setTimeout(() => router.replace("/sign-in"), 0);
         } catch (error: any) {
             Alert.alert("Unable to sign out", error?.message || "Please try again.");
         } finally {
@@ -230,7 +211,6 @@ export function useProfile() {
                 setDeletingProfile(true);
                 await deleteCurrentUserProfile();
                 setOrders([]);
-                setOwnedRestaurantId(null);
                 setNotifModalVisible(false);
                 setIsEditingProfile(false);
                 setSavingProfile(false);
@@ -246,7 +226,7 @@ export function useProfile() {
                     Alert.alert(successTitle, successBody);
                 }
 
-                router.replace("/sign-in");
+                setTimeout(() => router.replace("/sign-in"), 0);
             } catch (error: any) {
                 const message = error?.message || errorBody;
                 if (Platform.OS === "web") {
@@ -282,7 +262,7 @@ export function useProfile() {
         ]);
     };
 
-    return { user, isAuthenticated, defaultAddress, orders, activeOrders, ownedRestaurantId,
+    return { user, isAuthenticated, defaultAddress, orders, activeOrders,
         signingOut, deletingProfile, notifModalVisible, setNotifModalVisible,
         isEditingProfile, setIsEditingProfile, savingProfile, nameDraft, setNameDraft,
         emailDraft, whatsappDraft, setWhatsappDraft, initials, userId, guestCopy,

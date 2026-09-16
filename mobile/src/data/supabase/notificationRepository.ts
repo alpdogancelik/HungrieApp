@@ -7,21 +7,20 @@ import { requireSupabase, throwIfError } from "./utils";
 const ACTIVE_BINDING_KEY = "supabase_push_token_active_binding_v1";
 const LEGACY_PREFS_KEY = "hungrie_notification_prefs_v1";
 const PREFS_MIGRATED_KEY = "supabase_notification_prefs_migrated_v1";
-const defaults: NotificationPreferences = { orderStatus: true, restaurantOrders: true, reviewReplies: true };
+const defaults: NotificationPreferences = { orderStatus: true, restaurantOrders: false, reviewReplies: true };
 
 const normalizePreferences = (value: any): NotificationPreferences => ({
     orderStatus: value?.orderStatus !== false,
-    restaurantOrders: value?.restaurantOrders !== false,
+    restaurantOrders: false,
     reviewReplies: value?.reviewReplies !== false,
 });
 
 export const getPreferences: NotificationRepository["getPreferences"] = async () =>
-    normalizePreferences(throwIfError(await requireSupabase().rpc("get_my_notification_preferences")));
+    normalizePreferences(throwIfError(await requireSupabase().rpc("get_my_customer_notification_preferences_v1")));
 
 export const updatePreferences: NotificationRepository["updatePreferences"] = async (preferences) =>
-    normalizePreferences(throwIfError(await requireSupabase().rpc("update_my_notification_preferences", {
+    normalizePreferences(throwIfError(await requireSupabase().rpc("update_my_customer_notification_preferences_v1", {
         p_order_status: Boolean(preferences.orderStatus),
-        p_restaurant_orders: Boolean(preferences.restaurantOrders),
         p_review_replies: Boolean(preferences.reviewReplies),
     })));
 
@@ -33,7 +32,7 @@ const migrateLegacyPreferences = async () => {
             const parsed = JSON.parse(legacy);
             await updatePreferences({
                 orderStatus: parsed.orderStatus !== false,
-                restaurantOrders: true,
+                restaurantOrders: false,
                 reviewReplies: parsed.reviewReplies !== false,
             });
         } catch {
@@ -50,7 +49,7 @@ export const registerPushToken: NotificationRepository["registerPushToken"] = as
     await migrateLegacyPreferences();
     const registration = await NotificationManager.getExpoPushToken();
     if (!registration?.token || (registration.platform !== "ios" && registration.platform !== "android")) return null;
-    throwIfError(await requireSupabase().rpc("register_my_push_token", {
+    throwIfError(await requireSupabase().rpc("register_my_customer_push_token_v1", {
         p_token: registration.token,
         p_platform: registration.platform,
     }));
@@ -61,7 +60,7 @@ export const registerPushToken: NotificationRepository["registerPushToken"] = as
 export const unregisterPushToken: NotificationRepository["unregisterPushToken"] = async () => {
     const token = await storage.getItem(ACTIVE_BINDING_KEY);
     if (!token) return;
-    throwIfError(await requireSupabase().rpc("unregister_my_push_token", { p_token: token }));
+    throwIfError(await requireSupabase().rpc("unregister_my_customer_push_token_v1", { p_token: token }));
     await storage.removeItem(ACTIVE_BINDING_KEY);
 };
 

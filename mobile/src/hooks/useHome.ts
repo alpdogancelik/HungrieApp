@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { AppState } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import useAuthStore from "@/store/auth.store";
 import useAsyncResource from "@/lib/useAsyncResource";
 import { getMenu } from "@/src/data/menuRepository";
-import { getRestaurants, subscribeRestaurants } from "@/src/data/restaurantRepository";
+import { getRestaurants, refreshRestaurants, subscribeRestaurants } from "@/src/data/restaurantRepository";
 import type { Category } from "@/type";
 import { CATEGORIES } from "@/constants/mediaCatalog";
 import type { IconName } from "@/components/Icon";
@@ -40,6 +42,25 @@ export const useHome = (): UseHomeResult => {
     });
     const [restaurants, setRestaurants] = useState<any[] | null>(null);
     const [restaurantsLoading, setRestaurantsLoading] = useState(true);
+    const mountedRef = useRef(true);
+
+    const reloadRestaurants = useCallback(async (force = false) => {
+        try {
+            const nextRestaurants = await (force ? refreshRestaurants() : getRestaurants());
+            if (mountedRef.current) setRestaurants(nextRestaurants);
+        } catch (error) {
+            console.warn("[home] restaurant refresh failed", error);
+        } finally {
+            if (mountedRef.current) setRestaurantsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        mountedRef.current = true;
+        return () => {
+            mountedRef.current = false;
+        };
+    }, []);
 
     useEffect(() => {
         let active = true;
@@ -68,6 +89,17 @@ export const useHome = (): UseHomeResult => {
             unsubscribe();
         };
     }, []);
+
+    useFocusEffect(useCallback(() => {
+        void reloadRestaurants();
+    }, [reloadRestaurants]));
+
+    useEffect(() => {
+        const subscription = AppState.addEventListener("change", (state) => {
+            if (state === "active") void reloadRestaurants(true);
+        });
+        return () => subscription.remove();
+    }, [reloadRestaurants]);
 
     const categories = useMemo(() => CATEGORIES as unknown as Category[], []);
     const quickActions = useMemo<QuickAction[]>(

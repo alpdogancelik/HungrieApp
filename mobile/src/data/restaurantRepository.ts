@@ -19,7 +19,7 @@ import { signIn, signOut } from "@/src/data/authRepository";
 import { getCurrentMembership, listenCurrentMembership } from "@/src/data/membershipRepository";
 import { selectRepository } from "./backendFlags";
 import type { RestaurantRepository, RestaurantDetailsForm } from "./contracts";
-import { supabaseRestaurantRepository } from "./supabase/restaurantRepository";
+import { invalidateRestaurantCatalog, supabaseRestaurantRepository } from "./supabase/restaurantRepository";
 import { catalogRepository } from "./catalogRepository";
 export type { RestaurantSession } from "./contracts";
 
@@ -108,6 +108,10 @@ export const restaurantRepository = selectRepository<RestaurantRepository>("rest
 });
 
 export const getRestaurants = catalogRepository.getRestaurants;
+export const refreshRestaurants = async (filters?: { search?: string; category?: string }) => {
+    invalidateRestaurantCatalog();
+    return catalogRepository.getRestaurants(filters);
+};
 export const subscribeRestaurants = catalogRepository.subscribeRestaurants;
 export const subscribeRestaurant = catalogRepository.subscribeRestaurant;
 export const getRestaurant = catalogRepository.getRestaurant;

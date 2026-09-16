@@ -21,11 +21,9 @@ import CustomInput from "@/components/CustomInput";
 import LanguageToggle from "@/components/LanguageToggle";
 import { getAuthErrorMessage, getAuthScreenCopy, isTurkishLanguage } from "@/src/features/auth/authCopy";
 import { isStrictValidEmail } from "@/src/features/auth/emailValidation";
-import { signIn } from "@/src/data/authRepository";
-import { getCurrentUser as getCurrentProfile } from "@/src/data/profileRepository";
+import { getCurrentAuthIdentity, signIn } from "@/src/data/authRepository";
 import useAuthStore from "@/store/auth.store";
 import RobotDelivery from "@/assets/illustrations/Robot Delivery.svg";
-import { addressStore } from "@/src/data/addressRepository";
 import { makeShadow } from "@/src/lib/shadowStyle";
 import { useTheme } from "@/src/theme/themeContext";
 
@@ -372,28 +370,36 @@ const SignIn = () => {
 
         try {
             await signIn({ email, password });
-            const user = await getCurrentProfile();
+            const identity = await getCurrentAuthIdentity();
 
-            if (user) {
+            if (identity) {
                 const mappedUser = {
-                    id: user.accountId,
-                    $id: user.accountId,
-                    accountId: user.accountId,
-                    name: user.name,
-                    email: user.email,
-                    avatar: user.avatar,
-                    whatsappNumber: user.whatsappNumber,
+                    id: identity.uid,
+                    $id: identity.uid,
+                    accountId: identity.uid,
+                    name: identity.name,
+                    email: identity.email,
+                    avatar: identity.avatar,
                 };
-                await addressStore.list().catch(() => null);
                 setUser(mappedUser);
                 setIsAuthenticated(true);
             } else {
                 throw new Error(copy.fallbackError);
             }
         } catch (error: any) {
+            const errorCode = String(error?.code || "");
+            const hidesAccountKind = [
+                "auth/invalid-credential",
+                "auth/invalid-login-credentials",
+                "auth/user-not-found",
+                "auth/wrong-password",
+                "auth/multi-factor-auth-required",
+            ].includes(errorCode);
             setFeedback({
                 title: copy.emptyErrorTitle,
-                message: error?.message || copy.fallbackError,
+                message: hidesAccountKind
+                    ? getAuthErrorMessage(i18n.language, "invalidCredentials") || copy.fallbackError
+                    : error?.message || copy.fallbackError,
             });
             Sentry.captureException(error);
         } finally {

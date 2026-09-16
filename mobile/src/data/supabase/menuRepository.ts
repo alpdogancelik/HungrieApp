@@ -17,6 +17,19 @@ const toCustomizationDefinitions = (value: unknown) =>
         name: String(item.name || ""),
         price_kurus: item.price_kurus === undefined ? toKurus(item.price) : Number(item.price_kurus),
     }));
+const mapOptionGroups = (value: unknown) => (Array.isArray(value) ? value : []).map((group: any) => {
+    const maximumSelections = Number(group.maximum_selections || 1);
+    return {
+        id: String(group.id || ""),
+        name: String(group.name || ""),
+        kind: maximumSelections > 1 ? "multiple" as const : "single" as const,
+        minimumSelections: Number(group.minimum_selections || 0),
+        maximumSelections,
+        options: (Array.isArray(group.options) ? group.options : []).map((option: any) => ({
+            id: String(option.id || ""), name: String(option.name || ""), price: fromKurus(option.price_delta_kurus),
+        })),
+    };
+});
 
 export const mapCatalogCategory = (row: any) => ({
     id: String(row.id || ""),
@@ -29,7 +42,14 @@ export const mapCatalogCategory = (row: any) => ({
     icon: row.icon || undefined,
 });
 
-export const mapCatalogMenuItem = (row: any) => ({
+export const mapCatalogMenuItem = (row: any) => {
+ const optionGroups=mapOptionGroups(row.option_groups);
+ const ingredients=(Array.isArray(row.ingredients) ? row.ingredients : []).map((item: any) => ({ id: String(item.id || ""), name: String(item.name || ""), removable: Boolean(item.removable) }));
+ const richCustomizations=[...optionGroups.flatMap((group:any)=>group.options.map((option:any)=>({...option,
+   name:`${group.name}${group.minimumSelections>0?" *":""}: ${option.name}`,type:"option_value",groupId:group.id,
+   groupKind:group.kind,minimumSelections:group.minimumSelections,maximumSelections:group.maximumSelections}))),
+   ...ingredients.filter((item:any)=>item.removable).map((item:any)=>({id:item.id,name:`No ${item.name}`,price:0,type:"removed_ingredient"}))];
+ return ({
     id: String(row.id || ""),
     $id: String(row.id || ""),
     restaurantId: row.restaurant_id || undefined,
@@ -42,9 +62,12 @@ export const mapCatalogMenuItem = (row: any) => ({
     image_url: row.image_url || "",
     ratingAverage: Number(row.rating_average || 0),
     ratingCount: Number(row.rating_count || 0),
-    customizations: Array.isArray(row.customizations) ? row.customizations : [],
+    customizations: richCustomizations.length ? richCustomizations : (Array.isArray(row.customizations) ? row.customizations : []),
+    ingredients,
+    optionGroups,
+    menuDefinitionRevision: Number(row.menu_definition_revision || 0),
     visible: row.is_active !== false,
-});
+});};
 
 export const getRestaurantCategories: MenuRepository["getRestaurantCategories"] = async (restaurantId) => {
     const rows = await readCatalogCached(`categories:${String(restaurantId)}`, async () => throwIfError(
@@ -106,7 +129,7 @@ export const getMenu: MenuRepository["getMenu"] = async ({ category, query, limi
 
 export const getRestaurantBundle: MenuRepository["getRestaurantBundle"] = async (restaurantId) => {
     const result = await measureDevelopment("repository.catalog.bundle", () => readCatalogCached(`bundle:${String(restaurantId)}`, async () =>
-        throwIfError(await requireCatalogSupabase().rpc("get_active_restaurant_bundle", { p_restaurant_id: String(restaurantId) })),
+        throwIfError(await requireCatalogSupabase().rpc("get_active_restaurant_bundle_v2", { p_restaurant_id: String(restaurantId) })),
     ));
     if (!result?.restaurant) return null;
     const { mapCatalogRestaurant } = await import("./restaurantRepository");

@@ -2,7 +2,7 @@ import * as firebaseOrderRepository from "@/src/services/firebaseOrders";
 import * as firebaseAuthRepository from "@/lib/firebaseAuth";
 import { selectRepository } from "./backendFlags";
 import type { OrderRepository } from "./contracts";
-import { supabaseOrderRepository } from "./supabase/orderRepository";
+import { quoteOrder as supabaseQuoteOrder, supabaseOrderRepository } from "./supabase/orderRepository";
 
 const firebaseOrder: OrderRepository = {
     ...firebaseOrderRepository,
@@ -47,6 +47,7 @@ export const courierAssignmentMode = orderRepository.courierAssignmentMode;
 export const getOrderApprovalDeadlineMs = orderRepository.getOrderApprovalDeadlineMs;
 export const isExpiredPendingOrder = orderRepository.isExpiredPendingOrder;
 export const placeOrder = orderRepository.placeOrder;
+export const quoteOrder = supabaseQuoteOrder;
 export const subscribeOrder = orderRepository.subscribeOrder;
 export const fetchAuthorizedOrder = orderRepository.fetchAuthorizedOrder;
 export const fetchUserOrdersPage = orderRepository.fetchUserOrdersPage;

@@ -14,7 +14,7 @@ import {
     View,
     useWindowDimensions,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 
 import Icon from "@/components/Icon";
@@ -48,9 +48,9 @@ const ReviewSheet = ({
     const isTurkish = i18n.language?.toLowerCase().startsWith("tr");
     const copy = {
         title: isTurkish ? "Deneyimini payla\u015f" : "Share your experience",
+        subtitle: isTurkish ? "Bu ürünü nasıl buldun?" : "How was this item?",
         close: isTurkish ? "Kapat" : "Close",
         cancel: isTurkish ? "Vazge\u00e7" : "Cancel",
-        abandon: isTurkish ? "De\u011ferlendirmeden vazge\u00e7" : "Close without reviewing",
         submit: isTurkish ? "G\u00f6nder" : "Submit",
         submitting: isTurkish ? "G\u00f6nderiliyor..." : "Submitting...",
         placeholder: isTurkish ? "Teslimattan sonra bu \u00fcr\u00fcn nas\u0131ld\u0131?" : "Tell others about this item...",
@@ -103,7 +103,7 @@ const ReviewSheet = ({
                 const filled = value <= rating;
                 return (
                     <Pressable key={value} onPress={() => setRating(value)} style={styles.starButton}>
-                        <Icon name="star" size={24} color={filled ? "#FE8C00" : "#CBD5E1"} />
+                        <Icon name="star" size={28} color={filled ? "#FE8C00" : "#CBD5E1"} />
                     </Pressable>
                 );
             }),
@@ -117,7 +117,7 @@ const ReviewSheet = ({
             visible
             transparent
             statusBarTranslucent
-            animationType="fade"
+            animationType="slide"
             presentationStyle="overFullScreen"
             onRequestClose={handleRequestClose}
         >
@@ -126,26 +126,29 @@ const ReviewSheet = ({
                 <KeyboardAvoidingView
                     style={styles.keyboardAvoiding}
                     behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    keyboardVerticalOffset={Platform.OS === "ios" ? insets.bottom + 12 : 0}
+                    keyboardVerticalOffset={0}
                 >
-                    <SafeAreaView edges={["bottom"]} style={styles.safeArea}>
-                        <Pressable style={[styles.sheet, { maxHeight: Math.max(280, screenHeight * 0.8), backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]} onPress={() => undefined}>
+                    <Pressable style={[styles.sheet, { maxHeight: Math.max(280, screenHeight * 0.78), backgroundColor: theme.colors.surfaceElevated }]} onPress={() => undefined}>
                             <ScrollView
                                 bounces={false}
                                 keyboardShouldPersistTaps="handled"
-                                contentContainerStyle={styles.sheetContent}
+                                contentContainerStyle={[styles.sheetContent, { paddingBottom: Math.max(insets.bottom, 16) }]}
                                 showsVerticalScrollIndicator={false}
                             >
+                                <View style={[styles.sheetHandle, { backgroundColor: theme.colors.border }]} />
                                 <View style={styles.headerRow}>
-                                    <Text style={[styles.title, { color: theme.colors.ink }]}>{copy.title}</Text>
+                                    <View style={styles.headerCopy}>
+                                        <Text style={[styles.title, { color: theme.colors.ink }]}>{copy.title}</Text>
+                                        <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>{copy.subtitle}</Text>
+                                    </View>
                                     <TouchableOpacity
                                         onPress={handleRequestClose}
                                         disabled={submitting}
                                         accessibilityRole="button"
                                         accessibilityLabel={copy.close}
-                                        style={styles.closeButton}
+                                        style={[styles.closeButton, { borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceMuted }]}
                                     >
-                                        <Icon name="close" size={18} color="#475569" />
+                                        <Icon name="close" size={18} color={theme.colors.textSecondary} />
                                     </TouchableOpacity>
                                 </View>
                                 <View style={styles.starsRow}>{stars}</View>
@@ -158,10 +161,7 @@ const ReviewSheet = ({
                                     style={[styles.commentInput, { color: theme.colors.ink, backgroundColor: theme.colors.input, borderColor: theme.colors.border }]}
                                     textAlignVertical="top"
                                 />
-                                <View style={styles.actionsRow}>
-                                    <TouchableOpacity style={styles.cancelButton} onPress={handleRequestClose} disabled={submitting}>
-                                        <Text style={styles.cancelText}>{copy.cancel}</Text>
-                                    </TouchableOpacity>
+                                <View style={styles.actionsGroup}>
                                     <TouchableOpacity
                                         style={[styles.submitButton, disabled ? styles.submitButtonDisabled : null]}
                                         disabled={disabled}
@@ -169,17 +169,12 @@ const ReviewSheet = ({
                                     >
                                         <Text style={styles.submitText}>{submitting ? copy.submitting : copy.submit}</Text>
                                     </TouchableOpacity>
+                                    <TouchableOpacity style={[styles.cancelButton, { backgroundColor: theme.colors.surfaceMuted }]} onPress={handleRequestClose} disabled={submitting}>
+                                        <Text style={[styles.cancelText, { color: theme.colors.textSecondary }]}>{copy.cancel}</Text>
+                                    </TouchableOpacity>
                                 </View>
-                                <TouchableOpacity
-                                    onPress={handleRequestClose}
-                                    disabled={submitting}
-                                    style={styles.abandonButton}
-                                >
-                                    <Text style={styles.abandonText}>{copy.abandon}</Text>
-                                </TouchableOpacity>
                             </ScrollView>
                         </Pressable>
-                    </SafeAreaView>
                 </KeyboardAvoidingView>
             </View>
         </Modal>
@@ -199,38 +194,50 @@ const styles = createAdaptiveStyleSheet({
         flex: 1,
         justifyContent: "flex-end",
     },
-    safeArea: {
-        justifyContent: "flex-end",
-    },
     sheet: {
         backgroundColor: "#FFFFFF",
-        borderTopLeftRadius: 32,
-        borderTopRightRadius: 32,
-        borderWidth: 1,
-        borderColor: "#E2E8F0",
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
         overflow: "hidden",
     },
     sheetContent: {
-        paddingHorizontal: 24,
-        paddingTop: 18,
-        paddingBottom: 14,
-        gap: 14,
+        paddingHorizontal: 20,
+        paddingTop: 10,
+        gap: 16,
+    },
+    sheetHandle: {
+        width: 42,
+        height: 5,
+        borderRadius: 3,
+        alignSelf: "center",
+        marginBottom: 1,
     },
     title: {
         fontFamily: "ChairoSans",
-        fontSize: 22,
+        fontSize: 20,
+        lineHeight: 25,
+        fontWeight: "700",
         color: "#0F172A",
-        flex: 1,
+    },
+    subtitle: {
+        marginTop: 2,
+        fontFamily: "ChairoSans",
+        fontSize: 13.5,
+        lineHeight: 18,
     },
     headerRow: {
         flexDirection: "row",
         alignItems: "center",
         columnGap: 12,
     },
+    headerCopy: {
+        flex: 1,
+        minWidth: 0,
+    },
     closeButton: {
-        width: 34,
-        height: 34,
-        borderRadius: 17,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         borderWidth: 1,
         borderColor: "#E2E8F0",
         alignItems: "center",
@@ -240,14 +247,17 @@ const styles = createAdaptiveStyleSheet({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        columnGap: 8,
+        columnGap: 4,
     },
     starButton: {
-        paddingVertical: 2,
+        width: 44,
+        height: 44,
+        alignItems: "center",
+        justifyContent: "center",
     },
     commentInput: {
-        minHeight: 100,
-        borderRadius: 22,
+        minHeight: 112,
+        borderRadius: 14,
         borderWidth: 1,
         borderColor: "#E2E8F0",
         paddingHorizontal: 14,
@@ -257,28 +267,25 @@ const styles = createAdaptiveStyleSheet({
         fontSize: 14,
         backgroundColor: "#FFFFFF",
     },
-    actionsRow: {
-        flexDirection: "row",
-        columnGap: 10,
+    actionsGroup: {
+        gap: 8,
     },
     cancelButton: {
-        flex: 1,
-        minHeight: 44,
-        borderRadius: 999,
-        borderWidth: 1,
-        borderColor: "#E2E8F0",
+        minHeight: 48,
+        borderRadius: 12,
         alignItems: "center",
         justifyContent: "center",
     },
     cancelText: {
         fontFamily: "ChairoSans",
-        fontSize: 14,
+        fontSize: 15,
+        lineHeight: 20,
+        fontWeight: "600",
         color: "#475569",
     },
     submitButton: {
-        flex: 1,
-        minHeight: 44,
-        borderRadius: 999,
+        minHeight: 54,
+        borderRadius: 17,
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: "#FE8C00",
@@ -288,19 +295,10 @@ const styles = createAdaptiveStyleSheet({
     },
     submitText: {
         fontFamily: "ChairoSans",
-        fontSize: 14,
+        fontSize: 16,
+        lineHeight: 20,
+        fontWeight: "600",
         color: "#FFFFFF",
-    },
-    abandonButton: {
-        alignItems: "center",
-        justifyContent: "center",
-        paddingTop: 2,
-    },
-    abandonText: {
-        fontFamily: "ChairoSans",
-        fontSize: 13,
-        color: "#64748B",
-        textDecorationLine: "underline",
     },
 });
 

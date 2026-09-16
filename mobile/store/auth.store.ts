@@ -1,7 +1,6 @@
 import { create } from 'zustand';
-import { getCurrentUser } from '@/src/data/profileRepository';
 import { getCurrentAuthIdentity } from '@/src/data/authRepository';
-import { resolveAuthHydration, type AuthHydrationUser } from '@/src/features/auth/authHydration';
+import { resolveAuthHydration, resolveAuthSyncHydration, type AuthHydrationUser } from '@/src/features/auth/authHydration';
 
 type User = AuthHydrationUser | null;
 let authHydrationGeneration = 0;
@@ -19,6 +18,7 @@ type AuthState = {
     resetAuthState: () => void;
 
     fetchAuthenticatedUser: () => Promise<void>;
+    syncAuthenticatedUser: (forceServerValidation?: boolean) => Promise<void>;
 }
 
 const useAuthStore = create<AuthState>((set) => ({
@@ -46,21 +46,48 @@ const useAuthStore = create<AuthState>((set) => ({
         set({ isLoading: true });
 
         try {
-            const user = await getCurrentUser();
+            // Resolve Firebase persistence before any Customer-only Supabase
+            // request. A slow profile RPC must not keep the root navigator
+            // unmounted or bypass the access-context/bootstrap gate.
+            const identity = await getCurrentAuthIdentity(false);
             if (requestGeneration === authHydrationGeneration) {
-                set(resolveAuthHydration(user, null));
+                set(resolveAuthHydration(null, identity));
             }
         } catch {
-            const persistedIdentity = await getCurrentAuthIdentity().catch(() => null);
             if (requestGeneration === authHydrationGeneration) {
-                set(resolveAuthHydration(null, persistedIdentity));
+                set(resolveAuthHydration(null, null));
             }
         } finally {
             if (requestGeneration === authHydrationGeneration) {
                 set({ isLoading: false });
             }
         }
-    }
+    },
+
+    syncAuthenticatedUser: async (forceServerValidation = false) => {
+        const requestGeneration = ++authHydrationGeneration;
+        try {
+            const identity = await getCurrentAuthIdentity(forceServerValidation);
+            if (requestGeneration !== authHydrationGeneration) return;
+            if (!identity) {
+                set({ isAuthenticated: false, user: null, isLoading: false, preferredEmoji: undefined });
+                return;
+            }
+            set((state) => resolveAuthSyncHydration(state, identity));
+        } catch (error: any) {
+            const code = String(error?.code || "");
+            if (requestGeneration !== authHydrationGeneration) return;
+            if (["auth/user-token-expired", "auth/user-disabled", "auth/user-not-found"].includes(code)) {
+                set({ isAuthenticated: false, user: null, isLoading: false, preferredEmoji: undefined });
+                return;
+            }
+            // A listener or foreground refresh owns the current hydration
+            // generation. Even a transient failure must release the startup
+            // loading gate so it can show recovery UI instead of spinning
+            // forever.
+            set({ isLoading: false });
+        }
+    },
 }))
 
 export default useAuthStore;

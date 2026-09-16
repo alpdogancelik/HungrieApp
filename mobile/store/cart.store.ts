@@ -4,7 +4,6 @@ import { Alert, AppState, Platform } from "react-native";
 import { create } from "zustand";
 import { persist, type PersistStorage, type StorageValue } from "zustand/middleware";
 import type { CartCustomization, CartItemType } from "@/src/domain/types";
-import { seedMenusAll } from "@/lib/restaurantSeeds";
 import useAuthStore from "@/store/auth.store";
 import i18n from "@/src/lib/i18n";
 import {
@@ -16,11 +15,6 @@ import {
     summarizeCartLines,
     type CartLineItem,
 } from "@/store/cartModel";
-
-const MENU_ID_TO_RESTAURANT: Record<string, string> = seedMenusAll.reduce((acc, entry) => {
-    acc[String(entry.id)] = entry.restaurantId;
-    return acc;
-}, {} as Record<string, string>);
 
 export const normalizeCartRestaurantKey = (value?: string | null) => {
     if (!value) return null;
@@ -43,17 +37,13 @@ const resolveItemRestaurant = (item: Omit<CartItemType, "quantity">) => {
     const compatibleItem = item as typeof item & { restaurant_id?: string; restaurant?: { id?: string } };
     return normalizeCartRestaurantKey(
         item.restaurantId ?? compatibleItem.restaurant_id ?? compatibleItem.restaurant?.id ??
-        MENU_ID_TO_RESTAURANT[String(item.id)] ?? null,
+        null,
     );
 };
 
 const inferCartRestaurant = (items: CartLineItem[]) => {
     const explicit = items.find((item) => item.restaurantId)?.restaurantId;
     if (explicit) return normalizeCartRestaurantKey(explicit);
-    for (const item of items) {
-        const inferred = normalizeCartRestaurantKey(MENU_ID_TO_RESTAURANT[String(item.id)] || null);
-        if (inferred) return inferred;
-    }
     return null;
 };
 

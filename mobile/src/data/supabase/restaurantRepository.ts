@@ -41,6 +41,8 @@ export const mapCatalogRestaurant = (row: any) => ({
             : undefined,
 });
 
+export const invalidateRestaurantCatalog = () => invalidateCatalogCache("restaurants:");
+
 const getOwnedRestaurantId = async () => {
     const client = requireSupabase();
     const rows = throwIfError(

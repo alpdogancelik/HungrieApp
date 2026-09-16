@@ -246,6 +246,16 @@ export const fetchUserReviews = async (userId: string, options?: { limit?: numbe
     return sortReviewsByRecent(snapshot.docs.map(mapReviewDoc));
 };
 
+export const fetchReviewedMenuItemIdsForOrder = async (orderId: string, userId?: string) => {
+    const normalizedOrderId = normalizeId(orderId);
+    if (!normalizedOrderId) return [];
+    const reviews = await fetchUserReviews(userId || getCurrentAuthUid(), { limit: 100 });
+    return [...new Set(reviews
+        .filter((review) => review.orderId === normalizedOrderId)
+        .map((review) => normalizeId(review.itemId || review.menuItemId))
+        .filter(Boolean))];
+};
+
 export const subscribeUserReviews = (userId: string, cb: (reviews: MenuItemReview[]) => void, options?: { limit?: number }) => {
     const normalizedUserId = getCurrentAuthUid() || normalizeId(userId);
     if (!normalizedUserId) {

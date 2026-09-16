@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { resolveAuthHydration } from "./authHydration.ts";
+import { resolveAuthHydration, resolveAuthSyncHydration } from "./authHydration.ts";
 
 test("uses the complete repository profile when it is available", () => {
     const result = resolveAuthHydration({
@@ -18,6 +18,7 @@ test("uses the complete repository profile when it is available", () => {
 
     assert.equal(result.isAuthenticated, true);
     assert.equal(result.user?.accountId, "profile-1");
+    assert.equal(result.user?.firebaseUid, "firebase-1");
     assert.equal(result.user?.name, "Profile Name");
     assert.equal(result.user?.whatsappNumber, "555");
 });
@@ -40,6 +41,7 @@ test("preserves authentication from a persisted Firebase identity when profile h
             email: "firebase@example.test",
             avatar: "https://example.test/avatar.png",
             whatsappNumber: undefined,
+            firebaseUid: "firebase-1",
         },
     });
 });
@@ -49,4 +51,26 @@ test("reports signed out only when neither profile nor persisted Firebase identi
         isAuthenticated: false,
         user: null,
     });
+});
+
+test("cold-start token hydration releases loading and preserves the Supabase profile", () => {
+    const result = resolveAuthSyncHydration({
+        user: {
+            id: "profile-1",
+            $id: "profile-1",
+            accountId: "profile-1",
+            firebaseUid: "firebase-1",
+            name: "Customer",
+            email: "customer@example.test",
+        },
+    }, {
+        uid: "firebase-1",
+        name: "Firebase Customer",
+        email: "customer@example.test",
+    });
+
+    assert.equal(result.isLoading, false);
+    assert.equal(result.isAuthenticated, true);
+    assert.equal(result.user?.accountId, "profile-1");
+    assert.equal(result.user?.firebaseUid, "firebase-1");
 });

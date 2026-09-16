@@ -213,7 +213,7 @@ export const signIn = async ({ email, password }: { email: string; password: str
     try {
         const credential = await signInWithEmailAndPassword(requireAuth(), email, password);
         const verifiedUser = await ensureVerified(credential.user);
-        return verifiedUser ? syncProfile(verifiedUser) : null;
+        return verifiedUser ? mapFirebaseUser(verifiedUser) : null;
     } catch (e: any) {
         throw new Error(normalizeAuthErrorMessage(e));
     }
@@ -246,7 +246,6 @@ export const createUser = async ({
         }
         const target = user || (await waitForAuthUser());
         if (!target) throw new Error("User session could not be established.");
-        await syncProfile(target, { name, email, whatsappNumber }).catch(() => null);
         await firebaseSignOut(requireAuth()).catch(() => null);
         return { emailVerificationSent: true, email: target.email || email };
     } catch (e: any) {
@@ -258,7 +257,7 @@ export const getCurrentUser = async () => {
     const current = await waitForAuthUser();
     if (!current) return null;
     const verified = await ensureVerified(current).catch(() => null);
-    return verified ? syncProfile(verified) : null;
+    return verified ? mapFirebaseUser(verified) : null;
 };
 
 export const signOut = async () => {

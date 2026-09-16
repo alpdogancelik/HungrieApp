@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { resolveRepositoryBackend, selectRepositoryForBackend } from "./backendSelection.ts";
+import { resolveRepositoryBackend } from "./backendSelection.ts";
 import { createInitialFetchSubscription, setCatalogSupabaseClientForTests, setSupabaseClientForTests, withSupabaseAuthRetry } from "./supabase/utils.ts";
 import * as supabaseAddresses from "./supabase/addressRepository.ts";
 import * as supabaseMenu from "./supabase/menuRepository.ts";
@@ -18,6 +18,7 @@ import { getMembershipForFirebaseUser } from "./supabase/membershipQueries.ts";
 import { OrderRealtimeCoordinator } from "./supabase/orderRealtimeCoordinator.ts";
 import { createBoundedRetry } from "../features/notifications/boundedRetry.ts";
 import { createMenuSections } from "../features/restaurantMenu/menuUtils.ts";
+import { getCancellationReasonText } from "../features/orders/cancellationReason.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const readDataFile = (relativePath) => readFileSync(join(here, relativePath), "utf8");
@@ -116,19 +117,13 @@ const firebaseOrders = {
     unsubscribed: false,
 };
 
-const disabledSupabaseOrders = {
-    subscribeOrder() {
-        throw new Error("Supabase order repository should not be selected while globally disabled.");
-    },
-};
-
-test("selects Firebase for a domain when Supabase is globally disabled", () => {
+test("application data remains on Supabase when its client is unavailable", () => {
     assert.equal(
         resolveRepositoryBackend("order", {
             supabaseEnabled: false,
             domains: { order: "supabase" },
         }).backend,
-        "firebase",
+        "supabase",
     );
 });
 
@@ -151,22 +146,9 @@ test("standalone builds use statically referenced Expo repository flags", () => 
     assert.doesNotMatch(source, /process[^\n]*\.env\?\.\[name\]/);
 });
 
-test("Firebase listener contracts preserve unsubscribe semantics through selection", () => {
-    const selected = selectRepositoryForBackend(
-        "order",
-        { supabaseEnabled: false, domains: { order: "supabase" } },
-        { firebase: firebaseOrders, supabase: disabledSupabaseOrders },
-    );
-
-    let received = null;
-    const unsubscribe = selected.subscribeOrder("fixture-order", (order) => {
-        received = order;
-    });
-
-    assert.deepEqual(received, { id: "fixture-order", status: "pending" });
-    assert.equal(typeof unsubscribe, "function");
-    unsubscribe();
-    assert.equal(firebaseOrders.unsubscribed, true);
+test("authentication remains Firebase while application data remains Supabase", () => {
+    assert.equal(resolveRepositoryBackend("auth", { supabaseEnabled: false }).backend, "firebase");
+    assert.equal(resolveRepositoryBackend("order", { supabaseEnabled: false, domains: { order: "firebase" } }).backend, "supabase");
 });
 
 test("real repository facades use explicit contracts and Supabase adapters", () => {
@@ -180,22 +162,10 @@ test("real repository facades use explicit contracts and Supabase adapters", () 
     }
 });
 
-test("catalog is independently selectable while management domains stay on Firebase", () => {
-    assert.equal(resolveRepositoryBackend("catalog", {
-        supabaseEnabled: true,
-        domains: { catalog: "supabase", restaurant: "firebase", menu: "firebase" },
-    }).backend, "supabase");
-    assert.equal(resolveRepositoryBackend("restaurant", {
-        supabaseEnabled: true,
-        domains: { catalog: "supabase", restaurant: "firebase" },
-    }).backend, "firebase");
-    assert.equal(resolveRepositoryBackend("menu", {
-        supabaseEnabled: true,
-        domains: { catalog: "supabase", menu: "firebase" },
-    }).backend, "firebase");
-    const source = readDataFile("catalogRepository.ts");
-    assert.match(source, /selectRepository<CatalogRepository>\("catalog"/);
-    assert.doesNotMatch(source, /createMenuItem|updateRestaurant|updateMenuItem/);
+test("all Customer application-data domains are fixed to Supabase", () => {
+    for (const domain of ["catalog", "profile", "restaurant", "menu", "order", "review", "address", "favorites", "notification"]) {
+        assert.equal(resolveRepositoryBackend(domain, { supabaseEnabled: true, domains: { [domain]: "firebase" } }).backend, "supabase");
+    }
 });
 
 test("Supabase catalog subscriptions fetch once and never enable Realtime", async () => {
@@ -248,12 +218,12 @@ test("Supabase repository source files contain concrete domain implementations",
     const expected = {
         "supabase/restaurantRepository.ts": ["active_restaurants", "update_restaurant_details", "listenRestaurantSession"],
         "supabase/menuRepository.ts": ["active_menu_items", "upsert_menu_item", "upsert_category"],
-        "supabase/orderRepository.ts": ["get_my_orders_page", "create_order", "get_authorized_order", "orderRealtimeCoordinator"],
-        "supabase/reviewRepository.ts": ["published_product_reviews", "submit_product_review", "moderate_review"],
-        "supabase/addressRepository.ts": ["addresses", "set_default_address", "subscribe"],
-        "supabase/profileRepository.ts": ["ensure_my_profile", "update_my_profile", "profiles"],
+        "supabase/orderRepository.ts": ["get_my_customer_orders_page_v1", "create_order_v2", "get_my_customer_order_v1", "orderRealtimeCoordinator"],
+        "supabase/reviewRepository.ts": ["published_product_reviews", "submit_my_customer_product_review_v1", "moderate_review"],
+        "supabase/addressRepository.ts": ["list_my_customer_addresses_v1", "set_my_customer_default_address_v1", "subscribe"],
+        "supabase/profileRepository.ts": ["get_my_customer_profile_v1", "update_my_customer_profile_v1"],
         "supabase/membershipQueries.ts": ["my_restaurant_memberships", "getMembershipForFirebaseUser"],
-        "supabase/favoritesRepository.ts": ["favorites", "replace_my_favorites"],
+        "supabase/favoritesRepository.ts": ["list_my_customer_favorites_v1", "replace_my_customer_favorites_v1"],
     };
 
     for (const [path, snippets] of Object.entries(expected)) {
@@ -303,34 +273,84 @@ test("Supabase address cache is cleared immediately and ignores an older in-flig
     unsubscribe();
 });
 
-test("Supabase checkout sends customization_ids to server pricing", async () => {
-    const client = createMockClient({ rpc: (name) => ({ data: name === "create_order" ? "order-1" : null, error: null }) });
+test("Supabase checkout sends v2 option and removed-ingredient IDs with an operation ID", async () => {
+    const client = createMockClient({ rpc: (name) => ({ data: name === "create_order_v2" ? { orderId: "order-1", replayed: false } : null, error: null }) });
     setSupabaseClientForTests(client);
     const id = await supabaseOrders.placeOrder({
         userId: "profile-1",
         restaurantId: "restaurant-1",
-        items: [{ menuItemId: "item-1", name: "Pizza", price: 10, quantity: 2, customizations: [{ id: "extra-1", name: "Cheese", price: 2 }] }],
+        items: [{ menuItemId: "item-1", name: "Pizza", price: 10, quantity: 2, customizations: [{ id: "extra-1", name: "Cheese", price: 2 }, { id: "onion-1", name: "No onion", price: 0, type: "removed_ingredient" }] }],
         deliveryAddress: { id: "address-1" },
+        operationId: "00000000-0000-4000-8000-000000000001",
     });
     assert.equal(id, "order-1");
-    const call = client.calls.find((item) => item.kind === "rpc" && item.name === "create_order");
-    assert.deepEqual(call.args.p_items, [{ menu_item_id: "item-1", quantity: 2, customization_ids: ["extra-1"] }]);
-    assert.equal("customizations" in call.args.p_items[0], false);
+    const call = client.calls.find((item) => item.kind === "rpc" && item.name === "create_order_v2");
+    assert.deepEqual(call.args.p_items, [{ menuItemId: "item-1", quantity: 2, optionValueIds: ["extra-1"], removedIngredientIds: ["onion-1"] }]);
+    assert.equal(call.args.p_operation_id, "00000000-0000-4000-8000-000000000001");
     await supabaseOrders.transitionOrder("order-1", "accepted");
     const transition = client.calls.find((item) => item.kind === "rpc" && item.name === "transition_order");
     assert.equal(transition.args.p_new_status, "preparing");
 });
 
+test("Customer orders expose and translate only the safe cancellation reason code", async () => {
+    const client = createMockClient({
+        rpc: (name) => ({
+            data: name === "get_my_customer_order_v1"
+                ? {
+                    id: "order-canceled",
+                    restaurant_id: "restaurant-1",
+                    status: "canceled",
+                    cancellation_reason_code: "item_unavailable",
+                    subtotal_kurus: 1000,
+                    total_kurus: 1000,
+                    items: [],
+                }
+                : null,
+            error: null,
+        }),
+    });
+    setSupabaseClientForTests(client);
+
+    const order = await supabaseOrders.fetchAuthorizedOrder("order-canceled");
+
+    assert.equal(order?.cancellationReasonCode, "item_unavailable");
+    assert.equal(getCancellationReasonText(order?.cancellationReasonCode, false), "An item in your order is unavailable.");
+    assert.equal(getCancellationReasonText(order?.cancellationReasonCode, true), "Siparişindeki bir ürün mevcut değil.");
+    assert.equal(getCancellationReasonText("unsupported_internal_value", false), "The restaurant canceled this order.");
+});
+
+test("Customer order list and detail render cancellation reasons", () => {
+    const ordersScreen = readDataFile("../../app/orders.tsx");
+    const orderDetails = readDataFile("../features/orders/OrderDetailsScreen.tsx");
+
+    assert.match(ordersScreen, /getCancellationReasonText\(item\.cancellationReasonCode/);
+    assert.match(orderDetails, /getCancellationReasonText\(order\?\.cancellationReasonCode/);
+});
+
+test("Customer order expiry remains server-owned and notification taps open order detail", () => {
+    const pendingScreen = readDataFile("../screens/OrderPendingScreen.tsx");
+    const pendingRoute = readDataFile("../../app/order/pending.tsx");
+    const rootLayout = readDataFile("../../app/_layout.tsx");
+
+    assert.doesNotMatch(pendingScreen, /onApprovalExpired=/);
+    assert.doesNotMatch(pendingScreen, /nextSla\s*===\s*0[\s\S]{0,100}transitionOrder/);
+    assert.match(pendingScreen, /transitionOrder\(orderId, "canceled"\)/, "explicit Customer cancellation remains available");
+    assert.match(pendingRoute, /onConfirmed=.*pathname: "\/orders\/\[id\]"/);
+    assert.match(pendingRoute, /onRejected=.*pathname: "\/orders\/\[id\]"/);
+    assert.match(rootLayout, /pathname: "\/orders\/\[id\]",\s*params: \{ id: orderId \}/);
+    assert.doesNotMatch(rootLayout, /params: \{ highlight: orderId \}/);
+});
+
 test("Supabase notifications register Expo tokens, persist preferences, and revoke before logout", async () => {
     const client = createMockClient({
         rpc: (name, args) => {
-            if (name === "get_my_notification_preferences") {
+            if (name === "get_my_customer_notification_preferences_v1") {
                 return { data: { orderStatus: true, restaurantOrders: false, reviewReplies: true }, error: null };
             }
-            if (name === "update_my_notification_preferences") {
+            if (name === "update_my_customer_notification_preferences_v1") {
                 return { data: {
                     orderStatus: args.p_order_status,
-                    restaurantOrders: args.p_restaurant_orders,
+                    restaurantOrders: false,
                     reviewReplies: args.p_review_replies,
                 }, error: null };
             }
@@ -340,13 +360,13 @@ test("Supabase notifications register Expo tokens, persist preferences, and revo
     setSupabaseClientForTests(client);
     const registration = await supabaseNotifications.registerPushToken();
     assert.equal(registration.provider, "expo");
-    assert.ok(client.calls.some((call) => call.kind === "rpc" && call.name === "register_my_push_token" && call.args.p_platform === "ios"));
+    assert.ok(client.calls.some((call) => call.kind === "rpc" && call.name === "register_my_customer_push_token_v1" && call.args.p_platform === "ios"));
     assert.deepEqual(await supabaseNotifications.getPreferences(), { orderStatus: true, restaurantOrders: false, reviewReplies: true });
     assert.deepEqual(await supabaseNotifications.updatePreferences({ orderStatus: false, restaurantOrders: true, reviewReplies: false }), {
-        orderStatus: false, restaurantOrders: true, reviewReplies: false,
+        orderStatus: false, restaurantOrders: false, reviewReplies: false,
     });
     await supabaseNotifications.unregisterPushToken();
-    assert.ok(client.calls.some((call) => call.kind === "rpc" && call.name === "unregister_my_push_token"));
+    assert.ok(client.calls.some((call) => call.kind === "rpc" && call.name === "unregister_my_customer_push_token_v1"));
 });
 
 test("push registration retry is bounded and recovers without overlapping work", async () => {
@@ -381,7 +401,7 @@ test("Supabase delivery handoff is restaurant-managed and uses one batched role 
     const client = createMockClient({
         rpc: (name) => ({ data: name === "transition_order" ? "out_for_delivery"
             : name === "get_admin_orders_page" ? { items: [{ id: "ready-1", restaurant_id: "restaurant-1", status: "ready", items: [] }], has_more: false, next_cursor: null }
-            : name === "my_order_realtime_topics" ? [{ topic: "orders:restaurant:restaurant-1", topic_kind: "restaurant", resource_id: "restaurant-1" }] : [], error: null }),
+            : name === "my_customer_order_realtime_topics_v1" ? [{ topic: "orders:restaurant:restaurant-1", topic_kind: "restaurant", resource_id: "restaurant-1" }] : [], error: null }),
     });
     setSupabaseClientForTests(client);
     let received = [];
@@ -402,7 +422,7 @@ test("Supabase delivery handoff is restaurant-managed and uses one batched role 
 
 test("Supabase customer orders receive embedded item snapshots in one page RPC", async () => {
     const client = createMockClient({
-        rpc: (name) => ({ data: name === "get_my_orders_page" ? { items: [{
+        rpc: (name) => ({ data: name === "get_my_customer_orders_page_v1" ? { items: [{
             id: "order-1", restaurant_id: "restaurant-1", status: "delivered", total_kurus: 1800, created_at: "2026-09-04T10:00:00Z", items: [{
             id: "item-1", menu_item_id: null, source_menu_item_id: "legacy-menu", item_name: "Legacy Meal",
             item_image_url: "https://example.invalid/meal.png", unit_price_kurus: 1500, quantity: 1,
@@ -415,7 +435,7 @@ test("Supabase customer orders receive embedded item snapshots in one page RPC",
     assert.equal(orders[0].items[0].price, 15);
     assert.equal(orders[0].items[0].customizations[0].price, 3);
     assert.deepEqual(orders[0].orderItems, orders[0].items);
-    assert.equal(client.calls.filter((item) => item.kind === "rpc" && item.name === "get_my_orders_page").length, 1);
+    assert.equal(client.calls.filter((item) => item.kind === "rpc" && item.name === "get_my_customer_orders_page_v1").length, 1);
     assert.equal(client.calls.some((item) => item.kind === "rpc" && item.name === "get_order_items"), false);
 });
 
@@ -431,30 +451,87 @@ test("Supabase public catalog requests share the 60-second cache", async () => {
     assert.equal(client.calls.filter((item) => item.kind === "rpc" && item.name === "get_featured_catalog_items").length, 1);
 });
 
+test("a saved product review invalidates cached restaurant rating aggregates", async () => {
+    let restaurantReads = 0;
+    const client = createMockClient({
+        query: (builder) => {
+            if (builder.table === "active_restaurants") {
+                restaurantReads += 1;
+                return { data: [{ id: "restaurant-1", name: "Kitchen", rating_average: 5, rating_count: restaurantReads }], error: null };
+            }
+            return { data: builder.single ? null : [], error: null };
+        },
+        rpc: (name) => {
+            if (name === "submit_my_customer_product_review_v1") return { data: "review-1", error: null };
+            if (name === "get_my_customer_product_review_v1") return { data: {
+                id: "review-1", restaurant_id: "restaurant-1", menu_item_id: "menu-1", rating: 5,
+            }, error: null };
+            return { data: null, error: null };
+        },
+    });
+    setSupabaseClientForTests(client);
+
+    assert.equal((await supabaseRestaurants.getRestaurants())[0].ratingCount, 1);
+    await supabaseReviews.submitMenuItemReview({ orderId: "order-1", itemId: "menu-1", rating: 5 });
+    assert.equal((await supabaseRestaurants.getRestaurants())[0].ratingCount, 2);
+    assert.equal(restaurantReads, 2);
+});
+
+test("Home refreshes restaurant summaries on focus and foreground recovery", () => {
+    const source = readDataFile("../hooks/useHome.ts");
+    assert.match(source, /useFocusEffect/);
+    assert.match(source, /reloadRestaurants\(\)/);
+    assert.match(source, /AppState\.addEventListener\("change"/);
+    assert.match(source, /reloadRestaurants\(true\)/);
+});
+
+test("Customer catalog v2 maps required, multiple-choice, priced, and removable options", async () => {
+    const client = createMockClient({
+        rpc: (name) => ({ data: name === "get_active_restaurant_bundle_v2" ? {
+            restaurant: { id: "restaurant-1", name: "Kitchen", lifecycle_status: "active" },
+            categories: [],
+            items: [{
+                id: "item-1", restaurant_id: "restaurant-1", name: "Meal", price_kurus: 1000,
+                menu_definition_revision: 7,
+                ingredients: [{ id: "onion", name: "Onion", removable: true }, { id: "bread", name: "Bread", removable: false }],
+                option_groups: [{
+                    id: "extras", name: "Extras", minimum_selections: 1, maximum_selections: 2,
+                    options: [{ id: "cheese", name: "Cheese", price_delta_kurus: 250 }],
+                }],
+            }],
+        } : null, error: null }),
+    });
+    setCatalogSupabaseClientForTests(client);
+    const bundle = await supabaseMenu.getRestaurantBundle("restaurant-1");
+    assert.equal(bundle.items[0].menuDefinitionRevision, 7);
+    assert.deepEqual(bundle.items[0].optionGroups[0], {
+        id: "extras", name: "Extras", kind: "multiple", minimumSelections: 1, maximumSelections: 2,
+        options: [{ id: "cheese", name: "Cheese", price: 2.5 }],
+    });
+    assert.ok(bundle.items[0].customizations.some((entry) => entry.id === "onion" && entry.type === "removed_ingredient"));
+    assert.ok(!bundle.items[0].customizations.some((entry) => entry.id === "bread"));
+});
+
 test("Supabase address writes use transactional RPCs", async () => {
     let rows = [
         { id: "a1", label: "Home", line1: "One", city: "City", country: "Country", is_default: true, created_at: "2026-09-01T00:00:00Z" },
     ];
     const client = createMockClient({
-        query: (builder) => {
-            if (builder.table !== "addresses") return { data: builder.single ? null : [], error: null };
-            if (builder.operation === "select") return { data: rows.map((row) => ({ ...row })), error: null };
-            return { data: null, error: null };
-        },
         rpc: (name, args) => {
-            if (name === "set_default_address") rows = rows.map((row) => ({ ...row, is_default: row.id === args.p_address_id }));
-            if (name === "create_my_address") {
+            if (name === "list_my_customer_addresses_v1") return { data: rows.map((row) => ({ ...row })), error: null };
+            if (name === "set_my_customer_default_address_v1") rows = rows.map((row) => ({ ...row, is_default: row.id === args.p_address_id }));
+            if (name === "create_my_customer_address_v1") {
                 rows = rows.map((row) => ({ ...row, is_default: args.p_is_default ? false : row.is_default }));
                 rows.push({ id: args.p_id, label: args.p_label, line1: args.p_line1, city: args.p_city, country: args.p_country, is_default: args.p_is_default, created_at: "2026-09-03T00:00:00Z" });
             }
-            if (name === "update_my_address") {
+            if (name === "update_my_customer_address_v1") {
                 if (!args.p_is_default && rows.find((row) => row.id === args.p_id)?.is_default) {
                     const replacement = rows.find((row) => row.id !== args.p_id);
                     if (replacement) replacement.is_default = true;
                 }
                 rows = rows.map((row) => row.id === args.p_id ? { ...row, label: args.p_label, line1: args.p_line1, is_default: args.p_is_default } : row);
             }
-            if (name === "delete_my_address") {
+            if (name === "delete_my_customer_address_v1") {
                 const removed = rows.find((row) => row.id === args.p_id);
                 rows = rows.filter((row) => row.id !== args.p_id);
                 if (removed?.is_default && rows.length) rows[0].is_default = true;
@@ -523,7 +600,7 @@ test("order Realtime shares identical query fetches and resolves topics once per
     assert.equal(fetches, 2, "one initial request and one shared reconciliation");
     assert.deepEqual(firstValues, [1, 2]);
     assert.ok(secondValues.length >= 1);
-    assert.equal(harness.client.calls.filter(([kind, name]) => kind === "rpc" && name === "my_order_realtime_topics").length, 1);
+    assert.equal(harness.client.calls.filter(([kind, name]) => kind === "rpc" && name === "my_customer_order_realtime_topics_v1").length, 1);
     unsubscribeFirst();
     unsubscribeSecond();
 });
@@ -580,10 +657,10 @@ test("order Realtime refetches on foreground/network recovery and reconnects wit
 });
 
 test("Supabase favorites replace the caller set atomically", async () => {
-    const client = createMockClient({ rpc: (name, args) => ({ data: name === "replace_my_favorites" ? args.p_restaurant_ids.length : null, error: null }) });
+    const client = createMockClient({ rpc: (name, args) => ({ data: name === "replace_my_customer_favorites_v1" ? args.p_restaurant_ids.length : null, error: null }) });
     setSupabaseClientForTests(client);
     await supabaseFavoritesRepository.persistFavorites("profile-1", ["restaurant-1", "restaurant-2"]);
-    assert.deepEqual(client.calls, [{ kind: "rpc", name: "replace_my_favorites", args: { p_restaurant_ids: ["restaurant-1", "restaurant-2"] } }]);
+    assert.deepEqual(client.calls, [{ kind: "rpc", name: "replace_my_customer_favorites_v1", args: { p_restaurant_ids: ["restaurant-1", "restaurant-2"] } }]);
     assert.equal(client.calls.some((call) => call.kind === "delete" || call.kind === "insert"), false);
 });
 
@@ -628,9 +705,11 @@ test("Supabase catalog and review adapters execute allowed projections and scope
     });
     await supabaseReviews.fetchMenuItemReviews("item-1");
     await supabaseReviews.fetchUserReviews("profile-1");
+    await supabaseReviews.fetchReviewedMenuItemIdsForOrder("order-1");
     await supabaseReviews.fetchRestaurantReviews("restaurant-1", { includeHidden: true });
     assert.ok(client.calls.filter((item) => item.kind === "select").every((item) => item.columns !== "*"));
-    assert.ok(client.calls.some((item) => item.kind === "rpc" && item.name === "list_my_product_reviews"));
+    assert.ok(client.calls.some((item) => item.kind === "rpc" && item.name === "list_my_customer_product_reviews_v1"));
+    assert.ok(client.calls.some((item) => item.kind === "rpc" && item.name === "list_my_customer_product_review_menu_items_v1" && item.args.p_order_id === "order-1"));
     assert.ok(client.calls.some((item) => item.kind === "rpc" && item.name === "list_restaurant_product_reviews"));
     const menuWrite = client.calls.find((item) => item.kind === "rpc" && item.name === "upsert_menu_item");
     assert.deepEqual(menuWrite.args.p_customizations, [{ id: "extra-1", name: "Cheese", price_kurus: 200 }]);
@@ -679,12 +758,23 @@ test("public catalog reads do not use the Firebase-authenticated Supabase client
     assert.ok(authenticatedClient.calls.some((call) => call.kind === "rpc" && call.name === "upsert_menu_item"));
 });
 
-test("sign-in hydrates account details through the selected profile repository", () => {
+test("sign-in establishes Firebase identity and delegates Customer access to the root gate", () => {
     const signInScreen = readDataFile("../../app/(auth)/sign-in.tsx");
-    assert.match(signInScreen, /getCurrentUser as getCurrentProfile[^\n]+profileRepository/);
-    assert.match(signInScreen, /await getCurrentProfile\(\)/);
-    assert.doesNotMatch(signInScreen, /getCurrentUser[^\n]+authRepository/);
+    const customInput = readDataFile("../../components/CustomInput.tsx");
+    const customerGate = readDataFile("../features/auth/CustomerAccessGate.tsx");
+    assert.doesNotMatch(signInScreen, /resolveCustomerAccess/);
+    assert.match(signInScreen, /await getCurrentAuthIdentity\(\)/);
+    assert.match(customerGate, /await resolveCustomerAccess\(\)/);
+    assert.doesNotMatch(signInScreen, /getCurrentProfile\(\)|await addressStore\.list\(\)/);
     assert.doesNotMatch(signInScreen, /replaceAfterAuth|dismissAll/);
+    assert.match(signInScreen, /auth\/multi-factor-auth-required/);
+    assert.match(signInScreen, /getAuthErrorMessage\(i18n\.language, "invalidCredentials"\)/);
+    assert.match(customInput, /multiline=\{false\}/);
+    assert.match(customInput, /numberOfLines=\{1\}/);
+    assert.match(customInput, /scrollEnabled/);
+    assert.match(customerGate, /setInterval\(\(\) => void check\(\), 15000\)/);
+    assert.match(customerGate, /https:\/\/hungrie\.app\/support/);
+    assert.match(customerGate, /tr \? "Çıkış yap" : "Sign out"/);
 });
 
 test("guest auth layout keeps its navigator mounted while authentication hydrates", () => {
@@ -715,4 +805,36 @@ test("admin layout withholds data-fetching screens until dual authorization allo
     assert.doesNotMatch(layout, /listenToOrders|getAdminRestaurants|getAdminRestaurantMenu/);
 });
 
-test.after(() => setSupabaseClientForTests());
+test("Customer startup withholds navigation until configuration, release, and access checks pass", () => {
+    const layout = readDataFile("../../app/_layout.tsx");
+    const releaseGate = readDataFile("../features/runtime/CustomerReleaseGate.tsx");
+    assert.match(layout, /releaseReady && customerAccessReady \? <Stack/);
+    assert.match(layout, /customerAccessReadyFor === customerIdentityKey/);
+    assert.match(layout, /onIdTokenChanged\(auth/);
+    assert.match(layout, /single callback own cold-start auth/);
+    assert.doesNotMatch(layout, /useEffect\(\(\) => \{\s*fetchAuthenticatedUser\(\);/);
+    assert.match(layout, /syncAuthenticatedUser\(true\)/);
+    assert.match(layout, /!isAuthenticated \|\| !customerAccessReady/);
+    assert.match(layout, /isLegacyPrivilegedRoute/);
+    assert.match(releaseGate, /const API_CONTRACT=2/);
+    assert.match(releaseGate, /id6759683384/);
+    assert.match(releaseGate, /com\.hungrie\.app/);
+    assert.match(releaseGate, /get_client_release_policy_v1/);
+    assert.match(layout, /type === "restaurant_new_order" \|\| type === "restaurant_reminder"\) return false/);
+});
+
+test("iOS builds adopt the required scene lifecycle and start React Native from its window", () => {
+    const appConfig = readDataFile("../../app.json");
+    const scenePlugin = readDataFile("../../plugins/with-ios-scene-delegate.js");
+    assert.match(appConfig, /\.\/plugins\/with-ios-scene-delegate/);
+    assert.match(scenePlugin, /UIApplicationSceneManifest/);
+    assert.match(scenePlugin, /class SceneDelegate: UIResponder, UIWindowSceneDelegate/);
+    assert.match(scenePlugin, /UIWindow\(windowScene: windowScene\)/);
+    assert.match(scenePlugin, /factory\.startReactNative/);
+    assert.match(scenePlugin, /connectionOptions\.urlContexts/);
+});
+
+test.after(() => {
+    setSupabaseClientForTests();
+    setCatalogSupabaseClientForTests();
+});

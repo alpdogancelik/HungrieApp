@@ -28,7 +28,7 @@ const notify = (addresses: Address[]) => {
 
 export const list: AddressRepository["list"] = async () => {
     const requestGeneration = cacheGeneration;
-    const rows = await withSupabaseAuthRetry(async () => throwIfError(await requireSupabase().from("addresses").select(ADDRESS_COLUMNS).order("is_default", { ascending: false })));
+    const rows = await withSupabaseAuthRetry(async () => throwIfError(await requireSupabase().rpc("list_my_customer_addresses_v1")));
     const addresses = rows.map(mapAddress);
     if (requestGeneration !== cacheGeneration) return [];
     notify(addresses);
@@ -43,7 +43,7 @@ export const create: AddressRepository["create"] = async (payload) => {
         isDefault: existing.length === 0 || Boolean(payload.isDefault),
         createdAt: new Date().toISOString(),
     };
-    await withSupabaseAuthRetry(async () => throwIfError(await requireSupabase().rpc("create_my_address", {
+    await withSupabaseAuthRetry(async () => throwIfError(await requireSupabase().rpc("create_my_customer_address_v1", {
         p_id: address.id, p_label: address.label, p_line1: address.line1,
         p_block: address.block || undefined, p_room: address.room || undefined,
         p_city: address.city, p_country: address.country, p_is_default: address.isDefault,
@@ -56,7 +56,7 @@ export const update: AddressRepository["update"] = async (payload) => {
     const existing = await list();
     const previous = existing.find((address) => address.id === payload.id);
     if (!previous) throw new Error("Address not found.");
-    await withSupabaseAuthRetry(async () => throwIfError(await requireSupabase().rpc("update_my_address", {
+    await withSupabaseAuthRetry(async () => throwIfError(await requireSupabase().rpc("update_my_customer_address_v1", {
         p_id: payload.id, p_label: payload.label, p_line1: payload.line1,
         p_block: payload.block || undefined, p_room: payload.room || undefined,
         p_city: payload.city, p_country: payload.country, p_is_default: payload.isDefault,
@@ -66,12 +66,12 @@ export const update: AddressRepository["update"] = async (payload) => {
 };
 
 export const remove: AddressRepository["remove"] = async (id) => {
-    await withSupabaseAuthRetry(async () => throwIfError(await requireSupabase().rpc("delete_my_address", { p_id: id })));
+    await withSupabaseAuthRetry(async () => throwIfError(await requireSupabase().rpc("delete_my_customer_address_v1", { p_id: id })));
     await list();
 };
 
 export const setDefault: AddressRepository["setDefault"] = async (id) => {
-    await withSupabaseAuthRetry(async () => requireSupabase().rpc("set_default_address", { p_address_id: id }).then(throwIfError));
+    await withSupabaseAuthRetry(async () => requireSupabase().rpc("set_my_customer_default_address_v1", { p_address_id: id }).then(throwIfError));
     await list();
 };
 

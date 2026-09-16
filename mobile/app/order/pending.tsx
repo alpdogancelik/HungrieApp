@@ -19,8 +19,8 @@ const PendingRoute = () => {
                 restaurantName={params.restaurantName || "Restoran"}
                 etaSeconds={Number.isFinite(etaSeconds || NaN) ? etaSeconds : undefined}
                 onBack={() => router.replace("/(tabs)/profile")}
-                //onConfirmed={() => router.replace({ pathname: "/order", params: { highlight: params.orderId } })}
-                onRejected={() => router.replace("/(tabs)/cart")}
+                onConfirmed={(orderId) => router.replace({ pathname: "/orders/[id]", params: { id: orderId } })}
+                onRejected={(orderId) => router.replace({ pathname: "/orders/[id]", params: { id: orderId } })}
             />
         </ProtectedRoute>
     );

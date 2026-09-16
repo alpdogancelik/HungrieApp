@@ -1860,6 +1860,19 @@ export type Database = {
         }
         Returns: string
       }
+      create_my_customer_address_v1: {
+        Args: {
+          p_block: string
+          p_city: string
+          p_country: string
+          p_id: string
+          p_is_default?: boolean
+          p_label: string
+          p_line1: string
+          p_room: string
+        }
+        Returns: string
+      }
       create_order: {
         Args: {
           p_address_id: string
@@ -1883,6 +1896,10 @@ export type Database = {
       }
       create_restaurant: { Args: { p_payload: Json }; Returns: string }
       delete_my_address: { Args: { p_id: string }; Returns: undefined }
+      delete_my_customer_address_v1: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
       ensure_my_profile: {
         Args: {
           p_avatar_url?: string
@@ -1897,6 +1914,10 @@ export type Database = {
         Returns: boolean
       }
       get_active_restaurant_bundle: {
+        Args: { p_restaurant_id: string }
+        Returns: Json
+      }
+      get_active_restaurant_bundle_v2: {
         Args: { p_restaurant_id: string }
         Returns: Json
       }
@@ -1927,6 +1948,30 @@ export type Database = {
       get_my_access_context_v1: { Args: never; Returns: Json }
       get_my_active_order_summary: { Args: never; Returns: Json }
       get_my_admin_authorization: { Args: never; Returns: Json }
+      get_my_customer_active_order_summary_v1: { Args: never; Returns: Json }
+      get_my_customer_latest_order_summary_v1: { Args: never; Returns: Json }
+      get_my_customer_notification_preferences_v1: {
+        Args: never
+        Returns: Json
+      }
+      get_my_customer_order_review_by_order_v1: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
+      get_my_customer_order_review_v1: {
+        Args: { p_review_id: string }
+        Returns: Json
+      }
+      get_my_customer_order_v1: { Args: { p_order_id: string }; Returns: Json }
+      get_my_customer_orders_page_v1: {
+        Args: { p_cursor?: string; p_limit?: number }
+        Returns: Json
+      }
+      get_my_customer_product_review_v1: {
+        Args: { p_review_id: string }
+        Returns: Json
+      }
+      get_my_customer_profile_v1: { Args: never; Returns: Json }
       get_my_latest_order_summary: { Args: never; Returns: Json }
       get_my_notification_preferences: { Args: never; Returns: Json }
       get_my_order_review: { Args: { p_review_id: string }; Returns: Json }
@@ -1974,6 +2019,20 @@ export type Database = {
           writes_enabled: boolean
         }[]
       }
+      list_my_customer_addresses_v1: { Args: never; Returns: Json }
+      list_my_customer_favorites_v1: { Args: never; Returns: string[] }
+      list_my_customer_order_reviews_v1: {
+        Args: { p_limit?: number }
+        Returns: Json
+      }
+      list_my_customer_product_review_menu_items_v1: {
+        Args: { p_order_id: string }
+        Returns: string[]
+      }
+      list_my_customer_product_reviews_v1: {
+        Args: { p_limit?: number }
+        Returns: Json
+      }
       list_my_order_reviews: { Args: { p_limit?: number }; Returns: Json }
       list_my_product_reviews: { Args: { p_limit?: number }; Returns: Json }
       list_restaurant_couriers: {
@@ -1996,6 +2055,14 @@ export type Database = {
           p_status: Database["public"]["Enums"]["review_status"]
         }
         Returns: undefined
+      }
+      my_customer_order_realtime_topics_v1: {
+        Args: never
+        Returns: {
+          resource_id: string
+          topic: string
+          topic_kind: string
+        }[]
       }
       my_order_realtime_topics: {
         Args: never
@@ -2039,6 +2106,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      register_my_customer_push_token_v1: {
+        Args: {
+          p_platform: Database["public"]["Enums"]["notification_platform"]
+          p_token: string
+        }
+        Returns: string
+      }
       register_my_push_token: {
         Args: {
           p_platform: Database["public"]["Enums"]["notification_platform"]
@@ -2046,9 +2120,17 @@ export type Database = {
         }
         Returns: string
       }
+      replace_my_customer_favorites_v1: {
+        Args: { p_restaurant_ids: string[] }
+        Returns: number
+      }
       replace_my_favorites: {
         Args: { p_restaurant_ids: string[] }
         Returns: number
+      }
+      request_my_customer_order_reminder_v1: {
+        Args: { p_order_id: string }
+        Returns: undefined
       }
       request_order_reminder: {
         Args: { p_order_id: string }
@@ -2194,6 +2276,10 @@ export type Database = {
         Args: { p_is_active: boolean; p_menu_item_id: string }
         Returns: undefined
       }
+      set_my_customer_default_address_v1: {
+        Args: { p_address_id: string }
+        Returns: undefined
+      }
       set_platform_role: {
         Args: {
           p_enabled: boolean
@@ -2217,6 +2303,26 @@ export type Database = {
           p_role?: Database["public"]["Enums"]["restaurant_role"]
         }
         Returns: undefined
+      }
+      submit_my_customer_order_review_v1: {
+        Args: {
+          p_comment?: string
+          p_order_id: string
+          p_price_performance_rating: number
+          p_speed_rating: number
+          p_taste_rating: number
+          p_value_rating: number
+        }
+        Returns: string
+      }
+      submit_my_customer_product_review_v1: {
+        Args: {
+          p_comment?: string
+          p_menu_item_id: string
+          p_order_id: string
+          p_rating: number
+        }
+        Returns: string
       }
       submit_order_review: {
         Args: {
@@ -2256,6 +2362,10 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["order_status"]
       }
+      unregister_my_customer_push_token_v1: {
+        Args: { p_token: string }
+        Returns: undefined
+      }
       unregister_my_push_token: {
         Args: { p_token: string }
         Returns: undefined
@@ -2270,6 +2380,32 @@ export type Database = {
           p_label: string
           p_line1: string
           p_room: string
+        }
+        Returns: string
+      }
+      update_my_customer_address_v1: {
+        Args: {
+          p_block: string
+          p_city: string
+          p_country: string
+          p_id: string
+          p_is_default?: boolean
+          p_label: string
+          p_line1: string
+          p_room: string
+        }
+        Returns: string
+      }
+      update_my_customer_notification_preferences_v1: {
+        Args: { p_order_status: boolean; p_review_replies: boolean }
+        Returns: Json
+      }
+      update_my_customer_profile_v1: {
+        Args: {
+          p_avatar_url?: string
+          p_name: string
+          p_preferred_language?: string
+          p_whatsapp_number?: string
         }
         Returns: string
       }

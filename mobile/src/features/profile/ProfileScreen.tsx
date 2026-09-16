@@ -10,8 +10,6 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 
 import LanguageToggle from "@/components/LanguageToggle";
 import { getRestaurantImageSource } from "@/lib/assets";
-import { seedMenuByRestaurantId, seedRestaurants } from "@/lib/restaurantSeeds";
-import { checkCurrentAdminAuthorization } from "@/src/features/auth/adminAuthorization";
 import { formatPanelCurrency } from "@/src/features/restaurantPanel/panelLocale";
 import { isCancelledStatus, isReviewableStatus } from "@/src/features/reviews/reviewUtils";
 import { useTheme } from "@/src/theme/themeContext";
@@ -70,11 +68,9 @@ export default function ProfileScreen() {
     const scrollRef = useRef<ScrollView>(null);
     const [preferencesY, setPreferencesY] = useState(0);
     const [languageVisible, setLanguageVisible] = useState(false);
-    const [adminAuthorized, setAdminAuthorized] = useState(false);
     const [avatarImageFailed, setAvatarImageFailed] = useState(false);
     const isTurkish = i18n.language?.startsWith("tr") ?? false;
     const copy = (key: string, english: string, turkish: string) => t(key, { defaultValue: isTurkish ? turkish : english });
-    const isAdmin = profile.isAuthenticated && adminAuthorized;
     const displayName = String(profile.user?.name || "").trim();
     const avatarInitial = Array.from(displayName)[0]?.toLocaleUpperCase(isTurkish ? "tr-TR" : "en-US") || "";
     const avatarSource = profile.user?.avatar;
@@ -95,16 +91,6 @@ export default function ProfileScreen() {
 
     useEffect(() => setAvatarImageFailed(false), [avatarSource]);
 
-    useEffect(() => {
-        let active = true;
-        setAdminAuthorized(false);
-        if (profile.isAuthenticated) {
-            void checkCurrentAdminAuthorization(true).then((result) => {
-                if (active) setAdminAuthorized(result.status === "allowed");
-            }).catch(() => undefined);
-        }
-        return () => { active = false; };
-    }, [profile.isAuthenticated, profile.userId]);
 
     const icon = (name: IconName, size = 20, color = styles.title.color) => <Ionicons color={color} name={name} size={size} />;
     const chevron = (color = styles.chevron.color) => icon("chevron-forward", 16, color);
@@ -162,11 +148,10 @@ export default function ProfileScreen() {
     });
 
     const renderActiveOrder = (order: any) => {
-        const restaurant: any = seedRestaurants.find((entry: any) => String(entry.id) === String(order.restaurantId));
-        const restaurantName = order.restaurant?.name || order.restaurantName || restaurant?.name || t("orders.unknownRestaurant");
+        const restaurantName = order.restaurant?.name || order.restaurantName || t("orders.unknownRestaurant");
         const logoCandidate = order.restaurant?.logo || order.restaurant?.logoUrl || order.restaurant?.logo_url
             || order.restaurant?.restaurantLogo || order.restaurantLogo || order.restaurant_logo
-            || restaurant?.logoUrl || restaurant?.logo || restaurant?.imageUrl;
+            || order.restaurantLogo || order.restaurant_logo;
         const logoSource = getRestaurantImageSource(logoCandidate, undefined, restaurantName);
         const status = normalizedStatus(order);
         const statusLabel = t(`status.${status}`, { defaultValue: String(order.status || "pending") });
@@ -246,17 +231,11 @@ export default function ProfileScreen() {
     };
 
     const renderOrder = (order: any, active: boolean) => {
-        const restaurant: any = seedRestaurants.find((entry: any) => String(entry.id) === String(order.restaurantId));
-        const restaurantName = order.restaurant?.name || order.restaurantName || restaurant?.name || t("orders.unknownRestaurant");
+        const restaurantName = order.restaurant?.name || order.restaurantName || t("orders.unknownRestaurant");
         const items = Array.isArray(order.orderItems) ? order.orderItems : Array.isArray(order.items) ? order.items : [];
-        const presentationHint = `${restaurantName} ${order.restaurant?.cuisine || restaurant?.cuisine || ""}`.toLocaleLowerCase(isTurkish ? "tr-TR" : "en-US");
+        const presentationHint = `${restaurantName} ${order.restaurant?.cuisine || ""}`.toLocaleLowerCase(isTurkish ? "tr-TR" : "en-US");
         const preferredFoodTerms = ["pizza", "burger", "dürüm", "durum", "wrap", "kebap", "kebab", "salata", "salad", "cafe", "coffee"]
             .filter((term) => presentationHint.includes(term));
-        const storefrontItem = seedMenuByRestaurantId(String(restaurant?.id || order.restaurantId || "")).find((item) => {
-            if (!hasImageSource(item.imageUrl)) return false;
-            const itemHint = `${item.name} ${item.categories || ""}`.toLocaleLowerCase(isTurkish ? "tr-TR" : "en-US");
-            return preferredFoodTerms.some((term) => itemHint.includes(term));
-        });
         const itemImage = items.find((item: any) => {
             if (!hasImageSource(item?.imageUrl || item?.image_url || item?.itemImageUrl)) return false;
             const itemHint = `${item?.name || ""} ${item?.category || ""} ${item?.categories || ""}`.toLocaleLowerCase(isTurkish ? "tr-TR" : "en-US");
@@ -265,13 +244,11 @@ export default function ProfileScreen() {
         const primaryImageCandidate = order.restaurant?.coverImageUrl || order.restaurant?.cover_image_url
             || order.restaurant?.heroImageUrl || order.restaurant?.hero_image_url
             || order.restaurant?.storefrontImageUrl || order.restaurant?.storefront_image_url
-            || restaurant?.coverImageUrl || restaurant?.heroImageUrl || restaurant?.storefrontImageUrl
-            || storefrontItem?.imageUrl
             || itemImage?.imageUrl || itemImage?.image_url || itemImage?.itemImageUrl
             || order.imageUrl || order.image_url || order.foodImageUrl || order.food_image_url;
         const fallbackImageCandidate = order.restaurant?.logo || order.restaurant?.logoUrl || order.restaurant?.logo_url
             || order.restaurant?.restaurantLogo || order.restaurantLogo || order.restaurant_logo
-            || restaurant?.logoUrl || restaurant?.logo || restaurant?.imageUrl;
+            || order.restaurantLogo || order.restaurant_logo;
         const fallbackSource = getRestaurantImageSource(fallbackImageCandidate, undefined, restaurantName);
         const primarySource = hasImageSource(primaryImageCandidate)
             ? getRestaurantImageSource(primaryImageCandidate, fallbackSource)
@@ -335,7 +312,7 @@ export default function ProfileScreen() {
                                   ? <Text style={styles.initial}>{avatarInitial}</Text>
                                   : icon("person-outline", 24, ORANGE)}
                         </View>
-                        <View style={styles.flex}><Text numberOfLines={1} style={styles.name}>{profile.user?.name}</Text><Text numberOfLines={1} style={styles.metadata}>{profile.user?.email}</Text>{isAdmin ? <View style={styles.adminBadge}>{icon("shield-checkmark", 12, ORANGE)}<Text style={styles.adminText}>{copy("profileRedesign.admin", "Admin", "Yönetici")}</Text></View> : null}</View>
+                        <View style={styles.flex}><Text numberOfLines={1} style={styles.name}>{profile.user?.name}</Text><Text numberOfLines={1} style={styles.metadata}>{profile.user?.email}</Text></View>
                         {action(t("profile.header.edit"), () => profile.setIsEditingProfile(true))}
                     </View>
 
@@ -368,8 +345,6 @@ export default function ProfileScreen() {
 
                 {sectionHeader("help-circle-outline", copy("profileRedesign.accountSupport", "Account & support", "Hesap ve destek"))}
                 <View style={styles.group}>
-                    {isAdmin ? settingsRow("shield-checkmark-outline", copy("profileRedesign.adminAccess", "Admin access", "Yönetici erişimi"), () => router.push("/admin")) : null}
-                    {profile.ownedRestaurantId ? settingsRow("storefront-outline", copy("profileRedesign.restaurantPanel", "Restaurant panel", "Restoran paneli"), () => router.push("/restaurantpanel")) : null}
                     {settingsRow("document-text-outline", t("profileExtras.actions.privacy.label"), () => router.push("/privacy"))}
                     {settingsRow("document-text-outline", t("profileExtras.actions.terms.label"), () => router.push("/terms"))}
                     {settingsRow("headset-outline", t("profileExtras.actions.help.label"), () => router.push("/support"), undefined, true)}
@@ -400,7 +375,7 @@ export default function ProfileScreen() {
                 <Text style={styles.formLabel}>{t("profileExtras.editModal.whatsapp", "WhatsApp")}</Text><TextInput accessibilityLabel="WhatsApp" keyboardType="phone-pad" onChangeText={profile.setWhatsappDraft} style={styles.input} value={profile.whatsappDraft} />
                 <View style={styles.formActions}>{action(t("common.cancel"), () => profile.setIsEditingProfile(false))}<Pressable accessibilityRole="button" disabled={profile.savingProfile} onPress={profile.handleSaveProfile} style={styles.saveButton}><Text style={styles.saveText}>{t(profile.savingProfile ? "profile.header.saving" : "profileExtras.editModal.save")}</Text></Pressable></View>
             </View>)}
-            <NotificationPreferencesModal isRestaurantMember={Boolean(profile.ownedRestaurantId)} onClose={() => profile.setNotifModalVisible(false)} visible={profile.notifModalVisible} />
+            <NotificationPreferencesModal isRestaurantMember={false} onClose={() => profile.setNotifModalVisible(false)} visible={profile.notifModalVisible} />
         </SafeAreaView>
     );
 }

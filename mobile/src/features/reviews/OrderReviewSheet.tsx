@@ -14,7 +14,7 @@ import {
     View,
     useWindowDimensions,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Icon from "@/components/Icon";
 import { useTheme } from "@/src/theme/themeContext";
@@ -93,7 +93,7 @@ const OrderReviewSheet = ({ visible, submitting = false, items, errorText, onClo
             visible
             transparent
             statusBarTranslucent
-            animationType="fade"
+            animationType="slide"
             presentationStyle="overFullScreen"
             onRequestClose={handleRequestClose}
         >
@@ -102,16 +102,16 @@ const OrderReviewSheet = ({ visible, submitting = false, items, errorText, onClo
                 <KeyboardAvoidingView
                     style={styles.keyboardAvoiding}
                     behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    keyboardVerticalOffset={Platform.OS === "ios" ? insets.bottom + 12 : 0}
+                    keyboardVerticalOffset={0}
                 >
-                    <SafeAreaView edges={["bottom"]} style={styles.safeArea}>
-                        <Pressable style={[styles.sheet, { maxHeight: Math.max(340, screenHeight * 0.82), backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]} onPress={() => undefined}>
+                    <Pressable style={[styles.sheet, { maxHeight: Math.max(340, screenHeight * 0.82), backgroundColor: theme.colors.surfaceElevated }]} onPress={() => undefined}>
                             <ScrollView
                                 bounces={false}
                                 keyboardShouldPersistTaps="handled"
-                                contentContainerStyle={styles.sheetContent}
+                                contentContainerStyle={[styles.sheetContent, { paddingBottom: Math.max(insets.bottom, 16) }]}
                                 showsVerticalScrollIndicator={false}
                             >
+                                <View style={[styles.sheetHandle, { backgroundColor: theme.colors.border }]} />
                                 <View style={styles.headerRow}>
                                     <Text style={[styles.title, { color: theme.colors.ink }]}>Deneyimini değerlendir</Text>
                                     <TouchableOpacity
@@ -185,7 +185,6 @@ const OrderReviewSheet = ({ visible, submitting = false, items, errorText, onClo
                                 </View>
                             </ScrollView>
                         </Pressable>
-                    </SafeAreaView>
                 </KeyboardAvoidingView>
             </View>
         </Modal>
@@ -205,22 +204,23 @@ const styles = createAdaptiveStyleSheet({
         flex: 1,
         justifyContent: "flex-end",
     },
-    safeArea: {
-        justifyContent: "flex-end",
-    },
     sheet: {
         backgroundColor: "#FFFFFF",
-        borderTopLeftRadius: 32,
-        borderTopRightRadius: 32,
-        borderWidth: 1,
-        borderColor: "#E2E8F0",
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
         overflow: "hidden",
     },
     sheetContent: {
-        paddingHorizontal: 24,
-        paddingTop: 18,
-        paddingBottom: 16,
+        paddingHorizontal: 20,
+        paddingTop: 10,
         gap: 14,
+    },
+    sheetHandle: {
+        width: 42,
+        height: 5,
+        borderRadius: 3,
+        alignSelf: "center",
+        marginBottom: 1,
     },
     headerRow: {
         flexDirection: "row",

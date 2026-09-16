@@ -132,6 +132,9 @@ const CustomInput = forwardRef<TextInput, Props>(({
                 <TextInput
                     ref={ref}
                     {...({ id: fieldKey, name: fieldKey } as any)}
+                    multiline={false}
+                    numberOfLines={1}
+                    scrollEnabled
                     autoCapitalize="none"
                     autoCorrect={false}
                     autoComplete={autoComplete}

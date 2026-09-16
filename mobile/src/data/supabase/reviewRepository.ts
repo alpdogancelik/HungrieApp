@@ -1,6 +1,7 @@
 import type { ReviewRepository } from "@/src/data/contracts";
 import type { MenuItemReview, OrderReview, RestaurantOrderReviewSummary, RestaurantReviewSummary } from "@/src/domain/types";
 import { createInitialFetchSubscription, requireSupabase, throwIfError } from "./utils";
+import { invalidateCatalogCache } from "./publicCatalogCache";
 
 const normalizeLimit = (value?: number) => Math.min(Math.max(Math.floor(Number(value || 30)), 1), 100);
 const PRODUCT_REVIEW_COLUMNS = [
@@ -128,7 +129,10 @@ export const fetchRestaurantReviewSummary: ReviewRepository["fetchRestaurantRevi
     });
 
 export const fetchUserReviews: ReviewRepository["fetchUserReviews"] = async (_userId, options) =>
-    throwIfError(await requireSupabase().rpc("list_my_product_reviews", { p_limit: normalizeLimit(options?.limit) })).map(mapProductReview);
+    throwIfError(await requireSupabase().rpc("list_my_customer_product_reviews_v1", { p_limit: normalizeLimit(options?.limit) })).map(mapProductReview);
+
+export const fetchReviewedMenuItemIdsForOrder: ReviewRepository["fetchReviewedMenuItemIdsForOrder"] = async (orderId) =>
+    throwIfError(await requireSupabase().rpc("list_my_customer_product_review_menu_items_v1", { p_order_id: orderId }));
 
 export const subscribeUserReviews: ReviewRepository["subscribeUserReviews"] = (userId, cb, options) => {
     return createInitialFetchSubscription(() => fetchUserReviews(userId, options), cb, () => cb([]));
@@ -136,14 +140,17 @@ export const subscribeUserReviews: ReviewRepository["subscribeUserReviews"] = (u
 
 export const submitMenuItemReview: ReviewRepository["submitMenuItemReview"] = async (input) => {
     const id = throwIfError(
-        await requireSupabase().rpc("submit_product_review", {
+        await requireSupabase().rpc("submit_my_customer_product_review_v1", {
             p_order_id: input.orderId,
             p_menu_item_id: input.menuItemId || input.itemId,
             p_rating: input.rating,
             p_comment: input.comment || "",
         }),
     );
-    const row = throwIfError(await requireSupabase().rpc("get_my_product_review", { p_review_id: id }));
+    // Product-review metrics are updated in the same database transaction. Drop
+    // public catalog snapshots so Home/menu screens read those new aggregates.
+    invalidateCatalogCache();
+    const row = throwIfError(await requireSupabase().rpc("get_my_customer_product_review_v1", { p_review_id: id }));
     return mapProductReview(row);
 };
 
@@ -155,7 +162,7 @@ export const saveMenuItemReviewReply: ReviewRepository["saveMenuItemReviewReply"
 
 export const submitOrderReview: ReviewRepository["submitOrderReview"] = async (input) => {
     const id = throwIfError(
-        await requireSupabase().rpc("submit_order_review", {
+        await requireSupabase().rpc("submit_my_customer_order_review_v1", {
             p_order_id: input.orderId,
             p_speed_rating: input.ratings.speed,
             p_taste_rating: input.ratings.taste,
@@ -164,17 +171,17 @@ export const submitOrderReview: ReviewRepository["submitOrderReview"] = async (i
             p_comment: input.comment || "",
         }),
     );
-    const row = throwIfError(await requireSupabase().rpc("get_my_order_review", { p_review_id: id }));
+    const row = throwIfError(await requireSupabase().rpc("get_my_customer_order_review_v1", { p_review_id: id }));
     return mapOrderReview(row);
 };
 
 export const fetchOrderReviewByOrder: ReviewRepository["fetchOrderReviewByOrder"] = async (orderId) => {
-    const row = throwIfError(await requireSupabase().rpc("get_my_order_review_by_order", { p_order_id: orderId }));
+    const row = throwIfError(await requireSupabase().rpc("get_my_customer_order_review_by_order_v1", { p_order_id: orderId }));
     return row ? mapOrderReview(row) : null;
 };
 
 export const fetchUserOrderReviews: ReviewRepository["fetchUserOrderReviews"] = async (_userId, options) =>
-    throwIfError(await requireSupabase().rpc("list_my_order_reviews", { p_limit: normalizeLimit(options?.limit) })).map(mapOrderReview);
+    throwIfError(await requireSupabase().rpc("list_my_customer_order_reviews_v1", { p_limit: normalizeLimit(options?.limit) })).map(mapOrderReview);
 
 export const fetchRestaurantOrderReviews: ReviewRepository["fetchRestaurantOrderReviews"] = async (restaurantId, options) => {
     const limit = normalizeLimit(options?.limit);
@@ -211,6 +218,7 @@ export const supabaseReviewRepository: ReviewRepository = {
     fetchRestaurantReviews,
     fetchRestaurantReviewSummary,
     fetchUserReviews,
+    fetchReviewedMenuItemIdsForOrder,
     subscribeUserReviews,
     submitMenuItemReview,
     moderateMenuItemReview,

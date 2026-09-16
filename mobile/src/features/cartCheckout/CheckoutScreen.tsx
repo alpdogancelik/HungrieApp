@@ -8,8 +8,7 @@ import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Platfo
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { formatCurrency, getCustomizationsTotal } from "@/lib/cart.utils";
-import { seedRestaurants } from "@/lib/restaurantSeeds";
-import { placeOrder } from "@/src/data/orderRepository";
+import { placeOrder, quoteOrder } from "@/src/data/orderRepository";
 import { getRestaurant } from "@/src/data/restaurantRepository";
 import type { Address, PaymentMethod } from "@/src/domain/types";
 import { addressStore, useAddresses } from "@/src/features/address/addressFeature";
@@ -17,6 +16,8 @@ import { showUserMessage } from "@/src/lib/showUserMessage";
 import { useTheme } from "@/src/theme/themeContext";
 import useAuthStore from "@/store/auth.store";
 import { useCartStore } from "@/store/cart.store";
+import { clearCheckoutOperation, discardCheckoutOperationAfterCartChange, resolveCheckoutOperation } from "./checkoutOperation";
+import { classifyCheckoutQuoteFailure, type CheckoutQuoteFailure } from "./checkoutQuoteFailure";
 import {
     FOOTER_CONTENT_HEIGHT,
     isRestaurantOpenForOrdering,
@@ -51,10 +52,15 @@ const CheckoutScreen = () => {
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pos");
     const [notes, setNotes] = useState("");
     const [placingOrder, setPlacingOrder] = useState(false);
-    const deliveryFee = 0;
-    const serviceFee = 0;
-    const discount = 0;
-    const total = Math.max(0, subtotal + deliveryFee + serviceFee - discount);
+    const [serverQuote, setServerQuote] = useState<any>(null);
+    const [quoteLoading, setQuoteLoading] = useState(false);
+    const [quoteError, setQuoteError] = useState<CheckoutQuoteFailure | null>(null);
+    const [quoteAttempt, setQuoteAttempt] = useState(0);
+    const deliveryFee = serverQuote ? Number(serverQuote.delivery_fee_kurus||0)/100 : 0;
+    const serviceFee = serverQuote ? Number(serverQuote.service_fee_kurus||0)/100 : 0;
+    const discount = serverQuote ? Number(serverQuote.discount_kurus||0)/100 : 0;
+    const quotedSubtotal=serverQuote?Number(serverQuote.subtotal_kurus||0)/100:subtotal;
+    const total = serverQuote?Number(serverQuote.total_kurus||0)/100:Math.max(0, subtotal + deliveryFee + serviceFee - discount);
     const belowMinimum = subtotal < MINIMUM_ORDER_TOTAL;
 
     useEffect(() => {
@@ -62,14 +68,33 @@ const CheckoutScreen = () => {
             setRestaurant(null);
             return;
         }
-        const fallback = seedRestaurants.find((item) => stringifyId(item.id) === restaurantId);
-        setRestaurant(fallback || null);
+        setRestaurant(null);
         let mounted = true;
         void getRestaurant(restaurantId).then((result) => {
             if (mounted && result) setRestaurant(result);
         }).catch(() => undefined);
         return () => { mounted = false; };
     }, [restaurantId]);
+    useEffect(() => {
+        let active = true;
+        if (!isAuthenticated || !restaurantId || !items.length) {
+            setServerQuote(null);
+            setQuoteError(null);
+            setQuoteLoading(false);
+            return;
+        }
+        setServerQuote(null);
+        setQuoteError(null);
+        setQuoteLoading(true);
+        void quoteOrder(restaurantId, items).then((quote: any) => {
+            if (active) setServerQuote(quote);
+        }).catch((error) => {
+            if (active) setQuoteError(classifyCheckoutQuoteFailure(error));
+        }).finally(() => {
+            if (active) setQuoteLoading(false);
+        });
+        return () => { active = false; };
+    }, [isAuthenticated, items, quoteAttempt, restaurantId]);
 
     useFocusEffect(useCallback(() => {
         const preferred = addressList.find((address) => address.isDefault) || addressList[0];
@@ -77,8 +102,16 @@ const CheckoutScreen = () => {
     }, [addressList]));
 
     const selectedAddress = addressList.find((address) => stringifyId(address.id) === selectedAddressId) || addressList.find((address) => address.isDefault) || addressList[0];
+    const operationScope = String(user?.id || user?.$id || user?.accountId || "guest");
+    const cartSignature = useMemo(() => JSON.stringify(items.map((item) => ({
+        id: String(item.id), quantity: item.quantity,
+        customizationIds: (item.customizations || []).map((entry) => `${entry.type || "option"}:${entry.id}`).sort(),
+    }))), [items]);
+    useEffect(() => {
+        if (operationScope !== "guest") void discardCheckoutOperationAfterCartChange(operationScope, cartSignature);
+    }, [cartSignature, operationScope]);
     const eta = restaurantEta(restaurant, Boolean(turkish));
-    const canSubmit = Boolean(items.length && selectedAddress && paymentMethod && !belowMinimum && !placingOrder);
+    const canSubmit = Boolean(items.length && selectedAddress && paymentMethod && serverQuote && !quoteLoading && !quoteError && !placingOrder);
 
     const manageAddresses = () => {
         if (!isAuthenticated) {
@@ -126,12 +159,16 @@ const CheckoutScreen = () => {
             ]);
             return;
         }
-        if (belowMinimum) {
-            Alert.alert(t("cart.screen.alerts.minimumTitle"), t("cart.screen.alerts.minimumBody", { amount: formatCurrency(MINIMUM_ORDER_TOTAL) }));
+        if (!serverQuote || quoteLoading || quoteError) {
+            Alert.alert(copy("Price could not be verified", "Fiyat doğrulanamadı"), copy("Retry the server price before placing the order.", "Siparişi vermeden önce sunucu fiyatını yeniden deneyin."));
             return;
         }
 
-        const resolvedRestaurantId = String(items[0]?.restaurantId || restaurantId || "ada-pizza");
+        const resolvedRestaurantId = String(items[0]?.restaurantId || restaurantId || "");
+        if (!resolvedRestaurantId) {
+            Alert.alert(t("cart.screen.alerts.placeErrorTitle"), copy("The cart is missing its Restaurant. Remove these items and add them again.", "Sepette restoran bilgisi eksik. Ürünleri kaldırıp yeniden ekleyin."));
+            return;
+        }
         const pendingEta = 120;
         try {
             setPlacingOrder(true);
@@ -140,6 +177,18 @@ const CheckoutScreen = () => {
                 Alert.alert(t("cart.screen.alerts.placeErrorTitle"), copy("This restaurant is closed right now. Please order from an open restaurant.", "Bu restoran şu anda kapalı. Lütfen açık bir restorandan sipariş verin."));
                 return;
             }
+            const requestSignature = JSON.stringify({
+                restaurantId: resolvedRestaurantId,
+                addressId: String(selectedAddress.id),
+                paymentMethod,
+                notes: notes.trim(),
+                items: items.map((item) => ({
+                    id: String(item.id),
+                    quantity: item.quantity,
+                    customizationIds: (item.customizations || []).map((entry) => `${entry.type || "option"}:${entry.id}`).sort(),
+                })),
+            });
+            const operationId = await resolveCheckoutOperation(operationScope, requestSignature, cartSignature);
             const orderId = await placeOrder({
                 userId: user?.id ?? user?.$id ?? user?.accountId ?? "guest",
                 restaurantId: resolvedRestaurantId,
@@ -148,7 +197,7 @@ const CheckoutScreen = () => {
                     name: item.name,
                     quantity: item.quantity,
                     price: item.price + getCustomizationsTotal(item.customizations),
-                    customizations: item.customizations?.map(({ id, name, price }) => ({ id, name, price })) || [],
+                    customizations: item.customizations?.map(({ id, name, price, type }) => ({ id, name, price, type })) || [],
                 })),
                 paymentMethod,
                 fees: { deliveryFee, serviceFee, discount, tip: 0 },
@@ -156,9 +205,11 @@ const CheckoutScreen = () => {
                 customer: { name: user?.name, email: user?.email, whatsappNumber: user?.whatsappNumber },
                 deliveryAddress: copyAddress(selectedAddress),
                 notes,
+                operationId,
             });
-            const restaurantName = restaurant?.name || seedRestaurants.find((item) => stringifyId(item.id) === resolvedRestaurantId)?.name || copy("Restaurant", "Restoran");
+            const restaurantName = restaurant?.name || copy("Restaurant", "Restoran");
             clearCart();
+            await clearCheckoutOperation(operationScope, operationId);
             router.replace({ pathname: "/order/pending", params: { orderId, restaurantName, eta: String(pendingEta) } });
         } catch {
             Alert.alert(t("cart.screen.alerts.placeErrorTitle"), t("cart.screen.alerts.placeErrorBody"));
@@ -191,6 +242,11 @@ const CheckoutScreen = () => {
                         </View>
                         <Ionicons color={styles.tertiary.color} name="chevron-forward" size={18} />
                     </Pressable>
+                    {!addressesLoading && !selectedAddress ? <Pressable accessibilityRole="button" onPress={manageAddresses} style={styles.addressWarning}>
+                        <Ionicons color="#D92D20" name="alert-circle-outline" size={20} />
+                        <Text style={styles.addressWarningText}>{copy("Please add a delivery address before placing your order.", "Lütfen sipariş vermeden önce bir teslimat adresi ekleyin.")}</Text>
+                        <Text style={styles.addressWarningAction}>{copy("Add address", "Adres ekle")}</Text>
+                    </Pressable> : null}
 
                     <View style={styles.etaRow}><MaterialCommunityIcons color={styles.text.color} name="motorbike" size={21} /><Text style={styles.etaLabel}>{copy("Estimated delivery time", "Tahmini teslimat süresi")}</Text><Text style={styles.etaValue}>{eta}</Text></View>
 
@@ -201,7 +257,7 @@ const CheckoutScreen = () => {
                             return <View key={`${item.id}-${(item.customizations || []).map((option) => option.id).join("-")}`} style={styles.summaryItem}><View style={styles.flex}><Text numberOfLines={1} style={styles.summaryName}>{item.name}</Text><Text style={styles.summarySub}>{item.quantity} × {formatCurrency(unit)}</Text></View><Text style={styles.summaryPrice}>{formatCurrency(unit * item.quantity)}</Text></View>;
                         })}
                         <View style={styles.summaryDivider} />
-                        <CostRow label={copy("Subtotal", "Ara toplam")} styles={styles} value={formatCurrency(subtotal)} />
+                        <CostRow label={copy("Subtotal", "Ara toplam")} styles={styles} value={formatCurrency(quotedSubtotal)} />
                         <CostRow label={copy("Delivery fee", "Teslimat ücreti")} styles={styles} value={formatCurrency(deliveryFee)} />
                         {serviceFee ? <CostRow label={copy("Service fee", "Hizmet bedeli")} styles={styles} value={formatCurrency(serviceFee)} /> : null}
                         {discount ? <CostRow label={copy("Discount", "İndirim")} styles={styles} value={`-${formatCurrency(discount)}`} /> : null}
@@ -217,6 +273,8 @@ const CheckoutScreen = () => {
                     <View style={styles.noteShell}><TextInput maxLength={MAX_NOTES} multiline onChangeText={(value) => setNotes(value.slice(0, MAX_NOTES))} placeholder={copy("Door code, dorm details, special requests...", "Kapı kodu, yurt detayları, özel istekler...")} placeholderTextColor={styles.tertiary.color} style={styles.noteInput} textAlignVertical="top" value={notes} /><Text style={styles.counter}>{notes.length}/{MAX_NOTES}</Text></View>
 
                     {belowMinimum ? <View style={styles.minimumWarning}><Ionicons color="#F79009" name="warning-outline" size={18} /><Text style={styles.minimumText}>{copy(`Add ${formatCurrency(MINIMUM_ORDER_TOTAL - subtotal)} more to meet the minimum order.`, `Minimum sipariş tutarına ulaşmak için ${formatCurrency(MINIMUM_ORDER_TOTAL - subtotal)} daha ekleyin.`)}</Text></View> : null}
+                    {quoteLoading ? <View style={styles.quoteState}><ActivityIndicator color={ORANGE} size="small" /><Text style={styles.quoteStateText}>{copy("Verifying the current server price…", "Güncel sunucu fiyatı doğrulanıyor…")}</Text></View> : null}
+                    {quoteError ? <View style={styles.quoteState}><Ionicons color="#D92D20" name={quoteError === "restaurant_closed" ? "storefront-outline" : quoteError === "customer_access_denied" ? "lock-closed-outline" : "cloud-offline-outline"} size={18} /><Text style={styles.quoteStateText}>{quoteError === "restaurant_closed" ? copy("This restaurant is not accepting orders right now.", "Bu restoran şu anda sipariş almıyor.") : quoteError === "customer_access_denied" ? copy("Your Customer access has changed. Return to the app or sign in again.", "Müşteri erişiminiz değişti. Uygulamaya dönün veya tekrar giriş yapın.") : quoteError === "invalid_menu" ? copy("The current menu configuration could not be verified.", "Güncel menü yapılandırması doğrulanamadı.") : copy("The current server price could not be reached.", "Güncel sunucu fiyatına ulaşılamadı.")}</Text>{quoteError !== "customer_access_denied" ? <Pressable accessibilityRole="button" onPress={() => setQuoteAttempt((value) => value + 1)}><Text style={styles.quoteRetry}>{copy("Retry", "Tekrar dene")}</Text></Pressable> : null}</View> : null}
                 </ScrollView>
             </KeyboardAvoidingView>
             <TransactionFooter amount={formatCurrency(total)} ctaLabel={copy("Complete order", "Siparişi Tamamla")} disabled={!canSubmit} loading={placingOrder} onPress={() => void placeCheckoutOrder()} processingLabel={copy("Processing...", "İşleniyor...")} safeBottom={insets.bottom} styles={styles} totalLabel={copy("Total", "Toplam")} />
@@ -284,11 +342,11 @@ const createStyles = (dark: boolean) => {
         screen: { flex: 1, backgroundColor: c.bg }, flex: { flex: 1, minWidth: 0 }, text: { color: c.text }, tertiary: { color: c.tertiary }, pressed: { opacity: 0.65 }, primaryPressed: { backgroundColor: "#E94F00" },
         header: { height: 52, paddingHorizontal: 20, flexDirection: "row", alignItems: "center", backgroundColor: c.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border }, backButton: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: c.border, backgroundColor: c.surface, alignItems: "center", justifyContent: "center" }, headerTitle: { flex: 1, color: c.text, textAlign: "center", fontSize: 21, lineHeight: 26, fontWeight: "700" }, headerSpacer: { width: 40 },
         content: { paddingHorizontal: 20, paddingTop: 10 }, sectionHeader: { minHeight: 28, flexDirection: "row", alignItems: "center" }, sectionTitleFlush: { flex: 1, color: c.text, fontSize: 18.5, lineHeight: 23, fontWeight: "700" },
-        addressRow: { minHeight: 72, marginTop: 7, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 14, borderWidth: 1, borderColor: c.border, backgroundColor: c.surface, flexDirection: "row", alignItems: "center", gap: 12 }, addressLabel: { color: c.text, fontSize: 14.5, lineHeight: 18, fontWeight: "600" }, addressLine: { color: c.muted, fontSize: 12.5, lineHeight: 16 }, addressLoader: { alignSelf: "flex-start" },
+        addressRow: { minHeight: 72, marginTop: 7, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 14, borderWidth: 1, borderColor: c.border, backgroundColor: c.surface, flexDirection: "row", alignItems: "center", gap: 12 }, addressLabel: { color: c.text, fontSize: 14.5, lineHeight: 18, fontWeight: "600" }, addressLine: { color: c.muted, fontSize: 12.5, lineHeight: 16 }, addressLoader: { alignSelf: "flex-start" }, addressWarning: { marginTop: 8, borderRadius: 12, borderWidth: 1, borderColor: dark ? "#7A271A" : "#FDA29B", backgroundColor: dark ? "#3B1E1A" : "#FEF3F2", paddingHorizontal: 11, paddingVertical: 10, flexDirection: "row", alignItems: "center", gap: 8 }, addressWarningText: { flex: 1, color: dark ? "#FECDCA" : "#B42318", fontSize: 12.5, lineHeight: 17, fontWeight: "500" }, addressWarningAction: { color: ORANGE, fontSize: 12.5, lineHeight: 17, fontWeight: "700" },
         etaRow: { height: 48, marginTop: 10, borderRadius: 13, borderWidth: 1, borderColor: c.border, paddingHorizontal: 13, backgroundColor: c.surface, flexDirection: "row", alignItems: "center", gap: 10 }, etaLabel: { flex: 1, color: c.text, fontSize: 13.5, lineHeight: 18, fontWeight: "500" }, etaValue: { color: c.text, fontSize: 14, lineHeight: 18, fontWeight: "700" },
         sectionTitle: { marginTop: 12, marginBottom: 7, color: c.text, fontSize: 18.5, lineHeight: 23, fontWeight: "700" }, summaryCard: { borderRadius: 15, borderWidth: 1, borderColor: c.border, paddingHorizontal: 13, paddingVertical: 10, backgroundColor: c.surface }, summaryItem: { minHeight: 38, flexDirection: "row", alignItems: "flex-start", gap: 12 }, summaryName: { color: c.text, fontSize: 13.5, lineHeight: 17, fontWeight: "600" }, summarySub: { marginTop: 1, color: c.muted, fontSize: 12, lineHeight: 15 }, summaryPrice: { color: c.text, fontSize: 13.5, lineHeight: 17, fontWeight: "500" }, summaryDivider: { height: StyleSheet.hairlineWidth, marginVertical: 6, backgroundColor: c.border }, costRow: { minHeight: 21, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, costLabel: { color: c.muted, fontSize: 12.5, lineHeight: 17 }, costValue: { color: c.text, fontSize: 12.5, lineHeight: 17, fontWeight: "500" }, totalRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, totalLabel: { color: c.text, fontSize: 16, lineHeight: 21, fontWeight: "700" }, totalValue: { color: c.text, fontSize: 18, lineHeight: 23, fontWeight: "700" },
         paymentRow: { minHeight: 66, marginBottom: 8, padding: 11, borderRadius: 14, borderWidth: 1, borderColor: c.border, backgroundColor: c.surface, flexDirection: "row", alignItems: "center", gap: 11 }, paymentSelected: { borderColor: ORANGE }, radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: dark ? "#596273" : "#D0D5DD", alignItems: "center", justifyContent: "center" }, radioSelected: { borderColor: ORANGE }, radioDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: ORANGE }, paymentTitleRow: { flexDirection: "row", alignItems: "center", gap: 7 }, paymentTitle: { flexShrink: 1, color: c.text, fontSize: 14, lineHeight: 18, fontWeight: "600" }, paymentDescription: { marginTop: 2, color: c.muted, fontSize: 11.5, lineHeight: 15 }, badge: { borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2, backgroundColor: dark ? "#3A251C" : "#FFF1E7" }, badgeText: { color: ORANGE, fontSize: 10.5, lineHeight: 13, fontWeight: "500" },
-        noteHeader: { marginTop: 9, marginBottom: 7, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, noteTitle: { color: c.text, fontSize: 16.5, lineHeight: 21, fontWeight: "700" }, optional: { color: c.muted, fontSize: 12.5, lineHeight: 17 }, noteShell: { minHeight: 72, borderRadius: 12, borderWidth: 1, borderColor: c.border, backgroundColor: c.input, paddingHorizontal: 12, paddingTop: 9, paddingBottom: 6 }, noteInput: { minHeight: 38, padding: 0, color: c.text, fontSize: 13, lineHeight: 17 }, counter: { alignSelf: "flex-end", color: c.muted, fontSize: 11.5, lineHeight: 15 }, minimumWarning: { marginTop: 10, borderRadius: 12, padding: 11, backgroundColor: dark ? "#3A2A13" : "#FFF4E5", flexDirection: "row", alignItems: "flex-start", gap: 9 }, minimumText: { flex: 1, color: dark ? "#FFD18A" : "#8A4B08", fontSize: 12.5, lineHeight: 17, fontWeight: "500" },
+        noteHeader: { marginTop: 9, marginBottom: 7, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, noteTitle: { color: c.text, fontSize: 16.5, lineHeight: 21, fontWeight: "700" }, optional: { color: c.muted, fontSize: 12.5, lineHeight: 17 }, noteShell: { minHeight: 72, borderRadius: 12, borderWidth: 1, borderColor: c.border, backgroundColor: c.input, paddingHorizontal: 12, paddingTop: 9, paddingBottom: 6 }, noteInput: { minHeight: 38, padding: 0, color: c.text, fontSize: 13, lineHeight: 17 }, counter: { alignSelf: "flex-end", color: c.muted, fontSize: 11.5, lineHeight: 15 }, minimumWarning: { marginTop: 10, borderRadius: 12, padding: 11, backgroundColor: dark ? "#3A2A13" : "#FFF4E5", flexDirection: "row", alignItems: "flex-start", gap: 9 }, minimumText: { flex: 1, color: dark ? "#FFD18A" : "#8A4B08", fontSize: 12.5, lineHeight: 17, fontWeight: "500" }, quoteState: { marginTop: 10, borderRadius: 12, padding: 11, borderWidth: 1, borderColor: c.border, backgroundColor: c.surface, flexDirection: "row", alignItems: "center", gap: 9 }, quoteStateText: { flex: 1, color: c.muted, fontSize: 12.5, lineHeight: 17 }, quoteRetry: { color: ORANGE, fontSize: 13, fontWeight: "700" },
         footer: { position: "absolute", left: 0, right: 0, bottom: 0, minHeight: FOOTER_CONTENT_HEIGHT, paddingTop: 10, paddingHorizontal: 20, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16, backgroundColor: c.surface, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border }, footerLabel: { color: c.text, fontSize: 12.5, lineHeight: 16, fontWeight: "500" }, footerAmount: { marginTop: 1, color: c.text, fontSize: 21, lineHeight: 25, fontWeight: "700" }, primaryButton: { width: "62%", height: 53, borderRadius: 17, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: ORANGE }, primaryDisabled: { backgroundColor: dark ? "#343942" : "#E4E7EC" }, buttonText: { color: "#FFFFFF", fontSize: 16, lineHeight: 20, fontWeight: "600", textAlign: "center" }, disabledText: { color: c.tertiary },
         modalBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(2, 6, 23, 0.48)" }, modalDismiss: { flex: 1 }, addressSheet: { maxHeight: "72%", borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: c.surface, paddingHorizontal: 20, paddingTop: 10 }, modalHandle: { width: 42, height: 5, borderRadius: 3, backgroundColor: c.border, alignSelf: "center", marginBottom: 15 }, modalTitle: { color: c.text, fontSize: 21, lineHeight: 27, fontWeight: "700", marginBottom: 10 }, addressOption: { minHeight: 62, flexDirection: "row", alignItems: "center", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border }, addressOptionCopy: { flex: 1, paddingRight: 12 }, addressOptionTitle: { color: c.text, fontSize: 16, fontWeight: "600" }, addressOptionLine: { color: c.muted, marginTop: 3, fontSize: 13 }, emptyAddresses: { color: c.muted, fontSize: 15, paddingVertical: 24, textAlign: "center" }, manageAddressButton: { minHeight: 48, borderRadius: 14, backgroundColor: ORANGE, marginTop: 14, alignItems: "center", justifyContent: "center" }, manageAddressText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
         empty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 14, paddingHorizontal: 32 }, emptyTitle: { color: c.text, fontSize: 23, fontWeight: "700" }, emptyButton: { minHeight: 48, borderRadius: 15, paddingHorizontal: 22, alignItems: "center", justifyContent: "center", backgroundColor: ORANGE },

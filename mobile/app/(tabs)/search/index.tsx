@@ -190,7 +190,7 @@ const PopularChip = ({ colors, label, onPress, accessibilityLabel }: { colors: P
 const CuisineCard = ({ colors, image, label, onPress, accessibilityLabel }: { colors: Palette; image: ImageSource; label: string; onPress: () => void; accessibilityLabel: string }) => (
     <Pressable accessibilityLabel={accessibilityLabel} onPress={onPress} style={styles.cuisineCardPressable}>
         {({ pressed }) => (
-            <View style={[styles.cuisineCard, { backgroundColor: "transparent", borderColor: colors.border }, pressed && styles.cuisineCardPressed]}>
+            <View style={[styles.cuisineCard, { backgroundColor: colors.surface, borderColor: colors.border }, pressed && styles.cuisineCardPressed]}>
                 <Image cachePolicy="memory-disk" contentFit="cover" source={image} style={styles.cuisineImage} transition={120} />
                 <View style={styles.cuisineFooter}>
                     <Text numberOfLines={2} style={[styles.cuisineTitle, { color: colors.text }]}>{label}</Text>

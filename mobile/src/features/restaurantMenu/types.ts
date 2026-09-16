@@ -1,4 +1,4 @@
-import type { CartCustomization } from "@/src/domain/types";
+import type { CartCustomization, MenuIngredient, MenuOptionGroup } from "@/src/domain/types";
 
 export type MenuEntry = {
     id: string;
@@ -11,6 +11,9 @@ export type MenuEntry = {
     image_url?: string;
     imageUrl?: string;
     customizations?: CartCustomization[];
+    ingredients?: MenuIngredient[];
+    optionGroups?: MenuOptionGroup[];
+    menuDefinitionRevision?: number;
     rating?: number;
     ratingAverage?: number;
     ratingCount?: number;

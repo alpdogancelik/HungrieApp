@@ -14,7 +14,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useTranslation } from "react-i18next";
 import useOrderRealtime from "@/src/hooks/useOrderRealtime";
 import useOrderStatus from "@/src/hooks/useOrderStatus";
-import { transitionOrder } from "@/src/data/orderRepository";
+import { fetchAuthorizedOrder, transitionOrder } from "@/src/data/orderRepository";
 import { nudgeRestaurant } from "@/src/api/client";
 import useAuthStore from "@/store/auth.store";
 import type { OrderStatus } from "@/src/domain/types";
@@ -217,17 +217,17 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onBack,
     const [reminderUnlockRemaining, setReminderUnlockRemaining] = useState(REMINDER_UNLOCK_SECONDS);
     const [cooldown, setCooldown] = useState(0);
     const [sendingNudge, setSendingNudge] = useState(false);
-    const [autoCanceled, setAutoCanceled] = useState(false);
+    const [cancelSubmitting, setCancelSubmitting] = useState(false);
     const [cancelWindowRemaining, setCancelWindowRemaining] = useState(CANCEL_WINDOW_SECONDS);
 
     const prevStatus = useRef<OrderStatus>("pending");
-    const isCancelWindowActive = orderStatus === "pending" && cancelWindowRemaining > 0 && !autoCanceled;
+    const isCancelWindowActive = orderStatus === "pending" && cancelWindowRemaining > 0 && !cancelSubmitting;
     const isReminderLocked = orderStatus === "pending" && reminderUnlockRemaining > 0;
     const safeTop = Math.max(insets.top, 16);
 
-    const handleAutoCancel = useCallback(async () => {
-        if (autoCanceled || !orderId) return;
-        setAutoCanceled(true);
+    const handleCancelRequest = useCallback(async () => {
+        if (cancelSubmitting || !orderId) return;
+        setCancelSubmitting(true);
 
         try {
             await transitionOrder(orderId, "canceled");
@@ -235,10 +235,23 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onBack,
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => null);
             onRejected?.(orderId);
         } catch (error: any) {
-            setAutoCanceled(false);
+            // The Restaurant can accept the order between the Customer seeing
+            // the cancel action and the guarded transition reaching Supabase.
+            // Reconcile that authoritative state instead of reporting a false
+            // cancellation failure for a transition that already succeeded.
+            const currentOrder = await fetchAuthorizedOrder(orderId).catch(() => null);
+            const currentStatus = normalizeRealtimeStatus(currentOrder?.status);
+            if (currentOrder && currentStatus !== "pending") {
+                setCancelWindowRemaining(0);
+                if (currentStatus === "canceled") onRejected?.(orderId);
+                else onConfirmed?.(orderId);
+                return;
+            }
             Alert.alert(t("orderPending.alerts.unableCancelTitle"), error?.message || t("orderPending.alerts.pleaseTryAgain"));
+        } finally {
+            setCancelSubmitting(false);
         }
-    }, [autoCanceled, onRejected, orderId, t]);
+    }, [cancelSubmitting, onConfirmed, onRejected, orderId, t]);
 
     useEffect(() => {
         if (orderStatus !== "pending") {
@@ -251,9 +264,6 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onBack,
             const nowMs = Date.now();
             const sourceMs = createdAtMs;
             const elapsedSeconds = sourceMs ? Math.max(0, Math.floor((nowMs - sourceMs) / 1000)) : 0;
-            const nextSla = approvalDeadlineMs
-                ? Math.max(0, Math.ceil((approvalDeadlineMs - nowMs) / 1000))
-                : Math.max(APPROVAL_SLA_SECONDS - elapsedSeconds, 0);
             const nextReminderLock = Math.max(REMINDER_UNLOCK_SECONDS - elapsedSeconds, 0);
             const nextCancelWindow = cancelAllowedUntilMs
                 ? Math.max(0, Math.ceil((cancelAllowedUntilMs - nowMs) / 1000))
@@ -262,15 +272,12 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onBack,
             setReminderUnlockRemaining(nextReminderLock);
             setCancelWindowRemaining(nextCancelWindow);
 
-            if (nextSla === 0) {
-                void handleAutoCancel();
-            }
         };
 
         tick();
         const timer = setInterval(tick, 1000);
         return () => clearInterval(timer);
-    }, [approvalDeadlineMs, cancelAllowedUntilMs, createdAtMs, handleAutoCancel, orderStatus]);
+    }, [cancelAllowedUntilMs, createdAtMs, orderStatus]);
 
     useEffect(() => {
         if (!cooldown) return undefined;
@@ -422,7 +429,7 @@ const OrderPendingScreen = ({ orderId, restaurantName, etaSeconds = 120, onBack,
 ${t("orderPending.alerts.cancelConfirmBody")}`;
             const confirmed = g?.confirm ? g.confirm(confirmMessage) : true;
             if (confirmed) {
-                void handleAutoCancel();
+                void handleCancelRequest();
             }
             return;
         }
@@ -432,7 +439,7 @@ ${t("orderPending.alerts.cancelConfirmBody")}`;
             {
                 text: t("orderPending.alerts.cancelAnyway"),
                 style: "destructive",
-                onPress: () => void handleAutoCancel(),
+                onPress: () => void handleCancelRequest(),
             },
         ]);
     };
@@ -495,9 +502,6 @@ ${t("orderPending.alerts.cancelConfirmBody")}`;
                     totalApprovalSeconds={APPROVAL_SLA_SECONDS}
                     restaurantName={restaurantName}
                     onCancel={isCancelWindowActive ? handleCancel : undefined}
-                    onApprovalExpired={() => {
-                        if (orderStatus === "pending") void handleAutoCancel();
-                    }}
                 />
 
                 <View style={screenStyles.section}>

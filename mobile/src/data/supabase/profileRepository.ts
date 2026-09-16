@@ -4,8 +4,6 @@ import type { ProfileRepository } from "@/src/data/contracts";
 import i18n from "@/src/lib/i18n";
 import { requireSupabase, throwIfError, withSupabaseAuthRetry } from "./utils";
 
-const PROFILE_COLUMNS = "id,name,email,avatar_url,whatsapp_number,preferred_language";
-
 export const getCurrentUser: ProfileRepository["getCurrentUser"] = async () => {
     // Firebase restores native auth persistence asynchronously on a cold
     // launch. Reading currentUser before authStateReady resolves can briefly
@@ -15,20 +13,14 @@ export const getCurrentUser: ProfileRepository["getCurrentUser"] = async () => {
     const user = auth?.currentUser;
     if (!user) return null;
     return withSupabaseAuthRetry(async () => {
-        const id = throwIfError(await requireSupabase().rpc("ensure_my_profile", {
-            p_name: user.displayName || user.email || "Hungrie User",
-            p_avatar_url: user.photoURL || undefined,
-            p_whatsapp_number: undefined,
-            p_preferred_language: i18n.language.startsWith("tr") ? "tr" : "en",
-        }));
-        const row = throwIfError(await requireSupabase().from("profiles").select(PROFILE_COLUMNS).eq("id", id).maybeSingle());
+        const row = throwIfError(await requireSupabase().rpc("get_my_customer_profile_v1"));
         return row
         ? {
               id: row.id,
               accountId: row.id,
               name: row.name,
               email: row.email,
-              avatar: row.avatar_url || undefined,
+              avatar: row.avatar_url && !row.avatar_url.startsWith("wa:") ? row.avatar_url : undefined,
               whatsappNumber: row.whatsapp_number || undefined,
           }
             : null;
@@ -37,10 +29,11 @@ export const getCurrentUser: ProfileRepository["getCurrentUser"] = async () => {
 
 export const updateUserProfile: ProfileRepository["updateUserProfile"] = async ({ name, whatsappNumber }) => {
     const user = auth?.currentUser;
+    const avatarUrl = user?.photoURL && !user.photoURL.startsWith("wa:") ? user.photoURL : undefined;
     const id = await withSupabaseAuthRetry(async () => throwIfError(
-        await requireSupabase().rpc("update_my_profile", {
+        await requireSupabase().rpc("update_my_customer_profile_v1", {
             p_name: name,
-            p_avatar_url: user?.photoURL || undefined,
+            p_avatar_url: avatarUrl,
             p_whatsapp_number: whatsappNumber,
             p_preferred_language: i18n.language.startsWith("tr") ? "tr" : "en",
         }),

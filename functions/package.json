@@ -22,6 +22,7 @@
     "test:order-migration": "node --test scripts/orderMigration.test.js",
     "test:phase4-admin": "node --test phase4AdminLogic.test.js",
     "test:phase5-restaurant": "node --test phase5RestaurantPushLogic.test.js",
+    "test:phase6-customer": "node --test phase6CustomerDeletionLogic.test.js",
     "identity:migrate": "node scripts/migrateFirebaseIdentity.js",
     "review:migrate": "node scripts/migrateFirebaseReviews.js",
     "order:migrate": "node scripts/migrateFirebaseOrders.js",

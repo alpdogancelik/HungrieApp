@@ -60,11 +60,14 @@ const assertExternalFile = (filePath, label) => {
 let firebaseLines;
 if (firebaseEnvFile) {
   assertExternalFile(firebaseEnvFile, "Firebase env file");
-  firebaseLines = fs.readFileSync(firebaseEnvFile, "utf8").split(/\r?\n/).filter((line) => line.startsWith("EXPO_PUBLIC_FIREBASE_"));
+  firebaseLines = fs.readFileSync(firebaseEnvFile, "utf8").split(/\r?\n/)
+    .filter((line) => line.startsWith("EXPO_PUBLIC_FIREBASE_") && line.slice(line.indexOf("=") + 1).trim());
   if (!firebaseLines.some((line) => line.startsWith("EXPO_PUBLIC_FIREBASE_PROJECT_ID="))) throw new Error("Firebase env file is incomplete.");
 } else {
   const firebaseExtra = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, "mobile", "app.json"), "utf8")).expo.extra;
-  firebaseLines = Object.entries(firebaseExtra).filter(([name]) => name.startsWith("EXPO_PUBLIC_FIREBASE_")).map(([name, value]) => `${name}=${String(value ?? "")}`);
+  firebaseLines = Object.entries(firebaseExtra)
+    .filter(([name, value]) => name.startsWith("EXPO_PUBLIC_FIREBASE_") && String(value ?? "").trim())
+    .map(([name, value]) => `${name}=${String(value)}`);
 }
 let sentryDsn = "";
 if (sentryDsnFile) {
@@ -84,7 +87,7 @@ fs.writeFileSync(
     "EXPO_PUBLIC_AUTH_REPOSITORY=firebase",
     ...repositoryLines,
     ...firebaseLines,
-    `EXPO_PUBLIC_SENTRY_DSN=${sentryDsn}`,
+    ...(sentryDsn ? [`EXPO_PUBLIC_SENTRY_DSN=${sentryDsn}`] : []),
     "",
   ].join("\n"),
   { mode: 0o600 },

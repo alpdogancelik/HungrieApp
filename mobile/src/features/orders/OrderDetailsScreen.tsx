@@ -6,12 +6,12 @@ import { ActivityIndicator, Alert, Clipboard, Platform, Pressable, ScrollView, S
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { formatCurrency } from "@/lib/cart.utils";
-import { seedRestaurants } from "@/lib/restaurantSeeds";
 import { fetchAuthorizedOrder, subscribeOrder } from "@/src/data/orderRepository";
-import { fetchUserReviews, submitMenuItemReview } from "@/src/data/reviewRepository";
+import { fetchReviewedMenuItemIdsForOrder, submitMenuItemReview } from "@/src/data/reviewRepository";
 import { ReorderError, resolveOrderForReorder } from "@/src/features/orders/reorder";
+import { getCancellationReasonText } from "@/src/features/orders/cancellationReason";
 import ReviewSheet from "@/src/features/reviews/ReviewSheet";
-import { getProductReviewId, isReviewableStatus } from "@/src/features/reviews/reviewUtils";
+import { isReviewableStatus } from "@/src/features/reviews/reviewUtils";
 import { showUserMessage } from "@/src/lib/showUserMessage";
 import { useTheme } from "@/src/theme/themeContext";
 import { normalizeCartRestaurantKey, useCartStore } from "@/store/cart.store";
@@ -64,8 +64,7 @@ const resolveItems = (order: any, fallbackName: string) =>
 const restaurantName = (order: any, fallbackName: string) => {
     const direct = order?.restaurantName || order?.restaurant?.name;
     if (direct) return String(direct);
-    const id = String(order?.restaurantId || "");
-    return String(seedRestaurants.find((restaurant: any) => String(restaurant.id) === id)?.name || fallbackName);
+    return String(fallbackName);
 };
 
 const formatFullOrderDate = (value: unknown, locale: string, use24HourClock: boolean) => {
@@ -142,6 +141,7 @@ export default function OrderDetailsScreen({ orderId }: Props) {
         addAvailable: isTurkish ? "Uygun ürünleri ekle" : "Add available items", unavailable: isTurkish ? "Bu sipariş şu anda tekrarlanamıyor." : "This order cannot be reordered right now.",
         cartTitle: isTurkish ? "Yeni bir sepet başlatılsın mı?" : "Start a new cart?", cartBody: isTurkish ? "Sepetinde başka bir restorandan ürünler var. Mevcut sepet değiştirilsin mi?" : "Your cart contains items from another restaurant. Replace the current cart?",
         replace: isTurkish ? "Yeni sepet başlat" : "Start new cart", reviewSaved: isTurkish ? "Değerlendirmen kaydedildi." : "Your review was saved.",
+        cancellationReason: isTurkish ? "İptal nedeni" : "Cancellation reason",
     }), [isTurkish]);
 
     const [order, setOrder] = useState<any | null>(null);
@@ -167,16 +167,11 @@ export default function OrderDetailsScreen({ orderId }: Props) {
             return;
         }
         setReviewLookupLoading(true);
-        void fetchUserReviews(userId)
-            .then((reviews) => setReviewedIds(new Set(reviews.flatMap((review: any) => [
-                String(review.id || ""),
-                review.orderId && (review.itemId || review.menuItemId)
-                    ? getProductReviewId(String(review.orderId), String(review.itemId || review.menuItemId), userId)
-                    : "",
-            ].filter(Boolean)))))
+        void fetchReviewedMenuItemIdsForOrder(orderId, userId)
+            .then((menuItemIds) => setReviewedIds(new Set(menuItemIds)))
             .catch(() => setReviewedIds(new Set()))
             .finally(() => setReviewLookupLoading(false));
-    }, [userId]);
+    }, [orderId, userId]);
 
     const items = useMemo(() => resolveItems(order, copy.itemFallback), [copy.itemFallback, order]);
     const status = normalizedStatus(order?.status) as keyof typeof copy.status;
@@ -192,13 +187,16 @@ export default function OrderDetailsScreen({ orderId }: Props) {
     const addressPrimary = addressObject ? [addressObject.line1, addressObject.city, addressObject.country].filter(Boolean).join(", ") : String(order?.deliveryAddressText || order?.address || "");
     const addressMeta = addressObject ? [addressObject.buildingNumber || addressObject.block, addressObject.floor, addressObject.apartment || addressObject.room].filter(Boolean).join(" · ") : "";
     const note = String(order?.notes || order?.courierNote || order?.deliveryInstructions || "").trim();
+    const cancellationReason = status === "canceled"
+        ? getCancellationReasonText(order?.cancellationReasonCode, Boolean(isTurkish))
+        : "";
 
     const submitReview = useCallback(async ({ rating, comment }: { rating: 1 | 2 | 3 | 4 | 5; comment?: string }) => {
         if (!reviewTarget || !userId || !order) return;
         setReviewSubmitting(true);
         try {
             await submitMenuItemReview({ orderId, restaurantId: String(order.restaurantId || ""), itemId: reviewTarget.itemId, itemName: reviewTarget.itemName, userId, userName, rating, comment });
-            setReviewedIds((current) => new Set(current).add(getProductReviewId(orderId, reviewTarget.itemId, userId)));
+            setReviewedIds((current) => new Set(current).add(reviewTarget.itemId));
             setReviewTarget(null); showUserMessage(copy.reviewSaved);
         } catch { showUserMessage(copy.notFound, copy.retry); }
         finally { setReviewSubmitting(false); }
@@ -227,10 +225,11 @@ export default function OrderDetailsScreen({ orderId }: Props) {
         <Header copy={copy} colors={colors} router={router} styles={styles} />
         <ScrollView contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 18) + 24 }]} showsVerticalScrollIndicator={false}>
             <View style={[styles.status, { backgroundColor: statusUi.bg }]}><Ionicons color={statusUi.color} name={statusUi.icon} size={15} /><Text style={[styles.statusText, { color: statusUi.color }]}>{copy.status[status]}</Text></View>
+            {cancellationReason ? <View style={styles.cancellationCard}><View style={styles.cancellationIcon}><Ionicons color={statusUi.color} name="information-circle-outline" size={20} /></View><View style={styles.cancellationCopy}><Text style={styles.cancellationTitle}>{copy.cancellationReason}</Text><Text style={styles.cancellationBody}>{cancellationReason}</Text></View></View> : null}
             <Text style={styles.date}>{date}</Text><Text numberOfLines={2} style={styles.restaurant}>{restaurantName(order, copy.restaurantFallback)}</Text>
             <View style={styles.numberCard}><Text style={styles.numberLabel}>{copy.orderNumber}</Text><View style={styles.numberRight}><Text style={styles.numberValue}>{customerOrderNumber(order)}</Text><Pressable accessibilityLabel={copy.copy} hitSlop={8} onPress={() => { Clipboard.setString(customerOrderNumber(order)); showUserMessage(copy.copied); }} style={styles.copyButton}><Ionicons color={colors.primary} name="copy-outline" size={18} /></Pressable></View></View>
             <Text style={styles.sectionTitle}>{copy.summary}</Text><View style={styles.sectionDivider} />
-            {items.map((item: any, index: number) => { const reviewId = item.itemId && userId ? getProductReviewId(orderId, item.itemId, userId) : ""; const reviewed = reviewId ? reviewedIds.has(reviewId) : false; return <View key={`${item.itemId || item.name}-${index}`}><View style={styles.itemRow}><Text style={styles.quantity}>{item.quantity}×</Text><View style={styles.itemCopy}><Text style={styles.itemName}>{item.name}</Text>{item.modifierText ? <Text style={styles.modifiers}>{item.modifierText}</Text> : null}</View>{delivered && item.itemId ? reviewLookupLoading ? <View style={styles.reviewPlaceholder} /> : reviewed ? <View style={styles.reviewed}><Ionicons color={colors.secondary} name="checkmark" size={14} /><Text style={styles.reviewedText}>{copy.reviewed}</Text></View> : <Pressable accessibilityLabel={copy.reviewA11y(item.name)} hitSlop={6} onPress={() => setReviewTarget({ itemId: item.itemId, itemName: item.name })} style={styles.reviewButton}><Text style={styles.reviewText}>{copy.review}</Text></Pressable> : null}</View>{index < items.length - 1 ? <View style={styles.itemDivider} /> : null}</View>; })}
+            {items.map((item: any, index: number) => { const reviewed = item.itemId ? reviewedIds.has(item.itemId) : false; return <View key={`${item.itemId || item.name}-${index}`}><View style={styles.itemRow}><Text style={styles.quantity}>{item.quantity}×</Text><View style={styles.itemCopy}><Text style={styles.itemName}>{item.name}</Text>{item.modifierText ? <Text style={styles.modifiers}>{item.modifierText}</Text> : null}</View>{delivered && item.itemId ? reviewLookupLoading ? <View style={styles.reviewPlaceholder} /> : reviewed ? <View style={styles.reviewed}><Ionicons color={colors.secondary} name="checkmark" size={14} /><Text style={styles.reviewedText}>{copy.reviewed}</Text></View> : <Pressable accessibilityLabel={copy.reviewA11y(item.name)} hitSlop={6} onPress={() => setReviewTarget({ itemId: item.itemId, itemName: item.name })} style={styles.reviewButton}><Text style={styles.reviewText}>{copy.review}</Text></Pressable> : null}</View>{index < items.length - 1 ? <View style={styles.itemDivider} /> : null}</View>; })}
             <View style={styles.totalDivider} /><View style={styles.totalRow}><Text style={styles.totalLabel}>{copy.total}</Text><Text style={styles.totalValue}>{formatCurrency(Number(order.total ?? order.totalPrice ?? 0))}</Text></View>
             <Text style={styles.addressTitle}>{copy.address}</Text><View style={styles.addressCard}><View style={styles.addressTop}><View style={styles.pin}><Ionicons color={ORANGE} name="location-outline" size={19} /></View><View style={styles.addressCopy}><Text style={styles.addressLabel}>{String(addressObject?.label || (isTurkish ? "Adres" : "Address"))}</Text><Text style={styles.addressBody}>{addressPrimary || copy.noAddress}</Text>{addressMeta ? <Text style={styles.addressMeta}>{addressMeta}</Text> : null}</View></View>{note ? <><View style={styles.noteDivider} /><Text style={styles.noteLabel}>{copy.courierNote}</Text><Text style={styles.noteBody}>{note}</Text></> : null}</View>
             {delivered ? <Pressable accessibilityLabel={copy.reorder} disabled={reordering} onPress={() => void reorder()} style={({ pressed }) => [styles.reorder, pressed && styles.reorderPressed]}>{reordering ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}<Text style={styles.reorderText}>{reordering ? copy.adding : copy.reorder}</Text></Pressable> : null}
@@ -245,6 +244,7 @@ const Skeleton = ({ styles }: any) => <View style={styles.skeleton}><View style=
 const makeStyles = (c: any) => StyleSheet.create({
     safe: { flex: 1, backgroundColor: c.page }, header: { height: 54, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 10 }, back: { width: 44, height: 44, alignItems: "center", justifyContent: "center", borderRadius: 12 }, headerSpacer: { width: 44 }, headerTitle: { color: c.primary, fontFamily: "ChairoSans", fontSize: 21, lineHeight: 26, fontWeight: "700" },
     content: { paddingHorizontal: 22, paddingTop: 22 }, status: { height: 30, alignSelf: "flex-start", borderRadius: 11, paddingHorizontal: 11, flexDirection: "row", alignItems: "center", gap: 5 }, statusText: { fontFamily: "ChairoSans", fontSize: 13, lineHeight: 17, fontWeight: "600" }, date: { color: c.secondary, fontFamily: "ChairoSans", fontSize: 14, lineHeight: 19, marginTop: 9 }, restaurant: { color: c.primary, fontFamily: "ChairoSans", fontSize: 29, lineHeight: 35, fontWeight: "700", letterSpacing: -0.3, marginTop: 28 },
+    cancellationCard: { marginTop: 12, borderWidth: 1, borderColor: c.border, borderRadius: 14, backgroundColor: c.surface, padding: 13, flexDirection: "row", alignItems: "flex-start", gap: 11 }, cancellationIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: c.pressed, alignItems: "center", justifyContent: "center" }, cancellationCopy: { flex: 1, minWidth: 0 }, cancellationTitle: { color: c.primary, fontFamily: "ChairoSans", fontSize: 13.5, lineHeight: 18, fontWeight: "700" }, cancellationBody: { color: c.secondary, fontFamily: "ChairoSans", fontSize: 13.5, lineHeight: 19, marginTop: 2 },
     numberCard: { height: 56, marginTop: 18, borderRadius: 14, borderWidth: 1, borderColor: c.border, backgroundColor: c.surface, paddingLeft: 14, paddingRight: 6, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, numberLabel: { color: c.secondary, fontFamily: "ChairoSans", fontSize: 13.5, lineHeight: 18, fontWeight: "500" }, numberRight: { flexDirection: "row", alignItems: "center", gap: 5 }, numberValue: { color: c.primary, fontFamily: "ChairoSans", fontSize: 14.5, lineHeight: 19, fontWeight: "700" }, copyButton: { width: 44, height: 44, borderRadius: 10, backgroundColor: c.pressed, alignItems: "center", justifyContent: "center" },
     sectionTitle: { color: c.primary, fontFamily: "ChairoSans", fontSize: 19, lineHeight: 23, fontWeight: "700", marginTop: 24 }, sectionDivider: { height: StyleSheet.hairlineWidth, backgroundColor: c.border, marginTop: 12 }, itemRow: { minHeight: 72, paddingVertical: 14, flexDirection: "row", alignItems: "flex-start" }, quantity: { width: 34, color: c.primary, fontFamily: "ChairoSans", fontSize: 14.5, lineHeight: 20, fontWeight: "600" }, itemCopy: { flex: 1, minWidth: 0, paddingRight: 8 }, itemName: { color: c.primary, fontFamily: "ChairoSans", fontSize: 15, lineHeight: 20, fontWeight: "600" }, modifiers: { color: c.secondary, fontFamily: "ChairoSans", fontSize: 13, lineHeight: 17, marginTop: 3 }, itemDivider: { height: StyleSheet.hairlineWidth, backgroundColor: c.border }, reviewPlaceholder: { width: 84, height: 34, flexShrink: 0 }, reviewButton: { height: 34, borderRadius: 10, borderWidth: 1, borderColor: ORANGE, paddingHorizontal: 11, alignItems: "center", justifyContent: "center", flexShrink: 0 }, reviewText: { color: ORANGE, fontFamily: "ChairoSans", fontSize: 12.5, lineHeight: 17, fontWeight: "600" }, reviewed: { height: 34, flexDirection: "row", alignItems: "center", gap: 3, flexShrink: 0 }, reviewedText: { color: c.secondary, fontFamily: "ChairoSans", fontSize: 12.5, lineHeight: 17, fontWeight: "500" },
     totalDivider: { height: StyleSheet.hairlineWidth, backgroundColor: c.border }, totalRow: { paddingVertical: 17, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, totalLabel: { color: c.secondary, fontFamily: "ChairoSans", fontSize: 14, lineHeight: 19, fontWeight: "500" }, totalValue: { color: c.primary, fontFamily: "ChairoSans", fontSize: 22, lineHeight: 26, fontWeight: "700" }, addressTitle: { color: c.primary, fontFamily: "ChairoSans", fontSize: 19, lineHeight: 23, fontWeight: "700", marginTop: 9, marginBottom: 13 }, addressCard: { borderWidth: 1, borderColor: c.border, borderRadius: 14, backgroundColor: c.surface, padding: 14 }, addressTop: { flexDirection: "row", gap: 12 }, pin: { width: 42, height: 42, borderRadius: 21, backgroundColor: c.softOrange, alignItems: "center", justifyContent: "center" }, addressCopy: { flex: 1, minWidth: 0 }, addressLabel: { color: c.primary, fontFamily: "ChairoSans", fontSize: 15, lineHeight: 19, fontWeight: "700" }, addressBody: { color: c.secondary, fontFamily: "ChairoSans", fontSize: 14, lineHeight: 19, marginTop: 2 }, addressMeta: { color: c.secondary, fontFamily: "ChairoSans", fontSize: 13, lineHeight: 18, marginTop: 2 }, noteDivider: { height: StyleSheet.hairlineWidth, backgroundColor: c.border, marginTop: 13, marginBottom: 12, marginLeft: 54 }, noteLabel: { color: c.tertiary, fontFamily: "ChairoSans", fontSize: 12.5, lineHeight: 17, fontWeight: "500", marginLeft: 54 }, noteBody: { color: c.primary, fontFamily: "ChairoSans", fontSize: 13.5, lineHeight: 19, marginLeft: 54, marginTop: 2 }, reorder: { height: 54, borderRadius: 14, backgroundColor: ORANGE, marginTop: 22, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }, reorderPressed: { backgroundColor: ORANGE_PRESSED }, reorderText: { color: "#FFFFFF", fontFamily: "ChairoSans", fontSize: 16, lineHeight: 20, fontWeight: "600" },

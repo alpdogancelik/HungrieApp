@@ -321,6 +321,9 @@ const SignUp = () => {
     const revealPasswordRequirements = () => {
         setPasswordFocused(true);
         setFocusedField("password");
+        // React Native Web's programmatic ScrollView animation blurs the
+        // focused DOM input. Native still needs this keyboard reveal scroll.
+        if (Platform.OS === "web") return;
         setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), Platform.OS === "ios" ? 320 : 180);
     };
 

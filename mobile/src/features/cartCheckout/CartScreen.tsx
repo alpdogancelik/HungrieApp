@@ -9,8 +9,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { getRestaurantImageSource } from "@/lib/assets";
 import { formatCurrency, getCustomizationsTotal } from "@/lib/cart.utils";
-import { seedMenuByRestaurantId } from "@/lib/restaurantSeeds";
-import { getAdminRestaurantMenu as getRestaurantMenu } from "@/src/data/menuRepository";
+import { getRestaurantMenu } from "@/src/data/menuRepository";
 import { getRestaurant } from "@/src/data/restaurantRepository";
 import { useTheme } from "@/src/theme/themeContext";
 import { useCartStore } from "@/store/cart.store";
@@ -22,7 +21,6 @@ import {
     MINIMUM_ORDER_TOTAL,
     ORANGE,
     resolveCartRestaurantId,
-    resolveSeedRestaurant,
     restaurantEta,
     restaurantRating,
     restaurantReviewCount,
@@ -48,22 +46,21 @@ const CartScreen = () => {
     const addItem = useCartStore((state) => state.addItem);
 
     const restaurantId = useMemo(() => resolveCartRestaurantId(items), [items]);
-    const seedRestaurant = useMemo(() => resolveSeedRestaurant(restaurantId), [restaurantId]);
-    const [restaurant, setRestaurant] = useState<any>(seedRestaurant);
+    const [restaurant, setRestaurant] = useState<any>(null);
     const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
     const [recommendationsLoading, setRecommendationsLoading] = useState(false);
     const belowMinimum = subtotal < MINIMUM_ORDER_TOTAL;
     const navigationClearance = 45 + Math.max(insets.bottom, Platform.OS === "web" ? 8 : 0);
 
     useEffect(() => {
-        setRestaurant(seedRestaurant);
+        setRestaurant(null);
         if (!restaurantId) return;
         let mounted = true;
         void getRestaurant(restaurantId).then((result) => {
             if (mounted && result) setRestaurant(result);
         }).catch(() => undefined);
         return () => { mounted = false; };
-    }, [restaurantId, seedRestaurant]);
+    }, [restaurantId]);
 
     useEffect(() => {
         if (!restaurantId || !items.length) {
@@ -72,13 +69,12 @@ const CartScreen = () => {
         }
         let mounted = true;
         const cartIds = new Set(items.map((item) => String(item.id)));
-        const fallback = extractRecommendations(seedMenuByRestaurantId(restaurantId) || [], restaurantId, cartIds);
-        setRecommendations(fallback);
+        setRecommendations([]);
         setRecommendationsLoading(true);
-        void getRestaurantMenu(restaurantId).then((menu) => {
+        void getRestaurantMenu({ restaurantId }).then((menu) => {
             const resolved = extractRecommendations(menu || [], restaurantId, cartIds);
-            if (mounted) setRecommendations(resolved.length ? resolved : fallback);
-        }).catch(() => undefined).finally(() => {
+            if (mounted) setRecommendations(resolved);
+        }).catch(() => { if (mounted) setRecommendations([]); }).finally(() => {
             if (mounted) setRecommendationsLoading(false);
         });
         return () => { mounted = false; };
@@ -122,7 +118,7 @@ const CartScreen = () => {
         );
     }
 
-    const restaurantName = restaurant?.name || seedRestaurant?.name || copy("Restaurant", "Restoran");
+    const restaurantName = restaurant?.name || copy("Restaurant", "Restoran");
     const rating = restaurantRating(restaurant);
     const reviews = restaurantReviewCount(restaurant);
     const eta = restaurantEta(restaurant, Boolean(turkish));

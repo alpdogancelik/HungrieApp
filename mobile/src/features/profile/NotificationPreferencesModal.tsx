@@ -10,7 +10,7 @@ import { getNotificationPreferences, updateNotificationPreferences } from "@/src
 import type { NotificationPreferences } from "@/src/data/contracts";
 const defaultPrefs: NotificationPreferences = {
     orderStatus: true,
-    restaurantOrders: true,
+    restaurantOrders: false,
     reviewReplies: true,
 };
 const notificationUi = createAdaptiveStyleSheet({

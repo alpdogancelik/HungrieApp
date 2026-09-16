@@ -24,6 +24,7 @@ export const fetchMenuItemReviews = reviewRepository.fetchMenuItemReviews;
 export const fetchRestaurantReviews = reviewRepository.fetchRestaurantReviews;
 export const fetchRestaurantReviewSummary = reviewRepository.fetchRestaurantReviewSummary;
 export const fetchUserReviews = reviewRepository.fetchUserReviews;
+export const fetchReviewedMenuItemIdsForOrder = reviewRepository.fetchReviewedMenuItemIdsForOrder;
 export const subscribeUserReviews = reviewRepository.subscribeUserReviews;
 export const submitMenuItemReview = reviewRepository.submitMenuItemReview;
 export const moderateMenuItemReview = reviewRepository.moderateMenuItemReview;

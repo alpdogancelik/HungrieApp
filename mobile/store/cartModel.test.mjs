@@ -26,6 +26,13 @@ test("cart line identity is stable when customization order changes", () => {
     assert.equal(createCartLineKey("meal-1", left), createCartLineKey("meal-1", right));
 });
 
+test("cart line identity distinguishes option choices from removed ingredients", () => {
+    assert.notEqual(
+        createCartLineKey("meal-1", [{ id: "shared", type: "option_value", price: 0 }]),
+        createCartLineKey("meal-1", [{ id: "shared", type: "removed_ingredient", price: 0 }]),
+    );
+});
+
 test("one quantity operation inserts or updates the complete requested quantity", () => {
     const inserted = setCartLineQuantity([], meal(), 20);
     assert.equal(inserted.items.length, 1);
