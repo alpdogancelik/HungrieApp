@@ -1,6 +1,10 @@
 # Phase 6 secure Customer first release review
 
-**Status:** Development implementation and hosted Development qualification are complete. The reviewed Staging migrations, shared non-production deletion functions, and Customer Preview environment are deployed. Replacement iOS build 38 and Android version code 37 must be built and physically qualified before Phase 6 acceptance. Production was not touched.
+**Status:** Accepted by the app owner on 2026-09-18. Development implementation, hosted Development qualification, reviewed Staging migrations, shared non-production deletion functions, the Customer Preview environment, and Customer Review System v2 are complete. Unrecorded iOS build 38 and Android version code 37 physical-device checklist rows are carried into Phase 7 and remain mandatory before Production expansion or release. Production was not touched.
+
+## Acceptance
+
+The app owner approved Frontend Separation Phase 6 on 2026-09-18. This approval closes the Phase 6 implementation checkpoint and authorizes progression to Phase 7 full Staging qualification. It does not convert blank or partial physical-device checklist cells into passing evidence. Those checks retain their original expected results and must be completed and recorded during Phase 7 before any Production work begins.
 
 ## Result
 
@@ -51,7 +55,7 @@ The EAS `preview` environment was regenerated from the Staging Supabase project 
 
 The previews were built with pinned EAS CLI 16.32.0, the `preview` profile, and a cleared cache. Initial iOS build `c8c50d10-d750-44d8-a860-f93f2a8b9714` and Android build `9d974dbc-d2b8-4f35-bc81-c2b3a571b4bd` completed successfully. The Android preview profile was corrected to produce an installable APK rather than an app bundle. Both initial builds were superseded after the shared startup repair described below.
 
-Complete [the physical-device checklist](phase-6-device-test-checklist.md), including the temporary minimum-build block and restoration to the normal policy, before owner acceptance. No Production project, identity, policy, app, or data was changed by this batch.
+Complete the open rows in [the physical-device checklist](phase-6-device-test-checklist.md), including the temporary minimum-build block and restoration to the normal policy, during Phase 7 and before any Production expansion or release. No Production project, identity, policy, app, or data was changed by this batch.
 
 On the first physical iPhone launch, the Customer access gate correctly reported an account configuration error for a Staging profile created after the Phase 3 classification backfill. A read-only inventory found one live Firebase-linked profile without `account_access`. That profile had 22 Customer orders and one address, with no Restaurant membership, Admin role, privileged reservation, or active invitation. On 2026-09-14, the existing audited, reversible `private.phase3_import_classification` operator function classified that single profile as an active Customer. The resulting row and audit event were verified; the restricted operation record is `secure/phase6-staging/customer-classification-repair-1789376456068.json`. The iPhone flow must now be retried. Future Staging readiness checks must inventory live profiles missing `account_access` after any legacy Customer provisioning, because mapped but unclassified profiles intentionally fail closed.
 

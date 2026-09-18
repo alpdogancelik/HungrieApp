@@ -1,5 +1,7 @@
 # Phase 6 Customer physical-device checklist
 
+**Phase approval:** The app owner accepted Frontend Separation Phase 6 on 2026-09-18. Blank and partial cells below were not declared passed; they are carried into Phase 7 full Staging qualification and remain release-blocking before Production expansion or release.
+
 **Target:** The next Staging internal previews are iOS build 38 and Android version code 37. These include the shared Development/Staging deletion fix, runtime environment validation, Firebase session synchronization, single-flight account bootstrap with cached-token validation and bounded claim refresh, SecureStore-compatible native operation IDs, sign-up password-focus repair, identity-scoped startup, the iOS root-overlay repair, deterministic cold-start session restoration, and the required iOS 27 scene lifecycle. Record their EAS build IDs here. Run every row on one physical iPhone and one physical Android device. The iPhone qualification target is iOS 27 after build 37 was terminated at launch by UIKit. Do not record passwords, tokens, addresses, or notification payload identifiers here.
 
 | ID | Action | Expected result | iPhone | Android |
@@ -28,4 +30,4 @@
 | REL-02 | Raise the Staging minimum above the installed build. | Non-dismissible bilingual update screen appears and opens the correct platform store. |  |  |
 | REL-03 | Restore the approved normal Staging policy and restart. | Update block clears and the normal Customer app returns. |  |  |
 
-Phase 6 can be accepted only when every applicable cell passes on both physical platforms, hosted wrong-role/status probes pass, and Staging maintenance/release policy is restored to its reviewed normal state.
+The app owner accepted the Phase 6 implementation checkpoint on 2026-09-18 with the incomplete device evidence explicitly carried forward. Phase 7 and every later Production gate remain blocked until every applicable cell passes on both physical platforms, hosted wrong-role/status probes pass, and Staging maintenance/release policy is restored to its reviewed normal state.
