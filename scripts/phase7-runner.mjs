@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { acquireRunLock, appendEvidence, createRun, finalizeEvidence, loadRun, persistState, recordHeartbeat, requestStop, verifyFinalEvidence } from "./phase7-runner-lib.mjs";
+import { acquireRunLock, appendEvidence, createRun, finalizeEvidence, loadRun, persistState, recordHeartbeat, requestStop, runnerSourceSha256, verifyFinalEvidence } from "./phase7-runner-lib.mjs";
 import { executeQualificationTick } from "./phase7-qualification.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -22,10 +22,15 @@ async function tick(directory, now = new Date()) {
   try {
     const { manifest, state } = loadRun(directory);
     if (terminal.has(state.status)) return state;
-    if (state.stopRequestedAt) {
+    const stopRequestFile = path.join(directory, "stop-request.json");
+    if (fs.existsSync(stopRequestFile)) {
+      const stopRequest = JSON.parse(fs.readFileSync(stopRequestFile, "utf8"));
+      state.stopRequestedAt = stopRequest.requestedAt;
       state.status = "stopped"; state.stoppedAt = now.toISOString();
       appendEvidence(path.join(directory, "events.jsonl"), { at: now.toISOString(), type: "run.stopped" });
-      persistState(directory, state); return state;
+      persistState(directory, state);
+      finalizeEvidence(directory, { status: state.status, progress: state.progress, failure: state.failure }, new Date());
+      return state;
     }
     if (state.status === "created") {
       state.status = "running"; state.runnerStartedAt = now.toISOString();
@@ -35,8 +40,18 @@ async function tick(directory, now = new Date()) {
     try {
       await executeQualificationTick({ runDirectory: directory, manifest, state, now });
     } catch (error) {
-      state.status = "failed"; state.failedAt = new Date().toISOString(); state.failure = { message: error instanceof Error ? error.message : String(error) };
-      appendEvidence(path.join(directory, "events.jsonl"), { at: state.failedAt, type: "run.failed", message: state.failure.message });
+      if (error?.deferred) {
+        appendEvidence(path.join(directory, "events.jsonl"), { at: new Date().toISOString(), type: "run.deferred_to_surviving_worker" });
+        persistState(directory, state); return state;
+      }
+      if (error?.stopped) {
+        const stopRequest = JSON.parse(fs.readFileSync(path.join(directory, "stop-request.json"), "utf8"));
+        state.stopRequestedAt = stopRequest.requestedAt; state.status = "stopped"; state.stoppedAt = new Date().toISOString();
+        appendEvidence(path.join(directory, "events.jsonl"), { at: state.stoppedAt, type: "run.stopped" });
+      } else {
+        state.status = "failed"; state.failedAt = new Date().toISOString(); state.failure = { message: error instanceof Error ? error.message : String(error) };
+        appendEvidence(path.join(directory, "events.jsonl"), { at: state.failedAt, type: "run.failed", message: state.failure.message });
+      }
     }
     persistState(directory, state);
     if (terminal.has(state.status)) finalizeEvidence(directory, { status: state.status, progress: state.progress, failure: state.failure }, new Date());
@@ -54,8 +69,10 @@ function listRunnable() {
 if (command === "start") {
   const kind = arg("--kind"), head = git(["rev-parse", "HEAD"]);
   if (head.status !== 0) throw new Error("Unable to determine the source commit.");
+  const trackedChanges = git(["status", "--porcelain"]);
+  if (trackedChanges.status !== 0 || trackedChanges.stdout.trim()) throw new Error("Commit or restore source changes before starting immutable Phase 7 evidence.");
   if (!fs.existsSync(migration)) throw new Error("Phase 7 migration is missing.");
-  const created = createRun({ phaseRoot, runId: arg("--run-id") || crypto.randomUUID(), kind, commit: head.stdout.trim(), migrationSha256: sha256(fs.readFileSync(migration)) });
+  const created = createRun({ phaseRoot, runId: arg("--run-id") || crypto.randomUUID(), kind, commit: head.stdout.trim(), migrationSha256: sha256(fs.readFileSync(migration)), runnerSha256: runnerSourceSha256(root) });
   console.log(JSON.stringify({ runId: created.manifest.runId, kind, status: created.state.status, evidenceDirectory: created.runDirectory, loginRequiredAfterReboot: true }));
 } else if (command === "status") {
   const id = arg("--run-id");
@@ -64,7 +81,7 @@ if (command === "start") {
 } else if (command === "resume") {
   const id = arg("--run-id"); if (!id) throw new Error("--run-id is required.");
   const directory = runDirectory(id), release = acquireRunLock(directory);
-  try { const { state } = loadRun(directory); if (state.status === "failed" || state.status === "stopped") { state.status = "running"; state.failure = null; state.stopRequestedAt = null; persistState(directory, state); appendEvidence(path.join(directory, "events.jsonl"), { at: new Date().toISOString(), type: "run.resumed" }); } } finally { release(); }
+  try { const { state } = loadRun(directory); if (state.status === "failed" || state.status === "stopped") { state.status = "running"; state.failure = null; state.stopRequestedAt = null; try { fs.unlinkSync(path.join(directory, "stop-request.json")); } catch (error) { if (error?.code !== "ENOENT") throw error; } persistState(directory, state); appendEvidence(path.join(directory, "events.jsonl"), { at: new Date().toISOString(), type: "run.resumed" }); } } finally { release(); }
   console.log(JSON.stringify({ runId: id, resumed: true }));
 } else if (command === "stop") {
   const id = arg("--run-id"); if (!id) throw new Error("--run-id is required."); console.log(JSON.stringify(requestStop(runDirectory(id))));
@@ -72,7 +89,8 @@ if (command === "start") {
   const id = arg("--run-id"); if (!id) throw new Error("--run-id is required.");
   const { state } = loadRun(runDirectory(id)); const final = path.join(runDirectory(id), "final-evidence.json");
   if (!terminal.has(state.status) || !fs.existsSync(final)) throw new Error("Run has no finalized evidence.");
-  console.log(JSON.stringify({ runId: id, status: state.status, finalEvidence: verifyFinalEvidence(runDirectory(id)) }));
+  const verified = verifyFinalEvidence(runDirectory(id));
+  console.log(JSON.stringify({ runId: id, status: state.status, finalizedAt: verified.finalizedAt, continuityGaps: verified.continuityGaps, evidenceFileCount: Object.keys(verified.sha256 || {}).length, finalEvidenceSha256: sha256(fs.readFileSync(final)) }));
 } else if (command === "tick") {
   const id = arg("--run-id"); if (!id) throw new Error("--run-id is required."); console.log(JSON.stringify(await tick(runDirectory(id))));
 } else if (command === "daemon") {

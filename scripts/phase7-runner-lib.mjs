@@ -25,6 +25,22 @@ export const PHASE7_CONTRACT = Object.freeze({
 const UUID_NAMESPACE = "hungrie-phase7-v1";
 const allowedKinds = new Set(["preflight", "authorization", "load", "deadline", "incident", "soak", "cleanup"]);
 
+export function runnerSourceSha256(repositoryRoot) {
+  const scriptsDirectory = path.join(repositoryRoot, "scripts");
+  const names = fs.readdirSync(scriptsDirectory)
+    .filter(name => /^phase7-.*\.mjs$/.test(name) && !name.endsWith(".test.mjs"))
+    .sort();
+  if (names.length === 0) throw new Error("No Phase 7 runner sources were found.");
+  const digest = crypto.createHash("sha256");
+  for (const name of names) {
+    digest.update(name);
+    digest.update("\0");
+    digest.update(fs.readFileSync(path.join(scriptsDirectory, name)));
+    digest.update("\0");
+  }
+  return digest.digest("hex");
+}
+
 export function stableOperationId(runId, journey, step) {
   const bytes = crypto.createHash("sha256").update(`${UUID_NAMESPACE}\0${runId}\0${journey}\0${step}`).digest().subarray(0, 16);
   bytes[6] = (bytes[6] & 0x0f) | 0x50;
@@ -64,11 +80,12 @@ export function readJson(file, label = "JSON evidence") {
   return value;
 }
 
-export function createRun({ phaseRoot, runId = crypto.randomUUID(), kind, commit, migrationSha256, runnerMode = "launch-agent", now = new Date() }) {
+export function createRun({ phaseRoot, runId = crypto.randomUUID(), kind, commit, migrationSha256, runnerSha256, runnerMode = "launch-agent", now = new Date() }) {
   if (!allowedKinds.has(kind)) throw new Error(`Unsupported Phase 7 run kind: ${kind}`);
   if (!/^[0-9a-f-]{36}$/.test(runId)) throw new Error("Run ID must be a UUID.");
   if (!/^[0-9a-f]{40}$/.test(commit)) throw new Error("A full source commit is required.");
   if (migrationSha256 && !/^[0-9a-f]{64}$/.test(migrationSha256)) throw new Error("Migration checksum must be SHA-256.");
+  if (!/^[0-9a-f]{64}$/.test(runnerSha256 || "")) throw new Error("Runner checksum must be SHA-256.");
   const runDirectory = path.join(phaseRoot, runId);
   if (fs.existsSync(runDirectory)) throw new Error("Phase 7 run already exists.");
   ensurePrivateDirectory(runDirectory);
@@ -80,6 +97,7 @@ export function createRun({ phaseRoot, runId = crypto.randomUUID(), kind, commit
     kind,
     sourceCommit: commit,
     migrationSha256: migrationSha256 || null,
+    runnerSha256,
     runnerMode,
     launchAgentLoginRequiredAfterReboot: runnerMode === "launch-agent",
     startedAt,
@@ -114,13 +132,13 @@ export function createRun({ phaseRoot, runId = crypto.randomUUID(), kind, commit
   return { runDirectory, manifest, state };
 }
 
-function processExists(pid) {
+export function processExists(pid) {
   if (!Number.isInteger(pid) || pid <= 0) return false;
   try { process.kill(pid, 0); return true; } catch (error) { return error?.code === "EPERM"; }
 }
 
-export function acquireRunLock(runDirectory, now = new Date()) {
-  const lockFile = path.join(runDirectory, "runner.lock");
+export function acquirePidLock(lockFile, label, now = new Date()) {
+  ensurePrivateDirectory(path.dirname(lockFile));
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
       const descriptor = fs.openSync(lockFile, "wx", 0o600);
@@ -129,12 +147,16 @@ export function acquireRunLock(runDirectory, now = new Date()) {
       return () => { try { fs.unlinkSync(lockFile); } catch (error) { if (error?.code !== "ENOENT") throw error; } };
     } catch (error) {
       if (error?.code !== "EEXIST") throw error;
-      const lock = readJson(lockFile, "runner lock");
-      if (processExists(Number(lock.pid))) throw new Error(`Phase 7 run is already locked by process ${lock.pid}.`);
+      const lock = readJson(lockFile, label);
+      if (processExists(Number(lock.pid))) { const busy = new Error(`${label} is already held by process ${lock.pid}.`); busy.code = "PHASE7_LOCK_BUSY"; throw busy; }
       fs.unlinkSync(lockFile);
     }
   }
-  throw new Error("Unable to acquire Phase 7 run lock.");
+  throw new Error(`Unable to acquire ${label}.`);
+}
+
+export function acquireRunLock(runDirectory, now = new Date()) {
+  return acquirePidLock(path.join(runDirectory, "runner.lock"), "Phase 7 run lock", now);
 }
 
 export function loadRun(runDirectory) {
@@ -165,25 +187,31 @@ export function dueSoakJourneys(state, now = new Date()) {
 }
 
 export function requestStop(runDirectory, now = new Date()) {
-  const release = acquireRunLock(runDirectory, now);
-  try {
-    const { state } = loadRun(runDirectory);
-    if (["completed", "failed", "stopped"].includes(state.status)) return state;
-    state.stopRequestedAt = now.toISOString();
-    persistState(runDirectory, state);
-    appendEvidence(path.join(runDirectory, "events.jsonl"), { at: now.toISOString(), type: "run.stop_requested" });
-    return state;
-  } finally { release(); }
+  const { state } = loadRun(runDirectory);
+  if (["completed", "failed", "stopped"].includes(state.status)) return state;
+  const requestedAt = now.toISOString();
+  atomicWriteJson(path.join(runDirectory, "stop-request.json"), { requestedAt });
+  appendEvidence(path.join(runDirectory, "events.jsonl"), { at: requestedAt, type: "run.stop_requested" });
+  return { ...state, stopRequestedAt: requestedAt };
 }
 
-export function continuityGaps(runDirectory) {
+export function continuityGaps(runDirectory, endedAt = null) {
   const heartbeatFile = path.join(runDirectory, "heartbeats.jsonl");
   if (!fs.existsSync(heartbeatFile)) return [];
   const rows = fs.readFileSync(heartbeatFile, "utf8").trim().split("\n").filter(Boolean).map(line => JSON.parse(line));
   const gaps = [];
+  const manifest = readJson(path.join(runDirectory, "manifest.json"), "run manifest");
+  if (rows.length > 0) {
+    const initialDurationMs = Date.parse(rows[0].at) - Date.parse(manifest.startedAt);
+    if (initialDurationMs > PHASE7_CONTRACT.continuityLimitMs) gaps.push({ from: manifest.startedAt, to: rows[0].at, durationMs: initialDurationMs });
+  }
   for (let index = 1; index < rows.length; index += 1) {
     const durationMs = Date.parse(rows[index].at) - Date.parse(rows[index - 1].at);
     if (durationMs > PHASE7_CONTRACT.continuityLimitMs) gaps.push({ from: rows[index - 1].at, to: rows[index].at, durationMs });
+  }
+  if (rows.length > 0 && endedAt) {
+    const finalDurationMs = Date.parse(endedAt) - Date.parse(rows.at(-1).at);
+    if (finalDurationMs > PHASE7_CONTRACT.continuityLimitMs) gaps.push({ from: rows.at(-1).at, to: endedAt, durationMs: finalDurationMs });
   }
   return gaps;
 }
@@ -194,7 +222,8 @@ export function evidenceDigests(runDirectory) {
 }
 
 export function finalizeEvidence(runDirectory, result, now = new Date()) {
-  const payload = { contractVersion: 1, finalizedAt: now.toISOString(), result, continuityGaps: continuityGaps(runDirectory), sha256: evidenceDigests(runDirectory) };
+  const finalizedAt = now.toISOString();
+  const payload = { contractVersion: 1, finalizedAt, result, continuityGaps: continuityGaps(runDirectory, finalizedAt), sha256: evidenceDigests(runDirectory) };
   atomicWriteJson(path.join(runDirectory, "final-evidence.json"), payload);
   return payload;
 }

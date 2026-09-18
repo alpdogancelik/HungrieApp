@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
-import { appendEvidence, atomicWriteJson, PHASE7_CONTRACT, stableOperationId } from "./phase7-runner-lib.mjs";
+import { acquirePidLock, appendEvidence, atomicWriteJson, PHASE7_CONTRACT, stableOperationId } from "./phase7-runner-lib.mjs";
 import { executeOrderFlow } from "./phase7-order-flow.mjs";
 import { exchange, firebaseApp, loadOperatorContext, rpc, sql, sqlQuote as q } from "./phase7-staging-client.mjs";
 
@@ -13,8 +13,13 @@ if (!runDirectory.includes(`${path.sep}secure${path.sep}phase7${path.sep}`) || !
 const context = loadOperatorContext(), fixtures = JSON.parse(fs.readFileSync(path.resolve("secure/phase7/fixtures.json"), "utf8"));
 const manifest = JSON.parse(fs.readFileSync(path.join(runDirectory, "manifest.json"), "utf8"));
 const progressFile = path.join(runDirectory, `${kind}-progress.json`);
+const stopFile = path.join(runDirectory, "stop-request.json");
 const progress = fs.existsSync(progressFile) ? JSON.parse(fs.readFileSync(progressFile, "utf8")) : { completed: {}, startedAt: new Date().toISOString() };
+let releaseWorkload;
+try { releaseWorkload = acquirePidLock(path.join(runDirectory, `${kind}-workload.lock`), `Phase 7 ${kind} workload lock`); }
+catch (error) { if (error?.code === "PHASE7_LOCK_BUSY") process.exit(75); throw error; }
 const save = () => atomicWriteJson(progressFile, progress);
+const ensureRunning = () => { if (fs.existsSync(stopFile)) { const error = new Error("Phase 7 stop requested."); error.code = "PHASE7_STOP_REQUESTED"; throw error; } };
 const percentile = (values, fraction) => { const sorted = [...values].sort((a, b) => a - b); return sorted[Math.max(0, Math.ceil(sorted.length * fraction) - 1)] || 0; };
 const operationIds = index => Object.fromEntries(["create", "seen", "preparing", "ready", "out_for_delivery", "delivered"].map(step => [step, stableOperationId(manifest.runId, index, step)]));
 const base32 = value => { const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"; let bits = ""; for (const character of value.replaceAll("=", "").toUpperCase()) { const index = alphabet.indexOf(character); if (index < 0) throw new Error("Invalid TOTP secret."); bits += index.toString(2).padStart(5, "0"); } return Buffer.from(bits.match(/.{8}/g)?.map(binary => Number.parseInt(binary, 2)) ?? []); };
@@ -34,6 +39,7 @@ async function loadQualification() {
   let nextSlotAt = Date.now();
   try {
   for (let offset = 0; offset < total; offset += PHASE7_CONTRACT.load.workers) {
+    ensureRunning();
     const unitIndexes = Array.from({ length: Math.min(PHASE7_CONTRACT.load.workers, total - offset) }, (_, inner) => offset + inner).filter(index => !progress.completed[index]);
     if (unitIndexes.length === 0) continue;
     const sustained = offset < PHASE7_CONTRACT.load.sustainedPerMinute * PHASE7_CONTRACT.load.sustainedMinutes;
@@ -64,6 +70,7 @@ async function deadlineQualification() {
     const items = [{ menuItemId: fixtures.item, quantity: 1, optionValueIds: [], removedIngredientIds: [] }];
     progress.orders ||= [];
     for (let index = progress.orders.length; index < 105; index += 1) {
+      ensureRunning();
       const result = await rpc(context, customer, "create_order_v2", { p_restaurant_id: fixtures.restaurant, p_address_id: fixtures.address, p_payment_method: "cash", p_items: items, p_notes: "", p_operation_id: stableOperationId(manifest.runId, 20_000 + index, "create") });
       if (!result.ok) throw new Error(`Deadline fixture ${index} failed (${result.status}).`);
       progress.orders.push({ id: result.body.orderId, natural: index === 104, createdAt: new Date().toISOString() }); save();
@@ -75,6 +82,7 @@ async function deadlineQualification() {
     }
     const deadline = Date.now() + 7 * 60_000; let rows = [];
     while (Date.now() < deadline) {
+      ensureRunning();
       rows = await sql(context, `select id,status,approval_deadline_at,canceled_at from public.orders where id in(${progress.orders.map(value => q(value.id)).join(",")})`);
       if (rows.length === 105 && rows.every(value => value.status === "canceled")) break;
       await new Promise(resolve => setTimeout(resolve, 15_000));
@@ -236,4 +244,7 @@ try {
   else if (kind === "authorization") outcome = await authorizationQualification();
   else outcome = await cleanupQualification();
   console.log(JSON.stringify(outcome));
-} finally { clearInterval(heartbeat); clearInterval(health); }
+} catch (error) {
+  if (error?.code === "PHASE7_STOP_REQUESTED") process.exitCode = 76;
+  else throw error;
+} finally { clearInterval(heartbeat); clearInterval(health); releaseWorkload(); }

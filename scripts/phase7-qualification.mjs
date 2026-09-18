@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { appendEvidence, atomicWriteJson, dueSoakJourneys, PHASE7_CONTRACT, stableOperationId } from "./phase7-runner-lib.mjs";
+import { appendEvidence, atomicWriteJson, dueSoakJourneys, PHASE7_CONTRACT, runnerSourceSha256, stableOperationId } from "./phase7-runner-lib.mjs";
 import { inspectPowerPreflight } from "./phase7-power.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -34,7 +34,9 @@ function verifyManifestSource(manifest) {
   if (commit.status !== 0 || commit.stdout.trim() !== manifest.sourceCommit) throw new Error("Runner source commit differs from the immutable run manifest.");
   const migrationSha256 = sha256(fs.readFileSync(migrationPath));
   if (manifest.migrationSha256 !== migrationSha256) throw new Error("Runner migration checksum differs from the immutable run manifest.");
-  return migrationSha256;
+  const runnerSha256 = runnerSourceSha256(root);
+  if (manifest.runnerSha256 !== runnerSha256) throw new Error("Runner source checksum differs from the immutable run manifest.");
+  return { migrationSha256, runnerSha256 };
 }
 
 async function queryStaging(sql) {
@@ -66,18 +68,18 @@ function markComplete(runDirectory, state, result) {
 }
 
 async function runPreflight({ runDirectory, manifest, state, now }) {
-  const migrationSha256 = verifyManifestSource(manifest);
+  const { migrationSha256, runnerSha256 } = verifyManifestSource(manifest);
   const { staging } = projectIdentity();
   const power = inspectPowerPreflight({ runnerPath: path.join(root, "scripts/phase7-runner.mjs"), evidenceRoot: path.join(root, "secure/phase7"), launchAgentStatus: launchAgentStatus(), now });
   atomicWriteJson(path.join(runDirectory, "power-preflight.json"), power);
   if (!power.passed) throw new Error(`Power preflight failed: ${power.failures.join(" ")}`);
   const [database] = await queryStaging("select current_database() database, current_setting('server_version') server_version");
-  markComplete(runDirectory, state, { passed: true, environment: "staging", projectRefDigest: sha256(staging.ref).slice(0, 16), migrationSha256, databaseVersion: database.server_version, launchAgentLoginRequiredAfterReboot: true });
+  markComplete(runDirectory, state, { passed: true, environment: "staging", projectRefDigest: sha256(staging.ref).slice(0, 16), migrationSha256, runnerSha256, databaseVersion: database.server_version, launchAgentLoginRequiredAfterReboot: true });
 }
 
 async function runSoakTick({ runDirectory, manifest, state, now }) {
   verifyManifestSource(manifest);
-  await monitor(runDirectory, state, now);
+  if (!state.lastHealthAt || now.getTime() - Date.parse(state.lastHealthAt) >= PHASE7_CONTRACT.healthIntervalMs) await monitor(runDirectory, state, now);
   const fixtures = path.join(root, "secure/phase7/fixtures.json");
   if (!fs.existsSync(fixtures)) throw new Error("Guarded soak fixtures have not been prepared.");
   const executor = path.join(root, "scripts/phase7-real-contract-journey.mjs");
@@ -85,6 +87,7 @@ async function runSoakTick({ runDirectory, manifest, state, now }) {
     journey.state = "running"; journey.startedAt ||= now.toISOString();
     atomicWriteJson(path.join(runDirectory, "state.json"), state);
     const result = run(process.execPath, [executor, "--run-directory", runDirectory, "--journey", String(journey.index)]);
+    if (result.status === 75) { const deferred = new Error(`Guarded real-contract journey ${journey.index} is still owned by a surviving worker.`); deferred.deferred = true; throw deferred; }
     if (result.status !== 0) throw new Error(`Guarded real-contract journey ${journey.index} failed; sensitive details withheld.`);
     const outcome = JSON.parse(result.stdout);
     if (!outcome.authoritativeTerminalState) throw new Error(`Journey ${journey.index} lacks authoritative terminal verification.`);
@@ -99,6 +102,8 @@ async function runExternalKind({ runDirectory, manifest, state, now }) {
   verifyManifestSource(manifest);
   const executor = path.join(root, "scripts/phase7-guarded-qualification.mjs");
   const result = run(process.execPath, [executor, state.kind, "--run-directory", runDirectory]);
+  if (result.status === 75) { const deferred = new Error(`${state.kind} qualification is still owned by a surviving worker.`); deferred.deferred = true; throw deferred; }
+  if (result.status === 76) { const stopped = new Error(`${state.kind} qualification acknowledged the stop request.`); stopped.stopped = true; throw stopped; }
   if (result.status !== 0) throw new Error(`${state.kind} qualification failed; inspect owner-only evidence.`);
   const outcome = JSON.parse(result.stdout);
   if (!outcome.passed) throw new Error(`${state.kind} qualification did not pass.`);
