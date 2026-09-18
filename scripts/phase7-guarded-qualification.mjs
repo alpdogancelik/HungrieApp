@@ -1,0 +1,166 @@
+#!/usr/bin/env node
+import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { appendEvidence, atomicWriteJson, PHASE7_CONTRACT, stableOperationId } from "./phase7-runner-lib.mjs";
+import { executeOrderFlow } from "./phase7-order-flow.mjs";
+import { exchange, firebaseApp, loadOperatorContext, rpc, sql, sqlQuote as q } from "./phase7-staging-client.mjs";
+
+const kind = process.argv[2], at = name => { const index = process.argv.indexOf(name); return index < 0 ? null : process.argv[index + 1]; };
+const runDirectory = path.resolve(at("--run-directory") || "");
+if (!runDirectory.includes(`${path.sep}secure${path.sep}phase7${path.sep}`) || !["authorization", "load", "deadline", "incident", "cleanup"].includes(kind)) throw new Error("Guarded Phase 7 kind and owner-only run directory are required.");
+const context = loadOperatorContext(), fixtures = JSON.parse(fs.readFileSync(path.resolve("secure/phase7/fixtures.json"), "utf8"));
+const manifest = JSON.parse(fs.readFileSync(path.join(runDirectory, "manifest.json"), "utf8"));
+const progressFile = path.join(runDirectory, `${kind}-progress.json`);
+const progress = fs.existsSync(progressFile) ? JSON.parse(fs.readFileSync(progressFile, "utf8")) : { completed: {}, startedAt: new Date().toISOString() };
+const save = () => atomicWriteJson(progressFile, progress);
+const percentile = (values, fraction) => { const sorted = [...values].sort((a, b) => a - b); return sorted[Math.max(0, Math.ceil(sorted.length * fraction) - 1)] || 0; };
+const operationIds = index => Object.fromEntries(["create", "seen", "preparing", "ready", "out_for_delivery", "delivered"].map(step => [step, stableOperationId(manifest.runId, index, step)]));
+
+async function loadQualification() {
+  const total = PHASE7_CONTRACT.load.sustainedPerMinute * PHASE7_CONTRACT.load.sustainedMinutes + PHASE7_CONTRACT.load.burstPerMinute * PHASE7_CONTRACT.load.burstMinutes;
+  progress.total = total; save();
+  let nextSlotAt = Date.now();
+  for (let offset = 0; offset < total; offset += PHASE7_CONTRACT.load.workers) {
+    const unitIndexes = Array.from({ length: Math.min(PHASE7_CONTRACT.load.workers, total - offset) }, (_, inner) => offset + inner).filter(index => !progress.completed[index]);
+    if (unitIndexes.length === 0) continue;
+    const sustained = offset < PHASE7_CONTRACT.load.sustainedPerMinute * PHASE7_CONTRACT.load.sustainedMinutes;
+    const slotMs = sustained ? 12_000 : 6_000;
+    const wait = nextSlotAt - Date.now(); if (wait > 0) await new Promise(resolve => setTimeout(resolve, wait));
+    const results = await Promise.all(unitIndexes.map(async index => {
+      const outcome = await executeOrderFlow({ context, fixtures, operationIds: operationIds(index + 10_000), stateFile: path.join(runDirectory, `load-unit-${index}.json`), label: `load-${index}` });
+      progress.completed[index] = { at: new Date().toISOString(), ...outcome }; save(); return outcome;
+    }));
+    appendEvidence(path.join(runDirectory, "measurements.jsonl"), { at: new Date().toISOString(), kind: "load-slot", phase: sustained ? "sustained" : "burst", offset, completed: results.length });
+    nextSlotAt = Math.max(nextSlotAt + slotMs, Date.now());
+  }
+  const values = Object.values(progress.completed), quoteCreate = values.flatMap(value => [value.measurements.quote, value.measurements.create].filter(Number.isFinite));
+  const core = values.flatMap(value => Object.entries(value.measurements).filter(([key, latency]) => !["quote", "create"].includes(key) && Number.isFinite(latency)).map(([, latency]) => latency));
+  const failures = total - values.length, quoteCreateP95 = percentile(quoteCreate, .95), coreP95 = percentile(core, .95), failureRate = failures / total;
+  const passed = failures === 0 && failureRate < PHASE7_CONTRACT.reliability.unexpectedFailureRate && quoteCreateP95 <= PHASE7_CONTRACT.reliability.quoteCreateP95Ms && coreP95 <= PHASE7_CONTRACT.reliability.coreP95Ms;
+  return { passed, total, completed: values.length, workers: 10, sustainedOrdersPerMinute: 50, burstOrdersPerMinute: 100, quoteCreateP95Ms: quoteCreateP95, coreP95Ms: coreP95, unexpectedFailureRate: failureRate };
+}
+
+async function deadlineQualification() {
+  const app = firebaseApp(context, "deadline"), auth = app.auth();
+  try {
+    const customer = await exchange(context, await auth.createCustomToken(fixtures.firebaseUids.customer, { role: "authenticated" }));
+    const items = [{ menuItemId: fixtures.item, quantity: 1, optionValueIds: [], removedIngredientIds: [] }];
+    progress.orders ||= [];
+    for (let index = progress.orders.length; index < 105; index += 1) {
+      const result = await rpc(context, customer, "create_order_v2", { p_restaurant_id: fixtures.restaurant, p_address_id: fixtures.address, p_payment_method: "cash", p_items: items, p_notes: "", p_operation_id: stableOperationId(manifest.runId, 20_000 + index, "create") });
+      if (!result.ok) throw new Error(`Deadline fixture ${index} failed (${result.status}).`);
+      progress.orders.push({ id: result.body.orderId, natural: index === 104, createdAt: new Date().toISOString() }); save();
+    }
+    if (!progress.backdatedAt) {
+      const artificial = progress.orders.filter(value => !value.natural).map(value => q(value.id)).join(",");
+      await sql(context, `update public.orders set approval_deadline_at=statement_timestamp()-interval '1 second' where id in(${artificial}) and status='pending'`);
+      progress.backdatedAt = new Date().toISOString(); save();
+    }
+    const deadline = Date.now() + 7 * 60_000; let rows = [];
+    while (Date.now() < deadline) {
+      rows = await sql(context, `select id,status,approval_deadline_at,canceled_at from public.orders where id in(${progress.orders.map(value => q(value.id)).join(",")})`);
+      if (rows.length === 105 && rows.every(value => value.status === "canceled")) break;
+      await new Promise(resolve => setTimeout(resolve, 15_000));
+    }
+    const lags = rows.filter(value => value.canceled_at).map(value => Date.parse(value.canceled_at) - Date.parse(value.approval_deadline_at));
+    const natural = progress.orders.find(value => value.natural), naturalRow = rows.find(value => value.id === natural.id);
+    const p95 = percentile(lags, .95), maximum = lags.length ? Math.max(...lags) : Infinity;
+    const passed = rows.length === 105 && lags.length === 105 && naturalRow?.status === "canceled" && p95 <= 30_000 && maximum <= 75_000;
+    return { passed, fixtureCount: 105, exceedsBatchSize: true, naturalFiveMinuteOrder: naturalRow?.status === "canceled", p95LateMs: p95, maximumLateMs: maximum };
+  } finally { await app.delete(); }
+}
+
+async function incidentQualification() {
+  const rootId = `${fixtures.prefix}_incident_${manifest.runId.slice(0, 8)}`, below = `${rootId}_below`, atBoundary = `${rootId}_at`, above = `${rootId}_above`, base = "2026-09-18 12:00:00+00";
+  if (!progress.prepared) {
+    const fixtureSql = (restaurant, ignored, eligible) => `insert into public.orders(id,profile_id,restaurant_id,status,payment_method,subtotal_kurus,total_kurus,approval_deadline_at,canceled_at)
+      select ${q(`${restaurant}_`)}||g,${q(fixtures.customer)},${q(restaurant)},case when g<=${ignored} then 'canceled'::public.order_status else 'preparing'::public.order_status end,'cash',100,100,${q(base)}::timestamptz-(g||' minutes')::interval,case when g<=${ignored} then ${q(base)}::timestamptz else null end from generate_series(1,${eligible})g;
+      insert into private.order_status_history(order_id,previous_status,new_status,source,reason,created_at) select ${q(`${restaurant}_`)}||g,'pending','canceled','system','approval_deadline_expired',${q(base)}::timestamptz from generate_series(1,${ignored})g;`;
+    await sql(context, `begin;insert into public.restaurants(id,name,lifecycle_status,accepting_orders,is_active) values
+      (${q(below)},'Phase 7 incident below','active',true,true),(${q(atBoundary)},'Phase 7 incident at','active',true,true),(${q(above)},'Phase 7 incident above','active',true,true);
+      ${fixtureSql(below, 2, 4)}${fixtureSql(atBoundary, 3, 6)}${fixtureSql(above, 4, 6)}commit;`);
+    progress.prepared = true; save();
+  }
+  const concurrent = await Promise.all([sql(context, `select private.detect_repeated_order_non_response_v1(${q(base)}) created`), sql(context, `select private.detect_repeated_order_non_response_v1(${q(base)}) created`)]);
+  const rows = await sql(context, `select restaurant_id,state,ignored_order_count,eligible_order_count,threshold_snapshot from private.restaurant_operational_incidents where restaurant_id in(${q(below)},${q(atBoundary)},${q(above)}) order by restaurant_id`);
+  const restaurants = await sql(context, `select id,lifecycle_status,accepting_orders from public.restaurants where id in(${q(below)},${q(atBoundary)},${q(above)})`);
+  const created = concurrent.flat().reduce((sum, value) => sum + Number(value.created), 0);
+  const atRow = rows.find(value => value.restaurant_id === atBoundary), aboveRow = rows.find(value => value.restaurant_id === above);
+  await sql(context, `update private.restaurant_operational_incidents set state='resolved',resolved_at=${q(base)}::timestamptz+interval '2 minutes',resolution_note='Phase 7 controlled resolution' where restaurant_id=${q(atBoundary)} and state<>'resolved'`);
+  await sql(context, `begin;insert into public.orders(id,profile_id,restaurant_id,status,payment_method,subtotal_kurus,total_kurus,approval_deadline_at,canceled_at) select ${q(`${atBoundary}_cooldown_`)}||g,${q(fixtures.customer)},${q(atBoundary)},'canceled','cash',100,100,${q(base)}::timestamptz+interval '20 minutes'-(g||' minutes')::interval,${q(base)}::timestamptz+interval '20 minutes' from generate_series(1,3)g;insert into private.order_status_history(order_id,previous_status,new_status,source,reason,created_at)select ${q(`${atBoundary}_cooldown_`)}||g,'pending','canceled','system','approval_deadline_expired',${q(base)}::timestamptz+interval '20 minutes' from generate_series(1,3)g;commit;`);
+  const [cooldown] = await sql(context, `select private.detect_repeated_order_non_response_v1(${q(base)}::timestamptz+interval '30 minutes') created`);
+  const reopenBase = "2026-09-18 13:03:00+00";
+  await sql(context, `begin;insert into public.orders(id,profile_id,restaurant_id,status,payment_method,subtotal_kurus,total_kurus,approval_deadline_at,canceled_at) select ${q(`${atBoundary}_reopen_`)}||g,${q(fixtures.customer)},${q(atBoundary)},'canceled','cash',100,100,${q(reopenBase)}::timestamptz-(g||' minutes')::interval,${q(reopenBase)}::timestamptz from generate_series(1,3)g;insert into private.order_status_history(order_id,previous_status,new_status,source,reason,created_at)select ${q(`${atBoundary}_reopen_`)}||g,'pending','canceled','system','approval_deadline_expired',${q(reopenBase)}::timestamptz from generate_series(1,3)g;commit;`);
+  const [reopened] = await sql(context, `select private.detect_repeated_order_non_response_v1(${q(reopenBase)}) created`);
+  const openCount = await sql(context, `select restaurant_id,count(*)::integer count from private.restaurant_operational_incidents where restaurant_id in(${q(atBoundary)},${q(above)}) and state<>'resolved' group by restaurant_id`);
+  const noAutomaticChange = restaurants.every(value => value.lifecycle_status === "active" && value.accepting_orders === true);
+  const passed = created === 2 && rows.length === 2 && !rows.some(value => value.restaurant_id === below) && atRow?.ignored_order_count === 3 && atRow?.eligible_order_count === 6 && aboveRow?.ignored_order_count === 4 && Number(cooldown.created) === 0 && Number(reopened.created) === 1 && openCount.every(value => value.count === 1) && noAutomaticChange;
+  return { passed, belowThresholdOpened: false, atThresholdOpened: Boolean(atRow), aboveThresholdOpened: Boolean(aboveRow), ratioBoundaryBasisPoints: 5000, concurrentCreated: created, unresolvedUnique: openCount.every(value => value.count === 1), cooldownBlockedAtThirtyMinutes: Number(cooldown.created) === 0, reopenedAfterSixtyMinutes: Number(reopened.created) === 1, automaticSuspensionAbsent: noAutomaticChange, automaticAcceptanceChangeAbsent: noAutomaticChange, sla: { acknowledgementMinutes: 15, resolutionMinutes: 1440 }, fixtureRootDigest: crypto.createHash("sha256").update(rootId).digest("hex") };
+}
+
+async function authorizationQualification() {
+  const app = firebaseApp(context, "authorization"), auth = app.auth();
+  try {
+    const customer = await exchange(context, await auth.createCustomToken(fixtures.firebaseUids.customer, { role: "authenticated" }));
+    const restaurant = await exchange(context, await auth.createCustomToken(fixtures.firebaseUids.restaurant, { role: "authenticated" }));
+    const checks = [];
+    const expect = async (label, token, name, shouldPass, args = {}) => { const result = await rpc(context, token, name, args); checks.push({ label, status: result.status, passed: result.ok === shouldPass }); };
+    await expect("active-customer-own-portal", customer, "get_my_customer_profile_v1", true);
+    await expect("customer-wrong-restaurant-portal", customer, "restaurant_get_dashboard_v1", false);
+    await expect("customer-wrong-admin-portal", customer, "admin_get_dashboard_v1", false);
+    await expect("active-restaurant-own-portal", restaurant, "restaurant_get_dashboard_v1", true);
+    await expect("restaurant-wrong-customer-portal", restaurant, "get_my_customer_profile_v1", false);
+    await expect("restaurant-wrong-admin-portal", restaurant, "admin_get_dashboard_v1", false);
+    await expect("anonymous-private-rpc", null, "get_my_customer_profile_v1", false);
+    const direct = await fetch(`${context.staging.url}/rest/v1/orders`, { method: "POST", headers: { apikey: context.staging.publishableKey, authorization: `Bearer ${customer}`, "content-type": "application/json" }, body: "{}" });
+    checks.push({ label: "direct-table-write-denied", status: direct.status, passed: !direct.ok });
+    return { passed: checks.every(value => value.passed), checks, limitations: ["pending/suspended/revoked/unmapped, cross-Restaurant, recent-TOTP, stale-auth, and live-loss probes must run before this gate is accepted"] };
+  } finally { await app.delete(); }
+}
+
+async function cleanupQualification() {
+  const prefix = fixtures.prefix;
+  await sql(context, `begin;
+    create temporary table phase7_cleanup_orders on commit drop as select id from public.orders where restaurant_id like ${q(`${prefix}%`)};
+    delete from private.notification_deliveries where event_id in(select id from private.notification_events where order_id in(select id from phase7_cleanup_orders));
+    delete from private.notification_events where order_id in(select id from phase7_cleanup_orders);
+    delete from private.restaurant_operations where result->>'orderId' in(select id from phase7_cleanup_orders);
+    delete from private.customer_order_operations where order_id in(select id from phase7_cleanup_orders);
+    delete from private.restaurant_order_visibility where order_id in(select id from phase7_cleanup_orders);
+    delete from private.order_status_history where order_id in(select id from phase7_cleanup_orders);
+    delete from private.order_contacts where order_id in(select id from phase7_cleanup_orders);
+    delete from public.order_items where order_id in(select id from phase7_cleanup_orders);
+    delete from private.audit_log where target_id in(select id from phase7_cleanup_orders) or actor_profile_id like ${q(`${prefix}%`)} or metadata::text like ${q(`%${prefix}%`)};
+    delete from public.orders where id in(select id from phase7_cleanup_orders);
+    delete from private.restaurant_operational_incidents where restaurant_id like ${q(`${prefix}%`)};
+    delete from public.menu_items where id like ${q(`${prefix}%`)};delete from public.categories where id like ${q(`${prefix}%`)};
+    delete from public.addresses where id like ${q(`${prefix}%`)};delete from private.account_access where profile_id like ${q(`${prefix}%`)};
+    delete from public.profiles where id like ${q(`${prefix}%`)};delete from public.restaurants where id like ${q(`${prefix}%`)};commit;`);
+  const [remaining] = await sql(context, `select (select count(*) from public.orders where restaurant_id like ${q(`${prefix}%`)})::integer orders,(select count(*) from public.profiles where id like ${q(`${prefix}%`)})::integer profiles,(select count(*) from public.restaurants where id like ${q(`${prefix}%`)})::integer restaurants`);
+  const app = firebaseApp(context, "cleanup"), auth = app.auth();
+  try { for (const uid of Object.values(fixtures.firebaseUids)) await auth.deleteUser(uid).catch(error => { if (error?.code !== "auth/user-not-found") throw error; }); } finally { await app.delete(); }
+  const passed = remaining.orders === 0 && remaining.profiles === 0 && remaining.restaurants === 0;
+  return { passed, taggedFixtureCounts: remaining, exactTaggedCleanup: passed };
+}
+
+const heartbeat = setInterval(() => appendEvidence(path.join(runDirectory, "heartbeats.jsonl"), { at: new Date().toISOString(), pid: process.pid, child: kind }), 60_000);
+let healthRunning = false;
+const health = setInterval(async () => {
+  if (healthRunning) return; healthRunning = true;
+  try {
+    const [sample] = await sql(context, `select statement_timestamp() sampled_at,(select count(*)::integer from public.orders where approval_deadline_at<statement_timestamp() and status='pending') overdue_pending_orders,(select count(*)::integer from private.restaurant_operational_incidents where state<>'resolved') unresolved_incidents,(select count(*)::integer from private.notification_deliveries where state in('pending','processing')) notification_backlog,(select max(end_time) from cron.job_run_details where status='succeeded') latest_job_run_at`);
+    appendEvidence(path.join(runDirectory, "health.jsonl"), { at: new Date().toISOString(), ...sample });
+  } catch (error) {
+    appendEvidence(path.join(runDirectory, "health.jsonl"), { at: new Date().toISOString(), error: "health_sample_failed" });
+  } finally { healthRunning = false; }
+}, 300_000);
+try {
+  let outcome;
+  if (kind === "load") outcome = await loadQualification();
+  else if (kind === "deadline") outcome = await deadlineQualification();
+  else if (kind === "incident") outcome = await incidentQualification();
+  else if (kind === "authorization") outcome = await authorizationQualification();
+  else outcome = await cleanupQualification();
+  console.log(JSON.stringify(outcome));
+} finally { clearInterval(heartbeat); clearInterval(health); }

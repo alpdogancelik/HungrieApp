@@ -8,7 +8,7 @@
 
 **Current release status:** Hungrie has no live production Customer application or production user base. Development and Staging intentionally share the current non-production Firebase Auth project while using separate Supabase projects. Production will use new, clean Firebase and Supabase projects; no non-production test identities or application data will be copied into them. This plan prepares the first production Customer release, not an upgrade of existing production users.
 
-**Phase status:** Phase 0 through Phase 6 are complete and accepted. Phase 7 full Staging qualification is next. The open physical-device rows carried forward from Phase 6 must pass before any Production expansion or release.
+**Phase status:** Phase 0 through Phase 6 are complete and accepted. Phase 7 full Staging qualification implementation is in progress on `phase7-full-staging-qualification-20260918`; no Phase 7 automated or manual gate is accepted yet. The persistent-runner design, locked targets, and manual evidence boundary are recorded in [the Phase 7 plan](phase-7-full-staging-qualification-plan.md), with results tracked in [the Phase 7 checklist](phase-7-device-browser-checklist.md). The open physical-device rows carried forward from Phase 6 must pass before any Production expansion or release.
 
 **Scope:** Separate Customer, Restaurant, and Admin applications while retaining Firebase Authentication and one shared Supabase database per environment.
 
