@@ -17,8 +17,9 @@ export async function executeOrderFlow({ context, fixtures, operationIds, stateF
     const items = [{ menuItemId: fixtures.item, quantity: 1, optionValueIds: [], removedIngredientIds: [] }];
     if (!saved.steps.quote) must("quote", await rpcFn(context, customer, "quote_order_v2", { p_restaurant_id: fixtures.restaurant, p_items: items }));
     if (!saved.steps.create || !saved.orderId) {
-      const result = await rpcFn(context, customer, "create_order_v2", { p_restaurant_id: fixtures.restaurant, p_address_id: fixtures.address, p_payment_method: "cash", p_items: items, p_notes: "", p_operation_id: operationIds.create });
+      const requestStartedAt = Date.now(), result = await rpcFn(context, customer, "create_order_v2", { p_restaurant_id: fixtures.restaurant, p_address_id: fixtures.address, p_payment_method: "cash", p_items: items, p_notes: "", p_operation_id: operationIds.create });
       const created = must("create", result); saved.orderId = created.orderId; atomicWriteJson(stateFile, saved);
+      if (dependencies.onOrderCreated) { const latencyMs = await dependencies.onOrderCreated(saved.orderId, requestStartedAt); saved.steps.realtime_visibility = { completedAt: new Date().toISOString(), latencyMs, status: 200 }; atomicWriteJson(stateFile, saved); }
     }
     const advance = async (step, target) => {
       if (saved.steps[step]) return;

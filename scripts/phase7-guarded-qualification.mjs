@@ -2,6 +2,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { createClient } from "@supabase/supabase-js";
 import { appendEvidence, atomicWriteJson, PHASE7_CONTRACT, stableOperationId } from "./phase7-runner-lib.mjs";
 import { executeOrderFlow } from "./phase7-order-flow.mjs";
 import { exchange, firebaseApp, loadOperatorContext, rpc, sql, sqlQuote as q } from "./phase7-staging-client.mjs";
@@ -23,7 +24,15 @@ const firebaseRequest = async (version, method, body, expected = 200) => { const
 async function loadQualification() {
   const total = PHASE7_CONTRACT.load.sustainedPerMinute * PHASE7_CONTRACT.load.sustainedMinutes + PHASE7_CONTRACT.load.burstPerMinute * PHASE7_CONTRACT.load.burstMinutes;
   progress.total = total; save();
+  const realtimeApp = firebaseApp(context, "load-realtime"), realtimeAuth = realtimeApp.auth(), realtimeToken = await exchange(context, await realtimeAuth.createCustomToken(fixtures.firebaseUids.restaurant, { role: "authenticated" }));
+  const realtime = createClient(context.staging.url, context.staging.publishableKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }, realtime: { params: { eventsPerSecond: 200 } }, global: { headers: { Authorization: `Bearer ${realtimeToken}` } } });
+  await realtime.realtime.setAuth(realtimeToken);
+  const events = new Map(), waiters = new Map();
+  const channel = realtime.channel(`restaurant-orders:v1:${fixtures.restaurant}`, { config: { private: true } }).on("broadcast", { event: "order_changed" }, ({ payload }) => { if (payload?.operation !== "insert" || !payload?.order_id) return; const orderId = String(payload.order_id), eventAt = Date.now(), waiter = waiters.get(orderId); if (waiter) { waiters.delete(orderId); waiter(eventAt); } else events.set(orderId, eventAt); });
+  await new Promise((resolve, reject) => { const timeout = setTimeout(() => reject(new Error("Private Realtime subscription timed out.")), 15_000); channel.subscribe(status => { if (status === "SUBSCRIBED") { clearTimeout(timeout); resolve(); } else if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(status)) { clearTimeout(timeout); reject(new Error(`Private Realtime subscription failed: ${status}`)); } }); });
+  const onOrderCreated = async (orderId, requestStartedAt) => { const existing = events.get(orderId); if (existing) { events.delete(orderId); return existing - requestStartedAt; } const eventAt = await new Promise((resolve, reject) => { const timer = setTimeout(() => { waiters.delete(orderId); reject(new Error("Realtime order visibility exceeded ten seconds.")); }, 10_000); waiters.set(orderId, value => { clearTimeout(timer); resolve(value); }); }); return eventAt - requestStartedAt; };
   let nextSlotAt = Date.now();
+  try {
   for (let offset = 0; offset < total; offset += PHASE7_CONTRACT.load.workers) {
     const unitIndexes = Array.from({ length: Math.min(PHASE7_CONTRACT.load.workers, total - offset) }, (_, inner) => offset + inner).filter(index => !progress.completed[index]);
     if (unitIndexes.length === 0) continue;
@@ -31,17 +40,21 @@ async function loadQualification() {
     const slotMs = sustained ? 12_000 : 6_000;
     const wait = nextSlotAt - Date.now(); if (wait > 0) await new Promise(resolve => setTimeout(resolve, wait));
     const results = await Promise.all(unitIndexes.map(async index => {
-      const outcome = await executeOrderFlow({ context, fixtures, operationIds: operationIds(index + 10_000), stateFile: path.join(runDirectory, `load-unit-${index}.json`), label: `load-${index}` });
+      const outcome = await executeOrderFlow({ context, fixtures, operationIds: operationIds(index + 10_000), stateFile: path.join(runDirectory, `load-unit-${index}.json`), label: `load-${index}`, dependencies: { onOrderCreated } });
       progress.completed[index] = { at: new Date().toISOString(), ...outcome }; save(); return outcome;
     }));
     appendEvidence(path.join(runDirectory, "measurements.jsonl"), { at: new Date().toISOString(), kind: "load-slot", phase: sustained ? "sustained" : "burst", offset, completed: results.length });
     nextSlotAt = Math.max(nextSlotAt + slotMs, Date.now());
   }
+  } finally { await realtime.removeChannel(channel); await realtimeApp.delete(); }
+  const recovery = await executeOrderFlow({ context, fixtures, operationIds: operationIds(19_999), stateFile: path.join(runDirectory, "poll-recovery-unit.json"), label: "poll-recovery", dependencies: { onOrderCreated: async (orderId, requestStartedAt) => { const deadline = Date.now() + PHASE7_CONTRACT.reliability.recoveryMaximumMs; while (Date.now() <= deadline) { const observed = await rpc(context, realtimeToken, "restaurant_get_order_v1", { p_order_id: orderId }); if (observed.ok) return Date.now() - requestStartedAt; await new Promise(resolve => setTimeout(resolve, 1_000)); } throw new Error("Polling recovery exceeded twenty seconds."); } } });
   const values = Object.values(progress.completed), quoteCreate = values.flatMap(value => [value.measurements.quote, value.measurements.create].filter(Number.isFinite));
-  const core = values.flatMap(value => Object.entries(value.measurements).filter(([key, latency]) => !["quote", "create"].includes(key) && Number.isFinite(latency)).map(([, latency]) => latency));
-  const failures = total - values.length, quoteCreateP95 = percentile(quoteCreate, .95), coreP95 = percentile(core, .95), failureRate = failures / total;
-  const passed = failures === 0 && failureRate < PHASE7_CONTRACT.reliability.unexpectedFailureRate && quoteCreateP95 <= PHASE7_CONTRACT.reliability.quoteCreateP95Ms && coreP95 <= PHASE7_CONTRACT.reliability.coreP95Ms;
-  return { passed, total, completed: values.length, workers: 10, sustainedOrdersPerMinute: 50, burstOrdersPerMinute: 100, quoteCreateP95Ms: quoteCreateP95, coreP95Ms: coreP95, unexpectedFailureRate: failureRate };
+  const core = values.flatMap(value => Object.entries(value.measurements).filter(([key, latency]) => !["quote", "create", "realtime_visibility"].includes(key) && Number.isFinite(latency)).map(([, latency]) => latency));
+  const visibility = values.map(value => value.measurements.realtime_visibility).filter(Number.isFinite);
+  const failures = total - values.length, quoteCreateP95 = percentile(quoteCreate, .95), coreP95 = percentile(core, .95), realtimeP95 = percentile(visibility, .95), failureRate = failures / total;
+  const recoveryMs = recovery.measurements.realtime_visibility;
+  const passed = failures === 0 && failureRate < PHASE7_CONTRACT.reliability.unexpectedFailureRate && quoteCreateP95 <= PHASE7_CONTRACT.reliability.quoteCreateP95Ms && coreP95 <= PHASE7_CONTRACT.reliability.coreP95Ms && realtimeP95 <= PHASE7_CONTRACT.reliability.realtimeP95Ms && recoveryMs <= PHASE7_CONTRACT.reliability.recoveryMaximumMs;
+  return { passed, total, completed: values.length, workers: 10, sustainedOrdersPerMinute: 50, burstOrdersPerMinute: 100, quoteCreateP95Ms: quoteCreateP95, coreP95Ms: coreP95, realtimeVisibilityP95Ms: realtimeP95, pollingRecoveryMs: recoveryMs, unexpectedFailureRate: failureRate };
 }
 
 async function deadlineQualification() {
