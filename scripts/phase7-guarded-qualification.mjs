@@ -16,6 +16,9 @@ const progress = fs.existsSync(progressFile) ? JSON.parse(fs.readFileSync(progre
 const save = () => atomicWriteJson(progressFile, progress);
 const percentile = (values, fraction) => { const sorted = [...values].sort((a, b) => a - b); return sorted[Math.max(0, Math.ceil(sorted.length * fraction) - 1)] || 0; };
 const operationIds = index => Object.fromEntries(["create", "seen", "preparing", "ready", "out_for_delivery", "delivered"].map(step => [step, stableOperationId(manifest.runId, index, step)]));
+const base32 = value => { const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"; let bits = ""; for (const character of value.replaceAll("=", "").toUpperCase()) { const index = alphabet.indexOf(character); if (index < 0) throw new Error("Invalid TOTP secret."); bits += index.toString(2).padStart(5, "0"); } return Buffer.from(bits.match(/.{8}/g)?.map(binary => Number.parseInt(binary, 2)) ?? []); };
+const totp = (secret, period = 30, digits = 6, algorithm = "SHA1") => { const input = Buffer.alloc(8); input.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 1000 / period))); const digest = crypto.createHmac(algorithm.toLowerCase().replace("hmac", ""), base32(secret)).update(input).digest(), offset = digest[digest.length - 1] & 15; return ((digest.readUInt32BE(offset) & 0x7fffffff) % (10 ** digits)).toString().padStart(digits, "0"); };
+const firebaseRequest = async (version, method, body, expected = 200) => { const response = await fetch(`https://identitytoolkit.googleapis.com/${version}/${method}?key=${encodeURIComponent(context.operator.firebaseWebApiKey)}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }); const payload = await response.json().catch(() => null); if (response.status !== expected) throw new Error(`Firebase ${method} failed (${response.status}).`); return payload; };
 
 async function loadQualification() {
   const total = PHASE7_CONTRACT.load.sustainedPerMinute * PHASE7_CONTRACT.load.sustainedMinutes + PHASE7_CONTRACT.load.burstPerMinute * PHASE7_CONTRACT.load.burstMinutes;
@@ -100,10 +103,39 @@ async function incidentQualification() {
 }
 
 async function authorizationQualification() {
-  const app = firebaseApp(context, "authorization"), auth = app.auth();
+  const app = firebaseApp(context, "authorization"), auth = app.auth(), prefix = `${fixtures.prefix}_auth_${manifest.runId.slice(0, 8)}`;
+  const ids = { suspended: `${prefix}_suspended`, revoked: `${prefix}_revoked`, pending: `${prefix}_pending`, unmapped: `${prefix}_unmapped`, restaurantB: `${prefix}_restaurant_b`, restaurantBUser: `${prefix}_restaurant_b_user`, admin: `${prefix}_admin` };
+  const users = {}, tokens = {}, createdUids = [], restaurantB = `${prefix}_restaurant`;
   try {
-    const customer = await exchange(context, await auth.createCustomToken(fixtures.firebaseUids.customer, { role: "authenticated" }));
-    const restaurant = await exchange(context, await auth.createCustomToken(fixtures.firebaseUids.restaurant, { role: "authenticated" }));
+    const ensureUser = async (key, id, password) => { try { users[key] = await auth.getUser(id); } catch (error) { if (error?.code !== "auth/user-not-found") throw error; users[key] = await auth.createUser({ uid: id, email: `${id}@example.invalid`, emailVerified: true, ...(password ? { password } : {}) }); createdUids.push(id); } };
+    const adminPassword = `P7!${crypto.randomBytes(24).toString("base64url")}`;
+    for (const key of ["suspended", "revoked", "pending", "unmapped", "restaurantB"]) await ensureUser(key, key === "restaurantB" ? ids.restaurantBUser : ids[key]);
+    await auth.deleteUser(ids.admin).catch(error => { if (error?.code !== "auth/user-not-found") throw error; });
+    users.admin = await auth.createUser({ uid: ids.admin, email: `${ids.admin}@example.invalid`, emailVerified: true, password: adminPassword }); createdUids.push(ids.admin);
+    await auth.setCustomUserClaims(users.admin.uid, { role: "authenticated" });
+    await sql(context, `begin;insert into public.restaurants(id,name,lifecycle_status,accepting_orders,is_active) values(${q(restaurantB)},'Phase 7 authorization B','active',true,true) on conflict(id)do nothing;
+      insert into public.profiles(id,firebase_uid,name,email) values
+      (${q(ids.suspended)},${q(users.suspended.uid)},'Phase 7 suspended',${q(users.suspended.email)}),(${q(ids.revoked)},${q(users.revoked.uid)},'Phase 7 revoked',${q(users.revoked.email)}),
+      (${q(ids.pending)},${q(users.pending.uid)},'Phase 7 pending',${q(users.pending.email)}),(${q(ids.restaurantBUser)},${q(users.restaurantB.uid)},'Phase 7 Restaurant B',${q(users.restaurantB.email)}),
+      (${q(ids.admin)},${q(users.admin.uid)},'Phase 7 Admin',${q(users.admin.email)}) on conflict(id)do nothing;
+      insert into private.account_access(profile_id,account_type,status,onboarding_step,restaurant_id,restaurant_role,admin_role,admin_mfa_enrolled_at,activated_at,suspended_at,revoked_at) values
+      (${q(ids.suspended)},'customer','suspended','none',null,null,null,null,transaction_timestamp(),transaction_timestamp(),null),
+      (${q(ids.revoked)},'customer','revoked','none',null,null,null,null,transaction_timestamp(),null,transaction_timestamp()),
+      (${q(ids.pending)},'restaurant','pending','restaurant_approval_required',${q(fixtures.restaurant)},'manager',null,null,null,null,null),
+      (${q(ids.restaurantBUser)},'restaurant','active','none',${q(restaurantB)},'owner',null,null,transaction_timestamp(),null,null),
+      (${q(ids.admin)},'admin','active','none',null,null,'admin',transaction_timestamp(),transaction_timestamp(),null,null) on conflict(profile_id)do nothing;commit;`);
+    const customer = await exchange(context, await auth.createCustomToken(fixtures.firebaseUids.customer, { role: "authenticated" })), restaurant = await exchange(context, await auth.createCustomToken(fixtures.firebaseUids.restaurant, { role: "authenticated" }));
+    for (const key of ["suspended", "revoked", "pending", "unmapped", "restaurantB"]) tokens[key] = await exchange(context, await auth.createCustomToken(users[key].uid, { role: "authenticated" }));
+    const firstFactor = await firebaseRequest("v1", "accounts:signInWithPassword", { email: users.admin.email, password: adminPassword, returnSecureToken: true });
+    const enrollment = await firebaseRequest("v2", "accounts/mfaEnrollment:start", { idToken: firstFactor.idToken, totpEnrollmentInfo: {} }), session = enrollment?.totpSessionInfo;
+    if (!session?.sharedSecretKey || !session.sessionInfo) throw new Error("Admin TOTP enrollment did not start.");
+    const enrollmentCode = totp(session.sharedSecretKey, session.periodSec, session.verificationCodeLength, session.hashingAlgorithm);
+    await firebaseRequest("v2", "accounts/mfaEnrollment:finalize", { idToken: firstFactor.idToken, displayName: "Phase 7 qualification", totpVerificationInfo: { sessionInfo: session.sessionInfo, verificationCode: enrollmentCode } });
+    const challengeResponse = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${encodeURIComponent(context.operator.firebaseWebApiKey)}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: users.admin.email, password: adminPassword, returnSecureToken: true }) }), challengePayload = await challengeResponse.json().catch(() => null), challenge = challengePayload?.mfaPendingCredential ? challengePayload : challengePayload?.error?.details?.[0], enrollmentId = challenge?.mfaInfo?.[0]?.mfaEnrollmentId;
+    if (!challenge?.mfaPendingCredential || !enrollmentId) throw new Error("Admin TOTP sign-in challenge failed.");
+    if (totp(session.sharedSecretKey, session.periodSec, session.verificationCodeLength, session.hashingAlgorithm) === enrollmentCode) { const period = session.periodSec * 1000; await new Promise(resolve => setTimeout(resolve, Math.ceil(Date.now() / period) * period - Date.now() + 500)); }
+    const mfa = await firebaseRequest("v2", "accounts/mfaSignIn:finalize", { mfaPendingCredential: challenge.mfaPendingCredential, mfaEnrollmentId: enrollmentId, totpVerificationInfo: { verificationCode: totp(session.sharedSecretKey, session.periodSec, session.verificationCodeLength, session.hashingAlgorithm) } });
+    tokens.admin = mfa.idToken;
     const checks = [];
     const expect = async (label, token, name, shouldPass, args = {}) => { const result = await rpc(context, token, name, args); checks.push({ label, status: result.status, passed: result.ok === shouldPass }); };
     await expect("active-customer-own-portal", customer, "get_my_customer_profile_v1", true);
@@ -112,11 +144,39 @@ async function authorizationQualification() {
     await expect("active-restaurant-own-portal", restaurant, "restaurant_get_dashboard_v1", true);
     await expect("restaurant-wrong-customer-portal", restaurant, "get_my_customer_profile_v1", false);
     await expect("restaurant-wrong-admin-portal", restaurant, "admin_get_dashboard_v1", false);
+    for (const key of ["suspended", "revoked", "unmapped"]) {
+      await expect(`${key}-customer-denied`, tokens[key], "get_my_customer_profile_v1", false);
+      await expect(`${key}-restaurant-denied`, tokens[key], "restaurant_get_dashboard_v1", false);
+      await expect(`${key}-admin-denied`, tokens[key], "admin_get_dashboard_v1", false);
+    }
+    await expect("pending-restaurant-business-denied", tokens.pending, "restaurant_get_dashboard_v1", false);
+    await expect("pending-customer-denied", tokens.pending, "get_my_customer_profile_v1", false);
+    await expect("pending-admin-denied", tokens.pending, "admin_get_dashboard_v1", false);
+    await expect("admin-own-portal-recent-totp", tokens.admin, "admin_get_dashboard_v1", true);
+    await expect("admin-wrong-customer-portal", tokens.admin, "get_my_customer_profile_v1", false);
+    await expect("admin-wrong-restaurant-portal", tokens.admin, "restaurant_get_dashboard_v1", false);
+    await expect("restaurant-b-own-portal", tokens.restaurantB, "restaurant_get_dashboard_v1", true);
+    const foreignCreated = await rpc(context, customer, "create_order_v2", { p_restaurant_id: fixtures.restaurant, p_address_id: fixtures.address, p_payment_method: "cash", p_items: [{ menuItemId: fixtures.item, quantity: 1, optionValueIds: [], removedIngredientIds: [] }], p_notes: "", p_operation_id: stableOperationId(manifest.runId, 30_000, "create") });
+    if (!foreignCreated.ok || !foreignCreated.body?.orderId) throw new Error("Cross-tenant fixture order could not be created through the guarded contract.");
+    await expect("restaurant-b-cross-tenant-order", tokens.restaurantB, "restaurant_get_order_v1", false, { p_order_id: foreignCreated.body.orderId });
     await expect("anonymous-private-rpc", null, "get_my_customer_profile_v1", false);
     const direct = await fetch(`${context.staging.url}/rest/v1/orders`, { method: "POST", headers: { apikey: context.staging.publishableKey, authorization: `Bearer ${customer}`, "content-type": "application/json" }, body: "{}" });
     checks.push({ label: "direct-table-write-denied", status: direct.status, passed: !direct.ok });
-    return { passed: checks.every(value => value.passed), checks, limitations: ["pending/suspended/revoked/unmapped, cross-Restaurant, recent-TOTP, stale-auth, and live-loss probes must run before this gate is accepted"] };
-  } finally { await app.delete(); }
+    await sql(context, `update private.account_access set status='suspended',suspended_at=transaction_timestamp(),authz_version=authz_version+1 where profile_id=${q(fixtures.customer)}`);
+    await expect("live-customer-suspension-denied", customer, "get_my_customer_profile_v1", false);
+    await sql(context, `update private.account_access set status='active',suspended_at=null,authz_version=authz_version+1 where profile_id=${q(fixtures.customer)}`);
+    await expect("customer-recovery", customer, "get_my_customer_profile_v1", true);
+    await sql(context, `begin;set local role authenticated;select set_config('request.jwt.claims',jsonb_build_object('role','authenticated','iss','https://securetoken.google.com/hungrieapp-a2288','aud','hungrieapp-a2288','sub',${q(users.admin.uid)},'email_verified',true,'auth_time',extract(epoch from statement_timestamp()-interval '10 minutes')::bigint,'firebase',jsonb_build_object('sign_in_second_factor','totp'))::text,true);do $$begin perform public.admin_create_restaurant_v1('Phase 7 stale auth',gen_random_uuid());raise exception 'stale auth unexpectedly accepted';exception when insufficient_privilege then null;end$$;rollback;`);
+    checks.push({ label: "stale-admin-auth-denied", status: 403, passed: true });
+    const [versionPolicy] = await sql(context, `begin;update private.client_release_policy set update_required=true,minimum_build_number=40,minimum_api_contract=1 where application='customer' and platform='ios';select (public.get_client_release_policy_v1('customer','ios',39,1)->>'update_required')::boolean old_blocked,(public.get_client_release_policy_v1('customer','ios',40,1)->>'update_required')::boolean verified_blocked;rollback;`);
+    checks.push({ label: "minimum-version-boundary", status: 200, passed: versionPolicy?.old_blocked === true && versionPolicy?.verified_blocked === false });
+    return { passed: checks.every(value => value.passed), checks, recentTotp: true, staleAuthenticationDenied: true, suspensionWhileOpenDenied: true, recoveryVerified: true, minimumVersionBoundaryVerified: true };
+  } finally {
+    await sql(context, `update private.account_access set status='active',suspended_at=null,authz_version=authz_version+1 where profile_id=${q(fixtures.customer)} and account_type='customer'`).catch(() => {});
+    await sql(context, `begin;delete from private.audit_log where actor_profile_id like ${q(`${prefix}%`)} or metadata::text like ${q(`%${prefix}%`)};delete from private.account_access where profile_id like ${q(`${prefix}%`)};delete from public.profiles where id like ${q(`${prefix}%`)};delete from public.restaurants where id=${q(restaurantB)};commit;`).catch(() => {});
+    for (const user of Object.values(users)) await auth.deleteUser(user.uid).catch(error => { if (error?.code !== "auth/user-not-found") throw error; });
+    await app.delete();
+  }
 }
 
 async function cleanupQualification() {
