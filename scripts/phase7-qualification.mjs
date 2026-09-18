@@ -60,7 +60,7 @@ async function monitor(runDirectory, state, now) {
 }
 
 function markComplete(runDirectory, state, result, now) {
-  state.status = "completed"; state.completedAt = now.toISOString(); state.result = result;
+  state.status = "completed"; state.completedAt = now.toISOString(); state.result = result; state.progress.completed = state.progress.total;
   appendEvidence(path.join(runDirectory, "events.jsonl"), { at: now.toISOString(), type: "run.completed", result });
 }
 

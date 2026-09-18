@@ -83,3 +83,12 @@ test("final evidence detects later tampering", () => {
   fs.appendFileSync(path.join(runDirectory, "events.jsonl"), "tampered\n");
   assert.throws(() => verifyFinalEvidence(runDirectory), /checksum mismatch/);
 });
+
+test("final evidence excludes the transient writer lock", () => {
+  const root = temporary();
+  const { runDirectory } = createRun({ phaseRoot: root, runId: "00000000-0000-4000-8000-000000000008", kind: "preflight", commit, migrationSha256 });
+  const release = acquireRunLock(runDirectory);
+  finalizeEvidence(runDirectory, { status: "completed" });
+  release();
+  assert.equal(verifyFinalEvidence(runDirectory).result.status, "completed");
+});

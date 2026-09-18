@@ -189,7 +189,7 @@ export function continuityGaps(runDirectory) {
 }
 
 export function evidenceDigests(runDirectory) {
-  const names = fs.readdirSync(runDirectory).filter(name => name !== "final-evidence.json" && fs.statSync(path.join(runDirectory, name)).isFile()).sort();
+  const names = fs.readdirSync(runDirectory).filter(name => name !== "final-evidence.json" && !name.endsWith(".lock") && !name.endsWith(".tmp") && fs.statSync(path.join(runDirectory, name)).isFile()).sort();
   return Object.fromEntries(names.map(name => [name, crypto.createHash("sha256").update(fs.readFileSync(path.join(runDirectory, name))).digest("hex")]));
 }
 
