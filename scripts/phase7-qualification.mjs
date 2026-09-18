@@ -59,9 +59,10 @@ async function monitor(runDirectory, state, now) {
   state.lastHealthAt = now.toISOString();
 }
 
-function markComplete(runDirectory, state, result, now) {
-  state.status = "completed"; state.completedAt = now.toISOString(); state.result = result; state.progress.completed = state.progress.total;
-  appendEvidence(path.join(runDirectory, "events.jsonl"), { at: now.toISOString(), type: "run.completed", result });
+function markComplete(runDirectory, state, result) {
+  const completedAt = new Date().toISOString();
+  state.status = "completed"; state.completedAt = completedAt; state.result = result; state.progress.completed = state.progress.total;
+  appendEvidence(path.join(runDirectory, "events.jsonl"), { at: completedAt, type: "run.completed", result });
 }
 
 async function runPreflight({ runDirectory, manifest, state, now }) {
@@ -71,7 +72,7 @@ async function runPreflight({ runDirectory, manifest, state, now }) {
   atomicWriteJson(path.join(runDirectory, "power-preflight.json"), power);
   if (!power.passed) throw new Error(`Power preflight failed: ${power.failures.join(" ")}`);
   const [database] = await queryStaging("select current_database() database, current_setting('server_version') server_version");
-  markComplete(runDirectory, state, { passed: true, environment: "staging", projectRefDigest: sha256(staging.ref).slice(0, 16), migrationSha256, databaseVersion: database.server_version, launchAgentLoginRequiredAfterReboot: true }, now);
+  markComplete(runDirectory, state, { passed: true, environment: "staging", projectRefDigest: sha256(staging.ref).slice(0, 16), migrationSha256, databaseVersion: database.server_version, launchAgentLoginRequiredAfterReboot: true });
 }
 
 async function runSoakTick({ runDirectory, manifest, state, now }) {
@@ -91,7 +92,7 @@ async function runSoakTick({ runDirectory, manifest, state, now }) {
     state.progress.completed = state.journeys.filter(value => value.state === "completed").length;
     appendEvidence(path.join(runDirectory, "journeys.jsonl"), { at: journey.completedAt, journey: journey.index, ...outcome });
   }
-  if (now.getTime() >= Date.parse(state.plannedEndAt) && state.progress.completed === PHASE7_CONTRACT.automatedSoakJourneys) markComplete(runDirectory, state, { automatedJourneys: state.progress.completed }, now);
+  if (now.getTime() >= Date.parse(state.plannedEndAt) && state.progress.completed === PHASE7_CONTRACT.automatedSoakJourneys) markComplete(runDirectory, state, { automatedJourneys: state.progress.completed });
 }
 
 async function runExternalKind({ runDirectory, manifest, state, now }) {
@@ -101,7 +102,7 @@ async function runExternalKind({ runDirectory, manifest, state, now }) {
   if (result.status !== 0) throw new Error(`${state.kind} qualification failed; inspect owner-only evidence.`);
   const outcome = JSON.parse(result.stdout);
   if (!outcome.passed) throw new Error(`${state.kind} qualification did not pass.`);
-  markComplete(runDirectory, state, outcome, now);
+  markComplete(runDirectory, state, outcome);
 }
 
 export async function executeQualificationTick(context) {

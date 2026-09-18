@@ -35,11 +35,11 @@ async function tick(directory, now = new Date()) {
     try {
       await executeQualificationTick({ runDirectory: directory, manifest, state, now });
     } catch (error) {
-      state.status = "failed"; state.failedAt = now.toISOString(); state.failure = { message: error instanceof Error ? error.message : String(error) };
-      appendEvidence(path.join(directory, "events.jsonl"), { at: now.toISOString(), type: "run.failed", message: state.failure.message });
+      state.status = "failed"; state.failedAt = new Date().toISOString(); state.failure = { message: error instanceof Error ? error.message : String(error) };
+      appendEvidence(path.join(directory, "events.jsonl"), { at: state.failedAt, type: "run.failed", message: state.failure.message });
     }
     persistState(directory, state);
-    if (terminal.has(state.status)) finalizeEvidence(directory, { status: state.status, progress: state.progress, failure: state.failure }, now);
+    if (terminal.has(state.status)) finalizeEvidence(directory, { status: state.status, progress: state.progress, failure: state.failure }, new Date());
     return state;
   } finally { release(); }
 }
