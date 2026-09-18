@@ -67,3 +67,4 @@ mobile/data/restaurant-panel-accounts*.json
 
 /docs/
 /design/
+.env*

@@ -21,6 +21,7 @@ import { selectRepository } from "./backendFlags";
 import type { RestaurantRepository, RestaurantDetailsForm } from "./contracts";
 import { invalidateRestaurantCatalog, supabaseRestaurantRepository } from "./supabase/restaurantRepository";
 import { catalogRepository } from "./catalogRepository";
+import { invalidateAllRestaurantReviewSummariesV2 } from "./reviewV2Repository";
 export type { RestaurantSession } from "./contracts";
 
 const firebaseGetOwnedRestaurantDetails = async (): Promise<{ restaurantId: string; details: RestaurantDetailsForm } | null> => {
@@ -110,6 +111,7 @@ export const restaurantRepository = selectRepository<RestaurantRepository>("rest
 export const getRestaurants = catalogRepository.getRestaurants;
 export const refreshRestaurants = async (filters?: { search?: string; category?: string }) => {
     invalidateRestaurantCatalog();
+    invalidateAllRestaurantReviewSummariesV2();
     return catalogRepository.getRestaurants(filters);
 };
 export const subscribeRestaurants = catalogRepository.subscribeRestaurants;

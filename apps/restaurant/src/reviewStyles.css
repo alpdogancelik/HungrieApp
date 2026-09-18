@@ -1,0 +1,27 @@
+.review-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.review-card,
+.aggregate-card {
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+}
+
+@media (max-width: 700px) {
+  .aggregate-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .review-card-head {
+    align-items: flex-start;
+  }
+}
+
+.review-card p,
+.review-card span,
+.review-card strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

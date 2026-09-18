@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getMenu } from "@/src/data/menuRepository";
-import { getRestaurants } from "@/src/data/restaurantRepository";
+import { getRestaurants, refreshRestaurants } from "@/src/data/restaurantRepository";
 import { filterMenuForCustomer } from "@/lib/menuVisibility";
 import type { MenuItem } from "@/type";
 
@@ -236,8 +236,8 @@ export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptio
     const debouncedQuery = useMemo(() => query.trim(), [query]);
 
     const fetchResults = useCallback(
-        async (term: string) => {
-            const requestId = Date.now();
+        async (term: string, forceRestaurantRatings = false) => {
+            const requestId = requestRef.current + 1;
             requestRef.current = requestId;
             setLoading(true);
             setRestaurantsLoading(true);
@@ -246,7 +246,7 @@ export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptio
             try {
                 const [menuResult, restaurantResult] = await Promise.allSettled([
                     getMenu({ query: term || undefined }),
-                    getRestaurants(),
+                    forceRestaurantRatings ? refreshRestaurants() : getRestaurants(),
                 ]);
 
                 if (requestRef.current !== requestId) return;
@@ -351,6 +351,7 @@ export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptio
     const categories = useMemo(() => buildCategories(allResults), [allResults]);
 
     const updateSort = useCallback((next: SearchSort) => setSort(next), []);
+    const refetch = useCallback((forceRestaurantRatings = false) => fetchResults(debouncedQuery, forceRestaurantRatings), [debouncedQuery, fetchResults]);
 
     return {
         query,
@@ -366,7 +367,7 @@ export const useSearch = ({ initialQuery = "", initialCategory }: UseSearchOptio
         loading: loading || fetchPending,
         restaurantsLoading,
         error,
-        refetch: () => fetchResults(debouncedQuery),
+        refetch,
         clearLoadedData,
     };
 };

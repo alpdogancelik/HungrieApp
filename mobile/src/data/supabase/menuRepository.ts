@@ -132,9 +132,9 @@ export const getRestaurantBundle: MenuRepository["getRestaurantBundle"] = async 
         throwIfError(await requireCatalogSupabase().rpc("get_active_restaurant_bundle_v2", { p_restaurant_id: String(restaurantId) })),
     ));
     if (!result?.restaurant) return null;
-    const { mapCatalogRestaurant } = await import("./restaurantRepository");
+    const { hydrateCatalogRestaurant } = await import("./restaurantRepository");
     return {
-        restaurant: mapCatalogRestaurant(result.restaurant),
+        restaurant: await hydrateCatalogRestaurant(result.restaurant),
         categories: (Array.isArray(result.categories) ? result.categories : []).map(mapCatalogCategory),
         items: (Array.isArray(result.items) ? result.items : []).map(mapCatalogMenuItem),
     };

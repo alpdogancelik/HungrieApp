@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
+import { AppState } from "react-native";
 
 import useSearch, { SearchResult } from "@/src/hooks/useSearch";
 import { CATEGORY_CARDS } from "@/src/lib/categoryCards";
@@ -140,6 +142,17 @@ export const useSearchScreenV3 = () => {
         };
     }, [clearLoadedData]);
 
+    useFocusEffect(useCallback(() => {
+        void refetch(true);
+    }, [refetch]));
+
+    useEffect(() => {
+        const subscription = AppState.addEventListener("change", (state) => {
+            if (state === "active") void refetch(true);
+        });
+        return () => subscription.remove();
+    }, [refetch]);
+
     useEffect(() => {
         setQuery(routeQuery);
         setCategory(routeCategory || undefined);
@@ -252,7 +265,7 @@ export const useSearchScreenV3 = () => {
     const handleRefresh = useCallback(async () => {
         setRefreshing(true);
         try {
-            await refetch();
+            await refetch(true);
         } finally {
             setRefreshing(false);
         }

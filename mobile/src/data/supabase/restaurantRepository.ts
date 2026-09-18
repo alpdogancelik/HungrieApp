@@ -8,11 +8,12 @@ import { auth } from "@/lib/firebase";
 import type { RestaurantRepository, RestaurantSession, RestaurantDetailsForm } from "@/src/data/contracts";
 import { createInitialFetchSubscription, fromKurus, requireCatalogSupabase, requireSupabase, throwIfError, toSupabaseOrderStatus } from "./utils";
 import { invalidateCatalogCache, readCatalogCached } from "./publicCatalogCache";
+import { getRestaurantReviewSummaryV2 } from "./reviewV2Repository";
 
 const ACTIVE_RESTAURANT_COLUMNS = [
     "id", "name", "description", "cuisine", "image_url", "delivery_eta_min_minutes",
     "delivery_eta_max_minutes", "delivery_fee_kurus", "minimum_order_kurus", "opening_hours",
-    "preferred_language", "rating_average", "rating_count", "created_at", "updated_at",
+    "preferred_language", "created_at", "updated_at",
     "sort_order",
 ].join(",");
 const RESTAURANT_ORDER_COLUMNS = [
@@ -23,7 +24,7 @@ const RESTAURANT_ORDER_COLUMNS = [
     "customer_email", "customer_whatsapp", "delivery_address_snapshot",
 ].join(",");
 
-export const mapCatalogRestaurant = (row: any) => ({
+export const mapCatalogRestaurant = (row: any, summary: { overallRating: number | null; reviewCount: number }) => ({
     id: String(row.id || ""),
     name: row.name || "",
     description: row.description || "",
@@ -31,8 +32,8 @@ export const mapCatalogRestaurant = (row: any) => ({
     imageUrl: row.image_url || "",
     image_url: row.image_url || "",
     isActive: true,
-    ratingAverage: Number(row.rating_average || 0),
-    ratingCount: Number(row.rating_count || 0),
+    ratingAverage: summary.overallRating,
+    ratingCount: summary.reviewCount,
     deliveryFee: fromKurus(row.delivery_fee_kurus),
     minimumOrderAmount: fromKurus(row.minimum_order_kurus),
     deliveryTime:
@@ -40,6 +41,9 @@ export const mapCatalogRestaurant = (row: any) => ({
             ? `${row.delivery_eta_min_minutes}-${row.delivery_eta_max_minutes}`
             : undefined,
 });
+
+export const hydrateCatalogRestaurant = async (row: any) =>
+    mapCatalogRestaurant(row, await getRestaurantReviewSummaryV2(String(row.id || "")));
 
 export const invalidateRestaurantCatalog = () => invalidateCatalogCache("restaurants:");
 
@@ -73,7 +77,7 @@ export const getRestaurants: RestaurantRepository["getRestaurants"] = async (fil
         }
         return throwIfError(await query);
     });
-    return rows.map(mapCatalogRestaurant);
+    return Promise.all(rows.map(hydrateCatalogRestaurant));
 };
 
 export const subscribeRestaurants: RestaurantRepository["subscribeRestaurants"] = (cb, onError) => {
@@ -92,7 +96,7 @@ export const getRestaurant: RestaurantRepository["getRestaurant"] = async (resta
         const client = requireCatalogSupabase();
         return throwIfError(await client.from("active_restaurants").select(ACTIVE_RESTAURANT_COLUMNS).eq("id", String(restaurantId)).maybeSingle());
     });
-    return row ? mapCatalogRestaurant(row) : null;
+    return row ? hydrateCatalogRestaurant(row) : null;
 };
 
 export const subscribeRestaurant: RestaurantRepository["subscribeRestaurant"] = (restaurantId, cb, onError) => {

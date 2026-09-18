@@ -2,11 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { StatusBar } from "expo-status-bar";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import {
     ActivityIndicator,
     Animated,
+    AppState,
     LayoutChangeEvent,
     Modal,
     NativeScrollEvent,
@@ -24,6 +26,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { getRestaurantImageSource } from "@/lib/assets";
 import useServerResource from "@/lib/useServerResource";
 import { getRestaurantBundle } from "@/src/data/menuRepository";
+import { refreshRestaurantReviewSummaryV2 } from "@/src/data/reviewV2Repository";
 import { useFavoritesStore } from "@/src/data/favoritesRepository";
 import { StandaloneBottomNavigation } from "@/src/features/navigation/BottomNavigation";
 import { useMenuItemImage } from "@/src/features/restaurantMenu/hooks/useMenuItemImage";
@@ -35,6 +38,7 @@ import { useCartStore } from "@/store/cart.store";
 import MenuItemRow from "./MenuItemRow";
 import { createMenuSections, formatTry, getEta, getPromotionText, isRestaurantOpen, parseNumber } from "./menuUtils";
 import type { MenuCategory, MenuEntry, Restaurant } from "./types";
+import type { RestaurantReviewSummaryV2 } from "@hungrie/domain";
 
 const ORANGE = "#FF5A1F";
 const HERO_HEIGHT = 218;
@@ -113,6 +117,8 @@ const RestaurantMenuScreen = () => {
     const [selected, setSelected] = useState<{ item: MenuEntry; imageUrl?: string } | null>(null);
     const [quantity, setQuantity] = useState(1);
     const [selectedCustomizationIds, setSelectedCustomizationIds] = useState<string[]>([]);
+    const [reviewSummary, setReviewSummary] = useState<RestaurantReviewSummaryV2 | null>(null);
+    const summaryRequestRef = useRef<Promise<void> | null>(null);
     const selectionValid = useMemo(() => (selected?.item.optionGroups || []).every((group) => {
         const count = group.options.filter((option) => selectedCustomizationIds.includes(option.id)).length;
         return count >= group.minimumSelections && count <= group.maximumSelections;
@@ -186,6 +192,22 @@ const RestaurantMenuScreen = () => {
     }, []);
     const { data: bundle, loading, error, refetch } = useServerResource<Bundle | null, string | undefined>({ fn: fetchBundle, params: restaurantId || undefined, immediate: true, skipAlert: true });
     const restaurant = bundle?.restaurant || null;
+    const refreshReviewSummary = useCallback(() => {
+        if (!restaurantId || summaryRequestRef.current) return summaryRequestRef.current || Promise.resolve();
+        const request = refreshRestaurantReviewSummaryV2(restaurantId)
+            .then((next) => setReviewSummary(next))
+            .catch(() => undefined)
+            .finally(() => { if (summaryRequestRef.current === request) summaryRequestRef.current = null; });
+        summaryRequestRef.current = request;
+        return request;
+    }, [restaurantId]);
+    useFocusEffect(useCallback(() => { void refreshReviewSummary(); }, [refreshReviewSummary]));
+    useEffect(() => {
+        const subscription = AppState.addEventListener("change", (state) => {
+            if (state === "active") void refreshReviewSummary();
+        });
+        return () => subscription.remove();
+    }, [refreshReviewSummary]);
     const allSections = useMemo(() => createMenuSections(bundle?.items || [], bundle?.categories || [], locale), [bundle?.categories, bundle?.items, locale]);
     const sections = useMemo(() => {
         if (!normalizedQuery) return allSections;
@@ -223,8 +245,8 @@ const RestaurantMenuScreen = () => {
     const normalizedId = restaurantId.trim().toLowerCase();
     const favorite = favorites.includes(normalizedId);
     const open = isRestaurantOpen(restaurant);
-    const rating = parseNumber(restaurant?.ratingAverage);
-    const ratingCount = Math.max(0, Math.round(parseNumber(restaurant?.ratingCount) || 0));
+    const rating = reviewSummary?.overallRating ?? parseNumber(restaurant?.ratingAverage);
+    const ratingCount = reviewSummary?.reviewCount ?? Math.max(0, Math.round(parseNumber(restaurant?.ratingCount) || 0));
     const cuisine = String(restaurant?.cuisine || (isTurkish ? "Restoran" : "Restaurant"));
     const minimum = parseNumber(restaurant?.minimumOrderAmount ?? restaurant?.minimumOrder ?? restaurant?.minOrderAmount ?? restaurant?.minBasketAmount);
     const promotion = getPromotionText(restaurant, locale);

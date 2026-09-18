@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1480" viewBox="0 0 1600 1480" role="img" aria-labelledby="title description">
+  <title id="title">Hungrie Customer Review System v2 static wireframes</title>
+  <description id="description">Bilingual light and dark wireframes for the order review sheet and anonymous public restaurant reviews page, with accessibility and contract annotations.</description>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="10" stdDeviation="18" flood-color="#0F172A" flood-opacity="0.12"/></filter>
+    <style>
+      text { font-family: ChairoSans, Inter, Arial, sans-serif; }
+      .h1 { font-size: 34px; font-weight: 800; fill: #0F172A; }
+      .h2 { font-size: 22px; font-weight: 800; }
+      .body { font-size: 16px; }
+      .small { font-size: 13px; }
+      .caption { font-size: 12px; }
+      .ink { fill: #0F172A; }
+      .muted { fill: #64748B; }
+      .darkInk { fill: #F8FAFC; }
+      .darkMuted { fill: #CBD5E1; }
+      .orange { fill: #FE8C00; }
+      .white { fill: #FFFFFF; }
+      .stroke { stroke: #E2E8F0; stroke-width: 1.5; }
+      .darkStroke { stroke: #2A2E35; stroke-width: 1.5; }
+      .note { font-size: 14px; fill: #334155; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1480" fill="#F8FAFC"/>
+  <text x="70" y="62" class="h1">Customer Review System v2 · Phase 0 contract wireframes</text>
+  <text x="70" y="92" class="body muted">Static intent only · current Hungrie tokens · English/Türkçe · no Customer identity · no F/P or Service</text>
+
+  <!-- Order review sheet, English/light -->
+  <g transform="translate(70 130)" filter="url(#shadow)">
+    <rect width="430" height="870" rx="32" fill="#FFFFFF" class="stroke"/>
+    <rect width="430" height="104" rx="32" fill="#0F172A" opacity="0.08"/>
+    <text x="24" y="38" class="small muted">ORDER DETAILS · DELIVERED</text>
+    <text x="24" y="69" class="h2 ink">Review order</text>
+    <rect y="82" width="430" height="788" rx="28" fill="#FFFFFF"/>
+    <rect x="194" y="94" width="42" height="5" rx="3" fill="#CBD5E1"/>
+    <text x="24" y="138" class="h2 ink">How was your order?</text>
+    <text x="24" y="164" class="small muted">Ada Pizza · Delivered order</text>
+
+    <rect x="24" y="185" width="382" height="82" rx="16" fill="#F1F5F9" class="stroke"/>
+    <text x="40" y="213" class="small ink" font-weight="700">Order summary</text>
+    <text x="40" y="238" class="small muted">2× Margherita · 1× Ayran</text>
+    <text x="40" y="257" class="caption muted">Configured lines sharing one menu item share one reaction.</text>
+
+    <text x="24" y="301" class="body ink" font-weight="700">Taste</text>
+    <text x="184" y="301" class="body orange">★ ★ ★ ★ ☆</text>
+    <text x="360" y="301" class="small muted">4 of 5</text>
+    <text x="24" y="349" class="body ink" font-weight="700">Speed</text>
+    <text x="184" y="349" class="body orange">★ ★ ★ ★ ★</text>
+    <text x="360" y="349" class="small muted">5 of 5</text>
+    <text x="24" y="375" class="caption muted">Preparation and delivery speed</text>
+
+    <text x="24" y="417" class="body ink" font-weight="700">Comment <tspan class="small muted" font-weight="400">(optional)</tspan></text>
+    <rect x="24" y="432" width="382" height="92" rx="12" fill="#FFFFFF" class="stroke"/>
+    <text x="40" y="461" class="small muted">Tell us about the order…</text>
+    <text x="350" y="507" class="caption muted">0 / 500</text>
+
+    <text x="24" y="564" class="body ink" font-weight="700">Meals <tspan class="small muted" font-weight="400">(optional)</tspan></text>
+    <text x="24" y="587" class="caption muted">One reaction per distinct base menu item</text>
+    <rect x="24" y="604" width="382" height="58" rx="14" fill="#F8FAFC" class="stroke"/>
+    <text x="40" y="639" class="small ink">Margherita · 2 items</text>
+    <rect x="298" y="611" width="44" height="44" rx="12" fill="#FFF3EB"/><text x="310" y="640" class="body orange">♥</text>
+    <rect x="350" y="611" width="44" height="44" rx="12" fill="#F1F5F9"/><text x="362" y="640" class="body muted">↓</text>
+    <rect x="24" y="674" width="382" height="58" rx="14" fill="#F8FAFC" class="stroke"/>
+    <text x="40" y="709" class="small ink">Ayran · 1 item</text>
+    <rect x="298" y="681" width="44" height="44" rx="12" fill="#F1F5F9"/><text x="310" y="710" class="body muted">♥</text>
+    <rect x="350" y="681" width="44" height="44" rx="12" fill="#F1F5F9"/><text x="362" y="710" class="body muted">↓</text>
+
+    <rect x="24" y="758" width="382" height="50" rx="16" fill="#FE8C00"/>
+    <text x="173" y="790" class="body white" font-weight="800">Submit review</text>
+    <text x="24" y="836" class="caption muted">Changed draft → confirm discard · submitting → locked</text>
+  </g>
+
+  <!-- Order review sheet, Turkish/dark/large text -->
+  <g transform="translate(560 130)" filter="url(#shadow)">
+    <rect width="430" height="870" rx="32" fill="#0F1115" class="darkStroke"/>
+    <rect y="82" width="430" height="788" rx="28" fill="#171A20"/>
+    <rect x="194" y="94" width="42" height="5" rx="3" fill="#475569"/>
+    <text x="24" y="138" class="h2 darkInk">Siparişin nasıldı?</text>
+    <text x="24" y="169" class="body darkMuted">Ada Pizza · Teslim edilen sipariş</text>
+    <rect x="24" y="190" width="382" height="92" rx="16" fill="#22262E" class="darkStroke"/>
+    <text x="40" y="222" class="body darkInk" font-weight="700">Sipariş özeti</text>
+    <text x="40" y="253" class="body darkMuted">2× Margherita · 1× Ayran</text>
+    <text x="24" y="326" class="h2 darkInk">Lezzet</text>
+    <text x="192" y="326" class="h2 orange">★ ★ ★ ★ ☆</text>
+    <text x="24" y="383" class="h2 darkInk">Hız</text>
+    <text x="192" y="383" class="h2 orange">★ ★ ★ ★ ★</text>
+    <text x="24" y="414" class="body darkMuted">Hazırlama ve teslimat hızı</text>
+    <text x="24" y="459" class="body darkInk" font-weight="700">Yorum <tspan class="small darkMuted">(isteğe bağlı)</tspan></text>
+    <rect x="24" y="476" width="382" height="90" rx="12" fill="#1C2027" class="darkStroke"/>
+    <text x="40" y="509" class="body darkMuted">Sipariş deneyimini anlat…</text>
+    <text x="24" y="610" class="body darkInk" font-weight="700">Yemekler <tspan class="small darkMuted">(isteğe bağlı)</tspan></text>
+    <rect x="24" y="630" width="382" height="64" rx="14" fill="#22262E" class="darkStroke"/>
+    <text x="40" y="670" class="body darkInk">Margherita · 2 adet</text>
+    <rect x="298" y="640" width="44" height="44" rx="12" fill="#352319"/><text x="310" y="669" class="body orange">♥</text>
+    <rect x="350" y="640" width="44" height="44" rx="12" fill="#2A2E35"/><text x="362" y="669" class="body darkMuted">↓</text>
+    <rect x="24" y="729" width="382" height="56" rx="16" fill="#FE8C00"/>
+    <text x="146" y="765" class="body" fill="#111318" font-weight="800">Değerlendirmeyi gönder</text>
+    <text x="24" y="827" class="caption darkMuted">Large-text example · scroll keeps submit and input reachable</text>
+  </g>
+
+  <!-- Public reviews page, English/light -->
+  <g transform="translate(1070 130)" filter="url(#shadow)">
+    <rect width="430" height="870" rx="32" fill="#F8FAFC" class="stroke"/>
+    <text x="24" y="48" class="h2 ink">‹  Ada Pizza</text>
+    <text x="24" y="78" class="small muted">Reviews from delivered orders</text>
+    <rect x="20" y="104" width="390" height="192" rx="24" fill="#FFFFFF" class="stroke"/>
+    <text x="40" y="165" font-size="48" font-weight="800" class="ink">4.5</text>
+    <text x="40" y="194" class="small orange">★ ★ ★ ★ ☆</text>
+    <text x="286" y="176" class="small muted">24 order reviews</text>
+    <rect x="40" y="220" width="160" height="56" rx="14" fill="#FFF3EB"/>
+    <text x="56" y="242" class="caption muted">Taste</text><text x="56" y="265" class="body ink" font-weight="800">4.6</text>
+    <rect x="214" y="220" width="160" height="56" rx="14" fill="#FFF3EB"/>
+    <text x="230" y="242" class="caption muted">Speed</text><text x="230" y="265" class="body ink" font-weight="800">4.4</text>
+    <text x="24" y="336" class="h2 ink">Recent reviews</text>
+    <rect x="20" y="354" width="390" height="184" rx="20" fill="#FFFFFF" class="stroke"/>
+    <text x="40" y="389" class="small muted">3 days ago</text>
+    <text x="315" y="389" class="small orange">Overall 4.5</text>
+    <text x="40" y="422" class="small ink">Taste 5.0   ·   Speed 4.0</text>
+    <text x="40" y="458" class="body ink">“Fresh and quick. Everything arrived warm.”</text>
+    <text x="40" y="501" class="small muted">Margherita ×2 · Ayran</text>
+    <rect x="20" y="554" width="390" height="154" rx="20" fill="#FFFFFF" class="stroke"/>
+    <text x="40" y="589" class="small muted">2 weeks ago</text>
+    <text x="40" y="624" class="small ink">Taste 4.0   ·   Speed 5.0</text>
+    <text x="40" y="665" class="small muted">Pepperoni Pizza</text>
+    <rect x="20" y="728" width="390" height="52" rx="16" fill="#FFFFFF" class="stroke"/>
+    <text x="150" y="761" class="body orange" font-weight="700">Load more reviews</text>
+    <text x="24" y="827" class="caption muted">Cursor: (created_at, id) · no names, avatars, IDs, or reactions</text>
+  </g>
+
+  <!-- Contract/state annotations -->
+  <g transform="translate(70 1050)">
+    <text x="0" y="0" class="h2 ink">Locked states and accessibility</text>
+    <rect x="0" y="28" width="1460" height="330" rx="24" fill="#FFFFFF" class="stroke"/>
+    <g transform="translate(28 60)">
+      <text class="body ink" font-weight="800">Submission and recovery</text>
+      <text y="30" class="note">• Both scores required; comment and reactions optional; comment limit 500 characters.</text>
+      <text y="56" class="note">• Exact replay returns success; uncertain close checks authoritative state before offering Review again.</text>
+      <text y="82" class="note">• Expired at server UTC boundary: order remains visible, review action unavailable.</text>
+      <text y="108" class="note">• Session, access, ownership, delivery state, expiry, duplicate, validation, and service errors remain distinct.</text>
+    </g>
+    <g transform="translate(760 60)">
+      <text class="body ink" font-weight="800">Presentation and privacy</text>
+      <text y="30" class="note">• Star controls announce “Taste, 4 of 5” / “Lezzet, 5 üzerinden 4”; selection is not color-only.</text>
+      <text y="56" class="note">• 44 pt minimum targets, visible focus, large text, reduced motion, safe area, and keyboard avoidance.</text>
+      <text y="82" class="note">• Public cards use coarse relative dates and server snapshots; no Customer name or identity surrogate.</text>
+      <text y="108" class="note">• Restaurant report state never changes public visibility; only audited Admin moderation can hide/restore.</text>
+    </g>
+    <line x1="28" y1="208" x2="1432" y2="208" stroke="#E2E8F0"/>
+    <text x="28" y="244" class="body ink" font-weight="800">State strip</text>
+    <rect x="28" y="260" width="204" height="48" rx="14" fill="#F1F5F9"/><text x="50" y="290" class="small ink">Loading · skeleton</text>
+    <rect x="248" y="260" width="204" height="48" rx="14" fill="#F1F5F9"/><text x="270" y="290" class="small ink">Empty · no reviews yet</text>
+    <rect x="468" y="260" width="204" height="48" rx="14" fill="#FFFBEB"/><text x="490" y="290" class="small ink">Offline · keep context</text>
+    <rect x="688" y="260" width="204" height="48" rx="14" fill="#FEF2F2"/><text x="710" y="290" class="small ink">Error · retry</text>
+    <rect x="908" y="260" width="204" height="48" rx="14" fill="#ECFDF5"/><text x="930" y="290" class="small ink">Reviewed · authoritative</text>
+    <rect x="1128" y="260" width="304" height="48" rx="14" fill="#F1F5F9"/><text x="1150" y="290" class="small ink">Expired · visible, no action</text>
+  </g>
+
+  <text x="70" y="1440" class="caption muted">Tokens: primary #FE8C00 · light background #F8FAFC · dark background #0F1115 · surface radii 16/24/32 · spacing 4/8/12/14/22/32</text>
+</svg>

@@ -542,6 +542,7 @@ export type Database = {
         Row: {
           average_rating: number | null
           comment: string
+          contract_version: number
           created_at: string
           id: string
           items_snapshot: Json
@@ -555,12 +556,13 @@ export type Database = {
           status: Database["public"]["Enums"]["review_status"]
           taste_rating: number
           updated_at: string
-          user_name_snapshot: string
-          value_rating: number
+          user_name_snapshot: string | null
+          value_rating: number | null
         }
         Insert: {
           average_rating?: number | null
           comment?: string
+          contract_version?: number
           created_at?: string
           id: string
           items_snapshot?: Json
@@ -574,12 +576,13 @@ export type Database = {
           status?: Database["public"]["Enums"]["review_status"]
           taste_rating: number
           updated_at?: string
-          user_name_snapshot: string
-          value_rating: number
+          user_name_snapshot?: string | null
+          value_rating?: number | null
         }
         Update: {
           average_rating?: number | null
           comment?: string
+          contract_version?: number
           created_at?: string
           id?: string
           items_snapshot?: Json
@@ -593,8 +596,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["review_status"]
           taste_rating?: number
           updated_at?: string
-          user_name_snapshot?: string
-          value_rating?: number
+          user_name_snapshot?: string | null
+          value_rating?: number | null
         }
         Relationships: [
           {
@@ -1566,6 +1569,16 @@ export type Database = {
         }
         Relationships: []
       }
+      restaurant_order_review_metrics_v2: {
+        Row: {
+          overall_rating: number | null
+          restaurant_id: string | null
+          review_count: number | null
+          speed_rating: number | null
+          taste_rating: number | null
+        }
+        Relationships: []
+      }
       restaurant_orders: {
         Row: {
           approval_deadline_at: string | null
@@ -1740,6 +1753,23 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number; p_state?: string }
         Returns: Json
       }
+      admin_list_menu_item_reaction_aggregates_v2: {
+        Args: { p_cursor?: string; p_limit?: number; p_restaurant_id: string }
+        Returns: Json
+      }
+      admin_list_order_review_audit_v2: {
+        Args: { p_cursor?: string; p_limit?: number; p_report_id: string }
+        Returns: Json
+      }
+      admin_list_order_review_reports_v2: {
+        Args: {
+          p_cursor?: string
+          p_limit?: number
+          p_restaurant_id?: string
+          p_status?: Database["public"]["Enums"]["review_report_status"]
+        }
+        Returns: Json
+      }
       admin_list_orders_v1: {
         Args: {
           p_limit?: number
@@ -1799,6 +1829,24 @@ export type Database = {
           p_operation_id: string
           p_resolution_note: string
           p_state: string
+        }
+        Returns: Json
+      }
+      admin_set_order_review_report_status_v2: {
+        Args: {
+          p_operation_id: string
+          p_report_id: string
+          p_resolution_note: string
+          p_status: Database["public"]["Enums"]["review_report_status"]
+        }
+        Returns: Json
+      }
+      admin_set_order_review_visibility_v2: {
+        Args: {
+          p_operation_id: string
+          p_reason: string
+          p_review_id: string
+          p_status: Database["public"]["Enums"]["review_status"]
         }
         Returns: Json
       }
@@ -1958,6 +2006,10 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: Json
       }
+      get_my_customer_order_review_state_v2: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
       get_my_customer_order_review_v1: {
         Args: { p_review_id: string }
         Returns: Json
@@ -1972,6 +2024,7 @@ export type Database = {
         Returns: Json
       }
       get_my_customer_profile_v1: { Args: never; Returns: Json }
+      get_my_customer_review_prompt_v2: { Args: never; Returns: Json }
       get_my_latest_order_summary: { Args: never; Returns: Json }
       get_my_notification_preferences: { Args: never; Returns: Json }
       get_my_order_review: { Args: { p_review_id: string }; Returns: Json }
@@ -2010,6 +2063,10 @@ export type Database = {
         Args: { p_restaurant_id: string }
         Returns: Json
       }
+      get_restaurant_review_summary_v2: {
+        Args: { p_restaurant_id: string }
+        Returns: Json
+      }
       get_runtime_status: {
         Args: never
         Returns: {
@@ -2035,6 +2092,10 @@ export type Database = {
       }
       list_my_order_reviews: { Args: { p_limit?: number }; Returns: Json }
       list_my_product_reviews: { Args: { p_limit?: number }; Returns: Json }
+      list_published_restaurant_reviews_v2: {
+        Args: { p_cursor?: string; p_limit?: number; p_restaurant_id: string }
+        Returns: Json
+      }
       list_restaurant_couriers: {
         Args: { p_restaurant_id: string }
         Returns: Json
@@ -2160,6 +2221,19 @@ export type Database = {
       restaurant_get_menu_v2: { Args: never; Returns: Json }
       restaurant_get_order_v1: { Args: { p_order_id: string }; Returns: Json }
       restaurant_get_settings_v1: { Args: never; Returns: Json }
+      restaurant_list_menu_item_reaction_aggregates_v2: {
+        Args: { p_cursor?: string; p_limit?: number }
+        Returns: Json
+      }
+      restaurant_list_order_reviews_v2: {
+        Args: {
+          p_cursor?: string
+          p_limit?: number
+          p_report_status?: Database["public"]["Enums"]["review_report_status"]
+          p_status?: Database["public"]["Enums"]["review_status"]
+        }
+        Returns: Json
+      }
       restaurant_list_orders_v1: {
         Args: { p_cursor?: string; p_limit?: number; p_queue?: string }
         Returns: Json
@@ -2193,6 +2267,15 @@ export type Database = {
           p_category_id: string
           p_item_ids: string[]
           p_operation_id: string
+        }
+        Returns: Json
+      }
+      restaurant_report_order_review_v2: {
+        Args: {
+          p_internal_note: string
+          p_operation_id: string
+          p_reason: Database["public"]["Enums"]["review_report_reason"]
+          p_review_id: string
         }
         Returns: Json
       }
@@ -2314,6 +2397,17 @@ export type Database = {
           p_value_rating: number
         }
         Returns: string
+      }
+      submit_my_customer_order_review_v2: {
+        Args: {
+          p_comment: string
+          p_meal_reactions_json: Json
+          p_operation_id: string
+          p_order_id: string
+          p_speed_rating: number
+          p_taste_rating: number
+        }
+        Returns: Json
       }
       submit_my_customer_product_review_v1: {
         Args: {
@@ -2478,6 +2572,14 @@ export type Database = {
       platform_role: "admin" | "super_admin" | "courier"
       restaurant_lifecycle_status: "pending" | "active" | "suspended" | "closed"
       restaurant_role: "owner" | "manager"
+      review_report_reason:
+        | "spam"
+        | "abusive_content"
+        | "personal_information"
+        | "not_related_to_order"
+        | "suspected_fraud"
+        | "other"
+      review_report_status: "open" | "resolved" | "dismissed"
       review_status: "published" | "hidden"
     }
     CompositeTypes: {
@@ -2622,6 +2724,15 @@ export const Constants = {
       platform_role: ["admin", "super_admin", "courier"],
       restaurant_lifecycle_status: ["pending", "active", "suspended", "closed"],
       restaurant_role: ["owner", "manager"],
+      review_report_reason: [
+        "spam",
+        "abusive_content",
+        "personal_information",
+        "not_related_to_order",
+        "suspected_fraud",
+        "other",
+      ],
+      review_report_status: ["open", "resolved", "dismissed"],
       review_status: ["published", "hidden"],
     },
   },

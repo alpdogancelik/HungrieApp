@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-    ActivityIndicator,
+    AccessibilityInfo, ActivityIndicator, AppState,
     Alert,
     FlatList,
     Platform,
@@ -19,12 +19,18 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { fetchUserOrdersPage } from "@/src/data/orderRepository";
+import { classifyReviewRepositoryError } from "@/src/data/reviewV2Repository";
 import type { OrderCursor } from "@/src/data/contracts";
+import type { ReviewItemSnapshot } from "@hungrie/domain";
 import type { OrderStatus, RestaurantOrder } from "@/type";
 import { ProtectedRoute } from "@/src/features/auth/routeGuards";
 import { ReorderError, resolveOrderForReorder } from "@/src/features/orders/reorder";
 import { getCancellationReasonText } from "@/src/features/orders/cancellationReason";
 import { isCancelledStatus, isReviewableStatus } from "@/src/features/reviews/reviewUtils";
+import OrderReviewSheet, { OrderReviewSheetValue } from "@/src/features/reviews/OrderReviewSheet";
+import { getCustomerReviewCopy, groupReviewItems } from "@/src/features/reviews/customerReviewUiModel";
+import { clearCustomerReviewOperation, submitCustomerReviewWithDurableOperation } from "@/src/features/reviews/customerReviewOperation";
+import { markCustomerReviewAsReviewed, markCustomerReviewStatesChecking, refreshCustomerReviewState, refreshCustomerReviewStates, setCustomerReviewAvailabilityProfile, useCustomerReviewAvailability } from "@/src/features/reviews/customerReviewAvailability";
 import { useTheme } from "@/src/theme/themeContext";
 import { formatCurrency } from "@/lib/cart.utils";
 import useAuthStore from "@/store/auth.store";
@@ -44,6 +50,7 @@ type StatusPresentation = {
     icon: keyof typeof Ionicons.glyphMap;
     label: string;
 };
+type ReviewContext = { orderId: string; restaurantId: string; restaurantName: string; items: ReviewItemSnapshot[] };
 
 const PAGE_SIZE = 20;
 const ORANGE = "#FF5A00";
@@ -140,14 +147,14 @@ const OrderHistoryScreen = () => {
     const { variant } = useTheme();
     const isDark = variant === "dark";
     const colors = useMemo(() => ({
-        page: isDark ? "#0F1115" : "#FAFBFC",
+        page: isDark ? "#0F1115" : Platform.OS === "web" ? "#FAFBFC" : "#F3F5F8",
         surface: isDark ? "#171A20" : "#FFFFFF",
         pressed: isDark ? "#1E222A" : "#F9FAFB",
         primary: isDark ? "#F5F7FA" : "#111318",
         secondary: isDark ? "#AAB2C0" : "#667085",
         tertiary: isDark ? "#7F8999" : "#98A2B3",
         border: isDark ? "#2A2E35" : "#EAECF0",
-        cardBorder: isDark ? "#343A45" : "#DDE3EA",
+        cardBorder: isDark ? "#343A45" : Platform.OS === "web" ? "#DDE3EA" : "#CDD5E0",
         cardShadow: isDark ? "#000000" : "#101828",
         skeleton: isDark ? "#23272E" : "#F0F2F5",
     }), [isDark]);
@@ -159,7 +166,7 @@ const OrderHistoryScreen = () => {
     const { t, i18n } = useTranslation();
     const isTurkish = i18n.language?.toLowerCase().startsWith("tr");
     const locale = isTurkish ? "tr-TR" : "en-US";
-    const userId = String(user?.id ?? user?.$id ?? user?.accountId ?? "").trim();
+    const userId = String(user?.accountId ?? user?.id ?? user?.$id ?? "").trim();
 
     const [orders, setOrders] = useState<RestaurantOrder[]>([]);
     const [loading, setLoading] = useState(true);
@@ -171,6 +178,9 @@ const OrderHistoryScreen = () => {
     const [reorderLoadingId, setReorderLoadingId] = useState<string | null>(null);
     const [nextCursor, setNextCursor] = useState<OrderCursor | null>(null);
     const [hasMoreOrders, setHasMoreOrders] = useState(false);
+    const [selectedReview, setSelectedReview] = useState<ReviewContext | null>(null);
+    const [reviewSubmitting, setReviewSubmitting] = useState(false);
+    const [reviewError, setReviewError] = useState<string | null>(null);
 
     const copy = useMemo(() => ({
         title: isTurkish ? "Siparişler" : "Orders",
@@ -227,6 +237,7 @@ const OrderHistoryScreen = () => {
             rejected: isTurkish ? "İptal edildi" : "Canceled",
         } satisfies Record<OrderStatus, string>,
     }), [isTurkish]);
+    const reviewCopy = useMemo(() => getCustomerReviewCopy(isTurkish), [isTurkish]);
 
     const loadOrders = useCallback(async () => {
         if (!userId) {
@@ -241,6 +252,9 @@ const OrderHistoryScreen = () => {
             setOrders((page.items as RestaurantOrder[]) || []);
             setNextCursor(page.nextCursor);
             setHasMoreOrders(page.hasMore);
+            const deliveredIds = (page.items as RestaurantOrder[]).filter((entry) => isReviewableStatus(entry.status)).map((entry) => String(entry.id ?? entry.$id ?? "")).filter(Boolean);
+            setCustomerReviewAvailabilityProfile(userId);
+            await refreshCustomerReviewStates(userId, deliveredIds, true);
         } catch {
             setOrders([]);
             setNextCursor(null);
@@ -250,9 +264,17 @@ const OrderHistoryScreen = () => {
         }
     }, [userId]);
 
-    useFocusEffect(useCallback(() => {
-        void loadOrders();
-    }, [loadOrders]));
+    useFocusEffect(useCallback(() => { void loadOrders(); }, [loadOrders]));
+    useEffect(() => {
+        if (!userId) return;
+        setCustomerReviewAvailabilityProfile(userId);
+        const subscription = AppState.addEventListener("change", (state) => {
+            if (state !== "active") return;
+            markCustomerReviewStatesChecking(userId);
+            void loadOrders();
+        });
+        return () => subscription.remove();
+    }, [loadOrders, userId]);
 
     const refreshOrders = useCallback(async () => {
         setRefreshing(true);
@@ -292,10 +314,44 @@ const OrderHistoryScreen = () => {
             });
             setNextCursor(page.nextCursor);
             setHasMoreOrders(page.hasMore);
+            const deliveredIds = (page.items as RestaurantOrder[]).filter((entry) => isReviewableStatus(entry.status)).map((entry) => String(entry.id ?? entry.$id ?? "")).filter(Boolean);
+            await refreshCustomerReviewStates(userId, deliveredIds);
         } finally {
             setLoadingMore(false);
         }
     }, [hasMoreOrders, loadingMore, nextCursor, userId]);
+
+    const contextFromOrder = useCallback((order: RestaurantOrder): ReviewContext | null => {
+        const orderId = String(order.id ?? order.$id ?? "").trim();
+        const restaurantId = String((order as any).restaurantId || (order as any).restaurant?.id || "").trim();
+        if (!orderId || !restaurantId) return null;
+        return { orderId, restaurantId, restaurantName: resolveRestaurantName(order), items: groupReviewItems(resolveItems(order).map((item) => ({ menuItemId: item.itemId, name: item.name, quantity: item.quantity }))) };
+    }, []);
+
+    const openReview = useCallback(async (context: ReviewContext) => {
+        if (!userId || reviewSubmitting) return;
+        const current = await refreshCustomerReviewState(userId, context.orderId, true);
+        if (current.status === "eligible") { setReviewError(null); setSelectedReview(context); }
+    }, [reviewSubmitting, userId]);
+
+    const submitReview = useCallback(async (value: OrderReviewSheetValue) => {
+        if (!selectedReview || !userId || reviewSubmitting) return;
+        setReviewSubmitting(true); setReviewError(null);
+        try {
+            const current = await refreshCustomerReviewState(userId, selectedReview.orderId, true);
+            if (current.status !== "eligible") { setSelectedReview(null); return; }
+            await submitCustomerReviewWithDurableOperation(userId, { ...value, orderId: selectedReview.orderId, restaurantId: selectedReview.restaurantId });
+            markCustomerReviewAsReviewed(userId, selectedReview.orderId);
+            setSelectedReview(null);
+            AccessibilityInfo.announceForAccessibility(reviewCopy.completed);
+        } catch (error) {
+            const classified = classifyReviewRepositoryError(error);
+            if (classified.code === "already_reviewed" || classified.code === "review_expired") {
+                await refreshCustomerReviewState(userId, selectedReview.orderId, true);
+                setSelectedReview(null);
+            } else setReviewError(reviewCopy.errors[classified.code]);
+        } finally { setReviewSubmitting(false); }
+    }, [reviewCopy, reviewSubmitting, selectedReview, userId]);
 
     const openOrderDetails = useCallback((order: RestaurantOrder) => {
         const orderId = String(order.id ?? order.$id ?? "").trim();
@@ -394,7 +450,6 @@ const OrderHistoryScreen = () => {
             </View>
             <Text style={styles.subtitle}>{copy.subtitle}</Text>
             {params.highlight ? <Text style={styles.highlight}>{isTurkish ? `Sipariş #${params.highlight} onaylandı.` : `Order #${params.highlight} was confirmed.`}</Text> : null}
-
             <View style={[styles.searchField, searchFocused && styles.searchFieldFocused]}>
                 <Ionicons name="search-outline" size={18} color={colors.secondary} />
                 <TextInput
@@ -505,6 +560,8 @@ const OrderHistoryScreen = () => {
                             )}
                         </Pressable>
                     ) : canReorder ? (
+                        <View style={styles.deliveredActions}>
+                        {contextFromOrder(item) ? <RowReviewAction profileId={userId} context={contextFromOrder(item)!} copy={reviewCopy} mutedColor={colors.secondary} onOpen={openReview} /> : null}
                         <Pressable
                             accessibilityLabel={copy.reorderA11y}
                             accessibilityRole="button"
@@ -521,7 +578,7 @@ const OrderHistoryScreen = () => {
                             ) : (
                                 <><Text style={styles.contextActionText}>{copy.reorder}</Text><Ionicons color={ORANGE} name="arrow-forward" size={16} /></>
                             )}
-                        </Pressable>
+                        </Pressable></View>
                     ) : null}
                 </View>
             </Pressable>
@@ -575,9 +632,23 @@ const OrderHistoryScreen = () => {
                 showsVerticalScrollIndicator={false}
                 stickyHeaderIndices={[0]}
             />
+            <OrderReviewSheet visible={Boolean(selectedReview)} restaurantName={selectedReview?.restaurantName || ""} items={selectedReview?.items || []} submitting={reviewSubmitting} errorText={reviewError} onClose={() => setSelectedReview(null)} onDiscard={async () => { if (selectedReview) await clearCustomerReviewOperation(userId, selectedReview.orderId); }} onSubmit={submitReview} />
         </SafeAreaView>
     );
 };
+
+const RowReviewAction = ({ profileId, context, copy, mutedColor, onOpen }: { profileId: string; context: ReviewContext; copy: ReturnType<typeof getCustomerReviewCopy>; mutedColor: string; onOpen: (context: ReviewContext) => Promise<void> }) => {
+    const state = useCustomerReviewAvailability(profileId, context.orderId);
+    if (state.status === "checking") return <ActivityIndicator color={ORANGE} size={15} />;
+    if (state.status === "reviewed") return <View style={stylesStatic.reviewed}><Ionicons color={mutedColor} name="checkmark" size={15} /><Text style={[stylesStatic.reviewedText, { color: mutedColor }]}>{copy.completed}</Text></View>;
+    if (state.status !== "eligible") return null;
+    return <Pressable accessibilityRole="button" accessibilityLabel={copy.entry} onPress={(event) => { event.stopPropagation(); void onOpen(context); }} style={stylesStatic.rowReview}><Ionicons color={ORANGE} name="star-outline" size={16} /><Text style={stylesStatic.rowReviewText}>{copy.entry}</Text></Pressable>;
+};
+
+const stylesStatic = StyleSheet.create({
+    rowReview: { minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 }, rowReviewText: { color: ORANGE, fontFamily: "ChairoSans", fontSize: 13.5, lineHeight: 18, fontWeight: "700" },
+    reviewed: { minHeight: 44, flexDirection: "row", alignItems: "center", gap: 4 }, reviewedText: { fontFamily: "ChairoSans", fontSize: 13, fontWeight: "600" },
+});
 
 const OrderSkeleton = ({ styles }: { styles: ReturnType<typeof createStyles> }) => (
     <View style={styles.skeletonCard}>
@@ -632,11 +703,11 @@ const createStyles = (colors: Colors) => StyleSheet.create({
         ...Platform.select({
             ios: {
                 shadowColor: colors.cardShadow,
-                shadowOffset: { width: 0, height: 3 },
-                shadowOpacity: 0.08,
-                shadowRadius: 7,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.14,
+                shadowRadius: 9,
             },
-            android: { elevation: 2 },
+            android: { elevation: 4 },
             web: { boxShadow: `0 3px 12px ${colors.cardShadow}14` },
             default: {},
         }),
@@ -655,6 +726,7 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     moreItems: { color: colors.tertiary, fontFamily: "ChairoSans", fontSize: 13, lineHeight: 17, fontWeight: "500" },
     cancellationRow: { marginTop: 9, borderRadius: 11, backgroundColor: colors.pressed, paddingHorizontal: 10, paddingVertical: 8, flexDirection: "row", alignItems: "flex-start", gap: 7 }, cancellationText: { flex: 1, color: colors.secondary, fontFamily: "ChairoSans", fontSize: 12.5, lineHeight: 17 }, cancellationLabel: { color: colors.primary, fontWeight: "700" },
     cardFooter: { minHeight: 28, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+    deliveredActions: { flexShrink: 1, flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", columnGap: 13 },
     footerMeta: { flex: 1, minWidth: 0, color: colors.secondary, fontFamily: "ChairoSans", fontSize: 13, lineHeight: 20 },
     price: { color: colors.primary, fontSize: 16, fontWeight: "700" },
     contextAction: { minHeight: 44, marginVertical: -8, flexShrink: 0, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },

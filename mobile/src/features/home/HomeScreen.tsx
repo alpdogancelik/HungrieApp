@@ -85,11 +85,11 @@ const isRestaurantOpen = (restaurant: any) => {
     return opens < closes ? current >= opens && current < closes : current >= opens || current < closes;
 };
 const rating = (restaurant: any) => {
-    const value = parseNumber(restaurant?.ratingAverage ?? restaurant?.rating);
+    const value = parseNumber(restaurant?.ratingAverage);
     return value && value > 0 ? value.toFixed(1) : null;
 };
 const reviewCount = (restaurant: any) =>
-    Math.max(0, Math.round(parseNumber(restaurant?.ratingCount ?? restaurant?.reviewCount ?? restaurant?.reviewsCount) ?? 0));
+    Math.max(0, Math.round(parseNumber(restaurant?.ratingCount) ?? 0));
 const eta = (restaurant: any, fallback: string, isTurkish: boolean) => {
     const minimum = parseNumber(restaurant?.deliveryEtaMin);
     const maximum = parseNumber(restaurant?.deliveryEtaMax);

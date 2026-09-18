@@ -1,7 +1,6 @@
 import type { ReviewRepository } from "@/src/data/contracts";
 import type { MenuItemReview, OrderReview, RestaurantOrderReviewSummary, RestaurantReviewSummary } from "@/src/domain/types";
 import { createInitialFetchSubscription, requireSupabase, throwIfError } from "./utils";
-import { invalidateCatalogCache } from "./publicCatalogCache";
 
 const normalizeLimit = (value?: number) => Math.min(Math.max(Math.floor(Number(value || 30)), 1), 100);
 const PRODUCT_REVIEW_COLUMNS = [
@@ -147,9 +146,6 @@ export const submitMenuItemReview: ReviewRepository["submitMenuItemReview"] = as
             p_comment: input.comment || "",
         }),
     );
-    // Product-review metrics are updated in the same database transaction. Drop
-    // public catalog snapshots so Home/menu screens read those new aggregates.
-    invalidateCatalogCache();
     const row = throwIfError(await requireSupabase().rpc("get_my_customer_product_review_v1", { p_review_id: id }));
     return mapProductReview(row);
 };

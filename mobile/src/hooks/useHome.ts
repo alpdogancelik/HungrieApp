@@ -91,7 +91,7 @@ export const useHome = (): UseHomeResult => {
     }, []);
 
     useFocusEffect(useCallback(() => {
-        void reloadRestaurants();
+        void reloadRestaurants(true);
     }, [reloadRestaurants]));
 
     useEffect(() => {

@@ -27,6 +27,7 @@ import InternetConnectionGate from "@/src/features/connectivity/InternetConnecti
 import MaintenanceGate from "@/src/features/runtime/MaintenanceGate";
 import CustomerReleaseGate from "@/src/features/runtime/CustomerReleaseGate";
 import CustomerAccessGate from "@/src/features/auth/CustomerAccessGate";
+import CustomerReviewRecoveryCoordinator from "@/src/features/reviews/CustomerReviewRecoveryCoordinator";
 import { registerPushToken, unregisterPushToken } from "@/src/data/notificationRepository";
 import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 import { useReducedMotion } from "@/src/lib/useReducedMotion";
@@ -433,6 +434,7 @@ function RootLayoutBase() {
                 <MaintenanceGate />
                 <CustomerReleaseGate onReadyChange={handleReleaseReadyChange} />
                 {releaseReady ? <CustomerAccessGate onReadyChange={handleCustomerAccessReadyChange} /> : null}
+                {customerAccessReady && user?.accountId ? <CustomerReviewRecoveryCoordinator profileId={String(user.accountId)} /> : null}
                 <ThemeTransitionOverlay backgroundColor={theme.colors.background} />
         </GestureHandlerRootView>
     );

@@ -1,6 +1,6 @@
 # Customer Review System v2 — Phased Implementation Plan
 
-**Status:** Approved direction; implementation has not started
+**Status:** Phase 9 completed on 2026-09-18; Customer Review System v2 accepted
 
 **Scope:** Customer, Restaurant, Admin, Supabase, and public review presentation
 
@@ -9,7 +9,7 @@
 **Production:** Out of scope until the normal production-release review
 
 **Related release:** Phase 6 secure Customer first release
-**Revision note:** Final contract-lock clarifications added for an exact rolling 30-day UTC eligibility window, first-release/no-legacy-client deployment semantics, configured-line reaction semantics, Order History prompting, Restaurant report-only moderation with an explicit report contract, database-side anonymity, exact v1/v2 schema transition behavior, one authoritative rating source, keyset pagination, query/index qualification, uncertain-submission recovery, Restaurant meal-reaction aggregates, accessibility, and abuse scope.
+**Revision note:** Phases 0–9 are complete. [Phase 9 acceptance evidence](customer-review-system-v2-phase-9-review.md) records the final current-workspace gate and read-only legacy-usage audit. Customer Review System v2 is accepted through Staging and physical-device qualification. Production remains unchanged; any Production release or legacy-contract removal requires its own separate explicit approval.
 
 ## 1. Objective
 
@@ -21,7 +21,7 @@ Each delivered order may receive exactly one Customer order review containing:
 
 - **Speed / Hız:** required, 1–5 stars.
 
-- **Order comment:** optional, with a server-enforced length limit.
+- **Order comment:** optional, server-trimmed, Unicode-normalized to NFC, and limited to 500 characters.
 
 - **Meal reactions:** optional one-tap like/dislike feedback for each distinct menu item in that order.
 
@@ -457,6 +457,20 @@ Each phase has its own completion gate. Do not begin Staging deployment merely b
 
 - No database or application mutation has occurred.
 
+**Completed evidence — 2026-09-16**
+
+- Development and Staging catalog/data baselines were captured inside proven read-only transactions and reconciled. Development has no review rows. Staging has six published product reviews, no hidden product reviews, no order reviews, and no duplicate logical review keys. Both environments have 45 migrations through `20260916130000`. Their review catalogs match except that Development has broader `SELECT *` bodies for two Customer-owned legacy list helpers while Staging and the checked-in migration use explicit projections; Phase 1 must checksum-qualify this drift without touching either hosted environment.
+
+- The exact legacy non-null Value requirement, nullable F/P field, stored three-score `average_rating`, constraints, indexes, triggers, grants, RLS policies, dependent views, and v1 RPC behavior are recorded in [Phase 0 evidence](customer-review-system-v2-phase-0-evidence.md).
+
+- The payload limit is locked at 100 distinct base menu-item reactions, matching the authoritative v2 maximum of 100 configured order lines. Comment canonicalization is locked as NFC normalization after server trimming, with no internal-whitespace collapsing. Meal reactions are sorted lexically by menu-item ID before hashing.
+
+- Bilingual product/error copy, Speed meaning, privacy exclusions, report-only Restaurant authority, Admin-only visibility, aggregate-only meal analytics, metric-source inventory, and the no-prior-public-client baseline are locked.
+
+- [Static Customer wireframes](customer-review-system-v2-phase-0-wireframes.svg) cover the order-review sheet, public review page, bilingual/light/dark/large-text intent, state handling, safe areas, keyboard reachability, minimum touch targets, and identity-free public cards.
+
+- Gate result: **Pass.** Only documentation, the static SVG, and a reproducible read-only capture utility changed. No database/application mutation, migration application, code generation, deployment, build, EAS action, Staging mutation, or Production access occurred. Phase 1 requires separate explicit approval.
+
 ### Phase 1 — Migration and RPC design
 
 **Work**
@@ -492,6 +506,18 @@ Each phase has its own completion gate. Do not begin Staging deployment merely b
 - New pgTAP tests pass for v2 success, isolation, validation, duplicate attempts, and replay.
 
 - Migration review confirms no `CASCADE`, destructive data rewrite, fabricated legacy scores, broad grants, redundant/unjustified indexes, or Production target.
+
+**Completed evidence — 2026-09-17**
+
+- Added the single additive migration `20260917100000_customer_review_system_v2.sql` with the versioned v1/v2 row invariant, forced-RLS private relations, canonical idempotency, live Taste/Speed summaries, privacy-safe keyset feeds, Customer state/prompt reads, Restaurant report/aggregate contracts, and recent-auth Admin moderation.
+
+- The migration restores Development's two drifted Customer list helpers to the checked-in/Staging explicit projections. Legacy moderation remains callable for contract-v1 rows but is explicitly unable to mutate contract-v2 rows; v2 Restaurant authority is report-only and v2 visibility remains Admin-only.
+
+- A populated pre-migration rehearsal preserved the complete legacy protected-field digest and row count (`1` row, identical SHA-256 before/after) while assigning `contract_version = 1`. v2 tests prove no Value, F/P, Customer-name snapshot, or legacy average is fabricated.
+
+- [Phase 1 review evidence](customer-review-system-v2-phase-1-review.md) records migration SHA-256 `5340eeb74a50c038ae755b812ed5efcef5a29bd84b2251c4d66bff7acf5f372b`, grant/RLS/privacy findings, index rationale, Development-drift handling, reconciliation, and forward-fix/rollback procedure.
+
+- Gate result: **Pass.** Clean local replay, database lint, 90 focused v2 assertions, the complete 754-assertion pgTAP suite, three existing concurrency harnesses, the new review concurrency harness, migration safety scans, and diff checks all pass. No Development, Staging, or Production mutation, hosted probe/backup, code generation, application change, deployment, build, or EAS action occurred. Phase 2 requires separate explicit approval.
 
 ### Phase 2 — Development database qualification
 
@@ -533,6 +559,24 @@ Each phase has its own completion gate. Do not begin Staging deployment merely b
 
 - No Staging or Production mutation has occurred.
 
+**Completed evidence — 2026-09-17**
+
+- Added one guarded Development qualification utility with checksum-pinned `backup`, `preflight`, `apply`, `probe`, `plans`, `types`, and `verify-cleanup` actions. Every hosted action resolves the ignored Development registry, rejects environment overlap, requires its exact confirmation, and suppresses sensitive output.
+
+- Created owner-only schema/data backups and a checksum manifest under ignored `secure/`. Preflight confirmed healthy PostgreSQL 17 in `eu-central-1`, 45 migrations through `20260916130000`, exactly the reviewed v2 migration pending, the Phase 0 zero-review baseline, and only the two known Development helper drifts.
+
+- Dry-run output listed only `20260917100000_customer_review_system_v2.sql` at SHA-256 `5340eeb74a50c038ae755b812ed5efcef5a29bd84b2251c4d66bff7acf5f372b`. Development now has 46 migrations; protected review totals and digests were unchanged, hosted database lint is clean, and the two legacy helper definitions match their canonical explicit projections.
+
+- Real Firebase tokens qualified active and denied Customer/Restaurant/Admin states, exact canonical replay, changed-operation rejection, UTC eligibility, grouped configured-line snapshots, v1 Value/F/P/average compatibility, privacy-safe public and scoped feeds, Restaurant report-only authority and aggregates, genuine recent-auth TOTP Admin transitions, hide/restore transactional metrics, audit sanitization, and direct-table denial.
+
+- A transaction-scoped 5,000-review/5,000-operation/5,000-reaction/1,500-report workload used the reviewed Customer, public-feed, Restaurant queue, report queue, replay, and aggregate indexes with no unintended large target-table sequential scan, then rolled back.
+
+- Development and local generated `public` schema type bodies matched exactly. The shared generated types were refreshed from Development, the database-types package built, and Customer, Restaurant, and Admin typechecks passed.
+
+- [Phase 2 review evidence](customer-review-system-v2-phase-2-review.md) records the sanitized backup manifest/checksums, pre/post digests, authorization matrix, grant/RLS findings, query-plan evidence, type-generation hashes, warnings, and final zero-prefix cleanup reconciliation.
+
+- Gate result: **Pass.** Clean local replay, local and hosted lint, 90 focused v2 assertions, the complete 754-assertion pgTAP suite, all four concurrency harnesses, real hosted authorization/privacy/compatibility probes, representative query plans, type builds/checks, migration/secret scans, and diff checks pass. Development retains the approved migration and no disposable fixtures. Staging and Production were untouched; no application behavior, deployment, code generation beyond the approved shared database types, or EAS build occurred. Phase 3 requires separate explicit approval.
+
 ### Phase 3 — Shared types and repository layer
 
 **Work**
@@ -561,7 +605,25 @@ Each phase has its own completion gate. Do not begin Staging deployment merely b
 
 - TypeScript and generated-type builds pass.
 
+**Completed evidence — 2026-09-17**
+
+- Added shared v2 domain models and separate Supabase-only Customer/public, Restaurant, and Admin repositories. JSON mapping fails closed, cursor limits are bounded to 50, opaque keyset cursors remain unchanged, all mutations require stable operation UUIDs, and the Restaurant adapter has no visibility mutation.
+
+- Customer Home/search, Restaurant details/menu bundles, and the current review page now obtain rating/count metrics exclusively from `get_restaurant_review_summary_v2`. Legacy `restaurants.rating_*`, product-review summary, and legacy order-review summary sources are not fallbacks or competing inputs. The current review page consumes the anonymous Taste/Speed-only v2 contract without Customer identity or F/P.
+
+- Added Restaurant-scoped summary/feed cache keys and exact invalidation after confirmed submission or replay. The affected summary, feed, detail, and Restaurant-list entries are invalidated while unrelated Restaurant and menu/product-review caches remain intact.
+
+- Added profile-scoped durable operation storage containing only order/Restaurant IDs, UUID, canonical draft hash, and creation time. Canonicalization NFC-normalizes the space-trimmed comment, preserves allowed tab/newline/carriage-return characters, and sorts reactions lexically by menu-item ID. Uncertain failures retain the UUID; changed drafts replace it; authoritative success/reviewed/expired state clears it.
+
+- Added a nonvisual launch/foreground recovery coordinator behind the existing active-Customer access gate plus a single-order reconciliation entry point for Phase 4 navigation. Anonymous or unresolved startup executes no private review RPC.
+
+- [Phase 3 review evidence](customer-review-system-v2-phase-3-review.md) records interface mappings, privacy/source scans, cache/recovery behavior, stable error classification, tests, unchanged migration/generated-type checksums, and phase boundaries.
+
+- Gate result: **Pass.** Eight focused v2 repository cases, the 112-test mobile repository/auth suite, the complete 232-test JavaScript suite, package builds, Customer/Restaurant/Admin typechecks, Expo lint, checksum/privacy/credential scans, and diff checks pass with zero failures or skips. No hosted access, database change, generated-type regeneration, deployment, or EAS build occurred. Phase 4 requires separate explicit approval.
+
 ### Phase 4 — Customer submission experience
+
+**Completed (2026-09-17):** The local implementation, 19-case focused UI/controller suite, focused repository suite, 251-test complete JavaScript gate, database gates, package/type/lint gates, privacy/checksum scans, fresh Expo exports, desktop/mobile-width web inspection, iPhone interaction matrix, and physical Google Pixel 9 / Android 17 checklist pass. The user-reported device qualification includes both languages, light/dark, enlarged text/display, keyboard, VoiceOver/TalkBack, safe areas, back/discard, retry/submitting, touch targets, scrolling, and reduced motion. See [Phase 4 review evidence](customer-review-system-v2-phase-4-review.md). No hosted environment, schema, generated types, deployment, or EAS build was touched. Phase 5 requires separate explicit approval.
 
 **Work**
 
@@ -595,7 +657,11 @@ Each phase has its own completion gate. Do not begin Staging deployment merely b
 
 - At or after `delivered_at + interval '30 days'` the order cannot open or submit a review, including through direct RPC; tests use server UTC boundaries rather than client calendar dates.
 
+**Gate result:** **Pass.** All automated, web, iPhone, and physical Android requirements are complete. Phase 5 remains unauthorized pending separate explicit approval.
+
 ### Phase 5 — Public Restaurant reviews and Home metrics
+
+**Completed (2026-09-17):** Local implementation, the 9-case focused Phase 5 suite, 28-test combined review UI suite, 113-test repository/auth suite, complete 261-test JavaScript gate, local database gates, builds/typechecks/lint, fresh web/iOS/Android exports, checksum/privacy/source scans, responsive web inspection, iPhone 17 Pro simulator / iOS 26.2 matrix, and physical Google Pixel 9 / Android 17 matrix pass. See [Phase 5 review evidence](customer-review-system-v2-phase-5-review.md). No hosted environment, schema, generated types, deployment, or EAS build was touched. Phase 6 requires separate explicit approval.
 
 **Work**
 
@@ -629,7 +695,11 @@ Each phase has its own completion gate. Do not begin Staging deployment merely b
 
 - Public review responses do not include per-review meal reactions.
 
+**Gate result:** **Pass.** The implementation, automated/database gates, exports, responsive web checks, iPhone simulator matrix, and physical Pixel 9 / Android 17 matrix pass. Phase 6 remains unauthorized pending separate explicit approval.
+
 ### Phase 6 — Restaurant and Admin handling
+
+**Completed (2026-09-18):** Authored and qualified the additive local Admin-inspection forward-fix, regenerated shared database types, replaced Restaurant legacy review management with anonymous report-only v2 handling and aggregate reactions, and added the protected Admin report/moderation/audit workspace. All focused and complete database/application/concurrency/build/privacy/visual gates pass. See [Phase 6 review evidence](customer-review-system-v2-phase-6-review.md). No hosted access or mutation, deployment, EAS build, Customer UI change, or legacy-contract removal occurred. Phase 7 requires separate explicit approval.
 
 **Work**
 
@@ -667,7 +737,11 @@ Each phase has its own completion gate. Do not begin Staging deployment merely b
 
 - A Restaurant cannot create a second report for the same review after the first report is open, resolved, or dismissed; only Admin may reopen the existing report.
 
+**Gate result:** **Pass.** The 103 focused v2 and 767 complete pgTAP assertions, all concurrency harnesses, 265-test complete JavaScript gate, package/application checks, Restaurant export, Admin production build, migration/privacy scans, and bilingual responsive fixture inspection pass with zero failures or skipped assertions. Phase 7 remains unauthorized pending separate explicit approval.
+
 ### Phase 7 — Full Development qualification
+
+**Completed (2026-09-18):** Development was backed up, preflighted against the recorded empty baseline, and advanced from 46 to 47 migrations by applying only checksum-pinned `20260917110000_customer_review_system_v2_admin_inspection.sql`. Real Firebase Customer/Restaurant/Admin identities qualified canonical replay, recovery, tenancy, report-only authority, genuine TOTP recent-auth moderation, v1/v2 inspection, safe audit pagination, and aggregate hide/restore behavior. Representative-volume plans used every reviewed index, all fixtures and identities were removed, baseline totals/digests reconciled exactly, and the complete local database/application/build/export gate passed. See [Phase 7 review evidence](customer-review-system-v2-phase-7-review.md). Staging, Production, deployments, application releases, physical-device qualification, and EAS builds were untouched. Phase 8 requires separate explicit approval.
 
 Run:
 
@@ -727,7 +801,11 @@ Perform a hosted Development journey:
 
 - Development implementation is reviewed before Staging preparation.
 
+**Gate result:** **Pass.** Development has 47 migrations through the checksum-pinned Admin-inspection forward-fix. The real-identity authorization/privacy/idempotency/moderation/audit journey, seven representative-volume index plans, exact fixture cleanup, 103 focused and 767 complete pgTAP assertions, all concurrency harnesses, 265 JavaScript tests, package/application checks, fresh exports/builds, and final scans pass with zero failed or skipped assertions. Phase 8 remains unauthorized pending separate explicit approval.
+
 ### Phase 8 — Staging deployment and physical-device qualification
+
+**Completed (2026-09-18):** Staging advanced from 45 to 47 migrations using only the two checksum-pinned review migrations while preserving the six historical published product reviews and unrelated test data. Hosted real-identity, privacy, authorization, idempotency, report/moderation, audit, aggregate, type-parity, and representative-volume plan checks passed; automated fixtures were removed and the locked baseline reconciled exactly. Restaurant and Admin Staging previews passed their live security/configuration checks. The app owner reported both physical-device matrices working correctly and accepted the result. See [Phase 8 review evidence](customer-review-system-v2-phase-8-review.md) and the [device checklist](customer-review-system-v2-phase-8-device-checklist.md). Production remained untouched; Phase 9 requires separate explicit approval.
 
 **Work**
 
@@ -757,7 +835,7 @@ Test on physical iPhone and Android:
 
 - Review-window boundary behavior using server UTC: one instant before `delivered_at + interval '30 days'` succeeds; at the exact expiry timestamp and afterward submission is rejected while the order remains visible.
 
-- Multiple unreviewed delivered orders: row actions remain available where eligible, while only the most recent eligible order receives the prominent Order History prompt.
+- Multiple unreviewed delivered orders: row actions remain available where eligible. The optional prominent Order History prompt is not rendered in the accepted Phase 8 presentation.
 
 - Offline submission, reconnect, uncertain response, idempotent retry, and full app termination after server commit but before client success handling; reopening must query authoritative review state before offering submission again.
 
@@ -783,11 +861,15 @@ Test on physical iPhone and Android:
 
 - The app owner reviews and accepts the Staging result.
 
+**Gate result:** **Pass.** Staging contains the two reviewed v2 migrations and no recorded disposable review fixtures; historical review counts/digests remained intact; hosted and live-preview checks passed; and the physical iPhone and Pixel 9 / Android 17 matrices were accepted by the app owner. EAS build IDs and the physical iPhone model/OS were not supplied for the repository evidence and were not fabricated. Phase 9 remains unauthorized pending separate explicit approval.
+
 ### Phase 9 — Acceptance and later cleanup
 
-Phase 6 may count this review redesign as complete only after the Staging and physical-device gates pass. Production remains unchanged until its separate release process.
+**Completed (2026-09-18):** Customer Review System v2 is accepted after the passing Staging and physical-device gates. The complete 265-test JavaScript/repository gate, package builds, three application typechecks, Customer lint, migration checksums, and diff check pass against the final workspace. A read-only repository audit found that legacy removal is not yet safe: the still-routable mobile Restaurant-panel review screen calls the legacy list/moderation facade, and an orphaned `MenuCard`/`useProductReviews` chain still compiles legacy product-review calls. See [Phase 9 acceptance evidence](customer-review-system-v2-phase-9-review.md). Production remains unchanged until its separate release process.
 
 Legacy v1 RPCs, legacy score columns, and historical product reviews remain in place through the internal schema-transition period to keep this migration additive and easy to inspect. No public client depends on them because Hungrie has not yet been deployed. Their removal belongs to a later legacy-removal phase after repository search, Development/Staging telemetry/log inspection, and database inspection prove that no current supported code path calls them. Removal requires a separate migration and review; it must not be bundled into the v2 launch.
+
+**Gate result:** **Pass.** The v2 redesign is accepted. The legacy-removal readiness sub-gate is deliberately **not met** because supported source dependencies remain; no v1 contract, legacy score column, historical review, or generated signature was removed. No hosted environment or Production system was accessed or mutated during Phase 9. Any cleanup or Production release requires separate explicit approval.
 
 ## 9. Required automated test matrix
 

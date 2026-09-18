@@ -121,12 +121,12 @@ const restaurantMinimum = (restaurant: any) => {
 };
 
 const restaurantRating = (restaurant: any) => {
-    const value = parseNumber(restaurant?.ratingAverage ?? restaurant?.rating);
+    const value = parseNumber(restaurant?.ratingAverage);
     return value !== null && value > 0 ? value.toFixed(1) : null;
 };
 
 const restaurantReviewCount = (restaurant: any) => {
-    const value = parseNumber(restaurant?.ratingCount ?? restaurant?.reviewCount ?? restaurant?.reviewsCount);
+    const value = parseNumber(restaurant?.ratingCount);
     return value !== null && value > 0 ? Math.round(value) : null;
 };
 

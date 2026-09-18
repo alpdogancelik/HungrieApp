@@ -66,6 +66,12 @@ const persistVariant = async (variant: ThemeVariant) => {
     await storage.setItem(THEME_CACHE_KEY, variant);
 };
 
+const applyAppearanceVariant = (variant: ThemeVariant) => {
+    if (typeof Appearance.setColorScheme === "function") {
+        Appearance.setColorScheme(variant);
+    }
+};
+
 export const ThemeProvider = ({
     children,
     initialVariant,
@@ -79,7 +85,7 @@ export const ThemeProvider = ({
     useEffect(() => {
         let active = true;
         if (initialVariant) {
-            Appearance.setColorScheme(initialVariant);
+            applyAppearanceVariant(initialVariant);
             return () => {
                 active = false;
             };
@@ -90,7 +96,7 @@ export const ThemeProvider = ({
                 if (!active) return;
                 const resolved = stored ?? "light";
                 setVariantState(resolved);
-                Appearance.setColorScheme(resolved);
+                applyAppearanceVariant(resolved);
             })
             .catch(() => null)
             .finally(() => {
@@ -104,7 +110,7 @@ export const ThemeProvider = ({
 
     const setVariant = useCallback((nextVariant: ThemeVariant) => {
         setVariantState(nextVariant);
-        Appearance.setColorScheme(nextVariant);
+        applyAppearanceVariant(nextVariant);
         void persistVariant(nextVariant);
     }, []);
 
