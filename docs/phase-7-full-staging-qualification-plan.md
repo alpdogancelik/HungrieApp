@@ -41,7 +41,7 @@ npm run phase7:run:stop -- --run-id=<uuid>
 npm run phase7:run:verify -- --run-id=<uuid>
 ```
 
-The Staging migration is checksum pinned and its apply command requires a recent verified backup. Environment guards reject missing, overlapping, or Production-like targets. Disposable database/Firebase objects use the `phase7_` prefix. The isolated load Restaurant has no push registrations.
+The Staging migration is checksum pinned and its apply command requires a recent verified backup. Environment guards reject missing, overlapping, or Production-like targets. Disposable database/Firebase objects use the `phase7_` prefix. Fixture preparation binds the fixture contract to the immutable pre-fixture backup manifest and stores manual account credentials only in an owner-only file outside Git. The isolated load Restaurant has no push registrations.
 
 ## Reliability implementation
 
@@ -49,7 +49,7 @@ Migration `20260918100000_phase7_staging_reliability.sql` adds a private five-mi
 
 ## Automated qualification
 
-Automated runs cover guarded real-token portal/tenant probes, direct-write denial, paced load, more-than-100 deadline expiry with a natural five-minute order, incident threshold/ratio/concurrency/cooldown behavior, continuous health samples, restart-safe 24-hour journeys, and tagged cleanup reconciliation. A terminal journey is counted only after an authoritative delivered/canceled state is read.
+Automated runs cover guarded real-token portal/tenant probes, direct-write denial, paced load, more-than-100 deadline expiry with a natural five-minute order, incident threshold/ratio/concurrency/cooldown behavior, continuous health samples, restart-safe 24-hour journeys, and tagged cleanup reconciliation. Deadline evidence includes every drain sample, per-order lag, and expiry-job health. Cleanup fails closed before deletion if any tagged order is nonterminal or has a duplicate transition, deletes only the canonical fixture prefix, and must reproduce the preserved baseline counts and digests exactly. Its full deletion transaction is dry-run under `ROLLBACK` before final use. A terminal journey is counted only after an authoritative delivered/canceled state is read.
 
 Automation cannot pass a physical or human-observation row. The separate checklist in [Phase 7 device and browser checklist](phase-7-device-browser-checklist.md) is authoritative for those rows.
 

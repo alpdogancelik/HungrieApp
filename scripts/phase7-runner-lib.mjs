@@ -49,6 +49,13 @@ export function stableOperationId(runId, journey, step) {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+export function baselineMatches(expected, actual) {
+  if (!expected || !actual || typeof expected !== "object" || typeof actual !== "object" || Array.isArray(expected) || Array.isArray(actual)) return false;
+  const expectedKeys = Object.keys(expected).sort(), actualKeys = Object.keys(actual).sort();
+  return expectedKeys.length === actualKeys.length
+    && expectedKeys.every((key, index) => key === actualKeys[index] && actual[key] === expected[key]);
+}
+
 export function ensurePrivateDirectory(directory) {
   fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
   fs.chmodSync(directory, 0o700);

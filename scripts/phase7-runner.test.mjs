@@ -5,8 +5,9 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import test from "node:test";
+import { buildPhase7CleanupSql } from "./phase7-cleanup-contract.mjs";
 import {
-  acquirePidLock, acquireRunLock, atomicWriteJson, continuityGaps, createRun, loadRun,
+  acquirePidLock, acquireRunLock, atomicWriteJson, baselineMatches, continuityGaps, createRun, loadRun,
   dueSoakJourneys, finalizeEvidence, requestStop, runnerSourceSha256, stableOperationId, verifyFinalEvidence,
 } from "./phase7-runner-lib.mjs";
 
@@ -18,6 +19,21 @@ test("stable operation IDs survive restart and distinguish steps", () => {
   assert.equal(first, stableOperationId("00000000-0000-4000-8000-000000000001", 7, "create"));
   assert.notEqual(first, stableOperationId("00000000-0000-4000-8000-000000000001", 7, "delivered"));
   assert.match(first, /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+});
+
+test("baseline reconciliation requires the exact expected keys and values", () => {
+  const expected = { orders: 31, orders_digest: "abc" };
+  assert.equal(baselineMatches(expected, { orders_digest: "abc", orders: 31 }), true);
+  assert.equal(baselineMatches(expected, { orders: 32, orders_digest: "abc" }), false);
+  assert.equal(baselineMatches(expected, { orders: 31, orders_digest: "abc", extra: 1 }), false);
+  assert.equal(baselineMatches(null, expected), false);
+});
+
+test("cleanup contract is tagged, transactional, and dry-runnable", () => {
+  const prefix = "phase7_0123456789abcdef";
+  assert.match(buildPhase7CleanupSql(prefix), /^begin;[\s\S]+commit;$/);
+  assert.match(buildPhase7CleanupSql(prefix, { commit: false }), /^begin;[\s\S]+rollback;$/);
+  assert.throws(() => buildPhase7CleanupSql("phase7_bad"), /canonical/);
 });
 
 test("runner checksum is deterministic and ignores test-only sources", () => {

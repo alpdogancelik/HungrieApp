@@ -1,0 +1,43 @@
+const quote = value => `'${String(value).replaceAll("'", "''")}'`;
+
+export function buildPhase7CleanupSql(prefix, { commit = true } = {}) {
+  if (!/^phase7_[0-9a-f]{16}$/.test(prefix)) throw new Error("A canonical Phase 7 fixture prefix is required.");
+  const tagged = quote(`${prefix}%`), embedded = quote(`%${prefix}%`);
+  return `begin;
+    create temporary table phase7_cleanup_orders on commit drop as select id from public.orders where restaurant_id like ${tagged} or profile_id like ${tagged} or courier_profile_id like ${tagged};
+    create temporary table phase7_cleanup_invitations on commit drop as select id from private.account_invitations where normalized_email like ${tagged} or restaurant_id like ${tagged} or accepted_by_profile_id like ${tagged};
+    delete from private.review_action_operations where actor_profile_id like ${tagged} or result->>'reviewId' in(select id from public.order_reviews where order_id in(select id from phase7_cleanup_orders));
+    delete from private.order_review_reports where review_id in(select id from public.order_reviews where order_id in(select id from phase7_cleanup_orders)) or created_by_profile_id like ${tagged} or status_changed_by_profile_id like ${tagged};
+    delete from private.order_review_meal_reactions where order_id in(select id from phase7_cleanup_orders);
+    delete from private.customer_review_operations where profile_id like ${tagged} or review_id in(select id from public.order_reviews where order_id in(select id from phase7_cleanup_orders));
+    delete from private.notification_deliveries where event_id in(select id from private.notification_events where order_id in(select id from phase7_cleanup_orders) or review_id in(select id from public.product_reviews where order_id in(select id from phase7_cleanup_orders))) or token_id in(select id from private.push_tokens where profile_id like ${tagged} or restaurant_id like ${tagged} or registered_by_profile_id like ${tagged});
+    delete from private.notification_events where order_id in(select id from phase7_cleanup_orders) or review_id in(select id from public.product_reviews where order_id in(select id from phase7_cleanup_orders));
+    delete from public.product_reviews where order_id in(select id from phase7_cleanup_orders);
+    delete from public.order_reviews where order_id in(select id from phase7_cleanup_orders);
+    delete from private.restaurant_operations where profile_id like ${tagged} or result->>'orderId' in(select id from phase7_cleanup_orders);
+    delete from private.customer_order_operations where profile_id like ${tagged} or order_id in(select id from phase7_cleanup_orders);
+    delete from private.restaurant_order_visibility where order_id in(select id from phase7_cleanup_orders) or profile_id like ${tagged};
+    delete from private.order_status_history where order_id in(select id from phase7_cleanup_orders) or changed_by_profile_id like ${tagged};
+    delete from private.order_contacts where order_id in(select id from phase7_cleanup_orders);
+    delete from public.order_items where order_id in(select id from phase7_cleanup_orders);
+    delete from private.audit_log where target_id in(select id from phase7_cleanup_orders) or target_id like ${tagged} or actor_profile_id like ${tagged} or metadata::text like ${embedded};
+    delete from public.orders where id in(select id from phase7_cleanup_orders);
+    delete from private.restaurant_operational_incidents where restaurant_id like ${tagged} or acknowledged_by_profile_id like ${tagged} or resolved_by_profile_id like ${tagged};
+    delete from private.account_provisioning_operations where target_profile_id like ${tagged} or invitation_id in(select id from phase7_cleanup_invitations) or result::text like ${embedded};
+    delete from private.account_email_reservations where normalized_email like ${tagged} or profile_id like ${tagged} or invitation_id in(select id from phase7_cleanup_invitations);
+    delete from private.account_invitations where id in(select id from phase7_cleanup_invitations);
+    delete from private.notification_deliveries where token_id in(select id from private.push_tokens where profile_id like ${tagged} or restaurant_id like ${tagged} or registered_by_profile_id like ${tagged});
+    delete from private.push_tokens where profile_id like ${tagged} or restaurant_id like ${tagged} or registered_by_profile_id like ${tagged};
+    delete from private.notification_preferences where profile_id like ${tagged};
+    delete from private.restaurant_couriers where profile_id like ${tagged} or restaurant_id like ${tagged};
+    delete from private.restaurant_members where profile_id like ${tagged} or restaurant_id like ${tagged};
+    delete from private.user_roles where profile_id like ${tagged};
+    delete from public.favorites where profile_id like ${tagged} or restaurant_id like ${tagged};
+    delete from public.menu_items where id like ${tagged} or restaurant_id like ${tagged};
+    delete from public.categories where id like ${tagged} or restaurant_id like ${tagged};
+    delete from public.addresses where id like ${tagged} or profile_id like ${tagged};
+    delete from private.account_access where profile_id like ${tagged};
+    delete from public.profiles where id like ${tagged};
+    delete from public.restaurants where id like ${tagged};
+    ${commit ? "commit" : "rollback"};`;
+}

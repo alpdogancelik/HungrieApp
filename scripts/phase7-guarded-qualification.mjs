@@ -3,7 +3,8 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
-import { acquirePidLock, appendEvidence, atomicWriteJson, PHASE7_CONTRACT, stableOperationId } from "./phase7-runner-lib.mjs";
+import { acquirePidLock, appendEvidence, atomicWriteJson, baselineMatches, PHASE7_CONTRACT, stableOperationId } from "./phase7-runner-lib.mjs";
+import { buildPhase7CleanupSql } from "./phase7-cleanup-contract.mjs";
 import { executeOrderFlow } from "./phase7-order-flow.mjs";
 import { exchange, firebaseApp, loadOperatorContext, rpc, sql, sqlQuote as q } from "./phase7-staging-client.mjs";
 
@@ -80,18 +81,25 @@ async function deadlineQualification() {
       await sql(context, `update public.orders set approval_deadline_at=statement_timestamp()-interval '1 second' where id in(${artificial}) and status='pending'`);
       progress.backdatedAt = new Date().toISOString(); save();
     }
-    const deadline = Date.now() + 7 * 60_000; let rows = [];
+    const deadline = Date.now() + 7 * 60_000; let rows = []; progress.drainSamples ||= [];
     while (Date.now() < deadline) {
       ensureRunning();
       rows = await sql(context, `select id,status,approval_deadline_at,canceled_at from public.orders where id in(${progress.orders.map(value => q(value.id)).join(",")})`);
+      const [job] = await sql(context, `select d.status,d.start_time,d.end_time from cron.job j left join lateral(select status,start_time,end_time from cron.job_run_details where jobid=j.jobid order by runid desc limit 1)d on true where j.jobname='hungrie-expire-pending-orders'`);
+      const sample = { at: new Date().toISOString(), canceled: rows.filter(value => value.status === "canceled").length, remaining: rows.filter(value => value.status !== "canceled").length, expiryJobStatus: job?.status || null, expiryJobEndedAt: job?.end_time || null };
+      progress.drainSamples.push(sample); appendEvidence(path.join(runDirectory, "deadline-drain.jsonl"), sample); save();
       if (rows.length === 105 && rows.every(value => value.status === "canceled")) break;
       await new Promise(resolve => setTimeout(resolve, 15_000));
     }
     const lags = rows.filter(value => value.canceled_at).map(value => Date.parse(value.canceled_at) - Date.parse(value.approval_deadline_at));
     const natural = progress.orders.find(value => value.natural), naturalRow = rows.find(value => value.id === natural.id);
     const p95 = percentile(lags, .95), maximum = lags.length ? Math.max(...lags) : Infinity;
-    const passed = rows.length === 105 && lags.length === 105 && naturalRow?.status === "canceled" && p95 <= 30_000 && maximum <= 75_000;
-    return { passed, fixtureCount: 105, exceedsBatchSize: true, naturalFiveMinuteOrder: naturalRow?.status === "canceled", p95LateMs: p95, maximumLateMs: maximum };
+    progress.outcomes = rows.map(value => ({ orderIdDigest: crypto.createHash("sha256").update(value.id).digest("hex"), status: value.status, approvalDeadlineAt: value.approval_deadline_at, canceledAt: value.canceled_at, lateMs: value.canceled_at ? Date.parse(value.canceled_at) - Date.parse(value.approval_deadline_at) : null })); save();
+    const latestJobHealthy = progress.drainSamples.at(-1)?.expiryJobStatus === "succeeded";
+    await sql(context, "select private.detect_repeated_order_non_response_v1(statement_timestamp())");
+    await sql(context, `update private.restaurant_operational_incidents set state='resolved',resolved_at=coalesce(resolved_at,statement_timestamp()),resolution_note=coalesce(resolution_note,'Phase 7 deadline qualification complete') where restaurant_id like ${q(`${fixtures.prefix}%`)} and state<>'resolved'`);
+    const passed = rows.length === 105 && lags.length === 105 && naturalRow?.status === "canceled" && p95 <= 30_000 && maximum <= 75_000 && latestJobHealthy;
+    return { passed, fixtureCount: 105, exceedsBatchSize: true, naturalFiveMinuteOrder: naturalRow?.status === "canceled", p95LateMs: p95, maximumLateMs: maximum, drainSamples: progress.drainSamples.length, expiryJobHealthy: latestJobHealthy };
   } finally { await app.delete(); }
 }
 
@@ -99,7 +107,7 @@ async function incidentQualification() {
   const rootId = `${fixtures.prefix}_incident_${manifest.runId.slice(0, 8)}`, below = `${rootId}_below`, atBoundary = `${rootId}_at`, above = `${rootId}_above`, base = "2026-09-18 12:00:00+00";
   if (!progress.prepared) {
     const fixtureSql = (restaurant, ignored, eligible) => `insert into public.orders(id,profile_id,restaurant_id,status,payment_method,subtotal_kurus,total_kurus,approval_deadline_at,canceled_at)
-      select ${q(`${restaurant}_`)}||g,${q(fixtures.customer)},${q(restaurant)},case when g<=${ignored} then 'canceled'::public.order_status else 'preparing'::public.order_status end,'cash',100,100,${q(base)}::timestamptz-(g||' minutes')::interval,case when g<=${ignored} then ${q(base)}::timestamptz else null end from generate_series(1,${eligible})g;
+      select ${q(`${restaurant}_`)}||g,${q(fixtures.customer)},${q(restaurant)},case when g<=${ignored} then 'canceled'::public.order_status else 'delivered'::public.order_status end,'cash',100,100,${q(base)}::timestamptz-(g||' minutes')::interval,case when g<=${ignored} then ${q(base)}::timestamptz else null end from generate_series(1,${eligible})g;
       insert into private.order_status_history(order_id,previous_status,new_status,source,reason,created_at) select ${q(`${restaurant}_`)}||g,'pending','canceled','system','approval_deadline_expired',${q(base)}::timestamptz from generate_series(1,${ignored})g;`;
     await sql(context, `begin;insert into public.restaurants(id,name,lifecycle_status,accepting_orders,is_active) values
       (${q(below)},'Phase 7 incident below','active',true,true),(${q(atBoundary)},'Phase 7 incident at','active',true,true),(${q(above)},'Phase 7 incident above','active',true,true);
@@ -111,16 +119,20 @@ async function incidentQualification() {
   const restaurants = await sql(context, `select id,lifecycle_status,accepting_orders from public.restaurants where id in(${q(below)},${q(atBoundary)},${q(above)})`);
   const created = concurrent.flat().reduce((sum, value) => sum + Number(value.created), 0);
   const atRow = rows.find(value => value.restaurant_id === atBoundary), aboveRow = rows.find(value => value.restaurant_id === above);
-  await sql(context, `update private.restaurant_operational_incidents set state='resolved',resolved_at=${q(base)}::timestamptz+interval '2 minutes',resolution_note='Phase 7 controlled resolution' where restaurant_id=${q(atBoundary)} and state<>'resolved'`);
+  await sql(context, `update private.restaurant_operational_incidents set state='acknowledged',acknowledged_at=${q(base)}::timestamptz+interval '5 minutes' where restaurant_id=${q(atBoundary)} and state='open'`);
+  await sql(context, `update private.restaurant_operational_incidents set state='resolved',resolved_at=${q(base)}::timestamptz+interval '10 minutes',resolution_note='Phase 7 controlled resolution' where restaurant_id=${q(atBoundary)} and state='acknowledged'`);
   await sql(context, `begin;insert into public.orders(id,profile_id,restaurant_id,status,payment_method,subtotal_kurus,total_kurus,approval_deadline_at,canceled_at) select ${q(`${atBoundary}_cooldown_`)}||g,${q(fixtures.customer)},${q(atBoundary)},'canceled','cash',100,100,${q(base)}::timestamptz+interval '20 minutes'-(g||' minutes')::interval,${q(base)}::timestamptz+interval '20 minutes' from generate_series(1,3)g;insert into private.order_status_history(order_id,previous_status,new_status,source,reason,created_at)select ${q(`${atBoundary}_cooldown_`)}||g,'pending','canceled','system','approval_deadline_expired',${q(base)}::timestamptz+interval '20 minutes' from generate_series(1,3)g;commit;`);
   const [cooldown] = await sql(context, `select private.detect_repeated_order_non_response_v1(${q(base)}::timestamptz+interval '30 minutes') created`);
-  const reopenBase = "2026-09-18 13:03:00+00";
+  const reopenBase = "2026-09-18 13:11:00+00";
   await sql(context, `begin;insert into public.orders(id,profile_id,restaurant_id,status,payment_method,subtotal_kurus,total_kurus,approval_deadline_at,canceled_at) select ${q(`${atBoundary}_reopen_`)}||g,${q(fixtures.customer)},${q(atBoundary)},'canceled','cash',100,100,${q(reopenBase)}::timestamptz-(g||' minutes')::interval,${q(reopenBase)}::timestamptz from generate_series(1,3)g;insert into private.order_status_history(order_id,previous_status,new_status,source,reason,created_at)select ${q(`${atBoundary}_reopen_`)}||g,'pending','canceled','system','approval_deadline_expired',${q(reopenBase)}::timestamptz from generate_series(1,3)g;commit;`);
   const [reopened] = await sql(context, `select private.detect_repeated_order_non_response_v1(${q(reopenBase)}) created`);
   const openCount = await sql(context, `select restaurant_id,count(*)::integer count from private.restaurant_operational_incidents where restaurant_id in(${q(atBoundary)},${q(above)}) and state<>'resolved' group by restaurant_id`);
+  const [resolvedEvidence] = await sql(context, `select acknowledged_at,resolved_at,resolution_note,extract(epoch from acknowledged_at-window_ended_at)/60 acknowledgement_minutes,extract(epoch from resolved_at-window_ended_at)/60 resolution_minutes from private.restaurant_operational_incidents where restaurant_id=${q(atBoundary)} and state='resolved' order by resolved_at limit 1`);
   const noAutomaticChange = restaurants.every(value => value.lifecycle_status === "active" && value.accepting_orders === true);
-  const passed = created === 2 && rows.length === 2 && !rows.some(value => value.restaurant_id === below) && atRow?.ignored_order_count === 3 && atRow?.eligible_order_count === 6 && aboveRow?.ignored_order_count === 4 && Number(cooldown.created) === 0 && Number(reopened.created) === 1 && openCount.every(value => value.count === 1) && noAutomaticChange;
-  return { passed, belowThresholdOpened: false, atThresholdOpened: Boolean(atRow), aboveThresholdOpened: Boolean(aboveRow), ratioBoundaryBasisPoints: 5000, concurrentCreated: created, unresolvedUnique: openCount.every(value => value.count === 1), cooldownBlockedAtThirtyMinutes: Number(cooldown.created) === 0, reopenedAfterSixtyMinutes: Number(reopened.created) === 1, automaticSuspensionAbsent: noAutomaticChange, automaticAcceptanceChangeAbsent: noAutomaticChange, sla: { acknowledgementMinutes: 15, resolutionMinutes: 1440 }, fixtureRootDigest: crypto.createHash("sha256").update(rootId).digest("hex") };
+  const acknowledgementWithinSla = Number(resolvedEvidence?.acknowledgement_minutes) <= 15, resolutionWithinSla = Number(resolvedEvidence?.resolution_minutes) <= 1440, resolutionNoteRecorded = resolvedEvidence?.resolution_note === "Phase 7 controlled resolution";
+  const passed = created === 2 && rows.length === 2 && !rows.some(value => value.restaurant_id === below) && atRow?.ignored_order_count === 3 && atRow?.eligible_order_count === 6 && aboveRow?.ignored_order_count === 4 && Number(cooldown.created) === 0 && Number(reopened.created) === 1 && openCount.every(value => value.count === 1) && noAutomaticChange && acknowledgementWithinSla && resolutionWithinSla && resolutionNoteRecorded;
+  await sql(context, `update private.restaurant_operational_incidents set state='resolved',resolved_at=coalesce(resolved_at,statement_timestamp()),resolution_note=coalesce(resolution_note,'Phase 7 qualification complete') where restaurant_id like ${q(`${fixtures.prefix}%`)} and state<>'resolved'`);
+  return { passed, belowThresholdOpened: false, atThresholdOpened: Boolean(atRow), aboveThresholdOpened: Boolean(aboveRow), ratioBoundaryBasisPoints: 5000, concurrentCreated: created, unresolvedUnique: openCount.every(value => value.count === 1), cooldownBlockedAtThirtyMinutes: Number(cooldown.created) === 0, reopenedAfterSixtyMinutes: Number(reopened.created) === 1, acknowledgementWithinSla, resolutionWithinSla, resolutionNoteRecorded, automaticSuspensionAbsent: noAutomaticChange, automaticAcceptanceChangeAbsent: noAutomaticChange, sla: { acknowledgementMinutes: 15, resolutionMinutes: 1440 }, fixtureRootDigest: crypto.createHash("sha256").update(rootId).digest("hex") };
 }
 
 async function authorizationQualification() {
@@ -202,27 +214,26 @@ async function authorizationQualification() {
 
 async function cleanupQualification() {
   const prefix = fixtures.prefix;
-  await sql(context, `begin;
-    create temporary table phase7_cleanup_orders on commit drop as select id from public.orders where restaurant_id like ${q(`${prefix}%`)};
-    delete from private.notification_deliveries where event_id in(select id from private.notification_events where order_id in(select id from phase7_cleanup_orders));
-    delete from private.notification_events where order_id in(select id from phase7_cleanup_orders);
-    delete from private.restaurant_operations where result->>'orderId' in(select id from phase7_cleanup_orders);
-    delete from private.customer_order_operations where order_id in(select id from phase7_cleanup_orders);
-    delete from private.restaurant_order_visibility where order_id in(select id from phase7_cleanup_orders);
-    delete from private.order_status_history where order_id in(select id from phase7_cleanup_orders);
-    delete from private.order_contacts where order_id in(select id from phase7_cleanup_orders);
-    delete from public.order_items where order_id in(select id from phase7_cleanup_orders);
-    delete from private.audit_log where target_id in(select id from phase7_cleanup_orders) or actor_profile_id like ${q(`${prefix}%`)} or metadata::text like ${q(`%${prefix}%`)};
-    delete from public.orders where id in(select id from phase7_cleanup_orders);
-    delete from private.restaurant_operational_incidents where restaurant_id like ${q(`${prefix}%`)};
-    delete from public.menu_items where id like ${q(`${prefix}%`)};delete from public.categories where id like ${q(`${prefix}%`)};
-    delete from public.addresses where id like ${q(`${prefix}%`)};delete from private.account_access where profile_id like ${q(`${prefix}%`)};
-    delete from public.profiles where id like ${q(`${prefix}%`)};delete from public.restaurants where id like ${q(`${prefix}%`)};commit;`);
-  const [remaining] = await sql(context, `select (select count(*) from public.orders where restaurant_id like ${q(`${prefix}%`)})::integer orders,(select count(*) from public.profiles where id like ${q(`${prefix}%`)})::integer profiles,(select count(*) from public.restaurants where id like ${q(`${prefix}%`)})::integer restaurants`);
+  if (!fixtures.baseline || !fixtures.baselineManifestSha256) throw new Error("The immutable pre-Phase-7 baseline is missing from the fixture contract.");
+  const [before] = await sql(context, `select
+    (select count(*) from public.orders where restaurant_id like ${q(`${prefix}%`)} or profile_id like ${q(`${prefix}%`)})::integer tagged_orders,
+    (select count(*) from public.profiles where id like ${q(`${prefix}%`)})::integer tagged_profiles,
+    (select count(*) from public.restaurants where id like ${q(`${prefix}%`)})::integer tagged_restaurants,
+    (select count(*) from private.restaurant_operational_incidents where restaurant_id like ${q(`${prefix}%`)})::integer tagged_incidents,
+    (select count(*) from (select h.order_id,h.new_status,count(*) from private.order_status_history h join public.orders o on o.id=h.order_id where o.restaurant_id like ${q(`${prefix}%`)} group by h.order_id,h.new_status having count(*)>1)d)::integer duplicate_transitions,
+    (select count(*) from public.orders where restaurant_id like ${q(`${prefix}%`)} and status not in('delivered','canceled'))::integer nonterminal_orders`);
+  if (Number(before.duplicate_transitions) !== 0 || Number(before.nonterminal_orders) !== 0) throw new Error("Phase 7 cleanup requires zero duplicate transitions and zero nonterminal tagged orders before deletion.");
+  await sql(context, buildPhase7CleanupSql(prefix));
+  const [remaining] = await sql(context, `select (select count(*) from public.orders where restaurant_id like ${q(`${prefix}%`)} or profile_id like ${q(`${prefix}%`)})::integer orders,(select count(*) from public.profiles where id like ${q(`${prefix}%`)})::integer profiles,(select count(*) from public.restaurants where id like ${q(`${prefix}%`)})::integer restaurants,(select count(*) from private.restaurant_operational_incidents where restaurant_id like ${q(`${prefix}%`)})::integer incidents`);
+  const [after] = await sql(context, `select (select count(*) from public.orders)::integer orders,(select count(*) from public.profiles)::integer profiles,(select count(*) from public.restaurants)::integer restaurants,(select count(*) from private.restaurant_operational_incidents)::integer incidents,
+    (select encode(extensions.digest(coalesce(jsonb_agg(jsonb_build_array(id,status,updated_at) order by id)::text,'[]'),'sha256'),'hex') from public.orders) orders_digest,
+    (select encode(extensions.digest(coalesce(jsonb_agg(jsonb_build_array(id,updated_at) order by id)::text,'[]'),'sha256'),'hex') from public.profiles) profiles_digest,
+    (select encode(extensions.digest(coalesce(jsonb_agg(jsonb_build_array(id,updated_at) order by id)::text,'[]'),'sha256'),'hex') from public.restaurants) restaurants_digest`);
   const app = firebaseApp(context, "cleanup"), auth = app.auth();
   try { for (const uid of Object.values(fixtures.firebaseUids)) await auth.deleteUser(uid).catch(error => { if (error?.code !== "auth/user-not-found") throw error; }); } finally { await app.delete(); }
-  const passed = remaining.orders === 0 && remaining.profiles === 0 && remaining.restaurants === 0;
-  return { passed, taggedFixtureCounts: remaining, exactTaggedCleanup: passed };
+  const exactTaggedCleanup = Object.values(remaining).every(value => Number(value) === 0), baselineReconciled = baselineMatches(fixtures.baseline, after);
+  const passed = exactTaggedCleanup && baselineReconciled && Number(before.duplicate_transitions) === 0 && Number(before.nonterminal_orders) === 0;
+  return { passed, preCleanup: before, taggedFixtureCounts: remaining, exactTaggedCleanup, baselineReconciled, baselineManifestSha256: fixtures.baselineManifestSha256, postCleanup: after };
 }
 
 const heartbeat = setInterval(() => appendEvidence(path.join(runDirectory, "heartbeats.jsonl"), { at: new Date().toISOString(), pid: process.pid, child: kind }), 60_000);

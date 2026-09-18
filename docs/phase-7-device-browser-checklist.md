@@ -11,11 +11,11 @@
 | AUTO-03 | LaunchAgent and power preflight | AC, AC sleep disabled, managed assertions active, reviewed paths loaded | Pending |
 | AUTO-04 | Authorization matrix | Active roles pass only their portal/scope; pending, suspended, revoked, unmapped and anonymous fail closed; recent-TOTP and stale auth behave correctly | Pending |
 | AUTO-05 | Load | 10 workers; 50/min × 15m; 100/min × 2m; latency/error limits pass | Pending |
-| AUTO-06 | Deadline | More than 100 drained; natural five-minute order expires; p95/max lag pass | Pending |
+| AUTO-06 | Deadline | More than 100 drained; natural five-minute order expires; persisted drain/job-health evidence and p95/max lag pass | Pending |
 | AUTO-07 | Incident detector | Below/at/above threshold, ratio, concurrency, uniqueness, resolution, cooldown, SLA and no automatic suspension pass | Pending |
 | AUTO-08 | Persistent soak | 40 real-contract automated terminal journeys over 24h; no uncovered heartbeat gap over 5m | Pending |
 | AUTO-09 | Monitoring/reconciliation | No critical incident, permanently missed order, duplicate transition, unexplained backlog, or unexplained failure | Pending |
-| AUTO-10 | Cleanup | Only `phase7_` fixtures removed; baseline counts/digests reconcile; settings and Mac power restored; runner removed | Pending |
+| AUTO-10 | Cleanup | Cleanup SQL first passes rollback-only validation; only the canonical `phase7_` fixture set is removed; zero nonterminal/duplicate-transition rows; baseline counts/digests reconcile; settings and Mac power restored; runner removed | Pending |
 
 ## Manual Customer device evidence
 
