@@ -11,6 +11,8 @@
 
 **2026-09-21 notification-language follow-up:** The app owner reported English Customer pushes while the app was set to Turkish. The Customer app now restores its saved language before push registration and stores that language on its device token; language switches update the registered token. The worker continues to render Turkish or English from the claimed delivery language, with a profile-language fallback for older tokens. The additive Staging migration `20260921100000_customer_push_language.sql` passed guarded preflight, restricted backup, application, grant checks, and exact order-baseline reconciliation. New iOS/Android build 44 and physical-device Turkish/English push retests remain pending; no older build qualifies this change.
 
+**2026-09-21 narrow-screen Search follow-up:** Search/Cuisines cards could wrap an intended four-column row into three undersized cards on narrow phones, leaving a large empty strip. Card widths now derive from usable screen width, with three columns on narrow screens and four when space permits. Recent-search chips scroll horizontally instead of truncating short names. A cuisine image has a visible fallback while loading. The next owner-built iOS/Android build is 45; narrow-screen physical-device observation remains pending.
+
 This document is the final review template. Populate it only from owner-only durable evidence and manual checklist observations. Never copy credentials, ID tokens, TOTP seeds, addresses, comments, or Customer PII here.
 
 ## Source and deployment identity

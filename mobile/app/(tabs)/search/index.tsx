@@ -16,6 +16,7 @@ import {
     Text,
     TextInput,
     View,
+    useWindowDimensions,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -187,11 +188,14 @@ const PopularChip = ({ colors, label, onPress, accessibilityLabel }: { colors: P
     </Pressable>
 );
 
-const CuisineCard = ({ colors, image, label, onPress, accessibilityLabel }: { colors: Palette; image: ImageSource; label: string; onPress: () => void; accessibilityLabel: string }) => (
-    <Pressable accessibilityLabel={accessibilityLabel} onPress={onPress} style={styles.cuisineCardPressable}>
+const CuisineCard = ({ colors, image, label, width, onPress, accessibilityLabel }: { colors: Palette; image: ImageSource; label: string; width: number; onPress: () => void; accessibilityLabel: string }) => (
+    <Pressable accessibilityLabel={accessibilityLabel} onPress={onPress} style={[styles.cuisineCardPressable, { width }]}>
         {({ pressed }) => (
             <View style={[styles.cuisineCard, { backgroundColor: colors.surface, borderColor: colors.border }, pressed && styles.cuisineCardPressed]}>
-                <Image cachePolicy="memory-disk" contentFit="cover" source={image} style={styles.cuisineImage} transition={120} />
+                <View style={[styles.cuisineImageShell, { backgroundColor: colors.surface }]}>
+                    <Ionicons color={colors.tertiary} name="restaurant-outline" size={24} />
+                    <Image cachePolicy="memory-disk" contentFit="contain" source={image} style={styles.cuisineImage} transition={120} />
+                </View>
                 <View style={styles.cuisineFooter}>
                     <Text numberOfLines={2} style={[styles.cuisineTitle, { color: colors.text }]}>{label}</Text>
                 </View>
@@ -308,6 +312,7 @@ export default function SearchScreen() {
     useWebDocumentTitle();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { width: windowWidth } = useWindowDimensions();
     const tabBarHeight = useBottomTabBarHeight();
     const { i18n } = useTranslation();
     const { variant } = useTheme();
@@ -350,6 +355,9 @@ export default function SearchScreen() {
         label: tr ? category.tr : category.en,
         image: CUISINE_IMAGES[category.id],
     })), [tr]);
+    const cuisineGridWidth = Math.max(0, windowWidth - insets.left - insets.right - PAGE_PADDING * 2);
+    const cuisineColumns = cuisineGridWidth < 340 ? 3 : 4;
+    const cuisineCardWidth = Math.min(130, (cuisineGridWidth - (cuisineColumns - 1) * 8) / cuisineColumns);
 
     const runSearch = useCallback((term: string) => {
         const value = term.trim();
@@ -414,12 +422,17 @@ export default function SearchScreen() {
                         </View>
                         <Pressable accessibilityRole="button" hitSlop={8} onPress={clearRecents}><Text style={styles.actionText}>{copy("Clear", "Temizle")}</Text></Pressable>
                     </View>
-                    <View style={styles.recentRow}>
+                    <ScrollView
+                        horizontal
+                        contentContainerStyle={styles.recentRow}
+                        keyboardShouldPersistTaps="handled"
+                        showsHorizontalScrollIndicator={false}
+                    >
                         {recentSearches.map((term) => <RecentChip
                             colors={colors} key={term} label={term} onPress={() => runSearch(term)}
                             searchLabel={copy(`${term}, recent search`, `${term}, geçmiş arama`)}
                         />)}
-                    </View>
+                    </ScrollView>
                 </View>
             ) : null}
             <View style={styles.discoverySection}>
@@ -441,7 +454,7 @@ export default function SearchScreen() {
                 <View style={styles.cuisineGrid}>
                     {cuisines.map((cuisine) => <CuisineCard
                         accessibilityLabel={copy(`View ${cuisine.label} cuisine`, `${cuisine.label} mutfağını görüntüle`)} colors={colors}
-                        image={cuisine.image} key={cuisine.key} label={cuisine.label} onPress={() => runSearch(cuisine.term)}
+                        image={cuisine.image} key={cuisine.key} label={cuisine.label} onPress={() => runSearch(cuisine.term)} width={cuisineCardWidth}
                     />)}
                 </View>
             </View>
@@ -541,9 +554,9 @@ const styles = StyleSheet.create({
     actionText: { color: ORANGE, fontFamily: "ChairoSans", fontSize: 13.5, lineHeight: 18, fontWeight: "600" },
     recentHeadingTitle: { minWidth: 0, flexShrink: 1, flexDirection: "row", alignItems: "center", gap: 7 },
     recentHeadingIcon: { transform: [{ translateY: -2 }] },
-    recentRow: { width: "100%", flexDirection: "row", justifyContent: "flex-start", gap: 8 },
-    recentChipPressable: { width: "18%", flexGrow: 0, minWidth: 0, height: 38 },
-    recentChipSurface: { flex: 1, borderRadius: 12, borderWidth: 1.5, alignItems: "center", justifyContent: "center", paddingHorizontal: 5, overflow: "hidden" },
+    recentRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingRight: 2 },
+    recentChipPressable: { maxWidth: 180, height: 38 },
+    recentChipSurface: { flex: 1, borderRadius: 12, borderWidth: 1.5, alignItems: "center", justifyContent: "center", paddingHorizontal: 14, overflow: "hidden" },
     recentChipText: { maxWidth: "100%", fontFamily: "ChairoSans", fontSize: 13, lineHeight: 18, fontWeight: "500" },
     popularHeadingTitle: { flexDirection: "row", alignItems: "center", gap: 7 },
     popularRow: { flexDirection: "row", gap: 8, paddingRight: 2 },
@@ -551,10 +564,11 @@ const styles = StyleSheet.create({
     popularChipPressable: { height: 38 },
     popularChipSurface: { height: 38, borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, alignItems: "center", justifyContent: "center", overflow: "hidden" },
     cuisineGrid: { width: "100%", flexDirection: "row", flexWrap: "wrap", justifyContent: "flex-start", columnGap: 8, rowGap: 12 },
-    cuisineCardPressable: { width: "23.2%", height: 112 },
+    cuisineCardPressable: { height: 112 },
     cuisineCard: { width: "100%", height: "100%", borderRadius: 15, borderWidth: 1, overflow: "hidden", ...(cuisineCardShadow as object) },
     cuisineCardPressed: { opacity: 0.86, transform: [{ scale: 0.98 }] },
-    cuisineImage: { width: "100%", height: 78 },
+    cuisineImageShell: { width: "100%", height: 78, alignItems: "center", justifyContent: "center" },
+    cuisineImage: { ...StyleSheet.absoluteFillObject },
     cuisineFooter: { flex: 1, minHeight: 34, paddingHorizontal: 4, alignItems: "center", justifyContent: "center" },
     cuisineTitle: { width: "100%", textAlign: "center", fontFamily: "ChairoSans", fontSize: 11.5, lineHeight: 13, fontWeight: "600" },
     resultsHeading: { paddingHorizontal: PAGE_PADDING, paddingTop: 25, paddingBottom: 10 },
