@@ -40,6 +40,12 @@ Run the follow-up rows on a physical iPhone and Google Pixel 9 using build/versi
 | CUST-15 | Set Turkish, receive an order-status push and review-reply push in Turkish; switch to English and confirm later pushes use English; repeat after cold start |  |  |
 | CUST-16 | On a narrow phone, recent searches scroll horizontally and short names such as “Desserts” remain readable |  |  |
 
+## Manual Customer web evidence
+
+| ID | Manual observation | Result |
+|---|---|---|
+| CWEB-01 | Orders appear as a borderless list with no white card boxes or shadows; status, cancellation reason, and actions remain legible | Pending browser observation |
+
 ## Manual Restaurant browser evidence
 
 | ID | Manual observation | macOS Chrome | macOS Edge | Windows Chrome | Windows Edge |

@@ -13,6 +13,8 @@
 
 **2026-09-21 narrow-screen Search follow-up:** Search/Cuisines cards could wrap an intended four-column row into three undersized cards on narrow phones, leaving a large empty strip. Card widths now derive from usable screen width, with three columns on narrow screens and four when space permits. Recent-search chips scroll horizontally instead of truncating short names. A cuisine image has a visible fallback while loading. The next owner-built iOS/Android build is 45; narrow-screen physical-device observation remains pending.
 
+**2026-09-21 Customer web Orders follow-up:** The web Orders list used outlined, shadowed white cards while the native list was visually borderless. The web-only order and skeleton surfaces now use the page background without borders or shadows, with text aligned to the list margin. The running Pixel 9 emulator's installed build 44 was inspected after this change and still showed readable borderless native rows, status badges, cancellation reasons, and actions; this is supplementary native evidence because that installed build predates the web-only source change. The changed Customer web page still needs browser observation after deployment.
+
 This document is the final review template. Populate it only from owner-only durable evidence and manual checklist observations. Never copy credentials, ID tokens, TOTP seeds, addresses, comments, or Customer PII here.
 
 ## Source and deployment identity

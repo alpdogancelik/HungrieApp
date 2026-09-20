@@ -691,11 +691,12 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     filterUnderlineActive: { backgroundColor: ORANGE },
     cardGap: { height: 14 },
     orderCard: {
-        backgroundColor: colors.surface,
-        borderWidth: Platform.OS === "android" ? 0 : 1,
+        backgroundColor: Platform.OS === "web" ? colors.page : colors.surface,
+        borderWidth: Platform.OS === "android" || Platform.OS === "web" ? 0 : 1,
         borderColor: colors.cardBorder,
         borderRadius: 18,
         padding: 15,
+        paddingHorizontal: Platform.OS === "web" ? 0 : 15,
         ...Platform.select({
             ios: {
                 shadowColor: colors.cardShadow,
@@ -704,7 +705,7 @@ const createStyles = (colors: Colors) => StyleSheet.create({
                 shadowRadius: 9,
             },
             android: { elevation: 0 },
-            web: { boxShadow: `0 3px 12px ${colors.cardShadow}14` },
+            web: {},
             default: {},
         }),
     },
@@ -734,7 +735,7 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     browseText: { color: ORANGE, fontFamily: "ChairoSans", fontSize: 14, lineHeight: 19, fontWeight: "600" },
     loader: { marginVertical: 18 },
     skeletonList: { gap: 14 },
-    skeletonCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 18, padding: 15 },
+    skeletonCard: { backgroundColor: Platform.OS === "web" ? colors.page : colors.surface, borderWidth: Platform.OS === "web" ? 0 : 1, borderColor: colors.cardBorder, borderRadius: 18, padding: 15, paddingHorizontal: Platform.OS === "web" ? 0 : 15 },
     skeletonHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
     skeletonTitle: { width: "42%", height: 18, borderRadius: 5, backgroundColor: colors.skeleton },
     skeletonBadge: { width: 86, height: 28, borderRadius: 14, backgroundColor: colors.skeleton },
