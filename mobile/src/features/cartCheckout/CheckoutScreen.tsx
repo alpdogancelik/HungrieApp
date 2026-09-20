@@ -2,7 +2,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -56,6 +56,7 @@ const CheckoutScreen = () => {
     const [quoteLoading, setQuoteLoading] = useState(false);
     const [quoteError, setQuoteError] = useState<CheckoutQuoteFailure | null>(null);
     const [quoteAttempt, setQuoteAttempt] = useState(0);
+    const scrollRef = useRef<ScrollView>(null);
     const deliveryFee = serverQuote ? Number(serverQuote.delivery_fee_kurus||0)/100 : 0;
     const serviceFee = serverQuote ? Number(serverQuote.service_fee_kurus||0)/100 : 0;
     const discount = serverQuote ? Number(serverQuote.discount_kurus||0)/100 : 0;
@@ -233,7 +234,7 @@ const CheckoutScreen = () => {
             <StatusBar style={dark ? "light" : "dark"} />
             <TransactionHeader onBack={goBack} title={copy("Secure payment", "Güvenli Ödeme")} styles={styles} />
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.flex}>
-                <ScrollView contentContainerStyle={[styles.content, { paddingBottom: FOOTER_CONTENT_HEIGHT + insets.bottom + 20 }]} keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                <ScrollView ref={scrollRef} contentContainerStyle={[styles.content, { paddingBottom: FOOTER_CONTENT_HEIGHT + insets.bottom + 20 }]} keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                     <SectionHeader styles={styles} title={copy("Delivery address", "Teslimat adresi")} />
                     <Pressable accessibilityRole="button" onPress={openAddressSelector} style={styles.addressRow}>
                         <Ionicons color={ORANGE} name="location-outline" size={23} />
@@ -270,14 +271,14 @@ const CheckoutScreen = () => {
                     <PaymentRow description={copy("Pay the courier in cash.", "Ödemeyi kuryeye nakit olarak yapın.")} icon="cash-outline" label={copy("Cash payment", "Nakit ödeme")} onPress={() => setPaymentMethod("cash")} selected={paymentMethod === "cash"} styles={styles} />
 
                     <View style={styles.noteHeader}><Text style={styles.noteTitle}>{copy("Note to restaurant", "Restorana not")}</Text><Text style={styles.optional}>{copy("Optional", "İsteğe bağlı")}</Text></View>
-                    <View style={styles.noteShell}><TextInput maxLength={MAX_NOTES} multiline onChangeText={(value) => setNotes(value.slice(0, MAX_NOTES))} placeholder={copy("Door code, dorm details, special requests...", "Kapı kodu, yurt detayları, özel istekler...")} placeholderTextColor={styles.tertiary.color} style={styles.noteInput} textAlignVertical="top" value={notes} /><Text style={styles.counter}>{notes.length}/{MAX_NOTES}</Text></View>
+                    <View style={styles.noteShell}><TextInput maxLength={MAX_NOTES} multiline onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 120)} onChangeText={(value) => setNotes(value.slice(0, MAX_NOTES))} placeholder={copy("Door code, dorm details, special requests...", "Kapı kodu, yurt detayları, özel istekler...")} placeholderTextColor={styles.tertiary.color} style={styles.noteInput} textAlignVertical="top" value={notes} /><Text style={styles.counter}>{notes.length}/{MAX_NOTES}</Text></View>
 
                     {belowMinimum ? <View style={styles.minimumWarning}><Ionicons color="#F79009" name="warning-outline" size={18} /><Text style={styles.minimumText}>{copy(`Add ${formatCurrency(MINIMUM_ORDER_TOTAL - subtotal)} more to meet the minimum order.`, `Minimum sipariş tutarına ulaşmak için ${formatCurrency(MINIMUM_ORDER_TOTAL - subtotal)} daha ekleyin.`)}</Text></View> : null}
                     {quoteLoading ? <View style={styles.quoteState}><ActivityIndicator color={ORANGE} size="small" /><Text style={styles.quoteStateText}>{copy("Verifying the current server price…", "Güncel sunucu fiyatı doğrulanıyor…")}</Text></View> : null}
                     {quoteError ? <View style={styles.quoteState}><Ionicons color="#D92D20" name={quoteError === "restaurant_closed" ? "storefront-outline" : quoteError === "customer_access_denied" ? "lock-closed-outline" : "cloud-offline-outline"} size={18} /><Text style={styles.quoteStateText}>{quoteError === "restaurant_closed" ? copy("This restaurant is not accepting orders right now.", "Bu restoran şu anda sipariş almıyor.") : quoteError === "customer_access_denied" ? copy("Your Customer access has changed. Return to the app or sign in again.", "Müşteri erişiminiz değişti. Uygulamaya dönün veya tekrar giriş yapın.") : quoteError === "invalid_menu" ? copy("The current menu configuration could not be verified.", "Güncel menü yapılandırması doğrulanamadı.") : copy("The current server price could not be reached.", "Güncel sunucu fiyatına ulaşılamadı.")}</Text>{quoteError !== "customer_access_denied" ? <Pressable accessibilityRole="button" onPress={() => setQuoteAttempt((value) => value + 1)}><Text style={styles.quoteRetry}>{copy("Retry", "Tekrar dene")}</Text></Pressable> : null}</View> : null}
                 </ScrollView>
+                <TransactionFooter amount={formatCurrency(total)} ctaLabel={copy("Complete order", "Siparişi Tamamla")} disabled={!canSubmit} loading={placingOrder} onPress={() => void placeCheckoutOrder()} processingLabel={copy("Processing...", "İşleniyor...")} safeBottom={insets.bottom} styles={styles} totalLabel={copy("Total", "Toplam")} />
             </KeyboardAvoidingView>
-            <TransactionFooter amount={formatCurrency(total)} ctaLabel={copy("Complete order", "Siparişi Tamamla")} disabled={!canSubmit} loading={placingOrder} onPress={() => void placeCheckoutOrder()} processingLabel={copy("Processing...", "İşleniyor...")} safeBottom={insets.bottom} styles={styles} totalLabel={copy("Total", "Toplam")} />
 
             <Modal animationType="slide" onRequestClose={() => setAddressSheetVisible(false)} transparent visible={addressSheetVisible}>
                 <View style={styles.modalBackdrop}>

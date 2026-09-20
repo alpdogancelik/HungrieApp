@@ -19,7 +19,7 @@
 
 ## Manual Customer device evidence
 
-Run every row on both a physical iPhone using build 40 and Google Pixel 9 using version code 39.
+Run every row on both a physical iPhone using build 40 and Google Pixel 9 using post-soak version code 40. The earlier Android version code 39 artifact is retained only as pre-fix evidence.
 
 | ID | Manual observation | iPhone | Pixel 9 |
 |---|---|---|---|

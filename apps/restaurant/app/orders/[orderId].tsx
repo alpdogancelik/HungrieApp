@@ -226,7 +226,7 @@ export default function Order() {
       {next && <p><button className="button" disabled={transitioning} onClick={() => void transition(next)}>{t.confirm}: {statusLabel(next, locale)}</button></p>}
       {!['delivered', 'canceled'].includes(data.status) && <section className="card cancel-card">
         <h2>{labels.cancel}</h2>
-        <label className="field">{t.reason}<select value={reason} onChange={(event) => setReason(event.target.value)}>{reasons.map((value) => <option key={value}>{value.replaceAll("_", " ")}</option>)}</select></label>
+        <label className="field">{t.reason}<select value={reason} onChange={(event) => setReason(event.target.value)}>{reasons.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}</select></label>
         <label className="field">{t.note}<textarea maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} /></label>
         <button disabled={transitioning} onClick={() => void transition("canceled")}>{labels.cancel}</button>
       </section>}

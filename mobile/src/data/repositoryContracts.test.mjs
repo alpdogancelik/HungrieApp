@@ -337,6 +337,11 @@ test("Customer order list and detail render cancellation reasons", () => {
     assert.match(orderDetails, /getCancellationReasonText\(order\?\.cancellationReasonCode/);
 });
 
+test("Restaurant cancellation options submit stable reason codes", () => {
+    const restaurantOrder = readDataFile("../../../apps/restaurant/app/orders/[orderId].tsx");
+    assert.match(restaurantOrder, /<option key=\{value\} value=\{value\}>/);
+});
+
 test("Customer order expiry remains server-owned and notification taps open order detail", () => {
     const pendingScreen = readDataFile("../screens/OrderPendingScreen.tsx");
     const pendingRoute = readDataFile("../../app/order/pending.tsx");

@@ -14,9 +14,17 @@ const listeners = new Set<() => void>();
 const entries = new Map<string, ReviewAvailability>();
 const running = new Map<string, Promise<ReviewAvailability>>();
 const CHECKING: ReviewAvailability = { status: "checking" };
+const REVIEW_STATE_TIMEOUT_MS = 12_000;
 let activeProfileId = "";
 const keyFor = (profileId: string, orderId: string) => `${profileId}:${orderId}`;
 const emit = () => listeners.forEach((listener) => listener());
+const withTimeout = <T,>(operation: Promise<T>, timeoutMs: number, message: string) => new Promise<T>((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error(message)), timeoutMs);
+    operation.then(
+        (value) => { clearTimeout(timeout); resolve(value); },
+        (error) => { clearTimeout(timeout); reject(error); },
+    );
+});
 
 export const setCustomerReviewAvailabilityProfile = (profileId: string) => {
     if (activeProfileId === profileId) return;
@@ -29,6 +37,16 @@ export const setCustomerReviewAvailabilityProfile = (profileId: string) => {
 export const markCustomerReviewStatesChecking = (profileId: string) => {
     if (profileId !== activeProfileId) return;
     for (const key of entries.keys()) if (key.startsWith(`${profileId}:`)) entries.set(key, { status: "checking" });
+    emit();
+};
+
+export const markCustomerReviewStatesUnavailable = (profileId: string, error?: unknown) => {
+    if (profileId !== activeProfileId) return;
+    for (const key of entries.keys()) {
+        if (key.startsWith(`${profileId}:`) && entries.get(key)?.status === "checking") {
+            entries.set(key, { status: "unavailable", error });
+        }
+    }
     emit();
 };
 
@@ -48,7 +66,11 @@ export const refreshCustomerReviewState = async (profileId: string, orderId: str
     if (running.has(key)) return running.get(key)!;
     entries.set(key, CHECKING);
     emit();
-    const request = reconcileCustomerReviewOperation(profileId, orderId, getCustomerOrderReviewStateV2)
+    const request = withTimeout(
+        reconcileCustomerReviewOperation(profileId, orderId, getCustomerOrderReviewStateV2),
+        REVIEW_STATE_TIMEOUT_MS,
+        "Review state request timed out",
+    )
         .then((state) => publishCustomerReviewState(profileId, state))
         .catch((error) => {
             const value = { status: "unavailable", error } as ReviewAvailability;

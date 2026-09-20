@@ -4,6 +4,7 @@ import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { useTheme } from "@/src/theme/themeContext";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { profileImages } from "@/constants/profileMedia";
 import { NotificationManager } from "@/src/features/notifications/NotificationManager";
 import { getNotificationPreferences, updateNotificationPreferences } from "@/src/data/notificationRepository";
@@ -137,6 +138,7 @@ export const NotificationPreferencesModal = ({
 }) => {
     const { t } = useTranslation();
     const { theme } = useTheme();
+    const insets = useSafeAreaInsets();
     const [prefs, setPrefs] = useState<NotificationPreferences>(defaultPrefs);
     const [loading, setLoading] = useState(false);
     const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
@@ -190,7 +192,7 @@ export const NotificationPreferencesModal = ({
         <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
             <View style={notificationUi.backdrop}>
                 <Pressable style={notificationUi.dismissArea} onPress={onClose} />
-                <View style={notificationUi.sheet}>
+                <View style={[notificationUi.sheet, { paddingBottom: Math.max(insets.bottom, 24) }]}>
                     <View style={notificationUi.dragHandle} />
 
                     <View style={notificationUi.heroRow}>

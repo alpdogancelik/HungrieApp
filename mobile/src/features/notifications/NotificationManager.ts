@@ -118,8 +118,6 @@ export const requestPermissions = async (): Promise<boolean> => {
 
     const Notifications = getNotificationsModule();
     if (!Notifications) return false;
-    if (!Device.isDevice) return false;
-
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     if (existingStatus === "granted") {
         await ensureAndroidChannel();

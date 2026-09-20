@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { AppState, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -7,39 +7,55 @@ import { useTranslation } from "react-i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "@/src/theme/themeContext";
 
-const isOfflineState = (state: Network.NetworkState) =>
-    state.isConnected === false || state.isInternetReachable === false;
+const NETWORK_POLL_INTERVAL_MS = 2_500;
+
+export const isOfflineNetworkState = (state: Pick<Network.NetworkState, "type" | "isConnected" | "isInternetReachable">) =>
+    state.type === Network.NetworkStateType.NONE || state.isConnected === false || state.isInternetReachable === false;
 
 const InternetConnectionGate = () => {
     const { i18n } = useTranslation();
     const { theme } = useTheme();
     const [isOffline, setIsOffline] = useState(false);
     const [isChecking, setIsChecking] = useState(false);
+    const checkInFlightRef = useRef(false);
     const isTurkish = i18n.language?.toLowerCase().startsWith("tr");
 
     const checkConnection = useCallback(async () => {
+        if (checkInFlightRef.current) return;
+        checkInFlightRef.current = true;
         setIsChecking(true);
         try {
             const state = await Network.getNetworkStateAsync();
-            setIsOffline(isOfflineState(state));
+            setIsOffline(isOfflineNetworkState(state));
         } catch {
             // A failed status check should not lock a connected user out of the app.
         } finally {
+            checkInFlightRef.current = false;
             setIsChecking(false);
         }
     }, []);
 
     useEffect(() => {
         void checkConnection();
+        let appIsActive = AppState.currentState === "active";
 
         const networkSubscription = Network.addNetworkStateListener((state) => {
-            setIsOffline(isOfflineState(state));
+            setIsOffline(isOfflineNetworkState(state));
         });
         const appStateSubscription = AppState.addEventListener("change", (state) => {
-            if (state === "active") void checkConnection();
+            appIsActive = state === "active";
+            if (appIsActive) void checkConnection();
         });
+        // Some Android builds do not consistently emit a listener event when
+        // connectivity is changed from emulator/device controls. Poll only
+        // while foregrounded so the offline gate and reconnect recovery remain
+        // authoritative without doing background work.
+        const poll = setInterval(() => {
+            if (appIsActive) void checkConnection();
+        }, NETWORK_POLL_INTERVAL_MS);
 
         return () => {
+            clearInterval(poll);
             networkSubscription.remove();
             appStateSubscription.remove();
         };

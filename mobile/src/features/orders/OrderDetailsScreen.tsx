@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AccessibilityInfo, ActivityIndicator, Alert, Clipboard, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { AccessibilityInfo, ActivityIndicator, Alert, AppState, Clipboard, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { formatCurrency } from "@/lib/cart.utils";
@@ -161,6 +161,13 @@ export default function OrderDetailsScreen({ orderId }: Props) {
 
     useEffect(() => { void load(); const unsubscribe = orderId ? subscribeOrder(orderId, (next) => { if (next) setOrder(next); }) : undefined; return () => unsubscribe?.(); }, [load, orderId]);
     useEffect(() => { if (userId) { setCustomerReviewAvailabilityProfile(userId); void refreshCustomerReviewState(userId, orderId, true); } }, [orderId, userId]);
+    useEffect(() => {
+        if (!userId || !orderId) return;
+        const subscription = AppState.addEventListener("change", (state) => {
+            if (state === "active") void refreshCustomerReviewState(userId, orderId, true);
+        });
+        return () => subscription.remove();
+    }, [orderId, userId]);
     const reviewAvailability = useCustomerReviewAvailability(userId, orderId);
 
     const items = useMemo(() => resolveItems(order, copy.itemFallback), [copy.itemFallback, order]);

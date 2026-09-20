@@ -26,6 +26,20 @@ test("foreground invalidation hides stale actions until authoritative recovery",
     markCustomerReviewStatesChecking("profile-a"); expect(getCustomerReviewAvailability("profile-a", "order-1").status).toBe("checking");
 });
 
+test("a stalled review-state request settles into a retryable state", async () => {
+    jest.useFakeTimers();
+    try {
+        setCustomerReviewAvailabilityProfile("profile-a");
+        mockGetState.mockReturnValue(new Promise(() => undefined));
+        const request = refreshCustomerReviewState("profile-a", "order-1", true);
+        await jest.advanceTimersByTimeAsync(12_000);
+        expect((await request).status).toBe("unavailable");
+        expect(getCustomerReviewAvailability("profile-a", "order-1").status).toBe("unavailable");
+    } finally {
+        jest.useRealTimers();
+    }
+});
+
 test("reviewed, expired, unavailable, and account-scoped states fail closed", async () => {
     setCustomerReviewAvailabilityProfile("profile-a");
     mockGetState.mockResolvedValueOnce(state("reviewed", { reviewed: true, eligible: false })).mockResolvedValueOnce(state("expired", { eligible: false }));
@@ -59,4 +73,7 @@ test("notification routing reaches the detail screen that performs review recove
     const root = resolve(__dirname, "../../..");
     const layout = readFileSync(resolve(root, "app/_layout.tsx"), "utf8");
     expect(layout).toMatch(/pathname: "\/orders\/\[id\]"/);
+    const details = readFileSync(resolve(root, "src/features/orders/OrderDetailsScreen.tsx"), "utf8");
+    expect(details).toContain('AppState.addEventListener("change"');
+    expect(details).toMatch(/state === "active"[\s\S]{0,120}refreshCustomerReviewState/);
 });

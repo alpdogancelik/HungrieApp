@@ -23,6 +23,16 @@ async function fetchAccessContext() {
   }
 }
 
+async function restoreAccessContext(user: NonNullable<typeof auth.currentUser>) {
+  await ensureSessionPersistence();
+  await user.getIdToken();
+  const first = await fetchAccessContext();
+  if (!first.error) return first;
+  await new Promise(resolve => setTimeout(resolve, 250));
+  await user.getIdToken(true);
+  return fetchAccessContext();
+}
+
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
@@ -70,7 +80,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const { data, error } = await fetchAccessContext();
+        const { data, error } = await restoreAccessContext(user);
         if (error) throw error;
         if (!live) return;
         const context = data as unknown as AccessContext;
@@ -107,7 +117,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         // Protected database operations still recheck live authorization. Once
         // this browser has resolved active Restaurant access, a transient
         // context/network failure must not unmount the whole operational UI.
-        if (live && !verified.current) setState("error");
+        if (live) setState(verified.current ? "ready" : "error");
       }
     });
 

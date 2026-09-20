@@ -55,7 +55,7 @@ Automation cannot pass a physical or human-observation row. The separate checkli
 
 ## Manual qualification
 
-Fresh Customer artifacts remain version `1.0.2`, iOS build `40`, and Android version code `39`. The full carried Phase 6 matrix runs on a physical iPhone and Pixel 9. Restaurant runs on current Chrome and Edge on Windows and macOS. Push permission/revocation, closed-page notification delivery, sleep/wake, physical notification selection, keyboard/safe-area/accessibility, language/theme, PWA installation, private-cache inspection, and visual review require recorded human observation.
+Fresh Customer artifacts remain version `1.0.2` and iOS build `40`. The original qualification Android artifact used version code `39`; the post-soak corrected Android artifact uses version code `40` so both artifacts remain uniquely traceable. The full carried Phase 6 matrix runs on a physical iPhone and Pixel 9. Restaurant runs on current Chrome and Edge on Windows and macOS. Push permission/revocation, closed-page notification delivery, sleep/wake, physical notification selection, keyboard/safe-area/accessibility, language/theme, PWA installation, private-cache inspection, and visual review require recorded human observation.
 
 ## Completion
 

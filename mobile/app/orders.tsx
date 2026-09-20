@@ -707,7 +707,7 @@ const createStyles = (colors: Colors) => StyleSheet.create({
                 shadowOpacity: 0.14,
                 shadowRadius: 9,
             },
-            android: { elevation: 4 },
+            android: { elevation: 0 },
             web: { boxShadow: `0 3px 12px ${colors.cardShadow}14` },
             default: {},
         }),

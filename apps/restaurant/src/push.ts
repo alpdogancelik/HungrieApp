@@ -67,8 +67,29 @@ export const showRestaurantNotification = async (payload?: RestaurantAlertPayloa
 };
 
 const recentAlerts = new Map<string, number>();
+const RECENT_ALERTS_KEY = "hungrie-restaurant-recent-alerts-v1";
+
+const loadRecentAlerts = () => {
+  try {
+    const stored = JSON.parse(sessionStorage.getItem(RECENT_ALERTS_KEY) || "[]") as [string, number][];
+    for (const [key, alertedAt] of stored) {
+      if (key && Number.isFinite(alertedAt)) recentAlerts.set(key, alertedAt);
+    }
+  } catch {
+    // Malformed or unavailable browser storage must not block order alerts.
+  }
+};
+
+const persistRecentAlerts = () => {
+  try {
+    sessionStorage.setItem(RECENT_ALERTS_KEY, JSON.stringify([...recentAlerts.entries()]));
+  } catch {
+    // Audio and notification delivery remain best effort when storage is unavailable.
+  }
+};
 
 export const alertRestaurantOrder = async (payload: RestaurantAlertPayload) => {
+  if (!recentAlerts.size) loadRecentAlerts();
   const orderId = String(payload.data?.orderId || "");
   const eventId = String(payload.data?.eventId || "");
   const eventType = String(payload.data?.eventType || "restaurant_new_order");
@@ -76,6 +97,9 @@ export const alertRestaurantOrder = async (payload: RestaurantAlertPayload) => {
   const now = Date.now();
   for (const [storedKey, alertedAt] of recentAlerts) if (now - alertedAt > 10 * 60_000) recentAlerts.delete(storedKey);
   if (key && recentAlerts.has(key)) return;
-  if (key) recentAlerts.set(key, now);
+  if (key) {
+    recentAlerts.set(key, now);
+    persistRecentAlerts();
+  }
   await Promise.all([playOrderAlert(), showRestaurantNotification(payload)]);
 };
