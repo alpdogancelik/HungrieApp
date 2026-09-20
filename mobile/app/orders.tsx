@@ -154,7 +154,7 @@ const OrderHistoryScreen = () => {
         secondary: isDark ? "#AAB2C0" : "#667085",
         tertiary: isDark ? "#7F8999" : "#98A2B3",
         border: isDark ? "#2A2E35" : "#EAECF0",
-        cardBorder: isDark ? "#343A45" : Platform.OS === "web" ? "#DDE3EA" : "#CDD5E0",
+        cardBorder: isDark ? "#343A45" : "#DDE3EA",
         cardShadow: isDark ? "#000000" : "#101828",
         skeleton: isDark ? "#23272E" : "#F0F2F5",
     }), [isDark]);
@@ -691,12 +691,11 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     filterUnderlineActive: { backgroundColor: ORANGE },
     cardGap: { height: 14 },
     orderCard: {
-        backgroundColor: Platform.OS === "web" ? colors.page : colors.surface,
-        borderWidth: Platform.OS === "android" || Platform.OS === "web" ? 0 : 1,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
         borderColor: colors.cardBorder,
         borderRadius: 18,
         padding: 15,
-        paddingHorizontal: Platform.OS === "web" ? 0 : 15,
         ...Platform.select({
             ios: {
                 shadowColor: colors.cardShadow,
@@ -704,8 +703,8 @@ const createStyles = (colors: Colors) => StyleSheet.create({
                 shadowOpacity: 0.14,
                 shadowRadius: 9,
             },
-            android: { elevation: 0 },
-            web: {},
+            android: { elevation: 2 },
+            web: { boxShadow: `0 3px 12px ${colors.cardShadow}14` },
             default: {},
         }),
     },
@@ -735,7 +734,7 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     browseText: { color: ORANGE, fontFamily: "ChairoSans", fontSize: 14, lineHeight: 19, fontWeight: "600" },
     loader: { marginVertical: 18 },
     skeletonList: { gap: 14 },
-    skeletonCard: { backgroundColor: Platform.OS === "web" ? colors.page : colors.surface, borderWidth: Platform.OS === "web" ? 0 : 1, borderColor: colors.cardBorder, borderRadius: 18, padding: 15, paddingHorizontal: Platform.OS === "web" ? 0 : 15 },
+    skeletonCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: 18, padding: 15 },
     skeletonHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
     skeletonTitle: { width: "42%", height: 18, borderRadius: 5, backgroundColor: colors.skeleton },
     skeletonBadge: { width: 86, height: 28, borderRadius: 14, backgroundColor: colors.skeleton },
