@@ -12,7 +12,7 @@ This document is the final review template. Populate it only from owner-only dur
 - Migration SHA-256: `ac3419cade9767d9257fdceb963ee42d5e454934dec73cd59b17a2366286a9cd`
 - Runner mode: macOS LaunchAgent with owner-login requirement after reboot
 - Customer iOS build 40 / artifact SHA-256: Local signed ad-hoc build `Hungrie-1.0.2-build40-post-soak.ipa`; `dc29f9046d4fbb495835db31e16ef1f83eb89f5a53bec8c55cae4cbf2e5d029b`. Metadata verified as version `1.0.2`, build `40`, bundle `com.hungrie.app`. Cloud EAS build was unavailable because the account's monthly iOS build quota was exhausted; the local EAS build used the approved distribution certificate and device provisioning profile.
-- Customer Android version code 40 / EAS ID / artifact SHA-256: Pending post-fix build. Version code 39 (`7654738d-62d1-4ca2-a065-93412eb4eec6`) is pre-fix evidence only.
+- Customer Android version code 40 / EAS ID / artifact SHA-256: `7931a822-75fe-4d11-b99b-e41fb8734b94`; `71c567962d0708aacc53e2932bd573d3827bf8b816fb1a50d657d18d8a842ae2`. The internal APK is `Hungrie-1.0.2-version40-post-soak.apk`; package metadata and emulator installation confirm `com.hungrie.app`, `1.0.2` (40). Version code 39 (`7654738d-62d1-4ca2-a065-93412eb4eec6`) is pre-fix evidence only.
 - Restaurant Staging deployment/checksum: `https://hungrie-restaurant--l38zjzhj1h.expo.app` (alias `https://hungrie-restaurant--staging.expo.app`); `f7d21709fb9b92de27b745ce3f2cf1fe72c15c687a628d0857e4a5f726f11353`
 - Admin Staging deployment ID/checksum: Pending
 

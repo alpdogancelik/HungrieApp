@@ -9,12 +9,12 @@
 | AUTO-01 | Clean reset, lint, pgTAP, concurrency, runner/power tests | All pass | Pending |
 | AUTO-02 | Backup, checksum, migration, grants, RLS, cron, environment isolation | Exact reviewed Staging state; Production untouched | Pending |
 | AUTO-03 | LaunchAgent and power preflight | AC, AC sleep disabled, managed assertions active, reviewed paths loaded | Pending |
-| AUTO-04 | Authorization matrix | Active roles pass only their portal/scope; pending, suspended, revoked, unmapped and anonymous fail closed; recent-TOTP and stale auth behave correctly | Pending |
-| AUTO-05 | Load | 10 workers; 50/min × 15m; 100/min × 2m; latency/error limits pass | Pending |
-| AUTO-06 | Deadline | More than 100 drained; natural five-minute order expires; persisted drain/job-health evidence and p95/max lag pass | Pending |
-| AUTO-07 | Incident detector | Below/at/above threshold, ratio, concurrency, uniqueness, resolution, cooldown, SLA and no automatic suspension pass | Pending |
-| AUTO-08 | Persistent soak | 40 real-contract automated terminal journeys over 24h; no uncovered heartbeat gap over 5m | Pending |
-| AUTO-09 | Monitoring/reconciliation | No critical incident, permanently missed order, duplicate transition, unexplained backlog, or unexplained failure | Pending |
+| AUTO-04 | Authorization matrix | Active roles pass only their portal/scope; pending, suspended, revoked, unmapped and anonymous fail closed; recent-TOTP and stale auth behave correctly | Passed in run `0c718e92-0fbe-4aa5-91b2-e8a82c1c2fe9`; see Phase 7 review |
+| AUTO-05 | Load | 10 workers; 50/min × 15m; 100/min × 2m; latency/error limits pass | Passed in run `66b15925-20a8-44d1-8e73-c91eff0d7c99`; see Phase 7 review |
+| AUTO-06 | Deadline | More than 100 drained; natural five-minute order expires; persisted drain/job-health evidence and p95/max lag pass | Passed in run `623e875c-16a1-456e-b2ad-d1eac5dc3092`; see Phase 7 review |
+| AUTO-07 | Incident detector | Below/at/above threshold, ratio, concurrency, uniqueness, resolution, cooldown, SLA and no automatic suspension pass | Passed in run `594007d8-e62c-4958-b3a5-1db3c24b5144`; see Phase 7 review |
+| AUTO-08 | Persistent soak | 40 real-contract automated terminal journeys over 24h; no uncovered heartbeat gap over 5m | Passed in run `5bf872a2-e597-4c2c-ae41-8f82bb7b0da5`: 40/40, maximum heartbeat gap 64.692s; see Phase 7 review |
+| AUTO-09 | Monitoring/reconciliation | No critical incident, permanently missed order, duplicate transition, unexplained backlog, or unexplained failure | Soak monitoring passed with 0 critical incidents, missed orders, and duplicate transitions; final fixture cleanup reconciliation remains AUTO-10 |
 | AUTO-10 | Cleanup | Cleanup SQL first passes rollback-only validation; only the canonical `phase7_` fixture set is removed; zero nonterminal/duplicate-transition rows; baseline counts/digests reconcile; settings and Mac power restored; runner removed | Pending |
 
 ## Manual Customer device evidence
@@ -58,6 +58,6 @@ Run every row on both a physical iPhone using build 40 and Google Pixel 9 using 
 
 ## Owner acceptance
 
-- Automated terminal journeys: `0 / 40` until durable evidence is recorded.
-- Manual terminal journeys: `0 / 10` until human evidence is recorded.
+- Automated terminal journeys: `40 / 40` in finalized durable soak evidence.
+- Manual terminal journeys: `6 / 10` accepted from the owner-only workbook; four post-fix retests remain. The physical Pixel 9 and other empty manual rows remain open.
 - App-owner Phase 7 approval: **Not given**.
