@@ -19,7 +19,7 @@
 
 ## Manual Customer device evidence
 
-Run the follow-up rows on a physical iPhone using build 41 and Google Pixel 9 using version code 41 once those artifacts are available. Build 40 is earlier post-soak evidence; Android version code 39 is pre-fix evidence.
+Run the follow-up rows on a physical iPhone using the signed build 41 artifact and Google Pixel 9 using version code 41. Both owner-only artifacts are available; emulator installation is supplementary evidence only. Build 40 is earlier post-soak evidence; Android version code 39 is pre-fix evidence.
 
 | ID | Manual observation | iPhone | Pixel 9 |
 |---|---|---|---|

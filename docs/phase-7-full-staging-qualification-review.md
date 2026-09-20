@@ -11,12 +11,16 @@ This document is the final review template. Populate it only from owner-only dur
 
 - Qualified automated baseline source commit: `9659244c2edb291ef2efabd463bf3d44101fe858`
 - Post-soak corrected application source commit: `6dcbef4195addb56411313b5ca2d72c341f01f53`; evidence-document head used for fresh builds: `55d6c8028c466bff3d281f19a4c5a0fd132b9edc`
+- Cancellation-message and Restaurant notification follow-up source commit: `027ddda4130c6c8592ec1a9a9679e07f7561152f`
 - Migration SHA-256: `ac3419cade9767d9257fdceb963ee42d5e454934dec73cd59b17a2366286a9cd`
 - Follow-up additive Staging cancellation-message migration SHA-256: `74fc88781ad02518cc60c2d86fd8104ca899c3f622d14fca0551fbbd170cc30b`; applied and grant/RLS verified after a restricted backup. Pre/post migration orders and status-event counts and the order digest reconciled exactly.
 - Runner mode: macOS LaunchAgent with owner-login requirement after reboot
 - Customer iOS build 40 / artifact SHA-256: Local signed ad-hoc build `Hungrie-1.0.2-build40-post-soak.ipa`; `dc29f9046d4fbb495835db31e16ef1f83eb89f5a53bec8c55cae4cbf2e5d029b`. Metadata verified as version `1.0.2`, build `40`, bundle `com.hungrie.app`. Cloud EAS build was unavailable because the account's monthly iOS build quota was exhausted; the local EAS build used the approved distribution certificate and device provisioning profile.
 - Customer Android version code 40 / EAS ID / artifact SHA-256: `7931a822-75fe-4d11-b99b-e41fb8734b94`; `71c567962d0708aacc53e2932bd573d3827bf8b816fb1a50d657d18d8a842ae2`. The internal APK is `Hungrie-1.0.2-version40-post-soak.apk`; package metadata and emulator installation confirm `com.hungrie.app`, `1.0.2` (40). Version code 39 (`7654738d-62d1-4ca2-a065-93412eb4eec6`) is pre-fix evidence only.
+- Follow-up Customer iOS build 41: local signed ad-hoc artifact `Hungrie-1.0.2-build41-cancellation-message.ipa`; SHA-256 `1f136955ba98a0bfccbadf239c51b73efe0ce8e7e6948cf8bcd38c1bbf015cb7`. IPA metadata confirms `com.hungrie.app`, version `1.0.2`, build `41`. The owner-only artifact is mode `0600`; physical iPhone retest remains pending.
+- Follow-up Customer Android version code 41: EAS build `0ca9df2e-805e-443b-9b1d-673090fb8871`; owner-only APK `Hungrie-1.0.2-version41-cancellation-message.apk`, SHA-256 `6589e3488e4edf290a4b95bad6f165e70dafa47f8bf08a6608004b2473812d4e`. Package metadata and emulator installation confirm `com.hungrie.app`, version `1.0.2` (41). The artifact is mode `0600`; physical Pixel 9 retest remains pending.
 - Restaurant Staging deployment/checksum: `https://hungrie-restaurant--l38zjzhj1h.expo.app` (alias `https://hungrie-restaurant--staging.expo.app`); `f7d21709fb9b92de27b745ce3f2cf1fe72c15c687a628d0857e4a5f726f11353`
+- Follow-up Restaurant Staging deployment/checksum: `https://hungrie-restaurant--dkxapku412.expo.app` (same Staging alias); `f7e465831abfe73bcd6eac8c3887c65637072b40ba4024a521033cf558ec075d`. The notification cold-link manual timing retest remains pending.
 - Admin Staging deployment ID/checksum: Pending
 
 ## Automated runs
