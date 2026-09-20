@@ -522,8 +522,6 @@ const OrderHistoryScreen = () => {
                     </View>
                 </View>
 
-                <View style={styles.divider} />
-
                 <View style={styles.itemsPreview}>
                     {shownItems.length ? shownItems.map((orderItem, index) => (
                         <Text ellipsizeMode="tail" key={`${String(item.id ?? item.$id)}-${orderItem.itemId || orderItem.name}-${index}`} numberOfLines={1} style={styles.productLine}>
@@ -534,8 +532,6 @@ const OrderHistoryScreen = () => {
                 </View>
 
                 {cancellationReason ? <View style={styles.cancellationRow}><Ionicons color="#D92D20" name="information-circle-outline" size={16} /><Text numberOfLines={2} style={styles.cancellationText}><Text style={styles.cancellationLabel}>{copy.cancellationReason}: </Text>{cancellationReason}</Text></View> : null}
-
-                <View style={styles.divider} />
 
                 <View style={styles.cardFooter}>
                     <Text numberOfLines={1} style={styles.footerMeta}>
@@ -653,9 +649,9 @@ const stylesStatic = StyleSheet.create({
 const OrderSkeleton = ({ styles }: { styles: ReturnType<typeof createStyles> }) => (
     <View style={styles.skeletonCard}>
         <View style={styles.skeletonHeader}><View style={styles.skeletonTitle} /><View style={styles.skeletonBadge} /></View>
-        <View style={styles.skeletonDate} /><View style={styles.divider} />
+        <View style={styles.skeletonDate} />
         <View style={styles.skeletonLine} /><View style={styles.skeletonLineShort} />
-        <View style={styles.divider} /><View style={styles.skeletonFooter} />
+        <View style={styles.skeletonFooter} />
     </View>
 );
 
@@ -675,7 +671,7 @@ type Colors = {
 const createStyles = (colors: Colors) => StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: colors.page },
     listContent: { flexGrow: 1, paddingHorizontal: 22 },
-    header: { paddingBottom: 16, backgroundColor: colors.page, zIndex: 2, elevation: 2 },
+    header: { paddingBottom: 16, backgroundColor: colors.page, zIndex: 2 },
     headerTop: { width: "100%", height: 54, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
     backButton: { width: 44, height: 44, marginLeft: -10, borderRadius: 12, alignItems: "center", justifyContent: "center" },
     backButtonPressed: { backgroundColor: colors.pressed },
@@ -696,7 +692,7 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     cardGap: { height: 14 },
     orderCard: {
         backgroundColor: colors.surface,
-        borderWidth: 1,
+        borderWidth: Platform.OS === "android" ? 0 : 1,
         borderColor: colors.cardBorder,
         borderRadius: 18,
         padding: 15,
@@ -720,12 +716,11 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     statusAndChevron: { flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 7 },
     statusBadge: { height: 28, borderRadius: 999, paddingHorizontal: 9, flexDirection: "row", alignItems: "center", gap: 5 },
     statusText: { fontFamily: "ChairoSans", fontSize: 12.5, lineHeight: 16, fontWeight: "600" },
-    divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginVertical: 11 },
-    itemsPreview: { gap: 3 },
+    itemsPreview: { gap: 3, marginTop: 12 },
     productLine: { color: colors.secondary, fontFamily: "ChairoSans", fontSize: 13.5, lineHeight: 18, fontWeight: "500" },
     moreItems: { color: colors.tertiary, fontFamily: "ChairoSans", fontSize: 13, lineHeight: 17, fontWeight: "500" },
     cancellationRow: { marginTop: 9, borderRadius: 11, backgroundColor: colors.pressed, paddingHorizontal: 10, paddingVertical: 8, flexDirection: "row", alignItems: "flex-start", gap: 7 }, cancellationText: { flex: 1, color: colors.secondary, fontFamily: "ChairoSans", fontSize: 12.5, lineHeight: 17 }, cancellationLabel: { color: colors.primary, fontWeight: "700" },
-    cardFooter: { minHeight: 28, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+    cardFooter: { minHeight: 28, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 14 },
     deliveredActions: { flexShrink: 1, flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", columnGap: 13 },
     footerMeta: { flex: 1, minWidth: 0, color: colors.secondary, fontFamily: "ChairoSans", fontSize: 13, lineHeight: 20 },
     price: { color: colors.primary, fontSize: 16, fontWeight: "700" },
@@ -744,9 +739,9 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     skeletonTitle: { width: "42%", height: 18, borderRadius: 5, backgroundColor: colors.skeleton },
     skeletonBadge: { width: 86, height: 28, borderRadius: 14, backgroundColor: colors.skeleton },
     skeletonDate: { width: 84, height: 12, borderRadius: 4, backgroundColor: colors.skeleton, marginTop: 7 },
-    skeletonLine: { width: "72%", height: 13, borderRadius: 4, backgroundColor: colors.skeleton },
+    skeletonLine: { width: "72%", height: 13, borderRadius: 4, backgroundColor: colors.skeleton, marginTop: 14 },
     skeletonLineShort: { width: "55%", height: 13, borderRadius: 4, backgroundColor: colors.skeleton, marginTop: 6 },
-    skeletonFooter: { width: "35%", height: 18, borderRadius: 4, backgroundColor: colors.skeleton },
+    skeletonFooter: { width: "35%", height: 18, borderRadius: 4, backgroundColor: colors.skeleton, marginTop: 14 },
 });
 
 export default function OrderHistoryRoute() {
