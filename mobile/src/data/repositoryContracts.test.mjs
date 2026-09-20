@@ -228,7 +228,7 @@ test("Supabase repository source files contain concrete domain implementations",
     const expected = {
         "supabase/restaurantRepository.ts": ["active_restaurants", "update_restaurant_details", "listenRestaurantSession"],
         "supabase/menuRepository.ts": ["active_menu_items", "upsert_menu_item", "upsert_category"],
-        "supabase/orderRepository.ts": ["get_my_customer_orders_page_v1", "create_order_v2", "get_my_customer_order_v1", "orderRealtimeCoordinator"],
+        "supabase/orderRepository.ts": ["get_my_customer_orders_page_v1", "create_order_v2", "get_my_customer_order_v2", "orderRealtimeCoordinator"],
         "supabase/reviewRepository.ts": ["published_product_reviews", "submit_my_customer_product_review_v1", "moderate_review"],
         "supabase/addressRepository.ts": ["list_my_customer_addresses_v1", "set_my_customer_default_address_v1", "subscribe"],
         "supabase/profileRepository.ts": ["get_my_customer_profile_v1", "update_my_customer_profile_v1"],
@@ -305,12 +305,13 @@ test("Supabase checkout sends v2 option and removed-ingredient IDs with an opera
 test("Customer orders expose and translate only the safe cancellation reason code", async () => {
     const client = createMockClient({
         rpc: (name) => ({
-            data: name === "get_my_customer_order_v1"
+            data: name === "get_my_customer_order_v2"
                 ? {
                     id: "order-canceled",
                     restaurant_id: "restaurant-1",
                     status: "canceled",
                     cancellation_reason_code: "item_unavailable",
+                    restaurant_cancellation_note: "This item is unavailable today.",
                     subtotal_kurus: 1000,
                     total_kurus: 1000,
                     items: [],
@@ -324,6 +325,7 @@ test("Customer orders expose and translate only the safe cancellation reason cod
     const order = await supabaseOrders.fetchAuthorizedOrder("order-canceled");
 
     assert.equal(order?.cancellationReasonCode, "item_unavailable");
+    assert.equal(order?.restaurantCancellationNote, "This item is unavailable today.");
     assert.equal(getCancellationReasonText(order?.cancellationReasonCode, false), "An item in your order is unavailable.");
     assert.equal(getCancellationReasonText(order?.cancellationReasonCode, true), "Siparişindeki bir ürün mevcut değil.");
     assert.equal(getCancellationReasonText("unsupported_internal_value", false), "The restaurant canceled this order.");

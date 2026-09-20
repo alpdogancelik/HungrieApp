@@ -6,6 +6,7 @@ import { supabase } from "./supabase";
 import type { AccessContext } from "./contracts";
 import { useLocale } from "./providers";
 import { RestaurantNotificationListener } from "./RestaurantNotificationListener";
+import { RestaurantAccessReady } from "./RestaurantAccessReady";
 
 // Invite acceptance must be reachable before an account_access row exists.
 const publicPath = (path: string) =>
@@ -129,7 +130,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   return <>
     {state === "ready" && restaurantId && <RestaurantNotificationListener restaurantId={restaurantId} />}
-    {children}
+    <RestaurantAccessReady.Provider value={state === "ready" && Boolean(restaurantId)}>{children}</RestaurantAccessReady.Provider>
     {state !== "ready" && <div className="access-overlay center" role="status" aria-live="polite">
       <p>{state === "error" ? t.unavailable : t.loading}</p>
       {state === "error" && <button className="button" onClick={() => { setState("loading"); setRetry(value => value + 1); }}>{t.retry}</button>}

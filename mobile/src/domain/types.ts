@@ -190,6 +190,7 @@ export type RestaurantOrder = BaseDocument & {
     total?: string | number;
     status?: OrderStatus | string;
     cancellationReasonCode?: string;
+    restaurantCancellationNote?: string;
     paymentMethod?: string;
     orderItems?: { menuItemId?: string; name?: string; quantity?: number }[];
 };

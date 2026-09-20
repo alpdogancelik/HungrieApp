@@ -3,6 +3,8 @@
 **Status:** Remediation in progress; automated baseline completed, post-fix manual retests remain
 **Production changed:** No
 
+**2026-09-20 follow-up:** The app owner reported that a Restaurant notification link still showed a transient access/order error until polling, and requested an optional Restaurant-written cancellation message on Customer Order details. Corrected source and fresh mobile/Restaurant artifacts are being qualified. The earlier build-40 evidence remains historical and does not qualify these follow-up changes.
+
 This document is the final review template. Populate it only from owner-only durable evidence and manual checklist observations. Never copy credentials, ID tokens, TOTP seeds, addresses, comments, or Customer PII here.
 
 ## Source and deployment identity
@@ -10,6 +12,7 @@ This document is the final review template. Populate it only from owner-only dur
 - Qualified automated baseline source commit: `9659244c2edb291ef2efabd463bf3d44101fe858`
 - Post-soak corrected application source commit: `6dcbef4195addb56411313b5ca2d72c341f01f53`; evidence-document head used for fresh builds: `55d6c8028c466bff3d281f19a4c5a0fd132b9edc`
 - Migration SHA-256: `ac3419cade9767d9257fdceb963ee42d5e454934dec73cd59b17a2366286a9cd`
+- Follow-up additive Staging cancellation-message migration SHA-256: `74fc88781ad02518cc60c2d86fd8104ca899c3f622d14fca0551fbbd170cc30b`; applied and grant/RLS verified after a restricted backup. Pre/post migration orders and status-event counts and the order digest reconciled exactly.
 - Runner mode: macOS LaunchAgent with owner-login requirement after reboot
 - Customer iOS build 40 / artifact SHA-256: Local signed ad-hoc build `Hungrie-1.0.2-build40-post-soak.ipa`; `dc29f9046d4fbb495835db31e16ef1f83eb89f5a53bec8c55cae4cbf2e5d029b`. Metadata verified as version `1.0.2`, build `40`, bundle `com.hungrie.app`. Cloud EAS build was unavailable because the account's monthly iOS build quota was exhausted; the local EAS build used the approved distribution certificate and device provisioning profile.
 - Customer Android version code 40 / EAS ID / artifact SHA-256: `7931a822-75fe-4d11-b99b-e41fb8734b94`; `71c567962d0708aacc53e2932bd573d3827bf8b816fb1a50d657d18d8a842ae2`. The internal APK is `Hungrie-1.0.2-version40-post-soak.apk`; package metadata and emulator installation confirm `com.hungrie.app`, `1.0.2` (40). Version code 39 (`7654738d-62d1-4ca2-a065-93412eb4eec6`) is pre-fix evidence only.
@@ -44,4 +47,6 @@ Ten order journeys were executed and recorded in the owner-only workbook. Six pa
 
 ## Decision
 
-Phase 7 remains open. The backend reliability soak remains valid for the unchanged database, runner, and guarded order contracts; the Customer and Restaurant source fixes require fresh artifacts and targeted manual regression. Phase 8 must not begin until every automated and manual gate passes and the app owner explicitly approves Phase 7.
+Phase 7 remains open. The 24-hour baseline soak remains valid for its original guarded order journey and runner, which were not changed. The additive cancellation-message contract was introduced afterward and requires its own targeted hosted and manual qualification; the old soak is not evidence for that new behavior. The Customer and Restaurant source fixes require fresh artifacts and targeted manual regression. Phase 8 must not begin until every automated and manual gate passes and the app owner explicitly approves Phase 7.
+
+The new cancellation-message RPC is additive and calls the existing guarded transition contract. Its customer-visible text is stored separately from historical internal Restaurant notes. Local migration reset, all 795 pgTAP checks, concurrency suites, JavaScript tests, type checks, lint and web exports passed. A hosted real-token probe confirmed that an active Customer can read the new owned-order contract while a Restaurant identity receives 403. The new cancellation action and notification cold-link timing still need Staging browser/device retests.

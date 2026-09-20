@@ -35,6 +35,7 @@ const normalizeOrder = (row: any) => ({
     restaurantId: String(row.restaurant_id || ""),
     status: row.status || "pending",
     cancellationReasonCode: row.cancellation_reason_code || undefined,
+    restaurantCancellationNote: row.restaurant_cancellation_note || undefined,
     paymentMethod: row.payment_method || "pos",
     subtotal: fromKurus(row.subtotal_kurus),
     deliveryFee: fromKurus(row.delivery_fee_kurus),
@@ -72,7 +73,7 @@ const normalizePage = (value: any): OrderPage => ({
 
 const fetchOrderById = async (orderId: string) => {
     const row = await measureDevelopment("repository.order.detail", async () =>
-        throwIfError(await requireSupabase().rpc("get_my_customer_order_v1", { p_order_id: orderId })),
+        throwIfError(await requireSupabase().rpc("get_my_customer_order_v2", { p_order_id: orderId })),
     );
     return row ? hydrateOrder(row) : null;
 };

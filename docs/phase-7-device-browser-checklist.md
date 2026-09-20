@@ -19,7 +19,7 @@
 
 ## Manual Customer device evidence
 
-Run every row on both a physical iPhone using build 40 and Google Pixel 9 using post-soak version code 40. The earlier Android version code 39 artifact is retained only as pre-fix evidence.
+Run the follow-up rows on a physical iPhone using build 41 and Google Pixel 9 using version code 41 once those artifacts are available. Build 40 is earlier post-soak evidence; Android version code 39 is pre-fix evidence.
 
 | ID | Manual observation | iPhone | Pixel 9 |
 |---|---|---|---|
@@ -34,6 +34,7 @@ Run every row on both a physical iPhone using build 40 and Google Pixel 9 using 
 | CUST-09 | Keyboard, safe area, large text, screen reader, contrast, visual design |  |  |
 | CUST-10 | Turkish/English and supported light/dark theme |  |  |
 | CUST-11 | Five complete terminal manual order journeys across Customer and staffed Restaurant |  |  |
+| CUST-12 | Canceled order shows the Restaurant's customer-visible message when provided and omits its message area when blank; older internal notes remain hidden |  |  |
 
 ## Manual Restaurant browser evidence
 
@@ -47,6 +48,8 @@ Run every row on both a physical iPhone using build 40 and Google Pixel 9 using 
 | REST-06 | Machine sleep/wake and network loss/recovery |  |  |  |  |
 | REST-07 | PWA installation and private-cache inspection |  |  |  |  |
 | REST-08 | Keyboard, screen reader, contrast, zoom, and visual review |  |  |  |  |
+| REST-09 | Notification selection loads the related order as soon as Restaurant access is ready, with no false service-unavailable error or poll wait |  |  |  |  |
+| REST-10 | Cancellation message is clearly labeled as customer-visible; submitted text and empty-message behavior match Customer Order details |  |  |  |  |
 
 ## Manual Admin evidence
 

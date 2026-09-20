@@ -3,6 +3,7 @@ import { useLocalSearchParams } from "expo-router";
 import { Shell } from "../../src/Shell";
 import { supabase } from "../../src/supabase";
 import { useLocale } from "../../src/providers";
+import { useRestaurantAccessReady } from "../../src/RestaurantAccessReady";
 
 const reasons = ["too_busy", "item_unavailable", "closing", "equipment_issue", "delivery_unavailable", "other"];
 const requestTimeoutMs = 12000;
@@ -69,6 +70,7 @@ const customizationLabels = (value: unknown, locale: "en" | "tr"): string[] => {
 
 export default function Order() {
   const { orderId } = useLocalSearchParams<{ orderId: string }>();
+  const accessReady = useRestaurantAccessReady();
   const { locale, t } = useLocale();
   const [data, setData] = useState<OrderDetail | null>(null);
   const [error, setError] = useState("");
@@ -89,10 +91,12 @@ export default function Order() {
     placed: "Sipariş zamanı", deadline: "Yanıt sonu", payment: "Ödeme", items: "Ürünler",
     subtotal: "Ara toplam", discount: "İndirim", service: "Hizmet bedeli", delivery: "Teslimat",
     tip: "Bahşiş", total: "Toplam", notes: "Müşteri notu", cancel: "Siparişi iptal et",
+    customerMessage: "Müşteriye mesaj (isteğe bağlı)",
   } : {
     placed: "Order placed", deadline: "Response deadline", payment: "Payment", items: "Items",
     subtotal: "Subtotal", discount: "Discount", service: "Service fee", delivery: "Delivery",
     tip: "Tip", total: "Total", notes: "Customer note", cancel: "Cancel order",
+    customerMessage: "Message to customer (optional)",
   };
 
   const changedNotice = useCallback((status: string) => locale === "tr"
@@ -129,6 +133,7 @@ export default function Order() {
     latestOrder.current = null;
     setData(null);
     setNotice("");
+    if (!accessReady || !orderId) return;
     void load();
     const reconcile = () => { if (document.visibilityState === "visible" && navigator.onLine) void load(); };
     const timer = setInterval(reconcile, pollMs);
@@ -141,7 +146,7 @@ export default function Order() {
       window.removeEventListener("online", reconcile);
       document.removeEventListener("visibilitychange", reconcile);
     };
-  }, [load]);
+  }, [accessReady, load, orderId]);
 
   async function transition(status: string) {
     if (!data || inFlight.current) return;
@@ -152,11 +157,17 @@ export default function Order() {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
     try {
-      const result = await supabase.rpc("restaurant_transition_order_v1" as never, {
-        p_order_id: String(orderId), p_expected_version: data.updated_at, p_new_status: status,
-        p_reason_code: status === "canceled" ? reason : null, p_note: status === "canceled" ? note : null,
-        p_operation_id: crypto.randomUUID(),
-      } as never).abortSignal(controller.signal);
+      const operationId = crypto.randomUUID();
+      const request = status === "canceled"
+        ? supabase.rpc("restaurant_cancel_order_v2" as never, {
+          p_order_id: String(orderId), p_expected_version: data.updated_at,
+          p_reason_code: reason, p_customer_message: note.trim(), p_operation_id: operationId,
+        } as never)
+        : supabase.rpc("restaurant_transition_order_v1" as never, {
+          p_order_id: String(orderId), p_expected_version: data.updated_at, p_new_status: status,
+          p_reason_code: null, p_note: null, p_operation_id: operationId,
+        } as never);
+      const result = await request.abortSignal(controller.signal);
       if (result.error) {
         const current = await load();
         if (result.error.code === "40001" && current) setNotice(changedNotice(current.status));
@@ -186,10 +197,10 @@ export default function Order() {
       <div><p className="eyebrow">{locale === "tr" ? "Sipariş" : "Order"}</p><h1>#{String(orderId).slice(0, 8)}</h1></div>
       {data && <span className={`order-status status-${data.status}`}>{statusLabel(data.status, locale)}</span>}
     </div>
-    {error && <p className="danger" role="alert">{error}</p>}
+    {accessReady && error && <p className="danger" role="alert">{error}</p>}
     {notice && <p className="banner" role="status" aria-live="polite">{notice}</p>}
-    <p><button type="button" disabled={transitioning} onClick={() => void load()}>{t.refresh}</button></p>
-    {!data ? <section className="card"><p>{t.loading}</p></section> : <>
+    <p><button type="button" disabled={transitioning || !accessReady} onClick={() => void load()}>{t.refresh}</button></p>
+    {!accessReady || !data ? <section className="card"><p>{t.loading}</p></section> : <>
       <section className="card order-meta">
         <div><span>{labels.placed}</span><strong>{date(data.created_at)}</strong></div>
         <div><span>{labels.deadline}</span><strong>{date(data.approval_deadline_at)}</strong></div>
@@ -227,7 +238,7 @@ export default function Order() {
       {!['delivered', 'canceled'].includes(data.status) && <section className="card cancel-card">
         <h2>{labels.cancel}</h2>
         <label className="field">{t.reason}<select value={reason} onChange={(event) => setReason(event.target.value)}>{reasons.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}</select></label>
-        <label className="field">{t.note}<textarea maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} /></label>
+        <label className="field">{labels.customerMessage}<textarea maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} /></label>
         <button disabled={transitioning} onClick={() => void transition("canceled")}>{labels.cancel}</button>
       </section>}
     </>}

@@ -2015,6 +2015,7 @@ export type Database = {
         Returns: Json
       }
       get_my_customer_order_v1: { Args: { p_order_id: string }; Returns: Json }
+      get_my_customer_order_v2: { Args: { p_order_id: string }; Returns: Json }
       get_my_customer_orders_page_v1: {
         Args: { p_cursor?: string; p_limit?: number }
         Returns: Json
@@ -2216,6 +2217,16 @@ export type Database = {
       restaurant_can_manage_media_object_v1: {
         Args: { p_object_name: string }
         Returns: boolean
+      }
+      restaurant_cancel_order_v2: {
+        Args: {
+          p_customer_message: string
+          p_expected_version: string
+          p_operation_id: string
+          p_order_id: string
+          p_reason_code: string
+        }
+        Returns: Json
       }
       restaurant_get_dashboard_v1: { Args: never; Returns: Json }
       restaurant_get_menu_v2: { Args: never; Returns: Json }
