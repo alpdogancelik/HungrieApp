@@ -9,6 +9,8 @@
 
 **2026-09-21 Orders follow-up:** The app owner reported remaining gray lines in the Customer Orders list. Explicit card dividers, the Android card outline, and the sticky-header elevation were removed; spacing now separates order sections. The next owner-built mobile build/version code is 43, and physical-device visual checks for both Categories and Orders remain pending. Build 42 cannot qualify this Orders change.
 
+**2026-09-21 notification-language follow-up:** The app owner reported English Customer pushes while the app was set to Turkish. The Customer app now restores its saved language before push registration and stores that language on its device token; language switches update the registered token. The worker continues to render Turkish or English from the claimed delivery language, with a profile-language fallback for older tokens. The additive Staging migration `20260921100000_customer_push_language.sql` passed guarded preflight, restricted backup, application, grant checks, and exact order-baseline reconciliation. New iOS/Android build 44 and physical-device Turkish/English push retests remain pending; no older build qualifies this change.
+
 This document is the final review template. Populate it only from owner-only durable evidence and manual checklist observations. Never copy credentials, ID tokens, TOTP seeds, addresses, comments, or Customer PII here.
 
 ## Source and deployment identity
@@ -18,6 +20,7 @@ This document is the final review template. Populate it only from owner-only dur
 - Cancellation-message and Restaurant notification follow-up source commit: `027ddda4130c6c8592ec1a9a9679e07f7561152f`
 - Migration SHA-256: `ac3419cade9767d9257fdceb963ee42d5e454934dec73cd59b17a2366286a9cd`
 - Follow-up additive Staging cancellation-message migration SHA-256: `74fc88781ad02518cc60c2d86fd8104ca899c3f622d14fca0551fbbd170cc30b`; applied and grant/RLS verified after a restricted backup. Pre/post migration orders and status-event counts and the order digest reconciled exactly.
+- Follow-up additive Staging Customer push-language migration SHA-256: `d36097b124818e12051cefd80526743f782f1562502d98125e7e80451c279e84`; applied after restricted backup and verified. Customer RPC ownership/grants, token privacy, token-first language selection, and the pre/post order baseline reconciled. Native build 44 and physical push observations are pending.
 - Runner mode: macOS LaunchAgent with owner-login requirement after reboot
 - Customer iOS build 40 / artifact SHA-256: Local signed ad-hoc build `Hungrie-1.0.2-build40-post-soak.ipa`; `dc29f9046d4fbb495835db31e16ef1f83eb89f5a53bec8c55cae4cbf2e5d029b`. Metadata verified as version `1.0.2`, build `40`, bundle `com.hungrie.app`. Cloud EAS build was unavailable because the account's monthly iOS build quota was exhausted; the local EAS build used the approved distribution certificate and device provisioning profile.
 - Customer Android version code 40 / EAS ID / artifact SHA-256: `7931a822-75fe-4d11-b99b-e41fb8734b94`; `71c567962d0708aacc53e2932bd573d3827bf8b816fb1a50d657d18d8a842ae2`. The internal APK is `Hungrie-1.0.2-version40-post-soak.apk`; package metadata and emulator installation confirm `com.hungrie.app`, `1.0.2` (40). Version code 39 (`7654738d-62d1-4ca2-a065-93412eb4eec6`) is pre-fix evidence only.

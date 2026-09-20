@@ -13,6 +13,7 @@ import * as supabaseOrders from "./supabase/orderRepository.ts";
 import * as supabaseReviews from "./supabase/reviewRepository.ts";
 import * as reviewV2 from "./supabase/reviewV2Repository.ts";
 import * as supabaseNotifications from "./supabase/notificationRepository.ts";
+import i18n from "../lib/i18n.ts";
 import * as supabaseRestaurants from "./supabase/restaurantRepository.ts";
 import { supabaseFavoritesRepository } from "./supabase/favoritesRepository.ts";
 import { getMembershipForFirebaseUser } from "./supabase/membershipQueries.ts";
@@ -377,13 +378,32 @@ test("Supabase notifications register Expo tokens, persist preferences, and revo
     setSupabaseClientForTests(client);
     const registration = await supabaseNotifications.registerPushToken();
     assert.equal(registration.provider, "expo");
-    assert.ok(client.calls.some((call) => call.kind === "rpc" && call.name === "register_my_customer_push_token_v1" && call.args.p_platform === "ios"));
+    assert.ok(client.calls.some((call) => call.kind === "rpc" && call.name === "register_my_customer_push_token_v2" && call.args.p_platform === "ios" && call.args.p_preferred_language === "en"));
     assert.deepEqual(await supabaseNotifications.getPreferences(), { orderStatus: true, restaurantOrders: false, reviewReplies: true });
     assert.deepEqual(await supabaseNotifications.updatePreferences({ orderStatus: false, restaurantOrders: true, reviewReplies: false }), {
         orderStatus: false, restaurantOrders: false, reviewReplies: false,
     });
     await supabaseNotifications.unregisterPushToken();
     assert.ok(client.calls.some((call) => call.kind === "rpc" && call.name === "unregister_my_customer_push_token_v1"));
+});
+
+test("Customer push registration and later language changes use the app language", async () => {
+    const client = createMockClient();
+    setSupabaseClientForTests(client);
+    await i18n.changeLanguage("tr");
+    try {
+        await supabaseNotifications.registerPushToken();
+        assert.ok(client.calls.some((call) => call.name === "register_my_customer_push_token_v2" && call.args.p_preferred_language === "tr"));
+        await i18n.changeLanguage("en");
+        await supabaseNotifications.syncRegisteredPushLanguage();
+        const registrations = client.calls.filter((call) => call.name === "register_my_customer_push_token_v2");
+        assert.equal(registrations.length, 2);
+        assert.equal(registrations[1].args.p_preferred_language, "en");
+        assert.equal(registrations[1].args.p_token, registrations[0].args.p_token);
+    } finally {
+        await supabaseNotifications.unregisterPushToken();
+        await i18n.changeLanguage("en");
+    }
 });
 
 test("push registration retry is bounded and recovers without overlapping work", async () => {

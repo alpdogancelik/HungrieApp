@@ -1,4 +1,5 @@
 import { Platform } from "react-native";
+import i18n from "@/src/lib/i18n";
 import type { NotificationPreferences, NotificationRepository } from "@/src/data/contracts";
 import { NotificationManager } from "@/src/features/notifications/NotificationManager";
 import { storage } from "@/src/lib/storage";
@@ -8,6 +9,7 @@ const ACTIVE_BINDING_KEY = "supabase_push_token_active_binding_v1";
 const LEGACY_PREFS_KEY = "hungrie_notification_prefs_v1";
 const PREFS_MIGRATED_KEY = "supabase_notification_prefs_migrated_v1";
 const defaults: NotificationPreferences = { orderStatus: true, restaurantOrders: false, reviewReplies: true };
+const pushLanguage = (): "en" | "tr" => i18n.language?.split("-")[0] === "tr" ? "tr" : "en";
 
 const normalizePreferences = (value: any): NotificationPreferences => ({
     orderStatus: value?.orderStatus !== false,
@@ -49,12 +51,28 @@ export const registerPushToken: NotificationRepository["registerPushToken"] = as
     await migrateLegacyPreferences();
     const registration = await NotificationManager.getExpoPushToken();
     if (!registration?.token || (registration.platform !== "ios" && registration.platform !== "android")) return null;
-    throwIfError(await requireSupabase().rpc("register_my_customer_push_token_v1", {
+    const registeredLanguage = pushLanguage();
+    throwIfError(await requireSupabase().rpc("register_my_customer_push_token_v2", {
         p_token: registration.token,
         p_platform: registration.platform,
+        p_preferred_language: registeredLanguage,
     }));
     await storage.setItem(ACTIVE_BINDING_KEY, registration.token);
+    if (pushLanguage() !== registeredLanguage) await syncRegisteredPushLanguage();
     return registration;
+};
+
+// Called only after the root Customer access guard is ready. Reuses the bound
+// token, so switching language never prompts for notification permission.
+export const syncRegisteredPushLanguage = async (): Promise<void> => {
+    if (Platform.OS !== "ios" && Platform.OS !== "android") return;
+    const token = await storage.getItem(ACTIVE_BINDING_KEY);
+    if (!token) return;
+    throwIfError(await requireSupabase().rpc("register_my_customer_push_token_v2", {
+        p_token: token,
+        p_platform: Platform.OS,
+        p_preferred_language: pushLanguage(),
+    }));
 };
 
 export const unregisterPushToken: NotificationRepository["unregisterPushToken"] = async () => {

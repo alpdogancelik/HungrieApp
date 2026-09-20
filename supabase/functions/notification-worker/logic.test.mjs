@@ -27,6 +27,14 @@ test("builds a minimal localized order payload", () => {
   assert.equal(JSON.stringify(message).includes("delivery_id"), false);
 });
 
+test("uses Turkish for Customer order status and review notifications", () => {
+  const orderMessage = buildExpoMessage({ ...delivery, preferred_language: "tr", expected_status: "delivered" });
+  assert.equal(orderMessage.title, "Sipariş teslim edildi");
+  assert.equal(orderMessage.body, "Fixture Restaurant: Afiyet olsun.");
+  const reviewMessage = buildExpoMessage({ ...delivery, preferred_language: "tr", event_type: "review_reply" });
+  assert.equal(reviewMessage.title, "Restoran yanıtladı");
+});
+
 test("uses the restaurant sound and Turkish copy", () => {
   const message = buildExpoMessage({ ...delivery, event_type: "restaurant_reminder", preferred_language: "tr" });
   assert.equal(message.title, "Sipariş hatırlatması");

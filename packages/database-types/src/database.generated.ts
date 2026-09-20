@@ -2175,6 +2175,14 @@ export type Database = {
         }
         Returns: string
       }
+      register_my_customer_push_token_v2: {
+        Args: {
+          p_platform: Database["public"]["Enums"]["notification_platform"]
+          p_preferred_language: string
+          p_token: string
+        }
+        Returns: string
+      }
       register_my_push_token: {
         Args: {
           p_platform: Database["public"]["Enums"]["notification_platform"]

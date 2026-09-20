@@ -11,10 +11,11 @@ import { Animated, AppState, Easing, Platform, StyleSheet, Text, TextInput, View
 import { Image } from "expo-image";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { onIdTokenChanged } from "firebase/auth";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import useAuthStore from "@/store/auth.store";
 import { ThemeProvider, useTheme } from "@/src/theme/themeContext";
-import "@/src/lib/i18n";
+import i18n from "@/src/lib/i18n";
 import "./globals.css";
 import { isRemotePushSupported, NotificationManager } from "@/src/features/notifications/NotificationManager";
 import { startOrderStatusWatcher } from "@/src/features/notifications/orderStatusWatcher";
@@ -28,7 +29,7 @@ import MaintenanceGate from "@/src/features/runtime/MaintenanceGate";
 import CustomerReleaseGate from "@/src/features/runtime/CustomerReleaseGate";
 import CustomerAccessGate from "@/src/features/auth/CustomerAccessGate";
 import CustomerReviewRecoveryCoordinator from "@/src/features/reviews/CustomerReviewRecoveryCoordinator";
-import { registerPushToken, unregisterPushToken } from "@/src/data/notificationRepository";
+import { registerPushToken, syncRegisteredPushLanguage, unregisterPushToken } from "@/src/data/notificationRepository";
 import { useStableWindowDimensions } from "@/src/lib/useStableWindowDimensions";
 import { useReducedMotion } from "@/src/lib/useReducedMotion";
 import webSplashImage from "../assets/hungriesplash.png";
@@ -143,6 +144,7 @@ function RootLayoutBase() {
     const [launchSplashVisible, setLaunchSplashVisible] = useState(true);
     const [releaseReady, setReleaseReady] = useState(false);
     const [customerAccessReadyFor, setCustomerAccessReadyFor] = useState<string | null>(null);
+    const [languageReady, setLanguageReady] = useState(false);
     const customerIdentityKey = isAuthenticated ? String(getCurrentAuthUserId() || "authenticated") : "guest";
     const customerAccessReady = customerAccessReadyFor === customerIdentityKey;
     const finishLaunchSplash = useCallback(() => setLaunchSplashVisible(false), []);
@@ -246,6 +248,27 @@ function RootLayoutBase() {
     }, []);
 
     useEffect(() => {
+        let active = true;
+        void AsyncStorage.getItem("hungrie.language").then(async (stored) => {
+            if (stored === "tr" || stored === "en") await i18n.changeLanguage(stored);
+        }).catch(() => null).finally(() => {
+            if (active) setLanguageReady(true);
+        });
+        return () => { active = false; };
+    }, []);
+
+    useEffect(() => {
+        if (!languageReady || !isAuthenticated || !customerAccessReady || !isRemotePushSupported()) return;
+        const onLanguageChanged = () => {
+            void syncRegisteredPushLanguage().catch((error) => {
+                console.warn("[notifications] Failed to update push language", error);
+            });
+        };
+        i18n.on("languageChanged", onLanguageChanged);
+        return () => i18n.off("languageChanged", onLanguageChanged);
+    }, [customerAccessReady, isAuthenticated, languageReady]);
+
+    useEffect(() => {
         if (Platform.OS !== "android") return;
         NotificationManager.ensureNotificationChannels().catch((error) => {
             console.warn("[notifications] Failed to initialize channels", error);
@@ -253,7 +276,7 @@ function RootLayoutBase() {
     }, []);
 
     useEffect(() => {
-        if (!isAuthenticated || !customerAccessReady) return;
+        if (!isAuthenticated || !customerAccessReady || !languageReady) return;
         if (!isRemotePushSupported()) return;
         let cancelled = false;
 
@@ -281,7 +304,7 @@ function RootLayoutBase() {
             appStateSubscription.remove();
             networkSubscription.remove();
         };
-    }, [customerAccessReady, isAuthenticated, user]);
+    }, [customerAccessReady, isAuthenticated, languageReady, user]);
 
     useEffect(() => {
         if (isLoading) return;

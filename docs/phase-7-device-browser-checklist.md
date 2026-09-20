@@ -19,7 +19,7 @@
 
 ## Manual Customer device evidence
 
-Run the follow-up rows on a physical iPhone and Google Pixel 9 using build/version code 43 after the app owner builds it. Build 42 does not include the Orders-line fix; build 41 also predates the Categories card fix. Emulator installation is supplementary evidence only. Build 40 is earlier post-soak evidence; Android version code 39 is pre-fix evidence.
+Run the follow-up rows on a physical iPhone and Google Pixel 9 using build/version code 44 after the app owner builds it. Build 44 includes the Customer push-language fix; build 43 includes the Orders-line fix. Emulator installation is supplementary evidence only. Build 40 is earlier post-soak evidence; Android version code 39 is pre-fix evidence.
 
 | ID | Manual observation | iPhone | Pixel 9 |
 |---|---|---|---|
@@ -37,6 +37,7 @@ Run the follow-up rows on a physical iPhone and Google Pixel 9 using build/versi
 | CUST-12 | Canceled order shows the Restaurant's customer-visible message when provided and omits its message area when blank; older internal notes remain hidden |  |  |
 | CUST-13 | All Categories cards show food images and complete labels without gray footer blocks or clipping; incomplete final row aligns from the left |  |  |
 | CUST-14 | Orders list cards have no unwanted gray internal lines or sticky-header shadow on Android; order content and actions remain readable |  |  |
+| CUST-15 | Set Turkish, receive an order-status push and review-reply push in Turkish; switch to English and confirm later pushes use English; repeat after cold start |  |  |
 
 ## Manual Restaurant browser evidence
 

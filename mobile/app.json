@@ -12,7 +12,7 @@
     "ios": {
       "icon": "./assets/app-icon/app-icon-1024.png",
       "supportsTablet": true,
-      "buildNumber": "43",
+      "buildNumber": "44",
       "bundleIdentifier": "com.hungrie.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -28,7 +28,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.hungrie.app",
-      "versionCode": 43,
+      "versionCode": 44,
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "resize"
     },

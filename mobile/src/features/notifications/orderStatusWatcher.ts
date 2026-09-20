@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { isRemotePushSupported, NotificationManager } from "@/src/features/notifications/NotificationManager";
 import { autoCancelExpiredPendingOrders, subscribeLatestOrderSummary } from "@/src/data/orderRepository";
 import { getRepositoryBackend } from "@/src/data/backendFlags";
+import i18n from "@/src/lib/i18n";
 
 type NormalizedOrderStatus = "pending" | "preparing" | "ready" | "out_for_delivery" | "delivered" | "canceled";
 type StatusMap = Record<string, NormalizedOrderStatus>;
@@ -46,6 +47,18 @@ const getRestaurantName = (order: any) =>
 
 const toNotification = (order: any, status: NormalizedOrderStatus) => {
     const restaurantName = getRestaurantName(order);
+    if (i18n.language?.split("-")[0] !== "tr") {
+        const english = {
+            pending: ["Order received", "Your order is waiting for restaurant approval."],
+            preparing: ["Order accepted", "Your order is being prepared."],
+            ready: ["Order ready", "Your order is ready for courier pickup."],
+            out_for_delivery: ["Order on the way", "Your order is out for delivery."],
+            delivered: ["Order delivered", "Enjoy your meal."],
+            canceled: ["Order canceled", "Your order was canceled."],
+        } as const;
+        const [title, body] = english[status];
+        return { title, body: `${restaurantName}: ${body}` };
+    }
     switch (status) {
         case "pending":
             return {
