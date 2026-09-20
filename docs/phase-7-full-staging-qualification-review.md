@@ -8,7 +8,7 @@ This document is the final review template. Populate it only from owner-only dur
 ## Source and deployment identity
 
 - Qualified automated baseline source commit: `9659244c2edb291ef2efabd463bf3d44101fe858`
-- Post-soak fix source commit: Pending commit and deployment
+- Post-soak corrected application source commit: `6dcbef4195addb56411313b5ca2d72c341f01f53`; artifact/deployment identity pending
 - Migration SHA-256: `ac3419cade9767d9257fdceb963ee42d5e454934dec73cd59b17a2366286a9cd`
 - Runner mode: macOS LaunchAgent with owner-login requirement after reboot
 - Customer iOS build 40 / EAS ID / artifact SHA-256: Pending
