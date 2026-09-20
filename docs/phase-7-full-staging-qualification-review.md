@@ -5,6 +5,8 @@
 
 **2026-09-20 follow-up:** The app owner reported that a Restaurant notification link still showed a transient access/order error until polling, and requested an optional Restaurant-written cancellation message on Customer Order details. Corrected source and fresh mobile/Restaurant artifacts are being qualified. The earlier build-40 evidence remains historical and does not qualify these follow-up changes.
 
+**2026-09-21 follow-up:** The app owner reported gray blocks and clipped labels throughout the Customer Categories grid. The card surface, shadow placement, footer sizing, image fitting, and final-row alignment were corrected in source. The app-owner-built mobile build/version code 42 and physical-device visual checks are pending; build 41 cannot qualify this Categories fix.
+
 This document is the final review template. Populate it only from owner-only durable evidence and manual checklist observations. Never copy credentials, ID tokens, TOTP seeds, addresses, comments, or Customer PII here.
 
 ## Source and deployment identity

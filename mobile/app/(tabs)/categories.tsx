@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
-import { FlatList, Pressable, Text, View } from "react-native";
+import { FlatList, Pressable, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image, type ImageSource } from "expo-image";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -47,9 +47,11 @@ export default function CategoriesScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const tabBarHeight = useBottomTabBarHeight();
+    const { width } = useWindowDimensions();
     const { i18n } = useTranslation();
     const { theme, variant } = useTheme();
     const isTurkish = i18n.language?.startsWith("tr");
+    const cardWidth = (width - 44 - 24) / 4;
 
     const categories = useMemo(
         () =>
@@ -99,11 +101,11 @@ export default function CategoriesScreen() {
                         </Text>
                     }
                     renderItem={({ item }) => (
-                        <Pressable onPress={() => openCategory(item)} style={styles.cardPressable}>
+                        <Pressable onPress={() => openCategory(item)} style={[styles.cardPressable, { width: cardWidth, backgroundColor: theme.colors.surface }]}>
                             {({ pressed }) => (
-                                <View style={[styles.card, { backgroundColor: "transparent", borderColor: theme.colors.border }, pressed ? styles.cardPressed : null]}>
-                                    <Image cachePolicy="memory-disk" contentFit="cover" source={item.displayImage} style={styles.categoryImage} transition={120} />
-                                    <View style={styles.cardFooter}>
+                                <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }, pressed ? styles.cardPressed : null]}>
+                                    <Image cachePolicy="memory-disk" contentFit="contain" source={item.displayImage} style={[styles.categoryImage, { backgroundColor: theme.colors.surface }]} transition={120} />
+                                    <View style={[styles.cardFooter, { backgroundColor: theme.colors.surface }]}>
                                         <Text
                                             numberOfLines={2}
                                             maxFontSizeMultiplier={1}
@@ -167,24 +169,24 @@ const styles = createAdaptiveStyleSheet({
         marginBottom: 12,
     },
     gridRow: {
-        justifyContent: "space-between",
+        justifyContent: "flex-start",
         gap: 8,
         marginBottom: 12,
     },
     cardPressable: {
-        width: "23.2%",
         flexGrow: 0,
         minWidth: 0,
+        borderRadius: 15,
+        ...cardShadow,
     },
     card: {
         width: "100%",
-        height: 112,
+        height: 120,
         borderRadius: 15,
         backgroundColor: "#FFFFFF",
         borderWidth: 1,
         borderColor: "#E8EDF5",
         overflow: "hidden",
-        ...cardShadow,
     },
     cardPressed: {
         opacity: 0.86,
@@ -192,23 +194,22 @@ const styles = createAdaptiveStyleSheet({
     },
     categoryImage: {
         width: "100%",
-        height: 78,
+        height: 80,
     },
     cardFooter: {
         flex: 1,
-        minHeight: 34,
+        minHeight: 38,
         paddingHorizontal: 4,
         alignItems: "center",
         justifyContent: "center",
-        gap: 6,
     },
     categoryLabel: {
         width: "100%",
         textAlign: "center",
         color: COLORS.ink,
         fontFamily: "ChairoSans",
-        fontSize: 11.5,
-        lineHeight: 13,
+        fontSize: 12,
+        lineHeight: 15,
         fontWeight: "600",
     },
 });
