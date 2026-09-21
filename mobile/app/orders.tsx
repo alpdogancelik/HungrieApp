@@ -628,6 +628,7 @@ const OrderHistoryScreen = () => {
                 refreshControl={<RefreshControl onRefresh={() => void refreshOrders()} refreshing={refreshing} tintColor={ORANGE} />}
                 renderItem={renderOrder}
                 showsVerticalScrollIndicator={false}
+                style={styles.list}
                 stickyHeaderIndices={[0]}
             />
             <OrderReviewSheet visible={Boolean(selectedReview)} restaurantName={selectedReview?.restaurantName || ""} items={selectedReview?.items || []} submitting={reviewSubmitting} errorText={reviewError} onClose={() => setSelectedReview(null)} onDiscard={async () => { if (selectedReview) await clearCustomerReviewOperation(userId, selectedReview.orderId); }} onSubmit={submitReview} />
@@ -671,9 +672,20 @@ type Colors = {
 };
 
 const createStyles = (colors: Colors) => StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: colors.page },
+    safeArea: { flex: 1, backgroundColor: colors.surface },
+    list: { backgroundColor: colors.page },
     listContent: { flexGrow: 1, paddingHorizontal: 22 },
-    header: { paddingBottom: 16, backgroundColor: colors.page, zIndex: 2 },
+    header: {
+        marginHorizontal: -22,
+        paddingHorizontal: 22,
+        paddingBottom: 16,
+        backgroundColor: colors.surface,
+        zIndex: 3,
+        ...Platform.select({
+            android: { elevation: 3, shadowColor: "transparent" },
+            default: {},
+        }),
+    },
     headerTop: { width: "100%", height: 54, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
     backButton: { width: 44, height: 44, marginLeft: -10, borderRadius: 12, alignItems: "center", justifyContent: "center" },
     backButtonPressed: { backgroundColor: colors.pressed },
