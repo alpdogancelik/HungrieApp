@@ -19,7 +19,7 @@
 
 ## Manual Customer device evidence
 
-Run the follow-up rows on a physical iPhone and Google Pixel 9 using build/version code 50 after the app owner builds it. Build 50 changes the mobile Orders background to `#FAFAFA` and keeps its full-width sticky header opaque above elevated cards; build 48 contains the corrected web-style Orders cards with native wrapper-owned spacing; build 45 includes the narrow-screen Search/Cuisines layout fix; build 44 includes the Customer push-language fix. Emulator installation is supplementary evidence only. Build 40 is earlier post-soak evidence; Android version code 39 is pre-fix evidence.
+Run the follow-up rows on a physical iPhone and Google Pixel 9 using build/version code 51 after the app owner builds it. Build 51 makes native order cards wider, separates review from the price row, and restores a visible theme-safe Reorder button on Order details; build 50 changes the mobile Orders background to `#FAFAFA` and keeps its full-width sticky header opaque above elevated cards; build 48 contains the corrected web-style Orders cards with native wrapper-owned spacing; build 45 includes the narrow-screen Search/Cuisines layout fix; build 44 includes the Customer push-language fix. Emulator installation is supplementary evidence only. Build 40 is earlier post-soak evidence; Android version code 39 is pre-fix evidence.
 
 Supplementary Android evidence: signed Staging build 48 was installed in place on the Pixel 9 emulator. The Orders screen showed distinct white rounded cards, subtle outer borders/shadows, correct internal padding, readable actions, and no unwanted internal gray divider lines. This observation supports CUST-14 but does not replace its physical Pixel 9 row.
 
@@ -41,6 +41,7 @@ Supplementary Android evidence: signed Staging build 48 was installed in place o
 | CUST-14 | Orders list uses distinct rounded white cards with a subtle outer border/shadow like the old web version; its full-width `#FAFAFA` sticky header remains opaque above scrolling cards, with no border bleed-through, unwanted gray internal lines, or visible sticky-header shadow; content and actions remain readable |  |  |
 | CUST-15 | Set Turkish, receive an order-status push and review-reply push in Turkish; switch to English and confirm later pushes use English; repeat after cold start |  |  |
 | CUST-16 | On a narrow phone, recent searches scroll horizontally and short names such as “Desserts” remain readable |  |  |
+| CUST-17 | Delivered Order details shows “Reorder / Siparişi tekrarla” as a clearly visible outlined action in light and dark themes; wider Orders cards show the full price while Review and Reorder remain readable on separate rows |  |  |
 
 ## Manual Customer web evidence
 

@@ -19,6 +19,8 @@
 
 **2026-09-21 Orders background and sticky-header follow-up:** Mobile light-mode Orders now uses `#FAFAFA`. Its sticky header uses the same opaque color across the full width and is layered above elevated cards with a transparent Android shadow, preventing card-border bleed-through without adding a visible header shadow. Source checks pass; owner-built mobile build/version code 50 and physical-device observation remain pending.
 
+**2026-09-21 Orders action-layout follow-up:** Order details now renders Reorder as a static, theme-safe orange outlined action because callback-provided native `Pressable` styles were not reliably applied. Native order cards use 14-point side margins instead of 22, reserve the footer for the full price and Reorder action, and place Review on a separate compact outlined row. TypeScript, lint, review UI tests, and web export pass; owner-built mobile build/version code 51 and physical-device observation remain pending.
+
 This document is the final review template. Populate it only from owner-only durable evidence and manual checklist observations. Never copy credentials, ID tokens, TOTP seeds, addresses, comments, or Customer PII here.
 
 ## Source and deployment identity

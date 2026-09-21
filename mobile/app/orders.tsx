@@ -496,6 +496,7 @@ const OrderHistoryScreen = () => {
         const isActive = ACTIVE_STATUSES.has(status);
         const canReorder = status === "delivered";
         const reordering = reorderLoadingId === String(item.id ?? item.$id ?? "");
+        const reviewContext = canReorder ? contextFromOrder(item) : null;
         const cancellationReason = status === "canceled"
             ? getCancellationReasonText(item.cancellationReasonCode, Boolean(isTurkish))
             : "";
@@ -557,8 +558,6 @@ const OrderHistoryScreen = () => {
                             )}
                         </Pressable>
                     ) : canReorder ? (
-                        <View style={styles.deliveredActions}>
-                        {contextFromOrder(item) ? <RowReviewAction profileId={userId} context={contextFromOrder(item)!} copy={reviewCopy} mutedColor={colors.secondary} onOpen={openReview} /> : null}
                         <Pressable
                             accessibilityLabel={copy.reorderA11y}
                             accessibilityRole="button"
@@ -575,9 +574,10 @@ const OrderHistoryScreen = () => {
                             ) : (
                                 <><Text style={styles.contextActionText}>{copy.reorder}</Text><Ionicons color={ORANGE} name="arrow-forward" size={16} /></>
                             )}
-                        </Pressable></View>
+                        </Pressable>
                     ) : null}
                 </View>
+                {reviewContext ? <View style={styles.reviewActionRow}><RowReviewAction profileId={userId} context={reviewContext} copy={reviewCopy} mutedColor={colors.secondary} onOpen={openReview} /></View> : null}
             </Pressable>
             </View>
         );
@@ -644,8 +644,8 @@ const RowReviewAction = ({ profileId, context, copy, mutedColor, onOpen }: { pro
 };
 
 const stylesStatic = StyleSheet.create({
-    rowReview: { minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 }, rowReviewText: { color: ORANGE, fontFamily: "ChairoSans", fontSize: 13.5, lineHeight: 18, fontWeight: "700" },
-    reviewed: { minHeight: 44, flexDirection: "row", alignItems: "center", gap: 4 }, reviewedText: { fontFamily: "ChairoSans", fontSize: 13, fontWeight: "600" },
+    rowReview: { minHeight: 38, borderRadius: 11, borderWidth: 1, borderColor: ORANGE, paddingHorizontal: 11, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 }, rowReviewText: { color: ORANGE, fontFamily: "ChairoSans", fontSize: 13, lineHeight: 18, fontWeight: "700" },
+    reviewed: { minHeight: 38, flexDirection: "row", alignItems: "center", gap: 4 }, reviewedText: { fontFamily: "ChairoSans", fontSize: 13, fontWeight: "600" },
 });
 
 const OrderSkeleton = ({ styles }: { styles: ReturnType<typeof createStyles> }) => (
@@ -672,10 +672,10 @@ type Colors = {
 
 const createStyles = (colors: Colors) => StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: colors.page },
-    listContent: { flexGrow: 1, paddingHorizontal: 22 },
+    listContent: { flexGrow: 1, paddingHorizontal: Platform.OS === "web" ? 22 : 14 },
     header: {
-        marginHorizontal: -22,
-        paddingHorizontal: 22,
+        marginHorizontal: Platform.OS === "web" ? -22 : -14,
+        paddingHorizontal: Platform.OS === "web" ? 22 : 14,
         paddingBottom: 16,
         backgroundColor: colors.page,
         zIndex: 3,
@@ -733,7 +733,7 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     moreItems: { color: colors.tertiary, fontFamily: "ChairoSans", fontSize: 13, lineHeight: 17, fontWeight: "500" },
     cancellationRow: { marginTop: 9, borderRadius: 11, backgroundColor: colors.pressed, paddingHorizontal: 10, paddingVertical: 8, flexDirection: "row", alignItems: "flex-start", gap: 7 }, cancellationText: { flex: 1, color: colors.secondary, fontFamily: "ChairoSans", fontSize: 12.5, lineHeight: 17 }, cancellationLabel: { color: colors.primary, fontWeight: "700" },
     cardFooter: { minHeight: 28, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 14 },
-    deliveredActions: { flexShrink: 1, flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", columnGap: 13 },
+    reviewActionRow: { minHeight: 38, marginTop: 7, flexDirection: "row", alignItems: "center", justifyContent: "flex-end" },
     footerMeta: { flex: 1, minWidth: 0, color: colors.secondary, fontFamily: "ChairoSans", fontSize: 13, lineHeight: 20 },
     price: { color: colors.primary, fontSize: 16, fontWeight: "700" },
     contextAction: { minHeight: 44, marginVertical: -8, flexShrink: 0, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
