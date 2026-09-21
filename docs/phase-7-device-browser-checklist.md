@@ -19,7 +19,9 @@
 
 ## Manual Customer device evidence
 
-Run the follow-up rows on a physical iPhone and Google Pixel 9 using build/version code 46 after the app owner builds it. Build 46 adds the web-style outlined Orders cards to native; build 45 includes the narrow-screen Search/Cuisines layout fix; build 44 includes the Customer push-language fix. Emulator installation is supplementary evidence only. Build 40 is earlier post-soak evidence; Android version code 39 is pre-fix evidence.
+Run the follow-up rows on a physical iPhone and Google Pixel 9 using build/version code 48. Build 48 contains the corrected web-style Orders cards with native wrapper-owned spacing; build 45 includes the narrow-screen Search/Cuisines layout fix; build 44 includes the Customer push-language fix. Emulator installation is supplementary evidence only. Build 40 is earlier post-soak evidence; Android version code 39 is pre-fix evidence.
+
+Supplementary Android evidence: signed Staging build 48 was installed in place on the Pixel 9 emulator. The Orders screen showed distinct white rounded cards, subtle outer borders/shadows, correct internal padding, readable actions, and no unwanted internal gray divider lines. This observation supports CUST-14 but does not replace its physical Pixel 9 row.
 
 | ID | Manual observation | iPhone | Pixel 9 |
 |---|---|---|---|
