@@ -147,7 +147,7 @@ const OrderHistoryScreen = () => {
     const { variant } = useTheme();
     const isDark = variant === "dark";
     const colors = useMemo(() => ({
-        page: isDark ? "#0F1115" : Platform.OS === "web" ? "#FAFBFC" : "#F3F5F8",
+        page: isDark ? "#0F1115" : Platform.OS === "web" ? "#FAFBFC" : "#FAFAFA",
         surface: isDark ? "#171A20" : "#FFFFFF",
         pressed: isDark ? "#1E222A" : "#F9FAFB",
         primary: isDark ? "#F5F7FA" : "#111318",
