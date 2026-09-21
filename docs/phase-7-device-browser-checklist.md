@@ -1,6 +1,6 @@
 # Phase 7 Device, Browser, and Automated Qualification Checklist
 
-**Status:** Qualification complete; awaiting explicit app-owner Phase 7 approval. Automated output does not replace the app owner's manual observations.
+**Status:** Complete and accepted by the app owner on 2026-09-21. Automated output does not replace the app owner's manual observations.
 
 ## Automated evidence
 
@@ -78,4 +78,4 @@ All Restaurant cells above are recorded from the app owner's 2026-09-21 completi
 
 - Automated terminal journeys: `40 / 40` in finalized durable soak evidence.
 - Manual terminal journeys: `10 / 10`; the app owner reported all remaining device/browser rows and post-fix retests passed on 2026-09-21.
-- App-owner Phase 7 approval: **Not given**.
+- App-owner Phase 7 approval: **Given explicitly on 2026-09-21**.
