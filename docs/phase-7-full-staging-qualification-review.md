@@ -17,6 +17,8 @@
 
 **2026-09-21 Android Orders card verification:** Signed Staging build 48 moved card spacing to the native surface wrapper after build 47 exposed dropped `Pressable` padding. Build 48 was installed in place on the Pixel 9 emulator and showed the intended old web-style white rounded cards, subtle outer border/shadow, correct internal padding, readable actions, and no unwanted internal gray divider lines. This is supplementary emulator evidence; physical Pixel 9 and iPhone observation remain required.
 
+**2026-09-21 Orders background and sticky-header follow-up:** Mobile light-mode Orders now uses `#FAFAFA`. Its sticky header uses the same opaque color across the full width and is layered above elevated cards with a transparent Android shadow, preventing card-border bleed-through without adding a visible header shadow. Source checks pass; owner-built mobile build/version code 50 and physical-device observation remain pending.
+
 This document is the final review template. Populate it only from owner-only durable evidence and manual checklist observations. Never copy credentials, ID tokens, TOTP seeds, addresses, comments, or Customer PII here.
 
 ## Source and deployment identity

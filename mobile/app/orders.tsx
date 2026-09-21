@@ -673,7 +673,17 @@ type Colors = {
 const createStyles = (colors: Colors) => StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: colors.page },
     listContent: { flexGrow: 1, paddingHorizontal: 22 },
-    header: { paddingBottom: 16, backgroundColor: colors.page, zIndex: 2 },
+    header: {
+        marginHorizontal: -22,
+        paddingHorizontal: 22,
+        paddingBottom: 16,
+        backgroundColor: colors.page,
+        zIndex: 3,
+        ...Platform.select({
+            android: { elevation: 3, shadowColor: "transparent" },
+            default: {},
+        }),
+    },
     headerTop: { width: "100%", height: 54, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
     backButton: { width: 44, height: 44, marginLeft: -10, borderRadius: 12, alignItems: "center", justifyContent: "center" },
     backButtonPressed: { backgroundColor: colors.pressed },
