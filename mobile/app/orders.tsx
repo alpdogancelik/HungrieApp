@@ -501,12 +501,13 @@ const OrderHistoryScreen = () => {
             : "";
 
         return (
+            <View style={styles.orderCard}>
             <Pressable
                 accessibilityHint={isActive ? copy.track : undefined}
                 accessibilityLabel={`${restaurantName}, ${statusUi.label}, ${orderDate}, ${copy.items(itemCount)}, ${formatCurrency(Number(item.total || 0))}`}
                 accessibilityRole="button"
                 onPress={() => openOrderDetails(item)}
-                style={({ pressed }) => [styles.orderCard, pressed && styles.orderCardPressed]}
+                style={({ pressed }) => [styles.orderCardContent, pressed && styles.orderCardPressed]}
             >
                 <View style={styles.cardHeader}>
                     <View style={styles.cardHeadingCopy}>
@@ -578,6 +579,7 @@ const OrderHistoryScreen = () => {
                     ) : null}
                 </View>
             </Pressable>
+            </View>
         );
     };
 
@@ -695,7 +697,6 @@ const createStyles = (colors: Colors) => StyleSheet.create({
         borderWidth: 1,
         borderColor: colors.cardBorder,
         borderRadius: 18,
-        padding: 15,
         ...Platform.select({
             ios: {
                 shadowColor: colors.cardShadow,
@@ -708,6 +709,7 @@ const createStyles = (colors: Colors) => StyleSheet.create({
             default: {},
         }),
     },
+    orderCardContent: { backgroundColor: colors.surface, borderRadius: 17, padding: 15 },
     orderCardPressed: { backgroundColor: colors.pressed },
     cardHeader: { minHeight: 39, flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 8 },
     cardHeadingCopy: { flex: 1, minWidth: 0 },
