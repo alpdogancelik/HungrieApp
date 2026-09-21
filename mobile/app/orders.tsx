@@ -507,7 +507,7 @@ const OrderHistoryScreen = () => {
                 accessibilityLabel={`${restaurantName}, ${statusUi.label}, ${orderDate}, ${copy.items(itemCount)}, ${formatCurrency(Number(item.total || 0))}`}
                 accessibilityRole="button"
                 onPress={() => openOrderDetails(item)}
-                style={({ pressed }) => [styles.orderCardContent, pressed && styles.orderCardPressed]}
+                style={({ pressed }) => pressed && styles.orderCardPressed}
             >
                 <View style={styles.cardHeader}>
                     <View style={styles.cardHeadingCopy}>
@@ -697,6 +697,7 @@ const createStyles = (colors: Colors) => StyleSheet.create({
         borderWidth: 1,
         borderColor: colors.cardBorder,
         borderRadius: 18,
+        padding: 15,
         ...Platform.select({
             ios: {
                 shadowColor: colors.cardShadow,
@@ -709,8 +710,7 @@ const createStyles = (colors: Colors) => StyleSheet.create({
             default: {},
         }),
     },
-    orderCardContent: { backgroundColor: colors.surface, borderRadius: 17, padding: 15 },
-    orderCardPressed: { backgroundColor: colors.pressed },
+    orderCardPressed: { opacity: 0.8 },
     cardHeader: { minHeight: 39, flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 8 },
     cardHeadingCopy: { flex: 1, minWidth: 0 },
     restaurantName: { color: colors.primary, fontFamily: "ChairoSans", fontSize: 16, lineHeight: 21, fontWeight: "700" },
