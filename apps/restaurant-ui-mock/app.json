@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Mock Restaurant UI",
+    "slug": "hungrie-restaurant-ui-mock",
+    "scheme": "hungrie-restaurant-ui-mock",
+    "version": "0.1.0",
+    "orientation": "default",
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "name": "Hungrie Restaurant UI Mock",
+      "shortName": "Restaurant Mock"
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
