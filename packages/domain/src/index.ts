@@ -166,3 +166,116 @@ export type ReviewManagementErrorCode =
   | "validation"
   | "service_unavailable"
   | "unknown";
+
+/** Integer minor currency units returned by authoritative financial RPCs. */
+export type Kurus = number;
+/** Integer hundredths of one percent; 100 basis points equals 1.00%. */
+export type BasisPoints = number;
+export type CommissionContractVersion = 1;
+export type EarningsPaymentMethod = "cash" | "pos";
+export type EarningsSeriesBucket = "day" | "week" | "month";
+
+export type RestaurantCommissionRuleV1 = {
+  id: string;
+  rateBps: BasisPoints;
+  contractVersion: CommissionContractVersion;
+  effectiveFrom: string;
+  createdAt: string;
+  reason: string;
+};
+
+export type RestaurantFinancialWarningV1 = {
+  id: string;
+  type:
+    | "missing_applicable_rule"
+    | "missing_order_terms"
+    | "missing_delivered_snapshot"
+    | "snapshot_mismatch";
+  details: { orderReference?: string };
+  firstDetectedAt: string;
+  lastDetectedAt: string;
+  occurrenceCount: number;
+};
+
+export type AdminRestaurantCommissionV1 = {
+  restaurantId: string;
+  reportingTimezone: string;
+  capabilityEnabled: boolean;
+  currentRule: RestaurantCommissionRuleV1 | null;
+  nextScheduledRule: RestaurantCommissionRuleV1 | null;
+  history: RestaurantCommissionRuleV1[];
+  historyHasMore: boolean;
+  warnings: RestaurantFinancialWarningV1[];
+};
+
+export type ScheduleRestaurantCommissionResultV1 = {
+  ruleId: string;
+  restaurantId: string;
+  rateBps: BasisPoints;
+  contractVersion: CommissionContractVersion;
+  effectiveFrom: string;
+  reason: string;
+  operationId: string;
+  replayed: boolean;
+};
+
+export type EarningsPaymentBreakdownV1 = {
+  eligibleGrossKurus: Kurus;
+  commissionKurus: Kurus;
+  estimatedNetKurus: Kurus;
+  deliveredOrderCount: number;
+};
+
+export type RestaurantEarningsSummaryV1 = {
+  restaurantId: string;
+  from: string;
+  to: string;
+  reportingTimezone: string;
+  currencyCode: "TRY";
+  eligibleGrossKurus: Kurus;
+  commissionKurus: Kurus;
+  estimatedNetKurus: Kurus;
+  deliveredOrderCount: number;
+  paymentBreakdown: Record<EarningsPaymentMethod, EarningsPaymentBreakdownV1>;
+};
+
+export type RestaurantEarningsSeriesPointV1 = {
+  bucketStart: string;
+  eligibleGrossKurus: Kurus;
+  commissionKurus: Kurus;
+  estimatedNetKurus: Kurus;
+  deliveredOrderCount: number;
+  paymentBreakdown: Record<EarningsPaymentMethod, EarningsPaymentBreakdownV1>;
+};
+
+export type RestaurantEarningsSeriesV1 = {
+  restaurantId: string;
+  from: string;
+  to: string;
+  bucket: EarningsSeriesBucket;
+  reportingTimezone: string;
+  currencyCode: "TRY";
+  points: RestaurantEarningsSeriesPointV1[];
+};
+
+export type RestaurantEarningsOrderRowV1 = {
+  orderReference: string;
+  deliveredAt: string;
+  paymentMethod: EarningsPaymentMethod;
+  currencyCode: "TRY";
+  eligibleGrossKurus: Kurus;
+  commissionRateBps: BasisPoints;
+  commissionKurus: Kurus;
+  estimatedNetKurus: Kurus;
+};
+
+export type RestaurantEarningsOrdersPageV1 = {
+  restaurantId: string;
+  from: string;
+  to: string;
+  reportingTimezone: string;
+  currencyCode: "TRY";
+  limit: number;
+  items: RestaurantEarningsOrderRowV1[];
+  nextCursor: string | null;
+};

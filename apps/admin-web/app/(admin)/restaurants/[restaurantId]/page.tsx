@@ -1,3 +1,8 @@
 "use client";
-import{useEffect,useState}from"react";import{useParams}from"next/navigation";import{supabase}from"@/lib/supabase";
-export default function Page(){const{restaurantId}=useParams<{restaurantId:string}>();const[data,setData]=useState<Record<string,unknown>|null>(null);useEffect(()=>{void supabase.rpc("admin_get_restaurant_v1" as any,{p_restaurant_id:restaurantId}).then(({data})=>setData(data as any))},[restaurantId]);return <section><header className="page-header"><h2>{String(data?.name??restaurantId)}</h2></header><pre className="panel">{JSON.stringify(data,null,2)}</pre></section>}
+import { useParams } from "next/navigation";
+import { AdminRestaurantCommissionPage } from "@/components/AdminRestaurantCommissionPage";
+
+export default function Page() {
+  const { restaurantId } = useParams<{ restaurantId: string }>();
+  return <AdminRestaurantCommissionPage restaurantId={restaurantId} />;
+}

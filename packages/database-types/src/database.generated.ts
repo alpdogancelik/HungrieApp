@@ -874,6 +874,7 @@ export type Database = {
           preferred_language: string
           rating_average: number
           rating_count: number
+          reporting_timezone: string
           sort_order: number
           suspended_at: string | null
           suspended_by_profile_id: string | null
@@ -900,6 +901,7 @@ export type Database = {
           preferred_language?: string
           rating_average?: number
           rating_count?: number
+          reporting_timezone?: string
           sort_order?: number
           suspended_at?: string | null
           suspended_by_profile_id?: string | null
@@ -926,6 +928,7 @@ export type Database = {
           preferred_language?: string
           rating_average?: number
           rating_count?: number
+          reporting_timezone?: string
           sort_order?: number
           suspended_at?: string | null
           suspended_by_profile_id?: string | null
@@ -1707,6 +1710,14 @@ export type Database = {
       }
       admin_get_dashboard_v1: { Args: never; Returns: Json }
       admin_get_order_v1: { Args: { p_order_id: string }; Returns: Json }
+      admin_get_restaurant_commission_v1: {
+        Args: { p_restaurant_id: string }
+        Returns: Json
+      }
+      admin_get_restaurant_earnings_summary_v1: {
+        Args: { p_from: string; p_restaurant_id: string; p_to: string }
+        Returns: Json
+      }
       admin_get_restaurant_v1: {
         Args: { p_restaurant_id: string }
         Returns: Json
@@ -1811,6 +1822,16 @@ export type Database = {
           p_order_id: string
           p_reason: string
           p_resolution: string
+        }
+        Returns: Json
+      }
+      admin_schedule_restaurant_commission_v1: {
+        Args: {
+          p_effective_from: string
+          p_operation_id: string
+          p_rate_bps: number
+          p_reason: string
+          p_restaurant_id: string
         }
         Returns: Json
       }
@@ -2237,6 +2258,23 @@ export type Database = {
         Returns: Json
       }
       restaurant_get_dashboard_v1: { Args: never; Returns: Json }
+      restaurant_get_earnings_orders_page_v1: {
+        Args: {
+          p_cursor?: string
+          p_from: string
+          p_limit?: number
+          p_to: string
+        }
+        Returns: Json
+      }
+      restaurant_get_earnings_series_v1: {
+        Args: { p_bucket: string; p_from: string; p_to: string }
+        Returns: Json
+      }
+      restaurant_get_earnings_summary_v1: {
+        Args: { p_from: string; p_to: string }
+        Returns: Json
+      }
       restaurant_get_menu_v2: { Args: never; Returns: Json }
       restaurant_get_order_v1: { Args: { p_order_id: string }; Returns: Json }
       restaurant_get_settings_v1: { Args: never; Returns: Json }

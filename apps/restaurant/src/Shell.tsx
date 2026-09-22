@@ -4,12 +4,15 @@ import { useEffect, useState } from "react";
 import { auth } from "./firebase";
 import { useLocale } from "./providers";
 import { unregisterRestaurantPush } from "./push";
+import { isActiveRestaurantOwner, useRestaurantAccessContext } from "./RestaurantAccessContext";
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const { locale, setLocale, t } = useLocale();
+  const accessContext = useRestaurantAccessContext();
   const [online, setOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
   const links: [[string, string], ...Array<[string, string]>] = [
-    ["/dashboard", t.dashboard], ["/orders", t.orders], ["/history", t.history], ["/menu", t.menu],
+    ["/dashboard", t.dashboard], ["/orders", t.orders], ["/history", t.history],
+    ...(isActiveRestaurantOwner(accessContext) ? [["/earnings", locale === "tr" ? "Kazançlar" : "Earnings"] as [string, string]] : []), ["/menu", t.menu],
     ["/restaurant", t.restaurant], ["/reviews", t.reviews], ["/settings", t.settings], ["/security", t.security],
   ];
 

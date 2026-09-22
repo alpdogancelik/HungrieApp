@@ -3,10 +3,10 @@ import { usePathname, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { auth, ensureSessionPersistence } from "./firebase";
 import { supabase } from "./supabase";
-import type { AccessContext } from "./contracts";
 import { useLocale } from "./providers";
 import { RestaurantNotificationListener } from "./RestaurantNotificationListener";
 import { RestaurantAccessReady } from "./RestaurantAccessReady";
+import { parseRestaurantAccessContext, RestaurantAccessContext, RestaurantAccessContextError, type RestaurantAccessContextValue } from "./RestaurantAccessContext";
 
 // Invite acceptance must be reachable before an account_access row exists.
 const publicPath = (path: string) =>
@@ -40,6 +40,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const { t } = useLocale();
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [restaurantId, setRestaurantId] = useState("");
+  const [accessContext, setAccessContext] = useState<RestaurantAccessContextValue | null>(null);
   const [retry, setRetry] = useState(0);
   const verified = useRef(false);
   const verifiedUid = useRef("");
@@ -68,6 +69,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         verified.current = false;
         verifiedUid.current = "";
         setRestaurantId("");
+        setAccessContext(null);
         setState("loading");
       }
       if (path === "/invite" || path.startsWith("/invite/")) {
@@ -84,18 +86,20 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         const { data, error } = await restoreAccessContext(user);
         if (error) throw error;
         if (!live) return;
-        const context = data as unknown as AccessContext;
+        const context = parseRestaurantAccessContext(data);
         if (context.state !== "resolved" || context.accountType !== "restaurant" || context.accountStatus === "revoked") {
           await signOut(auth);
           if (live) router.replace("/login?reason=failed");
           return;
         }
         if (context.accountStatus === "pending") {
+          setAccessContext(context);
           if (path === "/pending") setState("ready");
           else router.replace("/pending");
           return;
         }
         if (context.accountStatus === "suspended" || context.restaurantStatus === "suspended") {
+          setAccessContext(context);
           if (path === "/suspended") setState("ready");
           else router.replace("/suspended");
           return;
@@ -107,6 +111,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         }
         if (!context.restaurantId) throw new Error("Restaurant scope is unavailable");
         setRestaurantId(context.restaurantId);
+        setAccessContext(context);
         verified.current = true;
         verifiedUid.current = user.uid;
         if (publicPath(path) || path === "/pending" || path === "/suspended") {
@@ -114,7 +119,15 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         } else {
           setState("ready");
         }
-      } catch {
+      } catch (error) {
+        if (error instanceof RestaurantAccessContextError) {
+          verified.current = false;
+          verifiedUid.current = "";
+          setRestaurantId("");
+          setAccessContext(null);
+          if (live) setState("error");
+          return;
+        }
         // Protected database operations still recheck live authorization. Once
         // this browser has resolved active Restaurant access, a transient
         // context/network failure must not unmount the whole operational UI.
@@ -130,7 +143,9 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   return <>
     {state === "ready" && restaurantId && <RestaurantNotificationListener restaurantId={restaurantId} />}
-    <RestaurantAccessReady.Provider value={state === "ready" && Boolean(restaurantId)}>{children}</RestaurantAccessReady.Provider>
+    <RestaurantAccessContext.Provider value={accessContext}>
+      <RestaurantAccessReady.Provider value={state === "ready" && Boolean(restaurantId)}>{children}</RestaurantAccessReady.Provider>
+    </RestaurantAccessContext.Provider>
     {state !== "ready" && <div className="access-overlay center" role="status" aria-live="polite">
       <p>{state === "error" ? t.unavailable : t.loading}</p>
       {state === "error" && <button className="button" onClick={() => { setState("loading"); setRetry(value => value + 1); }}>{t.retry}</button>}

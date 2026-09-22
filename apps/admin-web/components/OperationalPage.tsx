@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Locale, PageResult } from "@/lib/contracts";
@@ -105,7 +106,7 @@ export function OperationalPage({ kind }: { kind: keyof typeof rpc }) {
             <table>
                 <thead><tr>{columns.map((column) => <th key={column}>{column === "metadata" ? (locale === "tr" ? "Detaylar" : "Details") : column.replaceAll("_", " ")}</th>)}</tr></thead>
                 <tbody>{page.items.map((row, index) => <tr key={String(row.id ?? row.profile_id ?? index)}>
-                    {columns.map((column) => <td className={column === "metadata" ? "audit-details" : undefined} key={column}>{renderValue(row, column, locale)}</td>)}
+                    {columns.map((column) => <td className={column === "metadata" ? "audit-details" : undefined} key={column}>{kind === "restaurants" && (column === "id" || column === "name") ? <Link href={`/restaurants/${encodeURIComponent(String(row.id))}`}>{renderValue(row, column, locale)}</Link> : renderValue(row, column, locale)}</td>)}
                 </tr>)}</tbody>
             </table>
             {!page.items.length && <p className="empty">{t.noRows}</p>}

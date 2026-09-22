@@ -31,6 +31,26 @@ insert into public.restaurants (
     '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'
   );
 
+-- Explicit local-only version-1 rules begin after the historical fixture order.
+-- The capability remains disabled; these rules make current fixture Restaurants
+-- ready for the local activation preflight without fabricating old earnings.
+insert into private.restaurant_commission_rules (
+  id, restaurant_id, rate_bps, commission_contract_version, effective_from,
+  created_at, created_by_profile_id, reason, operation_id, request_sha256
+) values
+  (
+    'ea000000-0000-4000-8000-000000000001', 'fixture_restaurant_a', 800, 1,
+    '2026-01-02T00:00:00Z', '2026-01-02T00:00:00Z', 'fixture_super_admin',
+    'Local fixture initial commission rule',
+    'ea000000-0000-4000-8000-000000000011', repeat('a',64)
+  ),
+  (
+    'ea000000-0000-4000-8000-000000000002', 'fixture_restaurant_b', 1000, 1,
+    '2026-01-02T00:00:00Z', '2026-01-02T00:00:00Z', 'fixture_super_admin',
+    'Local fixture initial commission rule',
+    'ea000000-0000-4000-8000-000000000012', repeat('b',64)
+  );
+
 insert into public.categories (
   id, restaurant_id, name, is_active, sort_order, created_at, updated_at
 ) values
