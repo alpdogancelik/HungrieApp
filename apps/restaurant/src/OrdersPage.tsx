@@ -1,65 +1,50 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "expo-router";
+import { RefreshCw } from "lucide-react";
 import { Shell } from "./Shell";
-import { supabase } from "./supabase";
+import { Button } from "./components/Button";
+import { PageHeader } from "./components/PageHeader";
 import { useLocale } from "./providers";
-import type { OrderPage } from "./contracts";
 import { useRestaurantRuntime } from "./RestaurantRuntimeContext";
-
-const poll = Math.min(60000, Math.max(10000, Number(process.env.EXPO_PUBLIC_RESTAURANT_POLL_MS || 15000)));
+import { ACTIVE_ORDER_STATUSES, type ActiveOrderStatus, type RestaurantOrder } from "./orders/orderContract";
+import { OrderCard } from "./orders/OrderCard";
+import { OrderDetailView } from "./orders/OrderDetailView";
+import { statusLabel } from "./orders/orderPresentation";
+import { restaurantOrderRepository } from "./orders/orderRepository";
+import { useActiveOrders } from "./orders/useActiveOrders";
 
 export function OrdersPage() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const runtime = useRestaurantRuntime();
-  const [orders, setOrders] = useState<Record<string, any>[]>([]);
-  const [error, setError] = useState("");
-  const observedEvent = useRef(runtime.orderEventRevision);
-  const load = useCallback(async () => {
-    const result = await supabase.rpc("restaurant_list_orders_v1" as any, { p_queue: "active", p_cursor: null, p_limit: 50 });
-    if (result.error) { setError(t.unavailable); return; }
-    const items = (result.data as unknown as OrderPage)?.items || [];
-    setOrders(previous => {
-      const versions = new Map(previous.map(item => [item.id, item.updated_at]));
-      return items.map(item => versions.get(item.id) === item.updated_at ? previous.find(value => value.id === item.id) || item : item);
-    });
-    setError("");
-  }, [t.unavailable]);
+  const active = useActiveOrders();
+  const [filter, setFilter] = useState<ActiveOrderStatus | "all">("all");
+  const [selectedId, setSelectedId] = useState("");
+  const boardRef = useRef<HTMLDivElement>(null);
+  const detailRef = useRef<HTMLElement>(null);
+  const selected = active.orders.find(order => order.id === selectedId) || active.orders[0] || null;
+  useEffect(() => { if (selected && selected.id !== selectedId) setSelectedId(selected.id); }, [selected, selectedId]);
+  const refreshSelected = useCallback(async (): Promise<RestaurantOrder | null> => {
+    if (!selected) return null;
+    try {
+      const next = await restaurantOrderRepository.get(selected.id);
+      await active.reload();
+      return next;
+    } catch { await active.reload(); return null; }
+  }, [active, selected]);
+  const filtered = filter === "all" ? active.orders : active.orders.filter(order => order.status === filter);
+  const freshness = active.lastReconciledAt ? new Intl.DateTimeFormat(locale === "tr" ? "tr-TR" : "en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(active.lastReconciledAt) : "—";
+  const copy = locale === "tr" ? { title: "Canlı siparişler", subtitle: "Tüm sütunlar tek bir yetkili aktif sipariş listesinden oluşturulur.", all: "Tümü", empty: "Bu durumda aktif sipariş yok.", stale: "Daha önce yüklenen siparişler gösteriliyor. Son yenileme başarısız oldu.", refreshed: "Sipariş listesi son yenileme", board: "Sipariş panosu", detail: "Seçili sipariş" } : { title: "Live orders", subtitle: "Every column comes from one authoritative active-order list.", all: "All", empty: "There are no active orders in this state.", stale: "Previously loaded orders are shown. The latest refresh failed.", refreshed: "Order list last refreshed", board: "Order board", detail: "Selected order" };
 
-  useEffect(() => {
-    let timer: ReturnType<typeof setInterval>;
-    void load();
-    timer = setInterval(() => { if (document.visibilityState === "visible" && navigator.onLine) void load(); }, poll);
-    const focus = () => void load();
-    const network = () => { if (navigator.onLine) void load(); };
-    window.addEventListener("focus", focus);
-    window.addEventListener("online", network);
-    window.addEventListener("offline", network);
-    document.addEventListener("visibilitychange", focus);
-    return () => {
-      clearInterval(timer);
-      window.removeEventListener("focus", focus);
-      window.removeEventListener("online", network);
-      window.removeEventListener("offline", network);
-      document.removeEventListener("visibilitychange", focus);
-    };
-  }, [load]);
-
-  useEffect(() => {
-    if (observedEvent.current === runtime.orderEventRevision) return;
-    observedEvent.current = runtime.orderEventRevision;
-    void load();
-  }, [load, runtime.orderEventRevision]);
-
-  useEffect(() => {
-    orders.forEach(order => {
-      if (order.updated_at) void supabase.rpc("restaurant_acknowledge_order_seen_v1", {
-        p_order_id: order.id,
-        p_order_version: order.updated_at,
-        p_operation_id: crypto.randomUUID(),
-      });
-    });
-  }, [orders]);
-
-  const connected = runtime.status === "connected";
-  return <Shell><div className={`banner ${connected ? "healthy" : ""}`}><strong>{t.connection}:</strong> {connected ? "✓" : "⚠"}</div><div className="toolbar"><h1>{t.orders}</h1><button onClick={() => void load()}>{t.refresh}</button></div>{error && <p className="danger">{error}</p>}<div className="grid">{orders.map(order => <article className="card" key={order.id}><h3>#{String(order.id).slice(0, 8)}</h3><p>{order.customer_name || order.customer?.name || "Customer"}</p><p>{order.status} · {order.total_kurus != null ? `₺${(Number(order.total_kurus) / 100).toFixed(2)}` : ""}</p><Link href={`/orders/detail?orderId=${encodeURIComponent(String(order.id))}` as never}>{t.open}</Link></article>)}</div>{!orders.length && !error && <p>{t.noRows}</p>}</Shell>;
+  return <Shell><PageHeader title={copy.title} subtitle={copy.subtitle} action={<Button variant="secondary" disabled={active.loading} onClick={() => void active.reload()}><RefreshCw size={17} aria-hidden />{t.refresh}</Button>} />
+    <div className="orders-freshness" role="status"><span className={`runtime-status runtime-status--${runtime.status}`}>{t.runtimeStatus[runtime.status]}</span><span>{copy.refreshed}: <strong>{freshness}</strong></span></div>
+    {active.stale && <p className="ui-notice ui-notice--warning" role="status">{copy.stale}</p>}
+    {active.error && !active.orders.length && <p className="danger" role="alert">{t.unavailable}</p>}
+    <div className="orders-mobile">
+      <div className="order-filters" role="group" aria-label={locale === "tr" ? "Sipariş durumu filtresi" : "Order status filter"}><button type="button" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>{copy.all} <span>{active.orders.length}</span></button>{ACTIVE_ORDER_STATUSES.map(status => <button type="button" key={status} aria-pressed={filter === status} onClick={() => setFilter(status)}>{statusLabel(status, locale)} <span>{active.orders.filter(order => order.status === status).length}</span></button>)}</div>
+      <div className="order-list">{filtered.map(order => <OrderCard key={`${order.id}:${order.updated_at}`} order={order} />)}{!active.loading && !filtered.length && <div className="ui-card order-empty"><p>{copy.empty}</p></div>}</div>
+    </div>
+    <div className="orders-desktop" aria-label={copy.board}>
+      <div className="order-board" ref={boardRef}>{ACTIVE_ORDER_STATUSES.map(status => <section className="order-column" key={status} aria-labelledby={`column-${status}`}><header><h2 id={`column-${status}`}>{statusLabel(status, locale)}</h2><span>{active.orders.filter(order => order.status === status).length}</span></header><div className="order-column__list">{active.orders.filter(order => order.status === status).map(order => <OrderCard key={`${order.id}:${order.updated_at}`} order={order} selected={selected?.id === order.id} onSelect={() => setSelectedId(order.id)} rootRef={boardRef} />)}{!active.loading && !active.orders.some(order => order.status === status) && <p className="order-column__empty">{copy.empty}</p>}</div></section>)}</div>
+      <aside ref={detailRef} className="order-detail-panel" aria-label={copy.detail}>{selected ? <OrderDetailView key={selected.id} compact stale={active.stale} order={selected} reload={refreshSelected} scrollRootRef={detailRef} /> : <div className="ui-card order-empty"><p>{copy.empty}</p></div>}</aside>
+    </div>
+  </Shell>;
 }

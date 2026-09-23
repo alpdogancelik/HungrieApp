@@ -67,8 +67,8 @@ test("one shared realtime subscription preserves alert and cleanup contracts", (
 });
 
 test("Orders retains authoritative polling, recovery, acknowledgement, and monotonic replacement", () => {
-  const orders = read("apps/restaurant/src/OrdersPage.tsx");
-  for (const token of ["setInterval", 'addEventListener(\"focus\"', 'addEventListener(\"online\"', 'addEventListener(\"offline\"', 'addEventListener(\"visibilitychange\"', "restaurant_acknowledge_order_seen_v1", "versions.get(item.id) === item.updated_at", "runtime.orderEventRevision", "restaurant_list_orders_v1"]) assert.ok(orders.includes(token), `Missing Orders recovery contract: ${token}`);
+  const orders = ["apps/restaurant/src/OrdersPage.tsx", "apps/restaurant/src/orders/useActiveOrders.ts", "apps/restaurant/src/orders/orderAcknowledgement.ts", "apps/restaurant/src/orders/orderRepository.ts", "apps/restaurant/src/orders/orderModel.ts"].map(read).join("\n");
+  for (const token of ["setInterval", 'addEventListener(\"focus\"', 'addEventListener(\"online\"', 'addEventListener(\"offline\"', 'addEventListener(\"visibilitychange\"', "restaurant_acknowledge_order_seen_v1", "replaceOrdersMonotonically", "runtime.orderEventRevision", "restaurant_list_orders_v1"]) assert.ok(orders.includes(token), `Missing Orders recovery contract: ${token}`);
   assert.ok(!orders.includes("supabase.channel"));
 });
 
@@ -107,7 +107,5 @@ test("financial artifacts are unchanged and the lock delta is limited to approve
   for (const [file, expected] of Object.entries(hashes)) assert.equal(crypto.createHash("sha256").update(fs.readFileSync(path.join(root, file))).digest("hex"), expected, `${file} changed`);
   const baseline = JSON.parse(execFileSync("git", ["show", "HEAD:package-lock.json"], { cwd: root, encoding: "utf8" }));
   const current = JSON.parse(read("package-lock.json"));
-  for (const dependency of ["@expo-google-fonts/dm-sans", "@expo-google-fonts/outfit", "expo-font", "lucide-react"]) delete current.packages["apps/restaurant"].dependencies[dependency];
-  delete current.packages["node_modules/lucide-react"];
   assert.deepEqual(current, baseline);
 });

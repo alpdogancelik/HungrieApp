@@ -7,6 +7,7 @@ import { firebaseApp } from "./firebase";
 import { alertRestaurantOrder, unlockOrderAlert } from "./push";
 import { supabase } from "./supabase";
 import { deriveRestaurantRuntimeStatus, runtimeResultIsCurrent, type RestaurantRuntimeStatus } from "./restaurantRuntimeModel";
+import { resetAcknowledgementIntents } from "./orders/orderAcknowledgementModel";
 export type { RestaurantRuntimeStatus } from "./restaurantRuntimeModel";
 
 type RestaurantRuntimeValue = {
@@ -16,7 +17,7 @@ type RestaurantRuntimeValue = {
   realtimeConnected: boolean;
   lastDashboardReconciledAt: number | null;
   orderEventRevision: number;
-  refreshDashboard: () => Promise<void>;
+  refreshDashboard: () => Promise<RestaurantDashboard | null>;
 };
 
 const RestaurantRuntimeContext = createContext<RestaurantRuntimeValue | null>(null);
@@ -42,11 +43,11 @@ export function RestaurantRuntimeProvider({ restaurantId, role, children }: Prop
     const generation = identityGeneration.current;
     const request = ++requestSequence.current;
     const result = await supabase.rpc("restaurant_get_dashboard_v1");
-    if (!runtimeResultIsCurrent({ resultGeneration: generation, currentGeneration: identityGeneration.current, request, latestAppliedRequest: latestAppliedRequest.current })) return;
+    if (!runtimeResultIsCurrent({ resultGeneration: generation, currentGeneration: identityGeneration.current, request, latestAppliedRequest: latestAppliedRequest.current })) return null;
     latestAppliedRequest.current = request;
     if (result.error) {
       setRefreshFailed(true);
-      return;
+      return null;
     }
     try {
       const parsed = parseRestaurantDashboard(result.data);
@@ -54,8 +55,10 @@ export function RestaurantRuntimeProvider({ restaurantId, role, children }: Prop
       setDashboard(parsed);
       setLastDashboardReconciledAt(Date.now());
       setRefreshFailed(false);
+      return parsed;
     } catch {
       setRefreshFailed(true);
+      return null;
     }
   }, [restaurantId, role]);
 
@@ -64,6 +67,7 @@ export function RestaurantRuntimeProvider({ restaurantId, role, children }: Prop
     let unsubscribeMessage: (() => void) | undefined;
     let channel: ReturnType<typeof supabase.channel> | undefined;
     identityGeneration.current += 1;
+    resetAcknowledgementIntents();
     requestSequence.current = 0;
     latestAppliedRequest.current = 0;
     setDashboard(null);
@@ -129,6 +133,7 @@ export function RestaurantRuntimeProvider({ restaurantId, role, children }: Prop
     return () => {
       live = false;
       identityGeneration.current += 1;
+      resetAcknowledgementIntents();
       unsubscribeMessage?.();
       if (channel) void supabase.removeChannel(channel);
       window.removeEventListener("online", updateNetwork);
