@@ -51,6 +51,7 @@ export type RestaurantOrder = {
 };
 
 export type ActiveOrderPage = { items: RestaurantOrder[]; has_more: boolean; next_cursor: string | null };
+export type HistoryOrderPage = { items: RestaurantOrder[]; has_more: boolean; next_cursor: string | null };
 
 export class RestaurantOrderContractError extends Error {
   constructor() { super("Invalid Restaurant order response"); this.name = "RestaurantOrderContractError"; }
@@ -111,6 +112,14 @@ export function parseActiveOrderPage(value: unknown): ActiveOrderPage {
   if (items.some(item => !ACTIVE_ORDER_STATUSES.includes(item.status as ActiveOrderStatus))) invalid();
   const ids = new Set(items.map(item => item.id));
   if (ids.size !== items.length) invalid();
+  return { items, has_more: boolean(root.has_more), next_cursor: root.next_cursor === null ? null : text(root.next_cursor) };
+}
+
+export function parseHistoryOrderPage(value: unknown): HistoryOrderPage {
+  const root = required(allowed(object(value), ["items", "has_more", "next_cursor"]), ["items", "has_more", "next_cursor"]);
+  const items = Array.isArray(root.items) ? root.items.map(parseRestaurantOrder) : invalid();
+  if (items.some(item => item.status !== "delivered" && item.status !== "canceled")) invalid();
+  if (new Set(items.map(item => item.id)).size !== items.length) invalid();
   return { items, has_more: boolean(root.has_more), next_cursor: root.next_cursor === null ? null : text(root.next_cursor) };
 }
 

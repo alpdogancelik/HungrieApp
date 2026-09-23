@@ -118,15 +118,17 @@ test("UI keeps canonical deep links, truthful freshness, and no dashboard financ
   const orders = read("apps/restaurant/src/OrdersPage.tsx");
   const card = read("apps/restaurant/src/orders/OrderCard.tsx");
   const dashboard = read("apps/restaurant/src/DashboardPage.tsx");
+  const acceptance = read("apps/restaurant/src/useRestaurantAcceptance.ts");
   assert.match(card, /\/orders\/detail\?orderId=/);
   assert.match(orders, /lastReconciledAt/);
   assert.match(dashboard, /data\.counts\.pending/);
   assert.match(dashboard, /data\.counts\.active/);
   assert.match(dashboard, /data\.counts\.unreadReviews/);
   assert.doesNotMatch(dashboard, /earnings|commission|sales|total_kurus/i);
-  assert.match(dashboard, /target && runtime\.status !== "connected"/);
-  assert.match(dashboard, /!target && !runtime\.online/);
-  assert.match(dashboard, /acceptanceOperationId/);
+  assert.match(dashboard, /useRestaurantAcceptance/);
+  assert.match(acceptance, /target && runtime\.status !== "connected"/);
+  assert.match(acceptance, /!target && !runtime\.online/);
+  assert.match(acceptance, /const intents = new Map/);
 });
 
 test("visibility acknowledgement and mutation code never fire from fetch or realtime", () => {

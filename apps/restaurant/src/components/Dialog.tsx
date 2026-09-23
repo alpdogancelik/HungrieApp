@@ -1,6 +1,7 @@
-import { useEffect, useRef, type PropsWithChildren, type ReactNode } from "react";
+import { useEffect, useId, useRef, type PropsWithChildren, type ReactNode } from "react";
 
 export function Dialog({ open, title, children, actions, onClose }: PropsWithChildren<{ open: boolean; title: string; actions?: ReactNode; onClose: () => void }>) {
+  const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
@@ -22,5 +23,5 @@ export function Dialog({ open, title, children, actions, onClose }: PropsWithChi
     return () => { document.removeEventListener("keydown", keydown); restoreRef.current?.focus(); };
   }, [open, onClose]);
   if (!open) return null;
-  return <div className="ui-dialog-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}><div ref={dialogRef} className="ui-dialog" role="dialog" aria-modal="true" aria-labelledby="ui-dialog-title"><h2 id="ui-dialog-title">{title}</h2><div>{children}</div>{actions && <div className="ui-dialog__actions">{actions}</div>}</div></div>;
+  return <div className="ui-dialog-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}><div ref={dialogRef} className="ui-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId}><h2 id={titleId}>{title}</h2><div>{children}</div>{actions && <div className="ui-dialog__actions">{actions}</div>}</div></div>;
 }

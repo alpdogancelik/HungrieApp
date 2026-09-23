@@ -1,0 +1,2619 @@
+{
+  "generatedAt": "2026-09-23T22:42:34.280Z",
+  "note": "Local semantic/CSS Phase 3 qualification harness with synthetic generic values. No hosted environment, credentials, Customer PII, or operational data.",
+  "captures": [
+    {
+      "kind": "history",
+      "locale": "en",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/history-360x800-en.png",
+      "sha256": "356fa05c003a48999e9e2c21a4fcb499468033bfc3455b155f50cf2d8e95f576"
+    },
+    {
+      "kind": "menu",
+      "locale": "en",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/menu-360x800-en.png",
+      "sha256": "eaf096965843c52c3bfc0a9c776e682b41354d943fe639ffb1c4d5891f8d56ae"
+    },
+    {
+      "kind": "editor",
+      "locale": "en",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/editor-360x800-en.png",
+      "sha256": "4b1d91224a88f5fcb555de401d828e8327f6e460b5bf9df9d81952448feb9ca4"
+    },
+    {
+      "kind": "restaurant",
+      "locale": "en",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/restaurant-360x800-en.png",
+      "sha256": "6f5151261c9b2dcd8c547d3ddfb80d8c603052213a1594bafc5edd964599f8b0"
+    },
+    {
+      "kind": "loading",
+      "locale": "en",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/loading-360x800-en.png",
+      "sha256": "487093f810f0f83c51cf3ec037e69196d5787b0570310ce995eaa79caa342981"
+    },
+    {
+      "kind": "empty",
+      "locale": "en",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/empty-360x800-en.png",
+      "sha256": "ae09030a77b791b287236e05507be57e95292aa7d24ccea4c22d8ecff4257d08"
+    },
+    {
+      "kind": "offline",
+      "locale": "en",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/offline-360x800-en.png",
+      "sha256": "b7117f377d57cec42e563f6f97334c152644272bb18ee2b8cdd66417387dc2de"
+    },
+    {
+      "kind": "stale",
+      "locale": "en",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/stale-360x800-en.png",
+      "sha256": "274fb8d45d0e9ea7ac70de739be4ea92d059585612a366751b5d89c3bdcb7f40"
+    },
+    {
+      "kind": "validation",
+      "locale": "en",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/validation-360x800-en.png",
+      "sha256": "cfea85694d04dc8daddc31e67829f32b5725c78bf4265e666dbc1e85a427236a"
+    },
+    {
+      "kind": "conflict",
+      "locale": "en",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/conflict-360x800-en.png",
+      "sha256": "0bdadb3e4c8e2d0d5c8812b1bfac18a621f342d7e85d946311970a2ca323ce71"
+    },
+    {
+      "kind": "unknown-outcome",
+      "locale": "en",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/unknown-outcome-360x800-en.png",
+      "sha256": "d7c51cf48bc229ddaa35c74b1f7e7a83206008cc47261c04543a792a136da6d4"
+    },
+    {
+      "kind": "upload",
+      "locale": "en",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/upload-360x800-en.png",
+      "sha256": "a867089c1eea1fa51b0d7427aa04052ccf0fdc3aa8cf8e89793c517ec1cd93ce"
+    },
+    {
+      "kind": "dirty-confirmation",
+      "locale": "en",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/dirty-confirmation-360x800-en.png",
+      "sha256": "15757914c8211344c4d4d35277b3c60920ee1005109f96442423e79775c5bf8f"
+    },
+    {
+      "kind": "history",
+      "locale": "en",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/history-390x844-en.png",
+      "sha256": "331ab893e1efe7894c7879b04ff1933d73d0db5baca85faf5105bd45f26a8a5e"
+    },
+    {
+      "kind": "menu",
+      "locale": "en",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/menu-390x844-en.png",
+      "sha256": "e4d5ada13d5512c859c14bef263e8fce8304738524f9d5b2fdb52634b14c039a"
+    },
+    {
+      "kind": "editor",
+      "locale": "en",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/editor-390x844-en.png",
+      "sha256": "db89129de96b300add2732547bacc433846b90ab5e20a61db16fdfccf11326f5"
+    },
+    {
+      "kind": "restaurant",
+      "locale": "en",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/restaurant-390x844-en.png",
+      "sha256": "1edc77499934b93db516bb0c8a7c4b07e0aaddbe48f864c49ff133b5e4fcfd76"
+    },
+    {
+      "kind": "loading",
+      "locale": "en",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/loading-390x844-en.png",
+      "sha256": "e64cc3f2599a9aab1adc73c8446f351cd8f57d0449419af3d1e2a6b980537fbb"
+    },
+    {
+      "kind": "empty",
+      "locale": "en",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/empty-390x844-en.png",
+      "sha256": "2e36ab0608621ff3ff1998d475dad6ccd888f96756a4d8b7e6cbd84ce9f73e61"
+    },
+    {
+      "kind": "offline",
+      "locale": "en",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/offline-390x844-en.png",
+      "sha256": "1ad194a85af9388e23b35f94106257dd564dd62c2316fe7d22727ad70be4e50d"
+    },
+    {
+      "kind": "stale",
+      "locale": "en",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/stale-390x844-en.png",
+      "sha256": "1520fe05580d7871700d1e8b70cc9fad3b8f951318b030bf91d3f2011659d11a"
+    },
+    {
+      "kind": "validation",
+      "locale": "en",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/validation-390x844-en.png",
+      "sha256": "aeac549937f4ccc48d0ea28c1ca05589303a0d056f06259b2ea1a3b3fbb1edf4"
+    },
+    {
+      "kind": "conflict",
+      "locale": "en",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/conflict-390x844-en.png",
+      "sha256": "139e34ebe79f9bc7ca7fc0e2aada6a26915ae6e1241505a02a1db12e086ba88f"
+    },
+    {
+      "kind": "unknown-outcome",
+      "locale": "en",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/unknown-outcome-390x844-en.png",
+      "sha256": "24332b7cbc16b7a538e919d2c037e8c023dbaef9b7b351b2f90080aeb18ac09d"
+    },
+    {
+      "kind": "upload",
+      "locale": "en",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/upload-390x844-en.png",
+      "sha256": "8948a5f3b6be8837333bc4df85282965725e8722823dfef0bef26d014bab29a5"
+    },
+    {
+      "kind": "dirty-confirmation",
+      "locale": "en",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/dirty-confirmation-390x844-en.png",
+      "sha256": "63f79e99076ce3553c1bdf1560de2e08d207f3ee432a89cc032b35ce71307b60"
+    },
+    {
+      "kind": "history",
+      "locale": "en",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/history-768x1024-en.png",
+      "sha256": "4776da19cd31cbbdd3a5a154d7a69c7b5f500666b60d55bc372b737aee4ce19c"
+    },
+    {
+      "kind": "menu",
+      "locale": "en",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/menu-768x1024-en.png",
+      "sha256": "1240706ca7b28d3478f1916ab9802c51e8178ca5727e1730c3b750f5f118e77a"
+    },
+    {
+      "kind": "editor",
+      "locale": "en",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/editor-768x1024-en.png",
+      "sha256": "35fb05cfdbb4cf68a2888f186873d393c9ac7ae4a1007e6a100126074f93b112"
+    },
+    {
+      "kind": "restaurant",
+      "locale": "en",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/restaurant-768x1024-en.png",
+      "sha256": "af8d38419f643795cd00ffa5c54c4aa5c9f11e6235fc96bc9d44b2db7f37452a"
+    },
+    {
+      "kind": "loading",
+      "locale": "en",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/loading-768x1024-en.png",
+      "sha256": "fbb3d88ee189623fe4e171ea397b1a49ede4866c626313f3d723e6b97d988582"
+    },
+    {
+      "kind": "empty",
+      "locale": "en",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/empty-768x1024-en.png",
+      "sha256": "3908aa9ea832d110b4d032f9c342361be948c69c81c043668b34a2e1061e7716"
+    },
+    {
+      "kind": "offline",
+      "locale": "en",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/offline-768x1024-en.png",
+      "sha256": "599898bfc7db226276a863de4d80d3b1652b6ee0fdf90cf49c5c9d7d10b1bc63"
+    },
+    {
+      "kind": "stale",
+      "locale": "en",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/stale-768x1024-en.png",
+      "sha256": "1c70239039eff39925bf1a9099657dd40087ed7981c10233069308aab6a7449a"
+    },
+    {
+      "kind": "validation",
+      "locale": "en",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/validation-768x1024-en.png",
+      "sha256": "758ce1b4dc14016f14a242f130372ab24ce3dc41f728928bf2622a1bc88b07b8"
+    },
+    {
+      "kind": "conflict",
+      "locale": "en",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/conflict-768x1024-en.png",
+      "sha256": "5a45eac407343503e951e052695b6a7f881fb1f9642a2917a27fc078476d657b"
+    },
+    {
+      "kind": "unknown-outcome",
+      "locale": "en",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/unknown-outcome-768x1024-en.png",
+      "sha256": "d983edb1bc8ca07113df615fd4951b9b02b3ca37b6c4cf5111a60884516f0134"
+    },
+    {
+      "kind": "upload",
+      "locale": "en",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/upload-768x1024-en.png",
+      "sha256": "5debdadef80ad956f39e0e3efb2771214068dd7b2f6049e8233a677fc89801ff"
+    },
+    {
+      "kind": "dirty-confirmation",
+      "locale": "en",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/dirty-confirmation-768x1024-en.png",
+      "sha256": "87b52751c7fe916e5378a2ae4ac8ea5d0e6cbf8862343c46910fea5819b07cab"
+    },
+    {
+      "kind": "history",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/history-1024x768-en.png",
+      "sha256": "74f883c010b20f2d997c9593b9d7636fd6f192ec0b121cdabf6a40c99e45f43d"
+    },
+    {
+      "kind": "menu",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/menu-1024x768-en.png",
+      "sha256": "d77592ee120eb78a78f7e045e8973238ca0c7b944287041183ce25d68b642c71"
+    },
+    {
+      "kind": "editor",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/editor-1024x768-en.png",
+      "sha256": "1f7ef7703c4b809dc58ed18da0d27e8a9168d3bdf2f48a8db8550aa47694f9c5"
+    },
+    {
+      "kind": "restaurant",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/restaurant-1024x768-en.png",
+      "sha256": "c4866084222c507c190c8d9c8dd8185aae32f98e9a3b658cffb852c2827403f9"
+    },
+    {
+      "kind": "loading",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/loading-1024x768-en.png",
+      "sha256": "79d6e99753f8301fc322bf4390b583abf7042d8e539fcc39a55a10a29cdce3be"
+    },
+    {
+      "kind": "empty",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/empty-1024x768-en.png",
+      "sha256": "1d87c70627d1a92878e45bd252975ffd885c9bc57188d14fc719e2b8fbde8a50"
+    },
+    {
+      "kind": "offline",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/offline-1024x768-en.png",
+      "sha256": "453fadd771fb2fb21aef6acb3cfdd75990acf4a11fecfad46838d35ac18e621a"
+    },
+    {
+      "kind": "stale",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/stale-1024x768-en.png",
+      "sha256": "c707f828e51f10c383f60f40e641730d6476282fc42f5c76b8f82fb58a4fe8f4"
+    },
+    {
+      "kind": "validation",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/validation-1024x768-en.png",
+      "sha256": "95d5192d46ecddf8a1b9509977101a77721e2adf816db6403085ab3afbbbee9b"
+    },
+    {
+      "kind": "conflict",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/conflict-1024x768-en.png",
+      "sha256": "52ba102164ec67d5f599770e693a7445a12627935cb025a2f414fcab295f2edf"
+    },
+    {
+      "kind": "unknown-outcome",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/unknown-outcome-1024x768-en.png",
+      "sha256": "decdf59c5fec88a606a44f760ed6119ad95d5434b9f8ba073b99746da421aaa2"
+    },
+    {
+      "kind": "upload",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/upload-1024x768-en.png",
+      "sha256": "7e718a743626e689552dfb1cb9dd3fa0ceaa53bbc0162445caefe8e828452c67"
+    },
+    {
+      "kind": "dirty-confirmation",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/dirty-confirmation-1024x768-en.png",
+      "sha256": "c6c30c635fbc1f07ff8d3a5e6ec3961bbed332a0f841fbd62881df5f9120658e"
+    },
+    {
+      "kind": "history",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/history-1440x900-en.png",
+      "sha256": "ca729e96681691df97c8cd7b27415dc558b1fec38b801c48212618a6761b9ee6"
+    },
+    {
+      "kind": "menu",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/menu-1440x900-en.png",
+      "sha256": "021391c20ed6a1732abc56aa0845c72a55fbd5fa49b956c864e172882758c57c"
+    },
+    {
+      "kind": "editor",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/editor-1440x900-en.png",
+      "sha256": "5e2563e6f06153d65830aec9303d1ad5881b905b0450061119f891938632a360"
+    },
+    {
+      "kind": "restaurant",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/restaurant-1440x900-en.png",
+      "sha256": "53e43a95ed52f30fb0968b25da6bf56dd6a4654c7946b532bb73b2a3991d9659"
+    },
+    {
+      "kind": "loading",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/loading-1440x900-en.png",
+      "sha256": "3cef6e5c6aa39095a016261777ea740de60c3c19a86ed1629cd4d358cc38a1e2"
+    },
+    {
+      "kind": "empty",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/empty-1440x900-en.png",
+      "sha256": "e50e599630e1f3dccc28ee1ff1d9e3d42c87fd90569f59e003557b54129e5aff"
+    },
+    {
+      "kind": "offline",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/offline-1440x900-en.png",
+      "sha256": "f01e154ca3b908f9fd20c91c947be4c2ffe62329609a377b8a08c004700ebec9"
+    },
+    {
+      "kind": "stale",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/stale-1440x900-en.png",
+      "sha256": "c0678e5f1928b778481852936f6a4e9199f2ebf20543f58c92d6f495519e3bae"
+    },
+    {
+      "kind": "validation",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/validation-1440x900-en.png",
+      "sha256": "03eceb6a9578a31183fe8e4cff0a4e6ee21d90066a8839df5ab7b2c6d634be09"
+    },
+    {
+      "kind": "conflict",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/conflict-1440x900-en.png",
+      "sha256": "ad3367ed0f08db99cb0d58c54bc316be3f6be2fbc989d58bc988fb069c3606bd"
+    },
+    {
+      "kind": "unknown-outcome",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/unknown-outcome-1440x900-en.png",
+      "sha256": "3caff06f154cd16476c6a0490b7ffcc2207ee3e9e468ba2612b8491fc66f31dc"
+    },
+    {
+      "kind": "upload",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/upload-1440x900-en.png",
+      "sha256": "7b815bcb319af81e0c43131e0a98561095b2c572ad761a2a9281ef77d2c77c8c"
+    },
+    {
+      "kind": "dirty-confirmation",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/dirty-confirmation-1440x900-en.png",
+      "sha256": "d581675163a71d008b5a328891c4e6835896383cc185231f90b53049b6f36808"
+    },
+    {
+      "kind": "history",
+      "locale": "tr",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/history-360x800-tr.png",
+      "sha256": "8a2e59d8925ab4146760beb53c8812d0c76a12f6c0fe04ebaf07de2c8755fd6f"
+    },
+    {
+      "kind": "menu",
+      "locale": "tr",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/menu-360x800-tr.png",
+      "sha256": "99e9031aed4fc2a1912641c2bc40f168c39e9713af7e57a9f77bdc1078ebdee0"
+    },
+    {
+      "kind": "editor",
+      "locale": "tr",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/editor-360x800-tr.png",
+      "sha256": "077eb82ff9801f1b2db500b29cddbcd8cb12c62234a0ba439d0f48f5c78e310d"
+    },
+    {
+      "kind": "restaurant",
+      "locale": "tr",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/restaurant-360x800-tr.png",
+      "sha256": "36e4d302532cab322390c18196c16c2e292e6a621ffe0f3ce10bf6d06f489c14"
+    },
+    {
+      "kind": "loading",
+      "locale": "tr",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/loading-360x800-tr.png",
+      "sha256": "577cf1c9c2ebecf7be915511997388db7c69f518b3d9db3321aa6267c9b08509"
+    },
+    {
+      "kind": "empty",
+      "locale": "tr",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/empty-360x800-tr.png",
+      "sha256": "d0d6dcde90fbc1e354dbc5218678cd41172e6c2da55a53e75e489394ac9cdff1"
+    },
+    {
+      "kind": "offline",
+      "locale": "tr",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/offline-360x800-tr.png",
+      "sha256": "70071374f7bc1c8d0f42eece48379d3d733e3d12962c48a3971a922ff29220e5"
+    },
+    {
+      "kind": "stale",
+      "locale": "tr",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/stale-360x800-tr.png",
+      "sha256": "65d24f011fa7726d8b290ab4d7541d0c9de4fad46bc74d77b14108c414d4855a"
+    },
+    {
+      "kind": "validation",
+      "locale": "tr",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/validation-360x800-tr.png",
+      "sha256": "9ba1a234d43a0f719a7b0937f0d7bcdc65daac2ff76c57f6d11c1e0cf51e037c"
+    },
+    {
+      "kind": "conflict",
+      "locale": "tr",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/conflict-360x800-tr.png",
+      "sha256": "422ebd395a93f0301bca652c4e0a0bbd042999779dadfb3e8fc6ba9bf827cf81"
+    },
+    {
+      "kind": "unknown-outcome",
+      "locale": "tr",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/unknown-outcome-360x800-tr.png",
+      "sha256": "9ae8aa1aa133ace9a9ac24a12647a94a5d1419244c239f5d4476a7e5bf364cb4"
+    },
+    {
+      "kind": "upload",
+      "locale": "tr",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/upload-360x800-tr.png",
+      "sha256": "5d7f2493a5258f5aeb2ddf7265c9d80c732ec91502f9ce31e8071b71675b9c52"
+    },
+    {
+      "kind": "dirty-confirmation",
+      "locale": "tr",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/dirty-confirmation-360x800-tr.png",
+      "sha256": "67826ed0c7276f7764f1c862363e015f39e3cb1c85b505e06acbc3015fbc09ee"
+    },
+    {
+      "kind": "history",
+      "locale": "tr",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/history-390x844-tr.png",
+      "sha256": "66a2bf492ba9ee5d4a6003baa7981e2243c45aaeab678852bc4799d92c44f79a"
+    },
+    {
+      "kind": "menu",
+      "locale": "tr",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/menu-390x844-tr.png",
+      "sha256": "cd05cff1778218ff07a5b9365eb2fed2b419c9c1373c9c08dc016e0113c83399"
+    },
+    {
+      "kind": "editor",
+      "locale": "tr",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/editor-390x844-tr.png",
+      "sha256": "08492b9d9a3535a6c13efe39f43fbb8d949d0bba5cb630aef9b0cab1bf15b075"
+    },
+    {
+      "kind": "restaurant",
+      "locale": "tr",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/restaurant-390x844-tr.png",
+      "sha256": "3124952648a7de4ceb774e290e0029b47f1d6084eaa9eb2c3c0d0c8f23a44237"
+    },
+    {
+      "kind": "loading",
+      "locale": "tr",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/loading-390x844-tr.png",
+      "sha256": "241464c5fee16953f4e0b1c35a2d6122fe6e25064298d3553f084920d233f3cc"
+    },
+    {
+      "kind": "empty",
+      "locale": "tr",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/empty-390x844-tr.png",
+      "sha256": "4d02391b7352072ebef853aa9683a0d59849b153e6e4ed43cceea9154ab421f0"
+    },
+    {
+      "kind": "offline",
+      "locale": "tr",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/offline-390x844-tr.png",
+      "sha256": "a003d25744375a0b41b1ececdd22c79df7a3ecb1276d3be52890d10fa4f16211"
+    },
+    {
+      "kind": "stale",
+      "locale": "tr",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/stale-390x844-tr.png",
+      "sha256": "115f927259d1171274ffad9136d70ded87109c2ae8c588ab5e7f100f7821b4e8"
+    },
+    {
+      "kind": "validation",
+      "locale": "tr",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/validation-390x844-tr.png",
+      "sha256": "133971995fad227588909f854c5b89d5faf84ace091629859d4a93120f23be90"
+    },
+    {
+      "kind": "conflict",
+      "locale": "tr",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/conflict-390x844-tr.png",
+      "sha256": "1c27ca22735fa0373d0566ec793fa9607d383bb05480f5f59020f33ecf99fbbb"
+    },
+    {
+      "kind": "unknown-outcome",
+      "locale": "tr",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/unknown-outcome-390x844-tr.png",
+      "sha256": "7f52e5c77a7ab73810a03bfdcf5fc3efc7481f6020d3c8d82a4cd7e2e0ff47e2"
+    },
+    {
+      "kind": "upload",
+      "locale": "tr",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/upload-390x844-tr.png",
+      "sha256": "a9a2347029a548357fbd86accd775a31af6fcd42a91d2d5152f943808972e432"
+    },
+    {
+      "kind": "dirty-confirmation",
+      "locale": "tr",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/dirty-confirmation-390x844-tr.png",
+      "sha256": "365f6a1027aefbbd196aa32c89a3e3c37a3e78b552596af15f933eca9258be17"
+    },
+    {
+      "kind": "history",
+      "locale": "tr",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/history-768x1024-tr.png",
+      "sha256": "5ea5ffcf350f378e3f0baab247138e5784c356f4a83fd820e668af38c8da5941"
+    },
+    {
+      "kind": "menu",
+      "locale": "tr",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/menu-768x1024-tr.png",
+      "sha256": "c63dba1975aabf707a9deaa60f601a720bcde3810dccb28e92b244141e00cc2d"
+    },
+    {
+      "kind": "editor",
+      "locale": "tr",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/editor-768x1024-tr.png",
+      "sha256": "7bfb7060817412aa0cb64c0fc98d3a84565501ec2e8293d011ef9d304e36d45f"
+    },
+    {
+      "kind": "restaurant",
+      "locale": "tr",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/restaurant-768x1024-tr.png",
+      "sha256": "6e0283963d19cc8169d509be7d8dc384a712bbf462d9e924d5875cbd1d8dd321"
+    },
+    {
+      "kind": "loading",
+      "locale": "tr",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/loading-768x1024-tr.png",
+      "sha256": "d92331a1fafa2dc7649e82fe965b46ec06e551d255579c8f37fba7f99cb58d08"
+    },
+    {
+      "kind": "empty",
+      "locale": "tr",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/empty-768x1024-tr.png",
+      "sha256": "c7ffaac9ba77bcdfb93114825ab550c4a0ca97dbd260e3804f20e0f65cd3a94b"
+    },
+    {
+      "kind": "offline",
+      "locale": "tr",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/offline-768x1024-tr.png",
+      "sha256": "3be8dbf6491b1b2e063514dc269b0ccbdecd35199d9f5ff1d5b2cbe6497f8399"
+    },
+    {
+      "kind": "stale",
+      "locale": "tr",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/stale-768x1024-tr.png",
+      "sha256": "347ab6806f930d48fcf4020edf72fb8723dec718f5ef2e5299955951dc0b46f5"
+    },
+    {
+      "kind": "validation",
+      "locale": "tr",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/validation-768x1024-tr.png",
+      "sha256": "44e490e3620f5e54a8379533dbe1f4faedba0c3bd4cc48c47bee43970dd3b092"
+    },
+    {
+      "kind": "conflict",
+      "locale": "tr",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/conflict-768x1024-tr.png",
+      "sha256": "d366dc35c8ea56631db05fe2c6df7ae3aa22211409b0a19c690361d98be347c4"
+    },
+    {
+      "kind": "unknown-outcome",
+      "locale": "tr",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/unknown-outcome-768x1024-tr.png",
+      "sha256": "eacdec9eb25bee89945fc21b3dcc670f0c62af1eb7f4a842d14ce0d8a78ad376"
+    },
+    {
+      "kind": "upload",
+      "locale": "tr",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/upload-768x1024-tr.png",
+      "sha256": "342733dac8a7b8bea0a03eea605ca2d7a77cdf05488f979e762a1bb8db630fc1"
+    },
+    {
+      "kind": "dirty-confirmation",
+      "locale": "tr",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/dirty-confirmation-768x1024-tr.png",
+      "sha256": "73f59861fc25f38e4792c57f2fffd9bdfa48792dd10f5d23998167ae3d359931"
+    },
+    {
+      "kind": "history",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/history-1024x768-tr.png",
+      "sha256": "9214790788e28ef58c82a03493784da4883a4fc80445a257f07dde4f029be7fa"
+    },
+    {
+      "kind": "menu",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/menu-1024x768-tr.png",
+      "sha256": "c8cfd2121ed2da6bf20c7a933203cee03f603f795553411b38c4a9e0efe28949"
+    },
+    {
+      "kind": "editor",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/editor-1024x768-tr.png",
+      "sha256": "8fdc01d12506ce4728232261eb0079d551dcf86f0ef813424bc79321beeb0f27"
+    },
+    {
+      "kind": "restaurant",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/restaurant-1024x768-tr.png",
+      "sha256": "8f715290ff1924ec339f3075951598f20ffd95b14d2ae591dafdc7a4ad032782"
+    },
+    {
+      "kind": "loading",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/loading-1024x768-tr.png",
+      "sha256": "d1c4195d8b0722540bc9e029c26782d22ee6e3ffc1baf07d2a9707940fe2abba"
+    },
+    {
+      "kind": "empty",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/empty-1024x768-tr.png",
+      "sha256": "f5f7c8ae7da55a4344a4ba18807a7e5d2176f4fcb179e26269f49807db8768a9"
+    },
+    {
+      "kind": "offline",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/offline-1024x768-tr.png",
+      "sha256": "70a85eab0c61cfad9b2e3ce845c34984b56fb84a1eba51ea4ce325b6a2a0f4e7"
+    },
+    {
+      "kind": "stale",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/stale-1024x768-tr.png",
+      "sha256": "1db6dda34b7ad6fad6ecf6ab3cff01065cc362930e0807f96a2dd9961af49454"
+    },
+    {
+      "kind": "validation",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/validation-1024x768-tr.png",
+      "sha256": "96f17df47daa666b15635202d8f5e74de2689ee8161cd4c24ee9d7a039439f63"
+    },
+    {
+      "kind": "conflict",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/conflict-1024x768-tr.png",
+      "sha256": "90d6b8634cff9fb043570fe09a6f138a38b8c60fb88ff1f2b47091997988bca9"
+    },
+    {
+      "kind": "unknown-outcome",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/unknown-outcome-1024x768-tr.png",
+      "sha256": "15061811ce9ee4f1ca06dc6cebdbb2f6a6654de2b03e284dbb32084990287842"
+    },
+    {
+      "kind": "upload",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/upload-1024x768-tr.png",
+      "sha256": "d9ca1ec8ee129522cac1ddc06d27f1ebeb006b4e804c4ec236db2a52b4dafb2e"
+    },
+    {
+      "kind": "dirty-confirmation",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/dirty-confirmation-1024x768-tr.png",
+      "sha256": "17dbfe40e5da1880bba3e865247993a02502f1379fa1ab21eea52c04439a9fd2"
+    },
+    {
+      "kind": "history",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/history-1440x900-tr.png",
+      "sha256": "7915769d096064c51f8a9c5bb49d8c70a4b20f8fa1c9c3f7c3ca1aea53954337"
+    },
+    {
+      "kind": "menu",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/menu-1440x900-tr.png",
+      "sha256": "91ba4564d45fa97fd80f823ef8810849b314b62f160b221622d7a83cae3735a0"
+    },
+    {
+      "kind": "editor",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/editor-1440x900-tr.png",
+      "sha256": "be4f0b655920f8b9f749683d6e4d0d896e6231f23e1fbb15f2b479d98d644a75"
+    },
+    {
+      "kind": "restaurant",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/restaurant-1440x900-tr.png",
+      "sha256": "89aefaaf8ef18981a72e630deb060b2e148b9a2f0b73a18abc48dfe37b886079"
+    },
+    {
+      "kind": "loading",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/loading-1440x900-tr.png",
+      "sha256": "cf2e042eaf435466bf6eeae75796fd6ca3f86ab9c4397d188932d0918560632c"
+    },
+    {
+      "kind": "empty",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/empty-1440x900-tr.png",
+      "sha256": "b3b872d9964fe3b198594bd9f9141c72144280102df826091fd04e70ef5955b2"
+    },
+    {
+      "kind": "offline",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/offline-1440x900-tr.png",
+      "sha256": "b123c4c53b90b2a1a2c418c879fc51a19f7044e3d4e6365f8c96fbfdbaf71fb7"
+    },
+    {
+      "kind": "stale",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/stale-1440x900-tr.png",
+      "sha256": "1735aed6781d61bea59af0033f0fa024eee4db9e1ec72e3726f29f1463b7414c"
+    },
+    {
+      "kind": "validation",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/validation-1440x900-tr.png",
+      "sha256": "2debd8904dbffbb28027f3872053701e1f283cd369e33ad93c5601feae3565d1"
+    },
+    {
+      "kind": "conflict",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/conflict-1440x900-tr.png",
+      "sha256": "bd8a6791ee5857615a983766d9892912995cee1f8857571373d0712263d7d9b0"
+    },
+    {
+      "kind": "unknown-outcome",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/unknown-outcome-1440x900-tr.png",
+      "sha256": "fda7fe58472fa880930202909f3eb1c859ccfc5714b9e3a876f41eb248addf38"
+    },
+    {
+      "kind": "upload",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/upload-1440x900-tr.png",
+      "sha256": "15b5582b3a14d7a0e722f1a35ac200229d1b4a469c6c816341748bba49cc827a"
+    },
+    {
+      "kind": "dirty-confirmation",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "headings": 1,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase3-evidence/visual/dirty-confirmation-1440x900-tr.png",
+      "sha256": "f81a4e2aa76d2a34713d6b2c941ad47009cdb5d7f4f246667bd7f30209de4b92"
+    }
+  ],
+  "zoomEquivalent": {
+    "innerWidth": 512,
+    "documentWidth": 512,
+    "horizontalOverflow": false,
+    "mainLandmarks": 1,
+    "headings": 1,
+    "unlabelled": 0,
+    "smallTargets": []
+  },
+  "keyboardFocus": {
+    "tag": "A",
+    "visible": true
+  }
+}
