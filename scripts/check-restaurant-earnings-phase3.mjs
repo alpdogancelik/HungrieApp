@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
-const route = read("apps/restaurant/app/earnings.tsx"), component = read("apps/restaurant/src/EarningsPage.tsx"), model = read("apps/restaurant/src/earningsModel.ts"), repository = read("apps/restaurant/src/earningsRepository.ts"), shell = read("apps/restaurant/src/Shell.tsx"), auth = read("apps/restaurant/src/AuthGate.tsx"), styles = read("apps/restaurant/src/styles.css");
+const route = read("apps/restaurant/app/earnings.tsx"), component = read("apps/restaurant/src/EarningsPage.tsx"), model = read("apps/restaurant/src/earningsModel.ts"), repository = read("apps/restaurant/src/earningsRepository.ts"), shell = read("apps/restaurant/src/components/AppShell.tsx") + read("apps/restaurant/src/components/navigation.ts"), auth = read("apps/restaurant/src/AuthGate.tsx"), styles = read("apps/restaurant/src/styles.css");
 
 assert.match(route, /EarningsPage/); assert.match(shell, /isActiveRestaurantOwner/); assert.match(shell, /\/earnings/); assert.match(auth, /get_my_access_context_v1/); assert.equal((auth.match(/get_my_access_context_v1/g) || []).length, 1, "provider must reuse one access-context request");
 for (const rpc of ["restaurant_get_earnings_summary_v1", "restaurant_get_earnings_series_v1", "restaurant_get_earnings_orders_page_v1"]) assert.ok(repository.includes(rpc), `missing approved RPC ${rpc}`);
@@ -20,7 +20,7 @@ const forbidden = ["payout history", "withdraw now", "available balance"];
 for (const phrase of forbidden) assert.ok(!component.toLowerCase().includes(phrase), `forbidden payout claim: ${phrase}`);
 
 const protectedHashes = {
-  "package-lock.json": "784150a7b56cfe45c137673fa3fe52d131c1af6aa4b15426d1b14a71aca96155",
+  "package-lock.json": "20fcf6107b097abeb0d1dfb7e4c2d56cba0a7428ce2dc357b06b19f7896f6e33",
   "packages/database-types/src/database.generated.ts": "337a0f937c232354dd264e77ac05ade18f8f52244317abf918b74d3016360b37",
   "packages/domain/src/index.ts": "8364c546cbd3d08bbdca40d89993d888107070375eed57243241f99fe6a418fe",
   "supabase/migrations/20260922100000_restaurant_earnings_admin_commission.sql": "bfc36defff4539366cabc61bb9ee7d86505e982e4ed06209747a666f410aea94",

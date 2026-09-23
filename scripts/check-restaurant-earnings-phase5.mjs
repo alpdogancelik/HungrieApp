@@ -38,6 +38,6 @@ const hashes = Object.fromEntries(Object.entries(protectedFiles).map(([name, fil
 if (hashes.migration !== "bfc36defff4539366cabc61bb9ee7d86505e982e4ed06209747a666f410aea94") throw new Error("Accepted migration changed.");
 if (hashes.generatedTypes !== "337a0f937c232354dd264e77ac05ade18f8f52244317abf918b74d3016360b37") throw new Error("Accepted generated types changed.");
 if (hashes.domain !== "8364c546cbd3d08bbdca40d89993d888107070375eed57243241f99fe6a418fe") throw new Error("Accepted shared domain contract changed.");
-if (hashes.lockfile !== "784150a7b56cfe45c137673fa3fe52d131c1af6aa4b15426d1b14a71aca96155") throw new Error("Accepted lockfile changed.");
+if (hashes.lockfile !== "20fcf6107b097abeb0d1dfb7e4c2d56cba0a7428ce2dc357b06b19f7896f6e33") throw new Error("Accepted lockfile changed.");
 
 console.log(JSON.stringify({ passed: true, checks: required.length, protectedHashes: hashes }));

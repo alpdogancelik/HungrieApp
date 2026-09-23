@@ -1,16 +1,18 @@
-import { onIdTokenChanged, signOut } from "firebase/auth";
+import { onIdTokenChanged } from "firebase/auth";
 import { usePathname, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { auth, ensureSessionPersistence } from "./firebase";
 import { supabase } from "./supabase";
 import { useLocale } from "./providers";
-import { RestaurantNotificationListener } from "./RestaurantNotificationListener";
 import { RestaurantAccessReady } from "./RestaurantAccessReady";
 import { parseRestaurantAccessContext, RestaurantAccessContext, RestaurantAccessContextError, type RestaurantAccessContextValue } from "./RestaurantAccessContext";
+import { RestaurantRuntimeProvider } from "./RestaurantRuntimeContext";
+import { DataState } from "./components/DataState";
+import { restaurantSignOut } from "./restaurantSignOut";
 
 // Invite acceptance must be reachable before an account_access row exists.
 const publicPath = (path: string) =>
-  path === "/login" || path === "/invite" || path.startsWith("/invite/");
+  path === "/login" || path === "/forgot-password" || path === "/invite" || path.startsWith("/invite/");
 
 const accessContextTimeoutMs = 12000;
 
@@ -38,7 +40,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   const { t } = useLocale();
-  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  const [state, setState] = useState<"loading" | "ready" | "error">(publicPath(path) ? "ready" : "loading");
   const [restaurantId, setRestaurantId] = useState("");
   const [accessContext, setAccessContext] = useState<RestaurantAccessContextValue | null>(null);
   const [retry, setRetry] = useState(0);
@@ -46,7 +48,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const verifiedUid = useRef("");
 
   useEffect(() => {
-    void ensureSessionPersistence().catch(() => setState("error"));
+    void ensureSessionPersistence().catch(() => { if (!publicPath(path)) setState("error"); });
     if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
       void navigator.serviceWorker.register("/sw.js", { scope: "/" });
     }
@@ -65,6 +67,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     // restart at / and redirect to Dashboard instead of opening the route.
     const unsubscribe = onIdTokenChanged(auth, async (user) => {
       if (!live) return;
+      const wasVerified = verified.current;
       if (user?.uid !== verifiedUid.current) {
         verified.current = false;
         verifiedUid.current = "";
@@ -78,7 +81,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       }
       if (!user) {
         if (publicPath(path)) setState("ready");
-        else router.replace("/login");
+        else router.replace(wasVerified ? "/login?reason=session-expired" : "/login");
         return;
       }
 
@@ -87,9 +90,14 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         if (error) throw error;
         if (!live) return;
         const context = parseRestaurantAccessContext(data);
-        if (context.state !== "resolved" || context.accountType !== "restaurant" || context.accountStatus === "revoked") {
-          await signOut(auth);
-          if (live) router.replace("/login?reason=failed");
+        if (context.state !== "resolved" || context.accountType !== "restaurant") {
+          await restaurantSignOut();
+          if (live) router.replace(`/login?reason=${context.state === "configuration_error" && context.referenceId === "wrong-portal" ? "wrong-role" : "access"}`);
+          return;
+        }
+        if (context.accountStatus === "revoked") {
+          await restaurantSignOut();
+          if (live) router.replace("/login?reason=revoked");
           return;
         }
         if (context.accountStatus === "pending") {
@@ -105,7 +113,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           return;
         }
         if (context.accountStatus !== "active" || context.restaurantStatus !== "active") {
-          await signOut(auth);
+          await restaurantSignOut();
           if (live) router.replace("/login?reason=failed");
           return;
         }
@@ -142,13 +150,20 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }, [path, retry, router]);
 
   return <>
-    {state === "ready" && restaurantId && <RestaurantNotificationListener restaurantId={restaurantId} />}
     <RestaurantAccessContext.Provider value={accessContext}>
-      <RestaurantAccessReady.Provider value={state === "ready" && Boolean(restaurantId)}>{children}</RestaurantAccessReady.Provider>
+      <RestaurantAccessReady.Provider value={state === "ready" && Boolean(restaurantId)}>
+        {state === "ready" && restaurantId && accessContext
+          ? <RestaurantRuntimeProvider restaurantId={restaurantId} role={accessContext.restaurantRole}>{children}</RestaurantRuntimeProvider>
+          : children}
+      </RestaurantAccessReady.Provider>
     </RestaurantAccessContext.Provider>
-    {state !== "ready" && <div className="access-overlay center" role="status" aria-live="polite">
-      <p>{state === "error" ? t.unavailable : t.loading}</p>
-      {state === "error" && <button className="button" onClick={() => { setState("loading"); setRetry(value => value + 1); }}>{t.retry}</button>}
+    {state !== "ready" && <div className="access-overlay">
+      <DataState
+        live
+        kind={state === "error" ? "error" : "loading"}
+        title={state === "error" ? t.unavailable : t.loading}
+        action={state === "error" ? { label: t.retry, onClick: () => { setState("loading"); setRetry(value => value + 1); } } : undefined}
+      />
     </div>}
   </>;
 }

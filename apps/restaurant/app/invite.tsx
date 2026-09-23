@@ -4,6 +4,10 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { auth, ensureSessionPersistence } from "../src/firebase";
 import { supabase } from "../src/supabase";
 import { useLocale } from "../src/providers";
+import { AuthLayout } from "../src/components/AuthLayout";
+import { Button } from "../src/components/Button";
+import { Card } from "../src/components/Card";
+import { FormField } from "../src/components/FormField";
 
 // EAS static hosting serves /invite.html; invitation tokens travel in the
 // query string and are never included in a server-rendered page.
@@ -16,11 +20,13 @@ export default function Invite() {
   const [error, setError] = useState("");
   const [verify, setVerify] = useState(false);
   const [mode, setMode] = useState<"create" | "signin">("create");
+  const [submitting, setSubmitting] = useState(false);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError("");
     if (!token || Array.isArray(token)) { setError(t.inviteUnavailable); return; }
+    setSubmitting(true);
     try {
       await ensureSessionPersistence();
       const user = mode === "create"
@@ -39,20 +45,22 @@ export default function Invite() {
       router.replace("/pending");
     } catch {
       setError(t.invalid);
+    } finally {
+      setSubmitting(false);
     }
   }
 
-  return <main className="center"><form className="card" onSubmit={submit}>
-    <h1>{t.invite}</h1>
-    {verify ? <p>{t.verify}</p> : <>
-      <div className="row">
-        <button type="button" className={mode === "create" ? "button" : ""} onClick={() => setMode("create")}>New account / Yeni hesap</button>
-        <button type="button" className={mode === "signin" ? "button" : ""} onClick={() => setMode("signin")}>Existing account / Mevcut hesap</button>
+  return <AuthLayout><Card><form className="auth-form" onSubmit={submit} aria-busy={submitting}>
+    <div><p className="auth-eyebrow">Hungrie Restaurant</p><h1>{t.invite}</h1><p>{t.inviteIntro}</p></div>
+    {verify ? <p className="ui-notice ui-notice--success" role="status">{t.verify}</p> : <>
+      <div className="auth-tabs" role="tablist" aria-label={t.invite}>
+        <button type="button" role="tab" aria-selected={mode === "create"} onClick={() => setMode("create")}>{t.newAccount}</button>
+        <button type="button" role="tab" aria-selected={mode === "signin"} onClick={() => setMode("signin")}>{t.existingAccount}</button>
       </div>
-      <label className="field">{t.email}<input type="email" required value={email} onChange={e => setEmail(e.target.value)} /></label>
-      <label className="field">{t.password}<input type="password" minLength={8} required value={password} onChange={e => setPassword(e.target.value)} /></label>
-      {error && <p className="danger">{error}</p>}
-      <button className="button">{mode === "create" ? t.create : t.signIn}</button>
+      <FormField label={t.email} type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} />
+      <FormField label={t.password} type="password" autoComplete={mode === "create" ? "new-password" : "current-password"} minLength={8} required value={password} onChange={e => setPassword(e.target.value)} />
+      {error && <p className="ui-field__error" role="alert">{error}</p>}
+      <Button disabled={submitting}>{submitting ? t.saving : mode === "create" ? t.create : t.signIn}</Button>
     </>}
-  </form></main>;
+  </form></Card></AuthLayout>;
 }

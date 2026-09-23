@@ -1,0 +1,6 @@
+h1, h2, h3, h4, h5, h6, strong, .app-brand {
+  font-family: "Outfit_700Bold", "Outfit", "DMSans_600SemiBold", system-ui, sans-serif;
+}
+h1 { color: var(--color-ink); letter-spacing: -.025em; }
+p { line-height: 1.5; }
+.font-loading { min-height: 100vh; display: grid; place-items: center; background: var(--color-canvas); color: var(--color-muted); }

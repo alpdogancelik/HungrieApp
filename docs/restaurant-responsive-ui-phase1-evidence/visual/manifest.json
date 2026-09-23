@@ -1,0 +1,890 @@
+{
+  "generatedAt": "2026-09-23T19:41:55.891Z",
+  "note": "Protected shell captures use a local CSS/semantic markup harness; no application data or hosted environment was accessed. The 512 CSS-pixel pass represents a 1024-pixel viewport at 200% zoom.",
+  "captures": [
+    {
+      "kind": "route",
+      "route": "login",
+      "locale": "en",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/login-360x800-en.png",
+      "sha256": "4811caa6f0598479f45c37553bad1b7ac5f0504a07774be7264552b079a0dab3"
+    },
+    {
+      "kind": "route",
+      "route": "forgot-password",
+      "locale": "en",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/forgot-password-360x800-en.png",
+      "sha256": "b5f1f3794f4f9f3f1ce5cb79f63308cdcebb58981b6d25be3c0f3794099d28bd"
+    },
+    {
+      "kind": "route",
+      "route": "invite",
+      "locale": "en",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/invite-360x800-en.png",
+      "sha256": "976249089e81b97c72f4bcdba12e1e41bcce220a0aa46f1186ff92a9cb42df7b"
+    },
+    {
+      "kind": "shell-style-harness",
+      "locale": "en",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 2,
+        "currentLinks": 2,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/shell-360x800-en.png",
+      "sha256": "294449a187577b799324e3e1b0d87f6577661d162457f64f3adf1c7b0b277741"
+    },
+    {
+      "kind": "route",
+      "route": "login",
+      "locale": "en",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/login-390x844-en.png",
+      "sha256": "a368d892f81161bcc74c94e4a25fef79b9a9b7f3066481cf2a834b1c23d83561"
+    },
+    {
+      "kind": "route",
+      "route": "forgot-password",
+      "locale": "en",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/forgot-password-390x844-en.png",
+      "sha256": "25bff34673534a20b515a72b8770ba236ef2c6d73fc27880d268efd1a3a825ef"
+    },
+    {
+      "kind": "route",
+      "route": "invite",
+      "locale": "en",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/invite-390x844-en.png",
+      "sha256": "1bed71896b5e7d1dd20e784abe8dedf0b25a72eff3be037faffee8ba0d67033f"
+    },
+    {
+      "kind": "shell-style-harness",
+      "locale": "en",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 2,
+        "currentLinks": 2,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/shell-390x844-en.png",
+      "sha256": "4a10230b6dccca5e2bff77abac37608c9114884f8bd8fee80ce4225c94429943"
+    },
+    {
+      "kind": "route",
+      "route": "login",
+      "locale": "en",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/login-768x1024-en.png",
+      "sha256": "4cdf96c664bf6139958b4ce89736474b4d8389f33bbd384201c99969d46fd0f1"
+    },
+    {
+      "kind": "route",
+      "route": "forgot-password",
+      "locale": "en",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/forgot-password-768x1024-en.png",
+      "sha256": "4f395439e88a78e1be8230e54f7216a998dbf8f01437dfafd553e9380e7b862e"
+    },
+    {
+      "kind": "route",
+      "route": "invite",
+      "locale": "en",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/invite-768x1024-en.png",
+      "sha256": "6cdd5f54afc805fb8bb7a875c988872fdc5632f3ad117fc6b09a92c628811a04"
+    },
+    {
+      "kind": "shell-style-harness",
+      "locale": "en",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 2,
+        "currentLinks": 2,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/shell-768x1024-en.png",
+      "sha256": "979a09ed91a9091a5f699c9ecba1513827827a4f27a134a757afdc4565e0e22a"
+    },
+    {
+      "kind": "route",
+      "route": "login",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/login-1024x768-en.png",
+      "sha256": "a7b4224dc319dfd4680321eb85f737e53155cdccecfd86408540ef70901b0a3c"
+    },
+    {
+      "kind": "route",
+      "route": "forgot-password",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/forgot-password-1024x768-en.png",
+      "sha256": "744fa8f1a77aca45f4d2e7f1affea6ede6d5b9cf8c328eb56778298340418d69"
+    },
+    {
+      "kind": "route",
+      "route": "invite",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/invite-1024x768-en.png",
+      "sha256": "c830e11aef26ccfed7bb64a86e46e898b1416daf82453dc49392327f50833ba7"
+    },
+    {
+      "kind": "shell-style-harness",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 2,
+        "currentLinks": 2,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/shell-1024x768-en.png",
+      "sha256": "0bbd7fd19609d29e011ce176a0ff4626f879aebcaff05867681bb9d66e7a0dd9"
+    },
+    {
+      "kind": "route",
+      "route": "login",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/login-1440x900-en.png",
+      "sha256": "1d3053daea076d37f2ef6628814f8864a4b413465a880bcea3c67630fe0dd883"
+    },
+    {
+      "kind": "route",
+      "route": "forgot-password",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/forgot-password-1440x900-en.png",
+      "sha256": "229ce530540cfcc6da9aa89a5d6bd5f7b966d9b64ca0046a3cdb37e5e44cd248"
+    },
+    {
+      "kind": "route",
+      "route": "invite",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/invite-1440x900-en.png",
+      "sha256": "216db631927a99db81ab2e6a32b6161a4367059d14c918876b79673c0654bded"
+    },
+    {
+      "kind": "shell-style-harness",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 2,
+        "currentLinks": 2,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/shell-1440x900-en.png",
+      "sha256": "d504ef04a50dd6722b3d7ec53892760c2dd99596307bf08ddcbaf12705347bfa"
+    },
+    {
+      "kind": "route",
+      "route": "login",
+      "locale": "tr",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/login-360x800-tr.png",
+      "sha256": "5e28c8d72bc5633c4cff4a1a93905f802a34262023e057a2d9f47db717dfaa5f"
+    },
+    {
+      "kind": "route",
+      "route": "forgot-password",
+      "locale": "tr",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/forgot-password-360x800-tr.png",
+      "sha256": "460f0c7a20329693e5ec21ce099a5102a59cbe1f5cc5d11c5220e12698512885"
+    },
+    {
+      "kind": "route",
+      "route": "invite",
+      "locale": "tr",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/invite-360x800-tr.png",
+      "sha256": "6a1ee128e7c628c8955fb5b2560cd56ba993ce70c2f796e3daff2e0ba4794d93"
+    },
+    {
+      "kind": "shell-style-harness",
+      "locale": "tr",
+      "viewport": {
+        "name": "360x800",
+        "width": 360,
+        "height": 800
+      },
+      "metrics": {
+        "innerWidth": 360,
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 2,
+        "currentLinks": 2,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/shell-360x800-tr.png",
+      "sha256": "6aa57a9545b6d46b060e0f28a70fbc8483bee33b3164b35318338ad98bf8d108"
+    },
+    {
+      "kind": "route",
+      "route": "login",
+      "locale": "tr",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/login-390x844-tr.png",
+      "sha256": "ecbe536859f2fe115092c4c0a0474ce14217abea41ffe5a4d3330e137fd4eabc"
+    },
+    {
+      "kind": "route",
+      "route": "forgot-password",
+      "locale": "tr",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/forgot-password-390x844-tr.png",
+      "sha256": "2bebf341dd129c9009f99a190792a251c00522c24868a9f46a93b3f724f2cea0"
+    },
+    {
+      "kind": "route",
+      "route": "invite",
+      "locale": "tr",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/invite-390x844-tr.png",
+      "sha256": "1b4784c07bc3640767eceda14c8049ee2f62be3201d566504ae815be5214a156"
+    },
+    {
+      "kind": "shell-style-harness",
+      "locale": "tr",
+      "viewport": {
+        "name": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "innerWidth": 390,
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 2,
+        "currentLinks": 2,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/shell-390x844-tr.png",
+      "sha256": "ef6d6aeff1a696199726d45a88042bc353cd958a5c16923a301a40a4fd41c28c"
+    },
+    {
+      "kind": "route",
+      "route": "login",
+      "locale": "tr",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/login-768x1024-tr.png",
+      "sha256": "93d5721fbb8f4d2102f49d51a8d348eb2d146dc88dd03ffa53c689e839d164a5"
+    },
+    {
+      "kind": "route",
+      "route": "forgot-password",
+      "locale": "tr",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/forgot-password-768x1024-tr.png",
+      "sha256": "adc7236c7f593b50f4c4a00b6e992ecea943792716a42b8a0999dc3b783ce0eb"
+    },
+    {
+      "kind": "route",
+      "route": "invite",
+      "locale": "tr",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/invite-768x1024-tr.png",
+      "sha256": "6755584f1d1fcd2789c7bd71012f6829563f97e1d026d96973a9af72fca0a992"
+    },
+    {
+      "kind": "shell-style-harness",
+      "locale": "tr",
+      "viewport": {
+        "name": "768x1024",
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "innerWidth": 768,
+        "documentWidth": 768,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 2,
+        "currentLinks": 2,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/shell-768x1024-tr.png",
+      "sha256": "1e26d6fa6df6f60724d3d086836ce9aa64cd185a68a5ace0452e6e28b1748c57"
+    },
+    {
+      "kind": "route",
+      "route": "login",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/login-1024x768-tr.png",
+      "sha256": "3082f75f7697ac123565c19d1cfe216cff2e75ce26b79e48124c2e58bf42f96f"
+    },
+    {
+      "kind": "route",
+      "route": "forgot-password",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/forgot-password-1024x768-tr.png",
+      "sha256": "a4edf37963a8a0014a39548072f848537ec2d6cf2a8bd0674ad913d032f04efa"
+    },
+    {
+      "kind": "route",
+      "route": "invite",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/invite-1024x768-tr.png",
+      "sha256": "3d810589c6688b9a71ef0c224dfaf64a4f5610c381f68b9519c37cc736b0b16e"
+    },
+    {
+      "kind": "shell-style-harness",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "innerWidth": 1024,
+        "documentWidth": 1024,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 2,
+        "currentLinks": 2,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/shell-1024x768-tr.png",
+      "sha256": "8909a48364bee043f91a984d3f09c5b39a45432092e2d2591701aaed03d8cabe"
+    },
+    {
+      "kind": "route",
+      "route": "login",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/login-1440x900-tr.png",
+      "sha256": "b32cf8d12331ef280196b7b9093fec22cd0121dc47a63fbd7dea78a9a12e50ff"
+    },
+    {
+      "kind": "route",
+      "route": "forgot-password",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/forgot-password-1440x900-tr.png",
+      "sha256": "7d5dff924c557820bb0745f8207a8e4c92f9cad2cad29656977a8ce137035768"
+    },
+    {
+      "kind": "route",
+      "route": "invite",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 0,
+        "currentLinks": 0,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/invite-1440x900-tr.png",
+      "sha256": "df6635b72b7dc6810f9537ab7300d52a084c8a2ed486b63c3725b8574be350bc"
+    },
+    {
+      "kind": "shell-style-harness",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "innerWidth": 1440,
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "mainLandmarks": 1,
+        "navigationLandmarks": 2,
+        "currentLinks": 2,
+        "unlabelled": 0,
+        "smallTargets": []
+      },
+      "file": "docs/restaurant-responsive-ui-phase1-evidence/visual/shell-1440x900-tr.png",
+      "sha256": "8ba058daa21b76ac4d99e13c7f4e030955182c85dbc6aaff002c621a4935b1bc"
+    }
+  ],
+  "zoomEquivalent": {
+    "innerWidth": 512,
+    "documentWidth": 512,
+    "horizontalOverflow": false,
+    "mainLandmarks": 1,
+    "navigationLandmarks": 0,
+    "currentLinks": 0,
+    "unlabelled": 0,
+    "smallTargets": []
+  },
+  "keyboardFocus": {
+    "tag": "BUTTON",
+    "visible": true
+  }
+}
