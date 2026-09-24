@@ -46,6 +46,15 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const [retry, setRetry] = useState(0);
   const verified = useRef(false);
   const verifiedUid = useRef("");
+  const runtimeReady = state === "ready"
+    && Boolean(restaurantId)
+    && accessContext?.accountStatus === "active"
+    && accessContext.restaurantStatus === "active"
+    && accessContext.onboardingStep === "none";
+  const accessStatePageReady = state === "ready"
+    && ((path === "/pending" && accessContext?.accountStatus === "pending")
+      || (path === "/suspended" && (accessContext?.accountStatus === "suspended" || accessContext?.restaurantStatus === "suspended")));
+  const contentReady = publicPath(path) || runtimeReady || accessStatePageReady;
 
   useEffect(() => {
     void ensureSessionPersistence().catch(() => { if (!publicPath(path)) setState("error"); });
@@ -91,22 +100,36 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         if (!live) return;
         const context = parseRestaurantAccessContext(data);
         if (context.state !== "resolved" || context.accountType !== "restaurant") {
+          verified.current = false;
+          verifiedUid.current = "";
+          setRestaurantId("");
+          setAccessContext(null);
+          setState("loading");
           await restaurantSignOut();
           if (live) router.replace(`/login?reason=${context.state === "configuration_error" && context.referenceId === "wrong-portal" ? "wrong-role" : "access"}`);
           return;
         }
         if (context.accountStatus === "revoked") {
+          verified.current = false;
+          verifiedUid.current = "";
+          setRestaurantId("");
+          setAccessContext(null);
+          setState("loading");
           await restaurantSignOut();
           if (live) router.replace("/login?reason=revoked");
           return;
         }
         if (context.accountStatus === "pending") {
+          verified.current = false;
+          setRestaurantId("");
           setAccessContext(context);
           if (path === "/pending") setState("ready");
           else router.replace("/pending");
           return;
         }
         if (context.accountStatus === "suspended" || context.restaurantStatus === "suspended") {
+          verified.current = false;
+          setRestaurantId("");
           setAccessContext(context);
           if (path === "/suspended") setState("ready");
           else router.replace("/suspended");
@@ -122,11 +145,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         setAccessContext(context);
         verified.current = true;
         verifiedUid.current = user.uid;
-        if (publicPath(path) || path === "/pending" || path === "/suspended") {
-          router.replace("/dashboard");
-        } else {
-          setState("ready");
-        }
+        setState("ready");
       } catch (error) {
         if (error instanceof RestaurantAccessContextError) {
           verified.current = false;
@@ -149,15 +168,23 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     };
   }, [path, retry, router]);
 
+  // Navigation runs only after React has committed the ready render. At that
+  // point protected content is already wrapped by RestaurantRuntimeProvider.
+  useEffect(() => {
+    if (runtimeReady && (publicPath(path) || path === "/pending" || path === "/suspended")) {
+      router.replace("/dashboard");
+    }
+  }, [path, router, runtimeReady]);
+
   return <>
     <RestaurantAccessContext.Provider value={accessContext}>
-      <RestaurantAccessReady.Provider value={state === "ready" && Boolean(restaurantId)}>
-        {state === "ready" && restaurantId && accessContext
+      <RestaurantAccessReady.Provider value={runtimeReady}>
+        {runtimeReady && accessContext
           ? <RestaurantRuntimeProvider restaurantId={restaurantId} role={accessContext.restaurantRole}>{children}</RestaurantRuntimeProvider>
-          : children}
+          : contentReady ? children : null}
       </RestaurantAccessReady.Provider>
     </RestaurantAccessContext.Provider>
-    {state !== "ready" && <div className="access-overlay">
+    {(state !== "ready" || !contentReady) && <div className="access-overlay">
       <DataState
         live
         kind={state === "error" ? "error" : "loading"}
