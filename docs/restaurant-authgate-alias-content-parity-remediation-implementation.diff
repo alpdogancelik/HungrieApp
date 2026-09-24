@@ -1,0 +1,549 @@
+--- a/scripts/deploy-restaurant-authgate-staging-retry.mjs
++++ b/scripts/deploy-restaurant-authgate-staging-retry.mjs
+@@ -3,6 +3,7 @@
+ import fs from "node:fs";
+ import path from "node:path";
+ import { spawnSync } from "node:child_process";
++import { observeRequest, verifyAliasParity } from "./restaurant-alias-parity-verifier.mjs";
+
+ const root = path.resolve(import.meta.dirname, "..");
+ const sourceRoot = "/tmp/hungrie-ruip6a_20260924b";
+@@ -33,6 +34,7 @@
+ const apiQualification = JSON.parse(fs.readFileSync(path.join(runDirectory, "api-qualification.json"), "utf8"));
+ if (!migrationVerification.passed || !conflictQualification.passed || !apiQualification.passed || migrationVerification.state?.earnings_enabled !== false) throw new Error("Passing database, conflict, API, and Earnings-disabled gates are required before web deployment.");
+ const write = (name, value) => { const file = path.join(runDirectory, name); fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 }); fs.chmodSync(file, 0o600); return file; };
++const writeAtomic = (name, value) => { const file = path.join(runDirectory, name), temporary = `${file}.${process.pid}.tmp`; fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 }); fs.renameSync(temporary, file); fs.chmodSync(file, 0o600); return file; };
+ const walk = directory => fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => entry.isDirectory() ? walk(path.join(directory, entry.name)) : [path.join(directory, entry.name)]);
+ const canonicalFiles = directory => walk(directory).sort().map(file => ({ path: path.relative(directory, file).split(path.sep).join("/"), bytes: fs.statSync(file).size, sha256: sha256(fs.readFileSync(file)) }));
+ const digestManifest = entries => sha256(entries.map(entry => `${entry.sha256}\t${entry.bytes}\t${entry.path}`).join("\n") + "\n");
+@@ -100,11 +102,41 @@
+
+ if (action === "verify-alias") {
+   const deployment = JSON.parse(fs.readFileSync(deploymentPath, "utf8")); if (!fs.existsSync(path.join(runDirectory, "alias-promotion.json"))) throw new Error("Alias promotion evidence required.");
+-  const [immutable, alias] = await Promise.all([fetchAssetEvidence(deployment.url), fetchAssetEvidence(aliasUrl)]);
+-  const immutableMap = new Map(immutable.routes.map(row => [row.route, row.sha256])), assetMap = new Map(immutable.criticalAssets.map(row => [row.asset, row.sha256]));
+-  if (alias.routes.some(row => immutableMap.get(row.route) !== row.sha256) || alias.criticalAssets.some(row => assetMap.get(row.asset) !== row.sha256)) throw new Error("Alias content differs from immutable deployment.");
+-  const evidence = { capturedAt: new Date().toISOString(), deploymentIdentifier: deployment.deploymentIdentifier, immutable, alias, contentParity: true, etagUsedAsSoleProof: false };
+-  write("alias-verification.json", evidence); console.log(JSON.stringify({ passed: true, deploymentIdentifier: deployment.deploymentIdentifier, contentParity: true, routes: alias.routes.length, criticalAssets: alias.criticalAssets.length }));
++  const immutable = JSON.parse(fs.readFileSync(path.join(runDirectory, "immutable-smoke.json"), "utf8"));
++  if (!immutable.localArtifactParity?.html || !immutable.localArtifactParity?.criticalAssets || deployment.deploymentIdentifier !== JSON.parse(fs.readFileSync(path.join(runDirectory, "alias-promotion.json"), "utf8")).deploymentIdentifier) throw new Error("Fixed immutable parity evidence and matching promotion identity are required.");
++  const expoState = JSON.parse(fs.readFileSync(path.join(process.env.HOME, ".expo/state.json"), "utf8"));
++  const sessionSecret = expoState.auth?.sessionSecret;
++  if (!sessionSecret) throw new Error("Authenticated Expo session required for independent alias metadata verification.");
++  const retrieveMetadata = async ({ attempt, record, signal }) => {
++    const document = `query Alias($appId:String!){app{byId(appId:$appId){id workerDeploymentAliases(first:50){edges{node{id aliasName url updatedAt workerDeployment{id deploymentIdentifier url createdAt}}}}}}}`;
++    const result = await observeRequest({
++      url: "https://api.expo.dev/graphql",
++      init: { method: "POST", headers: { "content-type": "application/json", "expo-session": sessionSecret }, body: JSON.stringify({ query: document, variables: { appId: expectedProject } }) },
++      attempt,
++      resourceKind: "alias-metadata",
++      clock: { now: () => Date.now() },
++      record,
++      deadlineSignal: signal,
++    });
++    const payload = JSON.parse(result.body.toString("utf8"));
++    if (!result.response.ok || payload.errors) throw new Error("Live Expo alias metadata query failed.");
++    const alias = payload.data?.app?.byId?.workerDeploymentAliases?.edges?.map(edge => edge.node).find(node => node.aliasName === "staging");
++    if (!alias?.workerDeployment?.deploymentIdentifier) throw new Error("Staging alias metadata is incomplete.");
++    return { deploymentIdentifier: alias.workerDeployment.deploymentIdentifier, updatedAt: alias.updatedAt || null };
++  };
++  const evidence = await verifyAliasParity({
++    aliasUrl,
++    runId,
++    expected: { deploymentIdentifier: deployment.deploymentIdentifier, routes: immutable.routes, criticalAssets: immutable.criticalAssets },
++    retrieveMetadata,
++    persist: value => writeAtomic("alias-verification-progress.json", value),
++  });
++  if (!evidence.passed) {
++    writeAtomic("alias-verification-failure.json", evidence);
++    throw new Error("Alias metadata and exact content parity did not converge inside the reviewed observation window; rollback is required.");
++  }
++  writeAtomic("alias-verification.json", evidence);
++  console.log(JSON.stringify({ passed: true, deploymentIdentifier: deployment.deploymentIdentifier, contentParity: true, metadataParity: true, attempts: evidence.attempts.length, routes: immutable.routes.length, criticalAssets: new Set(immutable.criticalAssets.map(row => row.asset)).size }));
+ }
+
+ if (action === "rollback") {
+--- /dev/null
++++ b/scripts/restaurant-alias-parity-verifier.mjs
+@@ -0,0 +1,236 @@
++import crypto from "node:crypto";
++
++export const ALIAS_PARITY_POLICY = Object.freeze({
++  maximumAttempts: 10,
++  pollingIntervalMs: 5_000,
++  maximumObservationMs: 50_000,
++});
++
++const SAFE_RESPONSE_HEADERS = Object.freeze([
++  "cache-control", "age", "etag", "date", "last-modified", "server", "via",
++  "cf-ray", "x-served-by", "x-cache", "x-cache-hits", "x-timer", "x-request-id",
++  "x-amz-cf-id", "x-amz-cf-pop", "fly-request-id",
++]);
++const CREDENTIAL_KEY = /(?:authorization|token|secret|password|passwd|cookie|session|credential|api[-_]?key)/i;
++const REDACT_VALUE = /(?:bearer\s+)[a-z0-9._~+/=-]+|(?:token|secret|password|cookie|session|credential|api[-_]?key)\s*[:=]\s*[^\s,;]+/gi;
++
++const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
++const iso = milliseconds => new Date(milliseconds).toISOString();
++
++export function sanitizePersistentUrl(value) {
++  const url = new URL(value);
++  for (const key of [...url.searchParams.keys()]) if (CREDENTIAL_KEY.test(key)) url.searchParams.set(key, "[REDACTED]");
++  url.username = "";
++  url.password = "";
++  return url.toString();
++}
++
++export function sanitizeError(error) {
++  const raw = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
++  return raw.replace(REDACT_VALUE, match => match.split(/[:=\s]/, 1)[0] + " [REDACTED]").slice(0, 1_000);
++}
++
++function safeHeaders(headers) {
++  return Object.fromEntries(SAFE_RESPONSE_HEADERS.flatMap(name => {
++    const value = headers.get(name);
++    return value === null ? [] : [[name, value]];
++  }));
++}
++
++function cacheBustedUrl(base, { runId, attempt, resourceKind }) {
++  const url = new URL(base);
++  url.searchParams.set("__parity_run", runId);
++  url.searchParams.set("__parity_attempt", String(attempt));
++  url.searchParams.set("__parity_resource", resourceKind);
++  return url;
++}
++
++export async function observeRequest({
++  fetchImpl = fetch,
++  url,
++  init = {},
++  attempt,
++  resourceKind,
++  cacheBust = null,
++  clock,
++  record,
++  deadlineSignal,
++}) {
++  const requested = cacheBust ? cacheBustedUrl(url, cacheBust) : new URL(url);
++  const startedMs = clock.now();
++  const base = {
++    attempt,
++    resourceKind,
++    startedAt: iso(startedMs),
++    requestedUrl: sanitizePersistentUrl(requested),
++    cacheBust: cacheBust ? { runId: cacheBust.runId, attempt, resourceKind } : null,
++  };
++  try {
++    const response = await fetchImpl(requested, { ...init, redirect: "follow", signal: deadlineSignal });
++    const body = Buffer.from(await response.arrayBuffer());
++    const endedMs = clock.now();
++    const observation = {
++      ...base,
++      endedAt: iso(endedMs),
++      elapsedMs: Math.max(0, endedMs - startedMs),
++      finalUrl: sanitizePersistentUrl(response.url || requested),
++      status: response.status,
++      responseSha256: sha256(body),
++      byteLength: body.length,
++      headers: safeHeaders(response.headers),
++      error: null,
++    };
++    await record(observation);
++    return { response, body, observation };
++  } catch (error) {
++    const endedMs = clock.now();
++    const observation = {
++      ...base,
++      endedAt: iso(endedMs),
++      elapsedMs: Math.max(0, endedMs - startedMs),
++      finalUrl: null,
++      status: null,
++      responseSha256: null,
++      byteLength: null,
++      headers: {},
++      error: sanitizeError(error),
++    };
++    await record(observation);
++    throw error;
++  }
++}
++
++function expectedReference(expected) {
++  if (!expected?.deploymentIdentifier || !Array.isArray(expected.routes) || !Array.isArray(expected.criticalAssets)) throw new Error("A fixed immutable parity reference is required.");
++  const routes = expected.routes.map(row => ({ route: row.route, sha256: row.sha256 }));
++  const assets = [...new Map(expected.criticalAssets.map(row => [row.asset, { asset: row.asset, sha256: row.sha256 }])).values()];
++  if (!routes.length || !assets.length || routes.some(row => !row.route || !row.sha256) || assets.some(row => !row.asset || !row.sha256)) throw new Error("The immutable parity reference is incomplete.");
++  return { deploymentIdentifier: expected.deploymentIdentifier, routes, criticalAssets: assets };
++}
++
++function referencedAssets(body) {
++  return new Set([...body.toString("utf8").matchAll(/(?:src|href)=["']([^"']+\.(?:js|css))(?:\?[^"']*)?["']/g)].map(match => new URL(match[1], "https://parity.invalid").pathname));
++}
++
++function sameRequestedAndFinal(observation) {
++  if (!observation.finalUrl) return false;
++  const requested = new URL(observation.requestedUrl), final = new URL(observation.finalUrl);
++  return requested.origin === final.origin && requested.pathname === final.pathname && requested.search === final.search;
++}
++
++function attemptResult(attempt, expected) {
++  const metadataConverged = attempt.metadata?.deploymentIdentifier === expected.deploymentIdentifier;
++  const routeByName = new Map(attempt.routes.map(row => [row.route, row]));
++  const assetByName = new Map(attempt.criticalAssets.map(row => [row.asset, row]));
++  const routesComplete = expected.routes.every(reference => {
++    const row = routeByName.get(reference.route);
++    return row?.observation.status === 200 && row.observation.responseSha256 === reference.sha256 && row.finalUrlMatched && row.expectedAssetsReferenced;
++  });
++  const assetsComplete = expected.criticalAssets.every(reference => {
++    const row = assetByName.get(reference.asset);
++    return row?.observation.status === 200 && row.observation.responseSha256 === reference.sha256 && row.finalUrlMatched;
++  });
++  const contentConverged = routesComplete && assetsComplete && attempt.routes.length === expected.routes.length && attempt.criticalAssets.length === expected.criticalAssets.length;
++  return { metadataConverged, contentConverged, completeParity: metadataConverged && contentConverged };
++}
++
++export async function verifyAliasParity({
++  aliasUrl,
++  runId,
++  expected: inputExpected,
++  retrieveMetadata,
++  persist,
++  fetchImpl = fetch,
++  clock = { now: () => Date.now(), sleep: milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)) },
++  policy = ALIAS_PARITY_POLICY,
++  deadlineSignal = remainingMs => AbortSignal.timeout(Math.max(1, remainingMs)),
++}) {
++  const expected = expectedReference(inputExpected);
++  if (policy.maximumAttempts !== 10 || policy.pollingIntervalMs !== 5_000 || policy.maximumObservationMs !== 50_000) throw new Error("The reviewed alias stabilization policy is required.");
++  const evidence = {
++    schemaVersion: 1,
++    runId,
++    aliasUrl: sanitizePersistentUrl(aliasUrl),
++    expected,
++    policy: { ...policy, timing: "attempt 1 starts immediately; attempts 2-10 target +5s increments; attempt 10 may start at +45s; no request may start at or after +50s" },
++    startedAt: iso(clock.now()),
++    attempts: [],
++    passed: false,
++    rollbackRequired: false,
++    completedAt: null,
++  };
++  const startMs = clock.now();
++  const deadlineMs = startMs + policy.maximumObservationMs;
++  await persist(evidence);
++
++  for (let number = 1; number <= policy.maximumAttempts; number += 1) {
++    const targetStartMs = startMs + (number - 1) * policy.pollingIntervalMs;
++    const waitMs = targetStartMs - clock.now();
++    if (waitMs > 0) await clock.sleep(waitMs);
++    if (clock.now() >= deadlineMs) break;
++
++    const attempt = { number, startedAt: iso(clock.now()), metadata: null, routes: [], criticalAssets: [], errors: [], result: null, completedAt: null };
++    evidence.attempts.push(attempt);
++    await persist(evidence);
++    const record = async observation => { attempt.observations = [...(attempt.observations || []), observation]; await persist(evidence); };
++    const signal = () => deadlineSignal(Math.max(1, deadlineMs - clock.now()));
++
++    try {
++      const metadata = await retrieveMetadata({ attempt: number, record, signal: signal() });
++      attempt.metadata = {
++        deploymentIdentifier: metadata.deploymentIdentifier || null,
++        updatedAt: metadata.updatedAt || null,
++        retrievedAt: iso(clock.now()),
++      };
++      await persist(evidence);
++    } catch (error) {
++      attempt.errors.push({ stage: "metadata", error: sanitizeError(error) });
++      await persist(evidence);
++    }
++
++    for (const reference of expected.routes) {
++      if (clock.now() >= deadlineMs) { attempt.errors.push({ stage: "deadline", error: "Observation window expired before all routes were requested." }); await persist(evidence); break; }
++      try {
++        const requestUrl = new URL(reference.route, aliasUrl);
++        const result = await observeRequest({ fetchImpl, url: requestUrl, init: { headers: { "cache-control": "no-cache", pragma: "no-cache" } }, attempt: number, resourceKind: `route:${reference.route}`, cacheBust: { runId, attempt: number, resourceKind: "route" }, clock, record, deadlineSignal: signal() });
++        const foundAssets = referencedAssets(result.body);
++        attempt.routes.push({ route: reference.route, observation: result.observation, finalUrlMatched: sameRequestedAndFinal(result.observation), expectedAssetsReferenced: expected.criticalAssets.every(asset => foundAssets.has(new URL(asset.asset, aliasUrl).pathname)) });
++        await persist(evidence);
++      } catch (error) {
++        attempt.errors.push({ stage: `route:${reference.route}`, error: sanitizeError(error) });
++        await persist(evidence);
++      }
++    }
++
++    for (const reference of expected.criticalAssets) {
++      if (clock.now() >= deadlineMs) { attempt.errors.push({ stage: "deadline", error: "Observation window expired before all critical assets were requested." }); await persist(evidence); break; }
++      try {
++        const result = await observeRequest({ fetchImpl, url: new URL(reference.asset, aliasUrl), init: { headers: { "cache-control": "no-cache", pragma: "no-cache" } }, attempt: number, resourceKind: `asset:${reference.asset}`, cacheBust: { runId, attempt: number, resourceKind: "asset" }, clock, record, deadlineSignal: signal() });
++        attempt.criticalAssets.push({ asset: reference.asset, observation: result.observation, finalUrlMatched: sameRequestedAndFinal(result.observation) });
++        await persist(evidence);
++      } catch (error) {
++        attempt.errors.push({ stage: `asset:${reference.asset}`, error: sanitizeError(error) });
++        await persist(evidence);
++      }
++    }
++
++    attempt.result = attemptResult(attempt, expected);
++    attempt.result.withinObservationWindow = clock.now() <= deadlineMs;
++    attempt.result.completeParity = attempt.result.completeParity && attempt.result.withinObservationWindow;
++    attempt.completedAt = iso(clock.now());
++    await persist(evidence);
++    if (attempt.result.completeParity) {
++      evidence.passed = true;
++      evidence.rollbackRequired = false;
++      evidence.completedAt = iso(clock.now());
++      await persist(evidence);
++      return evidence;
++    }
++  }
++
++  evidence.passed = false;
++  evidence.rollbackRequired = true;
++  evidence.completedAt = iso(clock.now());
++  await persist(evidence);
++  return evidence;
++}
+--- /dev/null
++++ b/scripts/test-restaurant-alias-parity-verifier.mjs
+@@ -0,0 +1,242 @@
++import assert from "node:assert/strict";
++import crypto from "node:crypto";
++import http from "node:http";
++import test, { after, before } from "node:test";
++import {
++  ALIAS_PARITY_POLICY,
++  observeRequest,
++  sanitizeError,
++  sanitizePersistentUrl,
++  verifyAliasParity,
++} from "./restaurant-alias-parity-verifier.mjs";
++
++const hash = value => crypto.createHash("sha256").update(value).digest("hex");
++const candidateHtml = Buffer.from('<!doctype html><html><head><link href="/app.css" rel="stylesheet"></head><body><script src="/app.js"></script></body></html>');
++const oldHtml = Buffer.from('<!doctype html><html><head><link href="/old.css" rel="stylesheet"></head><body><script src="/old.js"></script></body></html>');
++const candidateJs = Buffer.from("globalThis.CANDIDATE=true;");
++const candidateCss = Buffer.from("body{color:#123456}");
++const oldJs = Buffer.from("globalThis.OLD=true;");
++const oldCss = Buffer.from("body{color:#654321}");
++const expected = {
++  deploymentIdentifier: "candidate-deployment",
++  routes: [{ route: "/login", sha256: hash(candidateHtml) }, { route: "/dashboard", sha256: hash(candidateHtml) }],
++  criticalAssets: [{ asset: "/app.js", sha256: hash(candidateJs) }, { asset: "/app.css", sha256: hash(candidateCss) }],
++};
++
++let server;
++let origin;
++let behavior;
++let requests;
++const ephemeralCredential = crypto.randomUUID();
++
++before(async () => {
++  server = http.createServer((request, response) => {
++    const url = new URL(request.url, "http://local.test");
++    const attempt = Number(url.searchParams.get("__parity_attempt") || url.searchParams.get("attempt") || 1);
++    requests.push({ method: request.method, pathname: url.pathname, attempt });
++    const state = behavior(attempt, url.pathname);
++    response.setHeader("cache-control", state.cacheControl || "public, max-age=60");
++    response.setHeader("age", String(state.age ?? attempt));
++    response.setHeader("etag", state.etag || `W/\"attempt-${attempt}\"`);
++    response.setHeader("date", new Date("2026-09-24T12:00:00.000Z").toUTCString());
++    response.setHeader("server", "local-parity-test");
++    response.setHeader("x-cache", state.xCache || "MISS");
++    response.setHeader("set-cookie", "credential=must-not-persist");
++    if (state.redirect) { response.writeHead(302, { location: state.redirect }); response.end(); return; }
++    if (state.status && state.status !== 200) { response.writeHead(state.status); response.end(`status-${state.status}`); return; }
++    if (url.pathname === "/metadata") {
++      response.setHeader("content-type", "application/json");
++      response.end(JSON.stringify({ deploymentIdentifier: state.metadata, updatedAt: `2026-09-24T12:00:0${Math.min(attempt, 9)}.000Z` }));
++      return;
++    }
++    if (url.pathname === "/redirected") { response.end(candidateHtml); return; }
++    if (url.pathname === "/app.js") { response.end(state.assetGeneration === "new" ? candidateJs : oldJs); return; }
++    if (url.pathname === "/app.css") { response.end(state.assetGeneration === "new" ? candidateCss : oldCss); return; }
++    response.end(state.routeGeneration === "new" ? candidateHtml : oldHtml);
++  });
++  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
++  origin = `http://127.0.0.1:${server.address().port}`;
++});
++
++after(async () => new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve())));
++
++const makeClock = () => {
++  let current = Date.parse("2026-09-24T12:00:00.000Z");
++  return { now: () => current, sleep: async milliseconds => { current += milliseconds; }, advance: milliseconds => { current += milliseconds; } };
++};
++
++const defaultState = { metadata: "candidate-deployment", routeGeneration: "new", assetGeneration: "new" };
++
++async function run(scenario, overrides = {}) {
++  behavior = scenario;
++  requests = [];
++  const clock = makeClock();
++  const snapshots = [];
++  const timedFetch = async (...args) => { const response = await fetch(...args); clock.advance(7); return response; };
++  const retrieveMetadata = overrides.retrieveMetadata || (async ({ attempt, record, signal }) => {
++    const result = await observeRequest({ fetchImpl: timedFetch, url: `${origin}/metadata?attempt=${attempt}`, init: { headers: { authorization: ["Bearer", ephemeralCredential].join(" "), cookie: ["session", ephemeralCredential].join("=") } }, attempt, resourceKind: "alias-metadata", clock, record, deadlineSignal: signal });
++    const payload = JSON.parse(result.body.toString("utf8"));
++    return payload;
++  });
++  const evidence = await verifyAliasParity({
++    aliasUrl: origin,
++    runId: "ruip6a_localtest",
++    expected,
++    retrieveMetadata,
++    persist: async value => snapshots.push(structuredClone(value)),
++    fetchImpl: timedFetch,
++    clock,
++    deadlineSignal: () => new AbortController().signal,
++  });
++  return { evidence, snapshots, requests };
++}
++
++test("old metadata and content converge to the intended deployment", async () => {
++  const { evidence } = await run(attempt => attempt < 3 ? { metadata: "rollback", routeGeneration: "old", assetGeneration: "old" } : defaultState);
++  assert.equal(evidence.passed, true);
++  assert.equal(evidence.attempts.length, 3);
++  assert.deepEqual(evidence.attempts.map(row => row.result.completeParity), [false, false, true]);
++});
++
++test("new metadata with old content never passes", async () => {
++  const { evidence } = await run(() => ({ metadata: "candidate-deployment", routeGeneration: "old", assetGeneration: "old" }));
++  assert.equal(evidence.passed, false);
++  assert.equal(evidence.rollbackRequired, true);
++  assert.ok(evidence.attempts.every(row => row.result.metadataConverged && !row.result.contentConverged));
++});
++
++test("old metadata with new content never passes", async () => {
++  const { evidence } = await run(() => ({ metadata: "rollback", routeGeneration: "new", assetGeneration: "new" }));
++  assert.equal(evidence.passed, false);
++  assert.ok(evidence.attempts.every(row => !row.result.metadataConverged && row.result.contentConverged));
++});
++
++test("mixed route and asset generations remain a hard mismatch", async () => {
++  const { evidence } = await run((_attempt, pathname) => ({ ...defaultState, routeGeneration: pathname === "/dashboard" ? "old" : "new", assetGeneration: pathname === "/app.css" ? "old" : "new" }));
++  assert.equal(evidence.passed, false);
++  assert.equal(evidence.rollbackRequired, true);
++});
++
++test("one incorrect critical asset prevents parity", async () => {
++  const { evidence } = await run((_attempt, pathname) => ({ ...defaultState, assetGeneration: pathname === "/app.js" ? "old" : "new" }));
++  assert.equal(evidence.passed, false);
++  assert.ok(evidence.attempts.every(row => !row.result.contentConverged));
++});
++
++test("transient 404 and 5xx observations are retained before convergence", async () => {
++  const { evidence } = await run((attempt, pathname) => ({ ...defaultState, status: attempt === 1 && pathname === "/login" ? 404 : attempt === 2 && pathname === "/app.js" ? 503 : 200 }));
++  assert.equal(evidence.passed, true);
++  assert.equal(evidence.attempts.length, 3);
++  assert.equal(evidence.attempts[0].routes.find(row => row.route === "/login").observation.status, 404);
++  assert.equal(evidence.attempts[1].criticalAssets.find(row => row.asset === "/app.js").observation.status, 503);
++});
++
++test("a redirect with candidate bytes fails final-URL parity", async () => {
++  const { evidence } = await run((_attempt, pathname) => ({ ...defaultState, redirect: pathname === "/login" ? "/redirected" : null }));
++  assert.equal(evidence.passed, false);
++  assert.ok(evidence.attempts.every(row => row.routes.find(route => route.route === "/login").finalUrlMatched === false));
++});
++
++test("the final permitted attempt starts at +45 seconds and may pass", async () => {
++  const { evidence } = await run(attempt => attempt === 10 ? defaultState : { metadata: "rollback", routeGeneration: "old", assetGeneration: "old" });
++  assert.equal(evidence.passed, true);
++  assert.equal(evidence.attempts.length, ALIAS_PARITY_POLICY.maximumAttempts);
++  const start = Date.parse(evidence.startedAt), finalStart = Date.parse(evidence.attempts.at(-1).startedAt);
++  assert.equal(finalStart - start, 45_000);
++  assert.ok(Date.parse(evidence.completedAt) - start < 50_000);
++});
++
++test("content completing after the 50-second deadline cannot pass", async () => {
++  behavior = () => defaultState;
++  requests = [];
++  const clock = makeClock();
++  const slowFetch = async (...args) => { const response = await fetch(...args); clock.advance(50_001); return response; };
++  const evidence = await verifyAliasParity({
++    aliasUrl: origin,
++    runId: "ruip6a_localtest",
++    expected,
++    retrieveMetadata: async () => ({ deploymentIdentifier: "candidate-deployment" }),
++    persist: async () => {},
++    fetchImpl: slowFetch,
++    clock,
++    deadlineSignal: () => new AbortController().signal,
++  });
++  assert.equal(evidence.passed, false);
++  assert.equal(evidence.rollbackRequired, true);
++  assert.equal(evidence.attempts.length, 1);
++  assert.equal(evidence.attempts[0].result.withinObservationWindow, false);
++});
++
++test("persistent mismatch exhausts the bound and requires rollback without promotion", async () => {
++  const { evidence, requests: seen } = await run(() => ({ metadata: "rollback", routeGeneration: "old", assetGeneration: "old" }));
++  assert.equal(evidence.passed, false);
++  assert.equal(evidence.rollbackRequired, true);
++  assert.equal(evidence.attempts.length, 10);
++  assert.equal(seen.some(row => /promote/i.test(row.pathname)), false);
++});
++
++test("network errors and thrown metadata parsing errors survive in evidence", async () => {
++  let call = 0;
++  const retrieveMetadata = async ({ attempt, record, signal }) => {
++    call += 1;
++    if (call === 1) {
++      await observeRequest({ url: `http://127.0.0.1:1/metadata?token=${ephemeralCredential}`, attempt, resourceKind: "alias-metadata", clock: { now: () => Date.parse("2026-09-24T12:00:00Z") }, record, deadlineSignal: signal });
++    }
++    throw new Error(`metadata token=${ephemeralCredential} could not be parsed`);
++  };
++  const { evidence, snapshots } = await run(() => defaultState, { retrieveMetadata });
++  assert.equal(evidence.passed, false);
++  assert.ok(evidence.attempts[0].observations[0].error);
++  assert.equal(JSON.stringify(snapshots).includes(ephemeralCredential), false);
++  assert.ok(evidence.attempts.every(row => row.errors.some(error => error.stage === "metadata")));
++});
++
++test("timing, hashes, byte lengths, cache headers, and cache busting are complete and sanitized", async () => {
++  const { evidence } = await run(() => defaultState);
++  const observations = evidence.attempts[0].observations;
++  assert.equal(evidence.passed, true);
++  assert.equal(observations.length, 5);
++  for (const row of observations) {
++    assert.ok(row.startedAt && row.endedAt);
++    assert.equal(row.elapsedMs, 7);
++    assert.ok(row.requestedUrl && row.finalUrl);
++    assert.equal(row.status, 200);
++    assert.match(row.responseSha256, /^[a-f0-9]{64}$/);
++    assert.ok(row.byteLength > 0);
++    assert.ok(row.headers["cache-control"]);
++    assert.ok(row.headers.age);
++    assert.ok(row.headers.etag);
++    assert.ok(row.headers.date);
++    assert.equal(row.headers.server, "local-parity-test");
++    assert.equal(row.headers["x-cache"], "MISS");
++    assert.equal("set-cookie" in row.headers, false);
++  }
++  assert.equal(JSON.stringify(evidence).includes(ephemeralCredential), false);
++  assert.equal(evidence.attempts[0].metadata.deploymentIdentifier, "candidate-deployment");
++  assert.ok(evidence.attempts[0].metadata.updatedAt);
++  assert.ok(evidence.attempts[0].metadata.retrievedAt);
++});
++
++test("omitted asset references and exact-hash changes cannot pass", async () => {
++  const withoutCss = Buffer.from('<!doctype html><html><body><script src="/app.js"></script></body></html>');
++  behavior = () => defaultState;
++  requests = [];
++  const altered = { ...expected, routes: expected.routes.map(row => ({ ...row, sha256: hash(withoutCss) })) };
++  const clock = makeClock();
++  const fetchImpl = async input => {
++    const url = new URL(input);
++    if (url.pathname === "/login" || url.pathname === "/dashboard") return new Response(withoutCss, { status: 200, headers: { "content-type": "text/html" } });
++    return fetch(input);
++  };
++  const evidence = await verifyAliasParity({ aliasUrl: origin, runId: "ruip6a_localtest", expected: altered, retrieveMetadata: async () => ({ deploymentIdentifier: "candidate-deployment" }), persist: async () => {}, fetchImpl, clock, deadlineSignal: () => new AbortController().signal });
++  assert.equal(evidence.passed, false);
++  assert.ok(evidence.attempts.every(row => row.routes.every(route => route.expectedAssetsReferenced === false)));
++});
++
++test("credential-shaped URLs and errors are redacted", () => {
++  const sanitized = sanitizePersistentUrl("https://example.invalid/path?token=abc&safe=value&next=ok");
++  assert.equal(sanitized.includes("abc"), false);
++  assert.match(sanitized, /%5BREDACTED%5D/);
++  assert.equal(sanitizeError(new Error("Bearer abc.def token=secret-value")).includes("abc.def"), false);
++  assert.equal(sanitizeError(new Error("Bearer abc.def token=secret-value")).includes("secret-value"), false);
++});
