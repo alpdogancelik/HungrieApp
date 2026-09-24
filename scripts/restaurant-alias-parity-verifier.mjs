@@ -6,6 +6,15 @@ export const ALIAS_PARITY_POLICY = Object.freeze({
   maximumObservationMs: 50_000,
 });
 
+export const ALIAS_PARITY_DIAGNOSTIC_POLICY = Object.freeze({
+  name: "diagnostic-10-minute",
+  maximumAttempts: 60,
+  pollingIntervalMs: 10_000,
+  maximumObservationMs: 600_000,
+  requiredCompleteObservations: 3,
+  stabilitySpacingMs: 30_000,
+});
+
 const SAFE_RESPONSE_HEADERS = Object.freeze([
   "cache-control", "age", "etag", "date", "last-modified", "server", "via",
   "cf-ray", "x-served-by", "x-cache", "x-cache-hits", "x-timer", "x-request-id",
@@ -134,6 +143,21 @@ function attemptResult(attempt, expected) {
   return { metadataConverged, contentConverged, completeParity: metadataConverged && contentConverged };
 }
 
+function samePolicy(actual, expected) {
+  return Object.entries(expected).every(([key, value]) => actual?.[key] === value)
+    && Object.keys(actual || {}).length === Object.keys(expected).length;
+}
+
+function policyMode(policy) {
+  if (samePolicy(policy, ALIAS_PARITY_POLICY)) return "legacy";
+  if (samePolicy(policy, ALIAS_PARITY_DIAGNOSTIC_POLICY)) return "diagnostic";
+  throw new Error("A reviewed alias stabilization policy is required.");
+}
+
+function diagnosticTiming() {
+  return "attempt 1 starts immediately; attempts 2-60 target +10s increments; attempt 60 may start at +590s; no request may start at or after +600s; success requires an initial complete observation and two additional complete observations at least +30s apart";
+}
+
 export async function verifyAliasParity({
   aliasUrl,
   runId,
@@ -146,22 +170,50 @@ export async function verifyAliasParity({
   deadlineSignal = remainingMs => AbortSignal.timeout(Math.max(1, remainingMs)),
 }) {
   const expected = expectedReference(inputExpected);
-  if (policy.maximumAttempts !== 10 || policy.pollingIntervalMs !== 5_000 || policy.maximumObservationMs !== 50_000) throw new Error("The reviewed alias stabilization policy is required.");
+  const mode = policyMode(policy);
   const evidence = {
     schemaVersion: 1,
     runId,
     aliasUrl: sanitizePersistentUrl(aliasUrl),
     expected,
-    policy: { ...policy, timing: "attempt 1 starts immediately; attempts 2-10 target +5s increments; attempt 10 may start at +45s; no request may start at or after +50s" },
+    policy: {
+      ...policy,
+      timing: mode === "legacy"
+        ? "attempt 1 starts immediately; attempts 2-10 target +5s increments; attempt 10 may start at +45s; no request may start at or after +50s"
+        : diagnosticTiming(),
+    },
     startedAt: iso(clock.now()),
     attempts: [],
     passed: false,
     rollbackRequired: false,
     completedAt: null,
   };
+  if (mode === "diagnostic") {
+    evidence.schemaVersion = 2;
+    evidence.classification = "RUNNING";
+    evidence.reason = null;
+    evidence.rollbackRequired = true;
+    evidence.stability = {
+      requiredCompleteObservations: policy.requiredCompleteObservations,
+      spacingMs: policy.stabilitySpacingMs,
+      initialAttempt: null,
+      selectedAttempts: [],
+    };
+  }
   const startMs = clock.now();
   const deadlineMs = startMs + policy.maximumObservationMs;
+  if (mode === "diagnostic") evidence.deadlineAt = iso(deadlineMs);
   await persist(evidence);
+
+  const finishDiagnostic = async (classification, reason, rollbackRequired) => {
+    evidence.passed = classification === "PASS";
+    evidence.classification = classification;
+    evidence.reason = reason;
+    evidence.rollbackRequired = rollbackRequired;
+    evidence.completedAt = iso(clock.now());
+    await persist(evidence);
+    return evidence;
+  };
 
   for (let number = 1; number <= policy.maximumAttempts; number += 1) {
     const targetStartMs = startMs + (number - 1) * policy.pollingIntervalMs;
@@ -220,14 +272,40 @@ export async function verifyAliasParity({
     attempt.completedAt = iso(clock.now());
     await persist(evidence);
     if (attempt.result.completeParity) {
+      if (mode === "diagnostic") {
+        const attemptStartMs = Date.parse(attempt.startedAt);
+        const selected = evidence.stability.selectedAttempts;
+        if (!selected.length) {
+          evidence.stability.initialAttempt = number;
+          selected.push({ number, startedAt: attempt.startedAt, completedAt: attempt.completedAt });
+          const lastRequiredStartMs = attemptStartMs + (policy.requiredCompleteObservations - 1) * policy.stabilitySpacingMs;
+          await persist(evidence);
+          if (lastRequiredStartMs >= deadlineMs) return finishDiagnostic("INCONCLUSIVE", "FIRST_COMPLETE_PARITY_TOO_LATE_FOR_STABILITY", true);
+          continue;
+        }
+        const previousSelectedStartMs = Date.parse(selected.at(-1).startedAt);
+        if (attemptStartMs - previousSelectedStartMs >= policy.stabilitySpacingMs) {
+          selected.push({ number, startedAt: attempt.startedAt, completedAt: attempt.completedAt });
+          await persist(evidence);
+        }
+        if (selected.length === policy.requiredCompleteObservations) return finishDiagnostic("PASS", "STABLE_COMPLETE_PARITY", false);
+        continue;
+      }
       evidence.passed = true;
       evidence.rollbackRequired = false;
       evidence.completedAt = iso(clock.now());
       await persist(evidence);
       return evidence;
     }
+    if (mode === "diagnostic" && evidence.stability.selectedAttempts.length) {
+      return finishDiagnostic("FAIL", "PARITY_REGRESSED_DURING_STABILITY", true);
+    }
   }
 
+  if (mode === "diagnostic") {
+    if (evidence.stability.selectedAttempts.length) return finishDiagnostic("INCONCLUSIVE", "DEADLINE_PREVENTED_STABILITY_CONFIRMATIONS", true);
+    return finishDiagnostic("FAIL", "COMPLETE_PARITY_NOT_OBSERVED", true);
+  }
   evidence.passed = false;
   evidence.rollbackRequired = true;
   evidence.completedAt = iso(clock.now());

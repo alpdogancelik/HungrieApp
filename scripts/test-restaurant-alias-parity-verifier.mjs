@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import http from "node:http";
 import test, { after, before } from "node:test";
 import {
+  ALIAS_PARITY_DIAGNOSTIC_POLICY,
   ALIAS_PARITY_POLICY,
   observeRequest,
   sanitizeError,
@@ -86,6 +87,7 @@ async function run(scenario, overrides = {}) {
     persist: async value => snapshots.push(structuredClone(value)),
     fetchImpl: timedFetch,
     clock,
+    policy: overrides.policy || ALIAS_PARITY_POLICY,
     deadlineSignal: () => new AbortController().signal,
   });
   return { evidence, snapshots, requests };
@@ -239,4 +241,155 @@ test("credential-shaped URLs and errors are redacted", () => {
   assert.match(sanitized, /%5BREDACTED%5D/);
   assert.equal(sanitizeError(new Error("Bearer abc.def token=secret-value")).includes("abc.def"), false);
   assert.equal(sanitizeError(new Error("Bearer abc.def token=secret-value")).includes("secret-value"), false);
+});
+
+test("the diagnostic policy is the reviewed 600-second configuration", () => {
+  assert.deepEqual(ALIAS_PARITY_DIAGNOSTIC_POLICY, {
+    name: "diagnostic-10-minute",
+    maximumAttempts: 60,
+    pollingIntervalMs: 10_000,
+    maximumObservationMs: 600_000,
+    requiredCompleteObservations: 3,
+    stabilitySpacingMs: 30_000,
+  });
+});
+
+test("diagnostic convergence requires three complete observations thirty seconds apart", async () => {
+  const { evidence } = await run(
+    attempt => attempt < 3 ? { metadata: "rollback", routeGeneration: "old", assetGeneration: "old" } : defaultState,
+    { policy: ALIAS_PARITY_DIAGNOSTIC_POLICY },
+  );
+  assert.equal(evidence.classification, "PASS");
+  assert.equal(evidence.reason, "STABLE_COMPLETE_PARITY");
+  assert.deepEqual(evidence.stability.selectedAttempts.map(row => row.number), [3, 6, 9]);
+  assert.equal(evidence.attempts.length, 9);
+  assert.ok(evidence.attempts.slice(2).every(row => row.result.completeParity));
+});
+
+test("persistent diagnostic mismatch uses all sixty scheduled starts and fails closed", async () => {
+  const { evidence } = await run(
+    () => ({ metadata: "candidate-deployment", routeGeneration: "old", assetGeneration: "old" }),
+    { policy: ALIAS_PARITY_DIAGNOSTIC_POLICY },
+  );
+  assert.equal(evidence.classification, "FAIL");
+  assert.equal(evidence.reason, "COMPLETE_PARITY_NOT_OBSERVED");
+  assert.equal(evidence.rollbackRequired, true);
+  assert.equal(evidence.attempts.length, 60);
+  const start = Date.parse(evidence.startedAt);
+  assert.equal(Date.parse(evidence.attempts.at(-1).startedAt) - start, 590_000);
+  assert.ok(evidence.attempts.every(row => Date.parse(row.startedAt) - start < 600_000));
+});
+
+test("the latest feasible initial diagnostic success may stabilize at +590 seconds", async () => {
+  const { evidence } = await run(
+    attempt => attempt < 54 ? { metadata: "rollback", routeGeneration: "old", assetGeneration: "old" } : defaultState,
+    { policy: ALIAS_PARITY_DIAGNOSTIC_POLICY },
+  );
+  assert.equal(evidence.classification, "PASS");
+  assert.deepEqual(evidence.stability.selectedAttempts.map(row => row.number), [54, 57, 60]);
+  assert.ok(Date.parse(evidence.completedAt) <= Date.parse(evidence.deadlineAt));
+});
+
+test("first convergence at +540 seconds is inconclusive and requires rollback", async () => {
+  const { evidence } = await run(
+    attempt => attempt < 55 ? { metadata: "rollback", routeGeneration: "old", assetGeneration: "old" } : defaultState,
+    { policy: ALIAS_PARITY_DIAGNOSTIC_POLICY },
+  );
+  assert.equal(evidence.classification, "INCONCLUSIVE");
+  assert.equal(evidence.reason, "FIRST_COMPLETE_PARITY_TOO_LATE_FOR_STABILITY");
+  assert.equal(evidence.rollbackRequired, true);
+  assert.equal(evidence.attempts.length, 55);
+});
+
+test("metadata drift after initial diagnostic success is an immediate stability failure", async () => {
+  const { evidence } = await run(
+    attempt => attempt === 1 ? defaultState : { metadata: "rollback", routeGeneration: "new", assetGeneration: "new" },
+    { policy: ALIAS_PARITY_DIAGNOSTIC_POLICY },
+  );
+  assert.equal(evidence.classification, "FAIL");
+  assert.equal(evidence.reason, "PARITY_REGRESSED_DURING_STABILITY");
+  assert.equal(evidence.attempts.length, 2);
+  assert.equal(evidence.attempts[1].result.metadataConverged, false);
+});
+
+test("an HTTP failure after initial diagnostic success fails stability", async () => {
+  const { evidence } = await run(
+    (attempt, pathname) => ({ ...defaultState, status: attempt === 2 && pathname === "/app.js" ? 503 : 200 }),
+    { policy: ALIAS_PARITY_DIAGNOSTIC_POLICY },
+  );
+  assert.equal(evidence.classification, "FAIL");
+  assert.equal(evidence.reason, "PARITY_REGRESSED_DURING_STABILITY");
+  assert.equal(evidence.attempts[1].criticalAssets.find(row => row.asset === "/app.js").observation.status, 503);
+});
+
+test("a diagnostic request completing after the deadline cannot pass", async () => {
+  behavior = () => defaultState;
+  requests = [];
+  const clock = makeClock();
+  let fetches = 0;
+  const slowAfterInitialFetch = async (...args) => {
+    const response = await fetch(...args);
+    fetches += 1;
+    clock.advance(fetches <= 5 ? 7 : 600_001);
+    return response;
+  };
+  const evidence = await verifyAliasParity({
+    aliasUrl: origin,
+    runId: "ruip6a_localtest",
+    expected,
+    retrieveMetadata: async () => ({ deploymentIdentifier: "candidate-deployment" }),
+    persist: async () => {},
+    fetchImpl: slowAfterInitialFetch,
+    clock,
+    policy: ALIAS_PARITY_DIAGNOSTIC_POLICY,
+    deadlineSignal: () => new AbortController().signal,
+  });
+  assert.equal(evidence.classification, "FAIL");
+  assert.equal(evidence.reason, "PARITY_REGRESSED_DURING_STABILITY");
+  assert.equal(evidence.rollbackRequired, true);
+  assert.equal(evidence.attempts.at(-1).result.withinObservationWindow, false);
+});
+
+test("diagnostic observation persistence errors abort before a comparison can pass", async () => {
+  behavior = () => defaultState;
+  requests = [];
+  const clock = makeClock();
+  let persistedObservation = false;
+  let lastPersisted = null;
+  await assert.rejects(
+    verifyAliasParity({
+      aliasUrl: origin,
+      runId: "ruip6a_localtest",
+      expected,
+      retrieveMetadata: async () => ({ deploymentIdentifier: "candidate-deployment" }),
+      persist: async value => {
+        lastPersisted = structuredClone(value);
+        if (value.attempts?.[0]?.observations?.length) {
+          persistedObservation = true;
+          throw new Error("local persistence unavailable");
+        }
+      },
+      fetchImpl: fetch,
+      clock,
+      policy: ALIAS_PARITY_DIAGNOSTIC_POLICY,
+      deadlineSignal: () => new AbortController().signal,
+    }),
+    /local persistence unavailable/,
+  );
+  assert.equal(persistedObservation, true);
+  assert.equal(lastPersisted.rollbackRequired, true);
+});
+
+test("unreviewed alias timing policies remain prohibited", async () => {
+  await assert.rejects(
+    verifyAliasParity({
+      aliasUrl: origin,
+      runId: "ruip6a_localtest",
+      expected,
+      retrieveMetadata: async () => ({ deploymentIdentifier: "candidate-deployment" }),
+      persist: async () => {},
+      policy: { ...ALIAS_PARITY_DIAGNOSTIC_POLICY, maximumObservationMs: 600_001 },
+    }),
+    /reviewed alias stabilization policy/,
+  );
 });

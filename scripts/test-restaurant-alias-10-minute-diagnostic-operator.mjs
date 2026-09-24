@@ -1,0 +1,386 @@
+import assert from "node:assert/strict";
+import crypto from "node:crypto";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import test from "node:test";
+import {
+  DIAGNOSTIC_OPERATOR,
+  REJECTED_DEPLOYMENTS,
+  classifyVerificationNextAction,
+  createDeterministicArchive,
+  executePromotionBoundary,
+  performSinglePromotion,
+  promotionCommand,
+  requireActionConfirmation,
+  rollbackCommand,
+  validateAuthority,
+  validateImmediateRollbackRecheck,
+  validatePromotionPrerequisites,
+  verifyImmutableArtifactParity,
+  verifyProtectedEvidence,
+  verifyRollbackParity,
+} from "./deploy-restaurant-alias-10-minute-diagnostic-staging.mjs";
+import { sanitizeRequest } from "./qualify-restaurant-alias-diagnostic-access-staging.mjs";
+
+const hash = value => crypto.createHash("sha256").update(value).digest("hex");
+const candidateHtml = Buffer.from('<!doctype html><link href="/app.css" rel="stylesheet"><script src="/app.js"></script>');
+const candidateJs = Buffer.from("globalThis.APP=true;");
+const candidateCss = Buffer.from("body{color:#123456}");
+const expected = {
+  deploymentIdentifier: "rollback-deployment",
+  routes: Array.from({ length: 6 }, (_, index) => ({ route: `/route-${index + 1}`, sha256: hash(candidateHtml) })),
+  criticalAssets: [{ asset: "/app.js", sha256: hash(candidateJs) }, { asset: "/app.css", sha256: hash(candidateCss) }],
+};
+const evidenceHash = character => character.repeat(64);
+
+function authority(overrides = {}) {
+  return {
+    contractVersion: 1,
+    approvedForHostedExecution: true,
+    environment: "staging",
+    planSha256: DIAGNOSTIC_OPERATOR.planSha256,
+    applicationTree: DIAGNOSTIC_OPERATOR.applicationTree,
+    artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256,
+    archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256,
+    easProjectId: DIAGNOSTIC_OPERATOR.easProjectId,
+    supabaseProjectRef: DIAGNOSTIC_OPERATOR.supabaseProjectRef,
+    firebaseProjectId: DIAGNOSTIC_OPERATOR.firebaseProjectId,
+    aliasId: DIAGNOSTIC_OPERATOR.aliasId,
+    aliasName: DIAGNOSTIC_OPERATOR.aliasName,
+    aliasUrl: DIAGNOSTIC_OPERATOR.aliasUrl,
+    runId: "ruip6ad_localtest",
+    sourceCommit: "a".repeat(40),
+    sourceManifestSha256: "b".repeat(64),
+    ownerAuthorizationSha256: "c".repeat(64),
+    ...overrides,
+  };
+}
+
+function fakeClock() {
+  let current = Date.parse("2026-09-24T12:00:00.000Z");
+  return { now: () => current, sleep: async milliseconds => { current += milliseconds; }, advance: milliseconds => { current += milliseconds; } };
+}
+
+function responseFor(url, state) {
+  const pathname = new URL(url).pathname;
+  const body = pathname === "/app.js" ? candidateJs : pathname === "/app.css" ? candidateCss : candidateHtml;
+  return new Response(state.status === 200 ? body : `status-${state.status}`, {
+    status: state.status,
+    headers: { "cache-control": "public,max-age=60", age: "3", etag: `\"${state.status}\"`, "cf-ray": "local-test" },
+  });
+}
+
+async function runRollback(scenario) {
+  const clock = fakeClock();
+  const snapshots = [];
+  const fetchImpl = async input => { const state = scenario(Math.floor((clock.now() - Date.parse("2026-09-24T12:00:00.000Z")) / 10_000) + 1, new URL(input).pathname); const response = responseFor(input, state); Object.defineProperty(response, "url", { value: String(input) }); clock.advance(state.elapsedMs ?? 2); return response; };
+  const evidence = await verifyRollbackParity({
+    aliasUrl: "https://alias.example.invalid",
+    runId: "ruip6ad_localtest",
+    expected,
+    retrieveMetadata: async ({ attempt }) => ({ deploymentIdentifier: scenario(attempt, "/metadata").metadata, updatedAt: null }),
+    persist: async value => snapshots.push(structuredClone(value)),
+    fetchImpl,
+    clock,
+    deadlineSignal: () => new AbortController().signal,
+  });
+  return { evidence, snapshots };
+}
+
+function validPromotionEvidence() {
+  const currentMs = Date.parse("2026-09-25T10:00:00.000Z"), capturedAt = new Date(currentMs - 10_000).toISOString();
+  const approved = authority(), deployment = { deploymentIdentifier: "new-candidate", url: "https://new-candidate.expo.app", sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256 };
+  const artifact = { runId: approved.runId, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, files: Array.from({ length: 74 }, (_, index) => ({ path: `file-${index}`, bytes: 1, sha256: evidenceHash("a") })) };
+  const immutableEvidenceSha256 = evidenceHash("d"), accessEvidenceSha256 = evidenceHash("e"), rollbackEvidenceSha256 = evidenceHash("f");
+  const immutable = { passed: true, completedAt: capturedAt, runId: approved.runId, deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, routes: Array.from({ length: 6 }, () => ({ passed: true })), criticalAssets: Array.from({ length: 5 }, () => ({ passed: true })) };
+  const access = { passed: true, capturedAt, runId: approved.runId, qualificationId: `${approved.runId}:${deployment.deploymentIdentifier}:immutable-access`, deploymentIdentifier: deployment.deploymentIdentifier, immutableUrl: deployment.url, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, immutableEvidenceSha256, results: [["pending", "/pending"], ["suspended", "/suspended"], ["owner", "/dashboard"], ["manager", "/dashboard"]].map(([account, expectedPath]) => ({ passed: true, account, expectedPath })) };
+  const rollback = { passed: true, capturedAt, runId: approved.runId, deploymentIdentifier: DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment, routes: Array.from({ length: 6 }, (_, index) => ({ route: `/route-${index}`, sha256: evidenceHash("1") })), criticalAssets: [{ asset: "/old.js", sha256: evidenceHash("2") }] };
+  const preflight = { passed: true, capturedAt, runId: approved.runId, environment: "staging", identities: { supabaseProjectRef: DIAGNOSTIC_OPERATOR.supabaseProjectRef, firebaseProjectId: DIAGNOSTIC_OPERATOR.firebaseProjectId, easProjectId: DIAGNOSTIC_OPERATOR.easProjectId, aliasId: DIAGNOSTIC_OPERATOR.aliasId, aliasName: DIAGNOSTIC_OPERATOR.aliasName, aliasUrl: DIAGNOSTIC_OPERATOR.aliasUrl }, source: { commit: approved.sourceCommit, manifestSha256: approved.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree }, artifact: { manifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256 }, migration: { ...DIAGNOSTIC_OPERATOR.conflictMigration, appliedExactlyOnce: true, pendingCount: 0 }, earnings: { capability: "restaurant_earnings_v1", enabled: false }, protectedEvidence: DIAGNOSTIC_OPERATOR.protectedEvidence.map(row => ({ ...row, passed: true })), candidate: { deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url, immutableEvidenceSha256, accessEvidenceSha256 }, rollback: { deploymentIdentifier: rollback.deploymentIdentifier, referenceSha256: rollbackEvidenceSha256, parityPassed: true } };
+  return { authority: approved, artifact, artifactEntriesSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveEvidenceSha256: DIAGNOSTIC_OPERATOR.archiveSha256, deployment, immutable, immutableEvidenceSha256, access, accessEvidenceSha256, rollback, rollbackEvidenceSha256, preflight, protectedEvidenceVerification: DIAGNOSTIC_OPERATOR.protectedEvidence.map(row => ({ ...row, passed: true })), currentMs };
+}
+
+function clone(value) { return structuredClone(value); }
+
+function passingRollbackRecheck(value) {
+  return { evidence: { passed: true, classification: "PASS", rollbackRequired: false, runId: value.rollback.runId, completedAt: new Date(value.currentMs - 1_000).toISOString(), expected: clone(value.rollback), selectedAttempts: [{ number: 1 }, { number: 4 }] }, sha256: evidenceHash("a"), currentMs: value.currentMs };
+}
+
+async function immutableFixture(mutate = () => {}) {
+  const base = "https://candidate.example.invalid";
+  const html = Buffer.from('<!doctype html><link href="/_expo/static/a.css"><link href="/_expo/static/b.css"><link href="/_expo/static/c.css"><link href="/_expo/static/d.css"><script src="/_expo/static/e.js"></script>');
+  const assets = new Map([["/_expo/static/a.css", Buffer.from("a")], ["/_expo/static/b.css", Buffer.from("b")], ["/_expo/static/c.css", Buffer.from("c")], ["/_expo/static/d.css", Buffer.from("d")], ["/_expo/static/e.js", Buffer.from("e")]]);
+  const routePaths = [["/login", "login.html"], ["/dashboard", "dashboard.html"], ["/orders/detail?orderId=phase6", "orders/detail.html"], ["/menu", "menu.html"], ["/reviews", "reviews.html"], ["/earnings", "earnings.html"]];
+  const files = routePaths.map(([, file]) => ({ path: file, bytes: html.length, sha256: hash(html) })).concat([...assets].map(([asset, body]) => ({ path: asset.slice(1), bytes: body.length, sha256: hash(body) })));
+  while (files.length < 74) files.push({ path: `other-${files.length}.txt`, bytes: 1, sha256: hash("x") });
+  const artifact = { artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, files };
+  const state = { status: 200, finalUrl: null, body: null }; mutate({ state, html, assets, artifact });
+  const snapshots = [];
+  const fetchImpl = async input => {
+    const url = new URL(input), body = state.body || assets.get(url.pathname) || html;
+    const response = new Response(body, { status: state.status });
+    Object.defineProperty(response, "url", { value: state.finalUrl || url.href });
+    return response;
+  };
+  const evidence = await verifyImmutableArtifactParity({ base, deploymentIdentifier: "new-candidate", artifact, fetchImpl, persist: async value => snapshots.push(clone(value)), clock: { now: () => Date.parse("2026-09-25T10:00:00Z") } });
+  return { evidence, snapshots };
+}
+
+test("authority is exact and fail-closed", () => {
+  assert.equal(validateAuthority(authority()).environment, "staging");
+  for (const [field, value] of [["environment", "production"], ["easProjectId", "wrong"], ["planSha256", "0".repeat(64)], ["approvedForHostedExecution", false]]) {
+    assert.throws(() => validateAuthority(authority({ [field]: value })), new RegExp(field, "i"));
+  }
+});
+
+test("all rejected deployments, including ipcij64k47, are denied", () => {
+  assert.equal(DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment, "6jki82fy0u");
+  assert.ok(REJECTED_DEPLOYMENTS.includes("ipcij64k47"));
+  for (const identifier of REJECTED_DEPLOYMENTS) assert.throws(() => promotionCommand(identifier), /new non-rejected/);
+  assert.deepEqual(promotionCommand("new-candidate"), ["eas-cli@16.32.0", "deploy:alias", "--alias", "staging", "--id", "new-candidate", "--json", "--non-interactive"]);
+});
+
+test("artifact archives are deterministic USTAR bytes", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-archive-test-"));
+  const source = path.join(directory, "source"); fs.mkdirSync(path.join(source, "nested"), { recursive: true });
+  fs.writeFileSync(path.join(source, "z.txt"), "last\n"); fs.writeFileSync(path.join(source, "nested", "a.txt"), "first\n");
+  const first = path.join(directory, "first.tar"), second = path.join(directory, "second.tar");
+  try {
+    const firstResult = createDeterministicArchive(source, first), secondResult = createDeterministicArchive(source, second);
+    assert.deepEqual(firstResult, secondResult);
+    assert.deepEqual(fs.readFileSync(first), fs.readFileSync(second));
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("protected prior-run evidence is independently verified", () => {
+  const rows = verifyProtectedEvidence(path.resolve(import.meta.dirname, ".."));
+  assert.deepEqual(rows, DIAGNOSTIC_OPERATOR.protectedEvidence.map(row => ({ ...row, passed: true })));
+});
+
+test("promotion and rollback require separate action confirmations", () => {
+  const approved = authority();
+  assert.doesNotThrow(() => requireActionConfirmation("promote", approved, `staging:restaurant-alias-diagnostic:promote:${approved.runId}`));
+  assert.doesNotThrow(() => requireActionConfirmation("rollback", approved, `staging:restaurant-alias-diagnostic:rollback:${approved.runId}`));
+  assert.throws(() => requireActionConfirmation("rollback", approved, `staging:restaurant-alias-diagnostic:promote:${approved.runId}`), /mismatch/);
+  assert.deepEqual(rollbackCommand("captured-rollback"), ["eas-cli@16.32.0", "deploy:alias", "--alias", "staging", "--id", "captured-rollback", "--json", "--non-interactive"]);
+});
+
+test("the atomic marker permits one promotion and blocks automatic retry", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-promotion-test-"));
+  let calls = 0;
+  const spawn = () => { calls += 1; return { status: 0, stdout: '{"ok":true}\n' }; };
+  const record = { deploymentIdentifier: "new-candidate" };
+  try {
+    const first = performSinglePromotion({ runDirectory: directory, record, appRoot: process.cwd(), spawn });
+    assert.equal(first.raw.ok, true);
+    assert.equal(calls, 1);
+    assert.throws(() => performSinglePromotion({ runDirectory: directory, record, appRoot: process.cwd(), spawn }), /EEXIST/);
+    assert.equal(calls, 1);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("a failed promotion retains its marker and cannot be retried", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-promotion-failure-test-"));
+  let calls = 0;
+  const spawn = () => { calls += 1; return { status: 1, stdout: "" }; };
+  const record = { deploymentIdentifier: "new-candidate" };
+  try {
+    assert.throws(() => performSinglePromotion({ runDirectory: directory, record, appRoot: process.cwd(), spawn }), /retry prohibited/);
+    assert.throws(() => performSinglePromotion({ runDirectory: directory, record, appRoot: process.cwd(), spawn }), /EEXIST/);
+    assert.equal(calls, 1);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("terminal verification decisions never trigger promotion", () => {
+  assert.equal(classifyVerificationNextAction({ classification: "PASS", passed: true, rollbackRequired: false }), "post-parity-qualification");
+  for (const classification of ["FAIL", "INCONCLUSIVE", "ABORTED"]) assert.equal(classifyVerificationNextAction({ classification, rollbackRequired: true }), "rollback-required");
+  assert.equal(classifyVerificationNextAction({ classification: "RUNNING" }), "stop-unexpected-verification-state");
+});
+
+test("rollback verification requires two exact observations thirty seconds apart", async () => {
+  const { evidence, snapshots } = await runRollback(() => ({ metadata: "rollback-deployment", status: 200 }));
+  assert.equal(evidence.passed, true);
+  assert.deepEqual(evidence.selectedAttempts.map(row => row.number), [1, 4]);
+  assert.equal(evidence.attempts.length, 4);
+  assert.ok(snapshots.some(row => row.attempts[0]?.observations?.length));
+});
+
+test("rollback mismatch exhausts the bound and remains rollback-required", async () => {
+  const { evidence } = await runRollback(() => ({ metadata: "other-deployment", status: 200 }));
+  assert.equal(evidence.passed, false);
+  assert.equal(evidence.rollbackRequired, true);
+  assert.equal(evidence.attempts.length, 12);
+});
+
+test("rollback stability regression is a hard failure", async () => {
+  const { evidence } = await runRollback(attempt => ({ metadata: attempt === 1 ? "rollback-deployment" : "other-deployment", status: 200 }));
+  assert.equal(evidence.classification, "FAIL");
+  assert.equal(evidence.reason, "ROLLBACK_PARITY_REGRESSED");
+  assert.equal(evidence.attempts.length, 2);
+});
+
+test("rollback HTTP failures and exact asset mismatches cannot pass", async () => {
+  const httpFailure = await runRollback((_attempt, pathname) => ({ metadata: "rollback-deployment", status: pathname === "/app.js" ? 503 : 200 }));
+  assert.equal(httpFailure.evidence.passed, false);
+  assert.ok(httpFailure.evidence.attempts.every(row => row.criticalAssets.find(value => value.asset === "/app.js").observation.status === 503));
+});
+
+test("immutable access evidence retains request shape without credential values", () => {
+  const secret = crypto.randomUUID();
+  const sanitized = sanitizeRequest({
+    method: "POST",
+    url: `https://staging.example.invalid/rest/v1/rpc/get_my_access_context_v1?token=${secret}&safe=yes`,
+    headers: { authorization: `Bearer ${secret}`, cookie: `session=${secret}`, "x-client-info": "qualification" },
+  });
+  assert.equal(JSON.stringify(sanitized).includes(secret), false);
+  assert.deepEqual(sanitized.queryParameterNames, ["safe", "token"]);
+  assert.deepEqual(sanitized.credentialHeaderNames, ["authorization", "cookie"]);
+});
+
+test("immutable qualification requires exact accepted route and asset bytes", async () => {
+  const passing = await immutableFixture();
+  assert.equal(passing.evidence.passed, true);
+  assert.equal(passing.evidence.routes.length, 6);
+  assert.equal(passing.evidence.criticalAssets.length, 5);
+  assert.ok(passing.snapshots.some(snapshot => snapshot.routes.length > 0 && snapshot.passed === false));
+  assert.equal(passing.snapshots.at(-1).passed, true);
+
+  for (const [name, mutation] of [
+    ["status", ({ state }) => { state.status = 503; }],
+    ["final URL", ({ state }) => { state.finalUrl = "https://other.example.invalid/wrong"; }],
+    ["byte length and hash", ({ state }) => { state.body = Buffer.from("different"); }],
+    ["asset references", ({ state, assets }) => { state.body = Buffer.from(`<script src="${[...assets.keys()][0]}"></script>`); }],
+  ]) {
+    const result = await immutableFixture(mutation);
+    assert.equal(result.evidence.passed, false, name);
+  }
+});
+
+test("promotion prerequisites accept only the complete fresh bound evidence set", () => {
+  const evidence = validPromotionEvidence();
+  assert.equal(validatePromotionPrerequisites(evidence), true);
+});
+
+test("promotion rejects every missing, stale, failed, or mismatched immutable prerequisite", () => {
+  const cases = [
+    value => { value.immutable = null; },
+    value => { value.immutable.passed = false; },
+    value => { value.immutable.completedAt = "2026-09-25T07:00:00.000Z"; },
+    value => { value.immutable.deploymentIdentifier = "other"; },
+    value => { value.immutable.routes.pop(); },
+    value => { value.immutable.criticalAssets[0].passed = false; },
+    value => { value.immutableEvidenceSha256 = "bad"; },
+    value => { value.artifact.files.pop(); },
+    value => { value.artifactEntriesSha256 = evidenceHash("0"); },
+    value => { value.archiveEvidenceSha256 = evidenceHash("0"); },
+    value => { value.deployment.artifactManifestSha256 = evidenceHash("0"); },
+  ];
+  for (const mutate of cases) { const value = validPromotionEvidence(); mutate(value); assert.throws(() => validatePromotionPrerequisites(value)); }
+});
+
+test("promotion rejects every missing, stale, failed, mismatched, or incomplete access qualification", () => {
+  const cases = [
+    value => { value.access = null; },
+    value => { value.access.passed = false; },
+    value => { value.access.capturedAt = "2026-09-25T09:00:00.000Z"; },
+    value => { value.access.deploymentIdentifier = "other"; },
+    value => { value.access.immutableUrl = "https://other.invalid"; },
+    value => { value.access.immutableEvidenceSha256 = evidenceHash("0"); },
+    value => { value.access.qualificationId = "other"; },
+    value => { value.access.results = value.access.results.filter(row => row.account !== "pending"); },
+    value => { value.access.results.find(row => row.account === "suspended").passed = false; },
+    value => { value.access.results.find(row => row.account === "owner").expectedPath = "/login"; },
+    value => { value.access.results.find(row => row.account === "manager").passed = false; },
+    value => { value.accessEvidenceSha256 = "bad"; },
+  ];
+  for (const mutate of cases) { const value = validPromotionEvidence(); mutate(value); assert.throws(() => validatePromotionPrerequisites(value)); }
+});
+
+test("promotion rejects missing, stale, incomplete, or unexpected rollback evidence", () => {
+  const cases = [
+    value => { value.rollback = null; },
+    value => { value.rollback.passed = false; },
+    value => { value.rollback.capturedAt = "2026-09-25T09:50:00.000Z"; },
+    value => { value.rollback.deploymentIdentifier = "unexpected"; },
+    value => { value.rollback.routes.pop(); },
+    value => { value.rollback.criticalAssets = []; },
+    value => { value.rollbackEvidenceSha256 = "bad"; },
+    value => { value.preflight.rollback.referenceSha256 = evidenceHash("0"); },
+    value => { value.preflight.rollback.parityPassed = false; },
+  ];
+  for (const mutate of cases) { const value = validPromotionEvidence(); mutate(value); assert.throws(() => validatePromotionPrerequisites(value)); }
+});
+
+test("promotion rejects every missing, stale, failed, or mismatched Staging preflight gate", () => {
+  const cases = [
+    value => { value.preflight = null; },
+    value => { value.preflight.passed = false; },
+    value => { value.preflight.capturedAt = "2026-09-25T09:40:00.000Z"; },
+    value => { value.preflight.environment = "production"; },
+    value => { value.preflight.identities.supabaseProjectRef = "wrong"; },
+    value => { value.preflight.identities.firebaseProjectId = "wrong"; },
+    value => { value.preflight.identities.easProjectId = "wrong"; },
+    value => { value.preflight.identities.aliasId = "wrong"; },
+    value => { value.preflight.source.commit = "0".repeat(40); },
+    value => { value.preflight.artifact.manifestSha256 = evidenceHash("0"); },
+    value => { value.preflight.migration.sha256 = evidenceHash("0"); },
+    value => { value.preflight.migration.appliedExactlyOnce = false; },
+    value => { value.preflight.migration.pendingCount = 1; },
+    value => { value.preflight.earnings.enabled = true; },
+    value => { value.preflight.protectedEvidence[0].passed = false; },
+    value => { value.preflight.protectedEvidence[1].manifestSha256 = evidenceHash("0"); },
+    value => { value.protectedEvidenceVerification[0].passed = false; },
+    value => { value.preflight.candidate.deploymentIdentifier = "other"; },
+    value => { value.preflight.candidate.accessEvidenceSha256 = evidenceHash("0"); },
+  ];
+  for (const mutate of cases) { const value = validPromotionEvidence(); mutate(value); assert.throws(() => validatePromotionPrerequisites(value)); }
+});
+
+test("promotion requires a fresh independently passing rollback recheck", () => {
+  const value = validPromotionEvidence();
+  const evidence = passingRollbackRecheck(value).evidence;
+  assert.equal(validateImmediateRollbackRecheck({ evidence, rollback: value.rollback, completedEvidenceSha256: evidenceHash("a"), currentMs: value.currentMs }), true);
+  for (const mutate of [
+    row => { row.evidence.passed = false; },
+    row => { row.evidence.completedAt = "2026-09-25T09:59:00.000Z"; },
+    row => { row.evidence.expected.deploymentIdentifier = "other"; },
+    row => { row.evidence.selectedAttempts.pop(); },
+    row => { row.completedEvidenceSha256 = "bad"; },
+  ]) {
+    const row = { evidence: clone(evidence), rollback: value.rollback, completedEvidenceSha256: evidenceHash("a"), currentMs: value.currentMs }; mutate(row); assert.throws(() => validateImmediateRollbackRecheck(row));
+  }
+});
+
+test("the promotion boundary performs no provider call when any mandatory gate fails", async () => {
+  const mutations = [
+    value => { value.artifact = null; },
+    value => { value.immutable.passed = false; },
+    value => { value.access.results.find(row => row.account === "pending").passed = false; },
+    value => { value.rollback.routes.pop(); },
+    value => { value.preflight.earnings.enabled = true; },
+  ];
+  for (const mutate of mutations) {
+    const value = validPromotionEvidence(), directory = fs.mkdtempSync(path.join(os.tmpdir(), "promotion-boundary-reject-")); let rechecks = 0, promotions = 0;
+    mutate(value);
+    try {
+      await assert.rejects(executePromotionBoundary({ ...value, preflightEvidenceSha256: evidenceHash("9"), recheckRollback: async () => { rechecks += 1; return passingRollbackRecheck(value); }, runDirectory: directory, appRoot: process.cwd(), spawn: () => { promotions += 1; return { status: 0, stdout: '{"ok":true}' }; } }));
+      assert.equal(rechecks, 0); assert.equal(promotions, 0);
+    } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+  }
+});
+
+test("the promotion boundary requires the immediate rollback recheck and invokes promotion once", async () => {
+  const rejected = validPromotionEvidence(), rejectedDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "promotion-boundary-recheck-")); let rejectedPromotions = 0;
+  try {
+    await assert.rejects(executePromotionBoundary({ ...rejected, preflightEvidenceSha256: evidenceHash("9"), recheckRollback: async () => ({ ...passingRollbackRecheck(rejected), evidence: { ...passingRollbackRecheck(rejected).evidence, passed: false } }), runDirectory: rejectedDirectory, appRoot: process.cwd(), spawn: () => { rejectedPromotions += 1; return { status: 0, stdout: '{"ok":true}' }; } }));
+    assert.equal(rejectedPromotions, 0);
+  } finally { fs.rmSync(rejectedDirectory, { recursive: true, force: true }); }
+
+  const accepted = validPromotionEvidence(), acceptedDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "promotion-boundary-pass-")); let acceptedPromotions = 0;
+  try {
+    const result = await executePromotionBoundary({ ...accepted, preflightEvidenceSha256: evidenceHash("9"), recheckRollback: async () => passingRollbackRecheck(accepted), runDirectory: acceptedDirectory, appRoot: process.cwd(), spawn: () => { acceptedPromotions += 1; return { status: 0, stdout: '{"ok":true}' }; } });
+    assert.equal(result.promoted.raw.ok, true); assert.equal(acceptedPromotions, 1);
+    await assert.rejects(executePromotionBoundary({ ...accepted, preflightEvidenceSha256: evidenceHash("9"), recheckRollback: async () => passingRollbackRecheck(accepted), runDirectory: acceptedDirectory, appRoot: process.cwd(), spawn: () => { acceptedPromotions += 1; return { status: 0, stdout: '{"ok":true}' }; } }), /EEXIST/);
+    assert.equal(acceptedPromotions, 1);
+  } finally { fs.rmSync(acceptedDirectory, { recursive: true, force: true }); }
+});
