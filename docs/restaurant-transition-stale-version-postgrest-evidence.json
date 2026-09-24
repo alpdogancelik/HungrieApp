@@ -1,0 +1,140 @@
+{
+  "postgrest": "14.5",
+  "probes": {
+    "staleTransition": {
+      "status": 409,
+      "body": {
+        "code": "40001",
+        "details": null,
+        "hint": null,
+        "message": "Order changed; refresh and retry"
+      },
+      "elapsedMs": 37.802
+    },
+    "staleAcknowledgement": {
+      "status": 409,
+      "body": {
+        "code": "40001",
+        "details": null,
+        "hint": null,
+        "message": "Order version unavailable"
+      },
+      "elapsedMs": 13.448
+    },
+    "staleCancellation": {
+      "status": 409,
+      "body": {
+        "code": "40001",
+        "details": null,
+        "hint": null,
+        "message": "Order changed; refresh and retry"
+      },
+      "elapsedMs": 5.396
+    },
+    "staleSideEffects": {
+      "audit": 0,
+      "history": 0,
+      "visibility": 0,
+      "notifications": 0,
+      "completedOperations": 0,
+      "cancellationMessages": 0
+    },
+    "crossTenantDenial": {
+      "status": 403,
+      "body": {
+        "code": "42501",
+        "details": null,
+        "hint": null,
+        "message": "Order unavailable"
+      },
+      "elapsedMs": 6.639
+    },
+    "idempotentReplay": {
+      "first": {
+        "status": 200,
+        "body": {
+          "status": "preparing",
+          "orderId": "conflict_transport_replay_order",
+          "version": "2026-09-24T13:56:49.842758+00:00"
+        },
+        "elapsedMs": 10.184
+      },
+      "second": {
+        "status": 200,
+        "body": {
+          "status": "preparing",
+          "orderId": "conflict_transport_replay_order",
+          "version": "2026-09-24T13:56:49.842758+00:00"
+        },
+        "elapsedMs": 3.597
+      }
+    },
+    "changedReplayDenied": {
+      "status": 400,
+      "body": {
+        "code": "22023",
+        "details": null,
+        "hint": null,
+        "message": "Operation ID was already used for another request"
+      },
+      "elapsedMs": 4.86
+    },
+    "concurrentTransitions": [
+      {
+        "status": 200,
+        "body": {
+          "status": "preparing",
+          "orderId": "conflict_transport_concurrent_order",
+          "version": "2026-09-24T13:56:49.935743+00:00"
+        },
+        "elapsedMs": 7.909
+      },
+      {
+        "status": 409,
+        "body": {
+          "code": "40001",
+          "details": null,
+          "hint": null,
+          "message": "Order changed; refresh and retry"
+        },
+        "elapsedMs": 7.934
+      }
+    ],
+    "authoritativeRecovery": {
+      "status": 200,
+      "body": {
+        "id": "conflict_transport_concurrent_order",
+        "items": [],
+        "notes": "",
+        "status": "preparing",
+        "tip_kurus": 0,
+        "created_at": "2026-09-24T13:56:49.604582+00:00",
+        "updated_at": "2026-09-24T13:56:49.935743+00:00",
+        "total_kurus": 1000,
+        "preparing_at": "2026-09-24T13:56:49.935743+00:00",
+        "restaurant_id": "conflict_transport_restaurant_a",
+        "discount_kurus": 0,
+        "payment_method": "cash",
+        "subtotal_kurus": 1000,
+        "restaurant_name": "Conflict Restaurant A",
+        "reminder_pending": false,
+        "service_fee_kurus": 0,
+        "delivery_fee_kurus": 0,
+        "approval_deadline_at": "2026-09-24T14:06:49.604582+00:00"
+      },
+      "elapsedMs": 7.228
+    },
+    "currentCancellation": {
+      "status": 200,
+      "body": {
+        "status": "canceled",
+        "orderId": "conflict_transport_cancel_order",
+        "version": "2026-09-24T13:56:49.985852+00:00"
+      },
+      "elapsedMs": 5.175
+    }
+  },
+  "cleanup": true,
+  "activeRetryBackends": 0,
+  "earningsDisabled": true
+}

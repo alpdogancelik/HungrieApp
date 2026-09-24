@@ -92,6 +92,7 @@
     "test:restaurant-responsive-ui-phase4": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --import ./mobile/src/data/registerTestModuleHooks.mjs --test scripts/test-restaurant-responsive-ui-phase4.mjs",
     "qualify:restaurant-responsive-ui-phase4": "node scripts/qualify-restaurant-responsive-ui-phase4.mjs",
     "test:restaurant-responsive-ui-phase5": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test scripts/test-restaurant-responsive-ui-phase5.mjs",
+    "test:restaurant-order-conflict-transport": "node scripts/test-restaurant-order-conflict-transport.mjs",
     "qualify:restaurant-responsive-ui-phase5": "node scripts/qualify-restaurant-responsive-ui-phase5.mjs",
     "qualify:restaurant-responsive-ui-phase5-safari": "node scripts/qualify-restaurant-responsive-ui-phase5-safari.mjs",
     "qualify:restaurant-responsive-ui-phase5-performance": "node scripts/qualify-restaurant-responsive-ui-phase5-performance.mjs",
