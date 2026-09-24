@@ -1,0 +1,23 @@
+{
+  "generatedAt": "2026-09-24T16:23:18.300Z",
+  "cases": [
+    {
+      "status": "pending",
+      "route": "/pending",
+      "renders": 5,
+      "subscriptions": 2,
+      "navigations": 1,
+      "maximumUpdateErrors": 0,
+      "finalRouteVisible": true
+    },
+    {
+      "status": "suspended",
+      "route": "/suspended",
+      "renders": 5,
+      "subscriptions": 2,
+      "navigations": 1,
+      "maximumUpdateErrors": 0,
+      "finalRouteVisible": true
+    }
+  ]
+}

@@ -1,0 +1,1629 @@
+{
+  "generatedAt": "2026-09-24T16:23:53.795Z",
+  "mode": "local production export; synthetic Firebase/Supabase responses fulfilled by CDP; all HTTPS intercepted and WSS blocked",
+  "results": [
+    {
+      "name": "pending",
+      "browser": "Chrome/153.0.8010.53",
+      "expectedRoute": "/pending",
+      "first": {
+        "path": "/pending",
+        "heading": "Approval pending",
+        "blank": false,
+        "protectedOperational": false,
+        "overlay": false,
+        "evidence": {
+          "errors": [],
+          "navigations": [
+            {
+              "type": "replaceState",
+              "path": "/dashboard"
+            },
+            {
+              "type": "replaceState",
+              "path": "/login"
+            },
+            {
+              "type": "replaceState",
+              "path": "/login"
+            },
+            {
+              "type": "replaceState",
+              "path": "/pending"
+            }
+          ]
+        }
+      },
+      "restored": {
+        "path": "/pending",
+        "heading": "Approval pending",
+        "blank": false,
+        "protectedOperational": false,
+        "overlay": false,
+        "evidence": {
+          "errors": [],
+          "navigations": [
+            {
+              "type": "replaceState",
+              "path": "/pending"
+            },
+            {
+              "type": "replaceState",
+              "path": "/pending"
+            }
+          ]
+        }
+      },
+      "navigationCount": 6,
+      "accessContextRequests": 4,
+      "requestInventory": [
+        {
+          "method": "OPTIONS",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:signInWithPassword",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "access-control-request-headers",
+            "access-control-request-method",
+            "origin",
+            "sec-fetch-mode",
+            "user-agent"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:signInWithPassword",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "content-type",
+            "origin",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-version",
+            "x-firebase-client",
+            "x-firebase-gmpid"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "OPTIONS",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:lookup",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "access-control-request-headers",
+            "access-control-request-method",
+            "origin",
+            "sec-fetch-mode",
+            "user-agent"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:lookup",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "content-type",
+            "origin",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-version",
+            "x-firebase-gmpid"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "OPTIONS",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/get_my_access_context_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "access-control-request-headers",
+            "access-control-request-method",
+            "origin",
+            "referer",
+            "sec-fetch-mode",
+            "user-agent"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/get_my_access_context_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/get_my_access_context_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:lookup",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "content-type",
+            "origin",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-version",
+            "x-firebase-gmpid"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/get_my_access_context_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        }
+      ],
+      "unexpectedHostedRequests": [],
+      "exceptions": [],
+      "consoleErrors": [],
+      "screenshot": {
+        "file": "local-pending.png",
+        "sha256": "3a5bf5c4791d1ea4fb7c0b5d6021ae1794826f93c582f88198da501b83a22517"
+      }
+    },
+    {
+      "name": "suspended",
+      "browser": "Chrome/153.0.8010.53",
+      "expectedRoute": "/suspended",
+      "first": {
+        "path": "/suspended",
+        "heading": "Access suspended",
+        "blank": false,
+        "protectedOperational": false,
+        "overlay": false,
+        "evidence": {
+          "errors": [],
+          "navigations": [
+            {
+              "type": "replaceState",
+              "path": "/dashboard"
+            },
+            {
+              "type": "replaceState",
+              "path": "/login"
+            },
+            {
+              "type": "replaceState",
+              "path": "/login"
+            },
+            {
+              "type": "replaceState",
+              "path": "/suspended"
+            }
+          ]
+        }
+      },
+      "restored": {
+        "path": "/suspended",
+        "heading": "Access suspended",
+        "blank": false,
+        "protectedOperational": false,
+        "overlay": false,
+        "evidence": {
+          "errors": [],
+          "navigations": [
+            {
+              "type": "replaceState",
+              "path": "/suspended"
+            },
+            {
+              "type": "replaceState",
+              "path": "/suspended"
+            }
+          ]
+        }
+      },
+      "navigationCount": 6,
+      "accessContextRequests": 4,
+      "requestInventory": [
+        {
+          "method": "OPTIONS",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:signInWithPassword",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "access-control-request-headers",
+            "access-control-request-method",
+            "origin",
+            "sec-fetch-mode",
+            "user-agent"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:signInWithPassword",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "content-type",
+            "origin",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-version",
+            "x-firebase-client",
+            "x-firebase-gmpid"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "OPTIONS",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:lookup",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "access-control-request-headers",
+            "access-control-request-method",
+            "origin",
+            "sec-fetch-mode",
+            "user-agent"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:lookup",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "content-type",
+            "origin",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-version",
+            "x-firebase-gmpid"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "OPTIONS",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/get_my_access_context_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "access-control-request-headers",
+            "access-control-request-method",
+            "origin",
+            "referer",
+            "sec-fetch-mode",
+            "user-agent"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/get_my_access_context_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/get_my_access_context_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:lookup",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "content-type",
+            "origin",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-version",
+            "x-firebase-gmpid"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/get_my_access_context_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        }
+      ],
+      "unexpectedHostedRequests": [],
+      "exceptions": [],
+      "consoleErrors": [],
+      "screenshot": {
+        "file": "local-suspended.png",
+        "sha256": "fecfbaf086673b3be5d770fb816eb84f44089501c68c9a8fcd0879f611a48d37"
+      }
+    },
+    {
+      "name": "owner",
+      "browser": "Chrome/153.0.8010.53",
+      "expectedRoute": "/dashboard",
+      "first": {
+        "path": "/dashboard",
+        "heading": "Operations overview",
+        "blank": false,
+        "protectedOperational": true,
+        "overlay": false,
+        "evidence": {
+          "errors": [],
+          "navigations": [
+            {
+              "type": "replaceState",
+              "path": "/dashboard"
+            },
+            {
+              "type": "replaceState",
+              "path": "/login"
+            },
+            {
+              "type": "replaceState",
+              "path": "/login"
+            },
+            {
+              "type": "replaceState",
+              "path": "/dashboard"
+            },
+            {
+              "type": "replaceState",
+              "path": "/dashboard"
+            }
+          ]
+        }
+      },
+      "restored": {
+        "path": "/dashboard",
+        "heading": "Operations overview",
+        "blank": false,
+        "protectedOperational": true,
+        "overlay": false,
+        "evidence": {
+          "errors": [],
+          "navigations": [
+            {
+              "type": "replaceState",
+              "path": "/dashboard"
+            },
+            {
+              "type": "replaceState",
+              "path": "/dashboard"
+            }
+          ]
+        }
+      },
+      "navigationCount": 7,
+      "accessContextRequests": 6,
+      "requestInventory": [
+        {
+          "method": "OPTIONS",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:signInWithPassword",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "access-control-request-headers",
+            "access-control-request-method",
+            "origin",
+            "sec-fetch-mode",
+            "user-agent"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:signInWithPassword",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "content-type",
+            "origin",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-version",
+            "x-firebase-client",
+            "x-firebase-gmpid"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "OPTIONS",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:lookup",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "access-control-request-headers",
+            "access-control-request-method",
+            "origin",
+            "sec-fetch-mode",
+            "user-agent"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:lookup",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "content-type",
+            "origin",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-version",
+            "x-firebase-gmpid"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "OPTIONS",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/get_my_access_context_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "access-control-request-headers",
+            "access-control-request-method",
+            "origin",
+            "referer",
+            "sec-fetch-mode",
+            "user-agent"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/get_my_access_context_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "OPTIONS",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/restaurant_get_dashboard_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "access-control-request-headers",
+            "access-control-request-method",
+            "origin",
+            "referer",
+            "sec-fetch-mode",
+            "user-agent"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "OPTIONS",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/restaurant_list_orders_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "access-control-request-headers",
+            "access-control-request-method",
+            "origin",
+            "referer",
+            "sec-fetch-mode",
+            "user-agent"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/get_my_access_context_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/restaurant_get_dashboard_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/restaurant_list_orders_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:lookup",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "content-type",
+            "origin",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-version",
+            "x-firebase-gmpid"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/get_my_access_context_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/restaurant_list_orders_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/restaurant_get_dashboard_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:lookup",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "content-type",
+            "origin",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-version",
+            "x-firebase-gmpid"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/get_my_access_context_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/restaurant_list_orders_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/restaurant_get_dashboard_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:lookup",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "content-type",
+            "origin",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-version",
+            "x-firebase-gmpid"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/get_my_access_context_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/restaurant_list_orders_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/restaurant_get_dashboard_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        }
+      ],
+      "unexpectedHostedRequests": [],
+      "exceptions": [],
+      "consoleErrors": [],
+      "screenshot": {
+        "file": "local-owner.png",
+        "sha256": "ef19a440bc134832c0f466030294aec787aeb5bf6d38f39591a5202c9c367c9b"
+      }
+    },
+    {
+      "name": "manager",
+      "browser": "Chrome/153.0.8010.53",
+      "expectedRoute": "/dashboard",
+      "first": {
+        "path": "/dashboard",
+        "heading": "Operations overview",
+        "blank": false,
+        "protectedOperational": true,
+        "overlay": false,
+        "evidence": {
+          "errors": [],
+          "navigations": [
+            {
+              "type": "replaceState",
+              "path": "/dashboard"
+            },
+            {
+              "type": "replaceState",
+              "path": "/login"
+            },
+            {
+              "type": "replaceState",
+              "path": "/login"
+            },
+            {
+              "type": "replaceState",
+              "path": "/dashboard"
+            },
+            {
+              "type": "replaceState",
+              "path": "/dashboard"
+            }
+          ]
+        }
+      },
+      "restored": {
+        "path": "/dashboard",
+        "heading": "Operations overview",
+        "blank": false,
+        "protectedOperational": true,
+        "overlay": false,
+        "evidence": {
+          "errors": [],
+          "navigations": [
+            {
+              "type": "replaceState",
+              "path": "/dashboard"
+            },
+            {
+              "type": "replaceState",
+              "path": "/dashboard"
+            }
+          ]
+        }
+      },
+      "navigationCount": 7,
+      "accessContextRequests": 6,
+      "requestInventory": [
+        {
+          "method": "OPTIONS",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:signInWithPassword",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "access-control-request-headers",
+            "access-control-request-method",
+            "origin",
+            "sec-fetch-mode",
+            "user-agent"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:signInWithPassword",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "content-type",
+            "origin",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-version",
+            "x-firebase-client",
+            "x-firebase-gmpid"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "OPTIONS",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:lookup",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "access-control-request-headers",
+            "access-control-request-method",
+            "origin",
+            "sec-fetch-mode",
+            "user-agent"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:lookup",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "content-type",
+            "origin",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-version",
+            "x-firebase-gmpid"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "OPTIONS",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/get_my_access_context_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "access-control-request-headers",
+            "access-control-request-method",
+            "origin",
+            "referer",
+            "sec-fetch-mode",
+            "user-agent"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/get_my_access_context_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "OPTIONS",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/restaurant_get_dashboard_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "access-control-request-headers",
+            "access-control-request-method",
+            "origin",
+            "referer",
+            "sec-fetch-mode",
+            "user-agent"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "OPTIONS",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/restaurant_list_orders_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "access-control-request-headers",
+            "access-control-request-method",
+            "origin",
+            "referer",
+            "sec-fetch-mode",
+            "user-agent"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/get_my_access_context_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/restaurant_get_dashboard_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/restaurant_list_orders_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:lookup",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "content-type",
+            "origin",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-version",
+            "x-firebase-gmpid"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/get_my_access_context_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/restaurant_list_orders_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/restaurant_get_dashboard_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:lookup",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "content-type",
+            "origin",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-version",
+            "x-firebase-gmpid"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/get_my_access_context_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/restaurant_list_orders_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/restaurant_get_dashboard_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "identitytoolkit.googleapis.com",
+          "path": "/v1/accounts:lookup",
+          "queryParameterNames": [
+            "key"
+          ],
+          "headerNames": [
+            "accept",
+            "content-type",
+            "origin",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-version",
+            "x-firebase-gmpid"
+          ],
+          "credentialHeaderNames": []
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/get_my_access_context_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/restaurant_list_orders_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        },
+        {
+          "method": "POST",
+          "host": "build-proof.supabase.co",
+          "path": "/rest/v1/rpc/restaurant_get_dashboard_v1",
+          "queryParameterNames": [],
+          "headerNames": [
+            "accept",
+            "apikey",
+            "authorization",
+            "content-profile",
+            "content-type",
+            "origin",
+            "referer",
+            "sec-ch-ua",
+            "sec-ch-ua-mobile",
+            "sec-ch-ua-platform",
+            "user-agent",
+            "x-client-info"
+          ],
+          "credentialHeaderNames": [
+            "apikey",
+            "authorization"
+          ]
+        }
+      ],
+      "unexpectedHostedRequests": [],
+      "exceptions": [],
+      "consoleErrors": [],
+      "screenshot": {
+        "file": "local-manager.png",
+        "sha256": "2842ff53c60c487fcc23d592d42f103e7f6f3a8fe8cbf199a4a1bba95162650c"
+      }
+    }
+  ],
+  "credentialsPersisted": false,
+  "unexpectedHostedRequests": 0,
+  "result": "PASS"
+}

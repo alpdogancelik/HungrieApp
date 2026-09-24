@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import test from "node:test";
+import test, { after } from "node:test";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { transformSync } from "@babel/core";
@@ -26,6 +26,12 @@ const compiled = transformSync(source, {
   sourceMaps: "inline",
 }).code;
 const nodeRequire = createRequire(import.meta.url);
+const routeLifecycleEvidence = [];
+after(() => {
+  const directory = path.join(root, "docs/restaurant-authgate-pending-remediation-evidence");
+  fs.mkdirSync(directory, { recursive: true });
+  fs.writeFileSync(path.join(directory, "route-lifecycle-counts.json"), `${JSON.stringify({ generatedAt: new Date().toISOString(), cases: routeLifecycleEvidence }, null, 2)}\n`);
+});
 
 class AccessContextError extends Error {}
 
@@ -38,11 +44,15 @@ function createHarness(initialPath = "/login") {
   let pathName = initialPath;
   let listener;
   let renderer;
+  let pendingReplacement = null;
+  let subscriptionCount = 0;
+  let renderCount = 0;
 
   const auth = { currentUser: null };
   const router = {
     replace(next) {
       events.push(`replace:${next}`);
+      pendingReplacement = String(next).split("?")[0];
     },
   };
 
@@ -56,11 +66,13 @@ function createHarness(initialPath = "/login") {
   }
 
   function RouteContent() {
+    renderCount += 1;
+    const access = useContext(accessContext);
+    const runtime = useContext(runtimeContext);
     if (["/login", "/forgot-password", "/invite", "/pending", "/suspended"].includes(pathName)) {
-      events.push(`public-render:${pathName}`);
+      events.push(`public-render:${pathName}:${access?.accountStatus || "none"}`);
       return React.createElement("div", { "data-route": pathName }, pathName);
     }
-    const runtime = useContext(runtimeContext);
     if (!runtime) throw new Error("Restaurant runtime is unavailable");
     events.push(`protected-render:${pathName}:${runtime.role}`);
     return React.createElement("main", { "data-route": pathName }, pathName);
@@ -69,6 +81,8 @@ function createHarness(initialPath = "/login") {
   const modules = {
     "firebase/auth": {
       onIdTokenChanged(_auth, callback) {
+        subscriptionCount += 1;
+        events.push(`auth-subscribe:${pathName}`);
         listener = callback;
         return () => events.push("auth-unsubscribe");
       },
@@ -91,7 +105,7 @@ function createHarness(initialPath = "/login") {
           return {
             abortSignal: async () => {
               assert.ok(accessResults.length, "Missing access-context result");
-              const next = accessResults.shift();
+              const next = await accessResults.shift();
               return next instanceof Error ? { data: null, error: next } : { data: next, error: null };
             },
           };
@@ -135,6 +149,22 @@ function createHarness(initialPath = "/login") {
       pathName = next;
       await act(async () => { renderer.update(app()); });
     },
+    async applyReplacement() {
+      assert.ok(pendingReplacement, "No router replacement is pending");
+      const next = pendingReplacement;
+      pendingReplacement = null;
+      pathName = next;
+      await act(async () => { renderer.update(app()); });
+      return next;
+    },
+    beginEmit(user) {
+      assert.ok(listener, "Auth listener was not registered");
+      auth.currentUser = user;
+      let promise;
+      act(() => { promise = listener(user); });
+      return promise;
+    },
+    counts() { return { renders: renderCount, subscriptions: subscriptionCount, navigations: events.filter(event => event.startsWith("replace:")).length }; },
     tree() { return renderer.toJSON(); },
     async unmount() { await act(async () => renderer.unmount()); },
   };
@@ -158,6 +188,45 @@ const inactive = status => ({
   restaurantStatus: status === "suspended" ? "suspended" : "active",
 });
 const user = uid => ({ uid, getIdToken: async () => "local-token" });
+const deferred = () => {
+  let resolve;
+  const promise = new Promise(done => { resolve = done; });
+  return { promise, resolve };
+};
+
+for (const status of ["pending", "suspended"]) {
+  test(`login-to-${status} applies route replacement and survives same-identity subscription recreation`, async () => {
+    const route = `/${status}`;
+    const harness = createHarness("/login");
+    await harness.mount();
+    const identity = user(`${status}-identity`);
+    harness.accessResults.push(inactive(status));
+    await harness.emit(identity);
+    assert.ok(harness.events.includes(`replace:${route}`));
+    const committed = harness.events.indexOf(`public-render:/login:${status}`);
+    const navigated = harness.events.indexOf(`replace:${route}`);
+    assert.ok(committed >= 0 && navigated > committed, "access-state navigation ran before its committed presentation state");
+    assert.equal(await harness.applyReplacement(), route);
+    harness.accessResults.push(inactive(status));
+    await harness.emit(identity);
+    assert.equal(harness.tree()?.props?.["data-route"], route);
+
+    const next = deferred();
+    harness.accessResults.push(next.promise);
+    const repeated = harness.beginEmit(identity);
+    await act(async () => { await Promise.resolve(); });
+    assert.equal(harness.tree()?.props?.["data-route"], route, "same identity temporarily removed its access-state route");
+    next.resolve(inactive(status));
+    await act(async () => { await repeated; });
+    const counts = harness.counts();
+    assert.ok(counts.renders <= 12, JSON.stringify(counts));
+    assert.ok(counts.navigations <= 1, JSON.stringify(counts));
+    assert.ok(counts.subscriptions <= 2, JSON.stringify(counts));
+    assert.equal(harness.events.some(event => /maximum update/i.test(event)), false);
+    routeLifecycleEvidence.push({ status, route, ...counts, maximumUpdateErrors: 0, finalRouteVisible: true });
+    await harness.unmount();
+  });
+}
 
 for (const role of ["owner", "manager"]) {
   test(`active ${role} runtime commits before login redirects to Dashboard`, async () => {
@@ -203,6 +272,8 @@ test("pending and suspended identities recover to active only through a committe
     const mounted = harness.events.lastIndexOf("provider-mounted:restaurant-local:owner");
     const redirected = harness.events.lastIndexOf("replace:/dashboard");
     assert.ok(redirected > mounted);
+    assert.equal(await harness.applyReplacement(), "/dashboard");
+    assert.ok(harness.events.includes("protected-render:/dashboard:owner"));
     await harness.unmount();
   }
 });
@@ -211,6 +282,7 @@ test("wrong-role and revoked identities remain denied", async () => {
   for (const [context, expected] of [
     [{ state: "configuration_error", referenceId: "wrong-portal" }, "replace:/login?reason=wrong-role"],
     [inactive("revoked"), "replace:/login?reason=revoked"],
+    [{ state: "unmapped", referenceId: "missing-access" }, "replace:/login?reason=access"],
   ]) {
     const harness = createHarness("/dashboard");
     await harness.mount();
@@ -221,6 +293,25 @@ test("wrong-role and revoked identities remain denied", async () => {
     assert.equal(harness.events.some(event => event.startsWith("protected-render:")), false);
     await harness.unmount();
   }
+});
+
+test("identity replacement clears the active runtime before presenting pending access", async () => {
+  const harness = createHarness("/dashboard");
+  await harness.mount();
+  harness.accessResults.push(active("owner"));
+  await harness.emit(user("first-owner"));
+  assert.ok(harness.events.includes("provider-mounted:restaurant-local:owner"));
+  harness.accessResults.push(inactive("pending"));
+  await harness.emit(user("replacement-pending"));
+  assert.ok(harness.events.includes("provider-unmounted:restaurant-local:owner"));
+  assert.ok(harness.events.includes("replace:/pending"));
+  assert.equal(harness.events.filter(event => event === "replace:/pending").length, 1);
+  await harness.applyReplacement();
+  harness.accessResults.push(inactive("pending"));
+  await harness.emit(user("replacement-pending"));
+  assert.equal(harness.tree()?.props?.["data-route"], "/pending");
+  assert.equal(harness.events.some(event => event === "protected-render:/pending:owner"), false);
+  await harness.unmount();
 });
 
 test("transient access failure preserves a previously verified runtime", async () => {

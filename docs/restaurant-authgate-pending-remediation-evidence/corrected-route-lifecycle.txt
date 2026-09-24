@@ -1,0 +1,32 @@
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ login-to-pending applies route replacement and survives same-identity subscription recreation (7.993917ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ login-to-suspended applies route replacement and survives same-identity subscription recreation (1.382916ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ active owner runtime commits before login redirects to Dashboard (0.767083ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ active manager runtime commits before login redirects to Dashboard (0.577792ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ a direct protected-route restoration never renders before authorization and runtime readiness (0.559708ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ pending and suspended identities recover to active only through a committed runtime (1.065958ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ wrong-role and revoked identities remain denied (0.96275ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ identity replacement clears the active runtime before presenting pending access (0.730667ms)
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+✔ transient access failure preserves a previously verified runtime (252.482959ms)
+✔ logout removes authenticated runtime access (1.796ms)
+✔ only the shared runtime owns a private Restaurant Realtime subscription (4.130083ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 509.415875

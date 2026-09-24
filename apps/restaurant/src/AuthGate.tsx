@@ -121,18 +121,18 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         }
         if (context.accountStatus === "pending") {
           verified.current = false;
+          verifiedUid.current = user.uid;
           setRestaurantId("");
           setAccessContext(context);
-          if (path === "/pending") setState("ready");
-          else router.replace("/pending");
+          setState("ready");
           return;
         }
         if (context.accountStatus === "suspended" || context.restaurantStatus === "suspended") {
           verified.current = false;
+          verifiedUid.current = user.uid;
           setRestaurantId("");
           setAccessContext(context);
-          if (path === "/suspended") setState("ready");
-          else router.replace("/suspended");
+          setState("ready");
           return;
         }
         if (context.accountStatus !== "active" || context.restaurantStatus !== "active") {
@@ -175,6 +175,19 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       router.replace("/dashboard");
     }
   }, [path, router, runtimeReady]);
+
+  // Inactive access context is committed before navigation so a recreated
+  // auth subscription cannot clear the route tree between access pages.
+  useEffect(() => {
+    const requiredPath = accessContext?.accountStatus === "pending"
+      ? "/pending"
+      : accessContext?.accountStatus === "suspended" || accessContext?.restaurantStatus === "suspended"
+        ? "/suspended"
+        : null;
+    if (state === "ready" && requiredPath && path !== requiredPath) {
+      router.replace(requiredPath);
+    }
+  }, [accessContext, path, router, state]);
 
   return <>
     <RestaurantAccessContext.Provider value={accessContext}>
