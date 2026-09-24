@@ -7,14 +7,14 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
-const route = read("apps/restaurant/app/earnings.tsx"), component = read("apps/restaurant/src/EarningsPage.tsx"), model = read("apps/restaurant/src/earningsModel.ts"), repository = read("apps/restaurant/src/earningsRepository.ts"), shell = read("apps/restaurant/src/components/AppShell.tsx") + read("apps/restaurant/src/components/navigation.ts"), auth = read("apps/restaurant/src/AuthGate.tsx"), styles = read("apps/restaurant/src/styles.css");
+const route = read("apps/restaurant/app/earnings.tsx"), component = read("apps/restaurant/src/EarningsPage.tsx"), model = read("apps/restaurant/src/earningsModel.ts"), repository = read("apps/restaurant/src/earningsRepository.ts"), shell = read("apps/restaurant/src/components/AppShell.tsx") + read("apps/restaurant/src/components/navigation.ts"), auth = read("apps/restaurant/src/AuthGate.tsx"), components = read("apps/restaurant/src/design/components.css"), responsive = read("apps/restaurant/src/design/responsive.css"), styles = components + responsive;
 
 assert.match(route, /EarningsPage/); assert.match(shell, /isActiveRestaurantOwner/); assert.match(shell, /\/earnings/); assert.match(auth, /get_my_access_context_v1/); assert.equal((auth.match(/get_my_access_context_v1/g) || []).length, 1, "provider must reuse one access-context request");
 for (const rpc of ["restaurant_get_earnings_summary_v1", "restaurant_get_earnings_series_v1", "restaurant_get_earnings_orders_page_v1"]) assert.ok(repository.includes(rpc), `missing approved RPC ${rpc}`);
 for (const phrase of ["Calculated estimate", "Hesaplanan tahmini değer", "not payouts", "ödeme", "No Customer details", "Müşteri bilgisi yok"]) assert.ok(component.includes(phrase), `missing bilingual financial/privacy copy: ${phrase}`);
 assert.match(repository, /p_limit: 25/); assert.match(repository, /p_cursor: opaqueCursor/); assert.doesNotMatch(component + repository + model, /atob\(|Buffer\.from|console\.(?:log|info|debug).*cursor|localStorage|sessionStorage|caches\./i);
 assert.doesNotMatch(component + repository + model, /parseFloat|commissionRateBps\s*\*|eligibleGrossKurus\s*\*/);
-for (const width of ["900px", "600px", "1440px"]) assert.ok(styles.includes(width), `missing responsive breakpoint ${width}`);
+for (const width of ["767px", "1023px", "1024px", "1440px"]) assert.ok(responsive.includes(width), `missing responsive breakpoint ${width}`);
 assert.match(styles, /:focus-visible/); assert.match(component, /aria-label/); assert.match(component, /<progress/);
 const forbidden = ["payout history", "withdraw now", "available balance"];
 for (const phrase of forbidden) assert.ok(!component.toLowerCase().includes(phrase), `forbidden payout claim: ${phrase}`);

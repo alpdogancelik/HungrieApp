@@ -1,0 +1,6560 @@
+{
+  "generatedAt": "2026-09-24T10:51:45.298Z",
+  "browser": "Safari 27.0 on macOS 27.0",
+  "adapter": "apps/restaurant/test/qualification/phase5Adapter.mjs",
+  "note": "Local Safari WebDriver qualification against the test-only adapter. Synthetic generic data; absent from Expo Router and production bundles. Browser accessibility-tree extraction is not exposed by Safari WebDriver, so this run records computed DOM semantics and modal isolation; accepted full AX-tree evidence is in the Chrome and Edge manifests.",
+  "captures": [
+    {
+      "scenario": "login",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Sign in · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/login-1024x768-en.png",
+      "sha256": "c4ca328a623d77c190f03dfbace3d1b94ad5009388a311d62b96fcab006e0867"
+    },
+    {
+      "scenario": "forgot-password",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Reset password · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/forgot-password-1024x768-en.png",
+      "sha256": "a85afab411fa7ae1c25aad7b20e851b779a9f3e19cc84ee10ecc05bff234d209"
+    },
+    {
+      "scenario": "invitation",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Accept invitation · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/invitation-1024x768-en.png",
+      "sha256": "52555bdb3f3f126e919d704af24c851d53408639e10dcaddc088ae2f340eb3e6"
+    },
+    {
+      "scenario": "pending",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Approval pending · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/pending-1024x768-en.png",
+      "sha256": "8679b50738094f8f10f1f56916cd2d0b8b6604a041753da36f056426591108e7"
+    },
+    {
+      "scenario": "suspended",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Access suspended · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/suspended-1024x768-en.png",
+      "sha256": "249a04ae6bd292a7e4410e97653cd1d666ef9ab3e5a850e0d0f1cfe45c807e97"
+    },
+    {
+      "scenario": "dashboard",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/dashboard-1024x768-en.png",
+      "sha256": "6018e1348e3f933b30946cb23252fd09bf255b34d413f726a97c299f2803b2fc"
+    },
+    {
+      "scenario": "orders-many",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Orders · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1007,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/orders-many-1024x768-en.png",
+      "sha256": "57ee67803f9efb4f735f77a5471458746c2005eb2060ff619de9f9216cee10a0"
+    },
+    {
+      "scenario": "order-detail",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Orders · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/order-detail-1024x768-en.png",
+      "sha256": "52bfd0a1a6deae3ad8549c05b0aa90958a3355f509813e7bd78e8c77fb3700d2"
+    },
+    {
+      "scenario": "history",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "History · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/history-1024x768-en.png",
+      "sha256": "87b3803317d58a28c8c1a7dfad960607e0311741ace7fd15e400579c15a18c53"
+    },
+    {
+      "scenario": "menu-long",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Menu · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/menu-long-1024x768-en.png",
+      "sha256": "a8ff3fe767bec6a159cd5df83b6d9c37707fb285467e4a6ebc6c0234a984b6f0"
+    },
+    {
+      "scenario": "menu-editor",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Menu · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": "Edit",
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": true,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.78
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/menu-editor-1024x768-en.png",
+      "sha256": "1624b4d7fa2c003d482ee8c6308f5b6588d3f2f8b6e63fb0b285185d36bbbde6"
+    },
+    {
+      "scenario": "menu-max-groups",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Menu · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": "Edit",
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": true,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.78
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/menu-max-groups-1024x768-en.png",
+      "sha256": "90527209fa9e530d3797b265b37cf4ae75644b9e329e7964393959c28e79ee5a"
+    },
+    {
+      "scenario": "restaurant-long",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Restaurant · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/restaurant-long-1024x768-en.png",
+      "sha256": "eda371eb16bb3f4cccae23ac39893bca6a10cdc74738aa82a2da4a22df772803"
+    },
+    {
+      "scenario": "reviews",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Reviews · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/reviews-1024x768-en.png",
+      "sha256": "c2c2d6dfa7e77519c3a6091cb7c9b8e18199f9f75b5286dbf5e3ac29b0365226"
+    },
+    {
+      "scenario": "review-report",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Reviews · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": "Report review",
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": true,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.78
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/review-report-1024x768-en.png",
+      "sha256": "efe22ad30aec78b13cb115aabd41c4b45d0bdd5885be43d99cd66107cc53362c"
+    },
+    {
+      "scenario": "alerts-install",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Alerts · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/alerts-install-1024x768-en.png",
+      "sha256": "f965b9b83e2599cb3140be7ce569a5849cae295cc6e2ef1fc4ad48a8a7f64af7"
+    },
+    {
+      "scenario": "alerts-denied",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Alerts · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/alerts-denied-1024x768-en.png",
+      "sha256": "51e4f1eecd97b54e54c5ee5edefb1250b931a9a551fda3f0a8d4cb36d7baa9d5"
+    },
+    {
+      "scenario": "security",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Security · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/security-1024x768-en.png",
+      "sha256": "3f0de016309451b6e01ca4432742e56cee04388e11910f0ea8b5f7a27f4bb0f8"
+    },
+    {
+      "scenario": "more",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "More · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/more-1024x768-en.png",
+      "sha256": "15549bc9b6a36d2b2c083817b707cdea72f91fecfcb04ce410368a1fe709fe7e"
+    },
+    {
+      "scenario": "earnings-owner",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Earnings · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/earnings-owner-1024x768-en.png",
+      "sha256": "23387ab7d6f8aa77077f63a2e48c615d5fedebdf4077c68241d20728f75dc45a"
+    },
+    {
+      "scenario": "loading",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Loading…",
+            "role": "status"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/loading-1024x768-en.png",
+      "sha256": "6b55631b5ad84f1d2ea204948ad5461ac3dbc09674d6877e99417b144594ce2c"
+    },
+    {
+      "scenario": "empty",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "No records.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/empty-1024x768-en.png",
+      "sha256": "ca03e84af845d26db14d0bfd7658c136b91d0a319d634759f3f27424cb8d583f"
+    },
+    {
+      "scenario": "recoverable-error",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "The operation could not be completed. Try again.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/recoverable-error-1024x768-en.png",
+      "sha256": "9da6a9a83e99cc14af06388828014e00cdb4e3226d9fe5e01a96dd95c34c70d9"
+    },
+    {
+      "scenario": "offline-empty",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Offline. Authoritative data is unavailable.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/offline-empty-1024x768-en.png",
+      "sha256": "b579f9f0029df996a86a0b9f38359e1ddfb4da320bc86b547f427904539f022a"
+    },
+    {
+      "scenario": "offline-retained",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Offline. Previous authoritative data is shown.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/offline-retained-1024x768-en.png",
+      "sha256": "0839f662813dde54c2e4d3a5827271ea03011c933bbb5395b6a64703a9eb6ea7"
+    },
+    {
+      "scenario": "reconnecting",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Reconnecting…",
+            "role": "status"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/reconnecting-1024x768-en.png",
+      "sha256": "9688fc6be3110e54c06eee6166f918d25bda5d13c92f5aff693dad28853f2528"
+    },
+    {
+      "scenario": "stale",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "The latest refresh failed. Previous data may be stale.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/stale-1024x768-en.png",
+      "sha256": "4eb45e2f107bae0bdfd8e2bcf1c9d7bd63b2483e32ee3055c5215b141a481dc7"
+    },
+    {
+      "scenario": "permission-denied",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Earnings · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "You do not have access to this page.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/permission-denied-1024x768-en.png",
+      "sha256": "42305340d153a7b14578d20c2c01f4e38e41b4e6784257201b517003395c2a64"
+    },
+    {
+      "scenario": "session-expired",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Your session has expired.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/session-expired-1024x768-en.png",
+      "sha256": "918aa086904e66695ed69a990292a1fdd923f96db8a388de1aafb23d34f540d6"
+    },
+    {
+      "scenario": "submitting",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Saving…",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/submitting-1024x768-en.png",
+      "sha256": "bbda33e930869b08ced72d07bf0ff28555740ae51c48ffc0af7a2b2f822f3f57"
+    },
+    {
+      "scenario": "validation",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Check the fields.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/validation-1024x768-en.png",
+      "sha256": "fee73b457a9a8a271fd9f40ee53209f40d59842db1de2226c193eaf9eb338619"
+    },
+    {
+      "scenario": "conflict",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "The record changed elsewhere. The current state is shown.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/conflict-1024x768-en.png",
+      "sha256": "4ff49267375d9579a96ea68a6683fa8e5381e1e295be926c4850c22e280a8aea"
+    },
+    {
+      "scenario": "unknown-outcome",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "The result could not be verified. Retry with the same operation ID.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/unknown-outcome-1024x768-en.png",
+      "sha256": "ddeaf2991e2eb5344c02c594de92bee820d09ba175dfbbe4c458b07bda31d983"
+    },
+    {
+      "scenario": "dirty-confirmation",
+      "locale": "en",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Menu · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": "Discard unsaved changes?",
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": true,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 6.07
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/dirty-confirmation-1024x768-en.png",
+      "sha256": "176636e71f50cce6e6ae81735654ba0b2cf724fa29810f19c4ce51003d889ada"
+    },
+    {
+      "scenario": "login",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Sign in · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/login-1440x900-en.png",
+      "sha256": "f7ff37277143e42e5bf85ac60cdb348ec97d4e4e9bf24d4a7d34b6599a061d1f"
+    },
+    {
+      "scenario": "forgot-password",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Reset password · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/forgot-password-1440x900-en.png",
+      "sha256": "1020a4969a51f57cbaf2fe414f539cedf4b53842b5867e70462b163ff74ea3a5"
+    },
+    {
+      "scenario": "invitation",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Accept invitation · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/invitation-1440x900-en.png",
+      "sha256": "0c2c471d43464323050a1fcd7aacfa9119dbcdb537219e70dace43db40181c77"
+    },
+    {
+      "scenario": "pending",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Approval pending · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/pending-1440x900-en.png",
+      "sha256": "3c9ad91be634b69e8352b228b557b6a2031181b738cb148dea8266c0bf4ae11d"
+    },
+    {
+      "scenario": "suspended",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Access suspended · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/suspended-1440x900-en.png",
+      "sha256": "538636794f8ea570184af87325cd084e6128e2cfba29885aa05910676085a6bb"
+    },
+    {
+      "scenario": "dashboard",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/dashboard-1440x900-en.png",
+      "sha256": "945caa701e0d252ffcd21a3643e6ce53afa8d07616454b5af48b930946ab88b7"
+    },
+    {
+      "scenario": "orders-many",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Orders · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1423,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/orders-many-1440x900-en.png",
+      "sha256": "651341070ac2e7ede7cd57c15c4a7e10e27d5826d36dce5f9a94b2af2dafb13e"
+    },
+    {
+      "scenario": "order-detail",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Orders · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/order-detail-1440x900-en.png",
+      "sha256": "bdd36e0ff51930d9487103126337844523fdc61451f73521128d58cfa41847f9"
+    },
+    {
+      "scenario": "history",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "History · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/history-1440x900-en.png",
+      "sha256": "bfa8ab3b9970793f0be086ca239222bd1c5bf1e6c4c9e9b297c044f65d8bf435"
+    },
+    {
+      "scenario": "menu-long",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Menu · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/menu-long-1440x900-en.png",
+      "sha256": "6e98b846f745f5d2751e5225ce493493fad4d9e188469cb4646259943a2ca696"
+    },
+    {
+      "scenario": "menu-editor",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Menu · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": "Edit",
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": true,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.78
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/menu-editor-1440x900-en.png",
+      "sha256": "6010a6599805fb3ca2a6419ce0f59b3c19d5c049bd27895e568c19e6f8f439cc"
+    },
+    {
+      "scenario": "menu-max-groups",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Menu · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": "Edit",
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": true,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.78
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/menu-max-groups-1440x900-en.png",
+      "sha256": "535b18713e77c61eedfca60ad2ebe1e6ab9b1b874e5df58760b2d7b3bd8e8c0d"
+    },
+    {
+      "scenario": "restaurant-long",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Restaurant · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/restaurant-long-1440x900-en.png",
+      "sha256": "b277aafda7a45976c60217af552a1dd43a7649b8c44885c812d86bfa2dc8fffa"
+    },
+    {
+      "scenario": "reviews",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Reviews · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/reviews-1440x900-en.png",
+      "sha256": "ef51547ad05375046fcfe6f2497c0a05002e2e38642ee8d9e3271fd46c10436a"
+    },
+    {
+      "scenario": "review-report",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Reviews · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": "Report review",
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": true,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.78
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/review-report-1440x900-en.png",
+      "sha256": "055fdecd381c3d56493ba95aeb82007644becf08ade2613d2c24ff357a7fc05d"
+    },
+    {
+      "scenario": "alerts-install",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Alerts · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/alerts-install-1440x900-en.png",
+      "sha256": "c4d4afa4d88d29928d4719a195dccca3a7befbf841b41221bc9592cd8683cbfe"
+    },
+    {
+      "scenario": "alerts-denied",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Alerts · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/alerts-denied-1440x900-en.png",
+      "sha256": "41e9f5f2ec2a6d2ed2eae977c94ad7870149b5098d874740ef760ca090ecd31f"
+    },
+    {
+      "scenario": "security",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Security · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/security-1440x900-en.png",
+      "sha256": "697dc08acee86ba8884c6fc5763a73435d6b2d472d26b99a7e3a4b2fbefb015a"
+    },
+    {
+      "scenario": "more",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "More · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/more-1440x900-en.png",
+      "sha256": "ef281bff7586548cb739c8fcf1805fc6b5d10e42aac93ab9ef9e2fee99e97699"
+    },
+    {
+      "scenario": "earnings-owner",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Earnings · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/earnings-owner-1440x900-en.png",
+      "sha256": "4a5d72e73ce2e09e467926dea3d4a20d0073a0152931744505eac35eb4b1a862"
+    },
+    {
+      "scenario": "loading",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Loading…",
+            "role": "status"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/loading-1440x900-en.png",
+      "sha256": "3bc7eb3eb8e33e95d980dbb64579dd18bafd3d4d3059d1646bb95a525bb94b29"
+    },
+    {
+      "scenario": "empty",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "No records.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/empty-1440x900-en.png",
+      "sha256": "cee9e02925f715817a5485ea6bd8d38a9981bae779bb5f64c29492622449bab3"
+    },
+    {
+      "scenario": "recoverable-error",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "The operation could not be completed. Try again.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/recoverable-error-1440x900-en.png",
+      "sha256": "4170d99eb7473d101bdb77bfac2c05a9831192ead4f94517ac02fe9c4a90d178"
+    },
+    {
+      "scenario": "offline-empty",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Offline. Authoritative data is unavailable.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/offline-empty-1440x900-en.png",
+      "sha256": "e7f1559893da1938184fe55c50da0d363fcd05fb16c7f341210b5cbfba888e75"
+    },
+    {
+      "scenario": "offline-retained",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Offline. Previous authoritative data is shown.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/offline-retained-1440x900-en.png",
+      "sha256": "35fb0e0859846d67fe22280ee5b253161864838f935f690b3e82f3b9e15e4344"
+    },
+    {
+      "scenario": "reconnecting",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Reconnecting…",
+            "role": "status"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/reconnecting-1440x900-en.png",
+      "sha256": "78f986d701c914a5a1351f2e5f7867ff32190e17474dce4d822db460099fc219"
+    },
+    {
+      "scenario": "stale",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "The latest refresh failed. Previous data may be stale.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/stale-1440x900-en.png",
+      "sha256": "3089eb1dadc0d3f2fe23893faad7d90b63c86496fda2edf87fcd5e010ce9f684"
+    },
+    {
+      "scenario": "permission-denied",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Earnings · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "You do not have access to this page.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/permission-denied-1440x900-en.png",
+      "sha256": "506b4ebb826318e830dd54e18ee434b65431fa4cb5d5b52900e655af634e2bde"
+    },
+    {
+      "scenario": "session-expired",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Your session has expired.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/session-expired-1440x900-en.png",
+      "sha256": "4db44c2c952390e6979a228173771aa06ff78cb7a837a8661a5bc092f0aa88cf"
+    },
+    {
+      "scenario": "submitting",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Saving…",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/submitting-1440x900-en.png",
+      "sha256": "2b3c8c78a32ff31ad36cbbea4d9e4302ac76ac66c0f89cd69cfc8afada3b9d02"
+    },
+    {
+      "scenario": "validation",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Check the fields.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/validation-1440x900-en.png",
+      "sha256": "04cf074c6818c6590b06b0ec9e1966bebc5d810fb3a6adb7a6ff6b664710e8bc"
+    },
+    {
+      "scenario": "conflict",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "The record changed elsewhere. The current state is shown.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/conflict-1440x900-en.png",
+      "sha256": "a8374a0a64c76ec21e4ab6186268b944d27c01eb915c511d3bddef7e59203bfe"
+    },
+    {
+      "scenario": "unknown-outcome",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Dashboard · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "The result could not be verified. Retry with the same operation ID.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/unknown-outcome-1440x900-en.png",
+      "sha256": "96490e8cf38279392929bfe17e13446aca09310ac1a303b4ecae9ac1676ecb02"
+    },
+    {
+      "scenario": "dirty-confirmation",
+      "locale": "en",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Menu · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": "Discard unsaved changes?",
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "en",
+        "smallTargets": [],
+        "dialog": true,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 6.07
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/dirty-confirmation-1440x900-en.png",
+      "sha256": "5668e940a31e1688a399ce420693b97e03254efcf200532f736b3527a8c16668"
+    },
+    {
+      "scenario": "login",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Giriş yap · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/login-1024x768-tr.png",
+      "sha256": "ce2b29d849b49fa2fbc1481e29071938f9d1ebc54b336c222161ae494523fcf1"
+    },
+    {
+      "scenario": "forgot-password",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Şifreyi yenile · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/forgot-password-1024x768-tr.png",
+      "sha256": "1ba30f4c08b41cff0a6284d288e1833c20c7d637a4b41d26f111579aec49f568"
+    },
+    {
+      "scenario": "invitation",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Daveti kabul et · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/invitation-1024x768-tr.png",
+      "sha256": "b6f993e0a7e1743f2b507dd5c2f40f18bb8a7e56b3702aa52715e0c41e16e840"
+    },
+    {
+      "scenario": "pending",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Onay bekleniyor · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/pending-1024x768-tr.png",
+      "sha256": "df9333458ea518783ec02ea7a36ac4529813995d533e5d32a577c332f712bec5"
+    },
+    {
+      "scenario": "suspended",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Erişim askıya alındı · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/suspended-1024x768-tr.png",
+      "sha256": "40375c77a579b6c79e41b1916d922ee278fa4da5f668441ff3cdaf57f51bfe95"
+    },
+    {
+      "scenario": "dashboard",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/dashboard-1024x768-tr.png",
+      "sha256": "53d4bc276a50541ead36d49f31d618a844832508820ffbd36708104bdb4e15be"
+    },
+    {
+      "scenario": "orders-many",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Siparişler · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1007,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/orders-many-1024x768-tr.png",
+      "sha256": "26520f07dbbee84dfc8bbce59b4d8583df871bc69b759d4abe2c4c7468db681b"
+    },
+    {
+      "scenario": "order-detail",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Siparişler · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/order-detail-1024x768-tr.png",
+      "sha256": "011561453b16020f7f30438fc5c8c7804a16c2e053076cbb3066bc8f6d412ce9"
+    },
+    {
+      "scenario": "history",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Geçmiş · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/history-1024x768-tr.png",
+      "sha256": "30a6764273595937eb7c1fdfaab618c9101d0727693772afd49d8c4c60125643"
+    },
+    {
+      "scenario": "menu-long",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Menü · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/menu-long-1024x768-tr.png",
+      "sha256": "cdd5b259f6943870c8d4774db983f79f4072d2d909bee4c54d7df1dd61bae008"
+    },
+    {
+      "scenario": "menu-editor",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Menü · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": "Düzenle",
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": true,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.78
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/menu-editor-1024x768-tr.png",
+      "sha256": "69560f73cd9cd367d79712acd38da8df137678396fd471d9a05b9dece89745b4"
+    },
+    {
+      "scenario": "menu-max-groups",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Menü · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": "Düzenle",
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": true,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.78
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/menu-max-groups-1024x768-tr.png",
+      "sha256": "236587182afc1edb77feff4d337a5b8a8888c51104d2e9864467620068d2f376"
+    },
+    {
+      "scenario": "restaurant-long",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Restoran · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/restaurant-long-1024x768-tr.png",
+      "sha256": "b9ee7f1673651ddb67c299a74088788af5fee9ffaf4a56b32b880bd427159931"
+    },
+    {
+      "scenario": "reviews",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Değerlendirmeler · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/reviews-1024x768-tr.png",
+      "sha256": "abab3b88c86a13cb635cea5ad3edb620ddcea2254b29cd66fd17891616a2d8e4"
+    },
+    {
+      "scenario": "review-report",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Değerlendirmeler · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": "Değerlendirmeyi bildir",
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": true,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.78
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/review-report-1024x768-tr.png",
+      "sha256": "6541bea587c19b4e8e0ab0e99c5ad8cf5c621b0e6414a40ba6e506c6cfde310b"
+    },
+    {
+      "scenario": "alerts-install",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Uyarılar · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/alerts-install-1024x768-tr.png",
+      "sha256": "6376cd482a26eede9716fa733e83420b23a8eb6c11b58d30199993522cf6788f"
+    },
+    {
+      "scenario": "alerts-denied",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Uyarılar · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/alerts-denied-1024x768-tr.png",
+      "sha256": "6e25f0b966f9e0d8db0c43b81b385aaed60c765fd18062c27918151a9f2acb53"
+    },
+    {
+      "scenario": "security",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Güvenlik · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/security-1024x768-tr.png",
+      "sha256": "fd3004749896f002590d816d3990e97bc11e281e7cd68c90fab50b1d227c0824"
+    },
+    {
+      "scenario": "more",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Daha Fazla · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/more-1024x768-tr.png",
+      "sha256": "a98a0e96e241dc9833fb48830b102a35c96e463b6424d4d7b5c10de4708e2511"
+    },
+    {
+      "scenario": "earnings-owner",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Kazançlar · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/earnings-owner-1024x768-tr.png",
+      "sha256": "77d121f0a5afb9cd4f7d31745acc2c7d84d3416ec1d5172de3d08b780a2f3646"
+    },
+    {
+      "scenario": "loading",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Yükleniyor…",
+            "role": "status"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/loading-1024x768-tr.png",
+      "sha256": "2ac2f789246677b6fd51f3575a70d13ac31c948d37772a679f34fc6108dce65c"
+    },
+    {
+      "scenario": "empty",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Kayıt yok.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/empty-1024x768-tr.png",
+      "sha256": "356b6d29dc661dba2f0e88e5978d570e0d1cbb5db4e263ba1bbc9fe72efdc1ee"
+    },
+    {
+      "scenario": "recoverable-error",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "İşlem tamamlanamadı. Tekrar deneyin.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/recoverable-error-1024x768-tr.png",
+      "sha256": "82512542ca11abf7958b6edb8332a17458e08ce602febcfc024e40b351156257"
+    },
+    {
+      "scenario": "offline-empty",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Çevrimdışı. Yetkili veri kullanılamıyor.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/offline-empty-1024x768-tr.png",
+      "sha256": "cce210aef7574dc385decc9c9c032ba4ef95f2f9d7b3545fb681b6c852bd69a0"
+    },
+    {
+      "scenario": "offline-retained",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Çevrimdışı. Önceki yetkili veri gösteriliyor.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/offline-retained-1024x768-tr.png",
+      "sha256": "dfada98872c3f0328f94f5190e2aef3b39edfdf2d07ba2701ce21f1ff4786521"
+    },
+    {
+      "scenario": "reconnecting",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Yeniden bağlanıyor…",
+            "role": "status"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/reconnecting-1024x768-tr.png",
+      "sha256": "500c3666755eb992ed47ecdc8d870ab0503ff7a374f4c266a757148e7ca5ef3b"
+    },
+    {
+      "scenario": "stale",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Son yenileme başarısız. Önceki veri güncel olmayabilir.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/stale-1024x768-tr.png",
+      "sha256": "0a62031a19525b6783cbd00b82e9c167a5c826c012910836a61cbd163f62dfd6"
+    },
+    {
+      "scenario": "permission-denied",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Kazançlar · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Bu sayfaya erişim izniniz yok.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/permission-denied-1024x768-tr.png",
+      "sha256": "c561eaa6fa4d88c3bf465f9775ff4ce0b3e93884252fd7c5743f8102d1ada0ed"
+    },
+    {
+      "scenario": "session-expired",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Oturum sona erdi.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/session-expired-1024x768-tr.png",
+      "sha256": "29eb35704213c17eee24a230fb1d095c1c7bd12010289e47e89f7c21214f853e"
+    },
+    {
+      "scenario": "submitting",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Kaydediliyor…",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/submitting-1024x768-tr.png",
+      "sha256": "75708cae63ccc2fd909dd9e410341a87c641182e08aabce77f05d7534c49be77"
+    },
+    {
+      "scenario": "validation",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Alanları kontrol edin.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/validation-1024x768-tr.png",
+      "sha256": "6c42488a8c506b2539679af6221022c871389646884043d77aa80a98131ff3b2"
+    },
+    {
+      "scenario": "conflict",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Kayıt başka bir yerde değişti. Güncel durum gösteriliyor.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/conflict-1024x768-tr.png",
+      "sha256": "2c6bfd703e8a774b3dae4279a976cd4e068af5c84c61c1dc3abdb8990946fc43"
+    },
+    {
+      "scenario": "unknown-outcome",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Sonuç doğrulanamadı. Aynı işlem kimliğiyle tekrar deneyin.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/unknown-outcome-1024x768-tr.png",
+      "sha256": "8f056e0ee58727e124594039b390f3f43934429cf062d816f4dc1a38b548d5e6"
+    },
+    {
+      "scenario": "dirty-confirmation",
+      "locale": "tr",
+      "viewport": {
+        "name": "1024x768",
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Menü · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": "Kaydedilmemiş değişiklikler silinsin mi?",
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1024,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": true,
+        "height": 768,
+        "unlabelled": 0,
+        "width": 1024,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 6.07
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/dirty-confirmation-1024x768-tr.png",
+      "sha256": "7b5e929698f64c3eff5d1456e8b2c933055b6b47f8ffe1ba1e7d4be27daca13f"
+    },
+    {
+      "scenario": "login",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Giriş yap · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/login-1440x900-tr.png",
+      "sha256": "5ec94fb891931acc72fb119c55bec9ef78f13ec8b7e68209fcc2316c80c3a6d3"
+    },
+    {
+      "scenario": "forgot-password",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Şifreyi yenile · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/forgot-password-1440x900-tr.png",
+      "sha256": "dd03c58b8611dc3b6e499afaaa5ef8c746746b5f2b0a7757e8340cbd69a3e179"
+    },
+    {
+      "scenario": "invitation",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Daveti kabul et · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/invitation-1440x900-tr.png",
+      "sha256": "2b7d4ab1dd55d2ba8ca0bdcf6691450ce874446c971b3ad136a3f6b773663a9d"
+    },
+    {
+      "scenario": "pending",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Onay bekleniyor · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/pending-1440x900-tr.png",
+      "sha256": "b861f374964add28dda1dc5085178afe34bbbd4cb49e9267152c4c76e351baf2"
+    },
+    {
+      "scenario": "suspended",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Erişim askıya alındı · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/suspended-1440x900-tr.png",
+      "sha256": "d1e7b2c3faa178bc191458ada12ea4211c1e9b80b5d8e481d5fd8324687b9313"
+    },
+    {
+      "scenario": "dashboard",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/dashboard-1440x900-tr.png",
+      "sha256": "02095c9083f68c0d1dcf728f8839fc6d3697cafdb5bdbded3780ebdab3d9fb8b"
+    },
+    {
+      "scenario": "orders-many",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Siparişler · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1423,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/orders-many-1440x900-tr.png",
+      "sha256": "96d1327c0be02d5653d1357beba6bb4a1631f966eb373f28dfd6340540487458"
+    },
+    {
+      "scenario": "order-detail",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Siparişler · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/order-detail-1440x900-tr.png",
+      "sha256": "3e3290e7f46ff21fdc2e848d782e7c4aa4af38ada5a4e824688cb8eff40c604a"
+    },
+    {
+      "scenario": "history",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Geçmiş · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/history-1440x900-tr.png",
+      "sha256": "a93de59b5426b87ef1a3085904bb45d2dfe653f97bfd012c607640fa204a47c3"
+    },
+    {
+      "scenario": "menu-long",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Menü · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/menu-long-1440x900-tr.png",
+      "sha256": "f4d7bd2678e0d8c6aa216980d0db8a1c86168b22d202be0c5ccc5e0182811b26"
+    },
+    {
+      "scenario": "menu-editor",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Menü · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": "Düzenle",
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": true,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.78
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/menu-editor-1440x900-tr.png",
+      "sha256": "748c02e573c29e675e0e94cb8d2622edac6cd006f530e4e56164601c63fae19d"
+    },
+    {
+      "scenario": "menu-max-groups",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Menü · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": "Düzenle",
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": true,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.78
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/menu-max-groups-1440x900-tr.png",
+      "sha256": "bd210bd7db63af06f2439d20f2e765b712841bd48ddcc5cf241f5eaa909c41dd"
+    },
+    {
+      "scenario": "restaurant-long",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Restoran · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/restaurant-long-1440x900-tr.png",
+      "sha256": "1f6f0cb09992c4f6e46efd6df24043e10bcd77e06795736d73cfa61266680e01"
+    },
+    {
+      "scenario": "reviews",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Değerlendirmeler · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/reviews-1440x900-tr.png",
+      "sha256": "913ef89f3a002d17dc8763d68e89274f623e833b1b3f281256e277d85e14575e"
+    },
+    {
+      "scenario": "review-report",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Değerlendirmeler · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": "Değerlendirmeyi bildir",
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": true,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.78
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/review-report-1440x900-tr.png",
+      "sha256": "ab46d08a64ce09086fb3756d7e14d0eb114e45601bc8ba40916bff771d9c7c48"
+    },
+    {
+      "scenario": "alerts-install",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Uyarılar · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/alerts-install-1440x900-tr.png",
+      "sha256": "28f640c4bf0021b14b5b6b1a5c2d42feddca1e78629c2dd6c9c2eaaed2b5e715"
+    },
+    {
+      "scenario": "alerts-denied",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Uyarılar · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/alerts-denied-1440x900-tr.png",
+      "sha256": "d2b7f4ad6a83936648cbd211b75ad09e6fc683d4ba086c1245c229034d7e525d"
+    },
+    {
+      "scenario": "security",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Güvenlik · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/security-1440x900-tr.png",
+      "sha256": "43ccc3c4cf2131a4c450ac0bcb142604424357dbe6c8f99accf7826e9d01c202"
+    },
+    {
+      "scenario": "more",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Daha Fazla · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/more-1440x900-tr.png",
+      "sha256": "653dbab70454f3f78d0d98148acdfbb0fecb1dcfdda920df19286fb7ef9b89c4"
+    },
+    {
+      "scenario": "earnings-owner",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Kazançlar · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/earnings-owner-1440x900-tr.png",
+      "sha256": "017ab42793f2fcec852815e29bca1e3bc551779da67b33494775afa59b868220"
+    },
+    {
+      "scenario": "loading",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Yükleniyor…",
+            "role": "status"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/loading-1440x900-tr.png",
+      "sha256": "a143df81edbe29ee972133490585e93d8e39214dca084958166aa3f6b1a2561c"
+    },
+    {
+      "scenario": "empty",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Kayıt yok.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/empty-1440x900-tr.png",
+      "sha256": "e0343598956d28949f34379fbf672886490e8688a775a76e53ef36acda2ecd1a"
+    },
+    {
+      "scenario": "recoverable-error",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "İşlem tamamlanamadı. Tekrar deneyin.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/recoverable-error-1440x900-tr.png",
+      "sha256": "a276861205c3eafa916881eccd7aa105c074f286f7bdb3384a67e38e39f19a86"
+    },
+    {
+      "scenario": "offline-empty",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Çevrimdışı. Yetkili veri kullanılamıyor.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/offline-empty-1440x900-tr.png",
+      "sha256": "a7bc2436c180fa64a119795a8957c52eedb4bcd249665a48f0010bbf95906190"
+    },
+    {
+      "scenario": "offline-retained",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Çevrimdışı. Önceki yetkili veri gösteriliyor.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/offline-retained-1440x900-tr.png",
+      "sha256": "6c71a959ec6fb35060149c884001cbce70d4b3c39f2a04440057662cfc2d8bd1"
+    },
+    {
+      "scenario": "reconnecting",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Yeniden bağlanıyor…",
+            "role": "status"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/reconnecting-1440x900-tr.png",
+      "sha256": "9be84957e50498f74eb4a7ac5302671b9f92bacd065b5243109ef759c55eb60a"
+    },
+    {
+      "scenario": "stale",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Son yenileme başarısız. Önceki veri güncel olmayabilir.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/stale-1440x900-tr.png",
+      "sha256": "84a4f79c39811152a75d194f489d746b1d219ca94acb3622e69d30473ed33f15"
+    },
+    {
+      "scenario": "permission-denied",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Kazançlar · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Bu sayfaya erişim izniniz yok.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/permission-denied-1440x900-tr.png",
+      "sha256": "313b0f0062d35dc9d63fe4675331aee8985880ca042ed1b6b5104c426a8d3359"
+    },
+    {
+      "scenario": "session-expired",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Oturum sona erdi.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/session-expired-1440x900-tr.png",
+      "sha256": "4e90127cbfd96b27029e814739cd72341e449637d82afd40f9edfd603104dd3e"
+    },
+    {
+      "scenario": "submitting",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Kaydediliyor…",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/submitting-1440x900-tr.png",
+      "sha256": "3dcb16a23a7997c4f2dc575c2764af48292e0d1bf0d3b7d5142ea4e3a9c31b30"
+    },
+    {
+      "scenario": "validation",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Alanları kontrol edin.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/validation-1440x900-tr.png",
+      "sha256": "78050e2031e2a2e2a22624a0c0bc0b047aa3e1b109fd30e7942195c7100220b1"
+    },
+    {
+      "scenario": "conflict",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Kayıt başka bir yerde değişti. Güncel durum gösteriliyor.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/conflict-1440x900-tr.png",
+      "sha256": "37144ef0e38d249cbd7ff9b8b22016c736ea4fbd6bc979b39d8e50dcbfcc46e5"
+    },
+    {
+      "scenario": "unknown-outcome",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Ana Sayfa · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": null,
+        "liveRegions": [
+          {
+            "live": null,
+            "text": "Sonuç doğrulanamadı. Aynı işlem kimliğiyle tekrar deneyin.",
+            "role": "alert"
+          }
+        ],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": false,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 4.53
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/unknown-outcome-1440x900-tr.png",
+      "sha256": "185e3e957ef8795640cdad29f76cc9374af5cc2b191846fe3e145a22cbee4c7a"
+    },
+    {
+      "scenario": "dirty-confirmation",
+      "locale": "tr",
+      "viewport": {
+        "name": "1440x900",
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "mainLandmarks": 1,
+        "bottomClearance": true,
+        "title": "Menü · Hungrie Restaurant",
+        "modalBackgroundHidden": true,
+        "dialogName": "Kaydedilmemiş değişiklikler silinsin mi?",
+        "liveRegions": [],
+        "stickyOpaque": true,
+        "headingOrderValid": true,
+        "documentWidth": 1440,
+        "modalBackgroundInert": true,
+        "documentLanguage": "tr",
+        "smallTargets": [],
+        "dialog": true,
+        "height": 900,
+        "unlabelled": 0,
+        "width": 1440,
+        "horizontalOverflow": false,
+        "visibleH1": 1,
+        "focusInsideDialog": true,
+        "badContrast": [],
+        "minimumContrast": 6.07
+      },
+      "file": "docs/restaurant-responsive-ui-phase5-evidence/safari-desktop/dirty-confirmation-1440x900-tr.png",
+      "sha256": "e0a70277fc11e04a30d7259de40ad68c3cb3b287ffc5bd7d566e61573499b03a"
+    }
+  ],
+  "boundaries": [
+    {
+      "bottomNav": "flex",
+      "desktop": "none",
+      "mobile": "block",
+      "sidebar": "none",
+      "width": 767,
+      "overflow": false
+    },
+    {
+      "bottomNav": "flex",
+      "desktop": "none",
+      "mobile": "block",
+      "sidebar": "none",
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "bottomNav": "flex",
+      "desktop": "none",
+      "mobile": "block",
+      "sidebar": "none",
+      "width": 1023,
+      "overflow": false
+    },
+    {
+      "bottomNav": "none",
+      "desktop": "grid",
+      "mobile": "none",
+      "sidebar": "flex",
+      "width": 1024,
+      "overflow": false
+    }
+  ],
+  "zoom": [
+    {
+      "viewport": "1024x768",
+      "effectiveCssWidth": 512,
+      "method": "Safari CSS viewport reduced to the width produced by 200% browser zoom",
+      "result": "PASS"
+    },
+    {
+      "viewport": "1440x900",
+      "effectiveCssWidth": 720,
+      "method": "Safari CSS viewport reduced to the width produced by 200% browser zoom",
+      "result": "PASS"
+    }
+  ],
+  "textScaling": [
+    {
+      "viewport": "1024x900",
+      "scale": "200% root text",
+      "result": "PASS"
+    }
+  ],
+  "reducedMotion": {
+    "result": "PASS",
+    "method": "Production CSS source assertion plus Chrome/Edge emulated-media runtime checks; Safari WebDriver does not expose prefers-reduced-motion emulation."
+  },
+  "keyboard": {
+    "skipFocus": {
+      "visible": true,
+      "text": "Skip to content"
+    },
+    "tabKeyboard": {
+      "selected": "true",
+      "text": "Meal feedback"
+    },
+    "focusBeforeEscape": {
+      "rootInert": true,
+      "inside": true
+    },
+    "focusAfterEscape": {
+      "rootInert": false,
+      "dialog": false,
+      "mainFocused": true
+    }
+  },
+  "semanticAudits": [
+    {
+      "scenario": "login",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "forgot-password",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "invitation",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "pending",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "suspended",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "dashboard",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "orders-many",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "order-detail",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "history",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "menu-long",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "menu-editor",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": "Edit",
+      "liveRegions": []
+    },
+    {
+      "scenario": "menu-max-groups",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": "Edit",
+      "liveRegions": []
+    },
+    {
+      "scenario": "restaurant-long",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "reviews",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "review-report",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": "Report review",
+      "liveRegions": []
+    },
+    {
+      "scenario": "alerts-install",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "alerts-denied",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "security",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "more",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "earnings-owner",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "loading",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Loading…",
+          "role": "status"
+        }
+      ]
+    },
+    {
+      "scenario": "empty",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "No records.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "recoverable-error",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "The operation could not be completed. Try again.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "offline-empty",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Offline. Authoritative data is unavailable.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "offline-retained",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Offline. Previous authoritative data is shown.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "reconnecting",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Reconnecting…",
+          "role": "status"
+        }
+      ]
+    },
+    {
+      "scenario": "stale",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "The latest refresh failed. Previous data may be stale.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "permission-denied",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "You do not have access to this page.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "session-expired",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Your session has expired.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "submitting",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Saving…",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "validation",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Check the fields.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "conflict",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "The record changed elsewhere. The current state is shown.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "unknown-outcome",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "The result could not be verified. Retry with the same operation ID.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "dirty-confirmation",
+      "locale": "en",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": "Discard unsaved changes?",
+      "liveRegions": []
+    },
+    {
+      "scenario": "login",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "forgot-password",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "invitation",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "pending",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "suspended",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "dashboard",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "orders-many",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "order-detail",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "history",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "menu-long",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "menu-editor",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": "Edit",
+      "liveRegions": []
+    },
+    {
+      "scenario": "menu-max-groups",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": "Edit",
+      "liveRegions": []
+    },
+    {
+      "scenario": "restaurant-long",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "reviews",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "review-report",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": "Report review",
+      "liveRegions": []
+    },
+    {
+      "scenario": "alerts-install",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "alerts-denied",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "security",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "more",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "earnings-owner",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "loading",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Loading…",
+          "role": "status"
+        }
+      ]
+    },
+    {
+      "scenario": "empty",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "No records.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "recoverable-error",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "The operation could not be completed. Try again.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "offline-empty",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Offline. Authoritative data is unavailable.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "offline-retained",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Offline. Previous authoritative data is shown.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "reconnecting",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Reconnecting…",
+          "role": "status"
+        }
+      ]
+    },
+    {
+      "scenario": "stale",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "The latest refresh failed. Previous data may be stale.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "permission-denied",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "You do not have access to this page.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "session-expired",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Your session has expired.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "submitting",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Saving…",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "validation",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Check the fields.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "conflict",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "The record changed elsewhere. The current state is shown.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "unknown-outcome",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "The result could not be verified. Retry with the same operation ID.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "dirty-confirmation",
+      "locale": "en",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": "Discard unsaved changes?",
+      "liveRegions": []
+    },
+    {
+      "scenario": "login",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "forgot-password",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "invitation",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "pending",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "suspended",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "dashboard",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "orders-many",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "order-detail",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "history",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "menu-long",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "menu-editor",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": "Düzenle",
+      "liveRegions": []
+    },
+    {
+      "scenario": "menu-max-groups",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": "Düzenle",
+      "liveRegions": []
+    },
+    {
+      "scenario": "restaurant-long",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "reviews",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "review-report",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": "Değerlendirmeyi bildir",
+      "liveRegions": []
+    },
+    {
+      "scenario": "alerts-install",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "alerts-denied",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "security",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "more",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "earnings-owner",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "loading",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Yükleniyor…",
+          "role": "status"
+        }
+      ]
+    },
+    {
+      "scenario": "empty",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Kayıt yok.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "recoverable-error",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "İşlem tamamlanamadı. Tekrar deneyin.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "offline-empty",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Çevrimdışı. Yetkili veri kullanılamıyor.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "offline-retained",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Çevrimdışı. Önceki yetkili veri gösteriliyor.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "reconnecting",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Yeniden bağlanıyor…",
+          "role": "status"
+        }
+      ]
+    },
+    {
+      "scenario": "stale",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Son yenileme başarısız. Önceki veri güncel olmayabilir.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "permission-denied",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Bu sayfaya erişim izniniz yok.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "session-expired",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Oturum sona erdi.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "submitting",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Kaydediliyor…",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "validation",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Alanları kontrol edin.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "conflict",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Kayıt başka bir yerde değişti. Güncel durum gösteriliyor.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "unknown-outcome",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Sonuç doğrulanamadı. Aynı işlem kimliğiyle tekrar deneyin.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "dirty-confirmation",
+      "locale": "tr",
+      "viewport": "1024x768",
+      "main": 1,
+      "heading": 1,
+      "dialogName": "Kaydedilmemiş değişiklikler silinsin mi?",
+      "liveRegions": []
+    },
+    {
+      "scenario": "login",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "forgot-password",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "invitation",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "pending",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "suspended",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "dashboard",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "orders-many",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "order-detail",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "history",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "menu-long",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "menu-editor",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": "Düzenle",
+      "liveRegions": []
+    },
+    {
+      "scenario": "menu-max-groups",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": "Düzenle",
+      "liveRegions": []
+    },
+    {
+      "scenario": "restaurant-long",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "reviews",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "review-report",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": "Değerlendirmeyi bildir",
+      "liveRegions": []
+    },
+    {
+      "scenario": "alerts-install",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "alerts-denied",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "security",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "more",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "earnings-owner",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": []
+    },
+    {
+      "scenario": "loading",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Yükleniyor…",
+          "role": "status"
+        }
+      ]
+    },
+    {
+      "scenario": "empty",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Kayıt yok.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "recoverable-error",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "İşlem tamamlanamadı. Tekrar deneyin.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "offline-empty",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Çevrimdışı. Yetkili veri kullanılamıyor.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "offline-retained",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Çevrimdışı. Önceki yetkili veri gösteriliyor.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "reconnecting",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Yeniden bağlanıyor…",
+          "role": "status"
+        }
+      ]
+    },
+    {
+      "scenario": "stale",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Son yenileme başarısız. Önceki veri güncel olmayabilir.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "permission-denied",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Bu sayfaya erişim izniniz yok.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "session-expired",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Oturum sona erdi.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "submitting",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Kaydediliyor…",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "validation",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Alanları kontrol edin.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "conflict",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Kayıt başka bir yerde değişti. Güncel durum gösteriliyor.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "unknown-outcome",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": null,
+      "liveRegions": [
+        {
+          "live": null,
+          "text": "Sonuç doğrulanamadı. Aynı işlem kimliğiyle tekrar deneyin.",
+          "role": "alert"
+        }
+      ]
+    },
+    {
+      "scenario": "dirty-confirmation",
+      "locale": "tr",
+      "viewport": "1440x900",
+      "main": 1,
+      "heading": 1,
+      "dialogName": "Kaydedilmemiş değişiklikler silinsin mi?",
+      "liveRegions": []
+    }
+  ]
+}

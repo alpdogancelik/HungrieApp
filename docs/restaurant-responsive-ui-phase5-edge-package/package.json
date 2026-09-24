@@ -1,0 +1,31 @@
+{
+  "generatedAt": "2026-09-24T10:57:10.394Z",
+  "phase4Baseline": "71e5d7e08189bbe0da3849c48db16ef10cd6a27f",
+  "sourceManifestSha256": "aa5c6b85cc4b7fec6822066b75d05d24acd8d122f36b08216bb97accb1b2c645",
+  "artifactManifestSha256": "a05006e7aaef23d23de1f0ecc3abd38a2573c94e303d85387db7198934d61f5b",
+  "artifactSha256": "bf983c377dcaf68e001a577844b753bbc877c451ad31285c19574b291c5e6f89",
+  "routes": [
+    "/+not-found",
+    "/_sitemap",
+    "/dashboard",
+    "/earnings",
+    "/forgot-password",
+    "/history",
+    "/",
+    "/invite",
+    "/login",
+    "/menu",
+    "/more",
+    "/orders",
+    "/orders/[orderId]",
+    "/orders/detail",
+    "/pending",
+    "/restaurant",
+    "/reviews",
+    "/security",
+    "/settings",
+    "/suspended"
+  ],
+  "sourceEntries": 26,
+  "artifactFiles": 74
+}

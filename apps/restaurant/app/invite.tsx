@@ -5,6 +5,7 @@ import { auth, ensureSessionPersistence } from "../src/firebase";
 import { supabase } from "../src/supabase";
 import { useLocale } from "../src/providers";
 import { AuthLayout } from "../src/components/AuthLayout";
+import { handleTabKeyboard } from "../src/components/tabKeyboard";
 import { Button } from "../src/components/Button";
 import { Card } from "../src/components/Card";
 import { FormField } from "../src/components/FormField";
@@ -53,9 +54,9 @@ export default function Invite() {
   return <AuthLayout><Card><form className="auth-form" onSubmit={submit} aria-busy={submitting}>
     <div><p className="auth-eyebrow">Hungrie Restaurant</p><h1>{t.invite}</h1><p>{t.inviteIntro}</p></div>
     {verify ? <p className="ui-notice ui-notice--success" role="status">{t.verify}</p> : <>
-      <div className="auth-tabs" role="tablist" aria-label={t.invite}>
-        <button type="button" role="tab" aria-selected={mode === "create"} onClick={() => setMode("create")}>{t.newAccount}</button>
-        <button type="button" role="tab" aria-selected={mode === "signin"} onClick={() => setMode("signin")}>{t.existingAccount}</button>
+      <div className="auth-tabs" role="tablist" aria-label={t.invite} onKeyDown={handleTabKeyboard}>
+        <button type="button" role="tab" aria-selected={mode === "create"} tabIndex={mode === "create" ? 0 : -1} onClick={() => setMode("create")}>{t.newAccount}</button>
+        <button type="button" role="tab" aria-selected={mode === "signin"} tabIndex={mode === "signin" ? 0 : -1} onClick={() => setMode("signin")}>{t.existingAccount}</button>
       </div>
       <FormField label={t.email} type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} />
       <FormField label={t.password} type="password" autoComplete={mode === "create" ? "new-password" : "current-password"} minLength={8} required value={password} onChange={e => setPassword(e.target.value)} />

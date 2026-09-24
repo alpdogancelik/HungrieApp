@@ -1,6 +1,6 @@
 import { Bell, Languages, LogOut } from "lucide-react";
 import { Link, usePathname } from "expo-router";
-import type { PropsWithChildren } from "react";
+import { useRef, type PropsWithChildren } from "react";
 import { auth } from "../firebase";
 import { useLocale } from "../providers";
 import { isActiveRestaurantOwner, useRestaurantAccessContext } from "../RestaurantAccessContext";
@@ -8,6 +8,7 @@ import { useRestaurantRuntime } from "../RestaurantRuntimeContext";
 import { restaurantSignOut } from "../restaurantSignOut";
 import { ConnectivityStatus } from "./ConnectivityStatus";
 import { earningsNavigation, mobileNavigation, routeIsActive, workspaceNavigation, type NavigationItem } from "./navigation";
+import { useRouteAccessibility } from "./useRouteAccessibility";
 
 export function AppShell({ children }: PropsWithChildren) {
   const path = usePathname();
@@ -17,6 +18,8 @@ export function AppShell({ children }: PropsWithChildren) {
   const desktopItems = isActiveRestaurantOwner(access) ? [...workspaceNavigation, earningsNavigation] : workspaceNavigation;
   const labels = t.runtimeStatus;
   const role = access?.restaurantRole === "owner" ? t.owner : t.manager;
+  const mainRef = useRef<HTMLElement>(null);
+  useRouteAccessibility(path, locale, mainRef);
 
   return <div className="app-shell">
     <a className="skip-link" href="#main-content">{t.skipToContent}</a>
@@ -39,7 +42,7 @@ export function AppShell({ children }: PropsWithChildren) {
         <button type="button" className="app-language" aria-label={t.language} onClick={() => setLocale(locale === "en" ? "tr" : "en")}><Languages size={17} aria-hidden="true" />{locale.toUpperCase()}</button>
       </header>
       {runtime.status === "offline" && <div className="app-offline-banner" role="alert"><strong>{t.offlineTitle}</strong> {t.offlineMessage}</div>}
-      <main id="main-content" className="app-content" tabIndex={-1}>{children}</main>
+      <main ref={mainRef} id="main-content" className="app-content" tabIndex={-1}>{children}</main>
       <nav className="app-bottom-nav" aria-label={t.mobileNavigation}>
         {mobileNavigation.map(item => <NavigationLink key={item.href} item={item} label={t[item.key]} path={path} bottom />)}
       </nav>

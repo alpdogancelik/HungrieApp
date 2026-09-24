@@ -7,12 +7,12 @@
   --color-canvas: #fff8ef;
   --color-card: #fff;
   --color-muted: #697386;
-  --color-muted-soft: #a0a8b8;
+  --color-muted-soft: #697386;
   --color-border: #e7e9ef;
   --color-line: #f0f1f5;
   --color-green: #16a36a;
   --color-green-soft: #eaf9f1;
-  --color-red: #e23d36;
+  --color-red: #d13f38;
   --color-red-soft: #fff0ef;
   --color-amber: #9a6500;
   --color-amber-soft: #fff7db;
@@ -28,8 +28,9 @@
   font-family: "DMSans_400Regular", "DM Sans", system-ui, sans-serif;
 }
 
+* { box-sizing: border-box; }
 html, body, #root { min-height: 100%; }
-body { background: var(--color-canvas); color: var(--color-ink); }
+body { margin: 0; overflow-x: hidden; overflow-y: auto; background: var(--color-canvas); color: var(--color-ink); }
 button, input, select, textarea { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline: 3px solid var(--color-blue); outline-offset: 3px; }

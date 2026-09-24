@@ -103,6 +103,6 @@ test("Dashboard and Restaurant share the accepted acceptance controller", () => 
 });
 
 test("responsive management surfaces and accessible dialogs are wired", () => {
-  const css=source("../apps/restaurant/src/design/components.css"),dialog=source("../apps/restaurant/src/components/Dialog.tsx"),editor=source("../apps/restaurant/src/MenuItemDialog.tsx");
-  assert.match(css,/@media \(max-width: 767px\)/); assert.match(css,/\.history-cards/); assert.match(css,/\.menu-layout/); assert.match(css,/\.restaurant-grid/); assert.match(dialog,/aria-modal="true"/); assert.match(editor,/useDirtyGuard\(dirty\)/);
+  const css=source("../apps/restaurant/src/design/components.css"),responsive=source("../apps/restaurant/src/design/responsive.css"),dialog=source("../apps/restaurant/src/components/Dialog.tsx"),editor=source("../apps/restaurant/src/MenuItemDialog.tsx");
+  assert.match(responsive,/@media \(max-width: 767px\)/); assert.match(css,/\.history-cards/); assert.match(css,/\.menu-layout/); assert.match(css,/\.restaurant-grid/); assert.match(dialog,/aria-modal="true"/); assert.match(editor,/useDirtyGuard\(dirty\)/);
 });

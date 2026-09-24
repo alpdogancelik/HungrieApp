@@ -1,0 +1,58 @@
+{
+  "generatedAt": "2026-09-24T07:22:00.000Z",
+  "browser": "Safari 27.0",
+  "runtime": "iOS 26.2 Simulator",
+  "method": "Local static qualification adapter served from 127.0.0.1; Simulator Safari opened with simctl; screenshots captured with simctl io and inspected visually.",
+  "captures": [
+    {
+      "file": "iphone-dashboard-en.png",
+      "device": "iPhone 17 Pro",
+      "locale": "en",
+      "scenario": "dashboard",
+      "pixels": "1206x2622",
+      "sha256": "ef94d462451fbed78279ce602dae932126d130347727096aec3f59b0c4cfdc9f",
+      "result": "PASS"
+    },
+    {
+      "file": "iphone-alerts-install-tr.png",
+      "device": "iPhone 17 Pro",
+      "locale": "tr",
+      "scenario": "alerts-install",
+      "pixels": "1206x2622",
+      "sha256": "458d0db492ecc43ed649bfb1262b937b1cf2f6cab23f674ab56dd34489864831",
+      "result": "PASS"
+    },
+    {
+      "file": "ipad-menu-long-en.png",
+      "device": "iPad (A16)",
+      "locale": "en",
+      "scenario": "menu-long",
+      "pixels": "1640x2360",
+      "sha256": "35b38f81015ff7c496ffcc3bbe2cc632beec94a5562e2e9eff559ba1088d54ad",
+      "result": "PASS"
+    },
+    {
+      "file": "ipad-review-report-tr.png",
+      "device": "iPad (A16)",
+      "locale": "tr",
+      "scenario": "review-report",
+      "pixels": "1640x2360",
+      "sha256": "d2fc8ffb8eecf43d9742792ca2e6d7c77ed731b42f79db4d53cf34f943d0ce4c",
+      "result": "PASS"
+    }
+  ],
+  "visualChecks": {
+    "phoneAndTabletLayout": "PASS",
+    "safeAreas": "PASS",
+    "bottomNavigationClearance": "PASS",
+    "dialogContainmentAndOpacity": "PASS",
+    "alertsInstallationGuidance": "PASS",
+    "horizontalOverflow": "PASS by visual inspection"
+  },
+  "desktopSafari": {
+    "result": "PASS",
+    "browser": "Safari 27.0 on macOS 27.0",
+    "evidence": "../safari-desktop/manifest.json",
+    "note": "Desktop Safari remote automation was enabled by the owner and the complete required desktop matrix passed."
+  }
+}

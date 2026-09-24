@@ -1,0 +1,571 @@
+{
+  "generatedAt": "2026-09-24T10:27:36.781Z",
+  "measurements": [
+    {
+      "name": "public-authentication",
+      "route": "/login",
+      "viewport": [
+        390,
+        844
+      ],
+      "browser": "Edg/153.0.4234.48",
+      "cache": "cold; browser cache cleared and disabled before every repetition",
+      "network": "Fast 3G: 150 ms latency, 1.6 Mbps download, 750 Kbps upload",
+      "cpu": "4× slowdown",
+      "method": "Chrome DevTools Protocol PerformanceObserver for LCP/layout-shift and Navigation Timing",
+      "repetitions": 5,
+      "results": [
+        {
+          "repetition": 1,
+          "lcp": 464,
+          "cls": 0,
+          "loadEventEnd": 3846.899999976158,
+          "domContentLoaded": 3846.8000000715256,
+          "resources": 7,
+          "consoleMarker": "",
+          "wallTime": 4553,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 2,
+          "lcp": 476,
+          "cls": 0,
+          "loadEventEnd": 3713.399999976158,
+          "domContentLoaded": 3712.600000023842,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4418,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 3,
+          "lcp": 476,
+          "cls": 0,
+          "loadEventEnd": 3706.9000000953674,
+          "domContentLoaded": 3706.4000000953674,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4414,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 4,
+          "lcp": 476,
+          "cls": 0,
+          "loadEventEnd": 3711.2999999523163,
+          "domContentLoaded": 3710.5,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4419,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 5,
+          "lcp": 472,
+          "cls": 0,
+          "loadEventEnd": 3707.899999976158,
+          "domContentLoaded": 3707.100000023842,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4414,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        }
+      ],
+      "median": {
+        "lcp": 476,
+        "cls": 0,
+        "loadEventEnd": 3711.2999999523163,
+        "wallTime": 4418
+      }
+    },
+    {
+      "name": "operational-workspace",
+      "route": "/dashboard",
+      "viewport": [
+        1024,
+        768
+      ],
+      "browser": "Edg/153.0.4234.48",
+      "cache": "cold; browser cache cleared and disabled before every repetition",
+      "network": "Fast 3G: 150 ms latency, 1.6 Mbps download, 750 Kbps upload",
+      "cpu": "4× slowdown",
+      "method": "Chrome DevTools Protocol PerformanceObserver for LCP/layout-shift and Navigation Timing",
+      "repetitions": 5,
+      "results": [
+        {
+          "repetition": 1,
+          "lcp": 1100,
+          "cls": 0,
+          "loadEventEnd": 4363.900000095367,
+          "domContentLoaded": 4363.900000095367,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 5070,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 2,
+          "lcp": 472,
+          "cls": 0,
+          "loadEventEnd": 3710.3000000715256,
+          "domContentLoaded": 3710.2000000476837,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4416,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 3,
+          "lcp": 484,
+          "cls": 0,
+          "loadEventEnd": 3709.2000000476837,
+          "domContentLoaded": 3708.899999976158,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4416,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 4,
+          "lcp": 476,
+          "cls": 0,
+          "loadEventEnd": 3708.100000023842,
+          "domContentLoaded": 3707.600000023842,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4415,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 5,
+          "lcp": 480,
+          "cls": 0,
+          "loadEventEnd": 3713.600000023842,
+          "domContentLoaded": 3712.6999999284744,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4421,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        }
+      ],
+      "median": {
+        "lcp": 480,
+        "cls": 0,
+        "loadEventEnd": 3710.3000000715256,
+        "wallTime": 4416
+      }
+    },
+    {
+      "name": "order-detail",
+      "route": "/orders/detail?orderId=qualification",
+      "viewport": [
+        1024,
+        768
+      ],
+      "browser": "Edg/153.0.4234.48",
+      "cache": "cold; browser cache cleared and disabled before every repetition",
+      "network": "Fast 3G: 150 ms latency, 1.6 Mbps download, 750 Kbps upload",
+      "cpu": "4× slowdown",
+      "method": "Chrome DevTools Protocol PerformanceObserver for LCP/layout-shift and Navigation Timing",
+      "repetitions": 5,
+      "results": [
+        {
+          "repetition": 1,
+          "lcp": 1112,
+          "cls": 0,
+          "loadEventEnd": 4363.700000047684,
+          "domContentLoaded": 4363.200000047684,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 5071,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 2,
+          "lcp": 472,
+          "cls": 0,
+          "loadEventEnd": 3708.7000000476837,
+          "domContentLoaded": 3708.5,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4415,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 3,
+          "lcp": 476,
+          "cls": 0,
+          "loadEventEnd": 3709.6999999284744,
+          "domContentLoaded": 3709.5999999046326,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4417,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 4,
+          "lcp": 480,
+          "cls": 0,
+          "loadEventEnd": 3716.2000000476837,
+          "domContentLoaded": 3716,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4424,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 5,
+          "lcp": 480,
+          "cls": 0,
+          "loadEventEnd": 3710.5,
+          "domContentLoaded": 3710.5,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4416,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        }
+      ],
+      "median": {
+        "lcp": 480,
+        "cls": 0,
+        "loadEventEnd": 3710.5,
+        "wallTime": 4417
+      }
+    },
+    {
+      "name": "menu",
+      "route": "/menu",
+      "viewport": [
+        1024,
+        768
+      ],
+      "browser": "Edg/153.0.4234.48",
+      "cache": "cold; browser cache cleared and disabled before every repetition",
+      "network": "Fast 3G: 150 ms latency, 1.6 Mbps download, 750 Kbps upload",
+      "cpu": "4× slowdown",
+      "method": "Chrome DevTools Protocol PerformanceObserver for LCP/layout-shift and Navigation Timing",
+      "repetitions": 5,
+      "results": [
+        {
+          "repetition": 1,
+          "lcp": 1108,
+          "cls": 0,
+          "loadEventEnd": 4367.5,
+          "domContentLoaded": 4367.099999904633,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 5074,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 2,
+          "lcp": 476,
+          "cls": 0,
+          "loadEventEnd": 3711.100000023842,
+          "domContentLoaded": 3710.399999976158,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4418,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 3,
+          "lcp": 484,
+          "cls": 0,
+          "loadEventEnd": 3703.8000000715256,
+          "domContentLoaded": 3703.7000000476837,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4411,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 4,
+          "lcp": 476,
+          "cls": 0,
+          "loadEventEnd": 3710.7000000476837,
+          "domContentLoaded": 3710,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4417,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 5,
+          "lcp": 488,
+          "cls": 0,
+          "loadEventEnd": 3706.0999999046326,
+          "domContentLoaded": 3706.0999999046326,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4412,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        }
+      ],
+      "median": {
+        "lcp": 484,
+        "cls": 0,
+        "loadEventEnd": 3710.7000000476837,
+        "wallTime": 4417
+      }
+    },
+    {
+      "name": "reviews",
+      "route": "/reviews",
+      "viewport": [
+        1024,
+        768
+      ],
+      "browser": "Edg/153.0.4234.48",
+      "cache": "cold; browser cache cleared and disabled before every repetition",
+      "network": "Fast 3G: 150 ms latency, 1.6 Mbps download, 750 Kbps upload",
+      "cpu": "4× slowdown",
+      "method": "Chrome DevTools Protocol PerformanceObserver for LCP/layout-shift and Navigation Timing",
+      "repetitions": 5,
+      "results": [
+        {
+          "repetition": 1,
+          "lcp": 1096,
+          "cls": 0,
+          "loadEventEnd": 4365,
+          "domContentLoaded": 4364.899999976158,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 5071,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 2,
+          "lcp": 476,
+          "cls": 0,
+          "loadEventEnd": 3721.7000000476837,
+          "domContentLoaded": 3721.2000000476837,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4429,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 3,
+          "lcp": 484,
+          "cls": 0,
+          "loadEventEnd": 3711.600000023842,
+          "domContentLoaded": 3711.600000023842,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4419,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 4,
+          "lcp": 480,
+          "cls": 0,
+          "loadEventEnd": 3713.6999999284744,
+          "domContentLoaded": 3713.5999999046326,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4420,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 5,
+          "lcp": 488,
+          "cls": 0,
+          "loadEventEnd": 3709.7000000476837,
+          "domContentLoaded": 3709.600000023842,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4415,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        }
+      ],
+      "median": {
+        "lcp": 484,
+        "cls": 0,
+        "loadEventEnd": 3713.6999999284744,
+        "wallTime": 4420
+      }
+    },
+    {
+      "name": "earnings",
+      "route": "/earnings",
+      "viewport": [
+        1440,
+        900
+      ],
+      "browser": "Edg/153.0.4234.48",
+      "cache": "cold; browser cache cleared and disabled before every repetition",
+      "network": "Fast 3G: 150 ms latency, 1.6 Mbps download, 750 Kbps upload",
+      "cpu": "4× slowdown",
+      "method": "Chrome DevTools Protocol PerformanceObserver for LCP/layout-shift and Navigation Timing",
+      "repetitions": 5,
+      "results": [
+        {
+          "repetition": 1,
+          "lcp": 1108,
+          "cls": 0,
+          "loadEventEnd": 4363.799999952316,
+          "domContentLoaded": 4363.199999928474,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 5070,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 2,
+          "lcp": 476,
+          "cls": 0,
+          "loadEventEnd": 3717.5,
+          "domContentLoaded": 3716.7999999523163,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4424,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 3,
+          "lcp": 472,
+          "cls": 0,
+          "loadEventEnd": 3705.7000000476837,
+          "domContentLoaded": 3705.399999976158,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4413,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 4,
+          "lcp": 476,
+          "cls": 0,
+          "loadEventEnd": 3720.100000023842,
+          "domContentLoaded": 3719.8000000715256,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4428,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        },
+        {
+          "repetition": 5,
+          "lcp": 480,
+          "cls": 0,
+          "loadEventEnd": 3708.5,
+          "domContentLoaded": 3707.8000000715256,
+          "resources": 6,
+          "consoleMarker": "",
+          "wallTime": 4416,
+          "failedLocalAssets": 0,
+          "blockedExternalRequests": 0,
+          "uncaughtExceptions": 0
+        }
+      ],
+      "median": {
+        "lcp": 476,
+        "cls": 0,
+        "loadEventEnd": 3717.5,
+        "wallTime": 4424
+      }
+    }
+  ],
+  "clientNavigation": {
+    "from": "/login",
+    "to": "/forgot-password",
+    "browser": "Edg/153.0.4234.48",
+    "viewport": "390×844",
+    "cache": "warm",
+    "network": "unthrottled local",
+    "cpu": "unthrottled",
+    "method": "performance.now() around Expo Router link activation until target pathname and heading",
+    "repetitions": 5,
+    "results": [
+      {
+        "repetition": 1,
+        "duration": 6.5,
+        "reason": null
+      },
+      {
+        "repetition": 2,
+        "duration": 6.899999976158142,
+        "reason": null
+      },
+      {
+        "repetition": 3,
+        "duration": 6.699999928474426,
+        "reason": null
+      },
+      {
+        "repetition": 4,
+        "duration": 6.100000023841858,
+        "reason": null
+      },
+      {
+        "repetition": 5,
+        "duration": 6.200000047683716,
+        "reason": null
+      }
+    ],
+    "median": 6.5
+  },
+  "targets": {
+    "medianLcpMaximumMs": 2500,
+    "clsMaximum": 0.1
+  },
+  "note": "Static export served locally with gzip. External HTTPS was blocked to avoid hosted-environment access; only local asset failures count against the gate."
+}
