@@ -16,11 +16,11 @@ test("Restaurant v2 repository is report-only and maps anonymous queues and aggr
     if (name === "restaurant_list_order_reviews_v2") return { data: { limit: args.p_limit, nextCursor: "opaque-next", items: [{
       reviewId: "review-1", overallRating: 4.5, tasteRating: 5, speedRating: 4, comment: "Good", status: "published",
       createdAt: "2026-09-17T00:00:00Z", items: [{ menuItemId: "menu-1", name: "Meal", quantity: 1 }],
-      report: null, profileId: "must-not-map", orderId: "must-not-map", userName: "must-not-map",
+      report: null,
     }] }, error: null };
     if (name === "restaurant_report_order_review_v2") return { data: { reportId: "report-1", reviewId: args.p_review_id, status: "open" }, error: null };
     return { data: { limit: args.p_limit, nextCursor: null, items: [{ menuItemId: "menu-1", menuItemName: "Meal", likedCount: 3,
-      dislikedCount: 1, positivePercentage: 75, reviewId: "must-not-map", orderId: "must-not-map", profileId: "must-not-map" }] }, error: null };
+      dislikedCount: 1, positivePercentage: 75 }] }, error: null };
   });
   const repository = createRestaurantReviewV2Repository(fake);
   const reviews = await repository.listReviews({ cursor: "opaque-prior", limit: 100 });
@@ -34,6 +34,10 @@ test("Restaurant v2 repository is report-only and maps anonymous queues and aggr
   assert.equal(JSON.stringify(aggregates).includes("must-not-map"), false);
   assert.equal("setVisibility" in repository, false);
   await assert.rejects(() => createRestaurantReviewV2Repository(client(() => ({ data: { items: [{}], limit: 20 }, error: null }))).listReviews(), /Invalid Restaurant review response/);
+  await assert.rejects(() => createRestaurantReviewV2Repository(client(() => ({ data: { limit: 20, nextCursor: null, items: [{
+    reviewId: "review-1", overallRating: 4.5, tasteRating: 5, speedRating: 4, comment: "Good", status: "published",
+    createdAt: "2026-09-17T00:00:00Z", items: [], report: null, orderId: "forbidden",
+  }] }, error: null }))).listReviews(), /Invalid Restaurant review response/);
 });
 
 test("Admin v2 repository forwards stable operations and maps reports without Customer or order identity", async () => {
@@ -102,8 +106,8 @@ test("Restaurant and Admin review components enforce the Phase 6 authority and p
   const restaurant=readFileSync(new URL("../apps/restaurant/src/ReviewsPage.tsx",import.meta.url),"utf8");
   const admin=readFileSync(new URL("../apps/admin-web/components/AdminReviewsPage.tsx",import.meta.url),"utf8");
   assert.match(restaurant,/restaurantReviewV2Repository/);assert.doesNotMatch(restaurant,/restaurant_list_reviews_v1|restaurant_moderate_review_v1|productReviews|user_name_snapshot/);
-  assert.match(restaurant,/Anonymous customer|Anonim müşteri/);assert.match(restaurant,/reporting&&/);assert.doesNotMatch(restaurant,/\.setVisibility\(|publish review|delete review|reply/i);
+  assert.match(restaurant,/Anonymous customer|Anonim müşteri/);assert.match(restaurant,/open=\{Boolean\(reporting\)\}/);assert.doesNotMatch(restaurant,/\.setVisibility\(|publish review|delete review|reply/i);
   assert.match(admin,/legalReportTargets/);assert.match(admin,/window\.confirm/);assert.match(admin,/recent_auth_required/);assert.match(admin,/review\.contractVersion/);
   assert.match(admin,/listAudit/);assert.match(admin,/listReactionAggregates/);assert.doesNotMatch(admin,/customerId|orderId|userName|profileId/);
-  assert.match(restaurant,/role="dialog"/);assert.match(restaurant,/aria-selected/);assert.match(admin,/aria-pressed/);
+  assert.match(restaurant,/components\/Dialog/);assert.match(restaurant,/aria-selected/);assert.match(admin,/aria-pressed/);
 });

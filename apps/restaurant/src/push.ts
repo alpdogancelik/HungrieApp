@@ -2,6 +2,7 @@ import type { MessagePayload } from "firebase/messaging";
 import { deleteToken, getMessaging, isSupported } from "firebase/messaging";
 import { firebaseApp } from "./firebase";
 import { supabase } from "./supabase";
+import { parsePushUnregistration } from "./pushContract";
 
 type RestaurantAlertPayload = Pick<MessagePayload, "data" | "notification">;
 
@@ -14,14 +15,16 @@ export const restaurantDeviceId = () => {
   return id;
 };
 
-export const unregisterRestaurantPush = async () => {
+export const unregisterRestaurantPush = async (operationId: string = crypto.randomUUID()) => {
   const deviceId = restaurantDeviceId();
   const result = await supabase.rpc("restaurant_unregister_web_push_v1" as never, {
     p_device_id: deviceId,
-    p_operation_id: crypto.randomUUID(),
+    p_operation_id: operationId,
   } as never);
   if (result.error) throw result.error;
+  const authoritative = parsePushUnregistration(result.data);
   if (await isSupported()) await deleteToken(getMessaging(firebaseApp)).catch(() => false);
+  return authoritative;
 };
 
 let alertContext: AudioContext | null = null;

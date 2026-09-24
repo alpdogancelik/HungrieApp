@@ -89,6 +89,8 @@
     "qualify:restaurant-responsive-ui-phase2": "node scripts/qualify-restaurant-responsive-ui-phase2.mjs",
     "test:restaurant-responsive-ui-phase3": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --import ./mobile/src/data/registerTestModuleHooks.mjs --test scripts/test-restaurant-responsive-ui-phase3.mjs",
     "qualify:restaurant-responsive-ui-phase3": "node scripts/qualify-restaurant-responsive-ui-phase3.mjs",
+    "test:restaurant-responsive-ui-phase4": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --import ./mobile/src/data/registerTestModuleHooks.mjs --test scripts/test-restaurant-responsive-ui-phase4.mjs",
+    "qualify:restaurant-responsive-ui-phase4": "node scripts/qualify-restaurant-responsive-ui-phase4.mjs",
     "phase6:backup": "node scripts/backup-phase6-environment.mjs",
     "phase6:migration": "node scripts/apply-phase6-migration.mjs",
     "phase6:development:probe": "node scripts/probe-phase6-development-customer.mjs",
