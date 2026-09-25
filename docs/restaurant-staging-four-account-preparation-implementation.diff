@@ -1,0 +1,800 @@
+diff --git a/scripts/restaurant-staging-account-preparation.mjs b/scripts/restaurant-staging-account-preparation.mjs
+new file mode 100644
+index 0000000..4ca6652
+--- /dev/null
++++ b/scripts/restaurant-staging-account-preparation.mjs
+@@ -0,0 +1,496 @@
++#!/usr/bin/env node
++import crypto from "node:crypto";
++import fs from "node:fs";
++import path from "node:path";
++import { createRequire } from "node:module";
++import { execFileSync } from "node:child_process";
++import { fileURLToPath } from "node:url";
++
++const freeze = value => Object.freeze(value);
++export const ACCOUNT_PREPARATION = freeze({
++  contractVersion: 1,
++  runId: "ruip6ad_20260925a",
++  diagnosticCheckpoint: "c3180f019de93fae99341628577a9553faad60f7",
++  planPath: "docs/restaurant-staging-four-account-preparation-plan.md",
++  planSha256: "eacfb9adcb01e40c778f7a0d4ec49af31c23466d2088ab0a69a73931f4f506fa",
++  supabaseProjectRef: "rlrfvqskzvpysewdxqcr",
++  firebaseProjectId: "hungrieapp-a2288",
++  restaurantId: "598eacea-dd2a-4549-a198-40593f7fab06",
++  restaurantSha256: "f6e905eca20a2f298d1631525b693d081499ffae2baeb9366edf86611d82e510",
++  freshnessMs: 15 * 60_000,
++  evidenceRoot: "secure/restaurant-alias-diagnostic-authority/ruip6ad_20260925a-account-preparation",
++  accountsPath: "secure/restaurant-alias-diagnostic-authority/ruip6ad_20260925a-accounts.json",
++  accounts: freeze({
++    owner: freeze({ email: "gabava5260@jobscai.com", profileId: "oupm6g6CyzRgY3RjOU3BkpCGmRh1", beforeVersion: 1, afterVersion: 2, status: "active", onboardingStep: "none", role: "owner" }),
++    manager: freeze({ email: "nenof71463@meonvr.com", profileId: "6ePlV6emcjZEpqi5jsQTF7chiq83", beforeVersion: 1, afterVersion: 2, status: "active", onboardingStep: "none", role: "manager" }),
++    pending: freeze({ email: "setovot129@meonvr.com", profileId: "v9kzlLATn9fQxJ6oPTUjxTDj8MJ3", beforeVersion: 1, afterVersion: 2, status: "pending", onboardingStep: "restaurant_approval_required", role: "manager" }),
++    suspended: freeze({ email: "gejap71504@meonvr.com", profileId: "TBaq9HQIL9OBwLFP3MKchi3rpSA2", beforeVersion: 6, afterVersion: 7, status: "suspended", onboardingStep: "none", role: "manager" }),
++  }),
++  rowHashes: freeze({
++    profiles: freeze({
++      oupm6g6CyzRgY3RjOU3BkpCGmRh1: "ff6bb9c2000ccf7da9691867f31b9089cff1e2aed7098c5087309586455a4e54",
++      "6ePlV6emcjZEpqi5jsQTF7chiq83": "727e65f8317d4d8087f71366f78c7522d2f3bee227ea27bc091226a6873f4463",
++      v9kzlLATn9fQxJ6oPTUjxTDj8MJ3: "c8f2b29c81ab8e99e2c7795c40251852508fc1269baa110afc44b586cc93112c",
++      TBaq9HQIL9OBwLFP3MKchi3rpSA2: "04d49c9d7bec88e48e394068c8578ad7ceceac944774716ad06d96b8cbdccd18",
++    }),
++    access: freeze({
++      oupm6g6CyzRgY3RjOU3BkpCGmRh1: "e717e611668fcb9dd26dfe4fe26a7e9b7904ecba5a04b5fca510d6082fad33d9",
++      "6ePlV6emcjZEpqi5jsQTF7chiq83": "81ec67068ec79e362553a8a8459e9cdf20cf6074cc250894b69860bae5d0e453",
++      v9kzlLATn9fQxJ6oPTUjxTDj8MJ3: "810f4f8cac61998ab631e2c2b27df1e1ce9e09f86ed19961614164724bad3c44",
++      TBaq9HQIL9OBwLFP3MKchi3rpSA2: "0d874a4cbeac30f7c1d758d2985e1e3214424fdd5998d835a6ca0dfdc727cc82",
++    }),
++    reservations: freeze({
++      "gabava5260@jobscai.com": "44883cfcda97fb00192ecb55e5541c50fced8e7e92eca9b856cad4b857a6a065",
++      "nenof71463@meonvr.com": "be157a7f6c8ee1f691fb7fbeec6d0667a9a5aad4b2a4d231ea0ec56f2e31858d",
++      "setovot129@meonvr.com": "75561ab64392401501f9b4f989c8b143d03fa36918d902a3968f29a1e0dab980",
++      "gejap71504@meonvr.com": "758d2e5fb6674467738b8f24e32b8c6b13e10e3308f9f7ddf35ccdbd81a5f435",
++    }),
++    disposable: freeze({
++      "address:zeQ0xgA79Up5XTNs-i_Dg": "18797d697c2d65f78f8ff1896558a52883b37024da3e5ee0b98fcb6f8e169d14",
++      "address:7KnWuexTChn4F7o9hMtzH": "61c2e3cbf0dad5c21cdf730fb11a0256ed7c481ac5d89a030ea446c3d6663be6",
++      "favorite:TBaq9HQIL9OBwLFP3MKchi3rpSA2:lombard-kitchen": "72061ca9c65e987146159d3b0a874069ab36a5d14d7bb9be97c0356e33b4628d",
++      "preference:v9kzlLATn9fQxJ6oPTUjxTDj8MJ3": "8f77d926f7cd5d7a5437e88bb8546bdee9abd244479f6f28417cf73faf245de4",
++      "preference:TBaq9HQIL9OBwLFP3MKchi3rpSA2": "8b1a0b25a0f6f0cbcb22a996f83872a2c5fce04ca13ac5cf794dc6ea328ef976",
++    }),
++  }),
++  protectedCounts: freeze({ existingAccessAccounts: 2, orders: 2, activeOrders: 0, invitations: 4, incidents: 1, commissionRules: 1, reviews: 0, menuRows: 0, pushTokens: 0, commissionTerms: 0, financialSnapshots: 0, financialAlerts: 0 }),
++});
++
++const canonical = value => JSON.stringify(value, null, 2) + "\n";
++export const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
++const exactKeys = (value, expected, label) => {
++  if (JSON.stringify(Object.keys(value || {}).sort()) !== JSON.stringify([...expected].sort())) throw new Error(label + " fields differ from the reviewed contract.");
++};
++const required = (value, label) => {
++  if (typeof value !== "string" || !value.trim() || /<[^>]+>|placeholder|replace[_ -]?me|todo/i.test(value)) throw new Error(label + " is missing or contains a placeholder.");
++  return value;
++};
++const sanitizeError = error => ({ name: String(error?.name || "Error").slice(0, 80), code: String(error?.code || "UNCLASSIFIED").slice(0, 80), message: String(error?.message || error || "Unknown failure").replace(/(bearer|password|token|cookie|authorization)\s*[:=]?\s*[^\s,;]+/gi, "$1=[REDACTED]").slice(0, 500) });
++
++export function atomicWriteExclusive(file, value, io = fs) {
++  io.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
++  io.chmodSync(path.dirname(file), 0o700);
++  if (io.existsSync(file)) throw new Error("Exclusive evidence already exists: " + path.basename(file));
++  const temporary = file + "." + process.pid + ".tmp";
++  try {
++    io.writeFileSync(temporary, Buffer.isBuffer(value) ? value : canonical(value), { mode: 0o600, flag: "wx" });
++    io.renameSync(temporary, file);
++    io.chmodSync(file, 0o600);
++  } catch (error) {
++    try { if (io.existsSync(temporary)) io.unlinkSync(temporary); } catch {}
++    throw error;
++  }
++}
++
++export function atomicReplace(file, value, io = fs) {
++  io.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
++  io.chmodSync(path.dirname(file), 0o700);
++  const temporary = file + "." + process.pid + ".tmp";
++  io.writeFileSync(temporary, Buffer.isBuffer(value) ? value : canonical(value), { mode: 0o600 });
++  io.renameSync(temporary, file);
++  io.chmodSync(file, 0o600);
++}
++
++export function validateAuthority(authority, { now = Date.now() } = {}) {
++  const fields = ["contractVersion", "decision", "approvedForHostedMutation", "environment", "runId", "diagnosticCheckpoint", "operatorCommit", "planSha256", "supabaseProjectRef", "firebaseProjectId", "restaurantId", "authorizedActions", "authorizationText", "authorizationTextSha256", "issuedAt", "expiresAt"];
++  exactKeys(authority, fields, "Preparation authority");
++  if (authority.contractVersion !== 1 || authority.decision !== "APPROVE_RESTAURANT_STAGING_ACCOUNT_PREPARATION" || authority.approvedForHostedMutation !== true || authority.environment !== "staging") throw new Error("Explicit Staging account-preparation authority is required.");
++  if (authority.runId !== ACCOUNT_PREPARATION.runId || authority.diagnosticCheckpoint !== ACCOUNT_PREPARATION.diagnosticCheckpoint || authority.planSha256 !== ACCOUNT_PREPARATION.planSha256 || authority.supabaseProjectRef !== ACCOUNT_PREPARATION.supabaseProjectRef || authority.firebaseProjectId !== ACCOUNT_PREPARATION.firebaseProjectId || authority.restaurantId !== ACCOUNT_PREPARATION.restaurantId) throw new Error("Preparation authority identity mismatch.");
++  if (!/^[a-f0-9]{40}$/.test(authority.operatorCommit || "")) throw new Error("Audited operator commit is required.");
++  if (JSON.stringify(authority.authorizedActions) !== JSON.stringify(["prepare", "reconcile", "recover"])) throw new Error("Preparation authority action scope mismatch.");
++  required(authority.authorizationText, "Authorization text");
++  if (authority.authorizationTextSha256 !== sha256(Buffer.from(authority.authorizationText))) throw new Error("Authorization text digest mismatch.");
++  if (!/authorize/i.test(authority.authorizationText) || !/staging/i.test(authority.authorizationText) || !/recovery/i.test(authority.authorizationText) || !/firebase.+read.only/i.test(authority.authorizationText)) throw new Error("Authorization text lacks required boundaries.");
++  const issued = Date.parse(authority.issuedAt), expires = Date.parse(authority.expiresAt);
++  if (!Number.isFinite(issued) || !Number.isFinite(expires) || issued > now || expires <= now || expires - issued > 24 * 60 * 60_000) throw new Error("Preparation authority window is invalid.");
++  return authority;
++}
++
++export function validateAccountsFile(accounts) {
++  const names = ["pending", "suspended", "owner", "manager"];
++  exactKeys(accounts, names, "Accounts file");
++  for (const name of names) {
++    exactKeys(accounts[name], ["email", "password"], name + " account");
++    if (accounts[name].email !== ACCOUNT_PREPARATION.accounts[name].email) throw new Error(name + " account email mismatch.");
++    required(accounts[name].password, name + " password");
++  }
++  return { passed: true, roles: names, credentialValuesPersisted: false };
++}
++
++export function validateAccountsFilePath(file, { root, io = fs, isIgnored } = {}) {
++  const expected = path.resolve(root, ACCOUNT_PREPARATION.accountsPath);
++  const actual = path.resolve(file);
++  if (actual !== expected) throw new Error("Accounts file path differs from the reviewed secure path.");
++  const stat = io.lstatSync(actual);
++  if (stat.isSymbolicLink() || !stat.isFile() || (stat.mode & 0o777) !== 0o600) throw new Error("Accounts file must be a non-symlink regular mode-0600 file.");
++  const ignored = isIgnored ? isIgnored(actual) : (() => {
++    try { execFileSync("git", ["check-ignore", "--quiet", "--", actual], { cwd: root }); return true; } catch { return false; }
++  })();
++  if (!ignored) throw new Error("Accounts file must be excluded by Git.");
++  const parsed = JSON.parse(io.readFileSync(actual, "utf8"));
++  validateAccountsFile(parsed);
++  return parsed;
++}
++
++const expectedAccountList = () => Object.entries(ACCOUNT_PREPARATION.accounts).map(([qualification, value]) => ({ qualification, ...value }));
++const by = (values, field) => new Map((values || []).map(value => [value[field], value]));
++const assertHashMap = (actual, expected, label) => {
++  exactKeys(actual, Object.keys(expected), label);
++  for (const [key, digest] of Object.entries(expected)) if (actual[key] !== digest) throw new Error(label + " hash mismatch: " + key);
++};
++
++export function validateFirebaseObservation(observation) {
++  if (observation.projectId !== ACCOUNT_PREPARATION.firebaseProjectId || observation.runId !== ACCOUNT_PREPARATION.runId || !Number.isFinite(Date.parse(observation.capturedAt))) throw new Error("Firebase observation binding mismatch.");
++  const users = by(observation.users, "email");
++  if (users.size !== 4) throw new Error("Exactly four Firebase users are required.");
++  for (const expected of expectedAccountList()) {
++    const user = users.get(expected.email);
++    if (!user || user.uid !== expected.profileId || user.disabled !== false || user.emailVerified !== true || JSON.stringify(user.providers) !== JSON.stringify(["password"])) throw new Error("Firebase identity mismatch: " + expected.qualification);
++  }
++  return true;
++}
++
++export function validateBeforeState(snapshot, { now = Date.now() } = {}) {
++  if (snapshot.schemaVersion !== 1 || !["before", "reconciliation"].includes(snapshot.stage) || snapshot.runId !== ACCOUNT_PREPARATION.runId || snapshot.projectRef !== ACCOUNT_PREPARATION.supabaseProjectRef || snapshot.restaurantId !== ACCOUNT_PREPARATION.restaurantId || snapshot.planSha256 !== ACCOUNT_PREPARATION.planSha256) throw new Error("Before-state binding mismatch.");
++  const captured = Date.parse(snapshot.capturedAt);
++  if (!Number.isFinite(captured) || captured > now || now - captured > ACCOUNT_PREPARATION.freshnessMs) throw new Error("Before-state snapshot is stale or future-dated.");
++  if (snapshot.earningsEnabled !== false) throw new Error("Earnings must remain disabled.");
++  if (snapshot.pendingMigrations !== 0) throw new Error("Zero pending migrations required.");
++  if (snapshot.schemaContractValid !== true) throw new Error("Required account schema/trigger contract mismatch.");
++  if (snapshot.restaurant?.id !== ACCOUNT_PREPARATION.restaurantId || snapshot.restaurant.lifecycle_status !== "active" || snapshot.restaurant.is_active !== true || snapshot.restaurant.accepting_orders !== false || snapshot.restaurantSha256 !== ACCOUNT_PREPARATION.restaurantSha256) throw new Error("Selected Restaurant before-state mismatch.");
++  assertHashMap(snapshot.rowHashes?.profiles, ACCOUNT_PREPARATION.rowHashes.profiles, "Profile");
++  assertHashMap(snapshot.rowHashes?.access, ACCOUNT_PREPARATION.rowHashes.access, "Access");
++  assertHashMap(snapshot.rowHashes?.reservations, ACCOUNT_PREPARATION.rowHashes.reservations, "Reservation");
++  assertHashMap(snapshot.rowHashes?.disposable, ACCOUNT_PREPARATION.rowHashes.disposable, "Disposable");
++  exactKeys(snapshot.restaurantCounts, Object.keys(ACCOUNT_PREPARATION.protectedCounts), "Restaurant counts");
++  for (const [name, count] of Object.entries(ACCOUNT_PREPARATION.protectedCounts)) if (snapshot.restaurantCounts[name] !== count) throw new Error("Restaurant relationship count mismatch: " + name);
++  const profiles = by(snapshot.profiles, "id"), access = by(snapshot.access, "profile_id"), reservations = by(snapshot.reservations, "normalized_email");
++  if (profiles.size !== 4 || access.size !== 4 || reservations.size !== 4) throw new Error("Exactly four profile/access/reservation rows required.");
++  for (const expected of expectedAccountList()) {
++    const profile = profiles.get(expected.profileId), row = access.get(expected.profileId), reservation = reservations.get(expected.email);
++    if (!profile || profile.firebase_uid !== expected.profileId || String(profile.email).trim().toLowerCase() !== expected.email || profile.deletion_pending_at != null || profile.deleted_at != null) throw new Error("Profile mismatch: " + expected.qualification);
++    const expectedStatus = expected.qualification === "suspended" ? "revoked" : "active";
++    if (!row || row.account_type !== "customer" || row.status !== expectedStatus || row.onboarding_step !== "none" || row.restaurant_id != null || row.restaurant_role != null || row.authz_version !== expected.beforeVersion) throw new Error("Access before-state mismatch: " + expected.qualification);
++    if (!reservation || reservation.account_type !== "customer" || reservation.firebase_uid !== expected.profileId || reservation.profile_id !== expected.profileId || reservation.invitation_id != null) throw new Error("Reservation mismatch: " + expected.qualification);
++  }
++  const relationships = snapshot.identityRelationships;
++  if (!relationships || relationships.memberships !== 0 || relationships.platformRoles !== 0 || relationships.orders !== 0 || relationships.reviews !== 0 || relationships.pushTokens !== 0 || relationships.invitations !== 0 || relationships.provisioning !== 9 || relationships.existingAudits !== 4) throw new Error("Identity relationship boundary mismatch.");
++  if (snapshot.disposable?.addresses?.length !== 2 || snapshot.disposable?.favorites?.length !== 1 || snapshot.disposable?.preferences?.length !== 2) throw new Error("Exact disposable row set required.");
++  return true;
++}
++
++export function classifyState(snapshot) {
++  try { validateBeforeState(snapshot, { now: Date.parse(snapshot.capturedAt) }); return "BEFORE"; } catch {}
++  try { validateAfterState(snapshot); return "AFTER"; } catch {}
++  try { validateRecoveredState(snapshot); return "RECOVERED"; } catch {}
++  return "PARTIAL_OR_UNKNOWN";
++}
++
++export function validateAfterState(snapshot) {
++  if (snapshot.schemaVersion !== 1 || !["after", "reconciliation"].includes(snapshot.stage) || snapshot.runId !== ACCOUNT_PREPARATION.runId || snapshot.projectRef !== ACCOUNT_PREPARATION.supabaseProjectRef || snapshot.restaurantId !== ACCOUNT_PREPARATION.restaurantId) throw new Error("After-state binding mismatch.");
++  if (snapshot.earningsEnabled !== false || snapshot.restaurantSha256 !== ACCOUNT_PREPARATION.restaurantSha256) throw new Error("Protected Restaurant or capability changed.");
++  const access = by(snapshot.access, "profile_id"), reservations = by(snapshot.reservations, "normalized_email");
++  if (access.size !== 4 || reservations.size !== 4) throw new Error("After-state row cardinality mismatch.");
++  for (const expected of expectedAccountList()) {
++    const row = access.get(expected.profileId), reservation = reservations.get(expected.email);
++    if (!row || row.account_type !== "restaurant" || row.status !== expected.status || row.onboarding_step !== expected.onboardingStep || row.restaurant_id !== ACCOUNT_PREPARATION.restaurantId || row.restaurant_role !== expected.role || row.authz_version !== expected.afterVersion || row.revoked_at != null) throw new Error("Prepared access mismatch: " + expected.qualification);
++    if (!reservation || reservation.account_type !== "restaurant" || reservation.firebase_uid !== expected.profileId || reservation.profile_id !== expected.profileId || reservation.invitation_id != null) throw new Error("Prepared reservation mismatch: " + expected.qualification);
++  }
++  if (snapshot.identityRelationships?.memberships !== 0 || snapshot.identityRelationships?.platformRoles !== 0 || snapshot.identityRelationships?.orders !== 0 || snapshot.identityRelationships?.reviews !== 0 || snapshot.identityRelationships?.pushTokens !== 0 || snapshot.identityRelationships?.invitations !== 0 || snapshot.identityRelationships?.provisioning !== 9 || snapshot.identityRelationships?.existingAudits !== 4) throw new Error("Historical or authorization relationships changed.");
++  if (snapshot.disposable?.addresses?.length !== 0 || snapshot.disposable?.favorites?.length !== 0 || snapshot.disposable?.preferences?.length !== 0) throw new Error("Disposable rows remain after preparation.");
++  exactKeys(snapshot.restaurantCounts, Object.keys(ACCOUNT_PREPARATION.protectedCounts), "Prepared Restaurant counts");
++  if (snapshot.reclassificationAuditCount !== 4 || Object.entries(ACCOUNT_PREPARATION.protectedCounts).some(([name, count]) => snapshot.restaurantCounts[name] !== count)) throw new Error("Audit or Restaurant boundary mismatch.");
++  return true;
++}
++
++export function validateRecoveredState(snapshot) {
++  if (snapshot.schemaVersion !== 1 || !["recovered", "reconciliation"].includes(snapshot.stage) || snapshot.runId !== ACCOUNT_PREPARATION.runId || snapshot.restaurantSha256 !== ACCOUNT_PREPARATION.restaurantSha256 || snapshot.earningsEnabled !== false) throw new Error("Recovered-state binding mismatch.");
++  const access = by(snapshot.access, "profile_id"), reservations = by(snapshot.reservations, "normalized_email");
++  for (const expected of expectedAccountList()) {
++    const row = access.get(expected.profileId), reservation = reservations.get(expected.email);
++    const originalStatus = expected.qualification === "suspended" ? "revoked" : "active";
++    if (!row || row.account_type !== "customer" || row.status !== originalStatus || row.authz_version !== expected.afterVersion + 1 || row.restaurant_id != null || row.restaurant_role != null) throw new Error("Recovered access mismatch: " + expected.qualification);
++    if (!reservation || reservation.account_type !== "customer" || reservation.firebase_uid !== expected.profileId || reservation.profile_id !== expected.profileId) throw new Error("Recovered reservation mismatch: " + expected.qualification);
++  }
++  if (snapshot.disposable?.addresses?.length !== 2 || snapshot.disposable?.favorites?.length !== 1 || snapshot.disposable?.preferences?.length !== 2 || snapshot.reclassificationAuditCount !== 4 || snapshot.recoveryAuditCount !== 4) throw new Error("Recovery rows or audit history mismatch.");
++  exactKeys(snapshot.restaurantCounts, Object.keys(ACCOUNT_PREPARATION.protectedCounts), "Recovered Restaurant counts");
++  if (Object.entries(ACCOUNT_PREPARATION.protectedCounts).some(([name, count]) => snapshot.restaurantCounts[name] !== count)) throw new Error("Restaurant relationships changed during recovery.");
++  return true;
++}
++
++const q = value => "'" + String(value).replaceAll("'", "''") + "'";
++const ids = () => Object.values(ACCOUNT_PREPARATION.accounts).map(value => q(value.profileId)).join(",");
++const emails = () => Object.values(ACCOUNT_PREPARATION.accounts).map(value => q(value.email)).join(",");
++
++export function buildPreparationSql(snapshotSha256, authoritySha256) {
++  if (!/^[a-f0-9]{64}$/.test(snapshotSha256) || !/^[a-f0-9]{64}$/.test(authoritySha256)) throw new Error("Reviewed snapshot and authority digests required.");
++  const values = expectedAccountList().map(a => `(${q(a.profileId)},${q(a.email)},${q(a.status)}::private.account_status,${q(a.onboardingStep)}::private.account_onboarding_step,${q(a.role)}::public.restaurant_role,${a.beforeVersion}::bigint,${a.afterVersion}::bigint)`).join(",\n");
++  return `begin;
++set local lock_timeout='5s'; set local statement_timeout='30s';
++select pg_advisory_xact_lock(hashtextextended('hungrie:${ACCOUNT_PREPARATION.runId}:restaurant-account-preparation',0));
++create temporary table expected_accounts(profile_id,email,status,onboarding_step,restaurant_role,before_version,after_version) on commit drop as values
++${values};
++create temporary table expected_hashes(kind,identity,digest) on commit drop as values
++${Object.entries(ACCOUNT_PREPARATION.rowHashes.profiles).map(([identity,digest]) => `('profile',${q(identity)},${q(digest)})`).join(",")},
++${Object.entries(ACCOUNT_PREPARATION.rowHashes.access).map(([identity,digest]) => `('access',${q(identity)},${q(digest)})`).join(",")},
++${Object.entries(ACCOUNT_PREPARATION.rowHashes.reservations).map(([identity,digest]) => `('reservation',${q(identity)},${q(digest)})`).join(",")},
++${Object.entries(ACCOUNT_PREPARATION.rowHashes.disposable).map(([identity,digest]) => `('disposable',${q(identity)},${q(digest)})`).join(",")},
++('restaurant',${q(ACCOUNT_PREPARATION.restaurantId)},${q(ACCOUNT_PREPARATION.restaurantSha256)});
++select id from public.restaurants where id=${q(ACCOUNT_PREPARATION.restaurantId)} for update;
++select id from public.profiles where id in(${ids()}) order by id for update;
++select profile_id from private.account_access where profile_id in(${ids()}) order by profile_id for update;
++select normalized_email from private.account_email_reservations where normalized_email in(${emails()}) order by normalized_email for update;
++select id from public.addresses where id in('zeQ0xgA79Up5XTNs-i_Dg','7KnWuexTChn4F7o9hMtzH') order by id for update;
++select profile_id,restaurant_id from public.favorites where profile_id='TBaq9HQIL9OBwLFP3MKchi3rpSA2' and restaurant_id='lombard-kitchen' for update;
++select profile_id from private.notification_preferences where profile_id in('v9kzlLATn9fQxJ6oPTUjxTDj8MJ3','TBaq9HQIL9OBwLFP3MKchi3rpSA2') order by profile_id for update;
++create temporary table before_access on commit drop as select * from private.account_access where profile_id in(${ids()});
++do $prepare$ declare n integer; begin
++ if (select count(*) from public.profiles p join expected_accounts e on e.profile_id=p.id and e.profile_id=p.firebase_uid and e.email=lower(btrim(p.email)) where p.deletion_pending_at is null and p.deleted_at is null)<>4 then raise exception 'PROFILE_BOUNDARY'; end if;
++ if (select count(*) from before_access b join expected_accounts e using(profile_id) where b.account_type='customer' and b.status=case when e.status='suspended' then 'revoked'::private.account_status else 'active'::private.account_status end and b.onboarding_step='none' and b.restaurant_id is null and b.restaurant_role is null and b.authz_version=e.before_version)<>4 then raise exception 'ACCESS_BOUNDARY'; end if;
++ if (select count(*) from private.account_email_reservations r join expected_accounts e on e.email=r.normalized_email and e.profile_id=r.profile_id and e.profile_id=r.firebase_uid where r.account_type='customer' and r.invitation_id is null)<>4 then raise exception 'RESERVATION_BOUNDARY'; end if;
++ if (select count(*) from public.profiles p join expected_hashes h on h.kind='profile' and h.identity=p.id and h.digest=encode(extensions.digest(to_jsonb(p)::text,'sha256'),'hex'))<>4 then raise exception 'PROFILE_HASH_BOUNDARY'; end if;
++ if (select count(*) from before_access a join expected_hashes h on h.kind='access' and h.identity=a.profile_id and h.digest=encode(extensions.digest(to_jsonb(a)::text,'sha256'),'hex'))<>4 then raise exception 'ACCESS_HASH_BOUNDARY'; end if;
++ if (select count(*) from private.account_email_reservations r join expected_hashes h on h.kind='reservation' and h.identity=r.normalized_email and h.digest=encode(extensions.digest(to_jsonb(r)::text,'sha256'),'hex'))<>4 then raise exception 'RESERVATION_HASH_BOUNDARY'; end if;
++ if not exists(select 1 from public.addresses d join expected_hashes h on h.kind='disposable' and h.identity='address:'||d.id and h.digest=encode(extensions.digest(to_jsonb(d)::text,'sha256'),'hex') where d.id='zeQ0xgA79Up5XTNs-i_Dg') or not exists(select 1 from public.addresses d join expected_hashes h on h.kind='disposable' and h.identity='address:'||d.id and h.digest=encode(extensions.digest(to_jsonb(d)::text,'sha256'),'hex') where d.id='7KnWuexTChn4F7o9hMtzH') or not exists(select 1 from public.favorites f join expected_hashes h on h.kind='disposable' and h.identity='favorite:'||f.profile_id||':'||f.restaurant_id and h.digest=encode(extensions.digest(to_jsonb(f)::text,'sha256'),'hex') where f.profile_id='TBaq9HQIL9OBwLFP3MKchi3rpSA2' and f.restaurant_id='lombard-kitchen') or (select count(*) from private.notification_preferences pref join expected_hashes h on h.kind='disposable' and h.identity='preference:'||pref.profile_id and h.digest=encode(extensions.digest(to_jsonb(pref)::text,'sha256'),'hex') where pref.profile_id in('v9kzlLATn9fQxJ6oPTUjxTDj8MJ3','TBaq9HQIL9OBwLFP3MKchi3rpSA2'))<>2 then raise exception 'DISPOSABLE_HASH_BOUNDARY'; end if;
++ if exists(select 1 from private.restaurant_members where profile_id in(${ids()})) or exists(select 1 from private.user_roles where profile_id in(${ids()})) then raise exception 'AUTHORIZATION_OVERLAP'; end if;
++ if exists(select 1 from public.orders where profile_id in(${ids()}) or courier_profile_id in(${ids()})) or exists(select 1 from public.order_reviews where profile_id in(${ids()})) or exists(select 1 from public.product_reviews where profile_id in(${ids()})) or exists(select 1 from private.push_tokens where profile_id in(${ids()})) then raise exception 'UNEXPECTED_DEPENDENCY'; end if;
++ if (select count(*) from private.account_provisioning_operations where target_profile_id in(${ids()}))<>9 or (select count(*) from private.audit_log where actor_profile_id in(${ids()}))<>4 or (select count(*) from private.account_invitations where normalized_email in(${emails()}))<>0 then raise exception 'HISTORY_BOUNDARY'; end if;
++ if (select count(*) from public.addresses where (id,profile_id) in(('zeQ0xgA79Up5XTNs-i_Dg','v9kzlLATn9fQxJ6oPTUjxTDj8MJ3'),('7KnWuexTChn4F7o9hMtzH','TBaq9HQIL9OBwLFP3MKchi3rpSA2')))<>2 or (select count(*) from public.favorites where profile_id='TBaq9HQIL9OBwLFP3MKchi3rpSA2' and restaurant_id='lombard-kitchen')<>1 or (select count(*) from private.notification_preferences where profile_id in('v9kzlLATn9fQxJ6oPTUjxTDj8MJ3','TBaq9HQIL9OBwLFP3MKchi3rpSA2'))<>2 then raise exception 'DISPOSABLE_BOUNDARY'; end if;
++ if not exists(select 1 from public.restaurants r join expected_hashes h on h.kind='restaurant' and h.identity=r.id and h.digest=encode(extensions.digest(to_jsonb(r)::text,'sha256'),'hex') where r.id=${q(ACCOUNT_PREPARATION.restaurantId)} and r.lifecycle_status='active' and r.is_active and not r.accepting_orders) then raise exception 'RESTAURANT_BOUNDARY'; end if;
++ if (select count(*) from private.account_access where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)} and profile_id not in(${ids()}))<>2 or (select count(*) from public.orders where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>2 or (select count(*) from public.orders where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)} and status not in('delivered','canceled'))<>0 or (select count(*) from private.account_invitations where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>4 or (select count(*) from private.restaurant_operational_incidents where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>1 or (select count(*) from private.restaurant_commission_rules where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>1 or (select count(*) from public.order_reviews where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})+(select count(*) from public.product_reviews where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>0 or (select count(*) from public.categories where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})+(select count(*) from public.menu_items where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})+(select count(*) from public.menu_item_ingredients where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})+(select count(*) from public.menu_option_groups where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})+(select count(*) from public.menu_option_values where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>0 or (select count(*) from private.push_tokens where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>0 or (select count(*) from private.order_commission_terms where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>0 or (select count(*) from private.delivered_order_financial_snapshots where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>0 or (select count(*) from private.restaurant_financial_integrity_alerts where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>0 then raise exception 'RESTAURANT_RELATIONSHIP_BOUNDARY'; end if;
++ if not exists(select 1 from private.restaurant_earnings_capabilities where capability='restaurant_earnings_v1' and enabled=false) then raise exception 'EARNINGS_BOUNDARY'; end if;
++ delete from public.addresses where (id,profile_id) in(('zeQ0xgA79Up5XTNs-i_Dg','v9kzlLATn9fQxJ6oPTUjxTDj8MJ3'),('7KnWuexTChn4F7o9hMtzH','TBaq9HQIL9OBwLFP3MKchi3rpSA2')); get diagnostics n=row_count; if n<>2 then raise exception 'ADDRESS_COUNT'; end if;
++ delete from public.favorites where profile_id='TBaq9HQIL9OBwLFP3MKchi3rpSA2' and restaurant_id='lombard-kitchen'; get diagnostics n=row_count; if n<>1 then raise exception 'FAVORITE_COUNT'; end if;
++ delete from private.notification_preferences where profile_id in('v9kzlLATn9fQxJ6oPTUjxTDj8MJ3','TBaq9HQIL9OBwLFP3MKchi3rpSA2'); get diagnostics n=row_count; if n<>2 then raise exception 'PREFERENCE_COUNT'; end if;
++ update private.account_email_reservations set account_type='restaurant',updated_at=transaction_timestamp() where normalized_email in(${emails()}) and account_type='customer' and invitation_id is null; get diagnostics n=row_count; if n<>4 then raise exception 'RESERVATION_COUNT'; end if;
++ delete from private.account_access where profile_id in(${ids()}); get diagnostics n=row_count; if n<>4 then raise exception 'ACCESS_DELETE_COUNT'; end if;
++ insert into private.account_access(profile_id,account_type,status,onboarding_step,restaurant_id,restaurant_role,status_reason_code,created_by_profile_id,authz_version,activated_at,suspended_at,revoked_at,created_at,updated_at)
++ select b.profile_id,'restaurant',e.status,e.onboarding_step,${q(ACCOUNT_PREPARATION.restaurantId)},e.restaurant_role,case when e.status='suspended' then 'ruip6ad_diagnostic_suspension' else 'ruip6ad_account_preparation' end,b.created_by_profile_id,e.after_version,case when e.status='pending' then null else transaction_timestamp() end,case when e.status='suspended' then transaction_timestamp() else null end,null,b.created_at,transaction_timestamp() from before_access b join expected_accounts e using(profile_id);
++ get diagnostics n=row_count; if n<>4 then raise exception 'ACCESS_INSERT_COUNT'; end if;
++ perform private.write_audit(null,'qualification.restaurant_identity_reclassified','profile',e.profile_id,jsonb_build_object('run_id',${q(ACCOUNT_PREPARATION.runId)},'restaurant_id',${q(ACCOUNT_PREPARATION.restaurantId)},'from_account_type','customer','from_status',b.status,'to_account_type','restaurant','to_status',e.status,'restaurant_role',e.restaurant_role,'snapshot_sha256',${q(snapshotSha256)},'authority_sha256',${q(authoritySha256)})) from expected_accounts e join before_access b using(profile_id);
++ if (select count(*) from private.account_access a join expected_accounts e using(profile_id) where a.account_type='restaurant' and a.status=e.status and a.onboarding_step=e.onboarding_step and a.restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)} and a.restaurant_role=e.restaurant_role and a.authz_version=e.after_version and a.admin_role is null and a.revoked_at is null)<>4 then raise exception 'INTERNAL_ACCESS_POSTCONDITION'; end if;
++ if (select count(*) from private.account_email_reservations r join expected_accounts e on e.email=r.normalized_email and e.profile_id=r.profile_id and e.profile_id=r.firebase_uid where r.account_type='restaurant' and r.invitation_id is null)<>4 then raise exception 'INTERNAL_RESERVATION_POSTCONDITION'; end if;
++ if (select count(*) from public.profiles p join expected_hashes h on h.kind='profile' and h.identity=p.id and h.digest=encode(extensions.digest(to_jsonb(p)::text,'sha256'),'hex'))<>4 then raise exception 'INTERNAL_PROFILE_POSTCONDITION'; end if;
++ if not exists(select 1 from public.restaurants r join expected_hashes h on h.kind='restaurant' and h.identity=r.id and h.digest=encode(extensions.digest(to_jsonb(r)::text,'sha256'),'hex') where r.id=${q(ACCOUNT_PREPARATION.restaurantId)}) then raise exception 'INTERNAL_RESTAURANT_POSTCONDITION'; end if;
++ if exists(select 1 from private.restaurant_members where profile_id in(${ids()})) or exists(select 1 from private.user_roles where profile_id in(${ids()})) then raise exception 'INTERNAL_AUTHORIZATION_POSTCONDITION'; end if;
++ if exists(select 1 from public.orders where profile_id in(${ids()}) or courier_profile_id in(${ids()})) or exists(select 1 from public.order_reviews where profile_id in(${ids()})) or exists(select 1 from public.product_reviews where profile_id in(${ids()})) or exists(select 1 from private.push_tokens where profile_id in(${ids()})) or exists(select 1 from private.account_invitations where normalized_email in(${emails()})) then raise exception 'INTERNAL_DEPENDENCY_POSTCONDITION'; end if;
++ if (select count(*) from private.account_provisioning_operations where target_profile_id in(${ids()}))<>9 or (select count(*) from private.audit_log where actor_profile_id in(${ids()}))<>4 then raise exception 'INTERNAL_HISTORY_POSTCONDITION'; end if;
++ if (select count(*) from private.account_access where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)} and profile_id not in(${ids()}))<>2 or (select count(*) from public.orders where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>2 or (select count(*) from public.orders where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)} and status not in('delivered','canceled'))<>0 or (select count(*) from private.account_invitations where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>4 or (select count(*) from private.restaurant_operational_incidents where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>1 or (select count(*) from private.restaurant_commission_rules where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>1 or (select count(*) from public.order_reviews where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})+(select count(*) from public.product_reviews where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>0 or (select count(*) from public.categories where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})+(select count(*) from public.menu_items where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})+(select count(*) from public.menu_item_ingredients where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})+(select count(*) from public.menu_option_groups where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})+(select count(*) from public.menu_option_values where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>0 or (select count(*) from private.push_tokens where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>0 or (select count(*) from private.order_commission_terms where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>0 or (select count(*) from private.delivered_order_financial_snapshots where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>0 or (select count(*) from private.restaurant_financial_integrity_alerts where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>0 then raise exception 'INTERNAL_RESTAURANT_RELATIONSHIP_POSTCONDITION'; end if;
++ if not exists(select 1 from private.restaurant_earnings_capabilities where capability='restaurant_earnings_v1' and enabled=false) then raise exception 'INTERNAL_EARNINGS_POSTCONDITION'; end if;
++ if exists(select 1 from public.addresses where id in('zeQ0xgA79Up5XTNs-i_Dg','7KnWuexTChn4F7o9hMtzH')) or exists(select 1 from public.favorites where profile_id='TBaq9HQIL9OBwLFP3MKchi3rpSA2' and restaurant_id='lombard-kitchen') or exists(select 1 from private.notification_preferences where profile_id in('v9kzlLATn9fQxJ6oPTUjxTDj8MJ3','TBaq9HQIL9OBwLFP3MKchi3rpSA2')) then raise exception 'INTERNAL_DISPOSABLE_POSTCONDITION'; end if;
++ if (select count(*) from private.audit_log where action='qualification.restaurant_identity_reclassified' and metadata->>'run_id'=${q(ACCOUNT_PREPARATION.runId)} and target_id in(${ids()}))<>4 then raise exception 'INTERNAL_AUDIT_POSTCONDITION'; end if;
++end $prepare$;
++commit;`;
++}
++
++export function buildRecoverySql(before, authoritySha256) {
++  validateBeforeState(before, { now: Date.parse(before.capturedAt) });
++  if (!/^[a-f0-9]{64}$/.test(authoritySha256)) throw new Error("Recovery authority digest required.");
++  const row = name => ACCOUNT_PREPARATION.accounts[name];
++  const accessRows = expectedAccountList().map(a => {
++    const original = before.access.find(value => value.profile_id === a.profileId);
++    return `(${q(a.profileId)},${q(a.email)},${q(a.qualification === "suspended" ? "revoked" : "active")}::private.account_status,${a.afterVersion + 1}::bigint,${q(original.created_at)}::timestamptz,${original.activated_at ? q(original.activated_at) + "::timestamptz" : "null::timestamptz"},${original.revoked_at ? q(original.revoked_at) + "::timestamptz" : "null::timestamptz"},${original.status_reason_code == null ? "null::text" : q(original.status_reason_code)})`;
++  }).join(",\n");
++  const pendingAddress = before.disposable.addresses.find(value => value.id === "zeQ0xgA79Up5XTNs-i_Dg"), suspendedAddress = before.disposable.addresses.find(value => value.id === "7KnWuexTChn4F7o9hMtzH");
++  const addressValue = a => `(${q(a.id)},${q(a.profile_id)},${q(a.label)},${q(a.line1)},${a.block == null ? "null" : q(a.block)},${a.room == null ? "null" : q(a.room)},${q(a.city)},${q(a.country)},${a.is_default},${q(a.created_at)}::timestamptz,${q(a.updated_at)}::timestamptz)`;
++  return `begin;
++set local lock_timeout='5s'; set local statement_timeout='30s';
++select pg_advisory_xact_lock(hashtextextended('hungrie:${ACCOUNT_PREPARATION.runId}:restaurant-account-preparation',0));
++create temporary table original_accounts(profile_id,email,status,recovery_version,created_at,activated_at,revoked_at,status_reason_code) on commit drop as values
++${accessRows};
++select id from public.restaurants where id=${q(ACCOUNT_PREPARATION.restaurantId)} for update;
++select id from public.profiles where id in(${ids()}) order by id for update;
++select profile_id from private.account_access where profile_id in(${ids()}) order by profile_id for update;
++select normalized_email from private.account_email_reservations where normalized_email in(${emails()}) order by normalized_email for update;
++do $recover$ declare n integer; begin
++ if (select count(*) from private.account_access a join original_accounts o using(profile_id) where a.account_type='restaurant' and a.restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)} and a.authz_version=o.recovery_version-1)<>4 then raise exception 'PREPARED_STATE_REQUIRED'; end if;
++ if (select count(*) from private.audit_log where action='qualification.restaurant_identity_reclassified' and metadata->>'run_id'=${q(ACCOUNT_PREPARATION.runId)} and target_id in(${ids()}))<>4 then raise exception 'PREPARATION_AUDIT_REQUIRED'; end if;
++ if exists(select 1 from public.addresses where id in('zeQ0xgA79Up5XTNs-i_Dg','7KnWuexTChn4F7o9hMtzH')) or exists(select 1 from public.favorites where profile_id=${q(row("suspended").profileId)} and restaurant_id='lombard-kitchen') or exists(select 1 from private.notification_preferences where profile_id in(${q(row("pending").profileId)},${q(row("suspended").profileId)})) then raise exception 'RECOVERY_TARGET_OCCUPIED'; end if;
++ delete from private.account_access where profile_id in(${ids()}); get diagnostics n=row_count; if n<>4 then raise exception 'RECOVERY_ACCESS_DELETE_COUNT'; end if;
++ insert into private.account_access(profile_id,account_type,status,onboarding_step,status_reason_code,authz_version,activated_at,suspended_at,revoked_at,created_at,updated_at)
++ select profile_id,'customer',status,'none',status_reason_code,recovery_version,activated_at,null,revoked_at,created_at,transaction_timestamp() from original_accounts; get diagnostics n=row_count; if n<>4 then raise exception 'RECOVERY_ACCESS_INSERT_COUNT'; end if;
++ update private.account_email_reservations set account_type='customer',updated_at=transaction_timestamp() where normalized_email in(${emails()}) and account_type='restaurant' and invitation_id is null; get diagnostics n=row_count; if n<>4 then raise exception 'RECOVERY_RESERVATION_COUNT'; end if;
++ insert into public.addresses(id,profile_id,label,line1,block,room,city,country,is_default,created_at,updated_at) values ${addressValue(pendingAddress)},${addressValue(suspendedAddress)}; get diagnostics n=row_count; if n<>2 then raise exception 'RECOVERY_ADDRESS_COUNT'; end if;
++ insert into public.favorites(profile_id,restaurant_id,created_at) values(${q(row("suspended").profileId)},'lombard-kitchen',${q(before.disposable.favorites[0].created_at)}::timestamptz); get diagnostics n=row_count; if n<>1 then raise exception 'RECOVERY_FAVORITE_COUNT'; end if;
++ insert into private.notification_preferences(profile_id,order_status_enabled,restaurant_orders_enabled,review_replies_enabled,created_at,updated_at) values ${before.disposable.preferences.map(p => `(${q(p.profile_id)},${p.order_status_enabled},${p.restaurant_orders_enabled},${p.review_replies_enabled},${q(p.created_at)}::timestamptz,${q(p.updated_at)}::timestamptz)`).join(",")}; get diagnostics n=row_count; if n<>2 then raise exception 'RECOVERY_PREFERENCE_COUNT'; end if;
++ perform private.write_audit(null,'qualification.restaurant_identity_reclassification_recovered','profile',o.profile_id,jsonb_build_object('run_id',${q(ACCOUNT_PREPARATION.runId)},'restaurant_id',${q(ACCOUNT_PREPARATION.restaurantId)},'authority_sha256',${q(authoritySha256)})) from original_accounts o;
++ if (select count(*) from private.account_access a join original_accounts o using(profile_id) where a.account_type='customer' and a.status=o.status and a.authz_version=o.recovery_version and a.restaurant_id is null and a.restaurant_role is null)<>4 then raise exception 'INTERNAL_RECOVERY_ACCESS'; end if;
++ if (select count(*) from private.account_email_reservations r join original_accounts o on o.email=r.normalized_email and o.profile_id=r.profile_id and o.profile_id=r.firebase_uid where r.account_type='customer' and r.invitation_id is null)<>4 then raise exception 'INTERNAL_RECOVERY_RESERVATION'; end if;
++ if (select count(*) from public.addresses where id in('zeQ0xgA79Up5XTNs-i_Dg','7KnWuexTChn4F7o9hMtzH'))<>2 or (select count(*) from public.favorites where profile_id='TBaq9HQIL9OBwLFP3MKchi3rpSA2' and restaurant_id='lombard-kitchen')<>1 or (select count(*) from private.notification_preferences where profile_id in('v9kzlLATn9fQxJ6oPTUjxTDj8MJ3','TBaq9HQIL9OBwLFP3MKchi3rpSA2'))<>2 then raise exception 'INTERNAL_RECOVERY_DISPOSABLE'; end if;
++ if exists(select 1 from private.restaurant_members where profile_id in(${ids()})) or exists(select 1 from private.user_roles where profile_id in(${ids()})) or (select count(*) from private.account_provisioning_operations where target_profile_id in(${ids()}))<>9 or (select count(*) from private.audit_log where actor_profile_id in(${ids()}))<>4 then raise exception 'INTERNAL_RECOVERY_BOUNDARY'; end if;
++ if not exists(select 1 from private.restaurant_earnings_capabilities where capability='restaurant_earnings_v1' and enabled=false) then raise exception 'INTERNAL_RECOVERY_EARNINGS'; end if;
++ if (select count(*) from private.audit_log where action='qualification.restaurant_identity_reclassification_recovered' and metadata->>'run_id'=${q(ACCOUNT_PREPARATION.runId)} and target_id in(${ids()}))<>4 then raise exception 'INTERNAL_RECOVERY_AUDIT'; end if;
++end $recover$;
++commit;`;
++}
++
++function evidencePaths(root) {
++  const directory = path.join(root, ACCOUNT_PREPARATION.evidenceRoot);
++  return { directory, attempt: path.join(directory, "preparation-attempt.json"), authority: path.join(directory, "preparation-authority.json"), progress: path.join(directory, "preflight-progress.json"), before: path.join(directory, "before-state.json"), beforeHash: path.join(directory, "before-state.sha256"), result: path.join(directory, "preparation-result.json"), post: path.join(directory, "postcondition-report.json"), reconciliation: path.join(directory, "reconciliation-result.json"), recoveryAttempt: path.join(directory, "recovery-attempt.json"), recoveryResult: path.join(directory, "recovery-result.json") };
++}
++
++const persistTerminal = (file, value, io) => atomicReplace(file, { ...value, evidenceSha256: sha256(Buffer.from(canonical(value))) }, io);
++
++export async function runPreparation({ root, authority, accounts, provider, action = "prepare", confirm, now = () => Date.now(), io = fs, gitHead = () => execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim() }) {
++  validateAuthority(authority, { now: now() });
++  if (sha256(io.readFileSync(path.join(root, ACCOUNT_PREPARATION.planPath))) !== ACCOUNT_PREPARATION.planSha256) throw new Error("Reviewed preparation plan changed.");
++  if (authority.operatorCommit !== gitHead()) throw new Error("Audited operator checkpoint mismatch.");
++  const paths = evidencePaths(root), authoritySha256 = sha256(Buffer.from(canonical(authority)));
++  if (action === "prepare") {
++    if (confirm !== `staging:restaurant-account-preparation:prepare:${ACCOUNT_PREPARATION.runId}`) throw new Error("Preparation confirmation mismatch.");
++    const accountValidation = validateAccountsFile(accounts);
++    atomicWriteExclusive(paths.attempt, { schemaVersion: 1, runId: ACCOUNT_PREPARATION.runId, action, state: "started", startedAt: new Date(now()).toISOString(), authoritySha256, planSha256: ACCOUNT_PREPARATION.planSha256 }, io);
++    atomicWriteExclusive(paths.authority, authority, io);
++    let transactionOutcome = "not_started";
++    try {
++      const firebase = await provider.readFirebase();
++      atomicReplace(paths.progress, { schemaVersion: 1, runId: ACCOUNT_PREPARATION.runId, stage: "firebase_observed", recordedAt: new Date(now()).toISOString(), firebase, credentialValuesPersisted: false }, io);
++      const database = await provider.readDatabase("before");
++      atomicReplace(paths.progress, { schemaVersion: 1, runId: ACCOUNT_PREPARATION.runId, stage: "database_observed", recordedAt: new Date(now()).toISOString(), firebase, database, credentialValuesPersisted: false }, io);
++      const before = { ...database, firebase, authoritySha256, accountValidation, capturedAt: database.capturedAt || new Date(now()).toISOString() };
++      atomicWriteExclusive(paths.before, before, io);
++      atomicWriteExclusive(paths.beforeHash, Buffer.from(sha256(io.readFileSync(paths.before)) + "\n"), io);
++      validateFirebaseObservation(firebase); validateBeforeState(before, { now: now() });
++      const beforeSha256 = sha256(io.readFileSync(paths.before));
++      try { await provider.executePreparation(buildPreparationSql(beforeSha256, authoritySha256)); transactionOutcome = "acknowledged"; }
++      catch (error) { transactionOutcome = error?.code === "UNCERTAIN_RESPONSE" ? "uncertain" : "rolled_back_or_rejected"; throw error; }
++      const after = await provider.readDatabase("after");
++      atomicWriteExclusive(paths.post, after, io);
++      validateAfterState(after);
++      const result = { schemaVersion: 1, runId: ACCOUNT_PREPARATION.runId, action, disposition: "PASS", completedAt: new Date(now()).toISOString(), transactionOutcome, beforeStateSha256: beforeSha256, postconditionSha256: sha256(io.readFileSync(paths.post)), authoritySha256, credentialsPersisted: false };
++      persistTerminal(paths.result, result, io); return result;
++    } catch (error) {
++      let reconciliation = null;
++      try { const state = await provider.readDatabase("reconciliation"); reconciliation = { classification: classifyState(state), observation: state }; } catch (reconcileError) { reconciliation = { classification: "UNAVAILABLE", error: sanitizeError(reconcileError) }; }
++      const disposition = transactionOutcome === "uncertain" || reconciliation.classification === "PARTIAL_OR_UNKNOWN" || reconciliation.classification === "UNAVAILABLE" ? "BLOCKED" : "FAIL";
++      const result = { schemaVersion: 1, runId: ACCOUNT_PREPARATION.runId, action, disposition, completedAt: new Date(now()).toISOString(), transactionOutcome, error: sanitizeError(error), reconciliation, authoritySha256, credentialsPersisted: false };
++      persistTerminal(paths.result, result, io); return result;
++    }
++  }
++  if (action === "reconcile") {
++    if (confirm !== `staging:restaurant-account-preparation:reconcile:${ACCOUNT_PREPARATION.runId}`) throw new Error("Reconciliation confirmation mismatch.");
++    const state = await provider.readDatabase("reconciliation"), classification = classifyState(state);
++    const result = { schemaVersion: 1, runId: ACCOUNT_PREPARATION.runId, action, disposition: classification === "AFTER" ? "PASS" : classification === "BEFORE" || classification === "RECOVERED" ? "N/A" : "BLOCKED", classification, completedAt: new Date(now()).toISOString(), observation: state, authoritySha256 };
++    persistTerminal(paths.reconciliation, result, io); return result;
++  }
++  if (action === "recover") {
++    if (confirm !== `staging:restaurant-account-preparation:recover:${ACCOUNT_PREPARATION.runId}:${authoritySha256}`) throw new Error("Independent recovery confirmation mismatch.");
++    if (!io.existsSync(paths.before) || !io.existsSync(paths.beforeHash)) throw new Error("Protected before-state evidence required for recovery.");
++    const beforeBytes = io.readFileSync(paths.before), recorded = io.readFileSync(paths.beforeHash, "utf8").trim();
++    if (sha256(beforeBytes) !== recorded) throw new Error("Protected before-state evidence digest mismatch.");
++    const before = JSON.parse(beforeBytes);
++    atomicWriteExclusive(paths.recoveryAttempt, { schemaVersion: 1, runId: ACCOUNT_PREPARATION.runId, action, state: "started", startedAt: new Date(now()).toISOString(), authoritySha256, beforeStateSha256: recorded }, io);
++    let outcome = "not_started";
++    try {
++      const current = await provider.readDatabase("after"); validateAfterState(current);
++      try { await provider.executeRecovery(buildRecoverySql(before, authoritySha256)); outcome = "acknowledged"; }
++      catch (error) { outcome = error?.code === "UNCERTAIN_RESPONSE" ? "uncertain" : "rolled_back_or_rejected"; throw error; }
++      const recovered = await provider.readDatabase("recovered"); validateRecoveredState(recovered);
++      const result = { schemaVersion: 1, runId: ACCOUNT_PREPARATION.runId, action, disposition: "PASS", completedAt: new Date(now()).toISOString(), outcome, recoveredStateSha256: sha256(Buffer.from(canonical(recovered))), authoritySha256 };
++      persistTerminal(paths.recoveryResult, result, io); return result;
++    } catch (error) {
++      let reconciliation;
++      try { const state = await provider.readDatabase("reconciliation"); reconciliation = { classification: classifyState(state), observation: state }; } catch (readError) { reconciliation = { classification: "UNAVAILABLE", error: sanitizeError(readError) }; }
++      const result = { schemaVersion: 1, runId: ACCOUNT_PREPARATION.runId, action, disposition: reconciliation.classification === "RECOVERED" ? "PASS" : "BLOCKED", completedAt: new Date(now()).toISOString(), outcome, error: sanitizeError(error), reconciliation, authoritySha256 };
++      persistTerminal(paths.recoveryResult, result, io); return result;
++    }
++  }
++  throw new Error("Unsupported account-preparation action.");
++}
++
++export function createHostedProvider(root, fetchImpl = fetch) {
++  const registry = JSON.parse(fs.readFileSync(path.join(root, "secure/supabase-projects.local.json"), "utf8")), project = registry.projects?.staging;
++  if (project?.ref !== ACCOUNT_PREPARATION.supabaseProjectRef || project.ref === registry.projects?.development?.ref || project.ref === registry.projects?.production?.ref) throw new Error("Exact isolated Staging project required.");
++  const operator = JSON.parse(fs.readFileSync(path.join(root, "secure/phase7/operator-config.json"), "utf8"));
++  const credentialPath = path.resolve(operator.firebaseAdminCredentialPath || "");
++  if (!path.isAbsolute(credentialPath) || !fs.existsSync(credentialPath) || credentialPath.startsWith(root + path.sep)) throw new Error("External shared non-production Firebase credential required.");
++  const credential = JSON.parse(fs.readFileSync(credentialPath, "utf8"));
++  if (operator.firebaseProjectId !== ACCOUNT_PREPARATION.firebaseProjectId || credential.project_id !== ACCOUNT_PREPARATION.firebaseProjectId) throw new Error("Exact Firebase project required.");
++  const managementToken = fs.readFileSync(path.join(root, "secure/supabase-cli-hungrie/access-token"), "utf8").trim();
++  const migrationVersions = fs.readdirSync(path.join(root, "supabase/migrations")).filter(name => /^\d{14}_.+\.sql$/.test(name)).map(name => name.slice(0, 14)).sort();
++  const query = async sql => { const response = await fetchImpl(`https://api.supabase.com/v1/projects/${project.ref}/database/query`, { method: "POST", headers: { authorization: `Bearer ${managementToken}`, "content-type": "application/json" }, body: JSON.stringify({ query: sql }) }); if (!response.ok) { const error = new Error(`Staging database request failed (${response.status}); details withheld.`); if (response.status >= 500) error.code = "UNCERTAIN_RESPONSE"; throw error; } const result = await response.json(); if (!Array.isArray(result)) throw new Error("Malformed Staging response."); return result; };
++  const require = createRequire(import.meta.url), admin = require(path.join(root, "functions/node_modules/firebase-admin"));
++  return {
++    async readFirebase() {
++      const app = admin.initializeApp({ credential: admin.credential.cert(credential), projectId: ACCOUNT_PREPARATION.firebaseProjectId }, "restaurant-account-preparation-" + Date.now());
++      try { const users = []; for (const account of expectedAccountList()) { const u = await app.auth().getUserByEmail(account.email); users.push({ email: account.email, uid: u.uid, disabled: u.disabled, emailVerified: u.emailVerified, providers: u.providerData.map(p => p.providerId).sort() }); } return { runId: ACCOUNT_PREPARATION.runId, projectId: ACCOUNT_PREPARATION.firebaseProjectId, capturedAt: new Date().toISOString(), users }; } finally { await app.delete(); }
++    },
++    async readDatabase(stage) { const rows = await query(buildSnapshotSql(stage, migrationVersions)); if (rows.length !== 1 || !rows[0].snapshot) throw new Error("Complete database snapshot required."); return rows[0].snapshot; },
++    async executePreparation(sql) { return query(sql); },
++    async executeRecovery(sql) { return query(sql); },
++  };
++}
++
++export function buildSnapshotSql(stage, migrationVersions = ["20260924140000"]) {
++  if (!/^(before|after|recovered|reconciliation)$/.test(stage)) throw new Error("Unsupported snapshot stage.");
++  if (!Array.isArray(migrationVersions) || !migrationVersions.length || migrationVersions.some(version => !/^\d{14}$/.test(version))) throw new Error("Exact local migration inventory required.");
++  const migrationValues = migrationVersions.map(version => `(${q(version)})`).join(",");
++  return `begin transaction read only;
++with targets(profile_id,email) as (values ${expectedAccountList().map(a => `(${q(a.profileId)},${q(a.email)})`).join(",")}),
++profiles as (select p.* from public.profiles p join targets t on t.profile_id=p.id),
++restaurant as (select * from public.restaurants where id=${q(ACCOUNT_PREPARATION.restaurantId)}),
++snapshot as (select jsonb_build_object(
++ 'schemaVersion',1,'stage',${q(stage)},'runId',${q(ACCOUNT_PREPARATION.runId)},'projectRef',${q(ACCOUNT_PREPARATION.supabaseProjectRef)},'restaurantId',${q(ACCOUNT_PREPARATION.restaurantId)},'planSha256',${q(ACCOUNT_PREPARATION.planSha256)},'capturedAt',statement_timestamp(),
++ 'pendingMigrations',(select count(*) from (values ${migrationValues}) local(version) where not exists(select 1 from supabase_migrations.schema_migrations applied where applied.version=local.version)),
++ 'schemaContractValid',(
++   to_regclass('private.account_access') is not null and to_regclass('private.account_email_reservations') is not null
++   and to_regclass('private.restaurant_members_one_membership_per_profile_idx') is not null
++   and exists(select 1 from pg_trigger where tgrelid='private.account_access'::regclass and tgname='phase2_account_access_transition' and not tgisinternal)
++   and exists(select 1 from pg_constraint where conrelid='private.account_access'::regclass and conname='account_access_shape')
++   and exists(select 1 from pg_constraint where conrelid='private.account_access'::regclass and conname='account_access_active_shape')
++   and exists(select 1 from pg_constraint where conrelid='private.account_access'::regclass and conname='account_access_timestamps')
++   and to_regprocedure('private.write_audit(text,text,text,text,jsonb)') is not null),
++ 'earningsEnabled',(select enabled from private.restaurant_earnings_capabilities where capability='restaurant_earnings_v1'),
++ 'restaurant',(select to_jsonb(r) from restaurant r),'restaurantSha256',(select encode(extensions.digest(to_jsonb(r)::text,'sha256'),'hex') from restaurant r),
++ 'profiles',(select coalesce(jsonb_agg(to_jsonb(p) order by p.id),'[]') from profiles p),
++ 'access',(select coalesce(jsonb_agg(to_jsonb(a) order by a.profile_id),'[]') from private.account_access a where a.profile_id in(select profile_id from targets)),
++ 'reservations',(select coalesce(jsonb_agg(to_jsonb(e) order by e.normalized_email),'[]') from private.account_email_reservations e where e.profile_id in(select profile_id from targets) or e.normalized_email in(select email from targets)),
++ 'rowHashes',jsonb_build_object(
++   'profiles',(select coalesce(jsonb_object_agg(p.id,encode(extensions.digest(to_jsonb(p)::text,'sha256'),'hex')),'{}') from profiles p),
++   'access',(select coalesce(jsonb_object_agg(a.profile_id,encode(extensions.digest(to_jsonb(a)::text,'sha256'),'hex')),'{}') from private.account_access a where a.profile_id in(select profile_id from targets)),
++   'reservations',(select coalesce(jsonb_object_agg(e.normalized_email,encode(extensions.digest(to_jsonb(e)::text,'sha256'),'hex')),'{}') from private.account_email_reservations e where e.profile_id in(select profile_id from targets)),
++   'disposable',jsonb_build_object(
++    'address:zeQ0xgA79Up5XTNs-i_Dg',(select encode(extensions.digest(to_jsonb(d)::text,'sha256'),'hex') from public.addresses d where id='zeQ0xgA79Up5XTNs-i_Dg'),
++    'address:7KnWuexTChn4F7o9hMtzH',(select encode(extensions.digest(to_jsonb(d)::text,'sha256'),'hex') from public.addresses d where id='7KnWuexTChn4F7o9hMtzH'),
++    'favorite:TBaq9HQIL9OBwLFP3MKchi3rpSA2:lombard-kitchen',(select encode(extensions.digest(to_jsonb(f)::text,'sha256'),'hex') from public.favorites f where profile_id='TBaq9HQIL9OBwLFP3MKchi3rpSA2' and restaurant_id='lombard-kitchen'),
++    'preference:v9kzlLATn9fQxJ6oPTUjxTDj8MJ3',(select encode(extensions.digest(to_jsonb(n)::text,'sha256'),'hex') from private.notification_preferences n where profile_id='v9kzlLATn9fQxJ6oPTUjxTDj8MJ3'),
++    'preference:TBaq9HQIL9OBwLFP3MKchi3rpSA2',(select encode(extensions.digest(to_jsonb(n)::text,'sha256'),'hex') from private.notification_preferences n where profile_id='TBaq9HQIL9OBwLFP3MKchi3rpSA2'))),
++ 'disposable',jsonb_build_object(
++   'addresses',(select coalesce(jsonb_agg(to_jsonb(d) order by d.id),'[]') from public.addresses d where d.profile_id in(select profile_id from targets)),
++   'favorites',(select coalesce(jsonb_agg(to_jsonb(f) order by f.profile_id,f.restaurant_id),'[]') from public.favorites f where f.profile_id in(select profile_id from targets)),
++   'preferences',(select coalesce(jsonb_agg(to_jsonb(n) order by n.profile_id),'[]') from private.notification_preferences n where n.profile_id in(select profile_id from targets))),
++ 'identityRelationships',jsonb_build_object(
++   'memberships',(select count(*) from private.restaurant_members where profile_id in(select profile_id from targets)),
++   'platformRoles',(select count(*) from private.user_roles where profile_id in(select profile_id from targets)),
++   'orders',(select count(*) from public.orders where profile_id in(select profile_id from targets) or courier_profile_id in(select profile_id from targets)),
++   'reviews',(select (select count(*) from public.order_reviews where profile_id in(select profile_id from targets))+(select count(*) from public.product_reviews where profile_id in(select profile_id from targets))),
++   'pushTokens',(select count(*) from private.push_tokens where profile_id in(select profile_id from targets)),
++   'invitations',(select count(*) from private.account_invitations where normalized_email in(select email from targets)),
++   'provisioning',(select count(*) from private.account_provisioning_operations where target_profile_id in(select profile_id from targets)),
++   'existingAudits',(select count(*) from private.audit_log where actor_profile_id in(select profile_id from targets) and action<>'qualification.restaurant_identity_reclassified' and action<>'qualification.restaurant_identity_reclassification_recovered')),
++ 'restaurantCounts',jsonb_build_object(
++   'existingAccessAccounts',(select count(*) from private.account_access where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)} and profile_id not in(select profile_id from targets)),
++   'orders',(select count(*) from public.orders where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)}),'activeOrders',(select count(*) from public.orders where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)} and status not in('delivered','canceled')),
++   'invitations',(select count(*) from private.account_invitations where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)}),'incidents',(select count(*) from private.restaurant_operational_incidents where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)}),'commissionRules',(select count(*) from private.restaurant_commission_rules where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)}),
++   'reviews',(select (select count(*) from public.order_reviews where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})+(select count(*) from public.product_reviews where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})),
++   'menuRows',(select (select count(*) from public.categories where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})+(select count(*) from public.menu_items where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})+(select count(*) from public.menu_item_ingredients where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})+(select count(*) from public.menu_option_groups where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})+(select count(*) from public.menu_option_values where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})),
++   'pushTokens',(select count(*) from private.push_tokens where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)}),'commissionTerms',(select count(*) from private.order_commission_terms where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)}),'financialSnapshots',(select count(*) from private.delivered_order_financial_snapshots where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)}),'financialAlerts',(select count(*) from private.restaurant_financial_integrity_alerts where restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})),
++ 'reclassificationAuditCount',(select count(*) from private.audit_log where action='qualification.restaurant_identity_reclassified' and metadata->>'run_id'=${q(ACCOUNT_PREPARATION.runId)} and target_id in(select profile_id from targets)),
++ 'recoveryAuditCount',(select count(*) from private.audit_log where action='qualification.restaurant_identity_reclassification_recovered' and metadata->>'run_id'=${q(ACCOUNT_PREPARATION.runId)} and target_id in(select profile_id from targets))
++ ) snapshot)
++select snapshot from snapshot; rollback;`;
++}
++
++function parseArgs(argv) { const [action, ...rest] = argv; return { action, values: Object.fromEntries(rest.filter(v => v.startsWith("--") && v.includes("=")).map(v => { const i = v.indexOf("="); return [v.slice(2, i), v.slice(i + 1)]; })) }; }
++
++async function main(argv = process.argv.slice(2)) {
++  const { action, values } = parseArgs(argv), root = path.resolve(import.meta.dirname, "..");
++  if (!values.authority || !values.accounts || !values.confirm) throw new Error("Authority, accounts, and action confirmation are required.");
++  const authority = JSON.parse(fs.readFileSync(path.resolve(values.authority), "utf8"));
++  const accounts = validateAccountsFilePath(values.accounts, { root });
++  const result = await runPreparation({ root, authority, accounts, provider: createHostedProvider(root), action, confirm: values.confirm });
++  process.stdout.write(JSON.stringify({ disposition: result.disposition, action: result.action, runId: result.runId }) + "\n");
++  if (!["PASS", "N/A"].includes(result.disposition)) process.exitCode = 1;
++}
++
++if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch(error => { process.stderr.write(sanitizeError(error).message + "\n"); process.exitCode = 1; });
+diff --git a/scripts/test-restaurant-staging-account-preparation.mjs b/scripts/test-restaurant-staging-account-preparation.mjs
+new file mode 100644
+index 0000000..8278040
+--- /dev/null
++++ b/scripts/test-restaurant-staging-account-preparation.mjs
+@@ -0,0 +1,165 @@
++#!/usr/bin/env node
++import assert from "node:assert/strict";
++import fs from "node:fs";
++import os from "node:os";
++import path from "node:path";
++import test from "node:test";
++import {
++  ACCOUNT_PREPARATION,
++  atomicWriteExclusive,
++  buildPreparationSql,
++  buildRecoverySql,
++  buildSnapshotSql,
++  classifyState,
++  runPreparation,
++  sha256,
++  validateAccountsFile,
++  validateAccountsFilePath,
++  validateAfterState,
++  validateAuthority,
++  validateBeforeState,
++  validateFirebaseObservation,
++  validateRecoveredState,
++} from "./restaurant-staging-account-preparation.mjs";
++
++const fixedNow = Date.parse("2026-09-25T01:00:00.000Z");
++const clone = value => structuredClone(value);
++const accounts = Object.fromEntries(Object.entries(ACCOUNT_PREPARATION.accounts).map(([name, a]) => [name, { email: a.email, password: "Synthetic-local-only-password-" + name }]));
++const authorityText = "I authorize the reviewed Staging preparation and independent recovery. Firebase is read-only. Earnings remains disabled.";
++const authority = {
++  contractVersion: 1,
++  decision: "APPROVE_RESTAURANT_STAGING_ACCOUNT_PREPARATION",
++  approvedForHostedMutation: true,
++  environment: "staging",
++  runId: ACCOUNT_PREPARATION.runId,
++  diagnosticCheckpoint: ACCOUNT_PREPARATION.diagnosticCheckpoint,
++  operatorCommit: "a".repeat(40),
++  planSha256: ACCOUNT_PREPARATION.planSha256,
++  supabaseProjectRef: ACCOUNT_PREPARATION.supabaseProjectRef,
++  firebaseProjectId: ACCOUNT_PREPARATION.firebaseProjectId,
++  restaurantId: ACCOUNT_PREPARATION.restaurantId,
++  authorizedActions: ["prepare", "reconcile", "recover"],
++  authorizationText: authorityText,
++  authorizationTextSha256: sha256(Buffer.from(authorityText)),
++  issuedAt: "2026-09-25T00:55:00.000Z",
++  expiresAt: "2026-09-25T02:00:00.000Z",
++};
++
++const beforeAccess = Object.entries(ACCOUNT_PREPARATION.accounts).map(([qualification, a]) => ({
++  profile_id: a.profileId, account_type: "customer", status: qualification === "suspended" ? "revoked" : "active", onboarding_step: "none", restaurant_id: null, restaurant_role: null, admin_role: null, admin_mfa_enrolled_at: null, status_reason_code: qualification === "suspended" ? "Git burdan" : null, created_by_profile_id: null, authz_version: a.beforeVersion, activated_at: "2026-09-15T00:00:00.000Z", suspended_at: null, revoked_at: qualification === "suspended" ? "2026-09-15T01:00:00.000Z" : null, created_at: "2026-09-15T00:00:00.000Z", updated_at: "2026-09-15T00:00:00.000Z",
++}));
++const profiles = Object.values(ACCOUNT_PREPARATION.accounts).map(a => ({ id: a.profileId, firebase_uid: a.profileId, email: a.email, name: "Synthetic", deletion_pending_at: null, deleted_at: null }));
++const reservations = Object.values(ACCOUNT_PREPARATION.accounts).map(a => ({ normalized_email: a.email, account_type: "customer", firebase_uid: a.profileId, profile_id: a.profileId, invitation_id: null, created_at: "2026-09-15T00:00:00.000Z", updated_at: "2026-09-15T00:00:00.000Z" }));
++const addresses = [
++  { id: "zeQ0xgA79Up5XTNs-i_Dg", profile_id: ACCOUNT_PREPARATION.accounts.pending.profileId, label: "Pending", line1: "Synthetic", block: null, room: null, city: "Test", country: "TRNC", is_default: true, created_at: "2026-09-15T00:00:00.000Z", updated_at: "2026-09-15T00:00:00.000Z" },
++  { id: "7KnWuexTChn4F7o9hMtzH", profile_id: ACCOUNT_PREPARATION.accounts.suspended.profileId, label: "Suspended", line1: "Synthetic", block: null, room: null, city: "Test", country: "TRNC", is_default: true, created_at: "2026-09-15T00:00:00.000Z", updated_at: "2026-09-15T00:00:00.000Z" },
++];
++const favorites = [{ profile_id: ACCOUNT_PREPARATION.accounts.suspended.profileId, restaurant_id: "lombard-kitchen", created_at: "2026-09-15T00:00:00.000Z" }];
++const preferences = [ACCOUNT_PREPARATION.accounts.pending.profileId, ACCOUNT_PREPARATION.accounts.suspended.profileId].map(profile_id => ({ profile_id, order_status_enabled: true, restaurant_orders_enabled: true, review_replies_enabled: true, created_at: "2026-09-15T00:00:00.000Z", updated_at: "2026-09-15T00:00:00.000Z" }));
++
++function beforeState(stage = "before") {
++  return {
++    schemaVersion: 1, stage, runId: ACCOUNT_PREPARATION.runId, projectRef: ACCOUNT_PREPARATION.supabaseProjectRef, restaurantId: ACCOUNT_PREPARATION.restaurantId, planSha256: ACCOUNT_PREPARATION.planSha256, capturedAt: new Date(fixedNow).toISOString(), pendingMigrations: 0, schemaContractValid: true, earningsEnabled: false,
++    restaurant: { id: ACCOUNT_PREPARATION.restaurantId, lifecycle_status: "active", is_active: true, accepting_orders: false }, restaurantSha256: ACCOUNT_PREPARATION.restaurantSha256,
++    profiles: clone(profiles), access: clone(beforeAccess), reservations: clone(reservations), rowHashes: clone(ACCOUNT_PREPARATION.rowHashes),
++    disposable: { addresses: clone(addresses), favorites: clone(favorites), preferences: clone(preferences) },
++    identityRelationships: { memberships: 0, platformRoles: 0, orders: 0, reviews: 0, pushTokens: 0, invitations: 0, provisioning: 9, existingAudits: 4 },
++    restaurantCounts: clone(ACCOUNT_PREPARATION.protectedCounts), reclassificationAuditCount: 0, recoveryAuditCount: 0,
++  };
++}
++function afterState(stage = "after") {
++  const state = beforeState(stage);
++  state.access = Object.values(ACCOUNT_PREPARATION.accounts).map(a => ({ profile_id: a.profileId, account_type: "restaurant", status: a.status, onboarding_step: a.onboardingStep, restaurant_id: ACCOUNT_PREPARATION.restaurantId, restaurant_role: a.role, authz_version: a.afterVersion, admin_role: null, revoked_at: null }));
++  state.reservations = Object.values(ACCOUNT_PREPARATION.accounts).map(a => ({ normalized_email: a.email, account_type: "restaurant", firebase_uid: a.profileId, profile_id: a.profileId, invitation_id: null }));
++  state.disposable = { addresses: [], favorites: [], preferences: [] }; state.reclassificationAuditCount = 4;
++  return state;
++}
++function recoveredState(stage = "recovered") {
++  const state = beforeState(stage);
++  state.access = Object.entries(ACCOUNT_PREPARATION.accounts).map(([name, a]) => ({ profile_id: a.profileId, account_type: "customer", status: name === "suspended" ? "revoked" : "active", onboarding_step: "none", restaurant_id: null, restaurant_role: null, authz_version: a.afterVersion + 1 }));
++  state.reclassificationAuditCount = 4; state.recoveryAuditCount = 4;
++  return state;
++}
++function firebaseObservation() { return { runId: ACCOUNT_PREPARATION.runId, projectId: ACCOUNT_PREPARATION.firebaseProjectId, capturedAt: new Date(fixedNow).toISOString(), users: Object.values(ACCOUNT_PREPARATION.accounts).map(a => ({ email: a.email, uid: a.profileId, disabled: false, emailVerified: true, providers: ["password"] })) }; }
++function tempRoot() { const root = fs.mkdtempSync(path.join(os.tmpdir(), "restaurant-account-preparation-")); const plan = path.join(root, ACCOUNT_PREPARATION.planPath); fs.mkdirSync(path.dirname(plan), { recursive: true }); fs.copyFileSync(path.resolve(ACCOUNT_PREPARATION.planPath), plan); return root; }
++function mockProvider(options = {}) {
++  let state = clone(options.initial || beforeState()), prepared = false, recovered = false;
++  return {
++    calls: [],
++    async readFirebase() { this.calls.push("firebase"); if (options.firebaseError) throw options.firebaseError; return clone(options.firebase || firebaseObservation()); },
++    async readDatabase(stage) { this.calls.push("read:" + stage); if (options.readErrorStage === stage) throw new Error("synthetic read failure"); if (stage === "before") return clone(options.before || state); if (stage === "after" && options.afterOverride) return clone(options.afterOverride); if (stage === "recovered" && options.recoveredOverride) return clone(options.recoveredOverride); return clone(state); },
++    async executePreparation(sql) { this.calls.push("prepare"); assert.match(sql, /begin;/); if (options.prepareError) { if (options.applyBeforeError) { state = afterState("reconciliation"); prepared = true; } throw options.prepareError; } state = afterState("after"); prepared = true; return []; },
++    async executeRecovery(sql) { this.calls.push("recover"); assert.match(sql, /begin;/); if (options.recoveryError) { if (options.recoverBeforeError) { state = recoveredState("reconciliation"); recovered = true; } throw options.recoveryError; } state = recoveredState("recovered"); recovered = true; return []; },
++    get prepared() { return prepared; }, get recovered() { return recovered; },
++  };
++}
++const run = (root, provider, overrides = {}) => runPreparation({ root, authority: clone(authority), accounts: clone(accounts), provider, action: "prepare", confirm: `staging:restaurant-account-preparation:prepare:${ACCOUNT_PREPARATION.runId}`, now: () => fixedNow, gitHead: () => authority.operatorCommit, ...overrides });
++
++test("authority contract accepts exact reviewed scope", () => assert.equal(validateAuthority(clone(authority), { now: fixedNow }).runId, ACCOUNT_PREPARATION.runId));
++for (const [name, change] of [
++  ["wrong project", a => a.supabaseProjectRef = "development"], ["wrong restaurant", a => a.restaurantId = "other"], ["wrong plan", a => a.planSha256 = "0".repeat(64)], ["missing hosted decision", a => a.approvedForHostedMutation = false], ["expired window", a => a.expiresAt = "2026-09-25T00:59:00.000Z"], ["action expansion", a => a.authorizedActions.push("delete")],
++]) test("authority rejects " + name, () => { const a = clone(authority); change(a); assert.throws(() => validateAuthority(a, { now: fixedNow })); });
++
++test("accounts file accepts exact four-role schema without returning secrets", () => assert.deepEqual(validateAccountsFile(clone(accounts)), { passed: true, roles: ["pending", "suspended", "owner", "manager"], credentialValuesPersisted: false }));
++test("accounts file rejects missing role", () => { const a = clone(accounts); delete a.pending; assert.throws(() => validateAccountsFile(a)); });
++test("accounts file rejects extra field", () => { const a = clone(accounts); a.owner.token = "synthetic"; assert.throws(() => validateAccountsFile(a)); });
++test("accounts file rejects wrong email", () => { const a = clone(accounts); a.manager.email = "wrong@example.invalid"; assert.throws(() => validateAccountsFile(a)); });
++test("accounts file rejects placeholder password", () => { const a = clone(accounts); a.pending.password = "<existing secret>"; assert.throws(() => validateAccountsFile(a)); });
++test("accounts path requires exact secure path, mode 0600, and Git exclusion", t => {
++  const root = tempRoot(); t.after(() => fs.rmSync(root, { recursive: true, force: true }));
++  const file = path.join(root, ACCOUNT_PREPARATION.accountsPath); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, JSON.stringify(accounts), { mode: 0o600 }); fs.chmodSync(file, 0o600);
++  assert.deepEqual(validateAccountsFilePath(file, { root, isIgnored: () => true }), accounts);
++  fs.chmodSync(file, 0o644); assert.throws(() => validateAccountsFilePath(file, { root, isIgnored: () => true }), /0600/);
++  fs.chmodSync(file, 0o600); assert.throws(() => validateAccountsFilePath(file, { root, isIgnored: () => false }), /excluded by Git/);
++  assert.throws(() => validateAccountsFilePath(path.join(root, "other.json"), { root, isIgnored: () => true }), /reviewed secure path/);
++  const backing = file + ".backing"; fs.renameSync(file, backing); fs.symlinkSync(backing, file); assert.throws(() => validateAccountsFilePath(file, { root, isIgnored: () => true }), /non-symlink/);
++});
++
++test("Firebase observation verifies all four exact identities", () => assert.equal(validateFirebaseObservation(firebaseObservation()), true));
++test("Firebase disabled identity fails closed", () => { const f = firebaseObservation(); f.users[0].disabled = true; assert.throws(() => validateFirebaseObservation(f)); });
++test("Firebase UID mismatch fails closed", () => { const f = firebaseObservation(); f.users[1].uid = "different"; assert.throws(() => validateFirebaseObservation(f)); });
++test("Firebase provider mismatch fails closed", () => { const f = firebaseObservation(); f.users[2].providers = ["google.com"]; assert.throws(() => validateFirebaseObservation(f)); });
++
++test("exact before-state passes", () => assert.equal(validateBeforeState(beforeState(), { now: fixedNow }), true));
++for (const [name, change] of [
++  ["profile hash drift", s => s.rowHashes.profiles[ACCOUNT_PREPARATION.accounts.owner.profileId] = "0".repeat(64)],
++  ["access hash drift", s => s.rowHashes.access[ACCOUNT_PREPARATION.accounts.manager.profileId] = "0".repeat(64)],
++  ["reservation hash drift", s => s.rowHashes.reservations[ACCOUNT_PREPARATION.accounts.pending.email] = "0".repeat(64)],
++  ["disposable hash drift", s => s.rowHashes.disposable["address:zeQ0xgA79Up5XTNs-i_Dg"] = "0".repeat(64)],
++  ["unexpected order", s => s.identityRelationships.orders = 1], ["legacy membership", s => s.identityRelationships.memberships = 1], ["admin role overlap", s => s.identityRelationships.platformRoles = 1],
++  ["restaurant count drift", s => s.restaurantCounts.orders = 3], ["Earnings enabled", s => s.earningsEnabled = true], ["pending migration", s => s.pendingMigrations = 1], ["schema contract drift", s => s.schemaContractValid = false], ["stale snapshot", s => s.capturedAt = "2026-09-25T00:00:00.000Z"],
++]) test("before-state rejects " + name, () => { const s = beforeState(); change(s); assert.throws(() => validateBeforeState(s, { now: fixedNow })); });
++
++test("after-state proves active, pending, suspended, and no legacy authorization", () => assert.equal(validateAfterState(afterState()), true));
++test("pending operational activation fails", () => { const s = afterState(); s.access.find(a => a.profile_id === ACCOUNT_PREPARATION.accounts.pending.profileId).status = "active"; assert.throws(() => validateAfterState(s)); });
++test("suspended operational activation fails", () => { const s = afterState(); s.access.find(a => a.profile_id === ACCOUNT_PREPARATION.accounts.suspended.profileId).status = "active"; assert.throws(() => validateAfterState(s)); });
++test("non-monotonic prepared version fails", () => { const s = afterState(); s.access[0].authz_version = 1; assert.throws(() => validateAfterState(s)); });
++test("recovered state requires monotonic versions and retained audit history", () => assert.equal(validateRecoveredState(recoveredState()), true));
++test("recovery version rollback fails", () => { const s = recoveredState(); s.access[0].authz_version = 1; assert.throws(() => validateRecoveredState(s)); });
++
++test("preparation SQL encodes one transaction and complete safeguards", () => { const sql = buildPreparationSql("1".repeat(64), "2".repeat(64)); for (const token of ["lock_timeout='5s'", "statement_timeout='30s'", "AUTHORIZATION_OVERLAP", "UNEXPECTED_DEPENDENCY", "RESTAURANT_BOUNDARY", "EARNINGS_BOUNDARY", "INTERNAL_ACCESS_POSTCONDITION", "INTERNAL_AUDIT_POSTCONDITION", "commit;"]) assert.match(sql, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))); assert.doesNotMatch(sql, /restaurant_members\s*\(/i); });
++test("preparation SQL replaces revoked Customer without UPDATE of account_access", () => { const sql = buildPreparationSql("1".repeat(64), "2".repeat(64)); assert.match(sql, /delete from private\.account_access/); assert.match(sql, /insert into private\.account_access/); assert.doesNotMatch(sql, /update private\.account_access/i); assert.match(sql, /before_version/); assert.match(sql, /after_version/); });
++test("recovery SQL is independently scoped and monotonic", () => { const sql = buildRecoverySql(beforeState(), "2".repeat(64)); assert.match(sql, /PREPARED_STATE_REQUIRED/); assert.match(sql, /RECOVERY_TARGET_OCCUPIED/); assert.match(sql, /recovery_version/); assert.match(sql, /reclassification_recovered/); });
++test("snapshot SQL remains read-only and captures every protected domain", () => { const sql = buildSnapshotSql("before"); assert.match(sql, /^begin transaction read only;/); for (const name of ["account_access", "account_email_reservations", "restaurant_members", "user_roles", "account_provisioning_operations", "restaurant_earnings_capabilities", "delivered_order_financial_snapshots"]) assert.match(sql, new RegExp(name)); assert.doesNotMatch(sql, /\b(insert|update|delete)\b/i); });
++
++test("complete preparation persists PASS evidence and the reviewed authority without credentials", async t => { const root = tempRoot(); t.after(() => fs.rmSync(root, { recursive: true, force: true })); const provider = mockProvider(); const result = await run(root, provider); assert.equal(result.disposition, "PASS"); assert.equal(provider.prepared, true); const directory = path.join(root, ACCOUNT_PREPARATION.evidenceRoot); const evidence = JSON.parse(fs.readFileSync(path.join(directory, "preparation-result.json"))); assert.equal(evidence.credentialsPersisted, false); assert.equal(JSON.parse(fs.readFileSync(path.join(directory, "preparation-authority.json"))).authorizationTextSha256, authority.authorizationTextSha256); assert.doesNotMatch(fs.readdirSync(directory).map(file => fs.readFileSync(path.join(directory, file), "utf8")).join("\n"), /Synthetic-local-only-password/); });
++test("duplicate invocation is prohibited before a second mutation", async t => { const root = tempRoot(); t.after(() => fs.rmSync(root, { recursive: true, force: true })); await run(root, mockProvider()); await assert.rejects(() => run(root, mockProvider()), /already exists/); });
++test("lock failure rolls back or rejects and reconciles to BEFORE", async t => { const root = tempRoot(); t.after(() => fs.rmSync(root, { recursive: true, force: true })); const error = Object.assign(new Error("lock unavailable"), { code: "55P03" }); const result = await run(root, mockProvider({ prepareError: error })); assert.equal(result.disposition, "FAIL"); assert.equal(result.reconciliation.classification, "BEFORE"); });
++test("SQL exception preserves before-state", async t => { const root = tempRoot(); t.after(() => fs.rmSync(root, { recursive: true, force: true })); const result = await run(root, mockProvider({ prepareError: Object.assign(new Error("assertion"), { code: "P0001" }) })); assert.equal(result.transactionOutcome, "rolled_back_or_rejected"); assert.equal(result.reconciliation.classification, "BEFORE"); });
++test("uncertain response after commit is BLOCKED but reconciles AFTER", async t => { const root = tempRoot(); t.after(() => fs.rmSync(root, { recursive: true, force: true })); const error = Object.assign(new Error("network lost"), { code: "UNCERTAIN_RESPONSE" }); const result = await run(root, mockProvider({ prepareError: error, applyBeforeError: true })); assert.equal(result.disposition, "BLOCKED"); assert.equal(result.reconciliation.classification, "AFTER"); });
++test("uncertain response before commit is BLOCKED and reconciles BEFORE", async t => { const root = tempRoot(); t.after(() => fs.rmSync(root, { recursive: true, force: true })); const error = Object.assign(new Error("network lost"), { code: "UNCERTAIN_RESPONSE" }); const result = await run(root, mockProvider({ prepareError: error })); assert.equal(result.disposition, "BLOCKED"); assert.equal(result.reconciliation.classification, "BEFORE"); });
++test("post-commit mismatch fails without claiming PASS", async t => { const root = tempRoot(); t.after(() => fs.rmSync(root, { recursive: true, force: true })); const bad = afterState(); bad.restaurantCounts.orders = 99; const result = await run(root, mockProvider({ afterOverride: bad })); assert.equal(result.disposition, "FAIL"); });
++test("snapshot interruption leaves exclusive attempt marker and no mutation", async t => { const root = tempRoot(); t.after(() => fs.rmSync(root, { recursive: true, force: true })); const io = Object.create(fs); const original = fs.writeFileSync.bind(fs); io.writeFileSync = (file, ...args) => { if (String(file).includes("before-state.json")) throw new Error("synthetic interruption"); return original(file, ...args); }; const provider = mockProvider(); const result = await run(root, provider, { io }); assert.equal(result.disposition, "FAIL"); assert.equal(provider.prepared, false); assert.equal(fs.existsSync(path.join(root, ACCOUNT_PREPARATION.evidenceRoot, "preparation-attempt.json")), true); });
++test("database read failure preserves the completed Firebase observation without credentials", async t => { const root = tempRoot(); t.after(() => fs.rmSync(root, { recursive: true, force: true })); const result = await run(root, mockProvider({ readErrorStage: "before" })); assert.equal(result.disposition, "FAIL"); const progress = fs.readFileSync(path.join(root, ACCOUNT_PREPARATION.evidenceRoot, "preflight-progress.json"), "utf8"); assert.match(progress, /firebase_observed/); assert.doesNotMatch(progress, /Synthetic-local-only-password/); });
++
++test("explicit read-only reconciliation classifies prepared state in separate evidence", async t => { const root = tempRoot(); t.after(() => fs.rmSync(root, { recursive: true, force: true })); const post = path.join(root, ACCOUNT_PREPARATION.evidenceRoot, "postcondition-report.json"); fs.mkdirSync(path.dirname(post), { recursive: true }); fs.writeFileSync(post, "protected-postcondition\n"); const result = await runPreparation({ root, authority: clone(authority), accounts: clone(accounts), provider: mockProvider({ initial: afterState("reconciliation") }), action: "reconcile", confirm: `staging:restaurant-account-preparation:reconcile:${ACCOUNT_PREPARATION.runId}`, now: () => fixedNow, gitHead: () => authority.operatorCommit }); assert.equal(result.disposition, "PASS"); assert.equal(result.classification, "AFTER"); assert.equal(fs.readFileSync(post, "utf8"), "protected-postcondition\n"); assert.equal(fs.existsSync(path.join(root, ACCOUNT_PREPARATION.evidenceRoot, "reconciliation-result.json")), true); });
++test("partial reconciliation remains BLOCKED", async t => { const root = tempRoot(); t.after(() => fs.rmSync(root, { recursive: true, force: true })); const partial = afterState("reconciliation"); partial.access.pop(); const result = await runPreparation({ root, authority: clone(authority), accounts: clone(accounts), provider: mockProvider({ initial: partial }), action: "reconcile", confirm: `staging:restaurant-account-preparation:reconcile:${ACCOUNT_PREPARATION.runId}`, now: () => fixedNow, gitHead: () => authority.operatorCommit }); assert.equal(result.disposition, "BLOCKED"); });
++
++async function preparedRoot(t, provider = mockProvider()) { const root = tempRoot(); t.after(() => fs.rmSync(root, { recursive: true, force: true })); await run(root, provider); return root; }
++test("complete independent recovery passes", async t => { const provider = mockProvider(); const root = await preparedRoot(t, provider); const authHash = sha256(Buffer.from(JSON.stringify(authority, null, 2) + "\n")); const result = await runPreparation({ root, authority: clone(authority), accounts: clone(accounts), provider, action: "recover", confirm: `staging:restaurant-account-preparation:recover:${ACCOUNT_PREPARATION.runId}:${authHash}`, now: () => fixedNow, gitHead: () => authority.operatorCommit }); assert.equal(result.disposition, "PASS"); assert.equal(provider.recovered, true); });
++test("recovery requires exact independent confirmation", async t => { const provider = mockProvider(); const root = await preparedRoot(t, provider); await assert.rejects(() => runPreparation({ root, authority: clone(authority), accounts: clone(accounts), provider, action: "recover", confirm: "wrong", now: () => fixedNow, gitHead: () => authority.operatorCommit }), /confirmation/); });
++test("uncertain recovery reconciled as recovered may pass", async t => { const provider = mockProvider({ recoveryError: Object.assign(new Error("lost"), { code: "UNCERTAIN_RESPONSE" }), recoverBeforeError: true }); const root = await preparedRoot(t, provider); const authHash = sha256(Buffer.from(JSON.stringify(authority, null, 2) + "\n")); const result = await runPreparation({ root, authority: clone(authority), accounts: clone(accounts), provider, action: "recover", confirm: `staging:restaurant-account-preparation:recover:${ACCOUNT_PREPARATION.runId}:${authHash}`, now: () => fixedNow, gitHead: () => authority.operatorCommit }); assert.equal(result.disposition, "PASS"); assert.equal(result.reconciliation.classification, "RECOVERED"); });
++test("failed recovery with prepared state remains BLOCKED", async t => { const provider = mockProvider({ recoveryError: new Error("rollback") }); const root = await preparedRoot(t, provider); const authHash = sha256(Buffer.from(JSON.stringify(authority, null, 2) + "\n")); const result = await runPreparation({ root, authority: clone(authority), accounts: clone(accounts), provider, action: "recover", confirm: `staging:restaurant-account-preparation:recover:${ACCOUNT_PREPARATION.runId}:${authHash}`, now: () => fixedNow, gitHead: () => authority.operatorCommit }); assert.equal(result.disposition, "BLOCKED"); assert.equal(result.reconciliation.classification, "AFTER"); });
++
++test("exclusive atomic write survives interrupted temporary write", t => { const root = fs.mkdtempSync(path.join(os.tmpdir(), "atomic-evidence-")); t.after(() => fs.rmSync(root, { recursive: true, force: true })); const file = path.join(root, "evidence.json"); atomicWriteExclusive(file, { passed: true }); assert.throws(() => atomicWriteExclusive(file, { passed: false }), /already exists/); assert.equal(JSON.parse(fs.readFileSync(file)).passed, true); });
++test("state classifier distinguishes before, after, recovered, and partial", () => { assert.equal(classifyState(beforeState()), "BEFORE"); assert.equal(classifyState(afterState()), "AFTER"); assert.equal(classifyState(recoveredState()), "RECOVERED"); const partial = afterState(); partial.access.pop(); assert.equal(classifyState(partial), "PARTIAL_OR_UNKNOWN"); });
+diff --git a/scripts/test-restaurant-staging-account-preparation-postgres.mjs b/scripts/test-restaurant-staging-account-preparation-postgres.mjs
+new file mode 100644
+index 0000000..f621d00
+--- /dev/null
++++ b/scripts/test-restaurant-staging-account-preparation-postgres.mjs
+@@ -0,0 +1,121 @@
++#!/usr/bin/env node
++import assert from "node:assert/strict";
++import { spawnSync } from "node:child_process";
++import test from "node:test";
++import { ACCOUNT_PREPARATION, buildPreparationSql, buildRecoverySql } from "./restaurant-staging-account-preparation.mjs";
++
++const q = value => "'" + String(value).replaceAll("'", "''") + "'";
++const targetProfiles = Object.values(ACCOUNT_PREPARATION.accounts).map(a => a.profileId);
++const cleanupGuard = [...targetProfiles, "ruip6ad_local_existing_owner", "ruip6ad_local_existing_manager", "ruip6ad_local_customer"];
++
++function postgresAvailable() {
++  const result = spawnSync("docker", ["exec", "supabase_db_hungrie-app", "pg_isready", "-U", "postgres"], { encoding: "utf8" });
++  return result.status === 0;
++}
++
++function fixtureSql() {
++  const profiles = [
++    ...Object.entries(ACCOUNT_PREPARATION.accounts).map(([name, a]) => `(${q(a.profileId)},${q(a.profileId)},${q("Local " + name)},${q(a.email)})`),
++    "('ruip6ad_local_existing_owner','ruip6ad_local_existing_owner','Existing owner','existing-owner@example.invalid')",
++    "('ruip6ad_local_existing_manager','ruip6ad_local_existing_manager','Existing manager','existing-manager@example.invalid')",
++    "('ruip6ad_local_customer','ruip6ad_local_customer','Order customer','order-customer@example.invalid')",
++  ].join(",");
++  const access = Object.entries(ACCOUNT_PREPARATION.accounts).map(([name, a]) => `(${q(a.profileId)},'customer',${q(name === "suspended" ? "revoked" : "active")},'none',${a.beforeVersion},${name === "suspended" ? "'2026-09-25 00:00:00+00'::timestamptz" : "null"},'2026-09-25 00:00:00+00'::timestamptz,'2026-09-25 00:00:00+00'::timestamptz,'2026-09-25 00:00:00+00'::timestamptz)`).join(",");
++  const reservations = Object.values(ACCOUNT_PREPARATION.accounts).map(a => `(${q(a.email)},'customer',${q(a.profileId)},${q(a.profileId)})`).join(",");
++  return `
++begin;
++do $$ begin if exists(select 1 from public.profiles where id in(${cleanupGuard.map(q).join(",")})) or exists(select 1 from public.restaurants where id in(${q(ACCOUNT_PREPARATION.restaurantId)},'lombard-kitchen')) then raise exception 'LOCAL_FIXTURE_COLLISION'; end if; end $$;
++insert into public.profiles(id,firebase_uid,name,email) values ${profiles};
++insert into public.restaurants(id,name,is_active,lifecycle_status,accepting_orders) values(${q(ACCOUNT_PREPARATION.restaurantId)},'Phase 4 Restaurant QA',true,'active',false),('lombard-kitchen','Local Lombard dependency',true,'active',false);
++update public.restaurants set accepting_orders=false where id=${q(ACCOUNT_PREPARATION.restaurantId)};
++insert into private.account_access(profile_id,account_type,status,onboarding_step,authz_version,revoked_at,activated_at,created_at,updated_at) values ${access};
++insert into private.account_access(profile_id,account_type,status,onboarding_step,restaurant_id,restaurant_role,authz_version,activated_at) values
++ ('ruip6ad_local_existing_owner','restaurant','active','none',${q(ACCOUNT_PREPARATION.restaurantId)},'owner',1,statement_timestamp()),
++ ('ruip6ad_local_existing_manager','restaurant','active','none',${q(ACCOUNT_PREPARATION.restaurantId)},'manager',1,statement_timestamp());
++insert into private.account_email_reservations(normalized_email,account_type,firebase_uid,profile_id) values ${reservations};
++insert into public.addresses(id,profile_id,label,line1,city,country,is_default,created_at,updated_at) values
++ ('zeQ0xgA79Up5XTNs-i_Dg',${q(ACCOUNT_PREPARATION.accounts.pending.profileId)},'Pending','Synthetic','Test','TRNC',true,'2026-09-25 00:00:00+00','2026-09-25 00:00:00+00'),
++ ('7KnWuexTChn4F7o9hMtzH',${q(ACCOUNT_PREPARATION.accounts.suspended.profileId)},'Suspended','Synthetic','Test','TRNC',true,'2026-09-25 00:00:00+00','2026-09-25 00:00:00+00');
++insert into public.favorites(profile_id,restaurant_id,created_at) values(${q(ACCOUNT_PREPARATION.accounts.suspended.profileId)},'lombard-kitchen','2026-09-25 00:00:00+00');
++insert into private.notification_preferences(profile_id,created_at,updated_at) values(${q(ACCOUNT_PREPARATION.accounts.pending.profileId)},'2026-09-25 00:00:00+00','2026-09-25 00:00:00+00'),(${q(ACCOUNT_PREPARATION.accounts.suspended.profileId)},'2026-09-25 00:00:00+00','2026-09-25 00:00:00+00');
++insert into private.account_provisioning_operations(operation_id,operation_kind,request_digest,state,target_profile_id)
++select ('10000000-0000-0000-0000-'||lpad(g::text,12,'0'))::uuid,'customer_bootstrap',repeat('a',64),'completed',case when g<=6 then ${q(ACCOUNT_PREPARATION.accounts.suspended.profileId)} when g=7 then ${q(ACCOUNT_PREPARATION.accounts.owner.profileId)} when g=8 then ${q(ACCOUNT_PREPARATION.accounts.manager.profileId)} else ${q(ACCOUNT_PREPARATION.accounts.pending.profileId)} end from generate_series(1,9) g;
++insert into private.audit_log(actor_profile_id,action,target_type,target_id) select p.id,'local.fixture','profile',p.id from public.profiles p where p.id in(${targetProfiles.map(q).join(",")});
++insert into public.orders(id,profile_id,restaurant_id,status,payment_method,subtotal_kurus,total_kurus,delivered_at,canceled_at) values
++ ('ruip6ad_local_delivered','ruip6ad_local_customer',${q(ACCOUNT_PREPARATION.restaurantId)},'delivered','cash',100,100,statement_timestamp(),null),
++ ('ruip6ad_local_canceled','ruip6ad_local_customer',${q(ACCOUNT_PREPARATION.restaurantId)},'canceled','cash',100,100,null,statement_timestamp());
++insert into private.account_invitations(id,normalized_email,account_type,restaurant_id,restaurant_role,token_digest,state,expires_at) select ('20000000-0000-0000-0000-'||lpad(g::text,12,'0'))::uuid,'local-invite-'||g||'@example.invalid','restaurant',${q(ACCOUNT_PREPARATION.restaurantId)},'manager',md5(g::text)||md5('x'||g::text),'revoked',statement_timestamp()+interval '1 day' from generate_series(1,4) g;
++insert into private.restaurant_operational_incidents(id,restaurant_id,incident_type,state,window_started_at,window_ended_at,ignored_order_count,eligible_order_count,threshold_snapshot) values('30000000-0000-0000-0000-000000000001',${q(ACCOUNT_PREPARATION.restaurantId)},'repeated_order_non_response','open',statement_timestamp()-interval '1 hour',statement_timestamp(),1,1,'{}');
++insert into private.restaurant_commission_rules(id,restaurant_id,rate_bps,effective_from,created_by_profile_id,reason,operation_id,request_sha256) values('40000000-0000-0000-0000-000000000001',${q(ACCOUNT_PREPARATION.restaurantId)},1000,statement_timestamp(),'ruip6ad_local_existing_owner','Local fixture','50000000-0000-0000-0000-000000000001',repeat('b',64));
++`;
++}
++
++function localBeforeState() {
++  const access = Object.entries(ACCOUNT_PREPARATION.accounts).map(([name, a]) => ({ profile_id: a.profileId, account_type: "customer", status: name === "suspended" ? "revoked" : "active", onboarding_step: "none", restaurant_id: null, restaurant_role: null, authz_version: a.beforeVersion, created_by_profile_id: null, created_at: "2026-09-25T00:00:00+00:00", activated_at: "2026-09-25T00:00:00+00:00", revoked_at: name === "suspended" ? "2026-09-25T00:00:00+00:00" : null, status_reason_code: null }));
++  const addresses = [["zeQ0xgA79Up5XTNs-i_Dg", ACCOUNT_PREPARATION.accounts.pending.profileId, "Pending"], ["7KnWuexTChn4F7o9hMtzH", ACCOUNT_PREPARATION.accounts.suspended.profileId, "Suspended"]].map(([id, profile_id, label]) => ({ id, profile_id, label, line1: "Synthetic", block: null, room: null, city: "Test", country: "TRNC", is_default: true, created_at: "2026-09-25T00:00:00+00:00", updated_at: "2026-09-25T00:00:00+00:00" }));
++  return { schemaVersion: 1, stage: "before", runId: ACCOUNT_PREPARATION.runId, projectRef: ACCOUNT_PREPARATION.supabaseProjectRef, restaurantId: ACCOUNT_PREPARATION.restaurantId, planSha256: ACCOUNT_PREPARATION.planSha256, capturedAt: "2026-09-25T00:00:00.000Z", pendingMigrations: 0, schemaContractValid: true, earningsEnabled: false, restaurant: { id: ACCOUNT_PREPARATION.restaurantId, lifecycle_status: "active", is_active: true, accepting_orders: false }, restaurantSha256: ACCOUNT_PREPARATION.restaurantSha256, profiles: Object.values(ACCOUNT_PREPARATION.accounts).map(a => ({ id: a.profileId, firebase_uid: a.profileId, email: a.email, deletion_pending_at: null, deleted_at: null })), access, reservations: Object.values(ACCOUNT_PREPARATION.accounts).map(a => ({ normalized_email: a.email, account_type: "customer", firebase_uid: a.profileId, profile_id: a.profileId, invitation_id: null })), rowHashes: structuredClone(ACCOUNT_PREPARATION.rowHashes), disposable: { addresses, favorites: [{ profile_id: ACCOUNT_PREPARATION.accounts.suspended.profileId, restaurant_id: "lombard-kitchen", created_at: "2026-09-25T00:00:00+00:00" }], preferences: [ACCOUNT_PREPARATION.accounts.pending.profileId, ACCOUNT_PREPARATION.accounts.suspended.profileId].map(profile_id => ({ profile_id, order_status_enabled: true, restaurant_orders_enabled: true, review_replies_enabled: true, created_at: "2026-09-25T00:00:00+00:00", updated_at: "2026-09-25T00:00:00+00:00" })) }, identityRelationships: { memberships: 0, platformRoles: 0, orders: 0, reviews: 0, pushTokens: 0, invitations: 0, provisioning: 9, existingAudits: 4 }, restaurantCounts: structuredClone(ACCOUNT_PREPARATION.protectedCounts) };
++}
++
++function hashVariablesSql() {
++  const lines = [];
++  for (const [name, a] of Object.entries(ACCOUNT_PREPARATION.accounts)) {
++    lines.push(`select encode(extensions.digest(to_jsonb(p)::text,'sha256'),'hex') ${name}_profile_hash from public.profiles p where id=${q(a.profileId)} \\gset`);
++    lines.push(`select encode(extensions.digest(to_jsonb(x)::text,'sha256'),'hex') ${name}_access_hash from private.account_access x where profile_id=${q(a.profileId)} \\gset`);
++    lines.push(`select encode(extensions.digest(to_jsonb(x)::text,'sha256'),'hex') ${name}_reservation_hash from private.account_email_reservations x where normalized_email=${q(a.email)} \\gset`);
++  }
++  lines.push("select encode(extensions.digest(to_jsonb(x)::text,'sha256'),'hex') pending_address_hash from public.addresses x where id='zeQ0xgA79Up5XTNs-i_Dg' \\gset");
++  lines.push("select encode(extensions.digest(to_jsonb(x)::text,'sha256'),'hex') suspended_address_hash from public.addresses x where id='7KnWuexTChn4F7o9hMtzH' \\gset");
++  lines.push("select encode(extensions.digest(to_jsonb(x)::text,'sha256'),'hex') favorite_hash from public.favorites x where profile_id='TBaq9HQIL9OBwLFP3MKchi3rpSA2' and restaurant_id='lombard-kitchen' \\gset");
++  lines.push("select encode(extensions.digest(to_jsonb(x)::text,'sha256'),'hex') pending_preference_hash from private.notification_preferences x where profile_id='v9kzlLATn9fQxJ6oPTUjxTDj8MJ3' \\gset");
++  lines.push("select encode(extensions.digest(to_jsonb(x)::text,'sha256'),'hex') suspended_preference_hash from private.notification_preferences x where profile_id='TBaq9HQIL9OBwLFP3MKchi3rpSA2' \\gset");
++  lines.push(`select encode(extensions.digest(to_jsonb(x)::text,'sha256'),'hex') restaurant_hash from public.restaurants x where id=${q(ACCOUNT_PREPARATION.restaurantId)} \\gset`);
++  return lines.join("\n") + "\n";
++}
++
++function locallyBoundPreparationSql() {
++  let sql = buildPreparationSql("1".repeat(64), "2".repeat(64)).replace(/^begin;\n/, "").replace(/\ncommit;$/, "");
++  const replacements = new Map();
++  for (const [name, a] of Object.entries(ACCOUNT_PREPARATION.accounts)) {
++    replacements.set(ACCOUNT_PREPARATION.rowHashes.profiles[a.profileId], `:'${name}_profile_hash'`);
++    replacements.set(ACCOUNT_PREPARATION.rowHashes.access[a.profileId], `:'${name}_access_hash'`);
++    replacements.set(ACCOUNT_PREPARATION.rowHashes.reservations[a.email], `:'${name}_reservation_hash'`);
++  }
++  replacements.set(ACCOUNT_PREPARATION.rowHashes.disposable["address:zeQ0xgA79Up5XTNs-i_Dg"], ":'pending_address_hash'");
++  replacements.set(ACCOUNT_PREPARATION.rowHashes.disposable["address:7KnWuexTChn4F7o9hMtzH"], ":'suspended_address_hash'");
++  replacements.set(ACCOUNT_PREPARATION.rowHashes.disposable["favorite:TBaq9HQIL9OBwLFP3MKchi3rpSA2:lombard-kitchen"], ":'favorite_hash'");
++  replacements.set(ACCOUNT_PREPARATION.rowHashes.disposable["preference:v9kzlLATn9fQxJ6oPTUjxTDj8MJ3"], ":'pending_preference_hash'");
++  replacements.set(ACCOUNT_PREPARATION.rowHashes.disposable["preference:TBaq9HQIL9OBwLFP3MKchi3rpSA2"], ":'suspended_preference_hash'");
++  replacements.set(ACCOUNT_PREPARATION.restaurantSha256, ":'restaurant_hash'");
++  for (const [literal, variable] of replacements) sql = sql.replaceAll(q(literal), variable);
++  return sql;
++}
++
++function localRecoverySql() {
++  return buildRecoverySql(localBeforeState(), "2".repeat(64)).replace(/^begin;\n/, "").replace(/\ncommit;$/, "");
++}
++
++test("generated preparation and recovery execute under real local PostgreSQL constraints and roll back", { timeout: 30_000 }, () => {
++  assert.equal(postgresAvailable(), true, "local Supabase PostgreSQL must be running");
++  const verifyPrepared = `
++do $$ begin
++ if (select count(*) from private.account_access where profile_id in(${targetProfiles.map(q).join(",")}) and account_type='restaurant' and restaurant_id=${q(ACCOUNT_PREPARATION.restaurantId)})<>4 then raise exception 'LOCAL_ACCESS_VERIFY'; end if;
++ if exists(select 1 from private.restaurant_members where profile_id in(${targetProfiles.map(q).join(",")})) then raise exception 'LOCAL_MEMBERSHIP_VERIFY'; end if;
++ if (select count(*) from private.audit_log where action='qualification.restaurant_identity_reclassified' and metadata->>'run_id'=${q(ACCOUNT_PREPARATION.runId)})<>4 then raise exception 'LOCAL_AUDIT_VERIFY'; end if;
++ if (select count(*) from private.account_provisioning_operations where target_profile_id in(${targetProfiles.map(q).join(",")}))<>9 then raise exception 'LOCAL_HISTORY_VERIFY'; end if;
++end $$;
++`;
++  const verifyRecovered = `
++do $$ begin
++ if (select count(*) from private.account_access where profile_id in(${targetProfiles.map(q).join(",")}) and account_type='customer' and restaurant_id is null and restaurant_role is null)<>4 then raise exception 'LOCAL_RECOVERY_ACCESS_VERIFY'; end if;
++ if (select count(*) from private.account_access where profile_id in(${targetProfiles.map(q).join(",")}) and authz_version in (3,8))<>4 then raise exception 'LOCAL_RECOVERY_VERSION_VERIFY'; end if;
++ if (select count(*) from public.addresses where id in('zeQ0xgA79Up5XTNs-i_Dg','7KnWuexTChn4F7o9hMtzH'))<>2 or (select count(*) from public.favorites where profile_id='TBaq9HQIL9OBwLFP3MKchi3rpSA2' and restaurant_id='lombard-kitchen')<>1 or (select count(*) from private.notification_preferences where profile_id in('v9kzlLATn9fQxJ6oPTUjxTDj8MJ3','TBaq9HQIL9OBwLFP3MKchi3rpSA2'))<>2 then raise exception 'LOCAL_RECOVERY_DISPOSABLE_VERIFY'; end if;
++ if (select count(*) from private.audit_log where action='qualification.restaurant_identity_reclassification_recovered' and metadata->>'run_id'=${q(ACCOUNT_PREPARATION.runId)})<>4 then raise exception 'LOCAL_RECOVERY_AUDIT_VERIFY'; end if;
++end $$;
++rollback;
++select count(*)=0 fixture_rolled_back from public.profiles where id in(${cleanupGuard.map(q).join(",")});
++`;
++  const script = "\\set ON_ERROR_STOP on\n" + fixtureSql() + hashVariablesSql() + locallyBoundPreparationSql() + verifyPrepared + localRecoverySql() + verifyRecovered;
++  const result = spawnSync("docker", ["exec", "-i", "supabase_db_hungrie-app", "psql", "-U", "postgres", "-d", "postgres", "-At"], { input: script, encoding: "utf8", maxBuffer: 10 * 1024 * 1024 });
++  assert.equal(result.status, 0, result.stderr || result.stdout);
++  assert.match(result.stdout, /t\s*$/);
++});
