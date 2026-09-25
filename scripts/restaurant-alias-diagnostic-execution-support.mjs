@@ -15,12 +15,12 @@ import {
 import { sanitizeError } from "./restaurant-alias-parity-verifier.mjs";
 
 export const SUPPORT = Object.freeze({
-  proposalSha256: "e19442464a445c044d7cfd4212718edfd016b1af67f8f44aedeb6c399f72ef70",
-  baseCheckpoint: "583579463f339dd8178917ebaa5e5cae9347dc5c",
-  baseSourceManifestSha256: "fc3e6b5b6b4340bc7da310d2ef9bfca5514cc21756ae4c85db05cde0cf619c22",
+  proposalSha256: "4f07c54d1b6291a3272b242324c3e24eb02b62c84d8cd906b31f1b110fd880d4",
+  baseCheckpoint: "47104d426b3eb36486956f1de1db0aa5e6616393",
+  baseSourceManifestSha256: "dbdb7cb8d08c6f0a69397bb7846ade1fad06661950c218c774cf9cb3311d772a",
   checkpointFiles: Object.freeze([
-    "docs/restaurant-expo-alias-checkpoint-binding-compatibility-implementation-review.md",
-    "docs/restaurant-expo-alias-checkpoint-binding-compatibility-implementation.diff",
+    "docs/restaurant-expo-alias-supabase-http201-compatibility-implementation-review.md",
+    "docs/restaurant-expo-alias-supabase-http201-compatibility-implementation.diff",
     "docs/restaurant-expo-alias-final-execution-readiness-handoff.md",
     "docs/restaurant-expo-alias-final-one-run-staging-execution-authorization-proposal.md",
     "scripts/restaurant-alias-diagnostic-execution-support.mjs",
@@ -66,6 +66,20 @@ export const SUPPORT = Object.freeze({
         "scripts/test-restaurant-staging-account-preparation.mjs": "8e4e96a7d9131b77f65e32b4619ed7b573ff73f8c190a33f546126b39d608f85",
       }),
     }),
+    Object.freeze({
+      commit: "47104d426b3eb36486956f1de1db0aa5e6616393",
+      parent: "583579463f339dd8178917ebaa5e5cae9347dc5c",
+      sourceManifestSha256: "dbdb7cb8d08c6f0a69397bb7846ade1fad06661950c218c774cf9cb3311d772a",
+      sourceManifestFiles: 1504,
+      files: Object.freeze({
+        "docs/restaurant-expo-alias-checkpoint-binding-compatibility-implementation-review.md": "f25929bbae56487bdb4afabbe6b481ecbb090114ef7a0ff5fe08f20a04d3e07e",
+        "docs/restaurant-expo-alias-checkpoint-binding-compatibility-implementation.diff": "66bf47fb8023269cb79ffb90d594232131e242540f4a4d737af6e53ae6ee7494",
+        "docs/restaurant-expo-alias-final-execution-readiness-handoff.md": "c04c9e6d0ad7e4cdd0678451c525ee527ca2fece139237c66ace832936a20b4c",
+        "docs/restaurant-expo-alias-final-one-run-staging-execution-authorization-proposal.md": "e19442464a445c044d7cfd4212718edfd016b1af67f8f44aedeb6c399f72ef70",
+        "scripts/restaurant-alias-diagnostic-execution-support.mjs": "fc70479e57b94fa3640966c105b71e175cd1c193c60fc3dd3fd0cb8dc445fa82",
+        "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "b0737ddf8017170ad6cb246e87502a3f367651627bedea6d01a563b77056aa1b",
+      }),
+    }),
   ]),
   diagnosticExecutableFiles: Object.freeze({
     "scripts/restaurant-alias-parity-verifier.mjs": "e563d7a5203aaf6ea0e04687063d63027568fd2906accec43c26daaeea4ca1d8",
@@ -75,8 +89,8 @@ export const SUPPORT = Object.freeze({
     "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "9500103b1c54a6c97b1fb126ac0973bb881095d4f81e0e30dc941e7090293c35",
   }),
   applicationTree: DIAGNOSTIC_OPERATOR.applicationTree,
-  runId: "ruip6ad_20260925a",
-  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260925a",
+  runId: "ruip6ad_20260925b",
+  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260925b",
   authorityDirectory: "secure/restaurant-alias-diagnostic-authority",
   migrationFunctions: Object.freeze({
     "private.raise_restaurant_order_conflict_v1(text)": Object.freeze({
@@ -214,7 +228,7 @@ export function validateOwnerAuthorization(input) {
   if (JSON.stringify(input.authorizedSupportActions) !== JSON.stringify(SUPPORT.supportActions)) throw new Error("Owner authorization support actions are incomplete or contradictory.");
   required(input.authorizationText, "Owner authorization text");
   if (input.authorizationText.length < 80 || input.authorizationTextSha256 !== sha256(Buffer.from(input.authorizationText))) throw new Error("Owner authorization text digest mismatch.");
-  if (!/authorize/i.test(input.authorizationText) || !/staging/i.test(input.authorizationText) || !/ruip6ad_20260925a/i.test(input.authorizationText) || !/rollback/i.test(input.authorizationText) || !/earnings.+disabled/i.test(input.authorizationText)) throw new Error("Owner authorization text lacks required explicit boundaries.");
+  if (!/authorize/i.test(input.authorizationText) || !/staging/i.test(input.authorizationText) || !input.authorizationText.includes(SUPPORT.runId) || !/rollback/i.test(input.authorizationText) || !/earnings.+disabled/i.test(input.authorizationText)) throw new Error("Owner authorization text lacks required explicit boundaries.");
   if (!Number.isFinite(Date.parse(input.issuedAt))) throw new Error("Owner authorization timestamp is invalid.");
   return input;
 }
@@ -270,7 +284,8 @@ function observation(value, label, binding = {}) {
     const age = Date.parse(binding.capturedAt) - Date.parse(value.completedAt);
     if (age < 0 || age > binding.maximumAgeMs) throw new Error(label + " observation is stale or future-dated.");
   }
-  if (value.status !== 200 || !/^[a-f0-9]{64}$/.test(value.payloadSha256) || value.payloadSha256 !== sha256(Buffer.from(canonical(value.payload)))) throw new Error(label + " independent read is incomplete or unverified.");
+  const allowedStatuses = binding.allowedStatuses || [200];
+  if (!Array.isArray(allowedStatuses) || !allowedStatuses.includes(value.status) || !/^[a-f0-9]{64}$/.test(value.payloadSha256) || value.payloadSha256 !== sha256(Buffer.from(canonical(value.payload)))) throw new Error(label + " independent read is incomplete or unverified.");
   return value;
 }
 
@@ -286,7 +301,8 @@ function validateSnapshotReads(reads, stage, binding) {
   const names = ["supabaseProject", "firebaseProject", "alias", "migrationHistory", "functionCatalog", "earnings"];
   const sources = { supabaseProject: "supabase-project", firebaseProject: "firebase-project", alias: "expo-alias", migrationHistory: "supabase-migrations", functionCatalog: "supabase-function-catalog", earnings: "supabase-earnings-capability" };
   exactKeys(reads, names, stage + " read set");
-  const validated = Object.fromEntries(names.map(name => [name, observation(reads[name], name, { ...binding, source: sources[name] })]));
+  const sqlSources = new Set(["migrationHistory", "functionCatalog", "earnings"]);
+  const validated = Object.fromEntries(names.map(name => [name, observation(reads[name], name, { ...binding, source: sources[name], allowedStatuses: sqlSources.has(name) ? [200, 201] : [200] })]));
   const ids = validated;
   if (ids.supabaseProject.payload.id !== DIAGNOSTIC_OPERATOR.supabaseProjectRef || ids.supabaseProject.payload.status !== "ACTIVE_HEALTHY") throw new Error("Wrong or unhealthy Staging Supabase project.");
   if (ids.firebaseProject.payload.projectId !== DIAGNOSTIC_OPERATOR.firebaseProjectId) throw new Error("Wrong Firebase project.");
@@ -887,6 +903,10 @@ export function createHostedReaders({ root, runId, runDirectory, evidencePrefix,
     return { status: response.status, payload };
   };
   const query = statement => supabaseFetch("https://api.supabase.com/v1/projects/" + project.ref + "/database/query", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: statement }) });
+  const verifiedQueryRows = (result, label) => {
+    if (![200, 201].includes(result.status) || !Array.isArray(result.payload)) throw new Error(label + " returned an invalid Supabase SQL response.");
+    return result.payload;
+  };
   const migrationNames = testConfiguration?.migrationNames || fs.readdirSync(path.join(root, "supabase/migrations")).filter(name => /^\d{14}_.+\.sql$/.test(name)).sort();
   const catalogSql = "begin transaction read only; select case when strpos(p.oid::regprocedure::text,'.')>0 then p.oid::regprocedure::text else n.nspname||'.'||p.oid::regprocedure::text end identity, encode(extensions.digest(pg_get_functiondef(p.oid),'sha256'),'hex') definition_sha256, pg_get_userbyid(p.proowner) owner, p.prosecdef security_definer, p.provolatile volatility, coalesce(array_to_string(p.proconfig,','),'') config, coalesce(p.proacl::text,'') acl from pg_proc p join pg_namespace n on n.oid=p.pronamespace where (n.nspname='public' and p.proname in ('restaurant_transition_order_v1','restaurant_acknowledge_order_seen_v1')) or (n.nspname='private' and p.proname='raise_restaurant_order_conflict_v1') order by identity; rollback;";
   const aliasRead = async ({ signal } = {}) => {
@@ -915,16 +935,16 @@ export function createHostedReaders({ root, runId, runDirectory, evidencePrefix,
       const alias = await capture("alias", "expo-alias", aliasRead);
       const migrationHistory = await capture("migrationHistory", "supabase-migrations", async () => {
         const result = await query("begin transaction read only; select version from supabase_migrations.schema_migrations order by version; rollback;");
-        const applied = result.payload.map(row => String(row.version));
+        const applied = verifiedQueryRows(result, "Migration history query").map(row => String(row.version));
         return { status: result.status, payload: { applied, pending: migrationNames.map(name => name.slice(0, 14)).filter(version => !applied.includes(version)), localMigrationSha256: testConfiguration?.localMigrationSha256 || sha256(fs.readFileSync(path.join(root, "supabase/migrations/20260924140000_restaurant_order_conflict_transport.sql"))) } };
       });
       const functionCatalog = await capture("functionCatalog", "supabase-function-catalog", async () => {
         const result = await query(catalogSql);
-        return { status: result.status, payload: { rows: result.payload } };
+        return { status: result.status, payload: { rows: verifiedQueryRows(result, "Function catalog query") } };
       });
       const earnings = await capture("earnings", "supabase-earnings-capability", async () => {
         const result = await query("begin transaction read only; select capability,enabled from private.restaurant_earnings_capabilities where capability='restaurant_earnings_v1'; rollback;");
-        return { status: result.status, payload: result.payload[0] || null };
+        return { status: result.status, payload: verifiedQueryRows(result, "Earnings capability query")[0] || null };
       });
       const completedAt = persistReadProgress([]);
       return readProgressSnapshot(progressPath, { runId, stage: evidencePrefix, capturedAt: completedAt, maximumAgeMs: evidencePrefix === "baseline-preflight" ? SUPPORT.freshnessMs.baseline : SUPPORT.freshnessMs.final });

@@ -44,7 +44,7 @@ const fakeSourceManifestSha256 = hash(fakeManifestBytes);
 const protectedRows = DIAGNOSTIC_OPERATOR.protectedEvidence.map(value => ({ ...value, passed: true }));
 
 function approval(overrides = {}) {
-  const authorizationText = "I authorize the one-run Staging diagnostic ruip6ad_20260925a, including independent rollback, while Earnings remains disabled and Development and Production remain prohibited.";
+  const authorizationText = `I authorize the one-run Staging diagnostic ${SUPPORT.runId}, including independent rollback, while Earnings remains disabled and Development and Production remain prohibited.`;
   return {
     contractVersion: 1,
     decision: "APPROVE_ONE_RUN_STAGING_ALIAS_DIAGNOSTIC",
@@ -102,7 +102,7 @@ function observed(source, payload, index, status = 200, stage = "baseline-prefli
   };
 }
 
-function reads(overrides = {}, stage = "baseline-preflight") {
+function reads(overrides = {}, stage = "baseline-preflight", statuses = {}) {
   const catalog = Object.entries(SUPPORT.migrationFunctions).map(([identity, expected]) => ({
     identity,
     definition_sha256: expected.sha256,
@@ -133,7 +133,7 @@ function reads(overrides = {}, stage = "baseline-preflight") {
     earnings: { capability: "restaurant_earnings_v1", enabled: false },
     ...overrides,
   };
-  return Object.fromEntries(Object.entries(payloads).map(([name, payload], index) => [name, observed(name, payload, index + 1, 200, stage)]));
+  return Object.fromEntries(Object.entries(payloads).map(([name, payload], index) => [name, observed(name, payload, index + 1, statuses[name] ?? 200, stage)]));
 }
 
 function writeJson(directory, name, value) {
@@ -157,7 +157,7 @@ function writeReadProgress(directory, stage, readSet, options = {}) {
   return { file, value };
 }
 
-function hostedReaderFixture({ metadataFailure = false, preflightFailure = false, failedPath = null, missingPath = null, omitAssetReferences = false, mismatchedAsset = false } = {}) {
+function hostedReaderFixture({ metadataFailure = false, preflightFailure = false, failedPath = null, missingPath = null, omitAssetReferences = false, mismatchedAsset = false, sqlStatus = 200, malformedSql = null, evidencePrefix = "finalization" } = {}) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-hosted-reader-"));
   const routeBodies = new Map();
   const assets = Array.from({ length: 5 }, (_, index) => ({ asset: `/assets/critical-${index}.js`, body: Buffer.from(`asset-${index}\n`) }));
@@ -182,9 +182,9 @@ function hostedReaderFixture({ metadataFailure = false, preflightFailure = false
     if (url.href.startsWith("https://api.supabase.com/v1/projects/")) {
       if (!url.pathname.endsWith("/database/query")) return json({ id: DIAGNOSTIC_OPERATOR.supabaseProjectRef, status: "ACTIVE_HEALTHY" });
       const statement = JSON.parse(init.body || "{}").query || "";
-      if (statement.includes("schema_migrations")) return json([{ version: DIAGNOSTIC_OPERATOR.conflictMigration.version }]);
-      if (statement.includes("pg_proc")) return json(Object.entries(SUPPORT.migrationFunctions).map(([identity, value]) => ({ identity, definition_sha256: value.sha256, owner: value.owner, security_definer: value.securityDefiner, volatility: value.volatility, config: value.config, acl: value.acl })));
-      if (statement.includes("restaurant_earnings_capabilities")) return json([{ capability: "restaurant_earnings_v1", enabled: false }]);
+      if (statement.includes("schema_migrations")) return json(malformedSql === "migration" ? {} : [{ version: DIAGNOSTIC_OPERATOR.conflictMigration.version }], sqlStatus);
+      if (statement.includes("pg_proc")) return json(malformedSql === "catalog" ? null : Object.entries(SUPPORT.migrationFunctions).map(([identity, value]) => ({ identity, definition_sha256: value.sha256, owner: value.owner, security_definer: value.securityDefiner, volatility: value.volatility, config: value.config, acl: value.acl })), sqlStatus);
+      if (statement.includes("restaurant_earnings_capabilities")) return json(malformedSql === "earnings" ? {} : [{ capability: "restaurant_earnings_v1", enabled: false }], sqlStatus);
       throw new Error("Unexpected local SQL fixture request.");
     }
     if (url.hostname === "firebase.googleapis.com") {
@@ -217,7 +217,7 @@ function hostedReaderFixture({ metadataFailure = false, preflightFailure = false
     root: directory,
     runId: SUPPORT.runId,
     runDirectory: directory,
-    evidencePrefix: "finalization",
+    evidencePrefix,
     fetchImpl,
     now: clock.now,
     parityClock: clock,
@@ -298,7 +298,7 @@ function finalFixture({ rollbackCapturedAt = capturedAt } = {}) {
 test("source manifest exactly reproduces the audited checkpoint", () => {
   const result = buildSourceManifest(root, SUPPORT.baseCheckpoint);
   assert.equal(result.commit, SUPPORT.baseCheckpoint);
-  assert.equal(result.files, 1501);
+  assert.equal(result.files, 1504);
   assert.equal(result.sha256, SUPPORT.baseSourceManifestSha256);
 });
 
@@ -435,6 +435,69 @@ test("baseline preflight is independent from candidate evidence", () => {
   assert.equal(result.alias.deploymentIdentifier, DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment);
 });
 
+test("baseline preflight accepts documented HTTP 200 and endpoint-scoped SQL 201 responses", () => {
+  const statuses = { migrationHistory: 201, functionCatalog: 201, earnings: 201 };
+  const result = buildBaselinePreflight({ authority: authority(), reads: reads({}, "baseline-preflight", statuses), protectedEvidence: protectedRows, capturedAt });
+  assert.equal(result.passed, true);
+  assert.equal(result.observations.migrationHistory.status, 201);
+  assert.equal(result.observations.functionCatalog.status, 201);
+  assert.equal(result.observations.earnings.status, 201);
+});
+
+test("HTTP 201 remains rejected for every non-SQL hosted observation", () => {
+  for (const name of ["supabaseProject", "firebaseProject", "alias"]) {
+    assert.throws(
+      () => buildBaselinePreflight({ authority: authority(), reads: reads({}, "baseline-preflight", { [name]: 201 }), protectedEvidence: protectedRows, capturedAt }),
+      /incomplete or unverified/,
+    );
+  }
+});
+
+test("SQL responses reject malformed 201 bodies and unexpected status codes", () => {
+  const malformed = [
+    { migrationHistory: { applied: null, pending: [], localMigrationSha256: DIAGNOSTIC_OPERATOR.conflictMigration.sha256 } },
+    { functionCatalog: { rows: [] } },
+    { earnings: { capability: "restaurant_earnings_v1" } },
+  ];
+  for (const payload of malformed) {
+    assert.throws(() => buildBaselinePreflight({ authority: authority(), reads: reads(payload, "baseline-preflight", { migrationHistory: 201, functionCatalog: 201, earnings: 201 }), protectedEvidence: protectedRows, capturedAt }));
+  }
+  for (const status of [199, 202, 204, 400, 500]) {
+    assert.throws(() => buildBaselinePreflight({ authority: authority(), reads: reads({}, "baseline-preflight", { migrationHistory: status }), protectedEvidence: protectedRows, capturedAt }), /incomplete or unverified/);
+  }
+});
+
+test("complete hosted baseline sequence accepts valid SQL 201 and persists exact observations", async () => {
+  const fixture = hostedReaderFixture({ sqlStatus: 201, evidencePrefix: "baseline-preflight" });
+  try {
+    const collected = await fixture.readers.collect();
+    const result = buildBaselinePreflight({ authority: authority(), reads: collected, protectedEvidence: protectedRows, capturedAt: collected.migrationHistory.completedAt });
+    assert.equal(result.passed, true);
+    assert.deepEqual([collected.migrationHistory.status, collected.functionCatalog.status, collected.earnings.status], [201, 201, 201]);
+    assert.equal(fixture.persisted.at(-1).value.readsSha256, hash(Buffer.from(canonical(collected))));
+  } finally { await fixture.readers.close(); fs.rmSync(fixture.directory, { recursive: true, force: true }); }
+});
+
+test("hosted SQL 201 collection rejects malformed result arrays after persisting failure", async () => {
+  for (const malformedSql of ["migration", "catalog", "earnings"]) {
+    const fixture = hostedReaderFixture({ sqlStatus: 201, malformedSql, evidencePrefix: "baseline-preflight" });
+    try {
+      await assert.rejects(() => fixture.readers.collect(), /invalid Supabase SQL response/);
+      const progress = fixture.persisted.at(-1).value;
+      assert.equal(progress.errors.length, 1);
+      assert.equal(Object.values(progress.reads).some(row => row.status === null && /invalid Supabase SQL response/.test(row.error)), true);
+    } finally { await fixture.readers.close(); fs.rmSync(fixture.directory, { recursive: true, force: true }); }
+  }
+});
+
+test("hosted SQL collection rejects unexpected status even with a valid-looking array", async () => {
+  const fixture = hostedReaderFixture({ sqlStatus: 202, evidencePrefix: "baseline-preflight" });
+  try {
+    await assert.rejects(() => fixture.readers.collect(), /invalid Supabase SQL response/);
+    assert.equal(fixture.persisted.at(-1).value.errors[0], "supabase-migrations");
+  } finally { await fixture.readers.close(); fs.rmSync(fixture.directory, { recursive: true, force: true }); }
+});
+
 test("every hosted assertion requires a unique independently recorded read", () => {
   const value = reads();
   value.firebaseProject.requestId = value.supabaseProject.requestId;
@@ -558,7 +621,7 @@ test("terminal recording distinguishes no assignment, uncertain assignment, and 
       assert.equal(result.rollbackRequired, rollbackRequired);
       assert.equal(result.promotionRetryPermitted, false);
       if (expected === "not-attempted") assert.equal(JSON.parse(fs.readFileSync(path.join(directory, "promotion-attempt.json"), "utf8")).providerCommandInvoked, false);
-      if (rollbackRequired) assert.match(result.rollbackCommand, /:rollback:ruip6ad_20260925a/);
+      if (rollbackRequired) assert.match(result.rollbackCommand, /:rollback:ruip6ad_20260925b/);
       assert.throws(() => recordTerminalState({ runDirectory: directory, authority: authority(), classification: "ABORTED", reason: "again", capturedAt }), /overwrite prohibited/);
     } finally { fs.rmSync(directory, { recursive: true, force: true }); }
   }
@@ -615,7 +678,7 @@ test("real hosted-reader alias callback persists metadata failures without runti
     assert.equal(result.attempts.every(attempt => attempt.errors.some(row => row.stage === "metadata")), true);
     assert.equal(result.attempts.some(attempt => attempt.errors.some(row => /synthetic metadata transport failure/.test(row.error))), true, JSON.stringify(result.attempts[0], null, 2));
     const failedMetadata = result.attempts[0].observations.find(row => row.type === "metadata");
-    assert.match(failedMetadata.requestId, /^ruip6ad_20260925a:expo-alias-final-parity:1:/);
+    assert.match(failedMetadata.requestId, /^ruip6ad_20260925b:expo-alias-final-parity:1:/);
     assert.equal(failedMetadata.status, null);
     assert.match(failedMetadata.error, /synthetic metadata transport failure/);
     assert.ok(failedMetadata.startedAt && failedMetadata.completedAt);
@@ -777,7 +840,7 @@ test("final preflight requires verified fresh recapture and rejects altered evid
     directory => fs.rmSync(path.join(directory, "fresh-recapture-attempt.json")),
     directory => fs.rmSync(path.join(directory, "fresh-recapture-verification.json")),
     directory => { const file = path.join(directory, "fresh-recapture-attempt.json"); const value = JSON.parse(fs.readFileSync(file)); value.state = "READY_FOR_RECAPTURE"; fs.writeFileSync(file, canonical(value)); },
-    directory => fs.appendFileSync(path.join(directory, "rollback-history", "ruip6ad_20260925a_fresh-rollback-recapture", "rollback-reference.json"), " "),
+    directory => fs.appendFileSync(path.join(directory, "rollback-history", "ruip6ad_20260925b_fresh-rollback-recapture", "rollback-reference.json"), " "),
     directory => { const file = path.join(directory, "rollback-reference.json"); const value = JSON.parse(fs.readFileSync(file)); value.criticalAssets.pop(); fs.writeFileSync(file, canonical(value)); },
   ]) {
     const fixture = finalFixture();
