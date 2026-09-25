@@ -14,8 +14,8 @@ import {
 export const DIAGNOSTIC_OPERATOR = Object.freeze({
   planSha256: "47611c6cd93ab7d9595649db77589198d8d3f7bf4969c45062ae767d036d01fc",
   applicationTree: "ae03238ac8c34f4ef11365b5a5c51dee81187812",
-  artifactManifestSha256: "6c9f951a01b74c92079e1340d2fbf9cf0494b10256705e9c523c779ff612073a",
-  archiveSha256: "195e20e68ac5cb50eb886313716e3da67b9f36552a01e7c02018a82c02324f4d",
+  artifactManifestSha256: "a3a22439b973ed822aadbe13104daedb934b785f78c9a685cfab5a2995c3f9ae",
+  archiveSha256: "952e7ceb40766f5cab55706418db4e88f403495e88cce04b3e613282c066a135",
   easProjectId: "a2d5538b-bd0c-4205-8153-ba08a3a9b2b1",
   supabaseProjectRef: "rlrfvqskzvpysewdxqcr",
   firebaseProjectId: "hungrieapp-a2288",

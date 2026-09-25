@@ -38,6 +38,20 @@ const expected = {
 };
 const evidenceHash = character => character.repeat(64);
 
+test("reviewed candidate artifact evidence is complete and matches the fixed identity", () => {
+  const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+  const evidence = path.join(root, "docs/restaurant-expo-alias-artifact-remediation-evidence");
+  const manifest = JSON.parse(fs.readFileSync(path.join(evidence, "candidate-artifact-manifest.json"), "utf8"));
+  const rows = manifest.files.map(row => `${row.sha256}\t${row.bytes}\t${row.path}`).join("\n") + "\n";
+  assert.equal(manifest.fileCount, 74);
+  assert.equal(hash(rows), DIAGNOSTIC_OPERATOR.artifactManifestSha256);
+  assert.equal(manifest.artifactManifestSha256, DIAGNOSTIC_OPERATOR.artifactManifestSha256);
+  assert.equal(manifest.criticalAssets.length, 5);
+  assert.equal(manifest.routes.length, 20);
+  assert.deepEqual(Object.keys(manifest.runtimeFiles).sort(), [...DIAGNOSTIC_OPERATOR.runtimeFiles].map(value => value.slice(1)).sort());
+  assert.equal(hash(fs.readFileSync(path.join(evidence, "restaurant-static-export.tar"))), DIAGNOSTIC_OPERATOR.archiveSha256);
+});
+
 function authority(overrides = {}) {
   return {
     contractVersion: 1,

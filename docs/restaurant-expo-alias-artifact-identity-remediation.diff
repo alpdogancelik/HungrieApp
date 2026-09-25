@@ -1,0 +1,106 @@
+diff --git a/scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs b/scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs
+index f6eacf6..9609e63 100755
+--- a/scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs
++++ b/scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs
+@@ -17,2 +17,2 @@ export const DIAGNOSTIC_OPERATOR = Object.freeze({
+-  artifactManifestSha256: "6c9f951a01b74c92079e1340d2fbf9cf0494b10256705e9c523c779ff612073a",
+-  archiveSha256: "195e20e68ac5cb50eb886313716e3da67b9f36552a01e7c02018a82c02324f4d",
++  artifactManifestSha256: "a3a22439b973ed822aadbe13104daedb934b785f78c9a685cfab5a2995c3f9ae",
++  archiveSha256: "952e7ceb40766f5cab55706418db4e88f403495e88cce04b3e613282c066a135",
+diff --git a/scripts/restaurant-alias-diagnostic-execution-support.mjs b/scripts/restaurant-alias-diagnostic-execution-support.mjs
+index fe23cf8..6a33ffa 100755
+--- a/scripts/restaurant-alias-diagnostic-execution-support.mjs
++++ b/scripts/restaurant-alias-diagnostic-execution-support.mjs
+@@ -20,5 +20,5 @@ export const SUPPORT = Object.freeze({
+-  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260925c-execution-contract.md",
+-  proposalSha256: "1d89925353d88af8f278fb6b6aa2bf6e0cb4e133bd6d178409b8340430b4b6f5",
+-  baseCheckpoint: "5533606a841e9a7d75b2a3e22ef672bd107fa5d8",
+-  baseSourceManifestSha256: "f06613f65c5a8866fe914dcd80efd8b04ef53e734aa27c651c445498cf739fc6",
+-  baseSourceManifestFiles: 1506,
++  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260925d-artifact-remediation-contract.md",
++  proposalSha256: "0c8be1a0a4d64048d60c1e1cd07d35ea59aad136e8886afcf7321ce97262a3c5",
++  baseCheckpoint: "0612be3f72ff3792321c74cfad6540900fa3a4c2",
++  baseSourceManifestSha256: "609c232f6ffe5d3a551af07ea9e8070c06fafb866c34e9e54a5d3da72b074dc0",
++  baseSourceManifestFiles: 1511,
+@@ -26,4 +26,7 @@ export const SUPPORT = Object.freeze({
+-    "docs/restaurant-expo-alias-diagnostic-remediation-implementation-review.md",
+-    "docs/restaurant-expo-alias-diagnostic-remediation-implementation.diff",
+-    "docs/restaurant-expo-alias-diagnostic-remediated-execution-contract.md",
+-    "docs/restaurant-expo-alias-ruip6ad-20260925c-execution-contract.md",
++    "docs/restaurant-expo-alias-artifact-identity-remediation-review.md",
++    "docs/restaurant-expo-alias-artifact-identity-remediation.diff",
++    "docs/restaurant-expo-alias-artifact-remediation-evidence/candidate-artifact-manifest.json",
++    "docs/restaurant-expo-alias-artifact-remediation-evidence/complete-artifact-comparison.json",
++    "docs/restaurant-expo-alias-artifact-remediation-evidence/evidence-manifest.tsv",
++    "docs/restaurant-expo-alias-artifact-remediation-evidence/restaurant-static-export.tar",
++    "docs/restaurant-expo-alias-ruip6ad-20260925d-artifact-remediation-contract.md",
+@@ -31 +33,0 @@ export const SUPPORT = Object.freeze({
+-    "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs",
+@@ -35 +36,0 @@ export const SUPPORT = Object.freeze({
+-    "scripts/test-restaurant-alias-diagnostic-access-staging.mjs",
+@@ -104,0 +106,18 @@ export const SUPPORT = Object.freeze({
++    Object.freeze({
++      commit: "0612be3f72ff3792321c74cfad6540900fa3a4c2",
++      parent: "5533606a841e9a7d75b2a3e22ef672bd107fa5d8",
++      sourceManifestSha256: "609c232f6ffe5d3a551af07ea9e8070c06fafb866c34e9e54a5d3da72b074dc0",
++      sourceManifestFiles: 1511,
++      files: Object.freeze({
++        "docs/restaurant-expo-alias-diagnostic-remediated-execution-contract.md": "06f1d1862a82c4d8d225b08e6a06ceee4590b59b1ae2bdaaa44d73838df0799f",
++        "docs/restaurant-expo-alias-diagnostic-remediation-implementation-review.md": "fa024bb9c5b8e8abd0322676ca8509d47c0cd27ceaa386797727031e7d303571",
++        "docs/restaurant-expo-alias-diagnostic-remediation-implementation.diff": "4d527e9920cc5b3e41178498547ed6d04984009ed17851619ca2a377df3e8506",
++        "docs/restaurant-expo-alias-ruip6ad-20260925c-execution-contract.md": "1d89925353d88af8f278fb6b6aa2bf6e0cb4e133bd6d178409b8340430b4b6f5",
++        "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "cf0e10538f0922f8e13236fa9eaee9947d83cf4e2c838cee1d1d1f0b54858b53",
++        "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "2e0189fca16b9bbd6a95d87685d38e92b8260f75e6a8225bed5221c3492c3c7d",
++        "scripts/restaurant-alias-diagnostic-execution-support.mjs": "b76e106ed855d135dfc7339f7d4e213a15aa7aea04ebb9c405ffadaa9050c1a2",
++        "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "2392f2e9f96e9d6a40787775724f42537a9a0c34bb0f8644c23d0e4faeed349f",
++        "scripts/test-restaurant-alias-diagnostic-access-staging.mjs": "860e4b0589133bc7d452126e7652af6866b3ce7685db104b2c919e3fa9c76ee6",
++        "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "e7d848771145619d1cc3648388b48757a7165af9346ea02bb0911aaca92a51c6",
++      }),
++    }),
+@@ -109,2 +128,2 @@ export const SUPPORT = Object.freeze({
+-    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "cf0e10538f0922f8e13236fa9eaee9947d83cf4e2c838cee1d1d1f0b54858b53",
+-    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "2392f2e9f96e9d6a40787775724f42537a9a0c34bb0f8644c23d0e4faeed349f",
++    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "9b9889ba75d6e469d2f888ac9547786cc49a2a9f61f526d4c022bbdd11e2406f",
++    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "46874b6a903f45afd9509ec5dc7460f7a37c57172ce3920848871547713221df",
+@@ -115,2 +134,2 @@ export const SUPPORT = Object.freeze({
+-  runId: "ruip6ad_20260925c",
+-  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260925c",
++  runId: "ruip6ad_20260925d",
++  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260925d",
+diff --git a/scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs b/scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs
+index 85b991d..7ab45bf 100644
+--- a/scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs
++++ b/scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs
+@@ -40,0 +41,14 @@ const evidenceHash = character => character.repeat(64);
++test("reviewed candidate artifact evidence is complete and matches the fixed identity", () => {
++  const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
++  const evidence = path.join(root, "docs/restaurant-expo-alias-artifact-remediation-evidence");
++  const manifest = JSON.parse(fs.readFileSync(path.join(evidence, "candidate-artifact-manifest.json"), "utf8"));
++  const rows = manifest.files.map(row => `${row.sha256}\t${row.bytes}\t${row.path}`).join("\n") + "\n";
++  assert.equal(manifest.fileCount, 74);
++  assert.equal(hash(rows), DIAGNOSTIC_OPERATOR.artifactManifestSha256);
++  assert.equal(manifest.artifactManifestSha256, DIAGNOSTIC_OPERATOR.artifactManifestSha256);
++  assert.equal(manifest.criticalAssets.length, 5);
++  assert.equal(manifest.routes.length, 20);
++  assert.deepEqual(Object.keys(manifest.runtimeFiles).sort(), [...DIAGNOSTIC_OPERATOR.runtimeFiles].map(value => value.slice(1)).sort());
++  assert.equal(hash(fs.readFileSync(path.join(evidence, "restaurant-static-export.tar"))), DIAGNOSTIC_OPERATOR.archiveSha256);
++});
++
+diff --git a/scripts/test-restaurant-alias-diagnostic-execution-support.mjs b/scripts/test-restaurant-alias-diagnostic-execution-support.mjs
+index d3f045d..b92fca8 100644
+--- a/scripts/test-restaurant-alias-diagnostic-execution-support.mjs
++++ b/scripts/test-restaurant-alias-diagnostic-execution-support.mjs
+@@ -419,2 +419,2 @@ test("new run owns isolated authority and evidence identities", () => {
+-  assert.equal(SUPPORT.runId, "ruip6ad_20260925c");
+-  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260925c");
++  assert.equal(SUPPORT.runId, "ruip6ad_20260925d");
++  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260925d");
+@@ -665 +665 @@ test("terminal recording distinguishes no assignment, uncertain assignment, and
+-      if (rollbackRequired) assert.match(result.rollbackCommand, /:rollback:ruip6ad_20260925c/);
++      if (rollbackRequired) assert.match(result.rollbackCommand, /:rollback:ruip6ad_20260925d/);
+@@ -722 +722 @@ test("real hosted-reader alias callback persists metadata failures without runti
+-    assert.match(failedMetadata.requestId, /^ruip6ad_20260925c:expo-alias-final-parity:1:/);
++    assert.match(failedMetadata.requestId, /^ruip6ad_20260925d:expo-alias-final-parity:1:/);
+@@ -885 +885 @@ test("final preflight requires verified fresh recapture and rejects altered evid
+-    directory => fs.appendFileSync(path.join(directory, "rollback-history", "ruip6ad_20260925c_fresh-rollback-recapture", "rollback-reference.json"), " "),
++    directory => fs.appendFileSync(path.join(directory, "rollback-history", "ruip6ad_20260925d_fresh-rollback-recapture", "rollback-reference.json"), " "),
