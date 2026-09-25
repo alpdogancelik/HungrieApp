@@ -15,17 +15,65 @@ import {
 import { sanitizeError } from "./restaurant-alias-parity-verifier.mjs";
 
 export const SUPPORT = Object.freeze({
-  proposalSha256: "be7edcc86e94a95e61c1f452a4645dc326d6766cd9a4049e20263de3f7cfffaf",
-  baseCheckpoint: "1a64f4ddd59114af9ad8d7968bfdc9729f2f0e92",
-  baseSourceManifestSha256: "8449af0cf852d22154392525d1e2cca5c78461036667065f1f9ec4662c85e059",
+  proposalSha256: "e19442464a445c044d7cfd4212718edfd016b1af67f8f44aedeb6c399f72ef70",
+  baseCheckpoint: "583579463f339dd8178917ebaa5e5cae9347dc5c",
+  baseSourceManifestSha256: "fc3e6b5b6b4340bc7da310d2ef9bfca5514cc21756ae4c85db05cde0cf619c22",
   checkpointFiles: Object.freeze([
-    "docs/restaurant-alias-diagnostic-execution-support-implementation-review.md",
-    "docs/restaurant-alias-diagnostic-execution-support-implementation.diff",
-    "docs/restaurant-expo-alias-final-one-run-operational-readiness-audit.md",
+    "docs/restaurant-expo-alias-checkpoint-binding-compatibility-implementation-review.md",
+    "docs/restaurant-expo-alias-checkpoint-binding-compatibility-implementation.diff",
+    "docs/restaurant-expo-alias-final-execution-readiness-handoff.md",
     "docs/restaurant-expo-alias-final-one-run-staging-execution-authorization-proposal.md",
     "scripts/restaurant-alias-diagnostic-execution-support.mjs",
     "scripts/test-restaurant-alias-diagnostic-execution-support.mjs",
   ]),
+  acceptedLineage: Object.freeze([
+    Object.freeze({
+      commit: "1a64f4ddd59114af9ad8d7968bfdc9729f2f0e92",
+      parent: "267b9bc5bbe888431d864963890f73c7092ededc",
+      sourceManifestSha256: "8449af0cf852d22154392525d1e2cca5c78461036667065f1f9ec4662c85e059",
+      sourceManifestFiles: 1494,
+      files: Object.freeze({
+        "docs/restaurant-alias-diagnostic-execution-support-implementation-review.md": "acbdcdb95d2da5f7e1753fa028996526805e7c6c58adb1114f944adc7126925d",
+        "docs/restaurant-alias-diagnostic-execution-support-implementation.diff": "b1c271d712a5ae58e7b889dc6349e31787fe4cfd531d54272c1ef541665c48e6",
+        "scripts/restaurant-alias-diagnostic-execution-support.mjs": "b8e0671db93c4d8b1adc2a58844d495cb0b42c46931372f84b859017b6682bb4",
+        "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "11e8eb1c41b808004fb0aa7541bfc18b4e029604231feb8c5c7628e7d94c38ad",
+      }),
+    }),
+    Object.freeze({
+      commit: "c3180f019de93fae99341628577a9553faad60f7",
+      parent: "1a64f4ddd59114af9ad8d7968bfdc9729f2f0e92",
+      sourceManifestSha256: "89709da5fb1609b706fae69d41a200dd6914415f65a2ae31007806141a86c12b",
+      sourceManifestFiles: 1496,
+      files: Object.freeze({
+        "docs/restaurant-alias-diagnostic-execution-support-implementation-review.md": "04bd00d8810e3650cc7f772608d2363e430181f43fdd980ba59013818a94a4b5",
+        "docs/restaurant-alias-diagnostic-execution-support-implementation.diff": "20d2fde68d417b48e329c239a983ac9cb6b5aff032f36dd92c95855c030e3dd5",
+        "docs/restaurant-expo-alias-final-one-run-operational-readiness-audit.md": "ebc82cb266998699989a6a8ce1900ee4ed47d9dfbb729060a8df63cb2a215819",
+        "docs/restaurant-expo-alias-final-one-run-staging-execution-authorization-proposal.md": "9cf30053110f0380c09e297a645834d4ac9f020dd4214aa68b97ce9ab7103b41",
+        "scripts/restaurant-alias-diagnostic-execution-support.mjs": "b7374024b74f28e2dedd157e2de25b2a5368fd43484aa8528c6ed7d2ea6ceae5",
+        "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "84cf80869b12195d90192fcf46e2821574abeb4b02a9ae32e9b17eef5d4925c5",
+      }),
+    }),
+    Object.freeze({
+      commit: "583579463f339dd8178917ebaa5e5cae9347dc5c",
+      parent: "c3180f019de93fae99341628577a9553faad60f7",
+      sourceManifestSha256: "fc3e6b5b6b4340bc7da310d2ef9bfca5514cc21756ae4c85db05cde0cf619c22",
+      sourceManifestFiles: 1501,
+      files: Object.freeze({
+        "docs/restaurant-staging-four-account-preparation-implementation-review.md": "fa1f765d4fdbdd4141e5f009f0616b5adab81c5e99f172bc94c67753e77ec221",
+        "docs/restaurant-staging-four-account-preparation-implementation.diff": "47e3dbcd9dd0c3aeb3973a009a80823e423545432ae19e3087be5ea45a219032",
+        "scripts/restaurant-staging-account-preparation.mjs": "39d9ccd615b644715fe33337a9b60e6f7227d2207a0c7ada605a181bdb51105a",
+        "scripts/test-restaurant-staging-account-preparation-postgres.mjs": "5ac0d5049440750444b983d3b8f6c07b5edfd4d5f6153bee4b302ec10c68171b",
+        "scripts/test-restaurant-staging-account-preparation.mjs": "8e4e96a7d9131b77f65e32b4619ed7b573ff73f8c190a33f546126b39d608f85",
+      }),
+    }),
+  ]),
+  diagnosticExecutableFiles: Object.freeze({
+    "scripts/restaurant-alias-parity-verifier.mjs": "e563d7a5203aaf6ea0e04687063d63027568fd2906accec43c26daaeea4ca1d8",
+    "scripts/test-restaurant-alias-parity-verifier.mjs": "6fa1ce21c047f93678be3c45fb71cd1f0e8167ed142fc259e55efddea1030afb",
+    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "a3fe6fb596a6e6aefd17e576beaa2c35a06a19e620e7ab807fbe5a7dc6792ed6",
+    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "d09e43ab5a13a6357da994840f6bdd22730a5118f244f82979468b0f0243b288",
+    "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "9500103b1c54a6c97b1fb126ac0973bb881095d4f81e0e30dc941e7090293c35",
+  }),
   applicationTree: DIAGNOSTIC_OPERATOR.applicationTree,
   runId: "ruip6ad_20260925a",
   evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260925a",
@@ -113,6 +161,46 @@ export function buildSourceManifest(repoRoot, commit = SUPPORT.baseCheckpoint, s
   return { commit, files: paths.length, bytes, sha256: sha256(bytes) };
 }
 
+function gitResult(repoRoot, args, spawn, encoding = "utf8") {
+  const result = spawn("git", args, { cwd: repoRoot, encoding, maxBuffer: 128 * 1024 * 1024 });
+  if (result.status !== 0) throw new Error("Unable to verify accepted checkpoint lineage.");
+  return result.stdout;
+}
+
+function commitInventory(repoRoot, commit, spawn) {
+  return String(gitResult(repoRoot, ["diff-tree", "--no-commit-id", "--name-only", "-r", commit], spawn)).trim().split("\n").filter(Boolean).sort();
+}
+
+function commitFileSha256(repoRoot, commit, relative, spawn) {
+  const bytes = gitResult(repoRoot, ["show", commit + ":" + relative], spawn, null);
+  return sha256(Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes));
+}
+
+export function verifyAcceptedCheckpointLineage({ repoRoot, spawn = spawnSync, manifestBuilder = buildSourceManifest }) {
+  for (const checkpoint of SUPPORT.acceptedLineage) {
+    const parent = String(gitResult(repoRoot, ["rev-parse", checkpoint.commit + "^"], spawn)).trim();
+    if (parent !== checkpoint.parent) throw new Error("Accepted checkpoint parent mismatch: " + checkpoint.commit + ".");
+    const inventory = commitInventory(repoRoot, checkpoint.commit, spawn);
+    if (JSON.stringify(inventory) !== JSON.stringify(Object.keys(checkpoint.files).sort())) throw new Error("Accepted checkpoint inventory mismatch: " + checkpoint.commit + ".");
+    for (const [relative, expected] of Object.entries(checkpoint.files)) {
+      if (commitFileSha256(repoRoot, checkpoint.commit, relative, spawn) !== expected) throw new Error("Accepted checkpoint file hash mismatch: " + checkpoint.commit + ":" + relative + ".");
+    }
+    const manifest = manifestBuilder(repoRoot, checkpoint.commit, spawn);
+    if (manifest.sha256 !== checkpoint.sourceManifestSha256 || manifest.files !== checkpoint.sourceManifestFiles) throw new Error("Accepted checkpoint source manifest mismatch: " + checkpoint.commit + ".");
+    const applicationTree = String(gitResult(repoRoot, ["rev-parse", checkpoint.commit + ":apps/restaurant"], spawn)).trim();
+    if (applicationTree !== SUPPORT.applicationTree) throw new Error("Accepted checkpoint Restaurant tree mismatch: " + checkpoint.commit + ".");
+  }
+  return { passed: true, checkpoints: SUPPORT.acceptedLineage.map(value => value.commit) };
+}
+
+export function verifyAcceptedDiagnosticExecutables({ repoRoot, commit, spawn = spawnSync }) {
+  for (const [relative, expected] of Object.entries(SUPPORT.diagnosticExecutableFiles)) {
+    if (commitFileSha256(repoRoot, commit, relative, spawn) !== expected) throw new Error("Accepted diagnostic executable changed: " + relative + ".");
+  }
+  if (commitFileSha256(repoRoot, commit, "docs/restaurant-expo-alias-final-one-run-staging-execution-authorization-proposal.md", spawn) !== SUPPORT.proposalSha256) throw new Error("Reviewed execution proposal hash mismatch.");
+  return { passed: true, files: Object.keys(SUPPORT.diagnosticExecutableFiles).length };
+}
+
 export function validateOwnerAuthorization(input) {
   const fields = [
     "contractVersion", "decision", "approvedForHostedExecution", "environment", "runId",
@@ -131,15 +219,17 @@ export function validateOwnerAuthorization(input) {
   return input;
 }
 
-export function prepareAuthorityArtifacts({ repoRoot, approval, outputDirectory, spawn = spawnSync }) {
+export function prepareAuthorityArtifacts({ repoRoot, approval, outputDirectory, spawn = spawnSync, lineageVerifier = verifyAcceptedCheckpointLineage, executableVerifier = verifyAcceptedDiagnosticExecutables }) {
   validateOwnerAuthorization(approval);
+  lineageVerifier({ repoRoot, spawn });
   const manifest = buildSourceManifest(repoRoot, approval.sourceCommit, spawn);
   if (manifest.sha256 !== approval.sourceManifestSha256) throw new Error("Approved support-checkpoint source manifest was not reproduced.");
   if (spawn("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).stdout.trim() !== approval.sourceCommit) throw new Error("Repository HEAD is not the approved support checkpoint.");
-  if (spawn("git", ["rev-parse", approval.sourceCommit + "^"], { cwd: repoRoot, encoding: "utf8" }).stdout.trim() !== SUPPORT.baseCheckpoint) throw new Error("Support checkpoint is not a direct child of the accepted diagnostic checkpoint.");
+  if (spawn("git", ["rev-parse", approval.sourceCommit + "^"], { cwd: repoRoot, encoding: "utf8" }).stdout.trim() !== SUPPORT.baseCheckpoint) throw new Error("Compatibility checkpoint is not a direct child of the accepted account-preparation checkpoint.");
   const inventory = spawn("git", ["diff-tree", "--no-commit-id", "--name-only", "-r", approval.sourceCommit], { cwd: repoRoot, encoding: "utf8" }).stdout.trim().split("\n").filter(Boolean).sort();
-  if (JSON.stringify(inventory) !== JSON.stringify([...SUPPORT.checkpointFiles].sort())) throw new Error("Support checkpoint inventory differs from the reviewed four-file scope.");
+  if (JSON.stringify(inventory) !== JSON.stringify([...SUPPORT.checkpointFiles].sort())) throw new Error("Compatibility checkpoint inventory differs from the reviewed six-file scope.");
   if (spawn("git", ["rev-parse", approval.sourceCommit + ":apps/restaurant"], { cwd: repoRoot, encoding: "utf8" }).stdout.trim() !== SUPPORT.applicationTree) throw new Error("Restaurant application tree changed.");
+  executableVerifier({ repoRoot, commit: approval.sourceCommit, spawn });
   const authority = {
     contractVersion: 1,
     approvedForHostedExecution: true,

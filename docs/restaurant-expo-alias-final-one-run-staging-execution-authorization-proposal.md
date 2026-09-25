@@ -5,24 +5,31 @@
 **Run:** `ruip6ad_20260925a`
 **Phase 6:** `BLOCKED`
 
-This proposal is preparation only. It does not authorize authentication, hosted reads, export, deployment, alias assignment, observation, rollback, or cleanup. It requires a new audited local checkpoint containing the reviewed readiness changes before an owner may authorize the run.
+This proposal is preparation only. It does not authorize authentication, hosted reads, export, deployment, alias assignment, observation, rollback, or cleanup. It requires one audited local compatibility checkpoint that is a direct child of the accepted account-preparation checkpoint before an owner may authorize the run.
 
-## 1. Fixed identities and unresolved checkpoint values
+## 1. Fixed lineage and unresolved compatibility-checkpoint values
 
-| Item | Required value |
-|---|---|
-| Accepted execution-support base checkpoint | `1a64f4ddd59114af9ad8d7968bfdc9729f2f0e92` |
-| Its parent | `267b9bc5bbe888431d864963890f73c7092ededc` |
-| Accepted base source manifest | `8449af0cf852d22154392525d1e2cca5c78461036667065f1f9ec4662c85e059` (1,494 files) |
-| Restaurant tree | `ae03238ac8c34f4ef11365b5a5c51dee81187812` |
-| Artifact manifest | `6c9f951a01b74c92079e1340d2fbf9cf0494b10256705e9c523c779ff612073a` (74 files) |
-| Deterministic archive | `195e20e68ac5cb50eb886313716e3da67b9f36552a01e7c02018a82c02324f4d` |
-| Reviewed proposal input pinned by support code | `be7edcc86e94a95e61c1f452a4645dc326d6766cd9a4049e20263de3f7cfffaf` |
-| Run ID | `ruip6ad_20260925a` |
-| Evidence directory | `secure/restaurant-alias-diagnostic/ruip6ad_20260925a` |
-| Frozen rollback deployment | `6jki82fy0u` |
+| Checkpoint | Required parent | Source manifest | Committed scope |
+|---|---|---|---|
+| Execution-support base `1a64f4ddd59114af9ad8d7968bfdc9729f2f0e92` | `267b9bc5bbe888431d864963890f73c7092ededc` | `8449af0cf852d22154392525d1e2cca5c78461036667065f1f9ec4662c85e059` (1,494 files) | Exact accepted four-file execution-support inventory and hashes |
+| Readiness checkpoint `c3180f019de93fae99341628577a9553faad60f7` | `1a64f4ddd59114af9ad8d7968bfdc9729f2f0e92` | `89709da5fb1609b706fae69d41a200dd6914415f65a2ae31007806141a86c12b` (1,496 files) | Exact accepted six-file readiness inventory and hashes |
+| Account-preparation checkpoint `583579463f339dd8178917ebaa5e5cae9347dc5c` | `c3180f019de93fae99341628577a9553faad60f7` | `fc3e6b5b6b4340bc7da310d2ef9bfca5514cc21756ae4c85db05cde0cf619c22` (1,501 files) | Exact accepted five-file account-preparation inventory and hashes |
+| Future compatibility checkpoint `NEXT_COMPATIBILITY_CHECKPOINT` | `583579463f339dd8178917ebaa5e5cae9347dc5c` | `NEXT_SOURCE_MANIFEST_SHA256` | Exact six-file compatibility inventory defined below |
 
-The following values remain unresolved until the owner approves an audited checkpoint of the current local changes: `NEW_SUPPORT_CHECKPOINT`, `NEW_SOURCE_MANIFEST_SHA256`, this document's final reviewed SHA-256, the authority text digest, the maintenance window, and the new provider deployment ID/URL. No hosted command may run while any remains unresolved.
+Every checkpoint must retain Restaurant tree `ae03238ac8c34f4ef11365b5a5c51dee81187812`. The accepted artifact manifest is `6c9f951a01b74c92079e1340d2fbf9cf0494b10256705e9c523c779ff612073a` (74 files), and the deterministic archive is `195e20e68ac5cb50eb886313716e3da67b9f36552a01e7c02018a82c02324f4d`.
+
+The future compatibility checkpoint must contain exactly:
+
+- `scripts/restaurant-alias-diagnostic-execution-support.mjs`
+- `scripts/test-restaurant-alias-diagnostic-execution-support.mjs`
+- `docs/restaurant-expo-alias-final-one-run-staging-execution-authorization-proposal.md`
+- `docs/restaurant-expo-alias-final-execution-readiness-handoff.md`
+- `docs/restaurant-expo-alias-checkpoint-binding-compatibility-implementation-review.md`
+- `docs/restaurant-expo-alias-checkpoint-binding-compatibility-implementation.diff`
+
+Its owner authorization must bind the actual post-commit SHA-1, the actual complete source-manifest SHA-256, and the final reviewed SHA-256 of this proposal. The following values remain unresolved until that commit is reviewed: `NEXT_COMPATIBILITY_CHECKPOINT`, `NEXT_SOURCE_MANIFEST_SHA256`, the final reviewed proposal SHA-256, the authorization text/digest, the UTC maintenance window, and the new provider deployment ID/URL. No hosted command may run while any required value remains unresolved.
+
+The run ID is `ruip6ad_20260925a`, its evidence directory is `secure/restaurant-alias-diagnostic/ruip6ad_20260925a`, and the frozen rollback deployment is `6jki82fy0u`.
 
 Approved Staging identities are exact:
 
@@ -50,10 +57,10 @@ The approval JSON must contain only:
   "approvedForHostedExecution": true,
   "environment": "staging",
   "runId": "ruip6ad_20260925a",
-  "proposalSha256": "be7edcc86e94a95e61c1f452a4645dc326d6766cd9a4049e20263de3f7cfffaf",
-  "checkpointParent": "1a64f4ddd59114af9ad8d7968bfdc9729f2f0e92",
-  "sourceCommit": "NEW_SUPPORT_CHECKPOINT",
-  "sourceManifestSha256": "NEW_SOURCE_MANIFEST_SHA256",
+  "proposalSha256": "FINAL_REVIEWED_PROPOSAL_SHA256",
+  "checkpointParent": "583579463f339dd8178917ebaa5e5cae9347dc5c",
+  "sourceCommit": "NEXT_COMPATIBILITY_CHECKPOINT",
+  "sourceManifestSha256": "NEXT_SOURCE_MANIFEST_SHA256",
   "applicationTree": "ae03238ac8c34f4ef11365b5a5c51dee81187812",
   "authorizedActions": [
     "export", "capture-rollback", "deploy", "verify-immutable",
@@ -71,7 +78,7 @@ The approval JSON must contain only:
 }
 ```
 
-`NEW_SUPPORT_CHECKPOINT` must be a direct child of `1a64f4…`, contain only the reviewed six-file inventory, reproduce the reviewed hashes, and retain the Restaurant tree. The authorization text must name the run, Staging, exact final proposal hash, checkpoint, source manifest, maintenance window, rollback, one-deployment/one-promotion limits, mixed-content risk, and Earnings-disabled boundary.
+`NEXT_COMPATIBILITY_CHECKPOINT` must be a direct child of `583579…`, contain only the six files listed in section 1, reproduce the owner-approved complete source manifest, retain the Restaurant tree, preserve the accepted diagnostic executable hashes, and pass exact verification of every earlier lineage checkpoint. The authorization text must name the run, Staging, exact final proposal hash, checkpoint, source manifest, maintenance window, rollback, one-deployment/one-promotion limits, mixed-content risk, and Earnings-disabled boundary.
 
 ## 3. Credentials and local prerequisites
 
@@ -93,8 +100,8 @@ After future owner authorization only:
 
 ```sh
 RUN_ID=ruip6ad_20260925a
-CHECKPOINT=NEW_SUPPORT_CHECKPOINT
-SOURCE_SHA256=NEW_SOURCE_MANIFEST_SHA256
+CHECKPOINT=NEXT_COMPATIBILITY_CHECKPOINT
+SOURCE_SHA256=NEXT_SOURCE_MANIFEST_SHA256
 REPO_ROOT=/absolute/path/to/audited/checkout
 AUTHORITY_DIR="$REPO_ROOT/secure/restaurant-alias-diagnostic-authority"
 AUTHORITY_FILE="$AUTHORITY_DIR/$RUN_ID-authority.json"

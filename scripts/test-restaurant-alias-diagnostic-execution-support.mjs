@@ -26,6 +26,8 @@ import {
   registerSingleDeployment,
   sanitizeSupportError,
   validateOwnerAuthorization,
+  verifyAcceptedCheckpointLineage,
+  verifyAcceptedDiagnosticExecutables,
   verifyFreshRollbackRecapture,
 } from "./restaurant-alias-diagnostic-execution-support.mjs";
 import { DIAGNOSTIC_OPERATOR } from "./deploy-restaurant-alias-10-minute-diagnostic-staging.mjs";
@@ -296,8 +298,70 @@ function finalFixture({ rollbackCapturedAt = capturedAt } = {}) {
 test("source manifest exactly reproduces the audited checkpoint", () => {
   const result = buildSourceManifest(root, SUPPORT.baseCheckpoint);
   assert.equal(result.commit, SUPPORT.baseCheckpoint);
-  assert.equal(result.files, 1494);
+  assert.equal(result.files, 1501);
   assert.equal(result.sha256, SUPPORT.baseSourceManifestSha256);
+});
+
+test("accepted checkpoint lineage reproduces exact parents, inventories, hashes, manifests, and Restaurant trees", () => {
+  const result = verifyAcceptedCheckpointLineage({ repoRoot: root });
+  assert.equal(result.passed, true);
+  assert.deepEqual(result.checkpoints, SUPPORT.acceptedLineage.map(value => value.commit));
+});
+
+test("accepted checkpoint lineage rejects every parent, inventory, file, manifest, and Restaurant-tree bypass", () => {
+  const manifestBuilder = (_root, commit) => {
+    const expected = SUPPORT.acceptedLineage.find(value => value.commit === commit);
+    return { commit, files: expected.sourceManifestFiles, sha256: expected.sourceManifestSha256 };
+  };
+  const delegated = (mutation) => (program, args, options) => {
+    assert.equal(program, "git");
+    const altered = mutation(args);
+    if (altered) return altered;
+    return spawnSync(program, args, options);
+  };
+  const latest = SUPPORT.acceptedLineage.at(-1);
+  assert.throws(() => verifyAcceptedCheckpointLineage({
+    repoRoot: root,
+    manifestBuilder,
+    spawn: delegated(args => args[0] === "rev-parse" && args[1] === latest.commit + "^" ? { status: 0, stdout: "0".repeat(40) + "\n" } : null),
+  }), /parent mismatch/i);
+  assert.throws(() => verifyAcceptedCheckpointLineage({
+    repoRoot: root,
+    manifestBuilder,
+    spawn: delegated(args => args[0] === "diff-tree" && args.at(-1) === latest.commit ? { status: 0, stdout: "unexpected-file\n" } : null),
+  }), /inventory mismatch/i);
+  const firstFile = Object.keys(latest.files)[0];
+  assert.throws(() => verifyAcceptedCheckpointLineage({
+    repoRoot: root,
+    manifestBuilder,
+    spawn: delegated(args => args[0] === "show" && args[1] === latest.commit + ":" + firstFile ? { status: 0, stdout: Buffer.from("altered\n") } : null),
+  }), /file hash mismatch/i);
+  assert.throws(() => verifyAcceptedCheckpointLineage({
+    repoRoot: root,
+    manifestBuilder: (_root, commit) => ({ commit, files: SUPPORT.acceptedLineage.find(value => value.commit === commit).sourceManifestFiles, sha256: commit === latest.commit ? "0".repeat(64) : SUPPORT.acceptedLineage.find(value => value.commit === commit).sourceManifestSha256 }),
+  }), /source manifest mismatch/i);
+  assert.throws(() => verifyAcceptedCheckpointLineage({
+    repoRoot: root,
+    manifestBuilder,
+    spawn: delegated(args => args[0] === "rev-parse" && args[1] === latest.commit + ":apps/restaurant" ? { status: 0, stdout: "0".repeat(40) + "\n" } : null),
+  }), /Restaurant tree mismatch/i);
+});
+
+test("future compatibility checkpoint must retain diagnostic executables and reviewed proposal", () => {
+  const sourceCommit = fakeSourceCommit;
+  const source = (program, args) => {
+    assert.equal(program, "git");
+    if (args[0] !== "show" || !args[1].startsWith(sourceCommit + ":")) throw new Error("Unexpected command");
+    return { status: 0, stdout: fs.readFileSync(path.join(root, args[1].slice(sourceCommit.length + 1))) };
+  };
+  assert.equal(verifyAcceptedDiagnosticExecutables({ repoRoot: root, commit: sourceCommit, spawn: source }).passed, true);
+  for (const relative of [...Object.keys(SUPPORT.diagnosticExecutableFiles), "docs/restaurant-expo-alias-final-one-run-staging-execution-authorization-proposal.md"]) {
+    assert.throws(() => verifyAcceptedDiagnosticExecutables({
+      repoRoot: root,
+      commit: sourceCommit,
+      spawn: (program, args) => args[1] === sourceCommit + ":" + relative ? { status: 0, stdout: Buffer.from("altered\n") } : source(program, args),
+    }), /executable changed|proposal hash mismatch/i, relative);
+  }
 });
 
 test("authority preparation binds exact owner authorization and writes protected artifacts", () => {
@@ -315,7 +379,7 @@ test("authority preparation binds exact owner authorization and writes protected
     throw new Error("Unexpected local git command: " + args.join(" "));
   };
   try {
-    const result = prepareAuthorityArtifacts({ repoRoot: root, approval: approval(), outputDirectory: directory, spawn });
+    const result = prepareAuthorityArtifacts({ repoRoot: root, approval: approval(), outputDirectory: directory, spawn, lineageVerifier: () => ({ passed: true }), executableVerifier: () => ({ passed: true }) });
     assert.equal(result.sourceManifestSha256, fakeSourceManifestSha256);
     assert.equal(result.authority.ownerAuthorizationSha256, approval().authorizationTextSha256);
     assert.equal(result.authority.sourceCommit, fakeSourceCommit);
@@ -327,10 +391,40 @@ test("authority preparation binds exact owner authorization and writes protected
 
 test("authority rejects missing, placeholder, contradictory, and unapproved input", () => {
   assert.throws(() => validateOwnerAuthorization(approval({ approvedForHostedExecution: false })), /approval/i);
+  assert.throws(() => validateOwnerAuthorization(approval({ environment: "development" })), /approval|identity/i);
   assert.throws(() => validateOwnerAuthorization(approval({ environment: "production" })), /approval|identity/i);
   assert.throws(() => validateOwnerAuthorization(approval({ authorizationText: "<OWNER AUTHORIZATION>", authorizationTextSha256: hash(Buffer.from("<OWNER AUTHORIZATION>")) })), /placeholder/i);
   assert.throws(() => validateOwnerAuthorization(approval({ authorizationTextSha256: "0".repeat(64) })), /digest/i);
   assert.throws(() => validateOwnerAuthorization(approval({ authorizedActions: ["promote"] })), /actions/i);
+  assert.throws(() => validateOwnerAuthorization(approval({ checkpointParent: SUPPORT.acceptedLineage[1].commit })), /identity/i);
+  assert.throws(() => validateOwnerAuthorization(approval({ proposalSha256: "0".repeat(64) })), /identity/i);
+});
+
+test("authority preparation rejects an unreviewed future parent, inventory, source manifest, Restaurant tree, executable, or lineage", () => {
+  function attempt({ parent = SUPPORT.baseCheckpoint, inventory = SUPPORT.checkpointFiles, applicationTree = SUPPORT.applicationTree, approvedManifest = fakeSourceManifestSha256, lineageVerifier = () => ({ passed: true }), executableVerifier = () => ({ passed: true }) } = {}) {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-authority-negative-"));
+    const spawn = (program, args) => {
+      assert.equal(program, "git");
+      if (args[0] === "ls-tree") return { status: 0, stdout: Buffer.from("support.txt\0") };
+      if (args[0] === "show") return { status: 0, stdout: fakeBlob };
+      if (args[0] === "diff-tree") return { status: 0, stdout: inventory.join("\n") + "\n" };
+      if (args[0] === "rev-parse" && args[1] === "HEAD") return { status: 0, stdout: fakeSourceCommit + "\n" };
+      if (args[0] === "rev-parse" && args[1] === fakeSourceCommit + "^") return { status: 0, stdout: parent + "\n" };
+      if (args[0] === "rev-parse" && args[1] === fakeSourceCommit + ":apps/restaurant") return { status: 0, stdout: applicationTree + "\n" };
+      throw new Error("Unexpected local git command: " + args.join(" "));
+    };
+    try {
+      return () => prepareAuthorityArtifacts({ repoRoot: root, approval: approval({ sourceManifestSha256: approvedManifest }), outputDirectory: directory, spawn, lineageVerifier, executableVerifier });
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
+  }
+  assert.throws(attempt({ parent: SUPPORT.acceptedLineage[1].commit }), /direct child/i);
+  assert.throws(attempt({ inventory: [...SUPPORT.checkpointFiles, "unexpected"] }), /inventory/i);
+  assert.throws(attempt({ approvedManifest: "0".repeat(64) }), /manifest/i);
+  assert.throws(attempt({ applicationTree: "0".repeat(40) }), /Restaurant (?:application )?tree/i);
+  assert.throws(attempt({ executableVerifier: () => { throw new Error("Accepted diagnostic executable changed"); } }), /executable changed/i);
+  assert.throws(attempt({ lineageVerifier: () => { throw new Error("Accepted checkpoint lineage changed"); } }), /lineage changed/i);
 });
 
 test("baseline preflight is independent from candidate evidence", () => {
