@@ -9,12 +9,16 @@ import {
   REJECTED_DEPLOYMENTS,
   classifyVerificationNextAction,
   createDeterministicArchive,
+  consumeDeploymentReservation,
   executePromotionBoundary,
   performSinglePromotion,
   promotionCommand,
   requireActionConfirmation,
+  requireMaintenanceWindow,
   rollbackCommand,
+  rollbackContractDigest,
   validateAuthority,
+  validateRollbackReference,
   validateImmediateRollbackRecheck,
   validatePromotionPrerequisites,
   verifyImmutableArtifactParity,
@@ -53,6 +57,8 @@ function authority(overrides = {}) {
     sourceCommit: "a".repeat(40),
     sourceManifestSha256: "b".repeat(64),
     ownerAuthorizationSha256: "c".repeat(64),
+    maintenanceWindowStart: "2026-09-25T10:00:00.000Z",
+    maintenanceWindowEnd: "2026-09-25T12:00:00.000Z",
     ...overrides,
   };
 }
@@ -93,9 +99,11 @@ function validPromotionEvidence() {
   const approved = authority(), deployment = { deploymentIdentifier: "new-candidate", url: "https://new-candidate.expo.app", sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256 };
   const artifact = { runId: approved.runId, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, files: Array.from({ length: 74 }, (_, index) => ({ path: `file-${index}`, bytes: 1, sha256: evidenceHash("a") })) };
   const immutableEvidenceSha256 = evidenceHash("d"), accessEvidenceSha256 = evidenceHash("e"), rollbackEvidenceSha256 = evidenceHash("f");
-  const immutable = { passed: true, completedAt: capturedAt, runId: approved.runId, deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, routes: Array.from({ length: 6 }, () => ({ passed: true })), criticalAssets: Array.from({ length: 5 }, () => ({ passed: true })) };
+  const immutable = { passed: true, completedAt: capturedAt, runId: approved.runId, deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, routes: Array.from({ length: 6 }, () => ({ passed: true })), criticalAssets: Array.from({ length: 5 }, () => ({ passed: true })), publishedFiles: Array.from({ length: 74 }, () => ({ passed: true })), externalRuntime: Array.from({ length: 2 }, () => ({ passed: true })) };
   const access = { passed: true, capturedAt, runId: approved.runId, qualificationId: `${approved.runId}:${deployment.deploymentIdentifier}:immutable-access`, deploymentIdentifier: deployment.deploymentIdentifier, immutableUrl: deployment.url, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, immutableEvidenceSha256, results: [["pending", "/pending"], ["suspended", "/suspended"], ["owner", "/dashboard"], ["manager", "/dashboard"]].map(([account, expectedPath]) => ({ passed: true, account, expectedPath })) };
-  const rollback = { passed: true, capturedAt, runId: approved.runId, deploymentIdentifier: DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment, routes: Array.from({ length: 6 }, (_, index) => ({ route: `/route-${index}`, sha256: evidenceHash("1") })), criticalAssets: [{ asset: "/old.js", sha256: evidenceHash("2") }] };
+  const rollbackAssets = [{ asset: "/old.js", bytes: 1, sha256: evidenceHash("2") }];
+  const rollback = { passed: true, capturedAt, runId: approved.runId, deploymentIdentifier: DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment, deploymentUrl: "https://rollback.invalid", routes: Array.from({ length: 6 }, (_, index) => ({ route: `/route-${index}`, bytes: 1, sha256: evidenceHash("1"), referencedAssets: rollbackAssets.map(row => row.asset) })), criticalAssets: rollbackAssets, runtimeFiles: DIAGNOSTIC_OPERATOR.runtimeFiles.map((runtimePath, i) => ({ path: runtimePath, bytes: 1, sha256: hash("runtime" + i) })), externalRuntime: DIAGNOSTIC_OPERATOR.externalRuntime.map((row, i) => ({ url: row.url, bytes: i ? 37024 : 31766, sha256: row.sha256 })) };
+  rollback.contractSha256 = rollbackContractDigest(rollback);
   const preflight = { passed: true, capturedAt, runId: approved.runId, environment: "staging", identities: { supabaseProjectRef: DIAGNOSTIC_OPERATOR.supabaseProjectRef, firebaseProjectId: DIAGNOSTIC_OPERATOR.firebaseProjectId, easProjectId: DIAGNOSTIC_OPERATOR.easProjectId, aliasId: DIAGNOSTIC_OPERATOR.aliasId, aliasName: DIAGNOSTIC_OPERATOR.aliasName, aliasUrl: DIAGNOSTIC_OPERATOR.aliasUrl }, source: { commit: approved.sourceCommit, manifestSha256: approved.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree }, artifact: { manifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256 }, migration: { ...DIAGNOSTIC_OPERATOR.conflictMigration, appliedExactlyOnce: true, pendingCount: 0 }, earnings: { capability: "restaurant_earnings_v1", enabled: false }, protectedEvidence: DIAGNOSTIC_OPERATOR.protectedEvidence.map(row => ({ ...row, passed: true })), candidate: { deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url, immutableEvidenceSha256, accessEvidenceSha256 }, rollback: { deploymentIdentifier: rollback.deploymentIdentifier, referenceSha256: rollbackEvidenceSha256, parityPassed: true } };
   return { authority: approved, artifact, artifactEntriesSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveEvidenceSha256: DIAGNOSTIC_OPERATOR.archiveSha256, deployment, immutable, immutableEvidenceSha256, access, accessEvidenceSha256, rollback, rollbackEvidenceSha256, preflight, protectedEvidenceVerification: DIAGNOSTIC_OPERATOR.protectedEvidence.map(row => ({ ...row, passed: true })), currentMs };
 }
@@ -111,16 +119,21 @@ async function immutableFixture(mutate = () => {}) {
   const html = Buffer.from('<!doctype html><link href="/_expo/static/a.css"><link href="/_expo/static/b.css"><link href="/_expo/static/c.css"><link href="/_expo/static/d.css"><script src="/_expo/static/e.js"></script>');
   const assets = new Map([["/_expo/static/a.css", Buffer.from("a")], ["/_expo/static/b.css", Buffer.from("b")], ["/_expo/static/c.css", Buffer.from("c")], ["/_expo/static/d.css", Buffer.from("d")], ["/_expo/static/e.js", Buffer.from("e")]]);
   const routePaths = [["/login", "login.html"], ["/dashboard", "dashboard.html"], ["/orders/detail?orderId=phase6", "orders/detail.html"], ["/menu", "menu.html"], ["/reviews", "reviews.html"], ["/earnings", "earnings.html"]];
-  const files = routePaths.map(([, file]) => ({ path: file, bytes: html.length, sha256: hash(html) })).concat([...assets].map(([asset, body]) => ({ path: asset.slice(1), bytes: body.length, sha256: hash(body) })));
-  while (files.length < 74) files.push({ path: `other-${files.length}.txt`, bytes: 1, sha256: hash("x") });
+  const appCompat = fs.readFileSync(path.resolve(import.meta.dirname, "../node_modules/firebase/firebase-app-compat.js"));
+  const messagingCompat = fs.readFileSync(path.resolve(import.meta.dirname, "../node_modules/firebase/firebase-messaging-compat.js"));
+  const sw = Buffer.from(`importScripts("${DIAGNOSTIC_OPERATOR.externalRuntime[0].url}","${DIAGNOSTIC_OPERATOR.externalRuntime[1].url}")`);
+  const fileBodies = new Map(routePaths.map(([, file]) => [file, html]));
+  for (const [asset, body] of assets) fileBodies.set(asset.slice(1), body);
+  fileBodies.set("manifest.webmanifest", Buffer.from("{}")); fileBodies.set("sw.js", sw); fileBodies.set("firebase-config.js", Buffer.from("config"));
+  while (fileBodies.size < 74) fileBodies.set(`other-${fileBodies.size}.txt`, Buffer.from("x"));
+  const files = [...fileBodies].map(([file, body]) => ({ path: file, bytes: body.length, sha256: hash(body) }));
   const artifact = { artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, files };
-  const state = { status: 200, finalUrl: null, body: null }; mutate({ state, html, assets, artifact });
+  const state = { status: 200, finalUrl: null, body: null }; mutate({ state, html, assets, artifact, fileBodies });
   const snapshots = [];
   const fetchImpl = async input => {
-    const url = new URL(input), body = state.body || assets.get(url.pathname) || html;
-    const response = new Response(body, { status: state.status });
-    Object.defineProperty(response, "url", { value: state.finalUrl || url.href });
-    return response;
+    const url = new URL(input);
+    const body = state.body || (url.origin === "https://www.gstatic.com" ? (url.pathname.includes("messaging") ? messagingCompat : appCompat) : assets.get(url.pathname) || fileBodies.get(url.pathname.slice(1)) || html);
+    const response = new Response(body, { status: state.status }); Object.defineProperty(response, "url", { value: state.finalUrl || url.href }); return response;
   };
   const evidence = await verifyImmutableArtifactParity({ base, deploymentIdentifier: "new-candidate", artifact, fetchImpl, persist: async value => snapshots.push(clone(value)), clock: { now: () => Date.parse("2026-09-25T10:00:00Z") } });
   return { evidence, snapshots };
@@ -383,4 +396,33 @@ test("the promotion boundary requires the immediate rollback recheck and invokes
     await assert.rejects(executePromotionBoundary({ ...accepted, preflightEvidenceSha256: evidenceHash("9"), recheckRollback: async () => passingRollbackRecheck(accepted), runDirectory: acceptedDirectory, appRoot: process.cwd(), spawn: () => { acceptedPromotions += 1; return { status: 0, stdout: '{"ok":true}' }; } }), /EEXIST/);
     assert.equal(acceptedPromotions, 1);
   } finally { fs.rmSync(acceptedDirectory, { recursive: true, force: true }); }
+});
+
+
+test("maintenance window gates mutation time and preserves authorized recovery", () => {
+  const approved = authority();
+  assert.throws(() => requireMaintenanceWindow(approved, "deploy", Date.parse("2026-09-25T09:59:59Z")), /outside/);
+  assert.doesNotThrow(() => requireMaintenanceWindow(approved, "deploy", Date.parse("2026-09-25T11:40:00Z")));
+  assert.throws(() => requireMaintenanceWindow(approved, "promote", Date.parse("2026-09-25T11:49:00Z")), /Insufficient/);
+  assert.throws(() => requireMaintenanceWindow(approved, "observe-alias", Date.parse("2026-09-25T12:00:00Z")), /outside/);
+  assert.equal(requireMaintenanceWindow(approved, "rollback", Date.parse("2026-09-25T12:01:00Z")).recoveryAfterDeadline, true);
+});
+
+test("deployment-derived rollback contract accepts three assets and rejects incomplete runtime", () => {
+  const at = "2026-09-25T10:10:00Z", assets = Array.from({ length: 3 }, (_, i) => ({ asset: `/a${i}.js`, bytes: 1, sha256: evidenceHash(String(i + 1)) }));
+  const reference = { passed: true, runId: "ruip6ad_localtest", deploymentIdentifier: DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment, deploymentUrl: "https://rollback.invalid", capturedAt: at, routes: Array.from({ length: 6 }, (_, i) => ({ route: `/r${i}`, bytes: 1, sha256: hash("r" + i), referencedAssets: assets.map(row => row.asset) })), criticalAssets: assets, runtimeFiles: DIAGNOSTIC_OPERATOR.runtimeFiles.map((runtimePath, i) => ({ path: runtimePath, bytes: 1, sha256: hash("p" + i) })), externalRuntime: DIAGNOSTIC_OPERATOR.externalRuntime.map((row, i) => ({ url: row.url, bytes: i ? 37024 : 31766, sha256: row.sha256 })) };
+  reference.contractSha256 = rollbackContractDigest(reference);
+  assert.equal(validateRollbackReference(reference, reference.runId), true);
+  assert.throws(() => validateRollbackReference({ ...reference, runtimeFiles: reference.runtimeFiles.slice(1) }, reference.runId), /complete/i);
+});
+
+test("actual deployment boundary consumes one exclusive reservation", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "deployment-boundary-"));
+  const approved = authority();
+  try {
+    fs.writeFileSync(path.join(directory, "deployment-attempt.json"), JSON.stringify({ runId: approved.runId, state: "PROVIDER_COMMAND_AUTHORIZED", providerCommandInvoked: true, deploymentRetryPermitted: false }));
+    fs.writeFileSync(path.join(directory, "created-resources.json"), JSON.stringify({ runId: approved.runId, state: "DEPLOYMENT_IN_PROGRESS", deploymentAttemptCount: 1 }));
+    assert.equal(consumeDeploymentReservation({ runDirectory: directory, authority: approved, capturedAt: "2026-09-25T10:01:00Z" }).attempt.state, "PROVIDER_COMMAND_AUTHORIZED");
+    assert.throws(() => consumeDeploymentReservation({ runDirectory: directory, authority: approved }), /invalid|consumed/);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });

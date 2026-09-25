@@ -11,20 +11,28 @@ import {
   validateAuthority,
   verifyProtectedEvidence,
   verifyRollbackParity,
+  validateRollbackReference as validateDeploymentRollbackReference,
+  requireMaintenanceWindow,
 } from "./deploy-restaurant-alias-10-minute-diagnostic-staging.mjs";
 import { sanitizeError } from "./restaurant-alias-parity-verifier.mjs";
 
 export const SUPPORT = Object.freeze({
-  proposalSha256: "4f07c54d1b6291a3272b242324c3e24eb02b62c84d8cd906b31f1b110fd880d4",
-  baseCheckpoint: "47104d426b3eb36486956f1de1db0aa5e6616393",
-  baseSourceManifestSha256: "dbdb7cb8d08c6f0a69397bb7846ade1fad06661950c218c774cf9cb3311d772a",
+  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260925c-execution-contract.md",
+  proposalSha256: "1d89925353d88af8f278fb6b6aa2bf6e0cb4e133bd6d178409b8340430b4b6f5",
+  baseCheckpoint: "5533606a841e9a7d75b2a3e22ef672bd107fa5d8",
+  baseSourceManifestSha256: "f06613f65c5a8866fe914dcd80efd8b04ef53e734aa27c651c445498cf739fc6",
+  baseSourceManifestFiles: 1506,
   checkpointFiles: Object.freeze([
-    "docs/restaurant-expo-alias-supabase-http201-compatibility-implementation-review.md",
-    "docs/restaurant-expo-alias-supabase-http201-compatibility-implementation.diff",
-    "docs/restaurant-expo-alias-final-execution-readiness-handoff.md",
-    "docs/restaurant-expo-alias-final-one-run-staging-execution-authorization-proposal.md",
+    "docs/restaurant-expo-alias-diagnostic-remediation-implementation-review.md",
+    "docs/restaurant-expo-alias-diagnostic-remediation-implementation.diff",
+    "docs/restaurant-expo-alias-diagnostic-remediated-execution-contract.md",
+    "docs/restaurant-expo-alias-ruip6ad-20260925c-execution-contract.md",
+    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs",
+    "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs",
     "scripts/restaurant-alias-diagnostic-execution-support.mjs",
     "scripts/test-restaurant-alias-diagnostic-execution-support.mjs",
+    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs",
+    "scripts/test-restaurant-alias-diagnostic-access-staging.mjs",
   ]),
   acceptedLineage: Object.freeze([
     Object.freeze({
@@ -80,17 +88,32 @@ export const SUPPORT = Object.freeze({
         "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "b0737ddf8017170ad6cb246e87502a3f367651627bedea6d01a563b77056aa1b",
       }),
     }),
+    Object.freeze({
+      commit: "5533606a841e9a7d75b2a3e22ef672bd107fa5d8",
+      parent: "47104d426b3eb36486956f1de1db0aa5e6616393",
+      sourceManifestSha256: "f06613f65c5a8866fe914dcd80efd8b04ef53e734aa27c651c445498cf739fc6",
+      sourceManifestFiles: 1506,
+      files: Object.freeze({
+        "docs/restaurant-expo-alias-final-execution-readiness-handoff.md": "899c55b1ab3636b871452dfbc3b835382709415922827f66537c398334fc2e7c",
+        "docs/restaurant-expo-alias-final-one-run-staging-execution-authorization-proposal.md": "4f07c54d1b6291a3272b242324c3e24eb02b62c84d8cd906b31f1b110fd880d4",
+        "docs/restaurant-expo-alias-supabase-http201-compatibility-implementation-review.md": "e29192433ee6fc19da9d89cc188689c0006140d0cca6bf02b5bbe87e60a1cd26",
+        "docs/restaurant-expo-alias-supabase-http201-compatibility-implementation.diff": "bb251ba1bc45c9803323acba6c7e4c0c4924c34f336092a05a32cc8d91cc02a7",
+        "scripts/restaurant-alias-diagnostic-execution-support.mjs": "8be9d0bce40799f3aa9a75539044959eaa0b6a024e5b7f37c3689c75e539eaf9",
+        "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "fbd3c3af540fd2432eb247b3202a19ed1dfe44e6354dde3e9eef6f2549ecb126",
+      }),
+    }),
   ]),
   diagnosticExecutableFiles: Object.freeze({
     "scripts/restaurant-alias-parity-verifier.mjs": "e563d7a5203aaf6ea0e04687063d63027568fd2906accec43c26daaeea4ca1d8",
     "scripts/test-restaurant-alias-parity-verifier.mjs": "6fa1ce21c047f93678be3c45fb71cd1f0e8167ed142fc259e55efddea1030afb",
-    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "a3fe6fb596a6e6aefd17e576beaa2c35a06a19e620e7ab807fbe5a7dc6792ed6",
-    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "d09e43ab5a13a6357da994840f6bdd22730a5118f244f82979468b0f0243b288",
-    "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "9500103b1c54a6c97b1fb126ac0973bb881095d4f81e0e30dc941e7090293c35",
+    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "cf0e10538f0922f8e13236fa9eaee9947d83cf4e2c838cee1d1d1f0b54858b53",
+    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "2392f2e9f96e9d6a40787775724f42537a9a0c34bb0f8644c23d0e4faeed349f",
+    "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "2e0189fca16b9bbd6a95d87685d38e92b8260f75e6a8225bed5221c3492c3c7d",
+    "scripts/test-restaurant-alias-diagnostic-access-staging.mjs": "860e4b0589133bc7d452126e7652af6866b3ce7685db104b2c919e3fa9c76ee6",
   }),
   applicationTree: DIAGNOSTIC_OPERATOR.applicationTree,
-  runId: "ruip6ad_20260925b",
-  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260925b",
+  runId: "ruip6ad_20260925c",
+  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260925c",
   authorityDirectory: "secure/restaurant-alias-diagnostic-authority",
   migrationFunctions: Object.freeze({
     "private.raise_restaurant_order_conflict_v1(text)": Object.freeze({
@@ -115,11 +138,11 @@ export const SUPPORT = Object.freeze({
   ]),
   supportActions: Object.freeze([
     "prepare-authority", "baseline-preflight", "initialize-resources", "begin-deployment",
-    "register-deployment", "record-deployment-uncertainty", "reconcile-deployment", "prepare-recapture",
+    "register-deployment", "record-deployment-uncertainty", "produce-deployment-reconciliation", "reconcile-deployment", "prepare-recapture",
     "verify-recapture", "final-preflight", "prepare-expected-alias", "prepare-cleanup",
-    "record-abort", "finalize",
+    "record-abort", "produce-deployment-reconciliation", "finalize",
   ]),
-  rollbackContract: Object.freeze({ routes: 6, criticalAssets: 5 }),
+  rollbackContract: Object.freeze({ routes: 6, deploymentDerivedAssets: true, runtimeFiles: 3, externalRuntime: 2 }),
   freshnessMs: Object.freeze({ baseline: 10 * 60_000, final: 10 * 60_000, rollback: 5 * 60_000 }),
 });
 
@@ -211,7 +234,7 @@ export function verifyAcceptedDiagnosticExecutables({ repoRoot, commit, spawn = 
   for (const [relative, expected] of Object.entries(SUPPORT.diagnosticExecutableFiles)) {
     if (commitFileSha256(repoRoot, commit, relative, spawn) !== expected) throw new Error("Accepted diagnostic executable changed: " + relative + ".");
   }
-  if (commitFileSha256(repoRoot, commit, "docs/restaurant-expo-alias-final-one-run-staging-execution-authorization-proposal.md", spawn) !== SUPPORT.proposalSha256) throw new Error("Reviewed execution proposal hash mismatch.");
+  if (commitFileSha256(repoRoot, commit, SUPPORT.proposalPath, spawn) !== SUPPORT.proposalSha256) throw new Error("Reviewed execution proposal hash mismatch.");
   return { passed: true, files: Object.keys(SUPPORT.diagnosticExecutableFiles).length };
 }
 
@@ -219,7 +242,7 @@ export function validateOwnerAuthorization(input) {
   const fields = [
     "contractVersion", "decision", "approvedForHostedExecution", "environment", "runId",
     "proposalSha256", "checkpointParent", "sourceCommit", "sourceManifestSha256", "applicationTree", "authorizedActions", "authorizedSupportActions",
-    "authorizationText", "authorizationTextSha256", "issuedAt",
+    "authorizationText", "authorizationTextSha256", "issuedAt", "maintenanceWindowStart", "maintenanceWindowEnd",
   ];
   exactKeys(input, fields, "Owner authorization");
   if (input.contractVersion !== 1 || input.decision !== "APPROVE_ONE_RUN_STAGING_ALIAS_DIAGNOSTIC" || input.approvedForHostedExecution !== true || input.environment !== "staging") throw new Error("Explicit one-run Staging approval is required.");
@@ -229,21 +252,28 @@ export function validateOwnerAuthorization(input) {
   required(input.authorizationText, "Owner authorization text");
   if (input.authorizationText.length < 80 || input.authorizationTextSha256 !== sha256(Buffer.from(input.authorizationText))) throw new Error("Owner authorization text digest mismatch.");
   if (!/authorize/i.test(input.authorizationText) || !/staging/i.test(input.authorizationText) || !input.authorizationText.includes(SUPPORT.runId) || !/rollback/i.test(input.authorizationText) || !/earnings.+disabled/i.test(input.authorizationText)) throw new Error("Owner authorization text lacks required explicit boundaries.");
-  if (!Number.isFinite(Date.parse(input.issuedAt))) throw new Error("Owner authorization timestamp is invalid.");
+  const issued = Date.parse(input.issuedAt), start = Date.parse(input.maintenanceWindowStart), end = Date.parse(input.maintenanceWindowEnd);
+  if (!Number.isFinite(issued) || !Number.isFinite(start) || !Number.isFinite(end) || start < issued || end <= start || end - start > 2 * 60 * 60_000) throw new Error("Owner authorization or maintenance window timestamp is invalid.");
   return input;
 }
 
-export function prepareAuthorityArtifacts({ repoRoot, approval, outputDirectory, spawn = spawnSync, lineageVerifier = verifyAcceptedCheckpointLineage, executableVerifier = verifyAcceptedDiagnosticExecutables }) {
+export function verifyReviewedCandidateCheckpoint({ repoRoot, approval, spawn = spawnSync, lineageVerifier = verifyAcceptedCheckpointLineage, executableVerifier = verifyAcceptedDiagnosticExecutables }) {
   validateOwnerAuthorization(approval);
   lineageVerifier({ repoRoot, spawn });
   const manifest = buildSourceManifest(repoRoot, approval.sourceCommit, spawn);
   if (manifest.sha256 !== approval.sourceManifestSha256) throw new Error("Approved support-checkpoint source manifest was not reproduced.");
   if (spawn("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).stdout.trim() !== approval.sourceCommit) throw new Error("Repository HEAD is not the approved support checkpoint.");
-  if (spawn("git", ["rev-parse", approval.sourceCommit + "^"], { cwd: repoRoot, encoding: "utf8" }).stdout.trim() !== SUPPORT.baseCheckpoint) throw new Error("Compatibility checkpoint is not a direct child of the accepted account-preparation checkpoint.");
+  if (spawn("git", ["rev-parse", approval.sourceCommit + "^"], { cwd: repoRoot, encoding: "utf8" }).stdout.trim() !== SUPPORT.baseCheckpoint) throw new Error("Diagnostic-readiness checkpoint is not a direct child of the accepted parent.");
   const inventory = spawn("git", ["diff-tree", "--no-commit-id", "--name-only", "-r", approval.sourceCommit], { cwd: repoRoot, encoding: "utf8" }).stdout.trim().split("\n").filter(Boolean).sort();
-  if (JSON.stringify(inventory) !== JSON.stringify([...SUPPORT.checkpointFiles].sort())) throw new Error("Compatibility checkpoint inventory differs from the reviewed six-file scope.");
+  if (JSON.stringify(inventory) !== JSON.stringify([...SUPPORT.checkpointFiles].sort())) throw new Error("Diagnostic-readiness checkpoint inventory differs from the reviewed scope.");
   if (spawn("git", ["rev-parse", approval.sourceCommit + ":apps/restaurant"], { cwd: repoRoot, encoding: "utf8" }).stdout.trim() !== SUPPORT.applicationTree) throw new Error("Restaurant application tree changed.");
   executableVerifier({ repoRoot, commit: approval.sourceCommit, spawn });
+  return { passed: true, manifest, inventory, commit: approval.sourceCommit };
+}
+
+export function prepareAuthorityArtifacts({ repoRoot, approval, outputDirectory, spawn = spawnSync, lineageVerifier = verifyAcceptedCheckpointLineage, executableVerifier = verifyAcceptedDiagnosticExecutables }) {
+  const verified = verifyReviewedCandidateCheckpoint({ repoRoot, approval, spawn, lineageVerifier, executableVerifier });
+  const manifest = verified.manifest;
   const authority = {
     contractVersion: 1,
     approvedForHostedExecution: true,
@@ -262,6 +292,8 @@ export function prepareAuthorityArtifacts({ repoRoot, approval, outputDirectory,
     sourceCommit: approval.sourceCommit,
     sourceManifestSha256: approval.sourceManifestSha256,
     ownerAuthorizationSha256: approval.authorizationTextSha256,
+    maintenanceWindowStart: approval.maintenanceWindowStart,
+    maintenanceWindowEnd: approval.maintenanceWindowEnd,
   };
   const manifestPath = path.join(outputDirectory, SUPPORT.runId + "-source-manifest.tsv");
   const authorityPath = path.join(outputDirectory, SUPPORT.runId + "-authority.json");
@@ -363,19 +395,18 @@ function fileIdentity(runDirectory, file) {
 }
 
 function validateRollbackReference(value, authority, label = "Rollback reference") {
-  if (value?.passed !== true || value.runId !== authority.runId || value.deploymentIdentifier !== DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment) throw new Error(label + " binding mismatch.");
+  try { validateDeploymentRollbackReference(value, authority.runId); }
+  catch (error) { throw new Error(label + ": " + error.message); }
   if (!Number.isFinite(Date.parse(value.capturedAt || ""))) throw new Error(label + " timestamp is invalid.");
-  if (!Array.isArray(value.routes) || value.routes.length !== SUPPORT.rollbackContract.routes || new Set(value.routes.map(row => row?.route)).size !== SUPPORT.rollbackContract.routes || value.routes.some(row => !row?.route || !/^[a-f0-9]{64}$/.test(row.sha256 || ""))) throw new Error(label + " must contain exactly six unique route hashes.");
-  if (!Array.isArray(value.criticalAssets) || value.criticalAssets.length !== SUPPORT.rollbackContract.criticalAssets || new Set(value.criticalAssets.map(row => row?.asset)).size !== SUPPORT.rollbackContract.criticalAssets || value.criticalAssets.some(row => !row?.asset || !/^[a-f0-9]{64}$/.test(row.sha256 || ""))) throw new Error(label + " must contain exactly five unique critical asset hashes.");
   return value;
 }
 
 function validateRollbackProgress(value, authority, reference) {
-  if (value?.schemaVersion !== 1 || value.runId !== authority.runId || value.passed !== true || value.completedAt !== reference.capturedAt || value.metadata?.deploymentIdentifier !== reference.deploymentIdentifier) throw new Error("Rollback capture progress does not match the completed reference.");
-  if (!Array.isArray(value.routes) || value.routes.length !== SUPPORT.rollbackContract.routes || value.routes.some(row => row?.parity !== true) || !Array.isArray(value.criticalAssets) || value.criticalAssets.length !== SUPPORT.rollbackContract.criticalAssets || value.criticalAssets.some(row => row?.parity !== true)) throw new Error("Rollback capture progress is incomplete.");
-  const routes = value.routes.map(row => ({ route: row.route, sha256: row.sha256 }));
-  const assets = value.criticalAssets.map(row => ({ asset: row.asset, sha256: row.sha256 }));
-  if (JSON.stringify(routes) !== JSON.stringify(reference.routes) || JSON.stringify(assets) !== JSON.stringify(reference.criticalAssets)) throw new Error("Rollback progress and reference content differ.");
+  if (value?.schemaVersion !== 2 || value.runId !== authority.runId || value.passed !== true || value.completedAt !== reference.capturedAt || value.metadata?.deploymentIdentifier !== reference.deploymentIdentifier) throw new Error("Rollback capture progress does not match the completed reference.");
+  const parity = rows => Array.isArray(rows) && rows.every(row => row?.parity === true || row?.passed === true);
+  if (value.routes?.length !== 6 || !parity(value.routes) || value.criticalAssets?.length !== reference.criticalAssets.length || !parity(value.criticalAssets) || value.runtimeFiles?.length !== 3 || !parity(value.runtimeFiles) || value.externalRuntime?.length !== 2 || !parity(value.externalRuntime)) throw new Error("Rollback capture progress is incomplete.");
+  const project = row => Object.fromEntries(Object.entries(row).filter(([key]) => ["route","asset","path","url","bytes","sha256","referencedAssets"].includes(key)));
+  for (const key of ["routes", "criticalAssets", "runtimeFiles", "externalRuntime"]) if (JSON.stringify(value[key].map(project)) !== JSON.stringify(reference[key])) throw new Error("Rollback progress and reference content differ.");
   return value;
 }
 
@@ -448,6 +479,8 @@ export function verifyFreshRollbackRecapture({ runDirectory, authority, captured
   validateHistoricalRecapture(runDirectory, attempt);
   const reference = requireRunEvidence(path.join(runDirectory, "rollback-reference.json"), "Fresh rollback reference");
   const progress = requireRunEvidence(path.join(runDirectory, "rollback-capture-progress.json"), "Fresh rollback progress");
+  const captureMarker = requireRunEvidence(path.join(runDirectory, "rollback-capture-fresh-attempt.json"), "Fresh rollback capture attempt");
+  if (captureMarker.value.runId !== authority.runId || captureMarker.value.phase !== "fresh" || captureMarker.value.state !== "COMPLETE" || captureMarker.value.contractSha256 !== reference.value.contractSha256) throw new Error("Fresh rollback capture phase is incomplete or mismatched.");
   validateRollbackReference(reference.value, authority, "Fresh rollback reference");
   validateRollbackProgress(progress.value, authority, reference.value);
   const capturedMs = Date.parse(reference.value.capturedAt);
@@ -456,9 +489,9 @@ export function verifyFreshRollbackRecapture({ runDirectory, authority, captured
   const value = {
     schemaVersion: 1, passed: true, runId: authority.runId, attemptId: attempt.attemptId, verifiedAt: capturedAt,
     deploymentIdentifier: reference.value.deploymentIdentifier, capturedAt: reference.value.capturedAt,
-    canonical: { reference: fileIdentity(runDirectory, reference.file), progress: fileIdentity(runDirectory, progress.file) },
+    canonical: { reference: fileIdentity(runDirectory, reference.file), progress: fileIdentity(runDirectory, progress.file), captureAttempt: fileIdentity(runDirectory, captureMarker.file) },
     historical: attempt.historical, quarantine: attempt.quarantine,
-    contract: { routes: SUPPORT.rollbackContract.routes, criticalAssets: SUPPORT.rollbackContract.criticalAssets },
+    contract: { routes: SUPPORT.rollbackContract.routes, criticalAssets: reference.value.criticalAssets.length, runtimeFiles: reference.value.runtimeFiles.length, externalRuntime: reference.value.externalRuntime.length, contractSha256: reference.value.contractSha256 },
   };
   const output = path.join(runDirectory, "fresh-recapture-verification.json");
   writeExclusive(output, value);
@@ -476,9 +509,11 @@ function consumeFreshRollbackRecapture(runDirectory, authority, currentMs) {
   validateHistoricalRecapture(runDirectory, attempt.value);
   const reference = requireRunEvidence(path.join(runDirectory, "rollback-reference.json"), "Fresh rollback reference");
   const progress = requireRunEvidence(path.join(runDirectory, "rollback-capture-progress.json"), "Fresh rollback progress");
+  const captureMarker = requireRunEvidence(path.join(runDirectory, "rollback-capture-fresh-attempt.json"), "Fresh rollback capture attempt");
+  if (captureMarker.value.runId !== authority.runId || captureMarker.value.phase !== "fresh" || captureMarker.value.state !== "COMPLETE" || captureMarker.value.contractSha256 !== reference.value.contractSha256) throw new Error("Fresh rollback capture phase is incomplete or mismatched.");
   validateRollbackReference(reference.value, authority, "Fresh rollback reference");
   validateRollbackProgress(progress.value, authority, reference.value);
-  if (verification.value.canonical?.reference?.sha256 !== reference.sha256 || verification.value.canonical?.reference?.bytes !== fs.statSync(reference.file).size || verification.value.canonical?.progress?.sha256 !== progress.sha256 || verification.value.canonical?.progress?.bytes !== fs.statSync(progress.file).size) throw new Error("Canonical rollback evidence changed after fresh verification.");
+  if (verification.value.canonical?.reference?.sha256 !== reference.sha256 || verification.value.canonical?.reference?.bytes !== fs.statSync(reference.file).size || verification.value.canonical?.progress?.sha256 !== progress.sha256 || verification.value.canonical?.progress?.bytes !== fs.statSync(progress.file).size || verification.value.canonical?.captureAttempt?.sha256 !== captureMarker.sha256) throw new Error("Canonical rollback evidence changed after fresh verification.");
   const capturedMs = Date.parse(reference.value.capturedAt);
   if (capturedMs > currentMs + 5_000 || currentMs - capturedMs > SUPPORT.freshnessMs.rollback) throw new Error("Verified fresh rollback evidence is stale.");
   return { attempt, verification, reference, progress };
@@ -549,6 +584,32 @@ export function recordDeploymentUncertainty({ runDirectory, authority, capturedA
   return next;
 }
 
+export async function produceDeploymentReconciliationEvidence({ runDirectory, authority, capturedAt, fetchImpl = fetch, expoSession }) {
+  const marker = requireRunEvidence(path.join(runDirectory, "deployment-attempt.json"), "Deployment attempt");
+  const inventory = requireRunEvidence(inventoryPath(runDirectory), "Created-resource inventory");
+  if (marker.value.state !== "UNCERTAIN" || marker.value.runId !== authority.runId || inventory.value.state !== "DEPLOYMENT_UNCERTAIN") throw new Error("Independent provider read is permitted only for the uncertain single deployment attempt.");
+  if (!expoSession) throw new Error("Expo session is unavailable for read-only deployment reconciliation.");
+  const output = path.join(runDirectory, "provider-deployment-reconciliation.json");
+  if (fs.existsSync(output)) throw new Error("Provider reconciliation evidence already exists; overwrite prohibited.");
+  const startedAt = capturedAt || new Date().toISOString();
+  const requestId = authority.runId + ":provider-deployment-reconciliation:1";
+  const query = "query Deployments($appId:String!){app{byId(appId:$appId){id workerDeployments(first:50){edges{node{id deploymentIdentifier url createdAt}}}}}}";
+  let row;
+  try {
+    const response = await fetchImpl("https://api.expo.dev/graphql", { method: "POST", headers: { "content-type": "application/json", "expo-session": expoSession }, body: JSON.stringify({ query, variables: { appId: DIAGNOSTIC_OPERATOR.easProjectId } }) });
+    const body = await response.json();
+    const app = body.data?.app?.byId, deployments = app?.workerDeployments?.edges?.map(edge => edge.node) || [];
+    const payload = { attemptId: authority.runId + ":single-deployment-attempt", easProjectId: app?.id || null, endpoint: "https://api.expo.dev/graphql", deployments: deployments.map(value => ({ deploymentIdentifier: value.deploymentIdentifier, url: value.url, createdAt: value.createdAt })) };
+    row = { schemaVersion: 2, runId: authority.runId, stage: "deployment-reconciliation", requestId, startedAt, completedAt: new Date().toISOString(), status: response.status, payloadSha256: sha256(Buffer.from(canonical(payload))), payload, error: body.errors ? "PROVIDER_GRAPHQL_ERROR" : null };
+    writeExclusive(output, row);
+    if (response.status !== 200 || body.errors || app?.id !== DIAGNOSTIC_OPERATOR.easProjectId) throw new Error("Independent provider deployment read failed or returned the wrong EAS project.");
+  } catch (error) {
+    if (!fs.existsSync(output)) writeExclusive(output, { schemaVersion: 2, runId: authority.runId, stage: "deployment-reconciliation", requestId, startedAt, completedAt: new Date().toISOString(), status: null, payloadSha256: null, payload: null, error: sanitizeSupportError(error) });
+    throw error;
+  }
+  return { path: output, sha256: sha256(fs.readFileSync(output)), deployments: row.payload.deployments.length };
+}
+
 export function reconcileDeploymentObservation({ runDirectory, authority, observationPath, capturedAt }) {
   const marker = requireRunEvidence(path.join(runDirectory, "deployment-attempt.json"), "Deployment attempt");
   const inventoryRecord = requireRunEvidence(inventoryPath(runDirectory), "Created-resource inventory");
@@ -557,13 +618,13 @@ export function reconcileDeploymentObservation({ runDirectory, authority, observ
   relativeToRun(runDirectory, observationPath);
   const observationRecord = requireRunEvidence(observationPath, "Provider deployment reconciliation");
   const row = observationRecord.value;
-  exactKeys(row, ["schemaVersion", "runId", "stage", "requestId", "startedAt", "completedAt", "status", "payloadSha256", "payload"], "Provider deployment reconciliation");
-  if (row.schemaVersion !== 1 || row.runId !== authority.runId || row.stage !== "deployment-reconciliation" || row.status !== 200 || !row.requestId || row.payloadSha256 !== sha256(Buffer.from(canonical(row.payload))) || !Number.isFinite(Date.parse(row.startedAt)) || !Number.isFinite(Date.parse(row.completedAt)) || Date.parse(row.completedAt) < Date.parse(row.startedAt)) throw new Error("Independent provider deployment observation is invalid.");
-  exactKeys(row.payload, ["attemptId", "deployments"], "Provider deployment payload");
-  if (row.payload.attemptId !== authority.runId + ":single-deployment-attempt" || !Array.isArray(row.payload.deployments)) throw new Error("Provider deployment observation is bound to another attempt.");
+  exactKeys(row, ["schemaVersion", "runId", "stage", "requestId", "startedAt", "completedAt", "status", "payloadSha256", "payload", "error"], "Provider deployment reconciliation");
+  if (row.schemaVersion !== 2 || row.runId !== authority.runId || row.stage !== "deployment-reconciliation" || row.status !== 200 || !row.requestId || row.payloadSha256 !== sha256(Buffer.from(canonical(row.payload))) || !Number.isFinite(Date.parse(row.startedAt)) || !Number.isFinite(Date.parse(row.completedAt)) || Date.parse(row.completedAt) < Date.parse(row.startedAt)) throw new Error("Independent provider deployment observation is invalid.");
+  exactKeys(row.payload, ["attemptId", "easProjectId", "endpoint", "deployments"], "Provider deployment payload");
+  if (row.error !== null || row.payload.attemptId !== authority.runId + ":single-deployment-attempt" || row.payload.easProjectId !== DIAGNOSTIC_OPERATOR.easProjectId || row.payload.endpoint !== "https://api.expo.dev/graphql" || !Array.isArray(row.payload.deployments)) throw new Error("Provider deployment observation is bound to another attempt.");
   const deployments = row.payload.deployments;
   const ids = deployments.map(value => value?.deploymentIdentifier);
-  if (ids.some(value => !value) || new Set(ids).size !== ids.length || deployments.some(value => !value.url || !Number.isFinite(Date.parse(value.createdAt || "")) || REJECTED_DEPLOYMENTS.includes(value.deploymentIdentifier))) throw new Error("Provider deployment observation contains invalid identities.");
+  if (ids.some(value => !value) || new Set(ids).size !== ids.length || deployments.some(value => value.url !== `https://hungrie-restaurant--${value.deploymentIdentifier}.expo.app` || !Number.isFinite(Date.parse(value.createdAt || "")) || REJECTED_DEPLOYMENTS.includes(value.deploymentIdentifier))) throw new Error("Provider deployment observation contains invalid identities.");
   const attemptedMs = Date.parse(marker.value.attemptedAt);
   const candidates = deployments.filter(value => Date.parse(value.createdAt) >= attemptedMs - 5_000 && Date.parse(value.createdAt) <= Date.parse(row.completedAt));
   const previousRevision = preserveInventoryRevision(runDirectory, inventory);
@@ -617,10 +678,10 @@ export function buildExpectedFinalAliasReference({ runDirectory, authority, capt
   let rollbackVerificationSha256 = null;
   if (promotionResultExists && !terminalExists) {
     const verified = requireRunEvidence(path.join(runDirectory, "rollback-verification-result.json"), "Independent rollback verification");
-    if (verified.value.passed !== true || verified.value.classification !== "PASS" || verified.value.expected?.deploymentIdentifier !== reference.deploymentIdentifier || JSON.stringify(verified.value.expected.routes) !== JSON.stringify(reference.routes) || JSON.stringify(verified.value.expected.criticalAssets) !== JSON.stringify(reference.criticalAssets) || verified.value.selectedAttempts?.length < 2) throw new Error("Independent rollback verification does not match the frozen reference.");
+    if (verified.value.passed !== true || verified.value.classification !== "PASS" || verified.value.expected?.deploymentIdentifier !== reference.deploymentIdentifier || JSON.stringify(verified.value.expected.routes) !== JSON.stringify(reference.routes) || JSON.stringify(verified.value.expected.criticalAssets) !== JSON.stringify(reference.criticalAssets) || JSON.stringify(verified.value.expected.runtimeFiles) !== JSON.stringify(reference.runtimeFiles) || JSON.stringify(verified.value.expected.externalRuntime) !== JSON.stringify(reference.externalRuntime) || verified.value.selectedAttempts?.length < 2) throw new Error("Independent rollback verification does not match the frozen reference.");
     rollbackVerificationSha256 = verified.sha256;
   }
-  const value = { schemaVersion: 1, runId: authority.runId, capturedAt, deploymentIdentifier: reference.deploymentIdentifier, deploymentUrl: reference.deploymentUrl, routes: reference.routes, criticalAssets: reference.criticalAssets, source: { rollbackReferenceSha256: fresh.reference.sha256, freshRecaptureVerificationSha256: fresh.verification.sha256, originalHistoricalReferenceSha256: fresh.verification.value.historical.reference.sha256, rollbackVerificationSha256 } };
+  const value = { schemaVersion: 1, runId: authority.runId, capturedAt, deploymentIdentifier: reference.deploymentIdentifier, deploymentUrl: reference.deploymentUrl, routes: reference.routes, criticalAssets: reference.criticalAssets, runtimeFiles: reference.runtimeFiles, externalRuntime: reference.externalRuntime, contractSha256: reference.contractSha256, source: { rollbackReferenceSha256: fresh.reference.sha256, freshRecaptureVerificationSha256: fresh.verification.sha256, originalHistoricalReferenceSha256: fresh.verification.value.historical.reference.sha256, rollbackVerificationSha256 } };
   writeExclusive(path.join(runDirectory, "expected-final-alias-reference.json"), value);
   return value;
 }
@@ -789,11 +850,11 @@ function reconcileCleanup(runDirectory, authority, cleanup) {
 }
 
 export async function finalizeRun({ root, runDirectory, authority, expectedAlias, readers, cleanup, capturedAt, persist = atomicWrite, verifyProtectedEvidenceImpl = verifyProtectedEvidence }) {
-  if (expectedAlias?.schemaVersion !== 1 || expectedAlias.runId !== authority.runId || expectedAlias.deploymentIdentifier !== DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment || expectedAlias.routes?.length !== SUPPORT.rollbackContract.routes || expectedAlias.criticalAssets?.length !== SUPPORT.rollbackContract.criticalAssets) throw new Error("Complete run-bound final alias reference required.");
+  if (expectedAlias?.schemaVersion !== 1 || expectedAlias.runId !== authority.runId || expectedAlias.deploymentIdentifier !== DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment || expectedAlias.routes?.length !== SUPPORT.rollbackContract.routes || !expectedAlias.criticalAssets?.length || expectedAlias.runtimeFiles?.length !== 3 || expectedAlias.externalRuntime?.length !== 2) throw new Error("Complete run-bound final alias reference required.");
   const expectedRecord = requireRunEvidence(path.join(runDirectory, "expected-final-alias-reference.json"), "Expected final alias reference");
   if (expectedRecord.sha256 !== sha256(Buffer.from(canonical(expectedAlias)))) throw new Error("Expected final alias input differs from persisted evidence.");
   const fresh = consumeFreshRollbackRecapture(runDirectory, authority, Date.parse(capturedAt));
-  if (expectedAlias.source?.rollbackReferenceSha256 !== fresh.reference.sha256 || expectedAlias.source?.freshRecaptureVerificationSha256 !== fresh.verification.sha256 || JSON.stringify(expectedAlias.routes) !== JSON.stringify(fresh.reference.value.routes) || JSON.stringify(expectedAlias.criticalAssets) !== JSON.stringify(fresh.reference.value.criticalAssets)) throw new Error("Expected final alias is not derived from verified fresh rollback evidence.");
+  if (expectedAlias.source?.rollbackReferenceSha256 !== fresh.reference.sha256 || expectedAlias.source?.freshRecaptureVerificationSha256 !== fresh.verification.sha256 || JSON.stringify(expectedAlias.routes) !== JSON.stringify(fresh.reference.value.routes) || JSON.stringify(expectedAlias.criticalAssets) !== JSON.stringify(fresh.reference.value.criticalAssets) || JSON.stringify(expectedAlias.runtimeFiles) !== JSON.stringify(fresh.reference.value.runtimeFiles) || JSON.stringify(expectedAlias.externalRuntime) !== JSON.stringify(fresh.reference.value.externalRuntime) || expectedAlias.contractSha256 !== fresh.reference.value.contractSha256) throw new Error("Expected final alias is not derived from verified fresh rollback evidence.");
   const cleanupRecord = requireRunEvidence(path.join(runDirectory, "cleanup-disposition.json"), "Cleanup disposition");
   if (cleanupRecord.sha256 !== sha256(Buffer.from(canonical(cleanup)))) throw new Error("Cleanup input differs from persisted evidence.");
   const finalizationAttempt = path.join(runDirectory, "finalization-attempt.json");
@@ -816,7 +877,7 @@ export async function finalizeRun({ root, runDirectory, authority, expectedAlias
   const promotionAttempted = Boolean(promotionAttemptRecord?.providerCommandInvoked === true || (promotionAttemptRecord?.attemptedAt && promotionAttemptRecord?.deploymentIdentifier) || fs.existsSync(path.join(runDirectory, "promotion-result.json")));
   const terminalExists = fs.existsSync(path.join(runDirectory, "terminal-record.json"));
   if (promotionAttempted) required.push("artifact-manifest.json", "immutable-deployment.json", "immutable-smoke.json", "immutable-access-qualification.json", "promotion-preflight.json", "rollback-attempt.json");
-  if (promotionAttempted && !terminalExists) required.push("promotion-result.json", "alias-observation-result.json", "rollback-result.json", "rollback-verification-result.json");
+  if (promotionAttempted && !terminalExists) required.push("promotion-result.json", "alias-observation-result.json", "alias-full-artifact-result.json", "rollback-result.json", "rollback-verification-result.json");
   if (!promotionAttempted) required.push("terminal-record.json");
   const missingEvidence = required.filter(name => !fs.existsSync(path.join(runDirectory, name)));
   let result = "PASS";
@@ -989,12 +1050,13 @@ export async function runSupport(argv = process.argv.slice(2), dependencies = {}
     const output = path.resolve(required(values.output, "Authority output directory"));
     return prepareAuthorityArtifacts({ repoRoot: root, approval, outputDirectory: output, spawn: dependencies.spawnSync || spawnSync });
   }
-  const actions = new Set(["baseline-preflight", "initialize-resources", "begin-deployment", "register-deployment", "record-deployment-uncertainty", "reconcile-deployment", "prepare-recapture", "verify-recapture", "final-preflight", "prepare-expected-alias", "prepare-cleanup", "record-abort", "finalize"]);
+  const actions = new Set(["baseline-preflight", "initialize-resources", "begin-deployment", "register-deployment", "record-deployment-uncertainty", "produce-deployment-reconciliation", "reconcile-deployment", "prepare-recapture", "verify-recapture", "final-preflight", "prepare-expected-alias", "prepare-cleanup", "record-abort", "finalize"]);
   if (!actions.has(action)) throw new Error("Unsupported execution-support action.");
   const authorityPath = path.resolve(required(values.authority, "Authority path"));
   const expectedCommit = required(values["expect-commit"], "Expected support checkpoint");
   const expectedSourceSha256 = required(values["expect-source-sha256"], "Expected source manifest SHA-256");
   const authority = validateAuthority(JSON.parse(fs.readFileSync(authorityPath, "utf8")), { runId: SUPPORT.runId, sourceCommit: expectedCommit, sourceManifestSha256: expectedSourceSha256 });
+  requireMaintenanceWindow(authority, action === "finalize" ? "verify-rollback" : action, Number(values["current-time-ms"] || Date.now()));
   if (spawnSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).stdout.trim() !== expectedCommit || spawnSync("git", ["rev-parse", "HEAD:apps/restaurant"], { cwd: root, encoding: "utf8" }).stdout.trim() !== SUPPORT.applicationTree) throw new Error("Approved support checkpoint is not checked out.");
   const sourceManifestPath = path.resolve(required(values["source-manifest"], "Source manifest path"));
   if (!fs.existsSync(sourceManifestPath) || sha256(fs.readFileSync(sourceManifestPath)) !== expectedSourceSha256) throw new Error("Approved support source manifest file required.");
@@ -1007,6 +1069,10 @@ export async function runSupport(argv = process.argv.slice(2), dependencies = {}
   if (action === "begin-deployment") return beginSingleDeploymentAttempt({ runDirectory, authority, capturedAt: new Date().toISOString() });
   if (action === "register-deployment") return registerSingleDeployment({ runDirectory, authority, capturedAt: new Date().toISOString() });
   if (action === "record-deployment-uncertainty") return recordDeploymentUncertainty({ runDirectory, authority, capturedAt: new Date().toISOString(), reason: required(values.reason, "Deployment uncertainty reason") });
+  if (action === "produce-deployment-reconciliation") {
+    const expoState = dependencies.expoSession ? { auth: { sessionSecret: dependencies.expoSession } } : JSON.parse(fs.readFileSync(path.join(process.env.HOME, ".expo/state.json"), "utf8"));
+    return produceDeploymentReconciliationEvidence({ runDirectory, authority, capturedAt: new Date().toISOString(), fetchImpl: dependencies.fetchImpl || fetch, expoSession: expoState.auth?.sessionSecret });
+  }
   if (action === "reconcile-deployment") return reconcileDeploymentObservation({ runDirectory, authority, observationPath: path.resolve(required(values.observation, "Provider deployment observation")), capturedAt: new Date().toISOString() });
   if (action === "prepare-recapture") return prepareFreshRollbackRecapture({ runDirectory, authority, capturedAt: new Date().toISOString() });
   if (action === "verify-recapture") return verifyFreshRollbackRecapture({ runDirectory, authority, capturedAt: new Date().toISOString() });

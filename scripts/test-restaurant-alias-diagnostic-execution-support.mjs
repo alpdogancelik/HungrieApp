@@ -19,6 +19,7 @@ import {
   initializeResourceInventory,
   prepareAuthorityArtifacts,
   prepareFreshRollbackRecapture,
+  produceDeploymentReconciliationEvidence,
   readProgressSnapshot,
   recordTerminalState,
   recordDeploymentUncertainty,
@@ -29,8 +30,9 @@ import {
   verifyAcceptedCheckpointLineage,
   verifyAcceptedDiagnosticExecutables,
   verifyFreshRollbackRecapture,
+  verifyReviewedCandidateCheckpoint,
 } from "./restaurant-alias-diagnostic-execution-support.mjs";
-import { DIAGNOSTIC_OPERATOR } from "./deploy-restaurant-alias-10-minute-diagnostic-staging.mjs";
+import { DIAGNOSTIC_OPERATOR, rollbackContractDigest } from "./deploy-restaurant-alias-10-minute-diagnostic-staging.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const hash = value => crypto.createHash("sha256").update(value).digest("hex");
@@ -60,7 +62,9 @@ function approval(overrides = {}) {
     authorizedSupportActions: [...SUPPORT.supportActions],
     authorizationText,
     authorizationTextSha256: hash(Buffer.from(authorizationText)),
-    issuedAt: "2026-09-25T11:00:00.000Z",
+    issuedAt: "2026-09-25T09:55:00.000Z",
+    maintenanceWindowStart: "2026-09-25T10:00:00.000Z",
+    maintenanceWindowEnd: "2026-09-25T12:00:00.000Z",
     ...overrides,
   };
 }
@@ -84,6 +88,8 @@ function authority() {
     sourceCommit: fakeSourceCommit,
     sourceManifestSha256: fakeSourceManifestSha256,
     ownerAuthorizationSha256: "a".repeat(64),
+    maintenanceWindowStart: "2026-09-25T10:00:00.000Z",
+    maintenanceWindowEnd: "2026-09-25T12:00:00.000Z",
   };
 }
 
@@ -160,18 +166,20 @@ function writeReadProgress(directory, stage, readSet, options = {}) {
 function hostedReaderFixture({ metadataFailure = false, preflightFailure = false, failedPath = null, missingPath = null, omitAssetReferences = false, mismatchedAsset = false, sqlStatus = 200, malformedSql = null, evidencePrefix = "finalization" } = {}) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-hosted-reader-"));
   const routeBodies = new Map();
-  const assets = Array.from({ length: 5 }, (_, index) => ({ asset: `/assets/critical-${index}.js`, body: Buffer.from(`asset-${index}\n`) }));
+  const assets = Array.from({ length: 3 }, (_, index) => ({ asset: `/assets/critical-${index}.js`, body: Buffer.from(`asset-${index}\n`) }));
   const references = assets.map(row => `<script src="${row.asset}"></script>`).join("");
   const routes = Array.from({ length: 6 }, (_, index) => {
     const route = index === 0 ? "/" : `/route-${index}`;
     const body = Buffer.from(`<html><body>route-${index}${omitAssetReferences ? "" : references}</body></html>\n`);
     routeBodies.set(route, body);
-    return { route, sha256: hash(body) };
+    return { route, bytes: body.length, sha256: hash(body), referencedAssets: assets.map(row => row.asset) };
   });
   const expected = {
     deploymentIdentifier: DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment,
     routes,
-    criticalAssets: assets.map((row, index) => ({ asset: row.asset, sha256: mismatchedAsset && index === 0 ? "0".repeat(64) : hash(row.body) })),
+    criticalAssets: assets.map((row, index) => ({ asset: row.asset, bytes: row.body.length, sha256: mismatchedAsset && index === 0 ? "0".repeat(64) : hash(row.body) })),
+    runtimeFiles: DIAGNOSTIC_OPERATOR.runtimeFiles.map((runtimePath, index) => { const body = Buffer.from(`runtime-${index}`); return { path: runtimePath, bytes: body.length, sha256: hash(body) }; }),
+    externalRuntime: DIAGNOSTIC_OPERATOR.externalRuntime.map((row, index) => ({ url: row.url, bytes: index ? 37024 : 31766, sha256: row.sha256 })),
   };
   let milliseconds = Date.parse("2026-09-25T12:00:00.000Z");
   let aliasReads = 0;
@@ -202,8 +210,11 @@ function hostedReaderFixture({ metadataFailure = false, preflightFailure = false
       if (routeBodies.has(url.pathname)) return new Response(routeBodies.get(url.pathname), { status: 200, headers: { "cache-control": "no-store", "cf-ray": "local-route" } });
       const asset = assets.find(row => row.asset === url.pathname);
       if (asset) return new Response(asset.body, { status: 200, headers: { "cache-control": "no-store", "cf-ray": "local-asset" } });
+      const runtime = expected.runtimeFiles.find(row => row.path === url.pathname);
+      if (runtime) return new Response(Buffer.from(`runtime-${expected.runtimeFiles.indexOf(runtime)}`), { status: 200, headers: { "cache-control": "no-store", "cf-ray": "local-runtime" } });
       return new Response("missing", { status: 404 });
     }
+    if (url.origin === "https://www.gstatic.com") { const file = url.pathname.includes("messaging") ? "firebase-messaging-compat.js" : "firebase-app-compat.js"; return new Response(fs.readFileSync(path.join(root, "node_modules/firebase", file)), { status: 200 }); }
     throw new Error("Unexpected local HTTP fixture: " + url.origin + url.pathname);
   };
   const clock = { now: () => milliseconds, sleep: async delay => { milliseconds += delay; } };
@@ -238,15 +249,13 @@ function hostedReaderFixture({ metadataFailure = false, preflightFailure = false
 }
 
 function rollbackEvidence(at, suffix = "fresh") {
-  const routes = Array.from({ length: 6 }, (_, i) => ({ route: "/route-" + i, sha256: hash(Buffer.from(`${suffix}-route-${i}`)) }));
-  const criticalAssets = Array.from({ length: 5 }, (_, i) => ({ asset: `/assets/${suffix}-${i}.js`, sha256: hash(Buffer.from(`${suffix}-asset-${i}`)) }));
-  const reference = { passed: true, capturedAt: at, runId: SUPPORT.runId, deploymentIdentifier: DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment, deploymentUrl: "https://rollback.example.invalid", routes, criticalAssets };
-  const progress = {
-    schemaVersion: 1, runId: SUPPORT.runId, capturedAt: at,
-    metadata: { deploymentIdentifier: reference.deploymentIdentifier, deploymentUrl: reference.deploymentUrl }, observations: [],
-    routes: routes.map(row => ({ ...row, parity: true })), criticalAssets: criticalAssets.map(row => ({ ...row, parity: true })),
-    passed: true, completedAt: at,
-  };
+  const criticalAssets = Array.from({ length: 3 }, (_, i) => { const body = Buffer.from(`${suffix}-asset-${i}`); return { asset: `/assets/${suffix}-${i}.js`, bytes: body.length, sha256: hash(body) }; });
+  const routes = Array.from({ length: 6 }, (_, i) => { const body = Buffer.from(`${suffix}-route-${i}`); return { route: "/route-" + i, bytes: body.length, sha256: hash(body), referencedAssets: criticalAssets.map(row => row.asset) }; });
+  const runtimeFiles = DIAGNOSTIC_OPERATOR.runtimeFiles.map((runtimePath, i) => { const body = Buffer.from(`${suffix}-runtime-${i}`); return { path: runtimePath, bytes: body.length, sha256: hash(body) }; });
+  const externalRuntime = DIAGNOSTIC_OPERATOR.externalRuntime.map((row, i) => ({ url: row.url, bytes: i ? 37024 : 31766, sha256: row.sha256 }));
+  const reference = { passed: true, capturedAt: at, runId: SUPPORT.runId, deploymentIdentifier: DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment, deploymentUrl: "https://rollback.example.invalid", routes, criticalAssets, runtimeFiles, externalRuntime };
+  reference.contractSha256 = rollbackContractDigest(reference);
+  const progress = { schemaVersion: 2, runId: SUPPORT.runId, capturedAt: at, metadata: { deploymentIdentifier: reference.deploymentIdentifier, deploymentUrl: reference.deploymentUrl }, observations: [], routes: routes.map(row => ({ ...row, parity: true })), criticalAssets: criticalAssets.map(row => ({ ...row, parity: true })), runtimeFiles: runtimeFiles.map(row => ({ ...row, parity: true })), externalRuntime: externalRuntime.map(row => ({ ...row, passed: true })), passed: true, completedAt: at };
   return { reference, progress };
 }
 
@@ -255,13 +264,17 @@ function installVerifiedFreshRecapture(directory, auth, freshAt = capturedAt, re
   const historical = rollbackEvidence(historicalAt, "historical");
   writeJson(directory, "rollback-reference.json", historical.reference);
   writeJson(directory, "rollback-capture-progress.json", historical.progress);
+  writeJson(directory, "rollback-capture-initial-attempt.json", { schemaVersion: 1, runId: auth.runId, phase: "initial", state: "COMPLETE", contractSha256: historical.reference.contractSha256 });
   prepareFreshRollbackRecapture({ runDirectory: directory, authority: auth, capturedAt: new Date(Date.parse(historicalAt) + 1_000).toISOString() });
-  const fresh = referenceOverride ? {
-    reference: { passed: true, capturedAt: freshAt, runId: auth.runId, deploymentIdentifier: referenceOverride.deploymentIdentifier, deploymentUrl: "https://rollback.example.invalid", routes: referenceOverride.routes, criticalAssets: referenceOverride.criticalAssets },
-    progress: { schemaVersion: 1, runId: auth.runId, capturedAt: freshAt, metadata: { deploymentIdentifier: referenceOverride.deploymentIdentifier, deploymentUrl: "https://rollback.example.invalid" }, observations: [], routes: referenceOverride.routes.map(row => ({ ...row, parity: true })), criticalAssets: referenceOverride.criticalAssets.map(row => ({ ...row, parity: true })), passed: true, completedAt: freshAt },
-  } : rollbackEvidence(freshAt, "fresh");
+  let fresh = rollbackEvidence(freshAt, "fresh");
+  if (referenceOverride) {
+    fresh.reference = { ...fresh.reference, ...referenceOverride };
+    fresh.reference.contractSha256 = rollbackContractDigest(fresh.reference);
+    fresh.progress = { ...fresh.progress, metadata: { deploymentIdentifier: fresh.reference.deploymentIdentifier, deploymentUrl: fresh.reference.deploymentUrl }, routes: fresh.reference.routes.map(row => ({ ...row, parity: true })), criticalAssets: fresh.reference.criticalAssets.map(row => ({ ...row, parity: true })), runtimeFiles: fresh.reference.runtimeFiles.map(row => ({ ...row, parity: true })), externalRuntime: fresh.reference.externalRuntime.map(row => ({ ...row, passed: true })) };
+  }
   writeJson(directory, "rollback-reference.json", fresh.reference);
   writeJson(directory, "rollback-capture-progress.json", fresh.progress);
+  writeJson(directory, "rollback-capture-fresh-attempt.json", { schemaVersion: 1, runId: auth.runId, phase: "fresh", state: "COMPLETE", contractSha256: fresh.reference.contractSha256 });
   const verification = verifyFreshRollbackRecapture({ runDirectory: directory, authority: auth, capturedAt: freshAt, currentMs: Date.parse(freshAt) + 1_000 });
   return { ...fresh, verification };
 }
@@ -298,7 +311,7 @@ function finalFixture({ rollbackCapturedAt = capturedAt } = {}) {
 test("source manifest exactly reproduces the audited checkpoint", () => {
   const result = buildSourceManifest(root, SUPPORT.baseCheckpoint);
   assert.equal(result.commit, SUPPORT.baseCheckpoint);
-  assert.equal(result.files, 1504);
+  assert.equal(result.files, SUPPORT.baseSourceManifestFiles);
   assert.equal(result.sha256, SUPPORT.baseSourceManifestSha256);
 });
 
@@ -355,7 +368,7 @@ test("future compatibility checkpoint must retain diagnostic executables and rev
     return { status: 0, stdout: fs.readFileSync(path.join(root, args[1].slice(sourceCommit.length + 1))) };
   };
   assert.equal(verifyAcceptedDiagnosticExecutables({ repoRoot: root, commit: sourceCommit, spawn: source }).passed, true);
-  for (const relative of [...Object.keys(SUPPORT.diagnosticExecutableFiles), "docs/restaurant-expo-alias-final-one-run-staging-execution-authorization-proposal.md"]) {
+  for (const relative of [...Object.keys(SUPPORT.diagnosticExecutableFiles), SUPPORT.proposalPath]) {
     assert.throws(() => verifyAcceptedDiagnosticExecutables({
       repoRoot: root,
       commit: sourceCommit,
@@ -398,6 +411,34 @@ test("authority rejects missing, placeholder, contradictory, and unapproved inpu
   assert.throws(() => validateOwnerAuthorization(approval({ authorizedActions: ["promote"] })), /actions/i);
   assert.throws(() => validateOwnerAuthorization(approval({ checkpointParent: SUPPORT.acceptedLineage[1].commit })), /identity/i);
   assert.throws(() => validateOwnerAuthorization(approval({ proposalSha256: "0".repeat(64) })), /identity/i);
+  assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260925a" })), /identity/i);
+  assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260925b" })), /identity/i);
+});
+
+test("new run owns isolated authority and evidence identities", () => {
+  assert.equal(SUPPORT.runId, "ruip6ad_20260925c");
+  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260925c");
+  assert.notEqual(SUPPORT.runId, "ruip6ad_20260925a");
+  assert.notEqual(SUPPORT.runId, "ruip6ad_20260925b");
+  assert.ok(!SUPPORT.evidenceDirectory.includes("20260925a"));
+  assert.ok(!SUPPORT.evidenceDirectory.includes("20260925b"));
+});
+
+test("new-run checkpoint contract passes only the exact reviewed synthetic child", () => {
+  const spawn = (program, args) => {
+    assert.equal(program, "git");
+    if (args[0] === "ls-tree") return { status: 0, stdout: Buffer.from("support.txt\0") };
+    if (args[0] === "show") return { status: 0, stdout: fakeBlob };
+    if (args[0] === "diff-tree") return { status: 0, stdout: SUPPORT.checkpointFiles.join("\n") + "\n" };
+    if (args[0] === "rev-parse" && args[1] === "HEAD") return { status: 0, stdout: fakeSourceCommit + "\n" };
+    if (args[0] === "rev-parse" && args[1] === fakeSourceCommit + "^") return { status: 0, stdout: SUPPORT.baseCheckpoint + "\n" };
+    if (args[0] === "rev-parse" && args[1] === fakeSourceCommit + ":apps/restaurant") return { status: 0, stdout: SUPPORT.applicationTree + "\n" };
+    throw new Error("Unexpected local git command: " + args.join(" "));
+  };
+  const result = verifyReviewedCandidateCheckpoint({ repoRoot: root, approval: approval(), spawn, lineageVerifier: () => ({ passed: true }), executableVerifier: () => ({ passed: true }) });
+  assert.equal(result.passed, true);
+  assert.equal(result.commit, fakeSourceCommit);
+  assert.deepEqual(result.inventory, [...SUPPORT.checkpointFiles].sort());
 });
 
 test("authority preparation rejects an unreviewed future parent, inventory, source manifest, Restaurant tree, executable, or lineage", () => {
@@ -580,7 +621,7 @@ test("final preflight rejects mismatched candidate, access, and rollback evidenc
     const fixture = finalFixture();
     try {
       mutation(fixture.directory);
-      assert.throws(() => buildFinalPreflight({ authority: fixture.auth, reads: reads({}, "promotion-preflight"), protectedEvidence: protectedRows, runDirectory: fixture.directory, capturedAt, currentMs: nowMs }), /mismatch|identity/i);
+      assert.throws(() => buildFinalPreflight({ authority: fixture.auth, reads: reads({}, "promotion-preflight"), protectedEvidence: protectedRows, runDirectory: fixture.directory, capturedAt, currentMs: nowMs }), /mismatch|identity|contract/i);
     } finally { fs.rmSync(fixture.directory, { recursive: true, force: true }); }
   }
 });
@@ -621,7 +662,7 @@ test("terminal recording distinguishes no assignment, uncertain assignment, and 
       assert.equal(result.rollbackRequired, rollbackRequired);
       assert.equal(result.promotionRetryPermitted, false);
       if (expected === "not-attempted") assert.equal(JSON.parse(fs.readFileSync(path.join(directory, "promotion-attempt.json"), "utf8")).providerCommandInvoked, false);
-      if (rollbackRequired) assert.match(result.rollbackCommand, /:rollback:ruip6ad_20260925b/);
+      if (rollbackRequired) assert.match(result.rollbackCommand, /:rollback:ruip6ad_20260925c/);
       assert.throws(() => recordTerminalState({ runDirectory: directory, authority: authority(), classification: "ABORTED", reason: "again", capturedAt }), /overwrite prohibited/);
     } finally { fs.rmSync(directory, { recursive: true, force: true }); }
   }
@@ -638,7 +679,7 @@ test("rollback assignment response alone never claims restoration", () => {
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
-test("real hosted-reader alias callback verifies stable metadata, six routes, and five assets", async () => {
+test("real hosted-reader alias callback verifies stable metadata, six routes, and deployment-derived assets", async () => {
   const fixture = hostedReaderFixture();
   try {
     const collected = await fixture.readers.collect();
@@ -648,7 +689,7 @@ test("real hosted-reader alias callback verifies stable metadata, six routes, an
     assert.equal(result.deploymentIdentifier, DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment);
     assert.equal(result.selectedAttempts.length, 2);
     assert.equal(result.attempts[0].routes.length, 6);
-    assert.equal(result.attempts[0].criticalAssets.length, 5);
+    assert.equal(result.attempts[0].criticalAssets.length, 3);
     assert.equal(result.attempts[0].observations.some(row => row.type === "metadata" && row.requestId && row.payloadSha256 && row.startedAt && row.completedAt), true);
     const progress = fixture.persisted.filter(row => row.file === "final-alias-verification-progress.json");
     assert.equal(progress.length > 20, true);
@@ -664,7 +705,7 @@ test("final reconciliation executes the real hosted-reader parity integration", 
     assert.equal(result.result, "PASS");
     assert.equal(result.finalAlias.selectedAttempts.length, 2);
     assert.equal(result.finalAlias.attempts[0].routes.length, 6);
-    assert.equal(result.finalAlias.attempts[0].criticalAssets.length, 5);
+    assert.equal(result.finalAlias.attempts[0].criticalAssets.length, 3);
   } finally { await fixture.readers.close(); fs.rmSync(fixture.directory, { recursive: true, force: true }); }
 });
 
@@ -678,7 +719,7 @@ test("real hosted-reader alias callback persists metadata failures without runti
     assert.equal(result.attempts.every(attempt => attempt.errors.some(row => row.stage === "metadata")), true);
     assert.equal(result.attempts.some(attempt => attempt.errors.some(row => /synthetic metadata transport failure/.test(row.error))), true, JSON.stringify(result.attempts[0], null, 2));
     const failedMetadata = result.attempts[0].observations.find(row => row.type === "metadata");
-    assert.match(failedMetadata.requestId, /^ruip6ad_20260925b:expo-alias-final-parity:1:/);
+    assert.match(failedMetadata.requestId, /^ruip6ad_20260925c:expo-alias-final-parity:1:/);
     assert.equal(failedMetadata.status, null);
     assert.match(failedMetadata.error, /synthetic metadata transport failure/);
     assert.ok(failedMetadata.startedAt && failedMetadata.completedAt);
@@ -725,10 +766,11 @@ function writeSuccessfulRunEvidence(directory, expectedOverride = null) {
   writeJson(directory, "promotion-attempt.json", { attemptedAt: capturedAt, deploymentIdentifier: deployment.deploymentIdentifier });
   writeJson(directory, "promotion-result.json", { passed: true, deploymentIdentifier: deployment.deploymentIdentifier });
   writeJson(directory, "alias-observation-result.json", { passed: true, classification: "PASS" });
+  writeJson(directory, "alias-full-artifact-result.json", { passed: true, publishedFiles: Array.from({ length: 74 }, () => ({ passed: true })) });
   writeJson(directory, "rollback-attempt.json", { attemptedAt: capturedAt, deploymentIdentifier: DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment });
   writeJson(directory, "rollback-result.json", { completedAt: capturedAt, deploymentIdentifier: DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment });
   const fresh = installVerifiedFreshRecapture(directory, auth, capturedAt, expectedOverride);
-  writeJson(directory, "rollback-verification-result.json", { passed: true, classification: "PASS", expected: { deploymentIdentifier: fresh.reference.deploymentIdentifier, routes: fresh.reference.routes, criticalAssets: fresh.reference.criticalAssets }, selectedAttempts: [{ number: 1 }, { number: 4 }] });
+  writeJson(directory, "rollback-verification-result.json", { passed: true, classification: "PASS", expected: { deploymentIdentifier: fresh.reference.deploymentIdentifier, routes: fresh.reference.routes, criticalAssets: fresh.reference.criticalAssets, runtimeFiles: fresh.reference.runtimeFiles, externalRuntime: fresh.reference.externalRuntime }, selectedAttempts: [{ number: 1 }, { number: 4 }] });
   const expected = buildExpectedFinalAliasReference({ runDirectory: directory, authority: auth, capturedAt });
   const cleanup = buildCleanupDisposition({ runDirectory: directory, authority: auth, capturedAt });
   return { expected, cleanup };
@@ -840,7 +882,7 @@ test("final preflight requires verified fresh recapture and rejects altered evid
     directory => fs.rmSync(path.join(directory, "fresh-recapture-attempt.json")),
     directory => fs.rmSync(path.join(directory, "fresh-recapture-verification.json")),
     directory => { const file = path.join(directory, "fresh-recapture-attempt.json"); const value = JSON.parse(fs.readFileSync(file)); value.state = "READY_FOR_RECAPTURE"; fs.writeFileSync(file, canonical(value)); },
-    directory => fs.appendFileSync(path.join(directory, "rollback-history", "ruip6ad_20260925b_fresh-rollback-recapture", "rollback-reference.json"), " "),
+    directory => fs.appendFileSync(path.join(directory, "rollback-history", "ruip6ad_20260925c_fresh-rollback-recapture", "rollback-reference.json"), " "),
     directory => { const file = path.join(directory, "rollback-reference.json"); const value = JSON.parse(fs.readFileSync(file)); value.criticalAssets.pop(); fs.writeFileSync(file, canonical(value)); },
   ]) {
     const fixture = finalFixture();
@@ -878,8 +920,8 @@ test("uncertain deployment never fabricates an identifier and only an independen
     assert.equal(uncertain.resources.length, 0);
     assert.equal(uncertain.unexpectedResources[0].id, SUPPORT.runId + ":single-attempt");
     assert.throws(() => beginSingleDeploymentAttempt({ runDirectory: directory, authority: auth, capturedAt }), /clean initialized/);
-    const payload = { attemptId: SUPPORT.runId + ":single-deployment-attempt", deployments: [{ deploymentIdentifier: "provider-observed-id", url: "https://provider-observed.example.invalid", createdAt: "2026-09-25T11:55:10.000Z" }] };
-    const observation = { schemaVersion: 1, runId: SUPPORT.runId, stage: "deployment-reconciliation", requestId: "provider-read-1", startedAt: "2026-09-25T11:56:10.000Z", completedAt: "2026-09-25T11:56:11.000Z", status: 200, payloadSha256: hash(Buffer.from(canonical(payload))), payload };
+    const payload = { attemptId: SUPPORT.runId + ":single-deployment-attempt", easProjectId: DIAGNOSTIC_OPERATOR.easProjectId, endpoint: "https://api.expo.dev/graphql", deployments: [{ deploymentIdentifier: "provider-observed-id", url: "https://hungrie-restaurant--provider-observed-id.expo.app", createdAt: "2026-09-25T11:55:10.000Z" }] };
+    const observation = { schemaVersion: 2, runId: SUPPORT.runId, stage: "deployment-reconciliation", requestId: "provider-read-1", startedAt: "2026-09-25T11:56:10.000Z", completedAt: "2026-09-25T11:56:11.000Z", status: 200, payloadSha256: hash(Buffer.from(canonical(payload))), payload, error: null };
     const observationFile = writeJson(directory, "provider-deployment-reconciliation.json", observation).file;
     const reconciled = reconcileDeploymentObservation({ runDirectory: directory, authority: auth, observationPath: observationFile, capturedAt: "2026-09-25T11:56:12.000Z" });
     assert.equal(reconciled.resources[0].id, "provider-observed-id");
@@ -895,8 +937,8 @@ test("ambiguous deployment reconciliation remains blocked and preserves every ob
     initializeResourceInventory({ runDirectory: directory, authority: auth, capturedAt: "2026-09-25T11:50:00.000Z" });
     beginSingleDeploymentAttempt({ runDirectory: directory, authority: auth, capturedAt: "2026-09-25T11:55:00.000Z" });
     recordDeploymentUncertainty({ runDirectory: directory, authority: auth, capturedAt: "2026-09-25T11:56:00.000Z", reason: "uncertain" });
-    const payload = { attemptId: SUPPORT.runId + ":single-deployment-attempt", deployments: ["one", "two"].map((id, index) => ({ deploymentIdentifier: id, url: `https://${id}.example.invalid`, createdAt: `2026-09-25T11:55:1${index}.000Z` })) };
-    const row = { schemaVersion: 1, runId: SUPPORT.runId, stage: "deployment-reconciliation", requestId: "provider-read-many", startedAt: "2026-09-25T11:56:10.000Z", completedAt: "2026-09-25T11:56:11.000Z", status: 200, payloadSha256: hash(Buffer.from(canonical(payload))), payload };
+    const payload = { attemptId: SUPPORT.runId + ":single-deployment-attempt", easProjectId: DIAGNOSTIC_OPERATOR.easProjectId, endpoint: "https://api.expo.dev/graphql", deployments: ["one", "two"].map((id, index) => ({ deploymentIdentifier: id, url: `https://hungrie-restaurant--${id}.expo.app`, createdAt: `2026-09-25T11:55:1${index}.000Z` })) };
+    const row = { schemaVersion: 2, runId: SUPPORT.runId, stage: "deployment-reconciliation", requestId: "provider-read-many", startedAt: "2026-09-25T11:56:10.000Z", completedAt: "2026-09-25T11:56:11.000Z", status: 200, payloadSha256: hash(Buffer.from(canonical(payload))), payload, error: null };
     const file = writeJson(directory, "provider-deployment-reconciliation.json", row).file;
     const reconciled = reconcileDeploymentObservation({ runDirectory: directory, authority: auth, observationPath: file, capturedAt });
     assert.equal(reconciled.state, "DEPLOYMENT_RECONCILIATION_AMBIGUOUS");
@@ -914,7 +956,7 @@ test("expected final alias is exact, run-bound, and preserves the original rollb
     const expected = buildExpectedFinalAliasReference({ runDirectory: fixture.directory, authority: fixture.auth, capturedAt });
     assert.equal(expected.deploymentIdentifier, DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment);
     assert.equal(expected.routes.length, 6);
-    assert.equal(expected.criticalAssets.length, 5);
+    assert.equal(expected.criticalAssets.length, 3);
     assert.equal(expected.source.originalHistoricalReferenceSha256, before.historical.reference.sha256);
     assert.throws(() => buildExpectedFinalAliasReference({ runDirectory: fixture.directory, authority: fixture.auth, capturedAt }), /exist/);
   } finally { fs.rmSync(fixture.directory, { recursive: true, force: true }); }
@@ -967,4 +1009,23 @@ test("support tooling contains no provider deployment, promotion, rollback, or r
   const source = fs.readFileSync(path.join(root, "scripts/restaurant-alias-diagnostic-execution-support.mjs"), "utf8");
   assert.doesNotMatch(source, /eas-cli|deploy:alias|\bnpx\b/);
   assert.doesNotMatch(source, /automatic.{0,20}(?:promotion|rollback)|retry.{0,20}promotion/i);
+});
+
+
+test("independent provider reconciliation producer persists exact project-bound evidence", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "provider-reconciliation-producer-"));
+  const auth = authority();
+  try {
+    initializeResourceInventory({ runDirectory: directory, authority: auth, capturedAt: "2026-09-25T10:00:00Z" });
+    beginSingleDeploymentAttempt({ runDirectory: directory, authority: auth, capturedAt: "2026-09-25T10:01:00Z" });
+    recordDeploymentUncertainty({ runDirectory: directory, authority: auth, capturedAt: "2026-09-25T10:02:00Z", reason: "synthetic uncertain response" });
+    const id = "observed-only";
+    const fetchImpl = async (_url, init) => { const body = JSON.parse(init.body); assert.equal(body.variables.appId, DIAGNOSTIC_OPERATOR.easProjectId); return new Response(JSON.stringify({ data: { app: { byId: { id: DIAGNOSTIC_OPERATOR.easProjectId, workerDeployments: { edges: [{ node: { id: "provider-id", deploymentIdentifier: id, url: `https://hungrie-restaurant--${id}.expo.app`, createdAt: "2026-09-25T10:01:10Z" } }] } } } } }), { status: 200 }); };
+    const result = await produceDeploymentReconciliationEvidence({ runDirectory: directory, authority: auth, capturedAt: "2026-09-25T10:02:10Z", fetchImpl, expoSession: "synthetic-local-session" });
+    const row = JSON.parse(fs.readFileSync(result.path));
+    assert.equal(row.payload.easProjectId, DIAGNOSTIC_OPERATOR.easProjectId);
+    assert.equal(row.payload.deployments[0].deploymentIdentifier, id);
+    assert.equal(row.error, null);
+    await assert.rejects(() => produceDeploymentReconciliationEvidence({ runDirectory: directory, authority: auth, fetchImpl, expoSession: "synthetic" }), /exists|uncertain/);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });

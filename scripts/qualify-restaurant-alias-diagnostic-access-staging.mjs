@@ -67,6 +67,27 @@ async function openChrome(chromePath, profile, port) {
   return { processHandle, version, cdp: new Cdp(socket) };
 }
 
+export function evaluateBrowserQualification({ accountName, expectedPath, directPath, baseUrl, authenticated, restored, mainCount, exceptions = [], consoleErrors = [], failedRequests = [], httpErrors = [], requests = [], serviceWorkerReady = false }) {
+  const errors = [...exceptions, ...consoleErrors, ...(authenticated?.diagnostic?.errors || []), ...(restored?.diagnostic?.errors || [])].filter(Boolean);
+  const allowedOrigins = [new URL(baseUrl).origin, "https://identitytoolkit.googleapis.com", "https://securetoken.googleapis.com", "https://firebase.googleapis.com", "https://www.gstatic.com", "https://fcmregistrations.googleapis.com"];
+  const unexpectedRequests = requests.filter(request => { try { const origin = new URL(request.url || request.requestedUrl).origin; return !allowedOrigins.includes(origin) && !origin.endsWith(".supabase.co"); } catch { return true; } });
+  const operationalExpected = expectedPath === "/dashboard";
+  const completeRendering = authenticated?.path === expectedPath && restored?.path === (directPath || expectedPath) && authenticated?.heading && restored?.heading && !authenticated.blank && !restored.blank && authenticated.operational === operationalExpected && restored.operational === operationalExpected;
+  const earningsRequests = requests.filter(request => /restaurant_(?:get|list)_earnings/i.test(request.path || "")).length;
+  const blockers = [];
+  if (!completeRendering) blockers.push("INCOMPLETE_OPERATIONAL_RENDERING");
+  if (mainCount !== 1) blockers.push("MAIN_LANDMARK_INVALID");
+  if (errors.length) blockers.push("UNCAUGHT_OR_CONSOLE_ERROR");
+  if (failedRequests.length) blockers.push("NETWORK_LOADING_FAILURE");
+  if (httpErrors.length) blockers.push("SAME_ORIGIN_HTTP_ERROR");
+  if (unexpectedRequests.length) blockers.push("UNEXPECTED_RUNTIME_REQUEST");
+  if (!serviceWorkerReady) blockers.push("SERVICE_WORKER_NOT_READY");
+  if ((authenticated?.diagnostic?.navigations?.length || 0) > 8 || (restored?.diagnostic?.navigations?.length || 0) > 8) blockers.push("UNBOUNDED_NAVIGATION");
+  if (authenticated?.diagnostic?.protectedBeforeReady || restored?.diagnostic?.protectedBeforeReady) blockers.push("PROTECTED_CONTENT_BEFORE_AUTHORIZATION");
+  if (accountName === "manager" && (authenticated?.earningsLink || restored?.earningsLink || earningsRequests)) blockers.push("MANAGER_FINANCIAL_ACCESS");
+  return { passed: blockers.length === 0, blockers, errors, httpErrors, failedRequests, unexpectedRequests, earningsRequests, completeRendering };
+}
+
 async function qualifyAccount({ accountName, account, expectedPath, directPath, baseUrl, directory, chromePath, port }) {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), `restaurant-alias-diagnostic-${accountName}-`));
   const { processHandle, version, cdp } = await openChrome(chromePath, profile, port);
@@ -74,13 +95,18 @@ async function qualifyAccount({ accountName, account, expectedPath, directPath, 
     await Promise.all([cdp.send("Page.enable"), cdp.send("Runtime.enable"), cdp.send("Network.enable"), cdp.send("Accessibility.enable")]);
     await cdp.send("Emulation.setDeviceMetricsOverride", { width: 1024, height: 768, deviceScaleFactor: 1, mobile: false });
     await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: `window.__diagnostic={navigations:[],mutations:0,errors:[],accessResolved:false,protectedBeforeReady:false};for(const key of ['pushState','replaceState']){const original=history[key];history[key]=function(...args){const result=original.apply(this,args);__diagnostic.navigations.push({type:key,path:location.pathname});return result}}addEventListener('popstate',()=>__diagnostic.navigations.push({type:'popstate',path:location.pathname}));addEventListener('error',event=>__diagnostic.errors.push(String(event.error?.message||event.message)));addEventListener('unhandledrejection',event=>__diagnostic.errors.push(String(event.reason?.message||event.reason)));addEventListener('DOMContentLoaded',()=>new MutationObserver(()=>{__diagnostic.mutations++;const main=document.querySelector('.app-shell main');if(main&&!__diagnostic.accessResolved)__diagnostic.protectedBeforeReady=true}).observe(document.body,{subtree:true,childList:true,attributes:true}));` });
-    const exceptions = [], consoleErrors = [], failedRequests = [], requests = [];
+    const exceptions = [], consoleErrors = [], failedRequests = [], httpErrors = [], responses = [], requests = [];
     cdp.on(message => {
       if (message.method === "Runtime.exceptionThrown") exceptions.push(message.params.exceptionDetails?.exception?.description || message.params.exceptionDetails?.text);
       if (message.method === "Runtime.consoleAPICalled" && ["error", "assert"].includes(message.params.type)) consoleErrors.push(message.params.args.map(value => value.value || value.description || value.type).join(" "));
       if (message.method === "Network.loadingFailed" && !String(message.params.errorText || "").includes("ERR_ABORTED") && message.params.type !== "Other") failedRequests.push({ type: message.params.type, errorText: message.params.errorText });
       if (message.method === "Network.requestWillBeSent") requests.push(sanitizeRequest(message.params.request));
-      if (message.method === "Network.responseReceived" && new URL(message.params.response.url).pathname.endsWith("/get_my_access_context_v1")) cdp.send("Runtime.evaluate", { expression: "window.__diagnostic.accessResolved=true" }).catch(() => {});
+      if (message.method === "Network.responseReceived") {
+        const response = message.params.response, row = { url: response.url, status: response.status, mimeType: response.mimeType, type: message.params.type };
+        responses.push(row);
+        try { if (new URL(response.url).origin === new URL(baseUrl).origin && response.status >= 400) httpErrors.push(row); } catch {}
+        if (new URL(response.url).pathname.endsWith("/get_my_access_context_v1")) cdp.send("Runtime.evaluate", { expression: "window.__diagnostic.accessResolved=true" }).catch(() => {});
+      }
     });
     const evaluate = async expression => { const result = await cdp.send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true }); if (result.exceptionDetails) throw new Error(result.exceptionDetails.exception?.description || result.exceptionDetails.text); return result.result.value; };
     const snapshot = () => evaluate(`({path:location.pathname,heading:document.querySelector('main h1')?.textContent?.trim()||null,blank:!document.body.innerText.trim(),operational:Boolean(document.querySelector('.app-shell main')),earningsLink:Boolean(document.querySelector('a[href="/earnings"]')),diagnostic:window.__diagnostic})`);
@@ -97,15 +123,14 @@ async function qualifyAccount({ accountName, account, expectedPath, directPath, 
     else { await cdp.send("Page.reload", { ignoreCache: true }); restored = await waitFor(expectedPath); }
     const ax = await cdp.send("Accessibility.getFullAXTree");
     const mainCount = ax.nodes.filter(node => !node.ignored && node.role?.value === "main").length;
-    const errors = [...exceptions, ...consoleErrors, ...authenticated.diagnostic.errors, ...restored.diagnostic.errors];
     const accessRequests = requests.filter(request => request.path.endsWith("/get_my_access_context_v1")).length;
-    const earningsRequests = requests.filter(request => /restaurant_(?:get|list)_earnings/i.test(request.path)).length;
-    const operationalExpected = expectedPath === "/dashboard";
-    if (authenticated.operational !== operationalExpected || restored.operational !== operationalExpected || mainCount !== 1 || failedRequests.length || errors.some(value => /maximum update|React error #185|runtime is unavailable/i.test(value)) || authenticated.diagnostic.navigations.length > 8 || restored.diagnostic.navigations.length > 8 || authenticated.diagnostic.protectedBeforeReady || restored.diagnostic.protectedBeforeReady || (accountName === "manager" && (authenticated.earningsLink || restored.earningsLink || earningsRequests))) throw new Error(`${accountName} immutable access qualification failed.`);
+    const serviceWorkerReady = await evaluate("!!navigator.serviceWorker && !!(await navigator.serviceWorker.ready)").catch(() => false);
+    const decision = evaluateBrowserQualification({ accountName, expectedPath, directPath, baseUrl, authenticated, restored, mainCount, exceptions, consoleErrors, failedRequests, httpErrors, requests, serviceWorkerReady });
+    if (!decision.passed) throw new Error(`${accountName} immutable access qualification failed: ${decision.blockers.join(",")}.`);
     const screenshot = await cdp.send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
     const screenshotName = `immutable-${accountName}-access.png`, screenshotPath = path.join(directory, screenshotName);
     fs.writeFileSync(screenshotPath, Buffer.from(screenshot.data, "base64"), { mode: 0o600 });
-    return { passed: true, account: accountName, browser: version.Browser, expectedPath, directPath, authenticated, restored, mainCount, accessRequests, earningsRequests, uncaughtErrors: errors, failedRequests, requestInventory: requests, screenshot: { file: screenshotName, sha256: sha256(fs.readFileSync(screenshotPath)) } };
+    return { passed: true, account: accountName, browser: version.Browser, expectedPath, directPath, authenticated, restored, mainCount, accessRequests, earningsRequests: decision.earningsRequests, uncaughtErrors: decision.errors, failedRequests, httpErrors, unexpectedRequests: decision.unexpectedRequests, responseInventory: responses, serviceWorkerReady, requestInventory: requests, screenshot: { file: screenshotName, sha256: sha256(fs.readFileSync(screenshotPath)) } };
   } finally { cdp.close(); processHandle.kill("SIGTERM"); await delay(150); fs.rmSync(profile, { recursive: true, force: true }); }
 }
 

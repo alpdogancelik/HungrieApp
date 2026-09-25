@@ -29,6 +29,11 @@ export const DIAGNOSTIC_OPERATOR = Object.freeze({
     Object.freeze({ runId: "ruip6a_20260924c", files: 42, manifestSha256: "85de695ef3eee71ef949449b5a5c8da7cbb9ffdae2344ed6fefd0f1b1196d538" }),
   ]),
   freshnessMs: Object.freeze({ preflight: 10 * 60_000, rollbackReference: 5 * 60_000, immutable: 2 * 60 * 60_000, access: 30 * 60_000, rollbackRecheck: 30_000 }),
+  runtimeFiles: Object.freeze(["/manifest.webmanifest", "/sw.js", "/firebase-config.js"]),
+  externalRuntime: Object.freeze([
+    Object.freeze({ url: "https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js", sha256: "16fc846e94d74deed335af1fa0edef0b744f62cbcf6b797449e77de7ef161054" }),
+    Object.freeze({ url: "https://www.gstatic.com/firebasejs/11.10.0/firebase-messaging-compat.js", sha256: "f9b3a80d491a02739e8e44877e4124dea5e2d9b7313fa5bdd986913840d4c091" }),
+  ]),
   evidenceRoot: "secure/restaurant-alias-diagnostic",
 });
 
@@ -48,6 +53,7 @@ const ACTIONS = new Set([
   "observe-alias",
   "rollback",
   "verify-rollback",
+  "reconcile-deployment-read",
 ]);
 const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 const canonical = value => `${JSON.stringify(value, null, 2)}\n`;
@@ -81,10 +87,37 @@ export function validateAuthority(authority, options = {}) {
   if (!/^ruip6ad_[a-z0-9]{8,24}$/.test(authority.runId || "")) throw new Error("Canonical diagnostic run ID required.");
   if (!/^[a-f0-9]{40}$/.test(authority.sourceCommit || "") || !/^[a-f0-9]{64}$/.test(authority.sourceManifestSha256 || "")) throw new Error("Reviewed source identity required.");
   if (!authority.ownerAuthorizationSha256?.match(/^[a-f0-9]{64}$/)) throw new Error("Owner authorization digest required.");
+  const windowStart = Date.parse(authority.maintenanceWindowStart || ""), windowEnd = Date.parse(authority.maintenanceWindowEnd || "");
+  if (!Number.isFinite(windowStart) || !Number.isFinite(windowEnd) || windowEnd <= windowStart || windowEnd - windowStart > 2 * 60 * 60_000) throw new Error("A valid maximum two-hour maintenance window is required.");
   if (options.runId && options.runId !== authority.runId) throw new Error("Run ID differs from authority.");
   if (options.sourceCommit && options.sourceCommit !== authority.sourceCommit) throw new Error("Source commit differs from authority.");
   if (options.sourceManifestSha256 && options.sourceManifestSha256 !== authority.sourceManifestSha256) throw new Error("Source manifest differs from authority.");
   return authority;
+}
+
+
+export function requireMaintenanceWindow(authority, action, currentMs = Date.now()) {
+  const start = Date.parse(authority.maintenanceWindowStart || "");
+  const end = Date.parse(authority.maintenanceWindowEnd || "");
+  if (!Number.isFinite(start) || !Number.isFinite(end) || currentMs < start) throw new Error("Hosted action is outside the approved maintenance window.");
+  const recovery = ["rollback", "verify-rollback"].includes(action);
+  if (!recovery && currentMs >= end) throw new Error("Hosted action is outside the approved maintenance window.");
+  if (["deploy", "promote"].includes(action) && end - currentMs < 720_000) throw new Error("Insufficient maintenance window remains for observation and rollback verification.");
+  return { start, end, recoveryAfterDeadline: recovery && currentMs >= end };
+}
+
+export function rollbackContractDigest(reference) {
+  const contract = { deploymentIdentifier: reference.deploymentIdentifier, deploymentUrl: reference.deploymentUrl, routes: reference.routes, criticalAssets: reference.criticalAssets, runtimeFiles: reference.runtimeFiles, externalRuntime: reference.externalRuntime };
+  return sha256(Buffer.from(canonical(contract)));
+}
+
+export function validateRollbackReference(reference, runId = reference?.runId) {
+  if (reference?.passed !== true || reference.runId !== runId || reference.deploymentIdentifier !== DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment || reference.routes?.length !== 6 || !reference.criticalAssets?.length || reference.runtimeFiles?.length !== DIAGNOSTIC_OPERATOR.runtimeFiles.length || reference.externalRuntime?.length !== DIAGNOSTIC_OPERATOR.externalRuntime.length) throw new Error("Complete deployment-derived rollback contract required.");
+  const unique = (rows, key) => Array.isArray(rows) && new Set(rows.map(row => row[key])).size === rows.length;
+  const exact = row => Number.isSafeInteger(row.bytes) && row.bytes > 0 && /^[a-f0-9]{64}$/.test(row.sha256 || "");
+  if (!unique(reference.routes, "route") || !unique(reference.criticalAssets, "asset") || !unique(reference.runtimeFiles, "path") || !unique(reference.externalRuntime, "url") || reference.routes.some(row => !exact(row) || !Array.isArray(row.referencedAssets) || row.referencedAssets.some(asset => !reference.criticalAssets.some(value => value.asset === asset))) || reference.criticalAssets.some(row => !exact(row)) || reference.runtimeFiles.some(row => !exact(row) || !DIAGNOSTIC_OPERATOR.runtimeFiles.includes(row.path)) || reference.externalRuntime.some(row => !exact(row) || !DIAGNOSTIC_OPERATOR.externalRuntime.some(value => value.url === row.url && value.sha256 === row.sha256))) throw new Error("Rollback contract is incomplete, duplicated, or inconsistent.");
+  if (reference.contractSha256 !== rollbackContractDigest(reference)) throw new Error("Rollback contract digest mismatch.");
+  return true;
 }
 
 export function classifyVerificationNextAction(evidence) {
@@ -180,39 +213,40 @@ export function verifyProtectedEvidence(root) {
 }
 
 export async function verifyImmutableArtifactParity({ base, deploymentIdentifier, artifact, fetchImpl = fetch, persist = async () => {}, clock = { now: () => Date.now() } }) {
-  const fileByPath = new Map((artifact?.files || []).map(file => [file.path, file]));
+  const files = artifact?.files || [];
+  const fileByPath = new Map(files.map(file => [file.path, file]));
   const expectedRoutes = ROUTE_ARTIFACTS.map(({ route, path: artifactPath }) => ({ route, artifactPath, ...fileByPath.get(artifactPath) }));
-  const expectedAssets = (artifact?.files || []).filter(file => /^(?:_expo\/static\/).+\.(?:js|css)$/.test(file.path)).map(file => ({ asset: `/${file.path}`, ...file }));
-  if (artifact?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || expectedRoutes.some(row => !row.sha256 || !Number.isSafeInteger(row.bytes)) || expectedAssets.length !== 5 || expectedAssets.some(row => !row.sha256 || !Number.isSafeInteger(row.bytes))) throw new Error("Complete fixed accepted artifact evidence required.");
-  const evidence = { schemaVersion: 1, capturedAt: new Date(clock.now()).toISOString(), passed: false, deploymentIdentifier, url: base, artifactManifestSha256: artifact.artifactManifestSha256, archiveSha256: artifact.archiveSha256, routes: [], criticalAssets: [], errors: [] };
+  const expectedAssets = files.filter(file => /^(?:_expo\/static\/).+\.(?:js|css)$/.test(file.path)).map(file => ({ asset: `/${file.path}`, ...file }));
+  if (artifact?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || files.length !== 74 || expectedRoutes.some(row => !row.sha256 || !Number.isSafeInteger(row.bytes)) || expectedAssets.length !== 5 || files.some(row => !row.path || !Number.isSafeInteger(row.bytes) || !/^[a-f0-9]{64}$/.test(row.sha256 || ""))) throw new Error("Complete fixed accepted artifact evidence required.");
+  const publishedBodies = new Map();
+  const evidence = { schemaVersion: 2, capturedAt: new Date(clock.now()).toISOString(), passed: false, deploymentIdentifier, url: base, artifactManifestSha256: artifact.artifactManifestSha256, archiveSha256: artifact.archiveSha256, routes: [], criticalAssets: [], publishedFiles: [], externalRuntime: [], errors: [] };
   await persist(evidence);
-  for (const expected of expectedRoutes) {
-    const requestedUrl = new URL(expected.route, base);
-    try {
-      const response = await fetchImpl(requestedUrl, { redirect: "follow", headers: { "cache-control": "no-cache", pragma: "no-cache" } });
-      const body = Buffer.from(await response.arrayBuffer());
-      const actual = { status: response.status, finalUrl: response.url || requestedUrl.href, byteLength: body.length, sha256: sha256(body), expectedAssetReferences: assetsReferenced(body, expectedAssets) };
-      const row = { route: expected.route, artifactPath: expected.artifactPath, expected: { status: 200, finalUrl: requestedUrl.href, byteLength: expected.bytes, sha256: expected.sha256, assets: expectedAssets.map(asset => asset.asset) }, actual, comparison: null, passed: false };
-      evidence.routes.push(row); await persist(evidence);
-      const comparison = { status: actual.status === 200, finalUrl: actual.finalUrl === requestedUrl.href, byteLength: actual.byteLength === expected.bytes, sha256: actual.sha256 === expected.sha256, assetReferences: actual.expectedAssetReferences };
-      row.comparison = comparison; row.passed = Object.values(comparison).every(Boolean); await persist(evidence);
-    } catch (error) { evidence.errors.push({ stage: `route:${expected.route}`, error: sanitizeError(error) }); await persist(evidence); }
-  }
-  for (const expected of expectedAssets) {
-    const requestedUrl = new URL(expected.asset, base);
+  const observeExpected = async (requestedUrl, expected, stage) => {
     try {
       const response = await fetchImpl(requestedUrl, { redirect: "follow", headers: { "cache-control": "no-cache", pragma: "no-cache" } });
       const body = Buffer.from(await response.arrayBuffer());
       const actual = { status: response.status, finalUrl: response.url || requestedUrl.href, byteLength: body.length, sha256: sha256(body) };
-      const row = { asset: expected.asset, artifactPath: expected.path, expected: { status: 200, finalUrl: requestedUrl.href, byteLength: expected.bytes, sha256: expected.sha256 }, actual, comparison: null, passed: false };
-      evidence.criticalAssets.push(row); await persist(evidence);
       const comparison = { status: actual.status === 200, finalUrl: actual.finalUrl === requestedUrl.href, byteLength: actual.byteLength === expected.bytes, sha256: actual.sha256 === expected.sha256 };
-      row.comparison = comparison; row.passed = Object.values(comparison).every(Boolean); await persist(evidence);
-    } catch (error) { evidence.errors.push({ stage: `asset:${expected.asset}`, error: sanitizeError(error) }); await persist(evidence); }
+      return { actual, comparison, passed: Object.values(comparison).every(Boolean), body };
+    } catch (error) { evidence.errors.push({ stage, error: sanitizeError(error) }); await persist(evidence); return null; }
+  };
+  for (const expected of expectedRoutes) {
+    const requestedUrl = new URL(expected.route, base), result = await observeExpected(requestedUrl, expected, `route:${expected.route}`);
+    if (result) { const refs = assetsReferenced(result.body, expectedAssets); const row = { route: expected.route, artifactPath: expected.artifactPath, expected: { status: 200, finalUrl: requestedUrl.href, byteLength: expected.bytes, sha256: expected.sha256, assets: expectedAssets.map(asset => asset.asset) }, actual: result.actual, comparison: { ...result.comparison, assetReferences: refs }, passed: result.passed && refs }; evidence.routes.push(row); await persist(evidence); }
   }
-  evidence.passed = evidence.errors.length === 0 && evidence.routes.length === 6 && evidence.routes.every(row => row.passed) && evidence.criticalAssets.length === 5 && evidence.criticalAssets.every(row => row.passed);
-  evidence.completedAt = new Date(clock.now()).toISOString(); await persist(evidence);
-  return evidence;
+  for (const expected of files) {
+    const requestedUrl = new URL(`/${expected.path}`, base), result = await observeExpected(requestedUrl, expected, `file:${expected.path}`);
+    if (result) { publishedBodies.set(expected.path, result.body); evidence.publishedFiles.push({ path: expected.path, expected: { bytes: expected.bytes, sha256: expected.sha256 }, actual: result.actual, comparison: result.comparison, passed: result.passed }); await persist(evidence); }
+  }
+  evidence.criticalAssets = expectedAssets.map(expected => { const file = evidence.publishedFiles.find(row => row.path === expected.path); return { asset: expected.asset, artifactPath: expected.path, expected: file?.expected, actual: file?.actual, comparison: file?.comparison, passed: file?.passed === true }; });
+  const sw = evidence.publishedFiles.find(row => row.path === "sw.js"), swText = publishedBodies.get("sw.js")?.toString("utf8") || "";
+  if (sw?.passed) for (const required of DIAGNOSTIC_OPERATOR.externalRuntime) {
+    if (!swText.includes(required.url)) { evidence.errors.push({ stage: `external-reference:${required.url}`, error: "Service worker external runtime reference missing." }); await persist(evidence); continue; }
+    const requestedUrl = new URL(required.url); const result = await observeExpected(requestedUrl, { bytes: required.url.includes("messaging") ? 37024 : 31766, sha256: required.sha256 }, `external:${required.url}`);
+    if (result) { evidence.externalRuntime.push({ url: required.url, expectedSha256: required.sha256, actual: result.actual, passed: result.passed }); await persist(evidence); }
+  }
+  evidence.passed = evidence.errors.length === 0 && evidence.routes.length === 6 && evidence.routes.every(row => row.passed) && evidence.criticalAssets.length === 5 && evidence.criticalAssets.every(row => row.passed) && evidence.publishedFiles.length === 74 && evidence.publishedFiles.every(row => row.passed) && evidence.externalRuntime.length === DIAGNOSTIC_OPERATOR.externalRuntime.length && evidence.externalRuntime.every(row => row.passed);
+  evidence.completedAt = new Date(clock.now()).toISOString(); await persist(evidence); return evidence;
 }
 
 async function retrieveAliasMetadata({ attempt, record, signal, sessionSecret }) {
@@ -264,7 +298,7 @@ export async function verifyRollbackParity({
     const target = startedMs + (number - 1) * policy.pollingIntervalMs;
     if (clock.now() < target) await clock.sleep(target - clock.now());
     if (clock.now() >= deadlineMs) break;
-    const attempt = { number, startedAt: new Date(clock.now()).toISOString(), metadata: null, routes: [], criticalAssets: [], observations: [], errors: [], completeParity: false, completedAt: null };
+    const attempt = { number, startedAt: new Date(clock.now()).toISOString(), metadata: null, routes: [], criticalAssets: [], runtimeFiles: [], externalRuntime: [], observations: [], errors: [], completeParity: false, completedAt: null };
     evidence.attempts.push(attempt); await persist(evidence);
     const record = async observation => { attempt.observations.push(observation); await persist(evidence); };
     const signal = () => deadlineSignal(Math.max(1, deadlineMs - clock.now()));
@@ -287,10 +321,22 @@ export async function verifyRollbackParity({
         attempt.criticalAssets.push({ asset: reference.asset, observation: result.observation, finalUrlMatched: sameRequestedAndFinal(result.observation) }); await persist(evidence);
       } catch (error) { attempt.errors.push({ stage: `asset:${reference.asset}`, error: sanitizeError(error) }); await persist(evidence); }
     }
+    for (const reference of expected.runtimeFiles || []) {
+      if (clock.now() >= deadlineMs) { attempt.errors.push({ stage: "deadline", error: "Rollback runtime set incomplete before deadline." }); await persist(evidence); break; }
+      try { const result = await observeRequest({ fetchImpl, url: new URL(reference.path, aliasUrl), init: { headers: { "cache-control": "no-cache", pragma: "no-cache" } }, attempt: number, resourceKind: `rollback-runtime:${reference.path}`, cacheBust: { runId, attempt: number, resourceKind: "rollback-runtime" }, clock, record, deadlineSignal: signal() }); attempt.runtimeFiles.push({ path: reference.path, observation: result.observation, finalUrlMatched: sameRequestedAndFinal(result.observation) }); await persist(evidence); }
+      catch (error) { attempt.errors.push({ stage: `runtime:${reference.path}`, error: sanitizeError(error) }); await persist(evidence); }
+    }
+    for (const reference of expected.externalRuntime || []) {
+      if (clock.now() >= deadlineMs) { attempt.errors.push({ stage: "deadline", error: "External runtime set incomplete before deadline." }); await persist(evidence); break; }
+      try { const result = await observeRequest({ fetchImpl, url: reference.url, init: { headers: { "cache-control": "no-cache", pragma: "no-cache" } }, attempt: number, resourceKind: `rollback-external:${reference.url}`, cacheBust: null, clock, record, deadlineSignal: signal() }); attempt.externalRuntime.push({ url: reference.url, observation: result.observation, finalUrlMatched: sameRequestedAndFinal(result.observation) }); await persist(evidence); }
+      catch (error) { attempt.errors.push({ stage: `external:${reference.url}`, error: sanitizeError(error) }); await persist(evidence); }
+    }
     const metadataMatches = attempt.metadata?.deploymentIdentifier === expected.deploymentIdentifier;
     const routesMatch = attempt.routes.length === expected.routes.length && expected.routes.every(reference => { const row = attempt.routes.find(value => value.route === reference.route); return row?.observation.status === 200 && row.observation.responseSha256 === reference.sha256 && row.finalUrlMatched && row.expectedAssetsReferenced; });
     const assetsMatch = attempt.criticalAssets.length === expected.criticalAssets.length && expected.criticalAssets.every(reference => { const row = attempt.criticalAssets.find(value => value.asset === reference.asset); return row?.observation.status === 200 && row.observation.responseSha256 === reference.sha256 && row.finalUrlMatched; });
-    attempt.completeParity = metadataMatches && routesMatch && assetsMatch && clock.now() <= deadlineMs;
+    const runtimeMatches = (expected.runtimeFiles || []).length === attempt.runtimeFiles.length && (expected.runtimeFiles || []).every(reference => { const row = attempt.runtimeFiles.find(value => value.path === reference.path); return row?.observation.status === 200 && row.observation.responseSha256 === reference.sha256 && row.observation.byteLength === reference.bytes && row.finalUrlMatched; });
+    const externalMatches = (expected.externalRuntime || []).length === attempt.externalRuntime.length && (expected.externalRuntime || []).every(reference => { const row = attempt.externalRuntime.find(value => value.url === reference.url); return row?.observation.status === 200 && row.observation.responseSha256 === reference.sha256 && row.observation.byteLength === reference.bytes && row.finalUrlMatched; });
+    attempt.completeParity = metadataMatches && routesMatch && assetsMatch && runtimeMatches && externalMatches && clock.now() <= deadlineMs;
     attempt.completedAt = new Date(clock.now()).toISOString(); await persist(evidence);
     if (attempt.completeParity) {
       const prior = evidence.selectedAttempts.at(-1);
@@ -302,35 +348,49 @@ export async function verifyRollbackParity({
 }
 
 async function captureRollbackReference({ runId, sessionSecret, persist, fetchImpl = fetch }) {
-  const evidence = { schemaVersion: 1, runId, capturedAt: now(), metadata: null, observations: [], routes: [], criticalAssets: [], passed: false };
+  const evidence = { schemaVersion: 2, runId, capturedAt: now(), metadata: null, observations: [], routes: [], criticalAssets: [], runtimeFiles: [], externalRuntime: [], passed: false };
   await persist(evidence);
   const record = async observation => { evidence.observations.push(observation); await persist(evidence); };
-  const clock = { now: () => Date.now() };
-  const signal = () => AbortSignal.timeout(15_000);
+  const clock = { now: () => Date.now() }, signal = () => AbortSignal.timeout(15_000);
   const metadata = await retrieveAliasMetadata({ attempt: 0, record, signal: signal(), sessionSecret });
   evidence.metadata = { ...metadata, retrievedAt: now() }; await persist(evidence);
-  if (REJECTED_DEPLOYMENTS.includes(metadata.deploymentIdentifier)) throw new Error("Current alias points to a rejected deployment; owner review required.");
-  if (metadata.deploymentIdentifier !== DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment) throw new Error("Current alias differs from the last verified rollback deployment; owner review required.");
-  const discovery = await observeRequest({ fetchImpl, url: metadata.deploymentUrl, init: { headers: { "cache-control": "no-cache", pragma: "no-cache" } }, attempt: 0, resourceKind: "rollback-discovery", cacheBust: { runId, attempt: 0, resourceKind: "rollback-discovery" }, clock, record, deadlineSignal: signal() });
-  const assetPaths = [...new Set([...discovery.body.toString("utf8").matchAll(/(?:src|href)=["']([^"']+\.(?:js|css))(?:\?[^"']*)?["']/g)].map(match => new URL(match[1], metadata.deploymentUrl).pathname))];
-  if (!assetPaths.length) throw new Error("Rollback deployment has no discoverable critical JS/CSS assets.");
-  const routeNames = ["/login", "/dashboard", "/orders/detail?orderId=phase6", "/menu", "/reviews", "/earnings"];
+  if (REJECTED_DEPLOYMENTS.includes(metadata.deploymentIdentifier) || metadata.deploymentIdentifier !== DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment) throw new Error("Current alias is not the frozen accepted rollback deployment.");
+  const routeNames = ROUTE_ARTIFACTS.map(row => row.route), routeBodies = new Map(), assetPaths = new Set();
   for (const route of routeNames) {
     const immutable = await observeRequest({ fetchImpl, url: new URL(route, metadata.deploymentUrl), init: { headers: { "cache-control": "no-cache", pragma: "no-cache" } }, attempt: 0, resourceKind: `rollback-immutable-route:${route}`, cacheBust: { runId, attempt: 0, resourceKind: "rollback-immutable-route" }, clock, record, deadlineSignal: signal() });
     const alias = await observeRequest({ fetchImpl, url: new URL(route, DIAGNOSTIC_OPERATOR.aliasUrl), init: { headers: { "cache-control": "no-cache", pragma: "no-cache" } }, attempt: 0, resourceKind: `rollback-alias-route:${route}`, cacheBust: { runId, attempt: 0, resourceKind: "rollback-alias-route" }, clock, record, deadlineSignal: signal() });
-    const parity = immutable.observation.status === 200 && alias.observation.status === 200 && immutable.observation.responseSha256 === alias.observation.responseSha256 && assetsReferenced(immutable.body, assetPaths.map(asset => ({ asset }))) && assetsReferenced(alias.body, assetPaths.map(asset => ({ asset })));
-    evidence.routes.push({ route, sha256: immutable.observation.responseSha256, immutable: immutable.observation, alias: alias.observation, parity }); await persist(evidence);
+    const referencedAssets = [...new Set([...immutable.body.toString("utf8").matchAll(/(?:src|href)=["']([^"']+\.(?:js|css))(?:\?[^"']*)?["']/g)].map(match => new URL(match[1], metadata.deploymentUrl).pathname))].sort();
+    referencedAssets.forEach(value => assetPaths.add(value)); routeBodies.set(route, immutable.body);
+    const parity = immutable.observation.status === 200 && alias.observation.status === 200 && immutable.observation.responseSha256 === alias.observation.responseSha256 && immutable.observation.byteLength === alias.observation.byteLength;
+    evidence.routes.push({ route, bytes: immutable.observation.byteLength, sha256: immutable.observation.responseSha256, referencedAssets, immutable: immutable.observation, alias: alias.observation, parity }); await persist(evidence);
   }
-  for (const asset of assetPaths) {
+  if (!assetPaths.size || evidence.routes.some(row => !row.referencedAssets.length)) throw new Error("Rollback routes do not expose a complete JS/CSS contract.");
+  for (const asset of [...assetPaths].sort()) {
     const immutable = await observeRequest({ fetchImpl, url: new URL(asset, metadata.deploymentUrl), init: { headers: { "cache-control": "no-cache", pragma: "no-cache" } }, attempt: 0, resourceKind: `rollback-immutable-asset:${asset}`, cacheBust: { runId, attempt: 0, resourceKind: "rollback-immutable-asset" }, clock, record, deadlineSignal: signal() });
     const alias = await observeRequest({ fetchImpl, url: new URL(asset, DIAGNOSTIC_OPERATOR.aliasUrl), init: { headers: { "cache-control": "no-cache", pragma: "no-cache" } }, attempt: 0, resourceKind: `rollback-alias-asset:${asset}`, cacheBust: { runId, attempt: 0, resourceKind: "rollback-alias-asset" }, clock, record, deadlineSignal: signal() });
-    const parity = immutable.observation.status === 200 && alias.observation.status === 200 && immutable.observation.responseSha256 === alias.observation.responseSha256;
-    evidence.criticalAssets.push({ asset, sha256: immutable.observation.responseSha256, immutable: immutable.observation, alias: alias.observation, parity }); await persist(evidence);
+    const parity = immutable.observation.status === 200 && alias.observation.status === 200 && immutable.observation.responseSha256 === alias.observation.responseSha256 && immutable.observation.byteLength === alias.observation.byteLength;
+    evidence.criticalAssets.push({ asset, bytes: immutable.observation.byteLength, sha256: immutable.observation.responseSha256, immutable: immutable.observation, alias: alias.observation, parity }); await persist(evidence);
   }
-  evidence.passed = evidence.routes.length === 6 && evidence.routes.every(row => row.parity) && evidence.criticalAssets.length === assetPaths.length && evidence.criticalAssets.every(row => row.parity);
+  let serviceWorkerBody = null;
+  for (const runtimePath of DIAGNOSTIC_OPERATOR.runtimeFiles) {
+    const immutable = await observeRequest({ fetchImpl, url: new URL(runtimePath, metadata.deploymentUrl), init: { headers: { "cache-control": "no-cache", pragma: "no-cache" } }, attempt: 0, resourceKind: `rollback-immutable-runtime:${runtimePath}`, cacheBust: { runId, attempt: 0, resourceKind: "rollback-immutable-runtime" }, clock, record, deadlineSignal: signal() });
+    const alias = await observeRequest({ fetchImpl, url: new URL(runtimePath, DIAGNOSTIC_OPERATOR.aliasUrl), init: { headers: { "cache-control": "no-cache", pragma: "no-cache" } }, attempt: 0, resourceKind: `rollback-alias-runtime:${runtimePath}`, cacheBust: { runId, attempt: 0, resourceKind: "rollback-alias-runtime" }, clock, record, deadlineSignal: signal() });
+    if (runtimePath === "/sw.js") serviceWorkerBody = immutable.body;
+    const parity = immutable.observation.status === 200 && alias.observation.status === 200 && immutable.observation.responseSha256 === alias.observation.responseSha256 && immutable.observation.byteLength === alias.observation.byteLength;
+    evidence.runtimeFiles.push({ path: runtimePath, bytes: immutable.observation.byteLength, sha256: immutable.observation.responseSha256, immutable: immutable.observation, alias: alias.observation, parity }); await persist(evidence);
+  }
+  const imported = new Set([...(serviceWorkerBody?.toString("utf8") || "").matchAll(/https:\/\/www\.gstatic\.com\/firebasejs\/[^"'\s,)]+/g)].map(row => row[0]));
+  for (const required of DIAGNOSTIC_OPERATOR.externalRuntime) {
+    if (!imported.has(required.url)) throw new Error("Service worker external runtime contract is incomplete.");
+    const response = await observeRequest({ fetchImpl, url: required.url, init: { headers: { "cache-control": "no-cache", pragma: "no-cache" } }, attempt: 0, resourceKind: `rollback-external-runtime:${required.url}`, cacheBust: null, clock, record, deadlineSignal: signal() });
+    const passed = response.observation.status === 200 && response.observation.responseSha256 === required.sha256;
+    evidence.externalRuntime.push({ url: required.url, bytes: response.observation.byteLength, sha256: response.observation.responseSha256, passed }); await persist(evidence);
+  }
+  evidence.passed = evidence.routes.length === 6 && evidence.routes.every(row => row.parity) && evidence.criticalAssets.length === assetPaths.size && evidence.criticalAssets.every(row => row.parity) && evidence.runtimeFiles.length === 3 && evidence.runtimeFiles.every(row => row.parity) && evidence.externalRuntime.length === 2 && evidence.externalRuntime.every(row => row.passed);
   evidence.completedAt = now(); await persist(evidence);
-  if (!evidence.passed) throw new Error("Current alias metadata and rollback content do not have exact parity.");
-  return { passed: true, runId, deploymentIdentifier: metadata.deploymentIdentifier, deploymentUrl: metadata.deploymentUrl, capturedAt: evidence.completedAt, routes: evidence.routes.map(({ route, sha256 }) => ({ route, sha256 })), criticalAssets: evidence.criticalAssets.map(({ asset, sha256 }) => ({ asset, sha256 })) };
+  if (!evidence.passed) throw new Error("Current alias metadata and rollback content do not have exact complete parity.");
+  const reference = { passed: true, runId, deploymentIdentifier: metadata.deploymentIdentifier, deploymentUrl: metadata.deploymentUrl, capturedAt: evidence.completedAt, routes: evidence.routes.map(({ route, bytes, sha256, referencedAssets }) => ({ route, bytes, sha256, referencedAssets })), criticalAssets: evidence.criticalAssets.map(({ asset, bytes, sha256 }) => ({ asset, bytes, sha256 })), runtimeFiles: evidence.runtimeFiles.map(({ path, bytes, sha256 }) => ({ path, bytes, sha256 })), externalRuntime: evidence.externalRuntime.map(({ url, bytes, sha256 }) => ({ url, bytes, sha256 })) };
+  reference.contractSha256 = rollbackContractDigest(reference); validateRollbackReference(reference, runId); return reference;
 }
 
 export function requireActionConfirmation(action, authority, value) {
@@ -353,12 +413,13 @@ export function validatePromotionPrerequisites({ authority, artifact, artifactEn
   if (artifact?.runId !== authority.runId || artifact?.sourceCommit !== authority.sourceCommit || artifact?.sourceManifestSha256 !== authority.sourceManifestSha256 || artifact?.applicationTree !== DIAGNOSTIC_OPERATOR.applicationTree || artifact?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || artifact?.files?.length !== 74 || artifactEntriesSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || archiveEvidenceSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Accepted run-bound artifact evidence required.");
   if (!deployment?.deploymentIdentifier || REJECTED_DEPLOYMENTS.includes(deployment.deploymentIdentifier) || deployment.url !== immutable?.url || deployment.sourceCommit !== authority.sourceCommit || deployment.sourceManifestSha256 !== authority.sourceManifestSha256 || deployment.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256) throw new Error("Candidate deployment identity mismatch.");
   requireFresh("Immutable qualification", immutable?.completedAt, DIAGNOSTIC_OPERATOR.freshnessMs.immutable, currentMs);
-  if (immutable?.passed !== true || immutable.runId !== authority.runId || immutable.deploymentIdentifier !== deployment.deploymentIdentifier || immutable.sourceCommit !== authority.sourceCommit || immutable.sourceManifestSha256 !== authority.sourceManifestSha256 || immutable.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || immutable.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || immutable.routes?.length !== 6 || !immutable.routes.every(row => row.passed) || immutable.criticalAssets?.length !== 5 || !immutable.criticalAssets.every(row => row.passed) || !/^[a-f0-9]{64}$/.test(immutableEvidenceSha256 || "")) throw new Error("Complete passing immutable-to-artifact qualification required.");
+  if (immutable?.passed !== true || immutable.runId !== authority.runId || immutable.deploymentIdentifier !== deployment.deploymentIdentifier || immutable.sourceCommit !== authority.sourceCommit || immutable.sourceManifestSha256 !== authority.sourceManifestSha256 || immutable.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || immutable.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || immutable.routes?.length !== 6 || !immutable.routes.every(row => row.passed) || immutable.criticalAssets?.length !== 5 || !immutable.criticalAssets.every(row => row.passed) || immutable.publishedFiles?.length !== 74 || !immutable.publishedFiles.every(row => row.passed) || immutable.externalRuntime?.length !== 2 || !immutable.externalRuntime.every(row => row.passed) || !/^[a-f0-9]{64}$/.test(immutableEvidenceSha256 || "")) throw new Error("Complete passing immutable-to-artifact qualification required.");
   requireFresh("Immutable access qualification", access?.capturedAt, DIAGNOSTIC_OPERATOR.freshnessMs.access, currentMs);
   const expectedAccess = new Map([["pending", "/pending"], ["suspended", "/suspended"], ["owner", "/dashboard"], ["manager", "/dashboard"]]);
   if (access?.passed !== true || access.runId !== authority.runId || access.qualificationId !== `${authority.runId}:${deployment.deploymentIdentifier}:immutable-access` || deployment.deploymentIdentifier !== access.deploymentIdentifier || access.immutableUrl !== deployment.url || access.sourceCommit !== authority.sourceCommit || access.sourceManifestSha256 !== authority.sourceManifestSha256 || access.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || access.immutableEvidenceSha256 !== immutableEvidenceSha256 || access.results?.length !== 4 || !/^[a-f0-9]{64}$/.test(accessEvidenceSha256 || "") || ![...expectedAccess].every(([name, expectedPath]) => { const row = access.results.find(value => value.account === name); return row?.passed === true && row.expectedPath === expectedPath; })) throw new Error("Complete candidate-bound four-state immutable access qualification required.");
   requireFresh("Rollback reference", rollback?.capturedAt, DIAGNOSTIC_OPERATOR.freshnessMs.rollbackReference, currentMs);
-  if (rollback?.passed !== true || rollback.runId !== authority.runId || rollback.deploymentIdentifier !== DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment || rollback.routes?.length !== 6 || rollback.criticalAssets?.length < 1 || !/^[a-f0-9]{64}$/.test(rollbackEvidenceSha256 || "")) throw new Error("Complete expected rollback reference required.");
+  try { validateRollbackReference(rollback, authority.runId); } catch { throw new Error("Complete expected rollback reference required."); }
+  if (!/^[a-f0-9]{64}$/.test(rollbackEvidenceSha256 || "")) throw new Error("Hashed rollback reference required.");
   requireFresh("Staging promotion preflight", preflight?.capturedAt, DIAGNOSTIC_OPERATOR.freshnessMs.preflight, currentMs);
   if (preflight?.passed !== true || preflight.runId !== authority.runId || preflight.environment !== "staging" || preflight.identities?.supabaseProjectRef !== DIAGNOSTIC_OPERATOR.supabaseProjectRef || preflight.identities?.firebaseProjectId !== DIAGNOSTIC_OPERATOR.firebaseProjectId || preflight.identities?.easProjectId !== DIAGNOSTIC_OPERATOR.easProjectId || preflight.identities?.aliasId !== DIAGNOSTIC_OPERATOR.aliasId || preflight.identities?.aliasName !== DIAGNOSTIC_OPERATOR.aliasName || preflight.identities?.aliasUrl !== DIAGNOSTIC_OPERATOR.aliasUrl) throw new Error("Exact Staging identity preflight required.");
   if (preflight.source?.commit !== authority.sourceCommit || preflight.source?.manifestSha256 !== authority.sourceManifestSha256 || preflight.source?.applicationTree !== DIAGNOSTIC_OPERATOR.applicationTree || preflight.artifact?.manifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || preflight.artifact?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Preflight source or artifact identity mismatch.");
@@ -372,7 +433,7 @@ export function validatePromotionPrerequisites({ authority, artifact, artifactEn
 
 export function validateImmediateRollbackRecheck({ evidence, rollback, completedEvidenceSha256, currentMs = Date.now() }) {
   requireFresh("Immediate rollback parity recheck", evidence?.completedAt, DIAGNOSTIC_OPERATOR.freshnessMs.rollbackRecheck, currentMs);
-  if (evidence?.passed !== true || evidence.classification !== "PASS" || evidence.rollbackRequired !== false || evidence.runId !== rollback.runId || evidence.expected?.deploymentIdentifier !== rollback.deploymentIdentifier || JSON.stringify(evidence.expected?.routes) !== JSON.stringify(rollback.routes) || JSON.stringify(evidence.expected?.criticalAssets) !== JSON.stringify(rollback.criticalAssets) || evidence.selectedAttempts?.length !== 2 || !/^[a-f0-9]{64}$/.test(completedEvidenceSha256 || "")) throw new Error("Immediate independent rollback parity recheck required.");
+  if (evidence?.passed !== true || evidence.classification !== "PASS" || evidence.rollbackRequired !== false || evidence.runId !== rollback.runId || evidence.expected?.deploymentIdentifier !== rollback.deploymentIdentifier || JSON.stringify(evidence.expected?.routes) !== JSON.stringify(rollback.routes) || JSON.stringify(evidence.expected?.criticalAssets) !== JSON.stringify(rollback.criticalAssets) || JSON.stringify(evidence.expected?.runtimeFiles) !== JSON.stringify(rollback.runtimeFiles) || JSON.stringify(evidence.expected?.externalRuntime) !== JSON.stringify(rollback.externalRuntime) || evidence.selectedAttempts?.length !== 2 || !/^[a-f0-9]{64}$/.test(completedEvidenceSha256 || "")) throw new Error("Immediate independent rollback parity recheck required.");
   return true;
 }
 
@@ -402,6 +463,7 @@ function loadContext(values) {
   const runDirectory = path.join(root, DIAGNOSTIC_OPERATOR.evidenceRoot, authority.runId);
   if (path.resolve(runDirectory) !== path.join(root, DIAGNOSTIC_OPERATOR.evidenceRoot, authority.runId)) throw new Error("Unsafe run directory.");
   requireActionConfirmation(values.action, authority, values.confirm);
+  requireMaintenanceWindow(authority, values.action, Number(values["current-time-ms"] || Date.now()));
   if (spawnSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).stdout.trim() !== authority.sourceCommit) throw new Error("Audited operator checkpoint mismatch.");
   if (spawnSync("git", ["rev-parse", "HEAD:apps/restaurant"], { cwd: root, encoding: "utf8" }).stdout.trim() !== DIAGNOSTIC_OPERATOR.applicationTree) throw new Error("Restaurant application tree changed.");
   return { authority, root, runDirectory, sourceManifestPath };
@@ -412,6 +474,15 @@ function expoSessionSecret() {
   const value = JSON.parse(fs.readFileSync(statePath, "utf8")).auth?.sessionSecret;
   if (!value) throw new Error("Authenticated Expo session required.");
   return value;
+}
+
+export function consumeDeploymentReservation({ runDirectory, authority, capturedAt = now() }) {
+  const attemptPath = path.join(runDirectory, "deployment-attempt.json"), resourcePath = path.join(runDirectory, "created-resources.json");
+  if (!fs.existsSync(attemptPath) || !fs.existsSync(resourcePath) || fs.existsSync(path.join(runDirectory, "immutable-deployment.json"))) throw new Error("Exclusive deployment reservation is required and cannot be reused.");
+  const attempt = JSON.parse(fs.readFileSync(attemptPath, "utf8")), inventory = JSON.parse(fs.readFileSync(resourcePath, "utf8"));
+  if (attempt.runId !== authority.runId || attempt.state !== "PROVIDER_COMMAND_AUTHORIZED" || attempt.providerCommandInvoked !== true || attempt.deploymentRetryPermitted !== false || inventory.runId !== authority.runId || inventory.state !== "DEPLOYMENT_IN_PROGRESS" || inventory.deploymentAttemptCount !== 1) throw new Error("Exclusive deployment reservation is invalid or consumed.");
+  atomicWrite(attemptPath, { ...attempt, state: "PROVIDER_COMMAND_STARTED", commandStartedAt: capturedAt });
+  return { attemptPath, attempt, inventory };
 }
 
 export async function runDiagnosticOperator(argv = process.argv.slice(2), dependencies = {}) {
@@ -442,14 +513,17 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
   }
 
   if (action === "deploy") {
+    const { attemptPath, attempt } = consumeDeploymentReservation({ runDirectory, authority });
     const artifact = JSON.parse(fs.readFileSync(path.join(runDirectory, "artifact-manifest.json"), "utf8"));
     const archivePath = path.join(runDirectory, "restaurant-static-export.tar");
     if (artifact.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || !fs.existsSync(archivePath) || sha256(fs.readFileSync(archivePath)) !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Accepted artifact and deterministic archive evidence required.");
     const result = run("npx", ["eas-cli@16.32.0", "deploy", "--environment", "preview", "--export-dir", "dist", "--json", "--non-interactive"], { cwd: appRoot, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
     if (result.status !== 0) throw new Error("Immutable deployment failed; output withheld.");
     const raw = parseJsonOutput(result.stdout), deploymentIdentifier = raw.identifier || raw.deploymentIdentifier, url = raw.url;
-    if (!deploymentIdentifier || !url || REJECTED_DEPLOYMENTS.includes(deploymentIdentifier)) throw new Error("Provider did not return a new acceptable immutable deployment.");
-    atomicWrite(path.join(runDirectory, "immutable-deployment.json"), { capturedAt: now(), deploymentIdentifier, url, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256, artifactManifestSha256: artifact.artifactManifestSha256, aliasAssigned: false });
+    const expectedUrl = `https://hungrie-restaurant--${deploymentIdentifier}.expo.app`;
+    if (!deploymentIdentifier || url !== expectedUrl || REJECTED_DEPLOYMENTS.includes(deploymentIdentifier)) throw new Error("Provider did not return a project-bound acceptable immutable deployment.");
+    atomicWrite(attemptPath, { ...attempt, state: "PROVIDER_COMMAND_RETURNED", commandStartedAt: JSON.parse(fs.readFileSync(attemptPath, "utf8")).commandStartedAt, commandCompletedAt: now(), deploymentIdentifier });
+    atomicWrite(path.join(runDirectory, "immutable-deployment.json"), { capturedAt: now(), easProjectId: DIAGNOSTIC_OPERATOR.easProjectId, deploymentIdentifier, url, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256, artifactManifestSha256: artifact.artifactManifestSha256, aliasAssigned: false });
     return { passed: true, action, deploymentIdentifier, url };
   }
 
@@ -467,10 +541,16 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
 
   if (action === "capture-rollback") {
     if (fs.existsSync(path.join(runDirectory, "promotion-attempt.json"))) throw new Error("Rollback reference must be captured before promotion.");
+    const referencePath = path.join(runDirectory, "rollback-reference.json"), recapturePath = path.join(runDirectory, "fresh-recapture-attempt.json");
+    const phase = fs.existsSync(recapturePath) ? "fresh" : "initial";
+    if (phase === "initial" && fs.existsSync(referencePath)) throw new Error("Initial rollback reference already exists; overwrite prohibited.");
+    if (phase === "fresh") { const recapture = JSON.parse(fs.readFileSync(recapturePath, "utf8")); if (recapture.state !== "READY_FOR_RECAPTURE" || fs.existsSync(referencePath)) throw new Error("Fresh rollback recapture phase is not exclusively ready."); }
+    const phaseMarker = path.join(runDirectory, `rollback-capture-${phase}-attempt.json`); const descriptor = fs.openSync(phaseMarker, "wx", 0o600);
+    try { fs.writeFileSync(descriptor, canonical({ schemaVersion: 1, runId: authority.runId, phase, startedAt: now(), state: "STARTED" })); } finally { fs.closeSync(descriptor); }
     const progress = path.join(runDirectory, "rollback-capture-progress.json");
-    const reference = await captureRollbackReference({ runId: authority.runId, sessionSecret: expoSessionSecret(), persist: value => atomicWrite(progress, value), fetchImpl: dependencies.fetchImpl || fetch });
-    atomicWrite(path.join(runDirectory, "rollback-reference.json"), reference);
-    return { passed: true, action, deploymentIdentifier: reference.deploymentIdentifier, routes: reference.routes.length, criticalAssets: reference.criticalAssets.length };
+    const reference = await captureRollbackReference({ runId: authority.runId, sessionSecret: dependencies.retrieveAliasMetadata ? null : expoSessionSecret(), persist: value => atomicWrite(progress, value), fetchImpl: dependencies.fetchImpl || fetch });
+    atomicWrite(referencePath, reference); atomicWrite(phaseMarker, { schemaVersion: 1, runId: authority.runId, phase, startedAt: JSON.parse(fs.readFileSync(phaseMarker, "utf8")).startedAt, completedAt: now(), state: "COMPLETE", contractSha256: reference.contractSha256 });
+    return { passed: true, action, phase, deploymentIdentifier: reference.deploymentIdentifier, routes: reference.routes.length, criticalAssets: reference.criticalAssets.length, runtimeFiles: reference.runtimeFiles.length };
   }
 
   if (action === "promote") {
@@ -523,7 +603,11 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
     atomicWrite(path.join(runDirectory, "alias-observation-result.json"), evidence);
     const nextAction = classifyVerificationNextAction(evidence);
     if (nextAction !== "post-parity-qualification") throw new Error(`Alias diagnostic ${evidence.classification}; ${nextAction}.`);
-    return { passed: true, action, classification: evidence.classification, selectedAttempts: evidence.stability.selectedAttempts.map(row => row.number) };
+    const artifact = JSON.parse(fs.readFileSync(path.join(runDirectory, "artifact-manifest.json"), "utf8"));
+    const fullParity = await verifyImmutableArtifactParity({ base: DIAGNOSTIC_OPERATOR.aliasUrl, deploymentIdentifier: immutable.deploymentIdentifier, artifact, fetchImpl: dependencies.fetchImpl || fetch, persist: value => atomicWrite(path.join(runDirectory, "alias-full-artifact-progress.json"), value), clock: dependencies.clock || { now: () => Date.now() } });
+    atomicWrite(path.join(runDirectory, "alias-full-artifact-result.json"), fullParity);
+    if (!fullParity.passed) throw new Error("Promoted alias does not publish the complete accepted 74-file artifact and PWA runtime.");
+    return { passed: true, action, classification: evidence.classification, selectedAttempts: evidence.stability.selectedAttempts.map(row => row.number), publishedFiles: fullParity.publishedFiles.length };
   }
 
   if (action === "rollback") {

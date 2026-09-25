@@ -1,0 +1,725 @@
+diff --git a/scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs b/scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs
+index 31d8fcf..f6eacf6 100755
+--- a/scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs
++++ b/scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs
+@@ -31,0 +32,5 @@ export const DIAGNOSTIC_OPERATOR = Object.freeze({
++  runtimeFiles: Object.freeze(["/manifest.webmanifest", "/sw.js", "/firebase-config.js"]),
++  externalRuntime: Object.freeze([
++    Object.freeze({ url: "https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js", sha256: "16fc846e94d74deed335af1fa0edef0b744f62cbcf6b797449e77de7ef161054" }),
++    Object.freeze({ url: "https://www.gstatic.com/firebasejs/11.10.0/firebase-messaging-compat.js", sha256: "f9b3a80d491a02739e8e44877e4124dea5e2d9b7313fa5bdd986913840d4c091" }),
++  ]),
+@@ -50,0 +56 @@ const ACTIONS = new Set([
++  "reconcile-deployment-read",
+@@ -83,0 +90,2 @@ export function validateAuthority(authority, options = {}) {
++  const windowStart = Date.parse(authority.maintenanceWindowStart || ""), windowEnd = Date.parse(authority.maintenanceWindowEnd || "");
++  if (!Number.isFinite(windowStart) || !Number.isFinite(windowEnd) || windowEnd <= windowStart || windowEnd - windowStart > 2 * 60 * 60_000) throw new Error("A valid maximum two-hour maintenance window is required.");
+@@ -89,0 +98,25 @@ export function validateAuthority(authority, options = {}) {
++
++export function requireMaintenanceWindow(authority, action, currentMs = Date.now()) {
++  const start = Date.parse(authority.maintenanceWindowStart || "");
++  const end = Date.parse(authority.maintenanceWindowEnd || "");
++  if (!Number.isFinite(start) || !Number.isFinite(end) || currentMs < start) throw new Error("Hosted action is outside the approved maintenance window.");
++  const recovery = ["rollback", "verify-rollback"].includes(action);
++  if (!recovery && currentMs >= end) throw new Error("Hosted action is outside the approved maintenance window.");
++  if (["deploy", "promote"].includes(action) && end - currentMs < 720_000) throw new Error("Insufficient maintenance window remains for observation and rollback verification.");
++  return { start, end, recoveryAfterDeadline: recovery && currentMs >= end };
++}
++
++export function rollbackContractDigest(reference) {
++  const contract = { deploymentIdentifier: reference.deploymentIdentifier, deploymentUrl: reference.deploymentUrl, routes: reference.routes, criticalAssets: reference.criticalAssets, runtimeFiles: reference.runtimeFiles, externalRuntime: reference.externalRuntime };
++  return sha256(Buffer.from(canonical(contract)));
++}
++
++export function validateRollbackReference(reference, runId = reference?.runId) {
++  if (reference?.passed !== true || reference.runId !== runId || reference.deploymentIdentifier !== DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment || reference.routes?.length !== 6 || !reference.criticalAssets?.length || reference.runtimeFiles?.length !== DIAGNOSTIC_OPERATOR.runtimeFiles.length || reference.externalRuntime?.length !== DIAGNOSTIC_OPERATOR.externalRuntime.length) throw new Error("Complete deployment-derived rollback contract required.");
++  const unique = (rows, key) => Array.isArray(rows) && new Set(rows.map(row => row[key])).size === rows.length;
++  const exact = row => Number.isSafeInteger(row.bytes) && row.bytes > 0 && /^[a-f0-9]{64}$/.test(row.sha256 || "");
++  if (!unique(reference.routes, "route") || !unique(reference.criticalAssets, "asset") || !unique(reference.runtimeFiles, "path") || !unique(reference.externalRuntime, "url") || reference.routes.some(row => !exact(row) || !Array.isArray(row.referencedAssets) || row.referencedAssets.some(asset => !reference.criticalAssets.some(value => value.asset === asset))) || reference.criticalAssets.some(row => !exact(row)) || reference.runtimeFiles.some(row => !exact(row) || !DIAGNOSTIC_OPERATOR.runtimeFiles.includes(row.path)) || reference.externalRuntime.some(row => !exact(row) || !DIAGNOSTIC_OPERATOR.externalRuntime.some(value => value.url === row.url && value.sha256 === row.sha256))) throw new Error("Rollback contract is incomplete, duplicated, or inconsistent.");
++  if (reference.contractSha256 !== rollbackContractDigest(reference)) throw new Error("Rollback contract digest mismatch.");
++  return true;
++}
++
+@@ -183 +216,2 @@ export async function verifyImmutableArtifactParity({ base, deploymentIdentifier
+-  const fileByPath = new Map((artifact?.files || []).map(file => [file.path, file]));
++  const files = artifact?.files || [];
++  const fileByPath = new Map(files.map(file => [file.path, file]));
+@@ -185,3 +219,4 @@ export async function verifyImmutableArtifactParity({ base, deploymentIdentifier
+-  const expectedAssets = (artifact?.files || []).filter(file => /^(?:_expo\/static\/).+\.(?:js|css)$/.test(file.path)).map(file => ({ asset: `/${file.path}`, ...file }));
+-  if (artifact?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || expectedRoutes.some(row => !row.sha256 || !Number.isSafeInteger(row.bytes)) || expectedAssets.length !== 5 || expectedAssets.some(row => !row.sha256 || !Number.isSafeInteger(row.bytes))) throw new Error("Complete fixed accepted artifact evidence required.");
+-  const evidence = { schemaVersion: 1, capturedAt: new Date(clock.now()).toISOString(), passed: false, deploymentIdentifier, url: base, artifactManifestSha256: artifact.artifactManifestSha256, archiveSha256: artifact.archiveSha256, routes: [], criticalAssets: [], errors: [] };
++  const expectedAssets = files.filter(file => /^(?:_expo\/static\/).+\.(?:js|css)$/.test(file.path)).map(file => ({ asset: `/${file.path}`, ...file }));
++  if (artifact?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || files.length !== 74 || expectedRoutes.some(row => !row.sha256 || !Number.isSafeInteger(row.bytes)) || expectedAssets.length !== 5 || files.some(row => !row.path || !Number.isSafeInteger(row.bytes) || !/^[a-f0-9]{64}$/.test(row.sha256 || ""))) throw new Error("Complete fixed accepted artifact evidence required.");
++  const publishedBodies = new Map();
++  const evidence = { schemaVersion: 2, capturedAt: new Date(clock.now()).toISOString(), passed: false, deploymentIdentifier, url: base, artifactManifestSha256: artifact.artifactManifestSha256, archiveSha256: artifact.archiveSha256, routes: [], criticalAssets: [], publishedFiles: [], externalRuntime: [], errors: [] };
+@@ -189,14 +224 @@ export async function verifyImmutableArtifactParity({ base, deploymentIdentifier
+-  for (const expected of expectedRoutes) {
+-    const requestedUrl = new URL(expected.route, base);
+-    try {
+-      const response = await fetchImpl(requestedUrl, { redirect: "follow", headers: { "cache-control": "no-cache", pragma: "no-cache" } });
+-      const body = Buffer.from(await response.arrayBuffer());
+-      const actual = { status: response.status, finalUrl: response.url || requestedUrl.href, byteLength: body.length, sha256: sha256(body), expectedAssetReferences: assetsReferenced(body, expectedAssets) };
+-      const row = { route: expected.route, artifactPath: expected.artifactPath, expected: { status: 200, finalUrl: requestedUrl.href, byteLength: expected.bytes, sha256: expected.sha256, assets: expectedAssets.map(asset => asset.asset) }, actual, comparison: null, passed: false };
+-      evidence.routes.push(row); await persist(evidence);
+-      const comparison = { status: actual.status === 200, finalUrl: actual.finalUrl === requestedUrl.href, byteLength: actual.byteLength === expected.bytes, sha256: actual.sha256 === expected.sha256, assetReferences: actual.expectedAssetReferences };
+-      row.comparison = comparison; row.passed = Object.values(comparison).every(Boolean); await persist(evidence);
+-    } catch (error) { evidence.errors.push({ stage: `route:${expected.route}`, error: sanitizeError(error) }); await persist(evidence); }
+-  }
+-  for (const expected of expectedAssets) {
+-    const requestedUrl = new URL(expected.asset, base);
++  const observeExpected = async (requestedUrl, expected, stage) => {
+@@ -207,2 +228,0 @@ export async function verifyImmutableArtifactParity({ base, deploymentIdentifier
+-      const row = { asset: expected.asset, artifactPath: expected.path, expected: { status: 200, finalUrl: requestedUrl.href, byteLength: expected.bytes, sha256: expected.sha256 }, actual, comparison: null, passed: false };
+-      evidence.criticalAssets.push(row); await persist(evidence);
+@@ -210,2 +230,6 @@ export async function verifyImmutableArtifactParity({ base, deploymentIdentifier
+-      row.comparison = comparison; row.passed = Object.values(comparison).every(Boolean); await persist(evidence);
+-    } catch (error) { evidence.errors.push({ stage: `asset:${expected.asset}`, error: sanitizeError(error) }); await persist(evidence); }
++      return { actual, comparison, passed: Object.values(comparison).every(Boolean), body };
++    } catch (error) { evidence.errors.push({ stage, error: sanitizeError(error) }); await persist(evidence); return null; }
++  };
++  for (const expected of expectedRoutes) {
++    const requestedUrl = new URL(expected.route, base), result = await observeExpected(requestedUrl, expected, `route:${expected.route}`);
++    if (result) { const refs = assetsReferenced(result.body, expectedAssets); const row = { route: expected.route, artifactPath: expected.artifactPath, expected: { status: 200, finalUrl: requestedUrl.href, byteLength: expected.bytes, sha256: expected.sha256, assets: expectedAssets.map(asset => asset.asset) }, actual: result.actual, comparison: { ...result.comparison, assetReferences: refs }, passed: result.passed && refs }; evidence.routes.push(row); await persist(evidence); }
+@@ -213,3 +237,13 @@ export async function verifyImmutableArtifactParity({ base, deploymentIdentifier
+-  evidence.passed = evidence.errors.length === 0 && evidence.routes.length === 6 && evidence.routes.every(row => row.passed) && evidence.criticalAssets.length === 5 && evidence.criticalAssets.every(row => row.passed);
+-  evidence.completedAt = new Date(clock.now()).toISOString(); await persist(evidence);
+-  return evidence;
++  for (const expected of files) {
++    const requestedUrl = new URL(`/${expected.path}`, base), result = await observeExpected(requestedUrl, expected, `file:${expected.path}`);
++    if (result) { publishedBodies.set(expected.path, result.body); evidence.publishedFiles.push({ path: expected.path, expected: { bytes: expected.bytes, sha256: expected.sha256 }, actual: result.actual, comparison: result.comparison, passed: result.passed }); await persist(evidence); }
++  }
++  evidence.criticalAssets = expectedAssets.map(expected => { const file = evidence.publishedFiles.find(row => row.path === expected.path); return { asset: expected.asset, artifactPath: expected.path, expected: file?.expected, actual: file?.actual, comparison: file?.comparison, passed: file?.passed === true }; });
++  const sw = evidence.publishedFiles.find(row => row.path === "sw.js"), swText = publishedBodies.get("sw.js")?.toString("utf8") || "";
++  if (sw?.passed) for (const required of DIAGNOSTIC_OPERATOR.externalRuntime) {
++    if (!swText.includes(required.url)) { evidence.errors.push({ stage: `external-reference:${required.url}`, error: "Service worker external runtime reference missing." }); await persist(evidence); continue; }
++    const requestedUrl = new URL(required.url); const result = await observeExpected(requestedUrl, { bytes: required.url.includes("messaging") ? 37024 : 31766, sha256: required.sha256 }, `external:${required.url}`);
++    if (result) { evidence.externalRuntime.push({ url: required.url, expectedSha256: required.sha256, actual: result.actual, passed: result.passed }); await persist(evidence); }
++  }
++  evidence.passed = evidence.errors.length === 0 && evidence.routes.length === 6 && evidence.routes.every(row => row.passed) && evidence.criticalAssets.length === 5 && evidence.criticalAssets.every(row => row.passed) && evidence.publishedFiles.length === 74 && evidence.publishedFiles.every(row => row.passed) && evidence.externalRuntime.length === DIAGNOSTIC_OPERATOR.externalRuntime.length && evidence.externalRuntime.every(row => row.passed);
++  evidence.completedAt = new Date(clock.now()).toISOString(); await persist(evidence); return evidence;
+@@ -267 +301 @@ export async function verifyRollbackParity({
+-    const attempt = { number, startedAt: new Date(clock.now()).toISOString(), metadata: null, routes: [], criticalAssets: [], observations: [], errors: [], completeParity: false, completedAt: null };
++    const attempt = { number, startedAt: new Date(clock.now()).toISOString(), metadata: null, routes: [], criticalAssets: [], runtimeFiles: [], externalRuntime: [], observations: [], errors: [], completeParity: false, completedAt: null };
+@@ -289,0 +324,10 @@ export async function verifyRollbackParity({
++    for (const reference of expected.runtimeFiles || []) {
++      if (clock.now() >= deadlineMs) { attempt.errors.push({ stage: "deadline", error: "Rollback runtime set incomplete before deadline." }); await persist(evidence); break; }
++      try { const result = await observeRequest({ fetchImpl, url: new URL(reference.path, aliasUrl), init: { headers: { "cache-control": "no-cache", pragma: "no-cache" } }, attempt: number, resourceKind: `rollback-runtime:${reference.path}`, cacheBust: { runId, attempt: number, resourceKind: "rollback-runtime" }, clock, record, deadlineSignal: signal() }); attempt.runtimeFiles.push({ path: reference.path, observation: result.observation, finalUrlMatched: sameRequestedAndFinal(result.observation) }); await persist(evidence); }
++      catch (error) { attempt.errors.push({ stage: `runtime:${reference.path}`, error: sanitizeError(error) }); await persist(evidence); }
++    }
++    for (const reference of expected.externalRuntime || []) {
++      if (clock.now() >= deadlineMs) { attempt.errors.push({ stage: "deadline", error: "External runtime set incomplete before deadline." }); await persist(evidence); break; }
++      try { const result = await observeRequest({ fetchImpl, url: reference.url, init: { headers: { "cache-control": "no-cache", pragma: "no-cache" } }, attempt: number, resourceKind: `rollback-external:${reference.url}`, cacheBust: null, clock, record, deadlineSignal: signal() }); attempt.externalRuntime.push({ url: reference.url, observation: result.observation, finalUrlMatched: sameRequestedAndFinal(result.observation) }); await persist(evidence); }
++      catch (error) { attempt.errors.push({ stage: `external:${reference.url}`, error: sanitizeError(error) }); await persist(evidence); }
++    }
+@@ -293 +337,3 @@ export async function verifyRollbackParity({
+-    attempt.completeParity = metadataMatches && routesMatch && assetsMatch && clock.now() <= deadlineMs;
++    const runtimeMatches = (expected.runtimeFiles || []).length === attempt.runtimeFiles.length && (expected.runtimeFiles || []).every(reference => { const row = attempt.runtimeFiles.find(value => value.path === reference.path); return row?.observation.status === 200 && row.observation.responseSha256 === reference.sha256 && row.observation.byteLength === reference.bytes && row.finalUrlMatched; });
++    const externalMatches = (expected.externalRuntime || []).length === attempt.externalRuntime.length && (expected.externalRuntime || []).every(reference => { const row = attempt.externalRuntime.find(value => value.url === reference.url); return row?.observation.status === 200 && row.observation.responseSha256 === reference.sha256 && row.observation.byteLength === reference.bytes && row.finalUrlMatched; });
++    attempt.completeParity = metadataMatches && routesMatch && assetsMatch && runtimeMatches && externalMatches && clock.now() <= deadlineMs;
+@@ -305 +351 @@ async function captureRollbackReference({ runId, sessionSecret, persist, fetchIm
+-  const evidence = { schemaVersion: 1, runId, capturedAt: now(), metadata: null, observations: [], routes: [], criticalAssets: [], passed: false };
++  const evidence = { schemaVersion: 2, runId, capturedAt: now(), metadata: null, observations: [], routes: [], criticalAssets: [], runtimeFiles: [], externalRuntime: [], passed: false };
+@@ -308,2 +354 @@ async function captureRollbackReference({ runId, sessionSecret, persist, fetchIm
+-  const clock = { now: () => Date.now() };
+-  const signal = () => AbortSignal.timeout(15_000);
++  const clock = { now: () => Date.now() }, signal = () => AbortSignal.timeout(15_000);
+@@ -312,6 +357,2 @@ async function captureRollbackReference({ runId, sessionSecret, persist, fetchIm
+-  if (REJECTED_DEPLOYMENTS.includes(metadata.deploymentIdentifier)) throw new Error("Current alias points to a rejected deployment; owner review required.");
+-  if (metadata.deploymentIdentifier !== DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment) throw new Error("Current alias differs from the last verified rollback deployment; owner review required.");
+-  const discovery = await observeRequest({ fetchImpl, url: metadata.deploymentUrl, init: { headers: { "cache-control": "no-cache", pragma: "no-cache" } }, attempt: 0, resourceKind: "rollback-discovery", cacheBust: { runId, attempt: 0, resourceKind: "rollback-discovery" }, clock, record, deadlineSignal: signal() });
+-  const assetPaths = [...new Set([...discovery.body.toString("utf8").matchAll(/(?:src|href)=["']([^"']+\.(?:js|css))(?:\?[^"']*)?["']/g)].map(match => new URL(match[1], metadata.deploymentUrl).pathname))];
+-  if (!assetPaths.length) throw new Error("Rollback deployment has no discoverable critical JS/CSS assets.");
+-  const routeNames = ["/login", "/dashboard", "/orders/detail?orderId=phase6", "/menu", "/reviews", "/earnings"];
++  if (REJECTED_DEPLOYMENTS.includes(metadata.deploymentIdentifier) || metadata.deploymentIdentifier !== DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment) throw new Error("Current alias is not the frozen accepted rollback deployment.");
++  const routeNames = ROUTE_ARTIFACTS.map(row => row.route), routeBodies = new Map(), assetPaths = new Set();
+@@ -321,2 +362,4 @@ async function captureRollbackReference({ runId, sessionSecret, persist, fetchIm
+-    const parity = immutable.observation.status === 200 && alias.observation.status === 200 && immutable.observation.responseSha256 === alias.observation.responseSha256 && assetsReferenced(immutable.body, assetPaths.map(asset => ({ asset }))) && assetsReferenced(alias.body, assetPaths.map(asset => ({ asset })));
+-    evidence.routes.push({ route, sha256: immutable.observation.responseSha256, immutable: immutable.observation, alias: alias.observation, parity }); await persist(evidence);
++    const referencedAssets = [...new Set([...immutable.body.toString("utf8").matchAll(/(?:src|href)=["']([^"']+\.(?:js|css))(?:\?[^"']*)?["']/g)].map(match => new URL(match[1], metadata.deploymentUrl).pathname))].sort();
++    referencedAssets.forEach(value => assetPaths.add(value)); routeBodies.set(route, immutable.body);
++    const parity = immutable.observation.status === 200 && alias.observation.status === 200 && immutable.observation.responseSha256 === alias.observation.responseSha256 && immutable.observation.byteLength === alias.observation.byteLength;
++    evidence.routes.push({ route, bytes: immutable.observation.byteLength, sha256: immutable.observation.responseSha256, referencedAssets, immutable: immutable.observation, alias: alias.observation, parity }); await persist(evidence);
+@@ -324 +367,2 @@ async function captureRollbackReference({ runId, sessionSecret, persist, fetchIm
+-  for (const asset of assetPaths) {
++  if (!assetPaths.size || evidence.routes.some(row => !row.referencedAssets.length)) throw new Error("Rollback routes do not expose a complete JS/CSS contract.");
++  for (const asset of [...assetPaths].sort()) {
+@@ -327,2 +371,17 @@ async function captureRollbackReference({ runId, sessionSecret, persist, fetchIm
+-    const parity = immutable.observation.status === 200 && alias.observation.status === 200 && immutable.observation.responseSha256 === alias.observation.responseSha256;
+-    evidence.criticalAssets.push({ asset, sha256: immutable.observation.responseSha256, immutable: immutable.observation, alias: alias.observation, parity }); await persist(evidence);
++    const parity = immutable.observation.status === 200 && alias.observation.status === 200 && immutable.observation.responseSha256 === alias.observation.responseSha256 && immutable.observation.byteLength === alias.observation.byteLength;
++    evidence.criticalAssets.push({ asset, bytes: immutable.observation.byteLength, sha256: immutable.observation.responseSha256, immutable: immutable.observation, alias: alias.observation, parity }); await persist(evidence);
++  }
++  let serviceWorkerBody = null;
++  for (const runtimePath of DIAGNOSTIC_OPERATOR.runtimeFiles) {
++    const immutable = await observeRequest({ fetchImpl, url: new URL(runtimePath, metadata.deploymentUrl), init: { headers: { "cache-control": "no-cache", pragma: "no-cache" } }, attempt: 0, resourceKind: `rollback-immutable-runtime:${runtimePath}`, cacheBust: { runId, attempt: 0, resourceKind: "rollback-immutable-runtime" }, clock, record, deadlineSignal: signal() });
++    const alias = await observeRequest({ fetchImpl, url: new URL(runtimePath, DIAGNOSTIC_OPERATOR.aliasUrl), init: { headers: { "cache-control": "no-cache", pragma: "no-cache" } }, attempt: 0, resourceKind: `rollback-alias-runtime:${runtimePath}`, cacheBust: { runId, attempt: 0, resourceKind: "rollback-alias-runtime" }, clock, record, deadlineSignal: signal() });
++    if (runtimePath === "/sw.js") serviceWorkerBody = immutable.body;
++    const parity = immutable.observation.status === 200 && alias.observation.status === 200 && immutable.observation.responseSha256 === alias.observation.responseSha256 && immutable.observation.byteLength === alias.observation.byteLength;
++    evidence.runtimeFiles.push({ path: runtimePath, bytes: immutable.observation.byteLength, sha256: immutable.observation.responseSha256, immutable: immutable.observation, alias: alias.observation, parity }); await persist(evidence);
++  }
++  const imported = new Set([...(serviceWorkerBody?.toString("utf8") || "").matchAll(/https:\/\/www\.gstatic\.com\/firebasejs\/[^"'\s,)]+/g)].map(row => row[0]));
++  for (const required of DIAGNOSTIC_OPERATOR.externalRuntime) {
++    if (!imported.has(required.url)) throw new Error("Service worker external runtime contract is incomplete.");
++    const response = await observeRequest({ fetchImpl, url: required.url, init: { headers: { "cache-control": "no-cache", pragma: "no-cache" } }, attempt: 0, resourceKind: `rollback-external-runtime:${required.url}`, cacheBust: null, clock, record, deadlineSignal: signal() });
++    const passed = response.observation.status === 200 && response.observation.responseSha256 === required.sha256;
++    evidence.externalRuntime.push({ url: required.url, bytes: response.observation.byteLength, sha256: response.observation.responseSha256, passed }); await persist(evidence);
+@@ -330 +389 @@ async function captureRollbackReference({ runId, sessionSecret, persist, fetchIm
+-  evidence.passed = evidence.routes.length === 6 && evidence.routes.every(row => row.parity) && evidence.criticalAssets.length === assetPaths.length && evidence.criticalAssets.every(row => row.parity);
++  evidence.passed = evidence.routes.length === 6 && evidence.routes.every(row => row.parity) && evidence.criticalAssets.length === assetPaths.size && evidence.criticalAssets.every(row => row.parity) && evidence.runtimeFiles.length === 3 && evidence.runtimeFiles.every(row => row.parity) && evidence.externalRuntime.length === 2 && evidence.externalRuntime.every(row => row.passed);
+@@ -332,2 +391,3 @@ async function captureRollbackReference({ runId, sessionSecret, persist, fetchIm
+-  if (!evidence.passed) throw new Error("Current alias metadata and rollback content do not have exact parity.");
+-  return { passed: true, runId, deploymentIdentifier: metadata.deploymentIdentifier, deploymentUrl: metadata.deploymentUrl, capturedAt: evidence.completedAt, routes: evidence.routes.map(({ route, sha256 }) => ({ route, sha256 })), criticalAssets: evidence.criticalAssets.map(({ asset, sha256 }) => ({ asset, sha256 })) };
++  if (!evidence.passed) throw new Error("Current alias metadata and rollback content do not have exact complete parity.");
++  const reference = { passed: true, runId, deploymentIdentifier: metadata.deploymentIdentifier, deploymentUrl: metadata.deploymentUrl, capturedAt: evidence.completedAt, routes: evidence.routes.map(({ route, bytes, sha256, referencedAssets }) => ({ route, bytes, sha256, referencedAssets })), criticalAssets: evidence.criticalAssets.map(({ asset, bytes, sha256 }) => ({ asset, bytes, sha256 })), runtimeFiles: evidence.runtimeFiles.map(({ path, bytes, sha256 }) => ({ path, bytes, sha256 })), externalRuntime: evidence.externalRuntime.map(({ url, bytes, sha256 }) => ({ url, bytes, sha256 })) };
++  reference.contractSha256 = rollbackContractDigest(reference); validateRollbackReference(reference, runId); return reference;
+@@ -356 +416 @@ export function validatePromotionPrerequisites({ authority, artifact, artifactEn
+-  if (immutable?.passed !== true || immutable.runId !== authority.runId || immutable.deploymentIdentifier !== deployment.deploymentIdentifier || immutable.sourceCommit !== authority.sourceCommit || immutable.sourceManifestSha256 !== authority.sourceManifestSha256 || immutable.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || immutable.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || immutable.routes?.length !== 6 || !immutable.routes.every(row => row.passed) || immutable.criticalAssets?.length !== 5 || !immutable.criticalAssets.every(row => row.passed) || !/^[a-f0-9]{64}$/.test(immutableEvidenceSha256 || "")) throw new Error("Complete passing immutable-to-artifact qualification required.");
++  if (immutable?.passed !== true || immutable.runId !== authority.runId || immutable.deploymentIdentifier !== deployment.deploymentIdentifier || immutable.sourceCommit !== authority.sourceCommit || immutable.sourceManifestSha256 !== authority.sourceManifestSha256 || immutable.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || immutable.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || immutable.routes?.length !== 6 || !immutable.routes.every(row => row.passed) || immutable.criticalAssets?.length !== 5 || !immutable.criticalAssets.every(row => row.passed) || immutable.publishedFiles?.length !== 74 || !immutable.publishedFiles.every(row => row.passed) || immutable.externalRuntime?.length !== 2 || !immutable.externalRuntime.every(row => row.passed) || !/^[a-f0-9]{64}$/.test(immutableEvidenceSha256 || "")) throw new Error("Complete passing immutable-to-artifact qualification required.");
+@@ -361 +421,2 @@ export function validatePromotionPrerequisites({ authority, artifact, artifactEn
+-  if (rollback?.passed !== true || rollback.runId !== authority.runId || rollback.deploymentIdentifier !== DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment || rollback.routes?.length !== 6 || rollback.criticalAssets?.length < 1 || !/^[a-f0-9]{64}$/.test(rollbackEvidenceSha256 || "")) throw new Error("Complete expected rollback reference required.");
++  try { validateRollbackReference(rollback, authority.runId); } catch { throw new Error("Complete expected rollback reference required."); }
++  if (!/^[a-f0-9]{64}$/.test(rollbackEvidenceSha256 || "")) throw new Error("Hashed rollback reference required.");
+@@ -375 +436 @@ export function validateImmediateRollbackRecheck({ evidence, rollback, completed
+-  if (evidence?.passed !== true || evidence.classification !== "PASS" || evidence.rollbackRequired !== false || evidence.runId !== rollback.runId || evidence.expected?.deploymentIdentifier !== rollback.deploymentIdentifier || JSON.stringify(evidence.expected?.routes) !== JSON.stringify(rollback.routes) || JSON.stringify(evidence.expected?.criticalAssets) !== JSON.stringify(rollback.criticalAssets) || evidence.selectedAttempts?.length !== 2 || !/^[a-f0-9]{64}$/.test(completedEvidenceSha256 || "")) throw new Error("Immediate independent rollback parity recheck required.");
++  if (evidence?.passed !== true || evidence.classification !== "PASS" || evidence.rollbackRequired !== false || evidence.runId !== rollback.runId || evidence.expected?.deploymentIdentifier !== rollback.deploymentIdentifier || JSON.stringify(evidence.expected?.routes) !== JSON.stringify(rollback.routes) || JSON.stringify(evidence.expected?.criticalAssets) !== JSON.stringify(rollback.criticalAssets) || JSON.stringify(evidence.expected?.runtimeFiles) !== JSON.stringify(rollback.runtimeFiles) || JSON.stringify(evidence.expected?.externalRuntime) !== JSON.stringify(rollback.externalRuntime) || evidence.selectedAttempts?.length !== 2 || !/^[a-f0-9]{64}$/.test(completedEvidenceSha256 || "")) throw new Error("Immediate independent rollback parity recheck required.");
+@@ -404,0 +466 @@ function loadContext(values) {
++  requireMaintenanceWindow(authority, values.action, Number(values["current-time-ms"] || Date.now()));
+@@ -416,0 +479,9 @@ function expoSessionSecret() {
++export function consumeDeploymentReservation({ runDirectory, authority, capturedAt = now() }) {
++  const attemptPath = path.join(runDirectory, "deployment-attempt.json"), resourcePath = path.join(runDirectory, "created-resources.json");
++  if (!fs.existsSync(attemptPath) || !fs.existsSync(resourcePath) || fs.existsSync(path.join(runDirectory, "immutable-deployment.json"))) throw new Error("Exclusive deployment reservation is required and cannot be reused.");
++  const attempt = JSON.parse(fs.readFileSync(attemptPath, "utf8")), inventory = JSON.parse(fs.readFileSync(resourcePath, "utf8"));
++  if (attempt.runId !== authority.runId || attempt.state !== "PROVIDER_COMMAND_AUTHORIZED" || attempt.providerCommandInvoked !== true || attempt.deploymentRetryPermitted !== false || inventory.runId !== authority.runId || inventory.state !== "DEPLOYMENT_IN_PROGRESS" || inventory.deploymentAttemptCount !== 1) throw new Error("Exclusive deployment reservation is invalid or consumed.");
++  atomicWrite(attemptPath, { ...attempt, state: "PROVIDER_COMMAND_STARTED", commandStartedAt: capturedAt });
++  return { attemptPath, attempt, inventory };
++}
++
+@@ -444,0 +516 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
++    const { attemptPath, attempt } = consumeDeploymentReservation({ runDirectory, authority });
+@@ -451,2 +523,4 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
+-    if (!deploymentIdentifier || !url || REJECTED_DEPLOYMENTS.includes(deploymentIdentifier)) throw new Error("Provider did not return a new acceptable immutable deployment.");
+-    atomicWrite(path.join(runDirectory, "immutable-deployment.json"), { capturedAt: now(), deploymentIdentifier, url, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256, artifactManifestSha256: artifact.artifactManifestSha256, aliasAssigned: false });
++    const expectedUrl = `https://hungrie-restaurant--${deploymentIdentifier}.expo.app`;
++    if (!deploymentIdentifier || url !== expectedUrl || REJECTED_DEPLOYMENTS.includes(deploymentIdentifier)) throw new Error("Provider did not return a project-bound acceptable immutable deployment.");
++    atomicWrite(attemptPath, { ...attempt, state: "PROVIDER_COMMAND_RETURNED", commandStartedAt: JSON.parse(fs.readFileSync(attemptPath, "utf8")).commandStartedAt, commandCompletedAt: now(), deploymentIdentifier });
++    atomicWrite(path.join(runDirectory, "immutable-deployment.json"), { capturedAt: now(), easProjectId: DIAGNOSTIC_OPERATOR.easProjectId, deploymentIdentifier, url, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256, artifactManifestSha256: artifact.artifactManifestSha256, aliasAssigned: false });
+@@ -469,0 +544,6 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
++    const referencePath = path.join(runDirectory, "rollback-reference.json"), recapturePath = path.join(runDirectory, "fresh-recapture-attempt.json");
++    const phase = fs.existsSync(recapturePath) ? "fresh" : "initial";
++    if (phase === "initial" && fs.existsSync(referencePath)) throw new Error("Initial rollback reference already exists; overwrite prohibited.");
++    if (phase === "fresh") { const recapture = JSON.parse(fs.readFileSync(recapturePath, "utf8")); if (recapture.state !== "READY_FOR_RECAPTURE" || fs.existsSync(referencePath)) throw new Error("Fresh rollback recapture phase is not exclusively ready."); }
++    const phaseMarker = path.join(runDirectory, `rollback-capture-${phase}-attempt.json`); const descriptor = fs.openSync(phaseMarker, "wx", 0o600);
++    try { fs.writeFileSync(descriptor, canonical({ schemaVersion: 1, runId: authority.runId, phase, startedAt: now(), state: "STARTED" })); } finally { fs.closeSync(descriptor); }
+@@ -471,3 +551,3 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
+-    const reference = await captureRollbackReference({ runId: authority.runId, sessionSecret: expoSessionSecret(), persist: value => atomicWrite(progress, value), fetchImpl: dependencies.fetchImpl || fetch });
+-    atomicWrite(path.join(runDirectory, "rollback-reference.json"), reference);
+-    return { passed: true, action, deploymentIdentifier: reference.deploymentIdentifier, routes: reference.routes.length, criticalAssets: reference.criticalAssets.length };
++    const reference = await captureRollbackReference({ runId: authority.runId, sessionSecret: dependencies.retrieveAliasMetadata ? null : expoSessionSecret(), persist: value => atomicWrite(progress, value), fetchImpl: dependencies.fetchImpl || fetch });
++    atomicWrite(referencePath, reference); atomicWrite(phaseMarker, { schemaVersion: 1, runId: authority.runId, phase, startedAt: JSON.parse(fs.readFileSync(phaseMarker, "utf8")).startedAt, completedAt: now(), state: "COMPLETE", contractSha256: reference.contractSha256 });
++    return { passed: true, action, phase, deploymentIdentifier: reference.deploymentIdentifier, routes: reference.routes.length, criticalAssets: reference.criticalAssets.length, runtimeFiles: reference.runtimeFiles.length };
+@@ -526 +606,5 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
+-    return { passed: true, action, classification: evidence.classification, selectedAttempts: evidence.stability.selectedAttempts.map(row => row.number) };
++    const artifact = JSON.parse(fs.readFileSync(path.join(runDirectory, "artifact-manifest.json"), "utf8"));
++    const fullParity = await verifyImmutableArtifactParity({ base: DIAGNOSTIC_OPERATOR.aliasUrl, deploymentIdentifier: immutable.deploymentIdentifier, artifact, fetchImpl: dependencies.fetchImpl || fetch, persist: value => atomicWrite(path.join(runDirectory, "alias-full-artifact-progress.json"), value), clock: dependencies.clock || { now: () => Date.now() } });
++    atomicWrite(path.join(runDirectory, "alias-full-artifact-result.json"), fullParity);
++    if (!fullParity.passed) throw new Error("Promoted alias does not publish the complete accepted 74-file artifact and PWA runtime.");
++    return { passed: true, action, classification: evidence.classification, selectedAttempts: evidence.stability.selectedAttempts.map(row => row.number), publishedFiles: fullParity.publishedFiles.length };
+diff --git a/scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs b/scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs
+index 30475e7..803cfda 100644
+--- a/scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs
++++ b/scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs
+@@ -69,0 +70,21 @@ async function openChrome(chromePath, profile, port) {
++export function evaluateBrowserQualification({ accountName, expectedPath, directPath, baseUrl, authenticated, restored, mainCount, exceptions = [], consoleErrors = [], failedRequests = [], httpErrors = [], requests = [], serviceWorkerReady = false }) {
++  const errors = [...exceptions, ...consoleErrors, ...(authenticated?.diagnostic?.errors || []), ...(restored?.diagnostic?.errors || [])].filter(Boolean);
++  const allowedOrigins = [new URL(baseUrl).origin, "https://identitytoolkit.googleapis.com", "https://securetoken.googleapis.com", "https://firebase.googleapis.com", "https://www.gstatic.com", "https://fcmregistrations.googleapis.com"];
++  const unexpectedRequests = requests.filter(request => { try { const origin = new URL(request.url || request.requestedUrl).origin; return !allowedOrigins.includes(origin) && !origin.endsWith(".supabase.co"); } catch { return true; } });
++  const operationalExpected = expectedPath === "/dashboard";
++  const completeRendering = authenticated?.path === expectedPath && restored?.path === (directPath || expectedPath) && authenticated?.heading && restored?.heading && !authenticated.blank && !restored.blank && authenticated.operational === operationalExpected && restored.operational === operationalExpected;
++  const earningsRequests = requests.filter(request => /restaurant_(?:get|list)_earnings/i.test(request.path || "")).length;
++  const blockers = [];
++  if (!completeRendering) blockers.push("INCOMPLETE_OPERATIONAL_RENDERING");
++  if (mainCount !== 1) blockers.push("MAIN_LANDMARK_INVALID");
++  if (errors.length) blockers.push("UNCAUGHT_OR_CONSOLE_ERROR");
++  if (failedRequests.length) blockers.push("NETWORK_LOADING_FAILURE");
++  if (httpErrors.length) blockers.push("SAME_ORIGIN_HTTP_ERROR");
++  if (unexpectedRequests.length) blockers.push("UNEXPECTED_RUNTIME_REQUEST");
++  if (!serviceWorkerReady) blockers.push("SERVICE_WORKER_NOT_READY");
++  if ((authenticated?.diagnostic?.navigations?.length || 0) > 8 || (restored?.diagnostic?.navigations?.length || 0) > 8) blockers.push("UNBOUNDED_NAVIGATION");
++  if (authenticated?.diagnostic?.protectedBeforeReady || restored?.diagnostic?.protectedBeforeReady) blockers.push("PROTECTED_CONTENT_BEFORE_AUTHORIZATION");
++  if (accountName === "manager" && (authenticated?.earningsLink || restored?.earningsLink || earningsRequests)) blockers.push("MANAGER_FINANCIAL_ACCESS");
++  return { passed: blockers.length === 0, blockers, errors, httpErrors, failedRequests, unexpectedRequests, earningsRequests, completeRendering };
++}
++
+@@ -77 +98 @@ async function qualifyAccount({ accountName, account, expectedPath, directPath,
+-    const exceptions = [], consoleErrors = [], failedRequests = [], requests = [];
++    const exceptions = [], consoleErrors = [], failedRequests = [], httpErrors = [], responses = [], requests = [];
+@@ -83 +104,6 @@ async function qualifyAccount({ accountName, account, expectedPath, directPath,
+-      if (message.method === "Network.responseReceived" && new URL(message.params.response.url).pathname.endsWith("/get_my_access_context_v1")) cdp.send("Runtime.evaluate", { expression: "window.__diagnostic.accessResolved=true" }).catch(() => {});
++      if (message.method === "Network.responseReceived") {
++        const response = message.params.response, row = { url: response.url, status: response.status, mimeType: response.mimeType, type: message.params.type };
++        responses.push(row);
++        try { if (new URL(response.url).origin === new URL(baseUrl).origin && response.status >= 400) httpErrors.push(row); } catch {}
++        if (new URL(response.url).pathname.endsWith("/get_my_access_context_v1")) cdp.send("Runtime.evaluate", { expression: "window.__diagnostic.accessResolved=true" }).catch(() => {});
++      }
+@@ -100 +125,0 @@ async function qualifyAccount({ accountName, account, expectedPath, directPath,
+-    const errors = [...exceptions, ...consoleErrors, ...authenticated.diagnostic.errors, ...restored.diagnostic.errors];
+@@ -102,3 +127,3 @@ async function qualifyAccount({ accountName, account, expectedPath, directPath,
+-    const earningsRequests = requests.filter(request => /restaurant_(?:get|list)_earnings/i.test(request.path)).length;
+-    const operationalExpected = expectedPath === "/dashboard";
+-    if (authenticated.operational !== operationalExpected || restored.operational !== operationalExpected || mainCount !== 1 || failedRequests.length || errors.some(value => /maximum update|React error #185|runtime is unavailable/i.test(value)) || authenticated.diagnostic.navigations.length > 8 || restored.diagnostic.navigations.length > 8 || authenticated.diagnostic.protectedBeforeReady || restored.diagnostic.protectedBeforeReady || (accountName === "manager" && (authenticated.earningsLink || restored.earningsLink || earningsRequests))) throw new Error(`${accountName} immutable access qualification failed.`);
++    const serviceWorkerReady = await evaluate("!!navigator.serviceWorker && !!(await navigator.serviceWorker.ready)").catch(() => false);
++    const decision = evaluateBrowserQualification({ accountName, expectedPath, directPath, baseUrl, authenticated, restored, mainCount, exceptions, consoleErrors, failedRequests, httpErrors, requests, serviceWorkerReady });
++    if (!decision.passed) throw new Error(`${accountName} immutable access qualification failed: ${decision.blockers.join(",")}.`);
+@@ -108 +133 @@ async function qualifyAccount({ accountName, account, expectedPath, directPath,
+-    return { passed: true, account: accountName, browser: version.Browser, expectedPath, directPath, authenticated, restored, mainCount, accessRequests, earningsRequests, uncaughtErrors: errors, failedRequests, requestInventory: requests, screenshot: { file: screenshotName, sha256: sha256(fs.readFileSync(screenshotPath)) } };
++    return { passed: true, account: accountName, browser: version.Browser, expectedPath, directPath, authenticated, restored, mainCount, accessRequests, earningsRequests: decision.earningsRequests, uncaughtErrors: decision.errors, failedRequests, httpErrors, unexpectedRequests: decision.unexpectedRequests, responseInventory: responses, serviceWorkerReady, requestInventory: requests, screenshot: { file: screenshotName, sha256: sha256(fs.readFileSync(screenshotPath)) } };
+diff --git a/scripts/restaurant-alias-diagnostic-execution-support.mjs b/scripts/restaurant-alias-diagnostic-execution-support.mjs
+index d4e9737..fe23cf8 100755
+--- a/scripts/restaurant-alias-diagnostic-execution-support.mjs
++++ b/scripts/restaurant-alias-diagnostic-execution-support.mjs
+@@ -13,0 +14,2 @@ import {
++  validateRollbackReference as validateDeploymentRollbackReference,
++  requireMaintenanceWindow,
+@@ -18,3 +20,5 @@ export const SUPPORT = Object.freeze({
+-  proposalSha256: "4f07c54d1b6291a3272b242324c3e24eb02b62c84d8cd906b31f1b110fd880d4",
+-  baseCheckpoint: "47104d426b3eb36486956f1de1db0aa5e6616393",
+-  baseSourceManifestSha256: "dbdb7cb8d08c6f0a69397bb7846ade1fad06661950c218c774cf9cb3311d772a",
++  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260925c-execution-contract.md",
++  proposalSha256: "1d89925353d88af8f278fb6b6aa2bf6e0cb4e133bd6d178409b8340430b4b6f5",
++  baseCheckpoint: "5533606a841e9a7d75b2a3e22ef672bd107fa5d8",
++  baseSourceManifestSha256: "f06613f65c5a8866fe914dcd80efd8b04ef53e734aa27c651c445498cf739fc6",
++  baseSourceManifestFiles: 1506,
+@@ -22,4 +26,6 @@ export const SUPPORT = Object.freeze({
+-    "docs/restaurant-expo-alias-supabase-http201-compatibility-implementation-review.md",
+-    "docs/restaurant-expo-alias-supabase-http201-compatibility-implementation.diff",
+-    "docs/restaurant-expo-alias-final-execution-readiness-handoff.md",
+-    "docs/restaurant-expo-alias-final-one-run-staging-execution-authorization-proposal.md",
++    "docs/restaurant-expo-alias-diagnostic-remediation-implementation-review.md",
++    "docs/restaurant-expo-alias-diagnostic-remediation-implementation.diff",
++    "docs/restaurant-expo-alias-diagnostic-remediated-execution-contract.md",
++    "docs/restaurant-expo-alias-ruip6ad-20260925c-execution-contract.md",
++    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs",
++    "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs",
+@@ -27,0 +34,2 @@ export const SUPPORT = Object.freeze({
++    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs",
++    "scripts/test-restaurant-alias-diagnostic-access-staging.mjs",
+@@ -82,0 +91,14 @@ export const SUPPORT = Object.freeze({
++    Object.freeze({
++      commit: "5533606a841e9a7d75b2a3e22ef672bd107fa5d8",
++      parent: "47104d426b3eb36486956f1de1db0aa5e6616393",
++      sourceManifestSha256: "f06613f65c5a8866fe914dcd80efd8b04ef53e734aa27c651c445498cf739fc6",
++      sourceManifestFiles: 1506,
++      files: Object.freeze({
++        "docs/restaurant-expo-alias-final-execution-readiness-handoff.md": "899c55b1ab3636b871452dfbc3b835382709415922827f66537c398334fc2e7c",
++        "docs/restaurant-expo-alias-final-one-run-staging-execution-authorization-proposal.md": "4f07c54d1b6291a3272b242324c3e24eb02b62c84d8cd906b31f1b110fd880d4",
++        "docs/restaurant-expo-alias-supabase-http201-compatibility-implementation-review.md": "e29192433ee6fc19da9d89cc188689c0006140d0cca6bf02b5bbe87e60a1cd26",
++        "docs/restaurant-expo-alias-supabase-http201-compatibility-implementation.diff": "bb251ba1bc45c9803323acba6c7e4c0c4924c34f336092a05a32cc8d91cc02a7",
++        "scripts/restaurant-alias-diagnostic-execution-support.mjs": "8be9d0bce40799f3aa9a75539044959eaa0b6a024e5b7f37c3689c75e539eaf9",
++        "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "fbd3c3af540fd2432eb247b3202a19ed1dfe44e6354dde3e9eef6f2549ecb126",
++      }),
++    }),
+@@ -87,3 +109,4 @@ export const SUPPORT = Object.freeze({
+-    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "a3fe6fb596a6e6aefd17e576beaa2c35a06a19e620e7ab807fbe5a7dc6792ed6",
+-    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "d09e43ab5a13a6357da994840f6bdd22730a5118f244f82979468b0f0243b288",
+-    "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "9500103b1c54a6c97b1fb126ac0973bb881095d4f81e0e30dc941e7090293c35",
++    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "cf0e10538f0922f8e13236fa9eaee9947d83cf4e2c838cee1d1d1f0b54858b53",
++    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "2392f2e9f96e9d6a40787775724f42537a9a0c34bb0f8644c23d0e4faeed349f",
++    "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "2e0189fca16b9bbd6a95d87685d38e92b8260f75e6a8225bed5221c3492c3c7d",
++    "scripts/test-restaurant-alias-diagnostic-access-staging.mjs": "860e4b0589133bc7d452126e7652af6866b3ce7685db104b2c919e3fa9c76ee6",
+@@ -92,2 +115,2 @@ export const SUPPORT = Object.freeze({
+-  runId: "ruip6ad_20260925b",
+-  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260925b",
++  runId: "ruip6ad_20260925c",
++  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260925c",
+@@ -118 +141 @@ export const SUPPORT = Object.freeze({
+-    "register-deployment", "record-deployment-uncertainty", "reconcile-deployment", "prepare-recapture",
++    "register-deployment", "record-deployment-uncertainty", "produce-deployment-reconciliation", "reconcile-deployment", "prepare-recapture",
+@@ -120 +143 @@ export const SUPPORT = Object.freeze({
+-    "record-abort", "finalize",
++    "record-abort", "produce-deployment-reconciliation", "finalize",
+@@ -122 +145 @@ export const SUPPORT = Object.freeze({
+-  rollbackContract: Object.freeze({ routes: 6, criticalAssets: 5 }),
++  rollbackContract: Object.freeze({ routes: 6, deploymentDerivedAssets: true, runtimeFiles: 3, externalRuntime: 2 }),
+@@ -214 +237 @@ export function verifyAcceptedDiagnosticExecutables({ repoRoot, commit, spawn =
+-  if (commitFileSha256(repoRoot, commit, "docs/restaurant-expo-alias-final-one-run-staging-execution-authorization-proposal.md", spawn) !== SUPPORT.proposalSha256) throw new Error("Reviewed execution proposal hash mismatch.");
++  if (commitFileSha256(repoRoot, commit, SUPPORT.proposalPath, spawn) !== SUPPORT.proposalSha256) throw new Error("Reviewed execution proposal hash mismatch.");
+@@ -222 +245 @@ export function validateOwnerAuthorization(input) {
+-    "authorizationText", "authorizationTextSha256", "issuedAt",
++    "authorizationText", "authorizationTextSha256", "issuedAt", "maintenanceWindowStart", "maintenanceWindowEnd",
+@@ -232 +255,2 @@ export function validateOwnerAuthorization(input) {
+-  if (!Number.isFinite(Date.parse(input.issuedAt))) throw new Error("Owner authorization timestamp is invalid.");
++  const issued = Date.parse(input.issuedAt), start = Date.parse(input.maintenanceWindowStart), end = Date.parse(input.maintenanceWindowEnd);
++  if (!Number.isFinite(issued) || !Number.isFinite(start) || !Number.isFinite(end) || start < issued || end <= start || end - start > 2 * 60 * 60_000) throw new Error("Owner authorization or maintenance window timestamp is invalid.");
+@@ -236 +260 @@ export function validateOwnerAuthorization(input) {
+-export function prepareAuthorityArtifacts({ repoRoot, approval, outputDirectory, spawn = spawnSync, lineageVerifier = verifyAcceptedCheckpointLineage, executableVerifier = verifyAcceptedDiagnosticExecutables }) {
++export function verifyReviewedCandidateCheckpoint({ repoRoot, approval, spawn = spawnSync, lineageVerifier = verifyAcceptedCheckpointLineage, executableVerifier = verifyAcceptedDiagnosticExecutables }) {
+@@ -242 +266 @@ export function prepareAuthorityArtifacts({ repoRoot, approval, outputDirectory,
+-  if (spawn("git", ["rev-parse", approval.sourceCommit + "^"], { cwd: repoRoot, encoding: "utf8" }).stdout.trim() !== SUPPORT.baseCheckpoint) throw new Error("Compatibility checkpoint is not a direct child of the accepted account-preparation checkpoint.");
++  if (spawn("git", ["rev-parse", approval.sourceCommit + "^"], { cwd: repoRoot, encoding: "utf8" }).stdout.trim() !== SUPPORT.baseCheckpoint) throw new Error("Diagnostic-readiness checkpoint is not a direct child of the accepted parent.");
+@@ -244 +268 @@ export function prepareAuthorityArtifacts({ repoRoot, approval, outputDirectory,
+-  if (JSON.stringify(inventory) !== JSON.stringify([...SUPPORT.checkpointFiles].sort())) throw new Error("Compatibility checkpoint inventory differs from the reviewed six-file scope.");
++  if (JSON.stringify(inventory) !== JSON.stringify([...SUPPORT.checkpointFiles].sort())) throw new Error("Diagnostic-readiness checkpoint inventory differs from the reviewed scope.");
+@@ -246,0 +271,6 @@ export function prepareAuthorityArtifacts({ repoRoot, approval, outputDirectory,
++  return { passed: true, manifest, inventory, commit: approval.sourceCommit };
++}
++
++export function prepareAuthorityArtifacts({ repoRoot, approval, outputDirectory, spawn = spawnSync, lineageVerifier = verifyAcceptedCheckpointLineage, executableVerifier = verifyAcceptedDiagnosticExecutables }) {
++  const verified = verifyReviewedCandidateCheckpoint({ repoRoot, approval, spawn, lineageVerifier, executableVerifier });
++  const manifest = verified.manifest;
+@@ -264,0 +295,2 @@ export function prepareAuthorityArtifacts({ repoRoot, approval, outputDirectory,
++    maintenanceWindowStart: approval.maintenanceWindowStart,
++    maintenanceWindowEnd: approval.maintenanceWindowEnd,
+@@ -366 +398,2 @@ function validateRollbackReference(value, authority, label = "Rollback reference
+-  if (value?.passed !== true || value.runId !== authority.runId || value.deploymentIdentifier !== DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment) throw new Error(label + " binding mismatch.");
++  try { validateDeploymentRollbackReference(value, authority.runId); }
++  catch (error) { throw new Error(label + ": " + error.message); }
+@@ -368,2 +400,0 @@ function validateRollbackReference(value, authority, label = "Rollback reference
+-  if (!Array.isArray(value.routes) || value.routes.length !== SUPPORT.rollbackContract.routes || new Set(value.routes.map(row => row?.route)).size !== SUPPORT.rollbackContract.routes || value.routes.some(row => !row?.route || !/^[a-f0-9]{64}$/.test(row.sha256 || ""))) throw new Error(label + " must contain exactly six unique route hashes.");
+-  if (!Array.isArray(value.criticalAssets) || value.criticalAssets.length !== SUPPORT.rollbackContract.criticalAssets || new Set(value.criticalAssets.map(row => row?.asset)).size !== SUPPORT.rollbackContract.criticalAssets || value.criticalAssets.some(row => !row?.asset || !/^[a-f0-9]{64}$/.test(row.sha256 || ""))) throw new Error(label + " must contain exactly five unique critical asset hashes.");
+@@ -374,5 +405,5 @@ function validateRollbackProgress(value, authority, reference) {
+-  if (value?.schemaVersion !== 1 || value.runId !== authority.runId || value.passed !== true || value.completedAt !== reference.capturedAt || value.metadata?.deploymentIdentifier !== reference.deploymentIdentifier) throw new Error("Rollback capture progress does not match the completed reference.");
+-  if (!Array.isArray(value.routes) || value.routes.length !== SUPPORT.rollbackContract.routes || value.routes.some(row => row?.parity !== true) || !Array.isArray(value.criticalAssets) || value.criticalAssets.length !== SUPPORT.rollbackContract.criticalAssets || value.criticalAssets.some(row => row?.parity !== true)) throw new Error("Rollback capture progress is incomplete.");
+-  const routes = value.routes.map(row => ({ route: row.route, sha256: row.sha256 }));
+-  const assets = value.criticalAssets.map(row => ({ asset: row.asset, sha256: row.sha256 }));
+-  if (JSON.stringify(routes) !== JSON.stringify(reference.routes) || JSON.stringify(assets) !== JSON.stringify(reference.criticalAssets)) throw new Error("Rollback progress and reference content differ.");
++  if (value?.schemaVersion !== 2 || value.runId !== authority.runId || value.passed !== true || value.completedAt !== reference.capturedAt || value.metadata?.deploymentIdentifier !== reference.deploymentIdentifier) throw new Error("Rollback capture progress does not match the completed reference.");
++  const parity = rows => Array.isArray(rows) && rows.every(row => row?.parity === true || row?.passed === true);
++  if (value.routes?.length !== 6 || !parity(value.routes) || value.criticalAssets?.length !== reference.criticalAssets.length || !parity(value.criticalAssets) || value.runtimeFiles?.length !== 3 || !parity(value.runtimeFiles) || value.externalRuntime?.length !== 2 || !parity(value.externalRuntime)) throw new Error("Rollback capture progress is incomplete.");
++  const project = row => Object.fromEntries(Object.entries(row).filter(([key]) => ["route","asset","path","url","bytes","sha256","referencedAssets"].includes(key)));
++  for (const key of ["routes", "criticalAssets", "runtimeFiles", "externalRuntime"]) if (JSON.stringify(value[key].map(project)) !== JSON.stringify(reference[key])) throw new Error("Rollback progress and reference content differ.");
+@@ -450,0 +482,2 @@ export function verifyFreshRollbackRecapture({ runDirectory, authority, captured
++  const captureMarker = requireRunEvidence(path.join(runDirectory, "rollback-capture-fresh-attempt.json"), "Fresh rollback capture attempt");
++  if (captureMarker.value.runId !== authority.runId || captureMarker.value.phase !== "fresh" || captureMarker.value.state !== "COMPLETE" || captureMarker.value.contractSha256 !== reference.value.contractSha256) throw new Error("Fresh rollback capture phase is incomplete or mismatched.");
+@@ -459 +492 @@ export function verifyFreshRollbackRecapture({ runDirectory, authority, captured
+-    canonical: { reference: fileIdentity(runDirectory, reference.file), progress: fileIdentity(runDirectory, progress.file) },
++    canonical: { reference: fileIdentity(runDirectory, reference.file), progress: fileIdentity(runDirectory, progress.file), captureAttempt: fileIdentity(runDirectory, captureMarker.file) },
+@@ -461 +494 @@ export function verifyFreshRollbackRecapture({ runDirectory, authority, captured
+-    contract: { routes: SUPPORT.rollbackContract.routes, criticalAssets: SUPPORT.rollbackContract.criticalAssets },
++    contract: { routes: SUPPORT.rollbackContract.routes, criticalAssets: reference.value.criticalAssets.length, runtimeFiles: reference.value.runtimeFiles.length, externalRuntime: reference.value.externalRuntime.length, contractSha256: reference.value.contractSha256 },
+@@ -478,0 +512,2 @@ function consumeFreshRollbackRecapture(runDirectory, authority, currentMs) {
++  const captureMarker = requireRunEvidence(path.join(runDirectory, "rollback-capture-fresh-attempt.json"), "Fresh rollback capture attempt");
++  if (captureMarker.value.runId !== authority.runId || captureMarker.value.phase !== "fresh" || captureMarker.value.state !== "COMPLETE" || captureMarker.value.contractSha256 !== reference.value.contractSha256) throw new Error("Fresh rollback capture phase is incomplete or mismatched.");
+@@ -481 +516 @@ function consumeFreshRollbackRecapture(runDirectory, authority, currentMs) {
+-  if (verification.value.canonical?.reference?.sha256 !== reference.sha256 || verification.value.canonical?.reference?.bytes !== fs.statSync(reference.file).size || verification.value.canonical?.progress?.sha256 !== progress.sha256 || verification.value.canonical?.progress?.bytes !== fs.statSync(progress.file).size) throw new Error("Canonical rollback evidence changed after fresh verification.");
++  if (verification.value.canonical?.reference?.sha256 !== reference.sha256 || verification.value.canonical?.reference?.bytes !== fs.statSync(reference.file).size || verification.value.canonical?.progress?.sha256 !== progress.sha256 || verification.value.canonical?.progress?.bytes !== fs.statSync(progress.file).size || verification.value.canonical?.captureAttempt?.sha256 !== captureMarker.sha256) throw new Error("Canonical rollback evidence changed after fresh verification.");
+@@ -551,0 +587,26 @@ export function recordDeploymentUncertainty({ runDirectory, authority, capturedA
++export async function produceDeploymentReconciliationEvidence({ runDirectory, authority, capturedAt, fetchImpl = fetch, expoSession }) {
++  const marker = requireRunEvidence(path.join(runDirectory, "deployment-attempt.json"), "Deployment attempt");
++  const inventory = requireRunEvidence(inventoryPath(runDirectory), "Created-resource inventory");
++  if (marker.value.state !== "UNCERTAIN" || marker.value.runId !== authority.runId || inventory.value.state !== "DEPLOYMENT_UNCERTAIN") throw new Error("Independent provider read is permitted only for the uncertain single deployment attempt.");
++  if (!expoSession) throw new Error("Expo session is unavailable for read-only deployment reconciliation.");
++  const output = path.join(runDirectory, "provider-deployment-reconciliation.json");
++  if (fs.existsSync(output)) throw new Error("Provider reconciliation evidence already exists; overwrite prohibited.");
++  const startedAt = capturedAt || new Date().toISOString();
++  const requestId = authority.runId + ":provider-deployment-reconciliation:1";
++  const query = "query Deployments($appId:String!){app{byId(appId:$appId){id workerDeployments(first:50){edges{node{id deploymentIdentifier url createdAt}}}}}}";
++  let row;
++  try {
++    const response = await fetchImpl("https://api.expo.dev/graphql", { method: "POST", headers: { "content-type": "application/json", "expo-session": expoSession }, body: JSON.stringify({ query, variables: { appId: DIAGNOSTIC_OPERATOR.easProjectId } }) });
++    const body = await response.json();
++    const app = body.data?.app?.byId, deployments = app?.workerDeployments?.edges?.map(edge => edge.node) || [];
++    const payload = { attemptId: authority.runId + ":single-deployment-attempt", easProjectId: app?.id || null, endpoint: "https://api.expo.dev/graphql", deployments: deployments.map(value => ({ deploymentIdentifier: value.deploymentIdentifier, url: value.url, createdAt: value.createdAt })) };
++    row = { schemaVersion: 2, runId: authority.runId, stage: "deployment-reconciliation", requestId, startedAt, completedAt: new Date().toISOString(), status: response.status, payloadSha256: sha256(Buffer.from(canonical(payload))), payload, error: body.errors ? "PROVIDER_GRAPHQL_ERROR" : null };
++    writeExclusive(output, row);
++    if (response.status !== 200 || body.errors || app?.id !== DIAGNOSTIC_OPERATOR.easProjectId) throw new Error("Independent provider deployment read failed or returned the wrong EAS project.");
++  } catch (error) {
++    if (!fs.existsSync(output)) writeExclusive(output, { schemaVersion: 2, runId: authority.runId, stage: "deployment-reconciliation", requestId, startedAt, completedAt: new Date().toISOString(), status: null, payloadSha256: null, payload: null, error: sanitizeSupportError(error) });
++    throw error;
++  }
++  return { path: output, sha256: sha256(fs.readFileSync(output)), deployments: row.payload.deployments.length };
++}
++
+@@ -560,4 +621,4 @@ export function reconcileDeploymentObservation({ runDirectory, authority, observ
+-  exactKeys(row, ["schemaVersion", "runId", "stage", "requestId", "startedAt", "completedAt", "status", "payloadSha256", "payload"], "Provider deployment reconciliation");
+-  if (row.schemaVersion !== 1 || row.runId !== authority.runId || row.stage !== "deployment-reconciliation" || row.status !== 200 || !row.requestId || row.payloadSha256 !== sha256(Buffer.from(canonical(row.payload))) || !Number.isFinite(Date.parse(row.startedAt)) || !Number.isFinite(Date.parse(row.completedAt)) || Date.parse(row.completedAt) < Date.parse(row.startedAt)) throw new Error("Independent provider deployment observation is invalid.");
+-  exactKeys(row.payload, ["attemptId", "deployments"], "Provider deployment payload");
+-  if (row.payload.attemptId !== authority.runId + ":single-deployment-attempt" || !Array.isArray(row.payload.deployments)) throw new Error("Provider deployment observation is bound to another attempt.");
++  exactKeys(row, ["schemaVersion", "runId", "stage", "requestId", "startedAt", "completedAt", "status", "payloadSha256", "payload", "error"], "Provider deployment reconciliation");
++  if (row.schemaVersion !== 2 || row.runId !== authority.runId || row.stage !== "deployment-reconciliation" || row.status !== 200 || !row.requestId || row.payloadSha256 !== sha256(Buffer.from(canonical(row.payload))) || !Number.isFinite(Date.parse(row.startedAt)) || !Number.isFinite(Date.parse(row.completedAt)) || Date.parse(row.completedAt) < Date.parse(row.startedAt)) throw new Error("Independent provider deployment observation is invalid.");
++  exactKeys(row.payload, ["attemptId", "easProjectId", "endpoint", "deployments"], "Provider deployment payload");
++  if (row.error !== null || row.payload.attemptId !== authority.runId + ":single-deployment-attempt" || row.payload.easProjectId !== DIAGNOSTIC_OPERATOR.easProjectId || row.payload.endpoint !== "https://api.expo.dev/graphql" || !Array.isArray(row.payload.deployments)) throw new Error("Provider deployment observation is bound to another attempt.");
+@@ -566 +627 @@ export function reconcileDeploymentObservation({ runDirectory, authority, observ
+-  if (ids.some(value => !value) || new Set(ids).size !== ids.length || deployments.some(value => !value.url || !Number.isFinite(Date.parse(value.createdAt || "")) || REJECTED_DEPLOYMENTS.includes(value.deploymentIdentifier))) throw new Error("Provider deployment observation contains invalid identities.");
++  if (ids.some(value => !value) || new Set(ids).size !== ids.length || deployments.some(value => value.url !== `https://hungrie-restaurant--${value.deploymentIdentifier}.expo.app` || !Number.isFinite(Date.parse(value.createdAt || "")) || REJECTED_DEPLOYMENTS.includes(value.deploymentIdentifier))) throw new Error("Provider deployment observation contains invalid identities.");
+@@ -620 +681 @@ export function buildExpectedFinalAliasReference({ runDirectory, authority, capt
+-    if (verified.value.passed !== true || verified.value.classification !== "PASS" || verified.value.expected?.deploymentIdentifier !== reference.deploymentIdentifier || JSON.stringify(verified.value.expected.routes) !== JSON.stringify(reference.routes) || JSON.stringify(verified.value.expected.criticalAssets) !== JSON.stringify(reference.criticalAssets) || verified.value.selectedAttempts?.length < 2) throw new Error("Independent rollback verification does not match the frozen reference.");
++    if (verified.value.passed !== true || verified.value.classification !== "PASS" || verified.value.expected?.deploymentIdentifier !== reference.deploymentIdentifier || JSON.stringify(verified.value.expected.routes) !== JSON.stringify(reference.routes) || JSON.stringify(verified.value.expected.criticalAssets) !== JSON.stringify(reference.criticalAssets) || JSON.stringify(verified.value.expected.runtimeFiles) !== JSON.stringify(reference.runtimeFiles) || JSON.stringify(verified.value.expected.externalRuntime) !== JSON.stringify(reference.externalRuntime) || verified.value.selectedAttempts?.length < 2) throw new Error("Independent rollback verification does not match the frozen reference.");
+@@ -623 +684 @@ export function buildExpectedFinalAliasReference({ runDirectory, authority, capt
+-  const value = { schemaVersion: 1, runId: authority.runId, capturedAt, deploymentIdentifier: reference.deploymentIdentifier, deploymentUrl: reference.deploymentUrl, routes: reference.routes, criticalAssets: reference.criticalAssets, source: { rollbackReferenceSha256: fresh.reference.sha256, freshRecaptureVerificationSha256: fresh.verification.sha256, originalHistoricalReferenceSha256: fresh.verification.value.historical.reference.sha256, rollbackVerificationSha256 } };
++  const value = { schemaVersion: 1, runId: authority.runId, capturedAt, deploymentIdentifier: reference.deploymentIdentifier, deploymentUrl: reference.deploymentUrl, routes: reference.routes, criticalAssets: reference.criticalAssets, runtimeFiles: reference.runtimeFiles, externalRuntime: reference.externalRuntime, contractSha256: reference.contractSha256, source: { rollbackReferenceSha256: fresh.reference.sha256, freshRecaptureVerificationSha256: fresh.verification.sha256, originalHistoricalReferenceSha256: fresh.verification.value.historical.reference.sha256, rollbackVerificationSha256 } };
+@@ -792 +853 @@ export async function finalizeRun({ root, runDirectory, authority, expectedAlias
+-  if (expectedAlias?.schemaVersion !== 1 || expectedAlias.runId !== authority.runId || expectedAlias.deploymentIdentifier !== DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment || expectedAlias.routes?.length !== SUPPORT.rollbackContract.routes || expectedAlias.criticalAssets?.length !== SUPPORT.rollbackContract.criticalAssets) throw new Error("Complete run-bound final alias reference required.");
++  if (expectedAlias?.schemaVersion !== 1 || expectedAlias.runId !== authority.runId || expectedAlias.deploymentIdentifier !== DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment || expectedAlias.routes?.length !== SUPPORT.rollbackContract.routes || !expectedAlias.criticalAssets?.length || expectedAlias.runtimeFiles?.length !== 3 || expectedAlias.externalRuntime?.length !== 2) throw new Error("Complete run-bound final alias reference required.");
+@@ -796 +857 @@ export async function finalizeRun({ root, runDirectory, authority, expectedAlias
+-  if (expectedAlias.source?.rollbackReferenceSha256 !== fresh.reference.sha256 || expectedAlias.source?.freshRecaptureVerificationSha256 !== fresh.verification.sha256 || JSON.stringify(expectedAlias.routes) !== JSON.stringify(fresh.reference.value.routes) || JSON.stringify(expectedAlias.criticalAssets) !== JSON.stringify(fresh.reference.value.criticalAssets)) throw new Error("Expected final alias is not derived from verified fresh rollback evidence.");
++  if (expectedAlias.source?.rollbackReferenceSha256 !== fresh.reference.sha256 || expectedAlias.source?.freshRecaptureVerificationSha256 !== fresh.verification.sha256 || JSON.stringify(expectedAlias.routes) !== JSON.stringify(fresh.reference.value.routes) || JSON.stringify(expectedAlias.criticalAssets) !== JSON.stringify(fresh.reference.value.criticalAssets) || JSON.stringify(expectedAlias.runtimeFiles) !== JSON.stringify(fresh.reference.value.runtimeFiles) || JSON.stringify(expectedAlias.externalRuntime) !== JSON.stringify(fresh.reference.value.externalRuntime) || expectedAlias.contractSha256 !== fresh.reference.value.contractSha256) throw new Error("Expected final alias is not derived from verified fresh rollback evidence.");
+@@ -819 +880 @@ export async function finalizeRun({ root, runDirectory, authority, expectedAlias
+-  if (promotionAttempted && !terminalExists) required.push("promotion-result.json", "alias-observation-result.json", "rollback-result.json", "rollback-verification-result.json");
++  if (promotionAttempted && !terminalExists) required.push("promotion-result.json", "alias-observation-result.json", "alias-full-artifact-result.json", "rollback-result.json", "rollback-verification-result.json");
+@@ -992 +1053 @@ export async function runSupport(argv = process.argv.slice(2), dependencies = {}
+-  const actions = new Set(["baseline-preflight", "initialize-resources", "begin-deployment", "register-deployment", "record-deployment-uncertainty", "reconcile-deployment", "prepare-recapture", "verify-recapture", "final-preflight", "prepare-expected-alias", "prepare-cleanup", "record-abort", "finalize"]);
++  const actions = new Set(["baseline-preflight", "initialize-resources", "begin-deployment", "register-deployment", "record-deployment-uncertainty", "produce-deployment-reconciliation", "reconcile-deployment", "prepare-recapture", "verify-recapture", "final-preflight", "prepare-expected-alias", "prepare-cleanup", "record-abort", "finalize"]);
+@@ -997,0 +1059 @@ export async function runSupport(argv = process.argv.slice(2), dependencies = {}
++  requireMaintenanceWindow(authority, action === "finalize" ? "verify-rollback" : action, Number(values["current-time-ms"] || Date.now()));
+@@ -1009,0 +1072,4 @@ export async function runSupport(argv = process.argv.slice(2), dependencies = {}
++  if (action === "produce-deployment-reconciliation") {
++    const expoState = dependencies.expoSession ? { auth: { sessionSecret: dependencies.expoSession } } : JSON.parse(fs.readFileSync(path.join(process.env.HOME, ".expo/state.json"), "utf8"));
++    return produceDeploymentReconciliationEvidence({ runDirectory, authority, capturedAt: new Date().toISOString(), fetchImpl: dependencies.fetchImpl || fetch, expoSession: expoState.auth?.sessionSecret });
++  }
+diff --git a/scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs b/scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs
+index 7ba040c..85b991d 100644
+--- a/scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs
++++ b/scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs
+@@ -11,0 +12 @@ import {
++  consumeDeploymentReservation,
+@@ -15,0 +17 @@ import {
++  requireMaintenanceWindow,
+@@ -16,0 +19 @@ import {
++  rollbackContractDigest,
+@@ -17,0 +21 @@ import {
++  validateRollbackReference,
+@@ -55,0 +60,2 @@ function authority(overrides = {}) {
++    maintenanceWindowStart: "2026-09-25T10:00:00.000Z",
++    maintenanceWindowEnd: "2026-09-25T12:00:00.000Z",
+@@ -96 +102 @@ function validPromotionEvidence() {
+-  const immutable = { passed: true, completedAt: capturedAt, runId: approved.runId, deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, routes: Array.from({ length: 6 }, () => ({ passed: true })), criticalAssets: Array.from({ length: 5 }, () => ({ passed: true })) };
++  const immutable = { passed: true, completedAt: capturedAt, runId: approved.runId, deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, routes: Array.from({ length: 6 }, () => ({ passed: true })), criticalAssets: Array.from({ length: 5 }, () => ({ passed: true })), publishedFiles: Array.from({ length: 74 }, () => ({ passed: true })), externalRuntime: Array.from({ length: 2 }, () => ({ passed: true })) };
+@@ -98 +104,3 @@ function validPromotionEvidence() {
+-  const rollback = { passed: true, capturedAt, runId: approved.runId, deploymentIdentifier: DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment, routes: Array.from({ length: 6 }, (_, index) => ({ route: `/route-${index}`, sha256: evidenceHash("1") })), criticalAssets: [{ asset: "/old.js", sha256: evidenceHash("2") }] };
++  const rollbackAssets = [{ asset: "/old.js", bytes: 1, sha256: evidenceHash("2") }];
++  const rollback = { passed: true, capturedAt, runId: approved.runId, deploymentIdentifier: DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment, deploymentUrl: "https://rollback.invalid", routes: Array.from({ length: 6 }, (_, index) => ({ route: `/route-${index}`, bytes: 1, sha256: evidenceHash("1"), referencedAssets: rollbackAssets.map(row => row.asset) })), criticalAssets: rollbackAssets, runtimeFiles: DIAGNOSTIC_OPERATOR.runtimeFiles.map((runtimePath, i) => ({ path: runtimePath, bytes: 1, sha256: hash("runtime" + i) })), externalRuntime: DIAGNOSTIC_OPERATOR.externalRuntime.map((row, i) => ({ url: row.url, bytes: i ? 37024 : 31766, sha256: row.sha256 })) };
++  rollback.contractSha256 = rollbackContractDigest(rollback);
+@@ -114,2 +122,8 @@ async function immutableFixture(mutate = () => {}) {
+-  const files = routePaths.map(([, file]) => ({ path: file, bytes: html.length, sha256: hash(html) })).concat([...assets].map(([asset, body]) => ({ path: asset.slice(1), bytes: body.length, sha256: hash(body) })));
+-  while (files.length < 74) files.push({ path: `other-${files.length}.txt`, bytes: 1, sha256: hash("x") });
++  const appCompat = fs.readFileSync(path.resolve(import.meta.dirname, "../node_modules/firebase/firebase-app-compat.js"));
++  const messagingCompat = fs.readFileSync(path.resolve(import.meta.dirname, "../node_modules/firebase/firebase-messaging-compat.js"));
++  const sw = Buffer.from(`importScripts("${DIAGNOSTIC_OPERATOR.externalRuntime[0].url}","${DIAGNOSTIC_OPERATOR.externalRuntime[1].url}")`);
++  const fileBodies = new Map(routePaths.map(([, file]) => [file, html]));
++  for (const [asset, body] of assets) fileBodies.set(asset.slice(1), body);
++  fileBodies.set("manifest.webmanifest", Buffer.from("{}")); fileBodies.set("sw.js", sw); fileBodies.set("firebase-config.js", Buffer.from("config"));
++  while (fileBodies.size < 74) fileBodies.set(`other-${fileBodies.size}.txt`, Buffer.from("x"));
++  const files = [...fileBodies].map(([file, body]) => ({ path: file, bytes: body.length, sha256: hash(body) }));
+@@ -117 +131 @@ async function immutableFixture(mutate = () => {}) {
+-  const state = { status: 200, finalUrl: null, body: null }; mutate({ state, html, assets, artifact });
++  const state = { status: 200, finalUrl: null, body: null }; mutate({ state, html, assets, artifact, fileBodies });
+@@ -120,4 +134,3 @@ async function immutableFixture(mutate = () => {}) {
+-    const url = new URL(input), body = state.body || assets.get(url.pathname) || html;
+-    const response = new Response(body, { status: state.status });
+-    Object.defineProperty(response, "url", { value: state.finalUrl || url.href });
+-    return response;
++    const url = new URL(input);
++    const body = state.body || (url.origin === "https://www.gstatic.com" ? (url.pathname.includes("messaging") ? messagingCompat : appCompat) : assets.get(url.pathname) || fileBodies.get(url.pathname.slice(1)) || html);
++    const response = new Response(body, { status: state.status }); Object.defineProperty(response, "url", { value: state.finalUrl || url.href }); return response;
+@@ -386,0 +400,29 @@ test("the promotion boundary requires the immediate rollback recheck and invokes
++
++
++test("maintenance window gates mutation time and preserves authorized recovery", () => {
++  const approved = authority();
++  assert.throws(() => requireMaintenanceWindow(approved, "deploy", Date.parse("2026-09-25T09:59:59Z")), /outside/);
++  assert.doesNotThrow(() => requireMaintenanceWindow(approved, "deploy", Date.parse("2026-09-25T11:40:00Z")));
++  assert.throws(() => requireMaintenanceWindow(approved, "promote", Date.parse("2026-09-25T11:49:00Z")), /Insufficient/);
++  assert.throws(() => requireMaintenanceWindow(approved, "observe-alias", Date.parse("2026-09-25T12:00:00Z")), /outside/);
++  assert.equal(requireMaintenanceWindow(approved, "rollback", Date.parse("2026-09-25T12:01:00Z")).recoveryAfterDeadline, true);
++});
++
++test("deployment-derived rollback contract accepts three assets and rejects incomplete runtime", () => {
++  const at = "2026-09-25T10:10:00Z", assets = Array.from({ length: 3 }, (_, i) => ({ asset: `/a${i}.js`, bytes: 1, sha256: evidenceHash(String(i + 1)) }));
++  const reference = { passed: true, runId: "ruip6ad_localtest", deploymentIdentifier: DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment, deploymentUrl: "https://rollback.invalid", capturedAt: at, routes: Array.from({ length: 6 }, (_, i) => ({ route: `/r${i}`, bytes: 1, sha256: hash("r" + i), referencedAssets: assets.map(row => row.asset) })), criticalAssets: assets, runtimeFiles: DIAGNOSTIC_OPERATOR.runtimeFiles.map((runtimePath, i) => ({ path: runtimePath, bytes: 1, sha256: hash("p" + i) })), externalRuntime: DIAGNOSTIC_OPERATOR.externalRuntime.map((row, i) => ({ url: row.url, bytes: i ? 37024 : 31766, sha256: row.sha256 })) };
++  reference.contractSha256 = rollbackContractDigest(reference);
++  assert.equal(validateRollbackReference(reference, reference.runId), true);
++  assert.throws(() => validateRollbackReference({ ...reference, runtimeFiles: reference.runtimeFiles.slice(1) }, reference.runId), /complete/i);
++});
++
++test("actual deployment boundary consumes one exclusive reservation", () => {
++  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "deployment-boundary-"));
++  const approved = authority();
++  try {
++    fs.writeFileSync(path.join(directory, "deployment-attempt.json"), JSON.stringify({ runId: approved.runId, state: "PROVIDER_COMMAND_AUTHORIZED", providerCommandInvoked: true, deploymentRetryPermitted: false }));
++    fs.writeFileSync(path.join(directory, "created-resources.json"), JSON.stringify({ runId: approved.runId, state: "DEPLOYMENT_IN_PROGRESS", deploymentAttemptCount: 1 }));
++    assert.equal(consumeDeploymentReservation({ runDirectory: directory, authority: approved, capturedAt: "2026-09-25T10:01:00Z" }).attempt.state, "PROVIDER_COMMAND_AUTHORIZED");
++    assert.throws(() => consumeDeploymentReservation({ runDirectory: directory, authority: approved }), /invalid|consumed/);
++  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
++});
+diff --git a/scripts/test-restaurant-alias-diagnostic-execution-support.mjs b/scripts/test-restaurant-alias-diagnostic-execution-support.mjs
+index e594313..d3f045d 100644
+--- a/scripts/test-restaurant-alias-diagnostic-execution-support.mjs
++++ b/scripts/test-restaurant-alias-diagnostic-execution-support.mjs
+@@ -21,0 +22 @@ import {
++  produceDeploymentReconciliationEvidence,
+@@ -31,0 +33 @@ import {
++  verifyReviewedCandidateCheckpoint,
+@@ -33 +35 @@ import {
+-import { DIAGNOSTIC_OPERATOR } from "./deploy-restaurant-alias-10-minute-diagnostic-staging.mjs";
++import { DIAGNOSTIC_OPERATOR, rollbackContractDigest } from "./deploy-restaurant-alias-10-minute-diagnostic-staging.mjs";
+@@ -63 +65,3 @@ function approval(overrides = {}) {
+-    issuedAt: "2026-09-25T11:00:00.000Z",
++    issuedAt: "2026-09-25T09:55:00.000Z",
++    maintenanceWindowStart: "2026-09-25T10:00:00.000Z",
++    maintenanceWindowEnd: "2026-09-25T12:00:00.000Z",
+@@ -86,0 +91,2 @@ function authority() {
++    maintenanceWindowStart: "2026-09-25T10:00:00.000Z",
++    maintenanceWindowEnd: "2026-09-25T12:00:00.000Z",
+@@ -163 +169 @@ function hostedReaderFixture({ metadataFailure = false, preflightFailure = false
+-  const assets = Array.from({ length: 5 }, (_, index) => ({ asset: `/assets/critical-${index}.js`, body: Buffer.from(`asset-${index}\n`) }));
++  const assets = Array.from({ length: 3 }, (_, index) => ({ asset: `/assets/critical-${index}.js`, body: Buffer.from(`asset-${index}\n`) }));
+@@ -169 +175 @@ function hostedReaderFixture({ metadataFailure = false, preflightFailure = false
+-    return { route, sha256: hash(body) };
++    return { route, bytes: body.length, sha256: hash(body), referencedAssets: assets.map(row => row.asset) };
+@@ -174 +180,3 @@ function hostedReaderFixture({ metadataFailure = false, preflightFailure = false
+-    criticalAssets: assets.map((row, index) => ({ asset: row.asset, sha256: mismatchedAsset && index === 0 ? "0".repeat(64) : hash(row.body) })),
++    criticalAssets: assets.map((row, index) => ({ asset: row.asset, bytes: row.body.length, sha256: mismatchedAsset && index === 0 ? "0".repeat(64) : hash(row.body) })),
++    runtimeFiles: DIAGNOSTIC_OPERATOR.runtimeFiles.map((runtimePath, index) => { const body = Buffer.from(`runtime-${index}`); return { path: runtimePath, bytes: body.length, sha256: hash(body) }; }),
++    externalRuntime: DIAGNOSTIC_OPERATOR.externalRuntime.map((row, index) => ({ url: row.url, bytes: index ? 37024 : 31766, sha256: row.sha256 })),
+@@ -204,0 +213,2 @@ function hostedReaderFixture({ metadataFailure = false, preflightFailure = false
++      const runtime = expected.runtimeFiles.find(row => row.path === url.pathname);
++      if (runtime) return new Response(Buffer.from(`runtime-${expected.runtimeFiles.indexOf(runtime)}`), { status: 200, headers: { "cache-control": "no-store", "cf-ray": "local-runtime" } });
+@@ -206,0 +217 @@ function hostedReaderFixture({ metadataFailure = false, preflightFailure = false
++    if (url.origin === "https://www.gstatic.com") { const file = url.pathname.includes("messaging") ? "firebase-messaging-compat.js" : "firebase-app-compat.js"; return new Response(fs.readFileSync(path.join(root, "node_modules/firebase", file)), { status: 200 }); }
+@@ -241,9 +252,7 @@ function rollbackEvidence(at, suffix = "fresh") {
+-  const routes = Array.from({ length: 6 }, (_, i) => ({ route: "/route-" + i, sha256: hash(Buffer.from(`${suffix}-route-${i}`)) }));
+-  const criticalAssets = Array.from({ length: 5 }, (_, i) => ({ asset: `/assets/${suffix}-${i}.js`, sha256: hash(Buffer.from(`${suffix}-asset-${i}`)) }));
+-  const reference = { passed: true, capturedAt: at, runId: SUPPORT.runId, deploymentIdentifier: DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment, deploymentUrl: "https://rollback.example.invalid", routes, criticalAssets };
+-  const progress = {
+-    schemaVersion: 1, runId: SUPPORT.runId, capturedAt: at,
+-    metadata: { deploymentIdentifier: reference.deploymentIdentifier, deploymentUrl: reference.deploymentUrl }, observations: [],
+-    routes: routes.map(row => ({ ...row, parity: true })), criticalAssets: criticalAssets.map(row => ({ ...row, parity: true })),
+-    passed: true, completedAt: at,
+-  };
++  const criticalAssets = Array.from({ length: 3 }, (_, i) => { const body = Buffer.from(`${suffix}-asset-${i}`); return { asset: `/assets/${suffix}-${i}.js`, bytes: body.length, sha256: hash(body) }; });
++  const routes = Array.from({ length: 6 }, (_, i) => { const body = Buffer.from(`${suffix}-route-${i}`); return { route: "/route-" + i, bytes: body.length, sha256: hash(body), referencedAssets: criticalAssets.map(row => row.asset) }; });
++  const runtimeFiles = DIAGNOSTIC_OPERATOR.runtimeFiles.map((runtimePath, i) => { const body = Buffer.from(`${suffix}-runtime-${i}`); return { path: runtimePath, bytes: body.length, sha256: hash(body) }; });
++  const externalRuntime = DIAGNOSTIC_OPERATOR.externalRuntime.map((row, i) => ({ url: row.url, bytes: i ? 37024 : 31766, sha256: row.sha256 }));
++  const reference = { passed: true, capturedAt: at, runId: SUPPORT.runId, deploymentIdentifier: DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment, deploymentUrl: "https://rollback.example.invalid", routes, criticalAssets, runtimeFiles, externalRuntime };
++  reference.contractSha256 = rollbackContractDigest(reference);
++  const progress = { schemaVersion: 2, runId: SUPPORT.runId, capturedAt: at, metadata: { deploymentIdentifier: reference.deploymentIdentifier, deploymentUrl: reference.deploymentUrl }, observations: [], routes: routes.map(row => ({ ...row, parity: true })), criticalAssets: criticalAssets.map(row => ({ ...row, parity: true })), runtimeFiles: runtimeFiles.map(row => ({ ...row, parity: true })), externalRuntime: externalRuntime.map(row => ({ ...row, passed: true })), passed: true, completedAt: at };
+@@ -257,0 +267 @@ function installVerifiedFreshRecapture(directory, auth, freshAt = capturedAt, re
++  writeJson(directory, "rollback-capture-initial-attempt.json", { schemaVersion: 1, runId: auth.runId, phase: "initial", state: "COMPLETE", contractSha256: historical.reference.contractSha256 });
+@@ -259,4 +269,6 @@ function installVerifiedFreshRecapture(directory, auth, freshAt = capturedAt, re
+-  const fresh = referenceOverride ? {
+-    reference: { passed: true, capturedAt: freshAt, runId: auth.runId, deploymentIdentifier: referenceOverride.deploymentIdentifier, deploymentUrl: "https://rollback.example.invalid", routes: referenceOverride.routes, criticalAssets: referenceOverride.criticalAssets },
+-    progress: { schemaVersion: 1, runId: auth.runId, capturedAt: freshAt, metadata: { deploymentIdentifier: referenceOverride.deploymentIdentifier, deploymentUrl: "https://rollback.example.invalid" }, observations: [], routes: referenceOverride.routes.map(row => ({ ...row, parity: true })), criticalAssets: referenceOverride.criticalAssets.map(row => ({ ...row, parity: true })), passed: true, completedAt: freshAt },
+-  } : rollbackEvidence(freshAt, "fresh");
++  let fresh = rollbackEvidence(freshAt, "fresh");
++  if (referenceOverride) {
++    fresh.reference = { ...fresh.reference, ...referenceOverride };
++    fresh.reference.contractSha256 = rollbackContractDigest(fresh.reference);
++    fresh.progress = { ...fresh.progress, metadata: { deploymentIdentifier: fresh.reference.deploymentIdentifier, deploymentUrl: fresh.reference.deploymentUrl }, routes: fresh.reference.routes.map(row => ({ ...row, parity: true })), criticalAssets: fresh.reference.criticalAssets.map(row => ({ ...row, parity: true })), runtimeFiles: fresh.reference.runtimeFiles.map(row => ({ ...row, parity: true })), externalRuntime: fresh.reference.externalRuntime.map(row => ({ ...row, passed: true })) };
++  }
+@@ -264,0 +277 @@ function installVerifiedFreshRecapture(directory, auth, freshAt = capturedAt, re
++  writeJson(directory, "rollback-capture-fresh-attempt.json", { schemaVersion: 1, runId: auth.runId, phase: "fresh", state: "COMPLETE", contractSha256: fresh.reference.contractSha256 });
+@@ -301 +314 @@ test("source manifest exactly reproduces the audited checkpoint", () => {
+-  assert.equal(result.files, 1504);
++  assert.equal(result.files, SUPPORT.baseSourceManifestFiles);
+@@ -358 +371 @@ test("future compatibility checkpoint must retain diagnostic executables and rev
+-  for (const relative of [...Object.keys(SUPPORT.diagnosticExecutableFiles), "docs/restaurant-expo-alias-final-one-run-staging-execution-authorization-proposal.md"]) {
++  for (const relative of [...Object.keys(SUPPORT.diagnosticExecutableFiles), SUPPORT.proposalPath]) {
+@@ -400,0 +414,28 @@ test("authority rejects missing, placeholder, contradictory, and unapproved inpu
++  assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260925a" })), /identity/i);
++  assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260925b" })), /identity/i);
++});
++
++test("new run owns isolated authority and evidence identities", () => {
++  assert.equal(SUPPORT.runId, "ruip6ad_20260925c");
++  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260925c");
++  assert.notEqual(SUPPORT.runId, "ruip6ad_20260925a");
++  assert.notEqual(SUPPORT.runId, "ruip6ad_20260925b");
++  assert.ok(!SUPPORT.evidenceDirectory.includes("20260925a"));
++  assert.ok(!SUPPORT.evidenceDirectory.includes("20260925b"));
++});
++
++test("new-run checkpoint contract passes only the exact reviewed synthetic child", () => {
++  const spawn = (program, args) => {
++    assert.equal(program, "git");
++    if (args[0] === "ls-tree") return { status: 0, stdout: Buffer.from("support.txt\0") };
++    if (args[0] === "show") return { status: 0, stdout: fakeBlob };
++    if (args[0] === "diff-tree") return { status: 0, stdout: SUPPORT.checkpointFiles.join("\n") + "\n" };
++    if (args[0] === "rev-parse" && args[1] === "HEAD") return { status: 0, stdout: fakeSourceCommit + "\n" };
++    if (args[0] === "rev-parse" && args[1] === fakeSourceCommit + "^") return { status: 0, stdout: SUPPORT.baseCheckpoint + "\n" };
++    if (args[0] === "rev-parse" && args[1] === fakeSourceCommit + ":apps/restaurant") return { status: 0, stdout: SUPPORT.applicationTree + "\n" };
++    throw new Error("Unexpected local git command: " + args.join(" "));
++  };
++  const result = verifyReviewedCandidateCheckpoint({ repoRoot: root, approval: approval(), spawn, lineageVerifier: () => ({ passed: true }), executableVerifier: () => ({ passed: true }) });
++  assert.equal(result.passed, true);
++  assert.equal(result.commit, fakeSourceCommit);
++  assert.deepEqual(result.inventory, [...SUPPORT.checkpointFiles].sort());
+@@ -583 +624 @@ test("final preflight rejects mismatched candidate, access, and rollback evidenc
+-      assert.throws(() => buildFinalPreflight({ authority: fixture.auth, reads: reads({}, "promotion-preflight"), protectedEvidence: protectedRows, runDirectory: fixture.directory, capturedAt, currentMs: nowMs }), /mismatch|identity/i);
++      assert.throws(() => buildFinalPreflight({ authority: fixture.auth, reads: reads({}, "promotion-preflight"), protectedEvidence: protectedRows, runDirectory: fixture.directory, capturedAt, currentMs: nowMs }), /mismatch|identity|contract/i);
+@@ -624 +665 @@ test("terminal recording distinguishes no assignment, uncertain assignment, and
+-      if (rollbackRequired) assert.match(result.rollbackCommand, /:rollback:ruip6ad_20260925b/);
++      if (rollbackRequired) assert.match(result.rollbackCommand, /:rollback:ruip6ad_20260925c/);
+@@ -641 +682 @@ test("rollback assignment response alone never claims restoration", () => {
+-test("real hosted-reader alias callback verifies stable metadata, six routes, and five assets", async () => {
++test("real hosted-reader alias callback verifies stable metadata, six routes, and deployment-derived assets", async () => {
+@@ -651 +692 @@ test("real hosted-reader alias callback verifies stable metadata, six routes, an
+-    assert.equal(result.attempts[0].criticalAssets.length, 5);
++    assert.equal(result.attempts[0].criticalAssets.length, 3);
+@@ -667 +708 @@ test("final reconciliation executes the real hosted-reader parity integration",
+-    assert.equal(result.finalAlias.attempts[0].criticalAssets.length, 5);
++    assert.equal(result.finalAlias.attempts[0].criticalAssets.length, 3);
+@@ -681 +722 @@ test("real hosted-reader alias callback persists metadata failures without runti
+-    assert.match(failedMetadata.requestId, /^ruip6ad_20260925b:expo-alias-final-parity:1:/);
++    assert.match(failedMetadata.requestId, /^ruip6ad_20260925c:expo-alias-final-parity:1:/);
+@@ -727,0 +769 @@ function writeSuccessfulRunEvidence(directory, expectedOverride = null) {
++  writeJson(directory, "alias-full-artifact-result.json", { passed: true, publishedFiles: Array.from({ length: 74 }, () => ({ passed: true })) });
+@@ -731 +773 @@ function writeSuccessfulRunEvidence(directory, expectedOverride = null) {
+-  writeJson(directory, "rollback-verification-result.json", { passed: true, classification: "PASS", expected: { deploymentIdentifier: fresh.reference.deploymentIdentifier, routes: fresh.reference.routes, criticalAssets: fresh.reference.criticalAssets }, selectedAttempts: [{ number: 1 }, { number: 4 }] });
++  writeJson(directory, "rollback-verification-result.json", { passed: true, classification: "PASS", expected: { deploymentIdentifier: fresh.reference.deploymentIdentifier, routes: fresh.reference.routes, criticalAssets: fresh.reference.criticalAssets, runtimeFiles: fresh.reference.runtimeFiles, externalRuntime: fresh.reference.externalRuntime }, selectedAttempts: [{ number: 1 }, { number: 4 }] });
+@@ -843 +885 @@ test("final preflight requires verified fresh recapture and rejects altered evid
+-    directory => fs.appendFileSync(path.join(directory, "rollback-history", "ruip6ad_20260925b_fresh-rollback-recapture", "rollback-reference.json"), " "),
++    directory => fs.appendFileSync(path.join(directory, "rollback-history", "ruip6ad_20260925c_fresh-rollback-recapture", "rollback-reference.json"), " "),
+@@ -881,2 +923,2 @@ test("uncertain deployment never fabricates an identifier and only an independen
+-    const payload = { attemptId: SUPPORT.runId + ":single-deployment-attempt", deployments: [{ deploymentIdentifier: "provider-observed-id", url: "https://provider-observed.example.invalid", createdAt: "2026-09-25T11:55:10.000Z" }] };
+-    const observation = { schemaVersion: 1, runId: SUPPORT.runId, stage: "deployment-reconciliation", requestId: "provider-read-1", startedAt: "2026-09-25T11:56:10.000Z", completedAt: "2026-09-25T11:56:11.000Z", status: 200, payloadSha256: hash(Buffer.from(canonical(payload))), payload };
++    const payload = { attemptId: SUPPORT.runId + ":single-deployment-attempt", easProjectId: DIAGNOSTIC_OPERATOR.easProjectId, endpoint: "https://api.expo.dev/graphql", deployments: [{ deploymentIdentifier: "provider-observed-id", url: "https://hungrie-restaurant--provider-observed-id.expo.app", createdAt: "2026-09-25T11:55:10.000Z" }] };
++    const observation = { schemaVersion: 2, runId: SUPPORT.runId, stage: "deployment-reconciliation", requestId: "provider-read-1", startedAt: "2026-09-25T11:56:10.000Z", completedAt: "2026-09-25T11:56:11.000Z", status: 200, payloadSha256: hash(Buffer.from(canonical(payload))), payload, error: null };
+@@ -898,2 +940,2 @@ test("ambiguous deployment reconciliation remains blocked and preserves every ob
+-    const payload = { attemptId: SUPPORT.runId + ":single-deployment-attempt", deployments: ["one", "two"].map((id, index) => ({ deploymentIdentifier: id, url: `https://${id}.example.invalid`, createdAt: `2026-09-25T11:55:1${index}.000Z` })) };
+-    const row = { schemaVersion: 1, runId: SUPPORT.runId, stage: "deployment-reconciliation", requestId: "provider-read-many", startedAt: "2026-09-25T11:56:10.000Z", completedAt: "2026-09-25T11:56:11.000Z", status: 200, payloadSha256: hash(Buffer.from(canonical(payload))), payload };
++    const payload = { attemptId: SUPPORT.runId + ":single-deployment-attempt", easProjectId: DIAGNOSTIC_OPERATOR.easProjectId, endpoint: "https://api.expo.dev/graphql", deployments: ["one", "two"].map((id, index) => ({ deploymentIdentifier: id, url: `https://hungrie-restaurant--${id}.expo.app`, createdAt: `2026-09-25T11:55:1${index}.000Z` })) };
++    const row = { schemaVersion: 2, runId: SUPPORT.runId, stage: "deployment-reconciliation", requestId: "provider-read-many", startedAt: "2026-09-25T11:56:10.000Z", completedAt: "2026-09-25T11:56:11.000Z", status: 200, payloadSha256: hash(Buffer.from(canonical(payload))), payload, error: null };
+@@ -917 +959 @@ test("expected final alias is exact, run-bound, and preserves the original rollb
+-    assert.equal(expected.criticalAssets.length, 5);
++    assert.equal(expected.criticalAssets.length, 3);
+@@ -970,0 +1013,19 @@ test("support tooling contains no provider deployment, promotion, rollback, or r
++
++
++test("independent provider reconciliation producer persists exact project-bound evidence", async () => {
++  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "provider-reconciliation-producer-"));
++  const auth = authority();
++  try {
++    initializeResourceInventory({ runDirectory: directory, authority: auth, capturedAt: "2026-09-25T10:00:00Z" });
++    beginSingleDeploymentAttempt({ runDirectory: directory, authority: auth, capturedAt: "2026-09-25T10:01:00Z" });
++    recordDeploymentUncertainty({ runDirectory: directory, authority: auth, capturedAt: "2026-09-25T10:02:00Z", reason: "synthetic uncertain response" });
++    const id = "observed-only";
++    const fetchImpl = async (_url, init) => { const body = JSON.parse(init.body); assert.equal(body.variables.appId, DIAGNOSTIC_OPERATOR.easProjectId); return new Response(JSON.stringify({ data: { app: { byId: { id: DIAGNOSTIC_OPERATOR.easProjectId, workerDeployments: { edges: [{ node: { id: "provider-id", deploymentIdentifier: id, url: `https://hungrie-restaurant--${id}.expo.app`, createdAt: "2026-09-25T10:01:10Z" } }] } } } } }), { status: 200 }); };
++    const result = await produceDeploymentReconciliationEvidence({ runDirectory: directory, authority: auth, capturedAt: "2026-09-25T10:02:10Z", fetchImpl, expoSession: "synthetic-local-session" });
++    const row = JSON.parse(fs.readFileSync(result.path));
++    assert.equal(row.payload.easProjectId, DIAGNOSTIC_OPERATOR.easProjectId);
++    assert.equal(row.payload.deployments[0].deploymentIdentifier, id);
++    assert.equal(row.error, null);
++    await assert.rejects(() => produceDeploymentReconciliationEvidence({ runDirectory: directory, authority: auth, fetchImpl, expoSession: "synthetic" }), /exists|uncertain/);
++  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
++});
+diff --git a/scripts/test-restaurant-alias-diagnostic-access-staging.mjs b/scripts/test-restaurant-alias-diagnostic-access-staging.mjs
+new file mode 100644
+index 0000000..f196b6f
+--- /dev/null
++++ b/scripts/test-restaurant-alias-diagnostic-access-staging.mjs
+@@ -0,0 +1,16 @@
++import assert from "node:assert/strict";
++import test from "node:test";
++import { evaluateBrowserQualification } from "./qualify-restaurant-alias-diagnostic-access-staging.mjs";
++
++const base = "https://candidate.example.invalid";
++const state = (path, operational = true) => ({ path, heading: "Dashboard", blank: false, operational, earningsLink: false, diagnostic: { errors: [], navigations: [], protectedBeforeReady: false } });
++const valid = (overrides = {}) => ({ accountName: "owner", expectedPath: "/dashboard", directPath: "/orders", baseUrl: base, authenticated: state("/dashboard"), restored: state("/orders"), mainCount: 1, serviceWorkerReady: true, requests: [{ url: base + "/dashboard", path: "/dashboard" }], ...overrides });
++
++test("clean complete operational rendering passes", () => assert.equal(evaluateBrowserQualification(valid()).passed, true));
++test("React hydration #418 fails", () => assert.deepEqual(evaluateBrowserQualification(valid({ exceptions: ["Minified React error #418"] })).blockers, ["UNCAUGHT_OR_CONSOLE_ERROR"]));
++test("any console error fails", () => assert.ok(evaluateBrowserQualification(valid({ consoleErrors: ["unexpected"] })).blockers.includes("UNCAUGHT_OR_CONSOLE_ERROR")));
++test("same-origin HTTP 404 fails", () => assert.ok(evaluateBrowserQualification(valid({ httpErrors: [{ url: base + "/favicon.ico", status: 404 }] })).blockers.includes("SAME_ORIGIN_HTTP_ERROR")));
++test("unexpected runtime origin fails", () => assert.ok(evaluateBrowserQualification(valid({ requests: [{ url: "https://unexpected.invalid/code.js", path: "/code.js" }] })).blockers.includes("UNEXPECTED_RUNTIME_REQUEST")));
++test("incomplete rendering and missing service worker fail", () => { const result = evaluateBrowserQualification(valid({ restored: { ...state("/orders"), heading: null }, serviceWorkerReady: false })); assert.ok(result.blockers.includes("INCOMPLETE_OPERATIONAL_RENDERING")); assert.ok(result.blockers.includes("SERVICE_WORKER_NOT_READY")); });
++test("manager earnings request fails", () => assert.ok(evaluateBrowserQualification(valid({ accountName: "manager", requests: [{ url: base + "/rest/v1/rpc/restaurant_get_earnings", path: "/rest/v1/rpc/restaurant_get_earnings" }] })).blockers.includes("MANAGER_FINANCIAL_ACCESS")));
++test("pending renders without operational shell", () => { const pending = state("/pending", false); assert.equal(evaluateBrowserQualification(valid({ accountName: "pending", expectedPath: "/pending", directPath: null, authenticated: pending, restored: pending })).passed, true); });
