@@ -1,0 +1,81 @@
+diff --git a/scripts/restaurant-alias-diagnostic-execution-support.mjs b/scripts/restaurant-alias-diagnostic-execution-support.mjs
+index 6a33ffa..8f841ec 100755
+--- a/scripts/restaurant-alias-diagnostic-execution-support.mjs
++++ b/scripts/restaurant-alias-diagnostic-execution-support.mjs
+@@ -20,5 +20,5 @@ export const SUPPORT = Object.freeze({
+-  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260925d-artifact-remediation-contract.md",
+-  proposalSha256: "0c8be1a0a4d64048d60c1e1cd07d35ea59aad136e8886afcf7321ce97262a3c5",
+-  baseCheckpoint: "0612be3f72ff3792321c74cfad6540900fa3a4c2",
+-  baseSourceManifestSha256: "609c232f6ffe5d3a551af07ea9e8070c06fafb866c34e9e54a5d3da72b074dc0",
+-  baseSourceManifestFiles: 1511,
++  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260925e-run-binding-contract.md",
++  proposalSha256: "301376512928cc0297656372c3b57ffdcecc2cf8eb50422bb9cd54833a5baa30",
++  baseCheckpoint: "0fef9c48fdf976ad860f1bd587af4334c926cd91",
++  baseSourceManifestSha256: "b86fa4c5b37f68d72a4e81c38db468fbe5720bf39be533ac637a02a01686ea09",
++  baseSourceManifestFiles: 1518,
+@@ -26,8 +26,3 @@ export const SUPPORT = Object.freeze({
+-    "docs/restaurant-expo-alias-artifact-identity-remediation-review.md",
+-    "docs/restaurant-expo-alias-artifact-identity-remediation.diff",
+-    "docs/restaurant-expo-alias-artifact-remediation-evidence/candidate-artifact-manifest.json",
+-    "docs/restaurant-expo-alias-artifact-remediation-evidence/complete-artifact-comparison.json",
+-    "docs/restaurant-expo-alias-artifact-remediation-evidence/evidence-manifest.tsv",
+-    "docs/restaurant-expo-alias-artifact-remediation-evidence/restaurant-static-export.tar",
+-    "docs/restaurant-expo-alias-ruip6ad-20260925d-artifact-remediation-contract.md",
+-    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs",
++    "docs/restaurant-expo-alias-ruip6ad-20260925e-run-binding-implementation-review.md",
++    "docs/restaurant-expo-alias-ruip6ad-20260925e-run-binding.diff",
++    "docs/restaurant-expo-alias-ruip6ad-20260925e-run-binding-contract.md",
+@@ -36 +30,0 @@ export const SUPPORT = Object.freeze({
+-    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs",
+@@ -123,0 +118,19 @@ export const SUPPORT = Object.freeze({
++    Object.freeze({
++      commit: "0fef9c48fdf976ad860f1bd587af4334c926cd91",
++      parent: "0612be3f72ff3792321c74cfad6540900fa3a4c2",
++      sourceManifestSha256: "b86fa4c5b37f68d72a4e81c38db468fbe5720bf39be533ac637a02a01686ea09",
++      sourceManifestFiles: 1518,
++      files: Object.freeze({
++        "docs/restaurant-expo-alias-artifact-identity-remediation-review.md": "3e3267ddae32eca15abcc7bd77c41f6ce0454317f221e89d39f6424379a5d5f3",
++        "docs/restaurant-expo-alias-artifact-identity-remediation.diff": "38b8c3b031524bce934d4f9b8dd1fd2d773c039010dfa2ace76baa1508f313ed",
++        "docs/restaurant-expo-alias-artifact-remediation-evidence/candidate-artifact-manifest.json": "9d128ecb166be831d0ef7eb103d6b1e5c95c765abcd7d9e92b28ca1494b3f90e",
++        "docs/restaurant-expo-alias-artifact-remediation-evidence/complete-artifact-comparison.json": "01a5f4a688f915d1e6857cf975dff50d9ed33ef0c6789d113b41b451de0e0aa7",
++        "docs/restaurant-expo-alias-artifact-remediation-evidence/evidence-manifest.tsv": "773a808c43e83f6a70472d05c05ed05140ae35d55766d3a034e88f13f9870290",
++        "docs/restaurant-expo-alias-artifact-remediation-evidence/restaurant-static-export.tar": "952e7ceb40766f5cab55706418db4e88f403495e88cce04b3e613282c066a135",
++        "docs/restaurant-expo-alias-ruip6ad-20260925d-artifact-remediation-contract.md": "0c8be1a0a4d64048d60c1e1cd07d35ea59aad136e8886afcf7321ce97262a3c5",
++        "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "9b9889ba75d6e469d2f888ac9547786cc49a2a9f61f526d4c022bbdd11e2406f",
++        "scripts/restaurant-alias-diagnostic-execution-support.mjs": "75fa86afe4979a4be5df2d2ac80d736c4e69e0aaeb6a2375b09680c11e2ae5b4",
++        "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "46874b6a903f45afd9509ec5dc7460f7a37c57172ce3920848871547713221df",
++        "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "c00ce412842617ae4d81f47af6e4a6e925c2ea5a3120f9cc7cc7612d5d05bb12",
++      }),
++    }),
+@@ -134,2 +147,2 @@ export const SUPPORT = Object.freeze({
+-  runId: "ruip6ad_20260925d",
+-  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260925d",
++  runId: "ruip6ad_20260925e",
++  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260925e",
+diff --git a/scripts/test-restaurant-alias-diagnostic-execution-support.mjs b/scripts/test-restaurant-alias-diagnostic-execution-support.mjs
+index b92fca8..ebb4811 100644
+--- a/scripts/test-restaurant-alias-diagnostic-execution-support.mjs
++++ b/scripts/test-restaurant-alias-diagnostic-execution-support.mjs
+@@ -415,0 +416,2 @@ test("authority rejects missing, placeholder, contradictory, and unapproved inpu
++  assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260925c" })), /identity/i);
++  assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260925d" })), /identity/i);
+@@ -419,2 +421,2 @@ test("new run owns isolated authority and evidence identities", () => {
+-  assert.equal(SUPPORT.runId, "ruip6ad_20260925d");
+-  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260925d");
++  assert.equal(SUPPORT.runId, "ruip6ad_20260925e");
++  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260925e");
+@@ -423,2 +425,3 @@ test("new run owns isolated authority and evidence identities", () => {
+-  assert.ok(!SUPPORT.evidenceDirectory.includes("20260925a"));
+-  assert.ok(!SUPPORT.evidenceDirectory.includes("20260925b"));
++  assert.notEqual(SUPPORT.runId, "ruip6ad_20260925c");
++  assert.notEqual(SUPPORT.runId, "ruip6ad_20260925d");
++  for (const suffix of ["20260925a", "20260925b", "20260925c", "20260925d"]) assert.ok(!SUPPORT.evidenceDirectory.includes(suffix));
+@@ -665 +668 @@ test("terminal recording distinguishes no assignment, uncertain assignment, and
+-      if (rollbackRequired) assert.match(result.rollbackCommand, /:rollback:ruip6ad_20260925d/);
++      if (rollbackRequired) assert.match(result.rollbackCommand, /:rollback:ruip6ad_20260925e/);
+@@ -722 +725 @@ test("real hosted-reader alias callback persists metadata failures without runti
+-    assert.match(failedMetadata.requestId, /^ruip6ad_20260925d:expo-alias-final-parity:1:/);
++    assert.match(failedMetadata.requestId, /^ruip6ad_20260925e:expo-alias-final-parity:1:/);
+@@ -885 +888 @@ test("final preflight requires verified fresh recapture and rejects altered evid
+-    directory => fs.appendFileSync(path.join(directory, "rollback-history", "ruip6ad_20260925d_fresh-rollback-recapture", "rollback-reference.json"), " "),
++    directory => fs.appendFileSync(path.join(directory, "rollback-history", "ruip6ad_20260925e_fresh-rollback-recapture", "rollback-reference.json"), " "),
