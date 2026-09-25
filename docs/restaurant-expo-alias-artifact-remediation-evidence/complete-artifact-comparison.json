@@ -743,7 +743,8 @@
   "newArchive": {
     "path": "restaurant-static-export.tar",
     "bytes": 5642240,
-    "sha256": "952e7ceb40766f5cab55706418db4e88f403495e88cce04b3e613282c066a135"
+    "sha256": "477adc3170a52b095d8f92d49f46defa1d8001d7a647033d786590d2bda7184d",
+    "memberOrdering": "UTF-8 bytewise ascending relative POSIX path"
   },
   "findings": {
     "acceptedBundleNormalizedToFresh": true,
@@ -751,5 +752,11 @@
     "freshAssetPrefix": "__node_modules/",
     "normalizedOccurrences": 39,
     "applicationContentChanged": false
+  },
+  "historicalNoncanonicalArchive": {
+    "path": "historical-noncanonical-restaurant-static-export.tar",
+    "bytes": 5642240,
+    "sha256": "952e7ceb40766f5cab55706418db4e88f403495e88cce04b3e613282c066a135",
+    "memberOrdering": "directory-first Path traversal used only by the superseded review artifact"
   }
 }

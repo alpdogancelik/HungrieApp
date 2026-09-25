@@ -15,7 +15,7 @@ export const DIAGNOSTIC_OPERATOR = Object.freeze({
   planSha256: "47611c6cd93ab7d9595649db77589198d8d3f7bf4969c45062ae767d036d01fc",
   applicationTree: "ae03238ac8c34f4ef11365b5a5c51dee81187812",
   artifactManifestSha256: "a3a22439b973ed822aadbe13104daedb934b785f78c9a685cfab5a2995c3f9ae",
-  archiveSha256: "952e7ceb40766f5cab55706418db4e88f403495e88cce04b3e613282c066a135",
+  archiveSha256: "477adc3170a52b095d8f92d49f46defa1d8001d7a647033d786590d2bda7184d",
   easProjectId: "a2d5538b-bd0c-4205-8153-ba08a3a9b2b1",
   supabaseProjectRef: "rlrfvqskzvpysewdxqcr",
   firebaseProjectId: "hungrieapp-a2288",
@@ -190,16 +190,28 @@ export function createDeterministicArchive(sourceDirectory, archivePath, spawn =
   const program = [
     "import io, pathlib, sys, tarfile",
     "root=pathlib.Path(sys.argv[1]); output=pathlib.Path(sys.argv[2])",
-    "paths=sorted((p for p in root.rglob('*') if p.is_file()), key=lambda p:p.relative_to(root).as_posix())",
+    "members=[(p.relative_to(root).as_posix(),p) for p in root.rglob('*') if p.is_file()]",
+    "members.sort(key=lambda row:row[0].encode('utf-8'))",
+    "assert len(members)==len({name for name,_ in members})",
     "with tarfile.open(output, 'w', format=tarfile.USTAR_FORMAT) as archive:",
-    "  for file in paths:",
-    "    data=file.read_bytes(); info=tarfile.TarInfo(file.relative_to(root).as_posix())",
+    "  for name,file in members:",
+    "    data=file.read_bytes(); info=tarfile.TarInfo(name)",
     "    info.size=len(data); info.mode=0o644; info.uid=0; info.gid=0; info.mtime=0; info.uname=''; info.gname=''",
     "    archive.addfile(info, io.BytesIO(data))",
   ].join("\n");
   const result = spawn("python3", ["-c", program, sourceDirectory, archivePath], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
   if (result.status !== 0 || !fs.existsSync(archivePath)) throw new Error("Deterministic artifact archive creation failed; output withheld.");
   return { sha256: sha256(fs.readFileSync(archivePath)), bytes: fs.statSync(archivePath).size };
+}
+
+export function verifyLocalExportOutput({ distDirectory, archivePath, spawn = spawnSync }) {
+  const files = canonicalFiles(distDirectory);
+  if (files.length !== 74 || files.filter(file => file.path.endsWith(".html")).length !== 20 || manifestDigest(files) !== DIAGNOSTIC_OPERATOR.artifactManifestSha256) throw new Error("Export differs from the accepted artifact manifest.");
+  const bundle = files.filter(file => /\.(?:html|js|css)$/.test(file.path)).map(file => fs.readFileSync(path.join(distDirectory, file.path), "utf8")).join("\n");
+  if (!bundle.includes(DIAGNOSTIC_OPERATOR.firebaseProjectId) || !bundle.includes(DIAGNOSTIC_OPERATOR.supabaseProjectRef) || /phase5Adapter|MockProvider|restaurant-ui-mock/.test(bundle)) throw new Error("Exported configuration or production boundary mismatch.");
+  const archive = createDeterministicArchive(distDirectory, archivePath, spawn);
+  if (archive.sha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Deterministic archive differs from the accepted artifact.");
+  return { files, artifactManifestSha256: manifestDigest(files), archive };
 }
 
 export function verifyProtectedEvidence(root) {
@@ -502,13 +514,8 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
   if (action === "export") {
     const result = run("npx", ["eas-cli@16.32.0", "env:exec", "preview", "npm run prepare:web && npx expo export --platform web --clear", "--non-interactive"], { cwd: appRoot, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
     if (result.status !== 0) throw new Error("Restaurant preview export failed; output withheld.");
-    const files = canonicalFiles(path.join(appRoot, "dist"));
-    if (files.length !== 74 || files.filter(file => file.path.endsWith(".html")).length !== 20 || manifestDigest(files) !== DIAGNOSTIC_OPERATOR.artifactManifestSha256) throw new Error("Export differs from the accepted artifact manifest.");
-    const bundle = files.filter(file => /\.(?:html|js|css)$/.test(file.path)).map(file => fs.readFileSync(path.join(appRoot, "dist", file.path), "utf8")).join("\n");
-    if (!bundle.includes(DIAGNOSTIC_OPERATOR.firebaseProjectId) || !bundle.includes(DIAGNOSTIC_OPERATOR.supabaseProjectRef) || /phase5Adapter|MockProvider|restaurant-ui-mock/.test(bundle)) throw new Error("Exported configuration or production boundary mismatch.");
-    const archive = createDeterministicArchive(path.join(appRoot, "dist"), path.join(runDirectory, "restaurant-static-export.tar"), run);
-    if (archive.sha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Deterministic archive differs from the accepted artifact.");
-    atomicWrite(path.join(runDirectory, "artifact-manifest.json"), { capturedAt: now(), runId: authority.runId, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree, files, artifactManifestSha256: manifestDigest(files), archiveSha256: archive.sha256, archiveBytes: archive.bytes });
+    const { files, artifactManifestSha256, archive } = verifyLocalExportOutput({ distDirectory: path.join(appRoot, "dist"), archivePath: path.join(runDirectory, "restaurant-static-export.tar"), spawn: run });
+    atomicWrite(path.join(runDirectory, "artifact-manifest.json"), { capturedAt: now(), runId: authority.runId, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree, files, artifactManifestSha256, archiveSha256: archive.sha256, archiveBytes: archive.bytes });
     return { passed: true, action, files: files.length, routes: 20 };
   }
 

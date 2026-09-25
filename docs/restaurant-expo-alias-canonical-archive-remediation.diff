@@ -1,0 +1,79 @@
+diff --git a/scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs b/scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs
+index 9609e63..8098240 100755
+--- a/scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs
++++ b/scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs
+@@ -18 +18 @@ export const DIAGNOSTIC_OPERATOR = Object.freeze({
+-  archiveSha256: "952e7ceb40766f5cab55706418db4e88f403495e88cce04b3e613282c066a135",
++  archiveSha256: "477adc3170a52b095d8f92d49f46defa1d8001d7a647033d786590d2bda7184d",
+@@ -193 +193,3 @@ export function createDeterministicArchive(sourceDirectory, archivePath, spawn =
+-    "paths=sorted((p for p in root.rglob('*') if p.is_file()), key=lambda p:p.relative_to(root).as_posix())",
++    "members=[(p.relative_to(root).as_posix(),p) for p in root.rglob('*') if p.is_file()]",
++    "members.sort(key=lambda row:row[0].encode('utf-8'))",
++    "assert len(members)==len({name for name,_ in members})",
+@@ -195,2 +197,2 @@ export function createDeterministicArchive(sourceDirectory, archivePath, spawn =
+-    "  for file in paths:",
+-    "    data=file.read_bytes(); info=tarfile.TarInfo(file.relative_to(root).as_posix())",
++    "  for name,file in members:",
++    "    data=file.read_bytes(); info=tarfile.TarInfo(name)",
+@@ -204,0 +207,10 @@ export function createDeterministicArchive(sourceDirectory, archivePath, spawn =
++export function verifyLocalExportOutput({ distDirectory, archivePath, spawn = spawnSync }) {
++  const files = canonicalFiles(distDirectory);
++  if (files.length !== 74 || files.filter(file => file.path.endsWith(".html")).length !== 20 || manifestDigest(files) !== DIAGNOSTIC_OPERATOR.artifactManifestSha256) throw new Error("Export differs from the accepted artifact manifest.");
++  const bundle = files.filter(file => /\.(?:html|js|css)$/.test(file.path)).map(file => fs.readFileSync(path.join(distDirectory, file.path), "utf8")).join("\n");
++  if (!bundle.includes(DIAGNOSTIC_OPERATOR.firebaseProjectId) || !bundle.includes(DIAGNOSTIC_OPERATOR.supabaseProjectRef) || /phase5Adapter|MockProvider|restaurant-ui-mock/.test(bundle)) throw new Error("Exported configuration or production boundary mismatch.");
++  const archive = createDeterministicArchive(distDirectory, archivePath, spawn);
++  if (archive.sha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Deterministic archive differs from the accepted artifact.");
++  return { files, artifactManifestSha256: manifestDigest(files), archive };
++}
++
+@@ -505,7 +517,2 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
+-    const files = canonicalFiles(path.join(appRoot, "dist"));
+-    if (files.length !== 74 || files.filter(file => file.path.endsWith(".html")).length !== 20 || manifestDigest(files) !== DIAGNOSTIC_OPERATOR.artifactManifestSha256) throw new Error("Export differs from the accepted artifact manifest.");
+-    const bundle = files.filter(file => /\.(?:html|js|css)$/.test(file.path)).map(file => fs.readFileSync(path.join(appRoot, "dist", file.path), "utf8")).join("\n");
+-    if (!bundle.includes(DIAGNOSTIC_OPERATOR.firebaseProjectId) || !bundle.includes(DIAGNOSTIC_OPERATOR.supabaseProjectRef) || /phase5Adapter|MockProvider|restaurant-ui-mock/.test(bundle)) throw new Error("Exported configuration or production boundary mismatch.");
+-    const archive = createDeterministicArchive(path.join(appRoot, "dist"), path.join(runDirectory, "restaurant-static-export.tar"), run);
+-    if (archive.sha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Deterministic archive differs from the accepted artifact.");
+-    atomicWrite(path.join(runDirectory, "artifact-manifest.json"), { capturedAt: now(), runId: authority.runId, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree, files, artifactManifestSha256: manifestDigest(files), archiveSha256: archive.sha256, archiveBytes: archive.bytes });
++    const { files, artifactManifestSha256, archive } = verifyLocalExportOutput({ distDirectory: path.join(appRoot, "dist"), archivePath: path.join(runDirectory, "restaurant-static-export.tar"), spawn: run });
++    atomicWrite(path.join(runDirectory, "artifact-manifest.json"), { capturedAt: now(), runId: authority.runId, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree, files, artifactManifestSha256, archiveSha256: archive.sha256, archiveBytes: archive.bytes });
+diff --git a/scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs b/scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs
+index 7ab45bf..d572ad2 100644
+--- a/scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs
++++ b/scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs
+@@ -2,0 +3 @@ import crypto from "node:crypto";
++import { spawnSync } from "node:child_process";
+@@ -24,0 +26 @@ import {
++  verifyLocalExportOutput,
+@@ -170 +172 @@ test("all rejected deployments, including ipcij64k47, are denied", () => {
+-test("artifact archives are deterministic USTAR bytes", () => {
++test("artifact archives use canonical UTF-8 path order and deterministic USTAR bytes", () => {
+@@ -172,2 +174,5 @@ test("artifact archives are deterministic USTAR bytes", () => {
+-  const source = path.join(directory, "source"); fs.mkdirSync(path.join(source, "nested"), { recursive: true });
+-  fs.writeFileSync(path.join(source, "z.txt"), "last\n"); fs.writeFileSync(path.join(source, "nested", "a.txt"), "first\n");
++  const source = path.join(directory, "source"), reversed = path.join(directory, "reversed");
++  const entries = [["z.txt", "last\n"], ["orders/detail.html", "detail\n"], ["orders/[orderId].html", "dynamic\n"], ["orders.html", "orders\n"], ["nested/a.txt", "first\n"]];
++  for (const root of [source, reversed]) fs.mkdirSync(root, { recursive: true });
++  for (const [name, content] of entries) { const file = path.join(source, name); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, content); }
++  for (const [name, content] of [...entries].reverse()) { const file = path.join(reversed, name); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, content); }
+@@ -176 +181 @@ test("artifact archives are deterministic USTAR bytes", () => {
+-    const firstResult = createDeterministicArchive(source, first), secondResult = createDeterministicArchive(source, second);
++    const firstResult = createDeterministicArchive(source, first), secondResult = createDeterministicArchive(reversed, second);
+@@ -178,0 +184,18 @@ test("artifact archives are deterministic USTAR bytes", () => {
++    const listing = spawnSync("python3", ["-c", "import json,sys,tarfile; print(json.dumps([m.name for m in tarfile.open(sys.argv[1]).getmembers()]))", first], { encoding: "utf8" });
++    assert.equal(listing.status, 0);
++    assert.deepEqual(JSON.parse(listing.stdout), ["nested/a.txt", "orders.html", "orders/[orderId].html", "orders/detail.html", "z.txt"]);
++  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
++});
++
++test("the complete local export gate accepts the reviewed 74-file artifact and canonical archive", () => {
++  const root = path.resolve(import.meta.dirname, ".."), directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-export-gate-"));
++  const artifact = path.join(root, "docs/restaurant-expo-alias-artifact-remediation-evidence/restaurant-static-export.tar"), dist = path.join(directory, "dist"), archive = path.join(directory, "rebuilt.tar");
++  fs.mkdirSync(dist);
++  try {
++    const extracted = spawnSync("tar", ["-xf", artifact, "-C", dist], { encoding: "utf8" });
++    assert.equal(extracted.status, 0);
++    const result = verifyLocalExportOutput({ distDirectory: dist, archivePath: archive });
++    assert.equal(result.files.length, 74);
++    assert.equal(result.artifactManifestSha256, DIAGNOSTIC_OPERATOR.artifactManifestSha256);
++    assert.equal(result.archive.sha256, DIAGNOSTIC_OPERATOR.archiveSha256);
++    assert.deepEqual(fs.readFileSync(archive), fs.readFileSync(artifact));

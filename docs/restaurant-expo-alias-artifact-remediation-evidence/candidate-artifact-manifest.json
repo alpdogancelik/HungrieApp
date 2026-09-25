@@ -439,5 +439,17 @@
       "bytes": 1301,
       "sha256": "ef077262cd14ae536e2a61029b411997df5497ff7bda7c8d38e7ef6928ee3be0"
     }
+  },
+  "canonicalArchive": {
+    "format": "USTAR",
+    "pathOrder": "UTF-8 bytewise ascending relative POSIX path",
+    "mode": "0644",
+    "uid": 0,
+    "gid": 0,
+    "mtime": 0,
+    "uname": "",
+    "gname": "",
+    "bytes": 5642240,
+    "sha256": "477adc3170a52b095d8f92d49f46defa1d8001d7a647033d786590d2bda7184d"
   }
 }

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -22,6 +23,7 @@ import {
   validateImmediateRollbackRecheck,
   validatePromotionPrerequisites,
   verifyImmutableArtifactParity,
+  verifyLocalExportOutput,
   verifyProtectedEvidence,
   verifyRollbackParity,
 } from "./deploy-restaurant-alias-10-minute-diagnostic-staging.mjs";
@@ -167,15 +169,36 @@ test("all rejected deployments, including ipcij64k47, are denied", () => {
   assert.deepEqual(promotionCommand("new-candidate"), ["eas-cli@16.32.0", "deploy:alias", "--alias", "staging", "--id", "new-candidate", "--json", "--non-interactive"]);
 });
 
-test("artifact archives are deterministic USTAR bytes", () => {
+test("artifact archives use canonical UTF-8 path order and deterministic USTAR bytes", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-archive-test-"));
-  const source = path.join(directory, "source"); fs.mkdirSync(path.join(source, "nested"), { recursive: true });
-  fs.writeFileSync(path.join(source, "z.txt"), "last\n"); fs.writeFileSync(path.join(source, "nested", "a.txt"), "first\n");
+  const source = path.join(directory, "source"), reversed = path.join(directory, "reversed");
+  const entries = [["z.txt", "last\n"], ["orders/detail.html", "detail\n"], ["orders/[orderId].html", "dynamic\n"], ["orders.html", "orders\n"], ["nested/a.txt", "first\n"]];
+  for (const root of [source, reversed]) fs.mkdirSync(root, { recursive: true });
+  for (const [name, content] of entries) { const file = path.join(source, name); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, content); }
+  for (const [name, content] of [...entries].reverse()) { const file = path.join(reversed, name); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, content); }
   const first = path.join(directory, "first.tar"), second = path.join(directory, "second.tar");
   try {
-    const firstResult = createDeterministicArchive(source, first), secondResult = createDeterministicArchive(source, second);
+    const firstResult = createDeterministicArchive(source, first), secondResult = createDeterministicArchive(reversed, second);
     assert.deepEqual(firstResult, secondResult);
     assert.deepEqual(fs.readFileSync(first), fs.readFileSync(second));
+    const listing = spawnSync("python3", ["-c", "import json,sys,tarfile; print(json.dumps([m.name for m in tarfile.open(sys.argv[1]).getmembers()]))", first], { encoding: "utf8" });
+    assert.equal(listing.status, 0);
+    assert.deepEqual(JSON.parse(listing.stdout), ["nested/a.txt", "orders.html", "orders/[orderId].html", "orders/detail.html", "z.txt"]);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("the complete local export gate accepts the reviewed 74-file artifact and canonical archive", () => {
+  const root = path.resolve(import.meta.dirname, ".."), directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-export-gate-"));
+  const artifact = path.join(root, "docs/restaurant-expo-alias-artifact-remediation-evidence/restaurant-static-export.tar"), dist = path.join(directory, "dist"), archive = path.join(directory, "rebuilt.tar");
+  fs.mkdirSync(dist);
+  try {
+    const extracted = spawnSync("tar", ["-xf", artifact, "-C", dist], { encoding: "utf8" });
+    assert.equal(extracted.status, 0);
+    const result = verifyLocalExportOutput({ distDirectory: dist, archivePath: archive });
+    assert.equal(result.files.length, 74);
+    assert.equal(result.artifactManifestSha256, DIAGNOSTIC_OPERATOR.artifactManifestSha256);
+    assert.equal(result.archive.sha256, DIAGNOSTIC_OPERATOR.archiveSha256);
+    assert.deepEqual(fs.readFileSync(archive), fs.readFileSync(artifact));
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
