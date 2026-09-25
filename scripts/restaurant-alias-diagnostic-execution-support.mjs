@@ -7,6 +7,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import {
   DIAGNOSTIC_OPERATOR,
+  REJECTED_DEPLOYMENTS,
   validateAuthority,
   verifyProtectedEvidence,
   verifyRollbackParity,
@@ -14,12 +15,14 @@ import {
 import { sanitizeError } from "./restaurant-alias-parity-verifier.mjs";
 
 export const SUPPORT = Object.freeze({
-  proposalSha256: "90ebc57b3b07dc0f0a87e252d026b1f62bda6bacbd4edce439d8a0f543fe803b",
-  baseCheckpoint: "267b9bc5bbe888431d864963890f73c7092ededc",
-  baseSourceManifestSha256: "617c8a75b8fa2e2cf4003e7b22a730afcca98c8cc3da5e30bbfae4eb4ea53d9b",
+  proposalSha256: "be7edcc86e94a95e61c1f452a4645dc326d6766cd9a4049e20263de3f7cfffaf",
+  baseCheckpoint: "1a64f4ddd59114af9ad8d7968bfdc9729f2f0e92",
+  baseSourceManifestSha256: "8449af0cf852d22154392525d1e2cca5c78461036667065f1f9ec4662c85e059",
   checkpointFiles: Object.freeze([
     "docs/restaurant-alias-diagnostic-execution-support-implementation-review.md",
     "docs/restaurant-alias-diagnostic-execution-support-implementation.diff",
+    "docs/restaurant-expo-alias-final-one-run-operational-readiness-audit.md",
+    "docs/restaurant-expo-alias-final-one-run-staging-execution-authorization-proposal.md",
     "scripts/restaurant-alias-diagnostic-execution-support.mjs",
     "scripts/test-restaurant-alias-diagnostic-execution-support.mjs",
   ]),
@@ -48,6 +51,13 @@ export const SUPPORT = Object.freeze({
     "export", "capture-rollback", "deploy", "verify-immutable",
     "qualify-immutable-access", "promote", "observe-alias", "rollback", "verify-rollback",
   ]),
+  supportActions: Object.freeze([
+    "prepare-authority", "baseline-preflight", "initialize-resources", "begin-deployment",
+    "register-deployment", "record-deployment-uncertainty", "reconcile-deployment", "prepare-recapture",
+    "verify-recapture", "final-preflight", "prepare-expected-alias", "prepare-cleanup",
+    "record-abort", "finalize",
+  ]),
+  rollbackContract: Object.freeze({ routes: 6, criticalAssets: 5 }),
   freshnessMs: Object.freeze({ baseline: 10 * 60_000, final: 10 * 60_000, rollback: 5 * 60_000 }),
 });
 
@@ -106,13 +116,14 @@ export function buildSourceManifest(repoRoot, commit = SUPPORT.baseCheckpoint, s
 export function validateOwnerAuthorization(input) {
   const fields = [
     "contractVersion", "decision", "approvedForHostedExecution", "environment", "runId",
-    "proposalSha256", "checkpointParent", "sourceCommit", "sourceManifestSha256", "applicationTree", "authorizedActions",
+    "proposalSha256", "checkpointParent", "sourceCommit", "sourceManifestSha256", "applicationTree", "authorizedActions", "authorizedSupportActions",
     "authorizationText", "authorizationTextSha256", "issuedAt",
   ];
   exactKeys(input, fields, "Owner authorization");
   if (input.contractVersion !== 1 || input.decision !== "APPROVE_ONE_RUN_STAGING_ALIAS_DIAGNOSTIC" || input.approvedForHostedExecution !== true || input.environment !== "staging") throw new Error("Explicit one-run Staging approval is required.");
   if (input.runId !== SUPPORT.runId || input.proposalSha256 !== SUPPORT.proposalSha256 || input.checkpointParent !== SUPPORT.baseCheckpoint || !/^[a-f0-9]{40}$/.test(input.sourceCommit || "") || input.sourceCommit === SUPPORT.baseCheckpoint || !/^[a-f0-9]{64}$/.test(input.sourceManifestSha256 || "") || input.applicationTree !== SUPPORT.applicationTree) throw new Error("Owner authorization identity mismatch.");
   if (JSON.stringify(input.authorizedActions) !== JSON.stringify(SUPPORT.actions)) throw new Error("Owner authorization actions are incomplete or contradictory.");
+  if (JSON.stringify(input.authorizedSupportActions) !== JSON.stringify(SUPPORT.supportActions)) throw new Error("Owner authorization support actions are incomplete or contradictory.");
   required(input.authorizationText, "Owner authorization text");
   if (input.authorizationText.length < 80 || input.authorizationTextSha256 !== sha256(Buffer.from(input.authorizationText))) throw new Error("Owner authorization text digest mismatch.");
   if (!/authorize/i.test(input.authorizationText) || !/staging/i.test(input.authorizationText) || !/ruip6ad_20260925a/i.test(input.authorizationText) || !/rollback/i.test(input.authorizationText) || !/earnings.+disabled/i.test(input.authorizationText)) throw new Error("Owner authorization text lacks required explicit boundaries.");
@@ -225,6 +236,289 @@ function requireRunEvidence(file, label) {
   return { value: JSON.parse(bytes), sha256: sha256(bytes), file };
 }
 
+function writeExclusive(file, value) {
+  fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
+  const descriptor = fs.openSync(file, "wx", 0o600);
+  try { fs.writeFileSync(descriptor, Buffer.isBuffer(value) ? value : canonical(value)); }
+  finally { fs.closeSync(descriptor); }
+  return file;
+}
+
+function relativeToRun(runDirectory, file) {
+  const resolvedRun = path.resolve(runDirectory);
+  const resolved = path.resolve(file);
+  if (!resolved.startsWith(resolvedRun + path.sep)) throw new Error("Evidence path escapes the run directory.");
+  return path.relative(resolvedRun, resolved).split(path.sep).join("/");
+}
+
+function fileIdentity(runDirectory, file) {
+  const bytes = fs.readFileSync(file);
+  return { path: relativeToRun(runDirectory, file), bytes: bytes.length, sha256: sha256(bytes) };
+}
+
+function validateRollbackReference(value, authority, label = "Rollback reference") {
+  if (value?.passed !== true || value.runId !== authority.runId || value.deploymentIdentifier !== DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment) throw new Error(label + " binding mismatch.");
+  if (!Number.isFinite(Date.parse(value.capturedAt || ""))) throw new Error(label + " timestamp is invalid.");
+  if (!Array.isArray(value.routes) || value.routes.length !== SUPPORT.rollbackContract.routes || new Set(value.routes.map(row => row?.route)).size !== SUPPORT.rollbackContract.routes || value.routes.some(row => !row?.route || !/^[a-f0-9]{64}$/.test(row.sha256 || ""))) throw new Error(label + " must contain exactly six unique route hashes.");
+  if (!Array.isArray(value.criticalAssets) || value.criticalAssets.length !== SUPPORT.rollbackContract.criticalAssets || new Set(value.criticalAssets.map(row => row?.asset)).size !== SUPPORT.rollbackContract.criticalAssets || value.criticalAssets.some(row => !row?.asset || !/^[a-f0-9]{64}$/.test(row.sha256 || ""))) throw new Error(label + " must contain exactly five unique critical asset hashes.");
+  return value;
+}
+
+function validateRollbackProgress(value, authority, reference) {
+  if (value?.schemaVersion !== 1 || value.runId !== authority.runId || value.passed !== true || value.completedAt !== reference.capturedAt || value.metadata?.deploymentIdentifier !== reference.deploymentIdentifier) throw new Error("Rollback capture progress does not match the completed reference.");
+  if (!Array.isArray(value.routes) || value.routes.length !== SUPPORT.rollbackContract.routes || value.routes.some(row => row?.parity !== true) || !Array.isArray(value.criticalAssets) || value.criticalAssets.length !== SUPPORT.rollbackContract.criticalAssets || value.criticalAssets.some(row => row?.parity !== true)) throw new Error("Rollback capture progress is incomplete.");
+  const routes = value.routes.map(row => ({ route: row.route, sha256: row.sha256 }));
+  const assets = value.criticalAssets.map(row => ({ asset: row.asset, sha256: row.sha256 }));
+  if (JSON.stringify(routes) !== JSON.stringify(reference.routes) || JSON.stringify(assets) !== JSON.stringify(reference.criticalAssets)) throw new Error("Rollback progress and reference content differ.");
+  return value;
+}
+
+function updateRecaptureAttempt(runDirectory, value) {
+  atomicWrite(path.join(runDirectory, "fresh-recapture-attempt.json"), value);
+  return value;
+}
+
+export function prepareFreshRollbackRecapture({ runDirectory, authority, capturedAt, interruptAt = null }) {
+  const attemptPath = path.join(runDirectory, "fresh-recapture-attempt.json");
+  const verificationPath = path.join(runDirectory, "fresh-recapture-verification.json");
+  if (fs.existsSync(verificationPath)) throw new Error("Fresh recapture is already verified; retry prohibited.");
+  const attemptId = authority.runId + ":fresh-rollback-recapture";
+  const attempt = { schemaVersion: 1, runId: authority.runId, attemptId, initiatedAt: capturedAt, state: "INITIATED", historical: null, quarantine: {}, failure: null };
+  writeExclusive(attemptPath, attempt);
+  if (interruptAt === "after-initiation") throw new Error("Synthetic interruption after recapture initiation.");
+  const referencePath = path.join(runDirectory, "rollback-reference.json");
+  const progressPath = path.join(runDirectory, "rollback-capture-progress.json");
+  if (!fs.existsSync(referencePath) || !fs.existsSync(progressPath)) throw new Error("Canonical rollback reference and progress are required for preservation.");
+  const reference = requireRunEvidence(referencePath, "Historical rollback reference");
+  const progress = requireRunEvidence(progressPath, "Historical rollback progress");
+  validateRollbackReference(reference.value, authority, "Historical rollback reference");
+  validateRollbackProgress(progress.value, authority, reference.value);
+  const historyDirectory = path.join(runDirectory, "rollback-history", attemptId.replace(/[^a-zA-Z0-9._-]/g, "_"));
+  const historicalReference = path.join(historyDirectory, "rollback-reference.json");
+  const historicalProgress = path.join(historyDirectory, "rollback-capture-progress.json");
+  writeExclusive(historicalReference, fs.readFileSync(referencePath));
+  writeExclusive(historicalProgress, fs.readFileSync(progressPath));
+  attempt.historical = { reference: fileIdentity(runDirectory, historicalReference), progress: fileIdentity(runDirectory, historicalProgress) };
+  if (attempt.historical.reference.sha256 !== reference.sha256 || attempt.historical.progress.sha256 !== progress.sha256) throw new Error("Historical rollback preservation hash mismatch.");
+  attempt.state = "PRESERVED";
+  updateRecaptureAttempt(runDirectory, attempt);
+  if (interruptAt === "after-preservation" || interruptAt === "before-reference-movement") throw new Error("Synthetic interruption after rollback preservation.");
+  const quarantineDirectory = path.join(runDirectory, "rollback-recapture-quarantine", attemptId.replace(/[^a-zA-Z0-9._-]/g, "_"));
+  fs.mkdirSync(quarantineDirectory, { recursive: true, mode: 0o700 });
+  const quarantinedReference = path.join(quarantineDirectory, "rollback-reference.json");
+  fs.renameSync(referencePath, quarantinedReference);
+  attempt.quarantine.reference = fileIdentity(runDirectory, quarantinedReference);
+  attempt.state = "REFERENCE_QUARANTINED";
+  updateRecaptureAttempt(runDirectory, attempt);
+  if (interruptAt === "after-reference-movement") throw new Error("Synthetic interruption after rollback reference quarantine.");
+  const quarantinedProgress = path.join(quarantineDirectory, "rollback-capture-progress.json");
+  fs.renameSync(progressPath, quarantinedProgress);
+  attempt.quarantine.progress = fileIdentity(runDirectory, quarantinedProgress);
+  if (attempt.quarantine.reference.sha256 !== reference.sha256 || attempt.quarantine.progress.sha256 !== progress.sha256) throw new Error("Quarantined rollback evidence hash mismatch.");
+  attempt.state = "READY_FOR_RECAPTURE";
+  attempt.readyAt = capturedAt;
+  updateRecaptureAttempt(runDirectory, attempt);
+  if (interruptAt === "after-progress-movement" || interruptAt === "before-capture") throw new Error("Synthetic interruption before fresh rollback capture.");
+  return attempt;
+}
+
+function validateHistoricalRecapture(runDirectory, attempt) {
+  for (const kind of ["reference", "progress"]) {
+    const historical = attempt.historical?.[kind];
+    const quarantined = attempt.quarantine?.[kind];
+    if (!historical || !quarantined) throw new Error("Historical rollback preservation is incomplete.");
+    for (const row of [historical, quarantined]) {
+      const file = path.join(runDirectory, row.path || "");
+      if (!row.path || !file.startsWith(path.resolve(runDirectory) + path.sep) || !fs.existsSync(file) || fs.statSync(file).size !== row.bytes || sha256(fs.readFileSync(file)) !== row.sha256) throw new Error("Historical rollback evidence changed or is missing.");
+    }
+    if (historical.sha256 !== quarantined.sha256 || historical.bytes !== quarantined.bytes) throw new Error("Historical and quarantined rollback evidence differ.");
+  }
+}
+
+export function verifyFreshRollbackRecapture({ runDirectory, authority, capturedAt, currentMs = Date.now() }) {
+  const attemptRecord = requireRunEvidence(path.join(runDirectory, "fresh-recapture-attempt.json"), "Fresh recapture attempt");
+  const attempt = attemptRecord.value;
+  if (attempt.schemaVersion !== 1 || attempt.runId !== authority.runId || attempt.attemptId !== authority.runId + ":fresh-rollback-recapture" || attempt.state !== "READY_FOR_RECAPTURE") throw new Error("Fresh recapture attempt is not ready for verification.");
+  validateHistoricalRecapture(runDirectory, attempt);
+  const reference = requireRunEvidence(path.join(runDirectory, "rollback-reference.json"), "Fresh rollback reference");
+  const progress = requireRunEvidence(path.join(runDirectory, "rollback-capture-progress.json"), "Fresh rollback progress");
+  validateRollbackReference(reference.value, authority, "Fresh rollback reference");
+  validateRollbackProgress(progress.value, authority, reference.value);
+  const capturedMs = Date.parse(reference.value.capturedAt);
+  if (capturedMs < Date.parse(attempt.initiatedAt) || capturedMs > currentMs + 5_000 || currentMs - capturedMs > SUPPORT.freshnessMs.rollback) throw new Error("Fresh rollback capture timestamp is stale or precedes the recapture attempt.");
+  if (reference.sha256 === attempt.historical.reference.sha256 || progress.sha256 === attempt.historical.progress.sha256) throw new Error("Canonical rollback evidence was not freshly captured.");
+  const value = {
+    schemaVersion: 1, passed: true, runId: authority.runId, attemptId: attempt.attemptId, verifiedAt: capturedAt,
+    deploymentIdentifier: reference.value.deploymentIdentifier, capturedAt: reference.value.capturedAt,
+    canonical: { reference: fileIdentity(runDirectory, reference.file), progress: fileIdentity(runDirectory, progress.file) },
+    historical: attempt.historical, quarantine: attempt.quarantine,
+    contract: { routes: SUPPORT.rollbackContract.routes, criticalAssets: SUPPORT.rollbackContract.criticalAssets },
+  };
+  const output = path.join(runDirectory, "fresh-recapture-verification.json");
+  writeExclusive(output, value);
+  attempt.state = "VERIFIED";
+  attempt.verifiedAt = capturedAt;
+  attempt.verificationSha256 = sha256(fs.readFileSync(output));
+  updateRecaptureAttempt(runDirectory, attempt);
+  return value;
+}
+
+function consumeFreshRollbackRecapture(runDirectory, authority, currentMs) {
+  const attempt = requireRunEvidence(path.join(runDirectory, "fresh-recapture-attempt.json"), "Fresh recapture attempt");
+  const verification = requireRunEvidence(path.join(runDirectory, "fresh-recapture-verification.json"), "Fresh recapture verification");
+  if (attempt.value.state !== "VERIFIED" || attempt.value.verificationSha256 !== verification.sha256 || verification.value.passed !== true || verification.value.runId !== authority.runId || verification.value.attemptId !== attempt.value.attemptId) throw new Error("Completed verified fresh rollback recapture is mandatory.");
+  validateHistoricalRecapture(runDirectory, attempt.value);
+  const reference = requireRunEvidence(path.join(runDirectory, "rollback-reference.json"), "Fresh rollback reference");
+  const progress = requireRunEvidence(path.join(runDirectory, "rollback-capture-progress.json"), "Fresh rollback progress");
+  validateRollbackReference(reference.value, authority, "Fresh rollback reference");
+  validateRollbackProgress(progress.value, authority, reference.value);
+  if (verification.value.canonical?.reference?.sha256 !== reference.sha256 || verification.value.canonical?.reference?.bytes !== fs.statSync(reference.file).size || verification.value.canonical?.progress?.sha256 !== progress.sha256 || verification.value.canonical?.progress?.bytes !== fs.statSync(progress.file).size) throw new Error("Canonical rollback evidence changed after fresh verification.");
+  const capturedMs = Date.parse(reference.value.capturedAt);
+  if (capturedMs > currentMs + 5_000 || currentMs - capturedMs > SUPPORT.freshnessMs.rollback) throw new Error("Verified fresh rollback evidence is stale.");
+  return { attempt, verification, reference, progress };
+}
+
+function inventoryPath(runDirectory) { return path.join(runDirectory, "created-resources.json"); }
+
+function validateResourceInventory(inventory, authority) {
+  if (inventory?.schemaVersion !== 2 || inventory.runId !== authority.runId || inventory.sourceCommit !== authority.sourceCommit || inventory.sourceManifestSha256 !== authority.sourceManifestSha256 || inventory.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || !Array.isArray(inventory.resources) || !Array.isArray(inventory.unexpectedResources) || !Number.isInteger(inventory.deploymentAttemptCount) || inventory.deploymentAttemptCount < 0 || inventory.deploymentAttemptCount > 1) throw new Error("Created-resource inventory binding is invalid.");
+  const identities = [...inventory.resources, ...inventory.unexpectedResources].map(resourceIdentity);
+  if (identities.some(value => !value) || new Set(identities).size !== identities.length) throw new Error("Created-resource inventory contains invalid or duplicate identities.");
+  return inventory;
+}
+
+function preserveInventoryRevision(runDirectory, inventory) {
+  const bytes = Buffer.from(canonical(inventory));
+  const digest = sha256(bytes);
+  const file = path.join(runDirectory, "resource-inventory-history", digest + ".json");
+  if (!fs.existsSync(file)) writeExclusive(file, bytes);
+  else if (sha256(fs.readFileSync(file)) !== digest) throw new Error("Resource inventory history collision.");
+  return { path: relativeToRun(runDirectory, file), sha256: digest, bytes: bytes.length };
+}
+
+export function initializeResourceInventory({ runDirectory, authority, capturedAt }) {
+  const value = { schemaVersion: 2, runId: authority.runId, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, state: "INITIALIZED", createdAt: capturedAt, updatedAt: capturedAt, deploymentAttemptCount: 0, previousRevision: null, resources: [], unexpectedResources: [] };
+  writeExclusive(inventoryPath(runDirectory), value);
+  return value;
+}
+
+export function beginSingleDeploymentAttempt({ runDirectory, authority, capturedAt }) {
+  const record = requireRunEvidence(inventoryPath(runDirectory), "Created-resource inventory");
+  const inventory = validateResourceInventory(record.value, authority);
+  if (inventory.state !== "INITIALIZED" || inventory.deploymentAttemptCount !== 0 || inventory.resources.length || inventory.unexpectedResources.length) throw new Error("A clean initialized inventory is required before the one deployment attempt.");
+  const marker = { schemaVersion: 1, runId: authority.runId, attemptedAt: capturedAt, state: "PROVIDER_COMMAND_AUTHORIZED", providerCommandInvoked: true, deploymentRetryPermitted: false, inventoryBeforeSha256: record.sha256 };
+  writeExclusive(path.join(runDirectory, "deployment-attempt.json"), marker);
+  const previousRevision = preserveInventoryRevision(runDirectory, inventory);
+  atomicWrite(inventoryPath(runDirectory), { ...inventory, state: "DEPLOYMENT_IN_PROGRESS", updatedAt: capturedAt, deploymentAttemptCount: 1, previousRevision });
+  return marker;
+}
+
+export function registerSingleDeployment({ runDirectory, authority, capturedAt }) {
+  const marker = requireRunEvidence(path.join(runDirectory, "deployment-attempt.json"), "Deployment attempt");
+  const inventoryRecord = requireRunEvidence(inventoryPath(runDirectory), "Created-resource inventory");
+  const inventory = validateResourceInventory(inventoryRecord.value, authority);
+  if (marker.value.runId !== authority.runId || marker.value.providerCommandInvoked !== true || marker.value.deploymentRetryPermitted !== false || inventory.state !== "DEPLOYMENT_IN_PROGRESS" || inventory.deploymentAttemptCount !== 1) throw new Error("Single deployment attempt state is invalid.");
+  const deployment = requireRunEvidence(path.join(runDirectory, "immutable-deployment.json"), "Immutable deployment");
+  const value = deployment.value;
+  if (!value.deploymentIdentifier || !value.url || REJECTED_DEPLOYMENTS.includes(value.deploymentIdentifier) || value.sourceCommit !== authority.sourceCommit || value.sourceManifestSha256 !== authority.sourceManifestSha256 || value.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || value.aliasAssigned !== false) throw new Error("Provider-returned immutable deployment evidence is invalid.");
+  const previousRevision = preserveInventoryRevision(runDirectory, inventory);
+  const resource = { type: "immutable-deployment", id: value.deploymentIdentifier, provider: "expo-eas-hosting", url: value.url, createdByRun: true, evidence: { path: relativeToRun(runDirectory, deployment.file), sha256: deployment.sha256, bytes: fs.statSync(deployment.file).size } };
+  const next = { ...inventory, state: "DEPLOYMENT_REGISTERED", updatedAt: capturedAt, previousRevision, resources: [resource] };
+  atomicWrite(inventoryPath(runDirectory), next);
+  atomicWrite(path.join(runDirectory, "deployment-attempt.json"), { ...marker.value, state: "CONFIRMED", confirmedAt: capturedAt, deploymentIdentifier: value.deploymentIdentifier, deploymentEvidenceSha256: deployment.sha256 });
+  return next;
+}
+
+export function recordDeploymentUncertainty({ runDirectory, authority, capturedAt, reason }) {
+  required(reason, "Deployment uncertainty reason");
+  const marker = requireRunEvidence(path.join(runDirectory, "deployment-attempt.json"), "Deployment attempt");
+  const inventoryRecord = requireRunEvidence(inventoryPath(runDirectory), "Created-resource inventory");
+  const inventory = validateResourceInventory(inventoryRecord.value, authority);
+  if (marker.value.providerCommandInvoked !== true || inventory.state !== "DEPLOYMENT_IN_PROGRESS") throw new Error("Deployment uncertainty can only follow the one provider attempt.");
+  const previousRevision = preserveInventoryRevision(runDirectory, inventory);
+  const unexpected = { type: "provider-deployment-attempt", id: authority.runId + ":single-attempt", provider: "expo-eas-hosting", status: "IDENTITY_UNCERTAIN", reason: sanitizeSupportError(new Error(reason)) };
+  const next = { ...inventory, state: "DEPLOYMENT_UNCERTAIN", updatedAt: capturedAt, previousRevision, unexpectedResources: [unexpected] };
+  atomicWrite(inventoryPath(runDirectory), next);
+  atomicWrite(path.join(runDirectory, "deployment-attempt.json"), { ...marker.value, state: "UNCERTAIN", uncertainAt: capturedAt, reason: unexpected.reason });
+  return next;
+}
+
+export function reconcileDeploymentObservation({ runDirectory, authority, observationPath, capturedAt }) {
+  const marker = requireRunEvidence(path.join(runDirectory, "deployment-attempt.json"), "Deployment attempt");
+  const inventoryRecord = requireRunEvidence(inventoryPath(runDirectory), "Created-resource inventory");
+  const inventory = validateResourceInventory(inventoryRecord.value, authority);
+  if (marker.value.state !== "UNCERTAIN" || inventory.state !== "DEPLOYMENT_UNCERTAIN" || marker.value.providerCommandInvoked !== true) throw new Error("Only an uncertain one-time deployment attempt may be reconciled.");
+  relativeToRun(runDirectory, observationPath);
+  const observationRecord = requireRunEvidence(observationPath, "Provider deployment reconciliation");
+  const row = observationRecord.value;
+  exactKeys(row, ["schemaVersion", "runId", "stage", "requestId", "startedAt", "completedAt", "status", "payloadSha256", "payload"], "Provider deployment reconciliation");
+  if (row.schemaVersion !== 1 || row.runId !== authority.runId || row.stage !== "deployment-reconciliation" || row.status !== 200 || !row.requestId || row.payloadSha256 !== sha256(Buffer.from(canonical(row.payload))) || !Number.isFinite(Date.parse(row.startedAt)) || !Number.isFinite(Date.parse(row.completedAt)) || Date.parse(row.completedAt) < Date.parse(row.startedAt)) throw new Error("Independent provider deployment observation is invalid.");
+  exactKeys(row.payload, ["attemptId", "deployments"], "Provider deployment payload");
+  if (row.payload.attemptId !== authority.runId + ":single-deployment-attempt" || !Array.isArray(row.payload.deployments)) throw new Error("Provider deployment observation is bound to another attempt.");
+  const deployments = row.payload.deployments;
+  const ids = deployments.map(value => value?.deploymentIdentifier);
+  if (ids.some(value => !value) || new Set(ids).size !== ids.length || deployments.some(value => !value.url || !Number.isFinite(Date.parse(value.createdAt || "")) || REJECTED_DEPLOYMENTS.includes(value.deploymentIdentifier))) throw new Error("Provider deployment observation contains invalid identities.");
+  const attemptedMs = Date.parse(marker.value.attemptedAt);
+  const candidates = deployments.filter(value => Date.parse(value.createdAt) >= attemptedMs - 5_000 && Date.parse(value.createdAt) <= Date.parse(row.completedAt));
+  const previousRevision = preserveInventoryRevision(runDirectory, inventory);
+  if (candidates.length !== 1) {
+    const unexpectedResources = candidates.length ? candidates.map(value => ({ type: "immutable-deployment", id: value.deploymentIdentifier, provider: "expo-eas-hosting", url: value.url, status: "AMBIGUOUS_PROVIDER_RECONCILIATION", evidenceSha256: observationRecord.sha256 })) : inventory.unexpectedResources;
+    const next = { ...inventory, state: candidates.length ? "DEPLOYMENT_RECONCILIATION_AMBIGUOUS" : "DEPLOYMENT_RECONCILED_NO_RESOURCE", updatedAt: capturedAt, previousRevision, unexpectedResources };
+    atomicWrite(inventoryPath(runDirectory), next);
+    atomicWrite(path.join(runDirectory, "deployment-attempt.json"), { ...marker.value, state: next.state, reconciledAt: capturedAt, observationSha256: observationRecord.sha256 });
+    return next;
+  }
+  const candidate = candidates[0];
+  const deployment = { capturedAt: candidate.createdAt, deploymentIdentifier: candidate.deploymentIdentifier, url: candidate.url, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, aliasAssigned: false, reconciledFromProviderRead: true, providerObservationSha256: observationRecord.sha256 };
+  const deploymentPath = path.join(runDirectory, "immutable-deployment.json");
+  if (fs.existsSync(deploymentPath)) throw new Error("Immutable deployment evidence already exists; reconciliation overwrite prohibited.");
+  writeExclusive(deploymentPath, deployment);
+  const deploymentEvidence = fileIdentity(runDirectory, deploymentPath);
+  const resource = { type: "immutable-deployment", id: candidate.deploymentIdentifier, provider: "expo-eas-hosting", url: candidate.url, createdByRun: true, evidence: deploymentEvidence };
+  const next = { ...inventory, state: "DEPLOYMENT_REGISTERED", updatedAt: capturedAt, previousRevision, resources: [resource], unexpectedResources: [] };
+  atomicWrite(inventoryPath(runDirectory), next);
+  atomicWrite(path.join(runDirectory, "deployment-attempt.json"), { ...marker.value, state: "RECONCILED_CONFIRMED", reconciledAt: capturedAt, deploymentIdentifier: candidate.deploymentIdentifier, deploymentEvidenceSha256: deploymentEvidence.sha256, observationSha256: observationRecord.sha256 });
+  return next;
+}
+
+function consumeRegisteredDeployment(runDirectory, authority, deployment) {
+  const record = requireRunEvidence(inventoryPath(runDirectory), "Created-resource inventory");
+  const inventory = validateResourceInventory(record.value, authority);
+  const marker = requireRunEvidence(path.join(runDirectory, "deployment-attempt.json"), "Deployment attempt");
+  const resource = inventory.resources.find(row => row.type === "immutable-deployment" && row.id === deployment.value.deploymentIdentifier);
+  if (!['CONFIRMED', 'RECONCILED_CONFIRMED'].includes(marker.value.state) || marker.value.runId !== authority.runId || marker.value.providerCommandInvoked !== true || marker.value.deploymentRetryPermitted !== false || marker.value.deploymentIdentifier !== deployment.value.deploymentIdentifier || marker.value.deploymentEvidenceSha256 !== deployment.sha256 || inventory.state !== "DEPLOYMENT_REGISTERED" || inventory.deploymentAttemptCount !== 1 || inventory.resources.length !== 1 || inventory.unexpectedResources.length || !resource || resource.evidence?.sha256 !== deployment.sha256) throw new Error("Exactly one confirmed registered provider deployment is required.");
+  return record;
+}
+
+export function buildCleanupDisposition({ runDirectory, authority, capturedAt }) {
+  const record = requireRunEvidence(inventoryPath(runDirectory), "Created-resource inventory");
+  const inventory = validateResourceInventory(record.value, authority);
+  const createdResources = inventory.resources.map(row => ({ type: row.type, id: row.id, disposition: row.type === "immutable-deployment" ? "retained-provider-record" : "incomplete", verificationEvidence: row.evidence || null }));
+  const incomplete = [];
+  if (inventory.state !== "DEPLOYMENT_REGISTERED") incomplete.push("RESOURCE_INVENTORY_NOT_REGISTERED");
+  if (inventory.unexpectedResources.length) incomplete.push("UNEXPECTED_RESOURCES_REQUIRE_SEPARATE_RECONCILIATION");
+  if (createdResources.some(row => row.disposition === "incomplete")) incomplete.push("UNSUPPORTED_RESOURCE_DISPOSITION");
+  const value = { schemaVersion: 2, runId: authority.runId, capturedAt, manifestScoped: true, inventorySha256: record.sha256, createdResources, unexpectedResources: inventory.unexpectedResources, incomplete, passed: incomplete.length === 0 };
+  writeExclusive(path.join(runDirectory, "cleanup-disposition.json"), value);
+  return value;
+}
+
+export function buildExpectedFinalAliasReference({ runDirectory, authority, capturedAt }) {
+  const fresh = consumeFreshRollbackRecapture(runDirectory, authority, Date.parse(capturedAt));
+  const reference = fresh.reference.value;
+  const promotionResultExists = fs.existsSync(path.join(runDirectory, "promotion-result.json"));
+  const terminalExists = fs.existsSync(path.join(runDirectory, "terminal-record.json"));
+  let rollbackVerificationSha256 = null;
+  if (promotionResultExists && !terminalExists) {
+    const verified = requireRunEvidence(path.join(runDirectory, "rollback-verification-result.json"), "Independent rollback verification");
+    if (verified.value.passed !== true || verified.value.classification !== "PASS" || verified.value.expected?.deploymentIdentifier !== reference.deploymentIdentifier || JSON.stringify(verified.value.expected.routes) !== JSON.stringify(reference.routes) || JSON.stringify(verified.value.expected.criticalAssets) !== JSON.stringify(reference.criticalAssets) || verified.value.selectedAttempts?.length < 2) throw new Error("Independent rollback verification does not match the frozen reference.");
+    rollbackVerificationSha256 = verified.sha256;
+  }
+  const value = { schemaVersion: 1, runId: authority.runId, capturedAt, deploymentIdentifier: reference.deploymentIdentifier, deploymentUrl: reference.deploymentUrl, routes: reference.routes, criticalAssets: reference.criticalAssets, source: { rollbackReferenceSha256: fresh.reference.sha256, freshRecaptureVerificationSha256: fresh.verification.sha256, originalHistoricalReferenceSha256: fresh.verification.value.historical.reference.sha256, rollbackVerificationSha256 } };
+  writeExclusive(path.join(runDirectory, "expected-final-alias-reference.json"), value);
+  return value;
+}
+
 export function buildBaselinePreflight({ authority, reads, protectedEvidence, capturedAt }) {
   if (authority.runId !== SUPPORT.runId || !/^[a-f0-9]{40}$/.test(authority.sourceCommit || "") || !/^[a-f0-9]{64}$/.test(authority.sourceManifestSha256 || "") || authority.applicationTree !== SUPPORT.applicationTree) throw new Error("Baseline authority mismatch.");
   const snapshot = validateSnapshotReads(reads, "baseline", { runId: authority.runId, stage: "baseline-preflight", capturedAt, maximumAgeMs: SUPPORT.freshnessMs.baseline });
@@ -243,9 +537,11 @@ export function buildFinalPreflight({ authority, reads, protectedEvidence, runDi
   const deployment = requireRunEvidence(path.join(runDirectory, "immutable-deployment.json"), "Deployment");
   const immutable = requireRunEvidence(path.join(runDirectory, "immutable-smoke.json"), "Immutable parity");
   const access = requireRunEvidence(path.join(runDirectory, "immutable-access-qualification.json"), "Immutable access");
-  const rollback = requireRunEvidence(path.join(runDirectory, "rollback-reference.json"), "Rollback reference");
+  const fresh = consumeFreshRollbackRecapture(runDirectory, authority, currentMs);
+  const rollback = fresh.reference;
   if (artifact.value.runId !== authority.runId || artifact.value.sourceCommit !== authority.sourceCommit || artifact.value.sourceManifestSha256 !== authority.sourceManifestSha256 || artifact.value.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact.value.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Final artifact binding mismatch.");
   if (!deployment.value.deploymentIdentifier || deployment.value.url !== immutable.value.url || immutable.value.passed !== true || immutable.value.deploymentIdentifier !== deployment.value.deploymentIdentifier) throw new Error("Final immutable candidate mismatch.");
+  const resourceInventory = consumeRegisteredDeployment(runDirectory, authority, deployment);
   if (access.value.passed !== true || access.value.deploymentIdentifier !== deployment.value.deploymentIdentifier || access.value.immutableUrl !== deployment.value.url || access.value.immutableEvidenceSha256 !== immutable.sha256) throw new Error("Final access evidence mismatch.");
   if (rollback.value.passed !== true || rollback.value.deploymentIdentifier !== DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment) throw new Error("Final rollback identity mismatch.");
   const rollbackMs = Date.parse(rollback.value.capturedAt || "");
@@ -269,7 +565,8 @@ export function buildFinalPreflight({ authority, reads, protectedEvidence, runDi
     earnings: snapshot.earnings,
     protectedEvidence,
     candidate: { deploymentIdentifier: deployment.value.deploymentIdentifier, url: deployment.value.url, immutableEvidenceSha256: immutable.sha256, accessEvidenceSha256: access.sha256 },
-    rollback: { deploymentIdentifier: rollback.value.deploymentIdentifier, referenceSha256: rollback.sha256, parityPassed: true },
+    rollback: { deploymentIdentifier: rollback.value.deploymentIdentifier, referenceSha256: rollback.sha256, parityPassed: true, freshRecaptureVerificationSha256: fresh.verification.sha256, originalHistoricalReferenceSha256: fresh.verification.value.historical.reference.sha256 },
+    resourceInventory: { sha256: resourceInventory.sha256, state: resourceInventory.value.state, deploymentAttemptCount: resourceInventory.value.deploymentAttemptCount },
     observationEvidence: Object.fromEntries(Object.entries(snapshot.observations).map(([name, row]) => [name, { requestId: row.requestId, payloadSha256: row.payloadSha256, completedAt: row.completedAt }])),
   };
 }
@@ -281,7 +578,9 @@ export function recordTerminalState({ runDirectory, authority, classification, r
   const promotionResult = path.join(runDirectory, "promotion-result.json");
   const rollbackResult = path.join(runDirectory, "rollback-result.json");
   const rollbackVerification = path.join(runDirectory, "rollback-verification-result.json");
-  const assignment = fs.existsSync(promotionResult) ? "confirmed" : fs.existsSync(promotionAttempt) ? "uncertain" : "not-attempted";
+  const attempt = fs.existsSync(promotionAttempt) ? JSON.parse(fs.readFileSync(promotionAttempt, "utf8")) : null;
+  const providerCommandInvoked = fs.existsSync(promotionResult) || attempt?.providerCommandInvoked === true || (Boolean(attempt?.attemptedAt) && Boolean(attempt?.deploymentIdentifier));
+  const assignment = fs.existsSync(promotionResult) ? "confirmed" : providerCommandInvoked ? "uncertain" : "not-attempted";
   const rollbackRequired = assignment !== "not-attempted";
   if (!fs.existsSync(promotionAttempt)) atomicWrite(promotionAttempt, { blockedAt: capturedAt, runId: authority.runId, providerCommandInvoked: false, promotionPermanentlyProhibited: true, reason: classification + ": " + reason });
   const value = {
@@ -354,7 +653,9 @@ function reconcileCleanup(runDirectory, authority, cleanup) {
   catch (error) { issues.push("CREATED_RESOURCE_INVENTORY_MISSING_OR_INVALID"); }
   const resources = Array.isArray(inventory?.resources) ? inventory.resources : [];
   const unexpected = Array.isArray(inventory?.unexpectedResources) ? inventory.unexpectedResources : [];
-  if (inventory?.schemaVersion !== 1 || inventory?.runId !== authority.runId || !Array.isArray(inventory?.resources) || !Array.isArray(inventory?.unexpectedResources)) issues.push("CREATED_RESOURCE_INVENTORY_BINDING_INVALID");
+  if (inventory?.schemaVersion !== 2 || inventory?.runId !== authority.runId || inventory?.sourceCommit !== authority.sourceCommit || inventory?.sourceManifestSha256 !== authority.sourceManifestSha256 || inventory?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || inventory?.deploymentAttemptCount !== 1 || !Array.isArray(inventory?.resources) || !Array.isArray(inventory?.unexpectedResources)) issues.push("CREATED_RESOURCE_INVENTORY_BINDING_INVALID");
+  const inventoryBytes = fs.existsSync(path.join(runDirectory, "created-resources.json")) ? fs.readFileSync(path.join(runDirectory, "created-resources.json")) : null;
+  if (cleanup?.schemaVersion !== 2 || cleanup?.runId !== authority.runId || cleanup?.inventorySha256 !== (inventoryBytes ? sha256(inventoryBytes) : null) || cleanup?.passed !== true) issues.push("CLEANUP_BINDING_INVALID");
   const inventoryIds = resources.map(resourceIdentity);
   if (inventoryIds.some(value => !value) || new Set(inventoryIds).size !== inventoryIds.length) issues.push("CREATED_RESOURCE_INVENTORY_DUPLICATE_OR_INVALID");
   const cleanupRows = Array.isArray(cleanup?.createdResources) ? cleanup.createdResources : [];
@@ -382,7 +683,19 @@ function reconcileCleanup(runDirectory, authority, cleanup) {
 }
 
 export async function finalizeRun({ root, runDirectory, authority, expectedAlias, readers, cleanup, capturedAt, persist = atomicWrite, verifyProtectedEvidenceImpl = verifyProtectedEvidence }) {
-  if (!expectedAlias?.deploymentIdentifier || expectedAlias.routes?.length !== 6 || expectedAlias.criticalAssets?.length !== 5) throw new Error("Complete final alias reference required.");
+  if (expectedAlias?.schemaVersion !== 1 || expectedAlias.runId !== authority.runId || expectedAlias.deploymentIdentifier !== DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment || expectedAlias.routes?.length !== SUPPORT.rollbackContract.routes || expectedAlias.criticalAssets?.length !== SUPPORT.rollbackContract.criticalAssets) throw new Error("Complete run-bound final alias reference required.");
+  const expectedRecord = requireRunEvidence(path.join(runDirectory, "expected-final-alias-reference.json"), "Expected final alias reference");
+  if (expectedRecord.sha256 !== sha256(Buffer.from(canonical(expectedAlias)))) throw new Error("Expected final alias input differs from persisted evidence.");
+  const fresh = consumeFreshRollbackRecapture(runDirectory, authority, Date.parse(capturedAt));
+  if (expectedAlias.source?.rollbackReferenceSha256 !== fresh.reference.sha256 || expectedAlias.source?.freshRecaptureVerificationSha256 !== fresh.verification.sha256 || JSON.stringify(expectedAlias.routes) !== JSON.stringify(fresh.reference.value.routes) || JSON.stringify(expectedAlias.criticalAssets) !== JSON.stringify(fresh.reference.value.criticalAssets)) throw new Error("Expected final alias is not derived from verified fresh rollback evidence.");
+  const cleanupRecord = requireRunEvidence(path.join(runDirectory, "cleanup-disposition.json"), "Cleanup disposition");
+  if (cleanupRecord.sha256 !== sha256(Buffer.from(canonical(cleanup)))) throw new Error("Cleanup input differs from persisted evidence.");
+  const finalizationAttempt = path.join(runDirectory, "finalization-attempt.json");
+  if (!fs.existsSync(finalizationAttempt)) writeExclusive(finalizationAttempt, { schemaVersion: 1, runId: authority.runId, startedAt: capturedAt, state: "STARTED", expectedAliasSha256: expectedRecord.sha256, cleanupSha256: cleanupRecord.sha256 });
+  else {
+    const existing = JSON.parse(fs.readFileSync(finalizationAttempt, "utf8"));
+    if (existing.runId !== authority.runId || existing.state === "COMPLETE" || existing.expectedAliasSha256 !== expectedRecord.sha256 || existing.cleanupSha256 !== cleanupRecord.sha256) throw new Error("Finalization attempt cannot be retried or rebound.");
+  }
   let protectedRows = [], protectedError = null;
   try { protectedRows = verifyProtectedEvidenceImpl(root); } catch (error) { protectedError = error; }
   const protectedEvidence = reconcileProtectedEvidence(protectedRows, protectedError);
@@ -393,10 +706,11 @@ export async function finalizeRun({ root, runDirectory, authority, expectedAlias
   const findings = credentialFindings(runDirectory);
   const cleanupReconciliation = reconcileCleanup(runDirectory, authority, cleanup);
   const required = ["baseline-preflight.json", "rollback-reference.json"];
-  const promotionAttempted = fs.existsSync(path.join(runDirectory, "promotion-attempt.json"));
+  const promotionAttemptRecord = fs.existsSync(path.join(runDirectory, "promotion-attempt.json")) ? JSON.parse(fs.readFileSync(path.join(runDirectory, "promotion-attempt.json"), "utf8")) : null;
+  const promotionAttempted = Boolean(promotionAttemptRecord?.providerCommandInvoked === true || (promotionAttemptRecord?.attemptedAt && promotionAttemptRecord?.deploymentIdentifier) || fs.existsSync(path.join(runDirectory, "promotion-result.json")));
   const terminalExists = fs.existsSync(path.join(runDirectory, "terminal-record.json"));
-  if (promotionAttempted) required.push("artifact-manifest.json", "immutable-deployment.json", "immutable-smoke.json", "immutable-access-qualification.json", "promotion-preflight.json");
-  if (promotionAttempted && !terminalExists) required.push("promotion-result.json", "alias-observation-result.json");
+  if (promotionAttempted) required.push("artifact-manifest.json", "immutable-deployment.json", "immutable-smoke.json", "immutable-access-qualification.json", "promotion-preflight.json", "rollback-attempt.json");
+  if (promotionAttempted && !terminalExists) required.push("promotion-result.json", "alias-observation-result.json", "rollback-result.json", "rollback-verification-result.json");
   if (!promotionAttempted) required.push("terminal-record.json");
   const missingEvidence = required.filter(name => !fs.existsSync(path.join(runDirectory, name)));
   let result = "PASS";
@@ -404,6 +718,11 @@ export async function finalizeRun({ root, runDirectory, authority, expectedAlias
   if (!aliasParity?.passed || aliasParity.deploymentIdentifier !== expectedAlias.deploymentIdentifier || aliasParity.selectedAttempts?.length < 2) { result = "FAIL"; blockers.push("FINAL_ALIAS_PARITY_FAILED"); }
   if (!protectedEvidence.passed) { result = "FAIL"; blockers.push("PROTECTED_EVIDENCE_FAILED"); }
   if (terminalExists) { result = "FAIL"; blockers.push("TERMINAL_NON_PASS_RUN"); }
+  if (promotionAttempted && !aliasParity?.passed) { result = "FAIL"; blockers.push("ROLLBACK_RESTORATION_NOT_VERIFIED"); }
+  if (promotionAttempted && !terminalExists && fs.existsSync(path.join(runDirectory, "rollback-verification-result.json"))) {
+    const rollbackVerification = JSON.parse(fs.readFileSync(path.join(runDirectory, "rollback-verification-result.json"), "utf8"));
+    if (rollbackVerification.passed !== true || rollbackVerification.classification !== "PASS" || rollbackVerification.expected?.deploymentIdentifier !== expectedAlias.deploymentIdentifier || rollbackVerification.selectedAttempts?.length < 2) { result = "FAIL"; blockers.push("RECORDED_ROLLBACK_VERIFICATION_FAILED"); }
+  }
   if (missingEvidence.length) { if (result === "PASS") result = "BLOCKED"; blockers.push("MANDATORY_EVIDENCE_MISSING"); }
   if (!cleanupReconciliation.passed) { if (result === "PASS") result = "BLOCKED"; blockers.push("CLEANUP_INVENTORY_MISMATCH"); }
   if (findings.length) { result = "FAIL"; blockers.push("CREDENTIAL_SHAPED_EVIDENCE"); }
@@ -414,6 +733,7 @@ export async function finalizeRun({ root, runDirectory, authority, expectedAlias
     createdResources: cleanupReconciliation.inventory?.resources || [],
   };
   persist(path.join(runDirectory, "final-reconciliation.json"), final);
+  atomicWrite(finalizationAttempt, { schemaVersion: 1, runId: authority.runId, startedAt: JSON.parse(fs.readFileSync(finalizationAttempt, "utf8")).startedAt, completedAt: capturedAt, state: "COMPLETE", expectedAliasSha256: expectedRecord.sha256, cleanupSha256: cleanupRecord.sha256, result });
   const manifest = buildEvidenceManifest(runDirectory);
   persist(path.join(runDirectory, "evidence-manifest.tsv"), manifest.bytes);
   const verified = buildEvidenceManifest(runDirectory);
@@ -559,7 +879,8 @@ export async function runSupport(argv = process.argv.slice(2), dependencies = {}
     const output = path.resolve(required(values.output, "Authority output directory"));
     return prepareAuthorityArtifacts({ repoRoot: root, approval, outputDirectory: output, spawn: dependencies.spawnSync || spawnSync });
   }
-  if (!["baseline-preflight", "final-preflight", "record-abort", "finalize"].includes(action)) throw new Error("Unsupported execution-support action.");
+  const actions = new Set(["baseline-preflight", "initialize-resources", "begin-deployment", "register-deployment", "record-deployment-uncertainty", "reconcile-deployment", "prepare-recapture", "verify-recapture", "final-preflight", "prepare-expected-alias", "prepare-cleanup", "record-abort", "finalize"]);
+  if (!actions.has(action)) throw new Error("Unsupported execution-support action.");
   const authorityPath = path.resolve(required(values.authority, "Authority path"));
   const expectedCommit = required(values["expect-commit"], "Expected support checkpoint");
   const expectedSourceSha256 = required(values["expect-source-sha256"], "Expected source manifest SHA-256");
@@ -572,6 +893,15 @@ export async function runSupport(argv = process.argv.slice(2), dependencies = {}
   const confirmation = "staging:restaurant-alias-support:" + action + ":" + SUPPORT.runId;
   if (values.confirm !== confirmation) throw new Error("Action-specific execution-support confirmation mismatch.");
   if (action === "record-abort") return recordTerminalState({ runDirectory, authority, classification: values.classification || "ABORTED", reason: required(values.reason, "Abort reason"), capturedAt: new Date().toISOString() });
+  if (action === "initialize-resources") return initializeResourceInventory({ runDirectory, authority, capturedAt: new Date().toISOString() });
+  if (action === "begin-deployment") return beginSingleDeploymentAttempt({ runDirectory, authority, capturedAt: new Date().toISOString() });
+  if (action === "register-deployment") return registerSingleDeployment({ runDirectory, authority, capturedAt: new Date().toISOString() });
+  if (action === "record-deployment-uncertainty") return recordDeploymentUncertainty({ runDirectory, authority, capturedAt: new Date().toISOString(), reason: required(values.reason, "Deployment uncertainty reason") });
+  if (action === "reconcile-deployment") return reconcileDeploymentObservation({ runDirectory, authority, observationPath: path.resolve(required(values.observation, "Provider deployment observation")), capturedAt: new Date().toISOString() });
+  if (action === "prepare-recapture") return prepareFreshRollbackRecapture({ runDirectory, authority, capturedAt: new Date().toISOString() });
+  if (action === "verify-recapture") return verifyFreshRollbackRecapture({ runDirectory, authority, capturedAt: new Date().toISOString() });
+  if (action === "prepare-expected-alias") return buildExpectedFinalAliasReference({ runDirectory, authority, capturedAt: new Date().toISOString() });
+  if (action === "prepare-cleanup") return buildCleanupDisposition({ runDirectory, authority, capturedAt: new Date().toISOString() });
   const evidencePrefix = action === "baseline-preflight" ? "baseline-preflight" : action === "final-preflight" ? "promotion-preflight" : "finalization";
   const readers = dependencies.readers || createHostedReaders({ root, runId: SUPPORT.runId, runDirectory, evidencePrefix });
   try {
