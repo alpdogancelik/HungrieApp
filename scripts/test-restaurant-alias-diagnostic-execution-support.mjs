@@ -15,6 +15,7 @@ import {
   buildSourceManifest,
   beginSingleDeploymentAttempt,
   createHostedReaders,
+  createFirebaseAppLease,
   finalizeRun,
   initializeResourceInventory,
   prepareAuthorityArtifacts,
@@ -163,8 +164,8 @@ function writeReadProgress(directory, stage, readSet, options = {}) {
   return { file, value };
 }
 
-function hostedReaderFixture({ metadataFailure = false, preflightFailure = false, failedPath = null, missingPath = null, omitAssetReferences = false, mismatchedAsset = false, sqlStatus = 200, malformedSql = null, evidencePrefix = "finalization" } = {}) {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-hosted-reader-"));
+function hostedReaderFixture({ metadataFailure = false, preflightFailure = false, failedPath = null, missingPath = null, omitAssetReferences = false, mismatchedAsset = false, sqlStatus = 200, malformedSql = null, evidencePrefix = "finalization", directoryOverride = null } = {}) {
+  const directory = directoryOverride || fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-hosted-reader-"));
   const routeBodies = new Map();
   const assets = Array.from({ length: 3 }, (_, index) => ({ asset: `/assets/critical-${index}.js`, body: Buffer.from(`asset-${index}\n`) }));
   const references = assets.map(row => `<script src="${row.asset}"></script>`).join("");
@@ -428,8 +429,8 @@ test("authority rejects missing, placeholder, contradictory, and unapproved inpu
 });
 
 test("new run owns isolated authority and evidence identities", () => {
-  assert.equal(SUPPORT.runId, "ruip6ad_20260926g");
-  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260926g");
+  assert.equal(SUPPORT.runId, "ruip6ad_20260926h");
+  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260926h");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925a");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925b");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925c");
@@ -677,7 +678,7 @@ test("terminal recording distinguishes no assignment, uncertain assignment, and 
       assert.equal(result.rollbackRequired, rollbackRequired);
       assert.equal(result.promotionRetryPermitted, false);
       if (expected === "not-attempted") assert.equal(JSON.parse(fs.readFileSync(path.join(directory, "promotion-attempt.json"), "utf8")).providerCommandInvoked, false);
-      if (rollbackRequired) assert.match(result.rollbackCommand, /:rollback:ruip6ad_20260926g/);
+      if (rollbackRequired) assert.match(result.rollbackCommand, /:rollback:ruip6ad_20260926h/);
       assert.throws(() => recordTerminalState({ runDirectory: directory, authority: authority(), classification: "ABORTED", reason: "again", capturedAt }), /overwrite prohibited/);
     } finally { fs.rmSync(directory, { recursive: true, force: true }); }
   }
@@ -734,7 +735,7 @@ test("real hosted-reader alias callback persists metadata failures without runti
     assert.equal(result.attempts.every(attempt => attempt.errors.some(row => row.stage === "metadata")), true);
     assert.equal(result.attempts.some(attempt => attempt.errors.some(row => /synthetic metadata transport failure/.test(row.error))), true, JSON.stringify(result.attempts[0], null, 2));
     const failedMetadata = result.attempts[0].observations.find(row => row.type === "metadata");
-    assert.match(failedMetadata.requestId, /^ruip6ad_20260926g:expo-alias-final-parity:1:/);
+    assert.match(failedMetadata.requestId, /^ruip6ad_20260926h:expo-alias-final-parity:1:/);
     assert.equal(failedMetadata.status, null);
     assert.match(failedMetadata.error, /synthetic metadata transport failure/);
     assert.ok(failedMetadata.startedAt && failedMetadata.completedAt);
@@ -897,7 +898,7 @@ test("final preflight requires verified fresh recapture and rejects altered evid
     directory => fs.rmSync(path.join(directory, "fresh-recapture-attempt.json")),
     directory => fs.rmSync(path.join(directory, "fresh-recapture-verification.json")),
     directory => { const file = path.join(directory, "fresh-recapture-attempt.json"); const value = JSON.parse(fs.readFileSync(file)); value.state = "READY_FOR_RECAPTURE"; fs.writeFileSync(file, canonical(value)); },
-    directory => fs.appendFileSync(path.join(directory, "rollback-history", "ruip6ad_20260926g_fresh-rollback-recapture", "rollback-reference.json"), " "),
+    directory => fs.appendFileSync(path.join(directory, "rollback-history", "ruip6ad_20260926h_fresh-rollback-recapture", "rollback-reference.json"), " "),
     directory => { const file = path.join(directory, "rollback-reference.json"); const value = JSON.parse(fs.readFileSync(file)); value.criticalAssets.pop(); fs.writeFileSync(file, canonical(value)); },
   ]) {
     const fixture = finalFixture();
@@ -1021,10 +1022,14 @@ test("terminal abort after deployment uses preserved rollback history and comple
     assert.equal(expectedAlias.source.mode, "terminal-preserved");
     assert.equal(expectedAlias.contractSha256, initial.reference.contractSha256);
     const cleanup = buildCleanupDisposition({ runDirectory: directory, authority: auth, capturedAt });
-    const result = await finalizeRun({ root, runDirectory: directory, authority: auth, expectedAlias, readers: finalReaders(), cleanup, capturedAt });
+    let closes = 0;
+    const readers = { ...finalReaders(), close: async () => ({ state: "CLOSED", passed: true, calls: ++closes }) };
+    const result = await finalizeRun({ root, runDirectory: directory, authority: auth, expectedAlias, readers, cleanup, capturedAt });
     assert.equal(result.result, "FAIL");
     assert.deepEqual(result.blockers, ["TERMINAL_NON_PASS_RUN"]);
     assert.equal(result.cleanupReconciliation.passed, true);
+    assert.equal(result.firebaseAdminLifecycle.passed, true);
+    assert.equal(closes, 1);
     assert.equal(result.createdResources[0].id, "rejected-candidate");
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
@@ -1094,6 +1099,17 @@ test("interrupted finalization cannot produce PASS evidence and a completed prom
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
+test("Firebase Admin cleanup failure prevents terminal reconciliation from being written", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-firebase-cleanup-failure-"));
+  try {
+    const evidence = writeSuccessfulRunEvidence(directory);
+    const readers = { ...finalReaders(), close: async () => { throw new Error("synthetic Firebase cleanup failure"); } };
+    await assert.rejects(() => finalizeRun({ root, runDirectory: directory, authority: authority(), expectedAlias: evidence.expected, readers, cleanup: evidence.cleanup, capturedAt }), /synthetic Firebase cleanup failure/);
+    assert.equal(fs.existsSync(path.join(directory, "final-reconciliation.json")), false);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(directory, "finalization-attempt.json"), "utf8")).state, "STARTED");
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
 test("interrupted finalization resumes from preserved evidence exactly once", async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-finalization-resume-"));
   try {
@@ -1143,6 +1159,58 @@ test("credential-shaped errors are sanitized before evidence persistence", () =>
   const output = sanitizeSupportError(new Error("request token=" + secret + " failed with Bearer " + secret));
   assert.equal(output.includes(secret), false);
   assert.match(output, /REDACTED/);
+});
+
+test("owned Firebase Admin lease deletes once and verifies registry absence", async () => {
+  const app = { name: "temporary-app" };
+  const registry = [app], evidence = [];
+  let deletions = 0;
+  const lease = createFirebaseAppLease({ app, appName: app.name, owned: true, deleteApp: async () => { deletions += 1; registry.splice(0); }, listApps: () => registry, persist: value => evidence.push(structuredClone(value)), now: () => Date.parse(capturedAt) });
+  const first = await lease.close(), second = await lease.close();
+  assert.equal(first.passed, true);
+  assert.equal(second, first);
+  assert.equal(deletions, 1);
+  assert.deepEqual(evidence.map(row => row.state), ["ACTIVE", "CLOSED"]);
+});
+
+test("Firebase Admin lease records already-deleted error only after independent absence verification", async () => {
+  const evidence = [];
+  const lease = createFirebaseAppLease({ app: {}, appName: "temporary-app", owned: true, deleteApp: async () => { throw new Error('Firebase app named "temporary-app" has already been deleted.'); }, listApps: () => [], persist: value => evidence.push(structuredClone(value)), now: () => Date.parse(capturedAt) });
+  const result = await lease.close();
+  assert.equal(result.passed, true);
+  assert.match(result.deletionError, /already been deleted/);
+  assert.equal(result.registeredAfterClose, false);
+  assert.equal(evidence.at(-1).state, "CLOSED");
+});
+
+test("Firebase Admin lease fails when deletion leaves the temporary app registered", async () => {
+  const app = { name: "temporary-app" }, evidence = [];
+  const lease = createFirebaseAppLease({ app, appName: app.name, owned: true, deleteApp: async () => { throw new Error("synthetic deletion failure"); }, listApps: () => [app], persist: value => evidence.push(structuredClone(value)), now: () => Date.parse(capturedAt) });
+  await assert.rejects(() => lease.close(), /could not be independently verified/i);
+  assert.equal(evidence.at(-1).state, "CLEANUP_FAILED");
+  assert.equal(evidence.at(-1).passed, false);
+  assert.match(evidence.at(-1).deletionError, /synthetic deletion failure/);
+});
+
+test("borrowed Firebase Admin app is never deleted", async () => {
+  let deletions = 0;
+  const result = await createFirebaseAppLease({ app: {}, appName: "injected", owned: false, deleteApp: async () => { deletions += 1; } }).close();
+  assert.equal(result.state, "BORROWED");
+  assert.equal(result.passed, true);
+  assert.equal(deletions, 0);
+});
+
+test("Firebase Admin lifecycle evidence preserves earlier process observations", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-firebase-lifecycle-history-"));
+  try {
+    const first = hostedReaderFixture({ directoryOverride: directory });
+    await first.readers.close();
+    const second = hostedReaderFixture({ directoryOverride: directory });
+    await second.readers.close();
+    const evidence = JSON.parse(fs.readFileSync(path.join(directory, "finalization-firebase-admin-lifecycle.json"), "utf8"));
+    assert.equal(evidence.runId, SUPPORT.runId);
+    assert.deepEqual(evidence.events.map(row => row.state), ["ACTIVE", "BORROWED", "ACTIVE", "BORROWED"]);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
 test("evidence manifest is sorted and detects later mutation", () => {

@@ -172,6 +172,7 @@ test("all rejected deployments, including retained aborted candidates, are denie
   assert.equal(DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment, "6jki82fy0u");
   assert.ok(REJECTED_DEPLOYMENTS.includes("ipcij64k47"));
   assert.ok(REJECTED_DEPLOYMENTS.includes("tnc8x1kw9w"));
+  assert.ok(REJECTED_DEPLOYMENTS.includes("h5pf025zw9"));
   for (const identifier of REJECTED_DEPLOYMENTS) assert.throws(() => promotionCommand(identifier), /new non-rejected/);
   assert.deepEqual(promotionCommand("new-candidate"), ["eas-cli@16.32.0", "deploy:alias", "--alias", "staging", "--id", "new-candidate", "--json", "--non-interactive"]);
 });

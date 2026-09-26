@@ -43,6 +43,7 @@ export const REJECTED_DEPLOYMENTS = Object.freeze([
   "bfh8u5a0dh",
   "ipcij64k47",
   "tnc8x1kw9w",
+  "h5pf025zw9",
 ]);
 
 const ACTIONS = new Set([

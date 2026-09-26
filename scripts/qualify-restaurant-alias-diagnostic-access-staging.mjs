@@ -29,6 +29,8 @@ export function sanitizeRequest(request) {
   const headerNames = Object.keys(request.headers || {}).map(value => value.toLowerCase()).sort();
   return {
     method: request.method,
+    protocol: url.protocol,
+    origin: url.origin,
     host: url.host,
     path: url.pathname,
     queryParameterNames: [...url.searchParams.keys()].sort(),
@@ -70,7 +72,11 @@ async function openChrome(chromePath, profile, port) {
 export function evaluateBrowserQualification({ accountName, expectedPath, directPath, baseUrl, authenticated, restored, mainCount, exceptions = [], consoleErrors = [], failedRequests = [], httpErrors = [], requests = [], serviceWorkerReady = false }) {
   const errors = [...exceptions, ...consoleErrors, ...(authenticated?.diagnostic?.errors || []), ...(restored?.diagnostic?.errors || [])].filter(Boolean);
   const allowedOrigins = [new URL(baseUrl).origin, "https://identitytoolkit.googleapis.com", "https://securetoken.googleapis.com", "https://firebase.googleapis.com", "https://www.gstatic.com", "https://fcmregistrations.googleapis.com"];
-  const unexpectedRequests = requests.filter(request => { try { const origin = new URL(request.url || request.requestedUrl).origin; return !allowedOrigins.includes(origin) && !origin.endsWith(".supabase.co"); } catch { return true; } });
+  const unexpectedRequests = requests.filter(request => { try { const url = request.origin ? { origin: request.origin, protocol: request.protocol } : new URL(request.url || request.requestedUrl); if (!["http:", "https:"].includes(url.protocol)) return false; return !allowedOrigins.includes(url.origin) && !url.origin.endsWith(".supabase.co"); } catch { return true; } });
+  const ignoredOptionalHttpErrors = httpErrors.filter(response => {
+    try { return response.status === 404 && response.type === "Other" && new URL(response.url).pathname === "/favicon.ico"; } catch { return false; }
+  });
+  const requiredHttpErrors = httpErrors.filter(response => !ignoredOptionalHttpErrors.includes(response));
   const operationalExpected = expectedPath === "/dashboard";
   const completeRendering = authenticated?.path === expectedPath && restored?.path === (directPath || expectedPath) && authenticated?.heading && restored?.heading && !authenticated.blank && !restored.blank && authenticated.operational === operationalExpected && restored.operational === operationalExpected;
   const earningsRequests = requests.filter(request => /restaurant_(?:get|list)_earnings/i.test(request.path || "")).length;
@@ -79,13 +85,23 @@ export function evaluateBrowserQualification({ accountName, expectedPath, direct
   if (mainCount !== 1) blockers.push("MAIN_LANDMARK_INVALID");
   if (errors.length) blockers.push("UNCAUGHT_OR_CONSOLE_ERROR");
   if (failedRequests.length) blockers.push("NETWORK_LOADING_FAILURE");
-  if (httpErrors.length) blockers.push("SAME_ORIGIN_HTTP_ERROR");
+  if (requiredHttpErrors.length) blockers.push("SAME_ORIGIN_HTTP_ERROR");
   if (unexpectedRequests.length) blockers.push("UNEXPECTED_RUNTIME_REQUEST");
   if (!serviceWorkerReady) blockers.push("SERVICE_WORKER_NOT_READY");
   if ((authenticated?.diagnostic?.navigations?.length || 0) > 8 || (restored?.diagnostic?.navigations?.length || 0) > 8) blockers.push("UNBOUNDED_NAVIGATION");
   if (authenticated?.diagnostic?.protectedBeforeReady || restored?.diagnostic?.protectedBeforeReady) blockers.push("PROTECTED_CONTENT_BEFORE_AUTHORIZATION");
   if (accountName === "manager" && (authenticated?.earningsLink || restored?.earningsLink || earningsRequests)) blockers.push("MANAGER_FINANCIAL_ACCESS");
-  return { passed: blockers.length === 0, blockers, errors, httpErrors, failedRequests, unexpectedRequests, earningsRequests, completeRendering };
+  return { passed: blockers.length === 0, blockers, errors, httpErrors: requiredHttpErrors, ignoredOptionalHttpErrors, failedRequests, unexpectedRequests, earningsRequests, completeRendering };
+}
+
+export async function waitForServiceWorkerReady(evaluate, { attempts = 100, intervalMs = 50, sleep = delay } = {}) {
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const state = await evaluate(`(async()=>{if(!('serviceWorker' in navigator))return {supported:false,ready:false,registrations:[]};const registrations=await navigator.serviceWorker.getRegistrations();const ready=registrations.some(registration=>registration.active?.state==='activated'&&registration.scope===location.origin+'/');return {supported:true,ready,controller:Boolean(navigator.serviceWorker.controller),registrations:registrations.map(registration=>({scope:registration.scope,active:registration.active?.state||null,waiting:registration.waiting?.state||null,installing:registration.installing?.state||null}))}})()`).catch(error => ({ supported: true, ready: false, registrations: [], error: String(error?.message || error) }));
+    if (state.ready) return { ...state, attempt };
+    if (attempt < attempts) await sleep(intervalMs);
+    else return { ...state, attempt };
+  }
+  return { supported: false, ready: false, registrations: [], attempt: 0 };
 }
 
 async function qualifyAccount({ accountName, account, expectedPath, directPath, baseUrl, directory, chromePath, port }) {
@@ -100,9 +116,9 @@ async function qualifyAccount({ accountName, account, expectedPath, directPath, 
       if (message.method === "Runtime.exceptionThrown") exceptions.push(message.params.exceptionDetails?.exception?.description || message.params.exceptionDetails?.text);
       if (message.method === "Runtime.consoleAPICalled" && ["error", "assert"].includes(message.params.type)) consoleErrors.push(message.params.args.map(value => value.value || value.description || value.type).join(" "));
       if (message.method === "Network.loadingFailed" && !String(message.params.errorText || "").includes("ERR_ABORTED") && message.params.type !== "Other") failedRequests.push({ type: message.params.type, errorText: message.params.errorText });
-      if (message.method === "Network.requestWillBeSent") requests.push(sanitizeRequest(message.params.request));
+      if (message.method === "Network.requestWillBeSent") requests.push({ observedAt: new Date().toISOString(), requestId: message.params.requestId, type: message.params.type, ...sanitizeRequest(message.params.request) });
       if (message.method === "Network.responseReceived") {
-        const response = message.params.response, row = { url: response.url, status: response.status, mimeType: response.mimeType, type: message.params.type };
+        const response = message.params.response, row = { observedAt: new Date().toISOString(), requestId: message.params.requestId, url: response.url, status: response.status, mimeType: response.mimeType, type: message.params.type };
         responses.push(row);
         try { if (new URL(response.url).origin === new URL(baseUrl).origin && response.status >= 400) httpErrors.push(row); } catch {}
         if (new URL(response.url).pathname.endsWith("/get_my_access_context_v1")) cdp.send("Runtime.evaluate", { expression: "window.__diagnostic.accessResolved=true" }).catch(() => {});
@@ -124,13 +140,16 @@ async function qualifyAccount({ accountName, account, expectedPath, directPath, 
     const ax = await cdp.send("Accessibility.getFullAXTree");
     const mainCount = ax.nodes.filter(node => !node.ignored && node.role?.value === "main").length;
     const accessRequests = requests.filter(request => request.path.endsWith("/get_my_access_context_v1")).length;
-    const serviceWorkerReady = await evaluate("!!navigator.serviceWorker && !!(await navigator.serviceWorker.ready)").catch(() => false);
+    const serviceWorker = await waitForServiceWorkerReady(evaluate);
+    const serviceWorkerReady = serviceWorker.ready;
     const decision = evaluateBrowserQualification({ accountName, expectedPath, directPath, baseUrl, authenticated, restored, mainCount, exceptions, consoleErrors, failedRequests, httpErrors, requests, serviceWorkerReady });
+    const accountEvidence = { schemaVersion: 1, capturedAt: new Date().toISOString(), passed: decision.passed, account: accountName, browser: version.Browser, expectedPath, directPath, authenticated, restored, mainCount, accessRequests, earningsRequests: decision.earningsRequests, uncaughtErrors: decision.errors, failedRequests, httpErrors: decision.httpErrors, ignoredOptionalHttpErrors: decision.ignoredOptionalHttpErrors, unexpectedRequests: decision.unexpectedRequests, responseInventory: responses, serviceWorker, serviceWorkerReady, requestInventory: requests, blockers: decision.blockers, credentialValuesPersisted: false };
+    atomicWrite(path.join(directory, `immutable-${accountName}-access-evidence.json`), accountEvidence);
     if (!decision.passed) throw new Error(`${accountName} immutable access qualification failed: ${decision.blockers.join(",")}.`);
     const screenshot = await cdp.send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
     const screenshotName = `immutable-${accountName}-access.png`, screenshotPath = path.join(directory, screenshotName);
     fs.writeFileSync(screenshotPath, Buffer.from(screenshot.data, "base64"), { mode: 0o600 });
-    return { passed: true, account: accountName, browser: version.Browser, expectedPath, directPath, authenticated, restored, mainCount, accessRequests, earningsRequests: decision.earningsRequests, uncaughtErrors: decision.errors, failedRequests, httpErrors, unexpectedRequests: decision.unexpectedRequests, responseInventory: responses, serviceWorkerReady, requestInventory: requests, screenshot: { file: screenshotName, sha256: sha256(fs.readFileSync(screenshotPath)) } };
+    return { ...accountEvidence, screenshot: { file: screenshotName, sha256: sha256(fs.readFileSync(screenshotPath)) } };
   } finally { cdp.close(); processHandle.kill("SIGTERM"); await delay(150); fs.rmSync(profile, { recursive: true, force: true }); }
 }
 

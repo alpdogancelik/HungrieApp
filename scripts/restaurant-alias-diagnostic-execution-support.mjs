@@ -17,18 +17,20 @@ import {
 import { sanitizeError } from "./restaurant-alias-parity-verifier.mjs";
 
 export const SUPPORT = Object.freeze({
-  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260926g-run-binding-contract.md",
-  proposalSha256: "aef672add1d009a502a9f0faa037ddbaee9a412a10a16c59390d00234194d62f",
-  baseCheckpoint: "7cc25e2d43d91c42fbcc3c9694e8792fc4042079",
-  baseSourceManifestSha256: "c7a5fcf1b65f0aa40a407c30590c301d3637b8b5b9a9a0b142d14e57353dc32f",
-  baseSourceManifestFiles: 1527,
+  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260926h-run-binding-contract.md",
+  proposalSha256: "9eaaa418496ddd838ad5464d7393bbc25a094084b9a6374f51058a283a9ae4bd",
+  baseCheckpoint: "7262b4815ded41845f7cd431704ac3594933f70b",
+  baseSourceManifestSha256: "b8a19211bc1421ce4ce51517afdab01970aeb5171753596b93c84d2bab7ceb2f",
+  baseSourceManifestFiles: 1530,
   checkpointFiles: Object.freeze([
-    "docs/restaurant-expo-alias-publication-and-aborted-finalization-correction-report.md",
-    "docs/restaurant-expo-alias-publication-and-aborted-finalization-correction.diff",
-    "docs/restaurant-expo-alias-ruip6ad-20260926g-run-binding-contract.md",
+    "docs/restaurant-expo-alias-pending-access-firebase-finalization-remediation-report.md",
+    "docs/restaurant-expo-alias-pending-access-firebase-finalization-remediation.diff",
+    "docs/restaurant-expo-alias-ruip6ad-20260926h-run-binding-contract.md",
     "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs",
+    "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs",
     "scripts/restaurant-alias-diagnostic-execution-support.mjs",
     "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs",
+    "scripts/test-restaurant-alias-diagnostic-access-staging.mjs",
     "scripts/test-restaurant-alias-diagnostic-execution-support.mjs",
   ]),
   acceptedLineage: Object.freeze([
@@ -171,18 +173,33 @@ export const SUPPORT = Object.freeze({
         "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "68c33f3629427205eb08960b4da368d84495efc482aec21f9f6c60cbef11eb56",
       }),
     }),
+    Object.freeze({
+      commit: "7262b4815ded41845f7cd431704ac3594933f70b",
+      parent: "7cc25e2d43d91c42fbcc3c9694e8792fc4042079",
+      sourceManifestSha256: "b8a19211bc1421ce4ce51517afdab01970aeb5171753596b93c84d2bab7ceb2f",
+      sourceManifestFiles: 1530,
+      files: Object.freeze({
+        "docs/restaurant-expo-alias-publication-and-aborted-finalization-correction-report.md": "645f48a6dd274f4ba988da480ea47edf91ffd33c809dc0f00c99a8c781d3f055",
+        "docs/restaurant-expo-alias-publication-and-aborted-finalization-correction.diff": "cc48d506746cf8bee5be6ef7baa8b34e6316fe2ec4e7520ded736616d9d46664",
+        "docs/restaurant-expo-alias-ruip6ad-20260926g-run-binding-contract.md": "aef672add1d009a502a9f0faa037ddbaee9a412a10a16c59390d00234194d62f",
+        "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "c7d16e809bc570ba684aeefbfcd088534119c0805260d19fb6fbd97ea3bc7cae",
+        "scripts/restaurant-alias-diagnostic-execution-support.mjs": "56616f784834db600db2edfaea84d6dbd9170815bd7abc3aeea63386c6fdf603",
+        "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "6394a896da8bc98dab3deb30c727595b586aea85d69b3b4dfdb57a66bf3d868e",
+        "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "89b1225469e7f8e41f7046580339218a396a38847ef817dab76ab214051dbf05",
+      }),
+    }),
   ]),
   diagnosticExecutableFiles: Object.freeze({
     "scripts/restaurant-alias-parity-verifier.mjs": "e563d7a5203aaf6ea0e04687063d63027568fd2906accec43c26daaeea4ca1d8",
     "scripts/test-restaurant-alias-parity-verifier.mjs": "6fa1ce21c047f93678be3c45fb71cd1f0e8167ed142fc259e55efddea1030afb",
-    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "c7d16e809bc570ba684aeefbfcd088534119c0805260d19fb6fbd97ea3bc7cae",
-    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "6394a896da8bc98dab3deb30c727595b586aea85d69b3b4dfdb57a66bf3d868e",
-    "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "2e0189fca16b9bbd6a95d87685d38e92b8260f75e6a8225bed5221c3492c3c7d",
-    "scripts/test-restaurant-alias-diagnostic-access-staging.mjs": "860e4b0589133bc7d452126e7652af6866b3ce7685db104b2c919e3fa9c76ee6",
+    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "befeeeb14b81aa969b9ba62951df52d1e3b9d0d54b111f094206d578db675025",
+    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "f04b10d579767ea03a22b1dea4fef144087ea6099ab93a851c3e2be3fb88c3c7",
+    "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "e2621bd4f6f300daf3a9c997990c244680b8e09bf7b7801dbd2d65d59c593828",
+    "scripts/test-restaurant-alias-diagnostic-access-staging.mjs": "01a4a6c21809133620fd1610c3a7fd5e7d8d499b1438b76d8c0a9c26d19cd51c",
   }),
   applicationTree: DIAGNOSTIC_OPERATOR.applicationTree,
-  runId: "ruip6ad_20260926g",
-  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260926g",
+  runId: "ruip6ad_20260926h",
+  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260926h",
   authorityDirectory: "secure/restaurant-alias-diagnostic-authority",
   migrationFunctions: Object.freeze({
     "private.raise_restaurant_order_conflict_v1(text)": Object.freeze({
@@ -981,6 +998,8 @@ export async function finalizeRun({ root, runDirectory, authority, expectedAlias
   persist(path.join(runDirectory, "finalization-reads.json"), { schemaVersion: 1, runId: authority.runId, reads });
   const snapshot = validateSnapshotReads(reads, "finalization", { runId: authority.runId, stage: "finalization", capturedAt, maximumAgeMs: SUPPORT.freshnessMs.final });
   const aliasParity = await readers.verifyAliasParity(expectedAlias);
+  const firebaseAdminLifecycle = readers.close ? await readers.close() : { state: "NOT_APPLICABLE", passed: true };
+  if (firebaseAdminLifecycle?.passed !== true) throw new Error("Firebase Admin temporary app cleanup is incomplete.");
   const findings = credentialFindings(runDirectory);
   const cleanupReconciliation = reconcileCleanup(runDirectory, authority, cleanup);
   const required = ["baseline-preflight.json"];
@@ -1010,7 +1029,7 @@ export async function finalizeRun({ root, runDirectory, authority, expectedAlias
   const final = {
     schemaVersion: 1, capturedAt, runId: authority.runId, result, blockers,
     finalAlias: aliasParity, migration: snapshot.migration, earnings: snapshot.earnings,
-    protectedEvidence, cleanupReconciliation, credentialFindings: findings, missingEvidence,
+    protectedEvidence, cleanupReconciliation, firebaseAdminLifecycle, credentialFindings: findings, missingEvidence,
     createdResources: cleanupReconciliation.inventory?.resources || [],
   };
   persist(path.join(runDirectory, "final-reconciliation.json"), final);
@@ -1034,6 +1053,30 @@ export function readProgressSnapshot(progressPath, { runId, stage, capturedAt, m
   if (value.capturedAt !== capturedAt || !Array.isArray(value.errors) || value.errors.length) throw new Error("Hosted read progress is incomplete or unsuccessful.");
   validateSnapshotReads(value.reads, stage, { runId, stage, capturedAt, maximumAgeMs });
   return value.reads;
+}
+
+export function createFirebaseAppLease({ app, appName, owned, deleteApp = value => value.delete(), listApps = () => [], persist = () => undefined, now = () => Date.now() }) {
+  let terminal = null;
+  const write = value => { persist({ schemaVersion: 1, appName, owned, ...value }); return value; };
+  write({ state: "ACTIVE", capturedAt: iso(now()), passed: null, deletionError: null, registeredAfterClose: null });
+  return {
+    async close() {
+      if (terminal) return terminal;
+      if (!owned) {
+        terminal = write({ state: "BORROWED", capturedAt: iso(now()), passed: true, deletionError: null, registeredAfterClose: null });
+        return terminal;
+      }
+      let deletionError = null;
+      try { await deleteApp(app); } catch (error) { deletionError = sanitizeSupportError(error); }
+      let registeredAfterClose = null, verificationError = null;
+      try { registeredAfterClose = listApps().some(value => { try { return value.name === appName; } catch { return false; } }); }
+      catch (error) { verificationError = sanitizeSupportError(error); }
+      const passed = registeredAfterClose === false && !verificationError;
+      terminal = write({ state: passed ? "CLOSED" : "CLEANUP_FAILED", capturedAt: iso(now()), passed, deletionError, registeredAfterClose, verificationError });
+      if (!passed) throw new Error("Firebase Admin temporary app cleanup could not be independently verified.");
+      return terminal;
+    },
+  };
 }
 
 export function createHostedReaders({ root, runId, runDirectory, evidencePrefix, fetchImpl = fetch, now = () => Date.now(), testConfiguration = null, parityClock, deadlineSignal, persistEvidence = atomicWrite }) {
@@ -1093,15 +1136,35 @@ export function createHostedReaders({ root, runId, runDirectory, evidencePrefix,
     return { status: response.status, payload: { easProjectId: app?.id, aliasId: alias?.id, aliasName: alias?.aliasName, aliasUrl: alias?.url, deploymentIdentifier: alias?.workerDeployment?.deploymentIdentifier, deploymentUrl: alias?.workerDeployment?.url, updatedAt: alias?.updatedAt || null } };
   };
   let firebaseApp = testConfiguration?.firebaseApp;
+  let firebaseCredentialProvider = testConfiguration?.firebaseCredentialProvider;
+  let firebaseLease;
+  const firebaseLifecyclePath = path.join(runDirectory, evidencePrefix + "-firebase-admin-lifecycle.json");
+  let firebaseLifecycleEvents = [];
+  if (fs.existsSync(firebaseLifecyclePath)) {
+    const prior = JSON.parse(fs.readFileSync(firebaseLifecyclePath, "utf8"));
+    if (prior?.schemaVersion !== 1 || prior.runId !== runId || prior.stage !== evidencePrefix || !Array.isArray(prior.events)) throw new Error("Existing Firebase Admin lifecycle evidence is invalid or differently bound.");
+    firebaseLifecycleEvents = prior.events;
+  }
+  const persistFirebaseLifecycle = value => {
+    firebaseLifecycleEvents.push(value);
+    persistEvidence(firebaseLifecyclePath, { schemaVersion: 1, runId, stage: evidencePrefix, events: firebaseLifecycleEvents });
+  };
   if (!firebaseApp) {
     const require = createRequire(import.meta.url);
-    const admin = require(path.join(root, "functions/node_modules/firebase-admin"));
-    firebaseApp = admin.initializeApp({ credential: admin.credential.cert(firebaseCredential), projectId: DIAGNOSTIC_OPERATOR.firebaseProjectId }, "alias-support-" + runId + "-" + Date.now());
+    const adminApp = require(path.join(root, "functions/node_modules/firebase-admin/app"));
+    firebaseCredentialProvider = adminApp.cert(firebaseCredential);
+    const appName = "alias-support-" + runId + "-" + Date.now();
+    firebaseApp = adminApp.initializeApp({ credential: firebaseCredentialProvider, projectId: DIAGNOSTIC_OPERATOR.firebaseProjectId }, appName);
+    firebaseLease = createFirebaseAppLease({ app: firebaseApp, appName, owned: true, deleteApp: adminApp.deleteApp, listApps: adminApp.getApps, now, persist: persistFirebaseLifecycle });
+  } else {
+    firebaseCredentialProvider ||= firebaseApp.options?.credential;
+    firebaseLease = createFirebaseAppLease({ app: firebaseApp, appName: testConfiguration?.firebaseAppName || "injected-test-app", owned: false, now, persist: persistFirebaseLifecycle });
   }
+  if (!firebaseCredentialProvider?.getAccessToken) throw new Error("Firebase Admin credential provider is unavailable.");
   return {
     async collect() {
       const supabaseProject = await capture("supabaseProject", "supabase-project", () => supabaseFetch("https://api.supabase.com/v1/projects/" + project.ref));
-      const token = await firebaseApp.options.credential.getAccessToken();
+      const token = await firebaseCredentialProvider.getAccessToken();
       const firebaseProject = await capture("firebaseProject", "firebase-project", async () => {
         const response = await fetchImpl("https://firebase.googleapis.com/v1beta1/projects/" + DIAGNOSTIC_OPERATOR.firebaseProjectId, { headers: { authorization: "Bearer " + token.access_token } });
         const payload = await response.json();
@@ -1152,7 +1215,7 @@ export function createHostedReaders({ root, runId, runDirectory, evidencePrefix,
       persistEvidence(path.join(runDirectory, "final-alias-verification.json"), evidence);
       return { ...evidence, deploymentIdentifier: expected.deploymentIdentifier };
     },
-    async close() { await firebaseApp.delete(); },
+    async close() { return firebaseLease.close(); },
   };
 }
 
@@ -1194,6 +1257,7 @@ export async function runSupport(argv = process.argv.slice(2), dependencies = {}
   if (action === "prepare-cleanup") return buildCleanupDisposition({ runDirectory, authority, capturedAt: new Date().toISOString() });
   const evidencePrefix = action === "baseline-preflight" ? "baseline-preflight" : action === "final-preflight" ? "promotion-preflight" : "finalization";
   const readers = dependencies.readers || createHostedReaders({ root, runId: SUPPORT.runId, runDirectory, evidencePrefix });
+  let primaryError = null;
   try {
     if (action === "baseline-preflight") {
       const reads = await readers.collect();
@@ -1215,8 +1279,17 @@ export async function runSupport(argv = process.argv.slice(2), dependencies = {}
     const cleanup = JSON.parse(fs.readFileSync(cleanupPath, "utf8"));
     if (!readers.verifyAliasParity) throw new Error("Independent final alias parity reader required.");
     return finalizeRun({ root, runDirectory, authority, expectedAlias, readers, cleanup, capturedAt: new Date().toISOString() });
+  } catch (error) {
+    primaryError = error;
+    throw error;
   } finally {
-    if (readers.close) await readers.close();
+    if (readers.close) {
+      try { await readers.close(); }
+      catch (cleanupError) {
+        if (primaryError) throw new AggregateError([primaryError, cleanupError], "Hosted reconciliation failed and Firebase Admin cleanup also failed.");
+        throw cleanupError;
+      }
+    }
   }
 }
 
