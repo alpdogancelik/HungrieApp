@@ -1,0 +1,332 @@
+{
+  "schemaVersion": 1,
+  "historicalAcceptedArtifact": {
+    "manifestSha256": "7ca81f0fdbc649e34a929956329bcaafc95ec357c84f342a01f2a0dab2836431",
+    "archiveSha256": "dd416dd5f44a4f3dbb3443f7269c61f4d964fe3e3e4de3b38d873db553e183cb",
+    "status": "superseded-build-input-identity-preserved"
+  },
+  "replacementCandidate": {
+    "manifestSha256": "d3af007214f8fd5cf200dbe8e81cef33a32d98e0fb889e63596dae856ac39e89",
+    "archiveSha256": "b6294bb5195779e3d9fb2e412fb61e82d08a0ac2f0ea25deb283dc4094832862",
+    "buildInputContractSha256": "f2c3e37d1e5699ea806e7fe2fd337aef4cb07ebb421ad2215209442546770c2e"
+  },
+  "localCleanExports": [
+    {
+      "attempt": 1,
+      "fileCount": 74,
+      "htmlCount": 20,
+      "artifactManifestSha256": "d3af007214f8fd5cf200dbe8e81cef33a32d98e0fb889e63596dae856ac39e89",
+      "archive": {
+        "sha256": "b6294bb5195779e3d9fb2e412fb61e82d08a0ac2f0ea25deb283dc4094832862",
+        "bytes": 5642240
+      },
+      "javascript": [
+        {
+          "path": "_expo/static/js/web/entry-deb618126de6ff234988f8f3ca2e7588.js",
+          "bytes": 3602706,
+          "sha256": "b96ac1cef877ed46e3af6c2d6a4815ceed256af887cee1f56e7987a4a5d0f3cd"
+        }
+      ]
+    },
+    {
+      "attempt": 2,
+      "fileCount": 74,
+      "htmlCount": 20,
+      "artifactManifestSha256": "d3af007214f8fd5cf200dbe8e81cef33a32d98e0fb889e63596dae856ac39e89",
+      "archive": {
+        "sha256": "b6294bb5195779e3d9fb2e412fb61e82d08a0ac2f0ea25deb283dc4094832862",
+        "bytes": 5642240
+      },
+      "javascript": [
+        {
+          "path": "_expo/static/js/web/entry-deb618126de6ff234988f8f3ca2e7588.js",
+          "bytes": 3602706,
+          "sha256": "b96ac1cef877ed46e3af6c2d6a4815ceed256af887cee1f56e7987a4a5d0f3cd"
+        }
+      ]
+    }
+  ],
+  "byteIdenticalInventories": true,
+  "byteIdenticalArchives": true,
+  "preservedCheckKActual": {
+    "archiveSha256": "b6294bb5195779e3d9fb2e412fb61e82d08a0ac2f0ea25deb283dc4094832862",
+    "matchesReplacementArchive": true
+  },
+  "added": [
+    {
+      "path": "_expo/static/js/web/entry-deb618126de6ff234988f8f3ca2e7588.js",
+      "bytes": 3602706,
+      "sha256": "b96ac1cef877ed46e3af6c2d6a4815ceed256af887cee1f56e7987a4a5d0f3cd"
+    }
+  ],
+  "removed": [
+    {
+      "path": "_expo/static/js/web/entry-e60c059055bd9dd055f253e375b7f273.js",
+      "bytes": 3602617,
+      "sha256": "ad572298de4cd0214e550004cd2b69c97399827628fb646f41f0bb8074a52d47"
+    }
+  ],
+  "modified": [
+    {
+      "path": "+not-found.html",
+      "historical": {
+        "path": "+not-found.html",
+        "bytes": 17819,
+        "sha256": "3e55d52bdc5ff588efd1f3ac8f1a2b84747b36d7159463bda69707faa0405490"
+      },
+      "replacement": {
+        "path": "+not-found.html",
+        "bytes": 17819,
+        "sha256": "9753a41c1da7b781968993800ac6df12d5e5b07ad4533b76473de0879baa0a4e"
+      }
+    },
+    {
+      "path": "_sitemap.html",
+      "historical": {
+        "path": "_sitemap.html",
+        "bytes": 17819,
+        "sha256": "3e55d52bdc5ff588efd1f3ac8f1a2b84747b36d7159463bda69707faa0405490"
+      },
+      "replacement": {
+        "path": "_sitemap.html",
+        "bytes": 17819,
+        "sha256": "9753a41c1da7b781968993800ac6df12d5e5b07ad4533b76473de0879baa0a4e"
+      }
+    },
+    {
+      "path": "dashboard.html",
+      "historical": {
+        "path": "dashboard.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      },
+      "replacement": {
+        "path": "dashboard.html",
+        "bytes": 17919,
+        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
+      }
+    },
+    {
+      "path": "earnings.html",
+      "historical": {
+        "path": "earnings.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      },
+      "replacement": {
+        "path": "earnings.html",
+        "bytes": 17919,
+        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
+      }
+    },
+    {
+      "path": "forgot-password.html",
+      "historical": {
+        "path": "forgot-password.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      },
+      "replacement": {
+        "path": "forgot-password.html",
+        "bytes": 17919,
+        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
+      }
+    },
+    {
+      "path": "history.html",
+      "historical": {
+        "path": "history.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      },
+      "replacement": {
+        "path": "history.html",
+        "bytes": 17919,
+        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
+      }
+    },
+    {
+      "path": "index.html",
+      "historical": {
+        "path": "index.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      },
+      "replacement": {
+        "path": "index.html",
+        "bytes": 17919,
+        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
+      }
+    },
+    {
+      "path": "invite.html",
+      "historical": {
+        "path": "invite.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      },
+      "replacement": {
+        "path": "invite.html",
+        "bytes": 17919,
+        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
+      }
+    },
+    {
+      "path": "login.html",
+      "historical": {
+        "path": "login.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      },
+      "replacement": {
+        "path": "login.html",
+        "bytes": 17919,
+        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
+      }
+    },
+    {
+      "path": "menu.html",
+      "historical": {
+        "path": "menu.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      },
+      "replacement": {
+        "path": "menu.html",
+        "bytes": 17919,
+        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
+      }
+    },
+    {
+      "path": "more.html",
+      "historical": {
+        "path": "more.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      },
+      "replacement": {
+        "path": "more.html",
+        "bytes": 17919,
+        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
+      }
+    },
+    {
+      "path": "orders.html",
+      "historical": {
+        "path": "orders.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      },
+      "replacement": {
+        "path": "orders.html",
+        "bytes": 17919,
+        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
+      }
+    },
+    {
+      "path": "orders/[orderId].html",
+      "historical": {
+        "path": "orders/[orderId].html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      },
+      "replacement": {
+        "path": "orders/[orderId].html",
+        "bytes": 17919,
+        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
+      }
+    },
+    {
+      "path": "orders/detail.html",
+      "historical": {
+        "path": "orders/detail.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      },
+      "replacement": {
+        "path": "orders/detail.html",
+        "bytes": 17919,
+        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
+      }
+    },
+    {
+      "path": "pending.html",
+      "historical": {
+        "path": "pending.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      },
+      "replacement": {
+        "path": "pending.html",
+        "bytes": 17919,
+        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
+      }
+    },
+    {
+      "path": "restaurant.html",
+      "historical": {
+        "path": "restaurant.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      },
+      "replacement": {
+        "path": "restaurant.html",
+        "bytes": 17919,
+        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
+      }
+    },
+    {
+      "path": "reviews.html",
+      "historical": {
+        "path": "reviews.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      },
+      "replacement": {
+        "path": "reviews.html",
+        "bytes": 17919,
+        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
+      }
+    },
+    {
+      "path": "security.html",
+      "historical": {
+        "path": "security.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      },
+      "replacement": {
+        "path": "security.html",
+        "bytes": 17919,
+        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
+      }
+    },
+    {
+      "path": "settings.html",
+      "historical": {
+        "path": "settings.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      },
+      "replacement": {
+        "path": "settings.html",
+        "bytes": 17919,
+        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
+      }
+    },
+    {
+      "path": "suspended.html",
+      "historical": {
+        "path": "suspended.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      },
+      "replacement": {
+        "path": "suspended.html",
+        "bytes": 17919,
+        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
+      }
+    }
+  ],
+  "unchangedCount": 53
+}

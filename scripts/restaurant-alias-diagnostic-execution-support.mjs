@@ -19,16 +19,27 @@ import { verifyReadOnlyEasExportEvidence } from "./verify-restaurant-alias-produ
 
 export const SUPPORT = Object.freeze({
   historicalApplicationTree: "ae03238ac8c34f4ef11365b5a5c51dee81187812",
-  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260926j-run-binding-contract.md",
-  proposalSha256: "ecc346f1738bfb048e64e9281a1ac53270c92d00fe09e72614e470fc57a29b53",
-  baseCheckpoint: "05f7308b11247a22fa3f6d0741a4b3b59a2ac201",
-  baseSourceManifestSha256: "061385917032166e6795e346f683109e9512b95dd32dc5ba8f3e571d5f9a4aaf",
-  baseSourceManifestFiles: 1547,
+  proposalPath: "docs/restaurant-expo-alias-ruip6ae-20260926l-read-only-eas-export-plan.md",
+  proposalSha256: "73023632e2e62feabb992100a76294df5bcfc10dc26a00700ccfe2634b9a3c9e",
+  baseCheckpoint: "eceac9a822f376af7b3f32c8131393d5634e2f5c",
+  baseSourceManifestSha256: "12b4cac7f8c0a209fbc0585bda67d0d110cd9735ccf992b09c241ed87b0c1dd1",
+  baseSourceManifestFiles: 1549,
   checkpointFiles: Object.freeze([
-    "docs/restaurant-expo-alias-read-only-eas-evidence-initialization-remediation-review.md",
-    "docs/restaurant-expo-alias-ruip6ae-20260926k-check-binding-contract.md",
+    "docs/restaurant-expo-alias-staging-public-build-input-contract.json",
+    "docs/restaurant-expo-alias-staging-public-build-input-evidence/candidate-artifact-manifest.json",
+    "docs/restaurant-expo-alias-staging-public-build-input-evidence/complete-artifact-comparison.json",
+    "docs/restaurant-expo-alias-staging-public-build-input-evidence/evidence-manifest.tsv",
+    "docs/restaurant-expo-alias-staging-public-build-input-evidence/restaurant-static-export.tar",
+    "docs/restaurant-expo-alias-staging-build-input-artifact-remediation-review.md",
+    "docs/restaurant-expo-alias-staging-build-input-artifact-remediation.diff",
+    "docs/restaurant-expo-alias-ruip6ae-20260926l-read-only-eas-export-plan.md",
+    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs",
     "scripts/restaurant-alias-diagnostic-execution-support.mjs",
+    "scripts/restaurant-alias-staging-public-build-inputs.mjs",
+    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs",
+    "scripts/test-restaurant-alias-diagnostic-execution-support.mjs",
     "scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs",
+    "scripts/test-restaurant-alias-staging-public-build-inputs.mjs",
     "scripts/verify-restaurant-alias-production-export-readiness.mjs",
   ]),
   acceptedLineage: Object.freeze([
@@ -241,6 +252,20 @@ export const SUPPORT = Object.freeze({
         "scripts/verify-restaurant-alias-production-export-readiness.mjs": "451ab6f2b0e3b68a1ea1fd58eeb99ef0e8e1dd2920a4dc5ca479b1767e430684",
       }),
     }),
+    Object.freeze({
+      commit: "eceac9a822f376af7b3f32c8131393d5634e2f5c",
+      parent: "05f7308b11247a22fa3f6d0741a4b3b59a2ac201",
+      sourceManifestSha256: "12b4cac7f8c0a209fbc0585bda67d0d110cd9735ccf992b09c241ed87b0c1dd1",
+      sourceManifestFiles: 1549,
+      applicationTree: "7430599b150adbd19ddafadce1195f1e418daf8a",
+      files: Object.freeze({
+        "docs/restaurant-expo-alias-read-only-eas-evidence-initialization-remediation-review.md": "0ffa35a792f82cf75939dcc1d449ca120ee295d263438a619a4ad5954f3a3e8a",
+        "docs/restaurant-expo-alias-ruip6ae-20260926k-check-binding-contract.md": "efb2ae4f7023cb0797d2b8ad6dc7fc109240e6746b31cf517fa0327c10dba9e9",
+        "scripts/restaurant-alias-diagnostic-execution-support.mjs": "b2ad374ec0d524472897a3f3e98386f190480bd18fce7ee228b77fae67ae682a",
+        "scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs": "153e1718f37e80fc65aabd75d06b2c35dd5aadd83208c3548dbc0b81983da09a",
+        "scripts/verify-restaurant-alias-production-export-readiness.mjs": "e061c83d72f3233909489c59e4981d08fb0ec6560e6aeaa461d0b2032ba4f1eb",
+      }),
+    }),
   ]),
   diagnosticExecutableFiles: Object.freeze({
     "apps/restaurant/metro.config.js": "c1c09a3089568b12c4aeb9c1d30afb47bb7722dc9605fe534152424a4a2e64ad",
@@ -248,11 +273,13 @@ export const SUPPORT = Object.freeze({
     "apps/restaurant/scripts/deterministic-metro-module-map.json": "928fcbe1ba9aead4c2f180503254a4a6826033c33eabbad8f29fca24e4a056c8",
     "scripts/restaurant-alias-parity-verifier.mjs": "e563d7a5203aaf6ea0e04687063d63027568fd2906accec43c26daaeea4ca1d8",
     "scripts/test-restaurant-alias-parity-verifier.mjs": "6fa1ce21c047f93678be3c45fb71cd1f0e8167ed142fc259e55efddea1030afb",
-    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "865c1032ce89fef6efac32affcfb30f512a5743a91821c1079be7d599396c018",
-    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "6fce949367cfdc4c985d9fe87f632dba2779f53e4d75235322d4063a3f23839a",
-    "scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs": "153e1718f37e80fc65aabd75d06b2c35dd5aadd83208c3548dbc0b81983da09a",
+    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "0fd3bb82e8a619cb00e6de932846fffc4d1ce2946edbe78b7b7072daddd20b92",
+    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "80bf1f9a02a4901e85bb1b02b08e5f825460cb95a533aae332d0ac7d6062adad",
+    "scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs": "c5e0c9ad30db40567a6836ddcac94ffac348d25f330b9d42fe6188a3ecedd76a",
     "scripts/test-restaurant-deterministic-metro-module-ids.mjs": "c262a93e6788b0508bd07fdcb612f1126d9c440274ce4ea04901be7ff5930213",
-    "scripts/verify-restaurant-alias-production-export-readiness.mjs": "e061c83d72f3233909489c59e4981d08fb0ec6560e6aeaa461d0b2032ba4f1eb",
+    "scripts/verify-restaurant-alias-production-export-readiness.mjs": "4222eeafca09cc62f4079290fcb963d6fad8047ac090994ed71077a8038a9463",
+    "scripts/restaurant-alias-staging-public-build-inputs.mjs": "4aa0b89a932947fae65696bf6443b1613a62e9032bb983a1b9a37f915c9c4659",
+    "scripts/test-restaurant-alias-staging-public-build-inputs.mjs": "423fb4a83e416c14dd3e2348c5cf50b90da8599c8c678a0ce05b678f142377c6",
     "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "e2621bd4f6f300daf3a9c997990c244680b8e09bf7b7801dbd2d65d59c593828",
     "scripts/test-restaurant-alias-diagnostic-access-staging.mjs": "01a4a6c21809133620fd1610c3a7fd5e7d8d499b1438b76d8c0a9c26d19cd51c",
   }),
@@ -423,12 +450,12 @@ export function verifyAcceptedDiagnosticExecutables({ repoRoot, commit, spawn = 
 export function validateOwnerAuthorization(input) {
   const fields = [
     "contractVersion", "decision", "approvedForHostedExecution", "environment", "runId",
-    "proposalSha256", "checkpointParent", "sourceCommit", "sourceManifestSha256", "applicationTree", "authorizedActions", "authorizedSupportActions",
+    "proposalSha256", "checkpointParent", "sourceCommit", "sourceManifestSha256", "applicationTree", "buildInputContractSha256", "authorizedActions", "authorizedSupportActions",
     "authorizationText", "authorizationTextSha256", "issuedAt", "maintenanceWindowStart", "maintenanceWindowEnd",
   ];
   exactKeys(input, fields, "Owner authorization");
   if (input.contractVersion !== 1 || input.decision !== "APPROVE_ONE_RUN_STAGING_ALIAS_DIAGNOSTIC" || input.approvedForHostedExecution !== true || input.environment !== "staging") throw new Error("Explicit one-run Staging approval is required.");
-  if (input.runId !== SUPPORT.runId || input.proposalSha256 !== SUPPORT.proposalSha256 || input.checkpointParent !== SUPPORT.baseCheckpoint || !/^[a-f0-9]{40}$/.test(input.sourceCommit || "") || input.sourceCommit === SUPPORT.baseCheckpoint || !/^[a-f0-9]{64}$/.test(input.sourceManifestSha256 || "") || input.applicationTree !== SUPPORT.applicationTree) throw new Error("Owner authorization identity mismatch.");
+  if (input.runId !== SUPPORT.runId || input.proposalSha256 !== SUPPORT.proposalSha256 || input.checkpointParent !== SUPPORT.baseCheckpoint || !/^[a-f0-9]{40}$/.test(input.sourceCommit || "") || input.sourceCommit === SUPPORT.baseCheckpoint || !/^[a-f0-9]{64}$/.test(input.sourceManifestSha256 || "") || input.applicationTree !== SUPPORT.applicationTree || input.buildInputContractSha256 !== DIAGNOSTIC_OPERATOR.buildInputContractSha256) throw new Error("Owner authorization identity mismatch.");
   if (JSON.stringify(input.authorizedActions) !== JSON.stringify(SUPPORT.actions)) throw new Error("Owner authorization actions are incomplete or contradictory.");
   if (JSON.stringify(input.authorizedSupportActions) !== JSON.stringify(SUPPORT.supportActions)) throw new Error("Owner authorization support actions are incomplete or contradictory.");
   required(input.authorizationText, "Owner authorization text");
@@ -464,6 +491,7 @@ export function prepareAuthorityArtifacts({ repoRoot, approval, outputDirectory,
     applicationTree: SUPPORT.applicationTree,
     artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256,
     archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256,
+    buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256,
     easProjectId: DIAGNOSTIC_OPERATOR.easProjectId,
     supabaseProjectRef: DIAGNOSTIC_OPERATOR.supabaseProjectRef,
     firebaseProjectId: DIAGNOSTIC_OPERATOR.firebaseProjectId,
@@ -913,7 +941,7 @@ export function buildBaselinePreflight({ authority, reads, protectedEvidence, ca
   return {
     schemaVersion: 1, stage: "baseline", passed: true, capturedAt, runId: authority.runId,
     source: { commit: authority.sourceCommit, manifestSha256: authority.sourceManifestSha256, applicationTree: SUPPORT.applicationTree },
-    artifact: { manifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256 },
+    artifact: { manifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256 },
     protectedEvidence, ...snapshot,
   };
 }
@@ -926,7 +954,7 @@ export function buildFinalPreflight({ authority, reads, protectedEvidence, runDi
   const access = requireRunEvidence(path.join(runDirectory, "immutable-access-qualification.json"), "Immutable access");
   const fresh = consumeFreshRollbackRecapture(runDirectory, authority, currentMs);
   const rollback = fresh.reference;
-  if (artifact.value.runId !== authority.runId || artifact.value.sourceCommit !== authority.sourceCommit || artifact.value.sourceManifestSha256 !== authority.sourceManifestSha256 || artifact.value.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact.value.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Final artifact binding mismatch.");
+  if (artifact.value.runId !== authority.runId || artifact.value.sourceCommit !== authority.sourceCommit || artifact.value.sourceManifestSha256 !== authority.sourceManifestSha256 || artifact.value.buildInputContractSha256 !== DIAGNOSTIC_OPERATOR.buildInputContractSha256 || artifact.value.buildInputs?.length !== 9 || artifact.value.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact.value.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Final build-input and artifact binding mismatch.");
   if (!deployment.value.deploymentIdentifier || deployment.value.url !== immutable.value.url || immutable.value.passed !== true || immutable.value.deploymentIdentifier !== deployment.value.deploymentIdentifier) throw new Error("Final immutable candidate mismatch.");
   const resourceInventory = consumeRegisteredDeployment(runDirectory, authority, deployment);
   if (access.value.passed !== true || access.value.deploymentIdentifier !== deployment.value.deploymentIdentifier || access.value.immutableUrl !== deployment.value.url || access.value.immutableEvidenceSha256 !== immutable.sha256) throw new Error("Final access evidence mismatch.");
@@ -947,7 +975,7 @@ export function buildFinalPreflight({ authority, reads, protectedEvidence, runDi
     environment: "staging",
     identities: snapshot.identities,
     source: { commit: authority.sourceCommit, manifestSha256: authority.sourceManifestSha256, applicationTree: SUPPORT.applicationTree },
-    artifact: { manifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256 },
+    artifact: { manifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256 },
     migration: snapshot.migration,
     earnings: snapshot.earnings,
     protectedEvidence,

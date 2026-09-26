@@ -6,12 +6,13 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { DIAGNOSTIC_OPERATOR, verifyLocalExportOutput } from "./deploy-restaurant-alias-10-minute-diagnostic-staging.mjs";
+import { loadStagingBuildInputContract } from "./restaurant-alias-staging-public-build-inputs.mjs";
 
 export const READ_ONLY_EAS_EXPORT_CHECK = Object.freeze({
   decision: "AUTHORIZE_READ_ONLY_STAGING_EAS_EXPORT_CHECK",
   environment: "staging",
   easProjectId: DIAGNOSTIC_OPERATOR.easProjectId,
-  command: Object.freeze(["eas-cli@16.32.0", "env:exec", "preview", "npm run prepare:web && npx expo export --platform web --clear", "--non-interactive"]),
+  command: Object.freeze(["eas-cli@16.32.0", "env:exec", "preview", "node ../../scripts/restaurant-alias-staging-public-build-inputs.mjs && npm run prepare:web && npx expo export --platform web --clear", "--non-interactive"]),
   maximumAuthorizationMs: 2 * 60 * 60_000,
 });
 
@@ -61,12 +62,12 @@ export function validateReadOnlyEasExportAuthorization(input, { now = Date.now()
   exactKeys(input, [
     "contractVersion", "decision", "approvedForReadOnlyHostedAccess", "hostedMutationsAuthorized", "diagnosticRunAuthorized",
     "environment", "checkId", "easProjectId", "sourceCommit", "sourceManifestSha256", "applicationTree",
-    "artifactManifestSha256", "archiveSha256", "authorizationText", "authorizationTextSha256", "issuedAt", "expiresAt",
+    "artifactManifestSha256", "archiveSha256", "buildInputContractSha256", "authorizationText", "authorizationTextSha256", "issuedAt", "expiresAt",
   ], "Read-only EAS export authorization");
   if (input.contractVersion !== 1 || input.decision !== READ_ONLY_EAS_EXPORT_CHECK.decision || input.approvedForReadOnlyHostedAccess !== true || input.hostedMutationsAuthorized !== false || input.diagnosticRunAuthorized !== false) throw new Error("Explicit read-only EAS export authorization is required.");
   if (input.environment !== READ_ONLY_EAS_EXPORT_CHECK.environment || input.easProjectId !== READ_ONLY_EAS_EXPORT_CHECK.easProjectId) throw new Error("Read-only EAS export environment identity mismatch.");
   if (!/^ruip6ae_[a-z0-9]{8,24}$/.test(input.checkId || "")) throw new Error("A fresh canonical read-only export check ID is required.");
-  if (!/^[a-f0-9]{40}$/.test(input.sourceCommit || "") || !/^[a-f0-9]{64}$/.test(input.sourceManifestSha256 || "") || input.applicationTree !== DIAGNOSTIC_OPERATOR.applicationTree || input.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || input.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Read-only EAS export source or artifact binding mismatch.");
+  if (!/^[a-f0-9]{40}$/.test(input.sourceCommit || "") || !/^[a-f0-9]{64}$/.test(input.sourceManifestSha256 || "") || input.applicationTree !== DIAGNOSTIC_OPERATOR.applicationTree || input.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || input.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || input.buildInputContractSha256 !== DIAGNOSTIC_OPERATOR.buildInputContractSha256) throw new Error("Read-only EAS export source, build-input, or artifact binding mismatch.");
   if (typeof input.authorizationText !== "string" || input.authorizationText.length < 80 || input.authorizationTextSha256 !== sha256(Buffer.from(input.authorizationText)) || !/read-only/i.test(input.authorizationText) || !/staging/i.test(input.authorizationText) || !input.authorizationText.includes(input.checkId) || !/no deployment/i.test(input.authorizationText)) throw new Error("Read-only EAS export authorization text is incomplete or has the wrong digest.");
   const issued = Date.parse(input.issuedAt), expires = Date.parse(input.expiresAt);
   if (!Number.isFinite(issued) || !Number.isFinite(expires) || expires <= issued || expires - issued > READ_ONLY_EAS_EXPORT_CHECK.maximumAuthorizationMs || now < issued || now >= expires) throw new Error("Read-only EAS export authorization is not currently valid.");
@@ -107,7 +108,7 @@ export function verifyExactProductionExportReadiness({ root, run = spawnSync, ou
 }
 
 export function verifyReadOnlyEasExportEvidence(value, { sourceCommit, sourceManifestSha256, now = Date.now(), maximumAgeMs = 30 * 60_000 } = {}) {
-  if (value?.schemaVersion !== 1 || value?.disposition !== "PASS" || value?.environment !== "staging" || value?.easProjectId !== DIAGNOSTIC_OPERATOR.easProjectId || value?.sourceCommit !== sourceCommit || value?.sourceManifestSha256 !== sourceManifestSha256 || value?.applicationTree !== DIAGNOSTIC_OPERATOR.applicationTree || value?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || value?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || value?.attempts?.length !== 2 || value.attempts.some(row => row.passed !== true || row.fileCount !== 74 || row.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || row.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || row.files?.length !== 74) || JSON.stringify(value.attempts[0].files) !== JSON.stringify(value.attempts[1].files)) throw new Error("Complete passing read-only EAS export evidence is required.");
+  if (value?.schemaVersion !== 1 || value?.disposition !== "PASS" || value?.environment !== "staging" || value?.easProjectId !== DIAGNOSTIC_OPERATOR.easProjectId || value?.sourceCommit !== sourceCommit || value?.sourceManifestSha256 !== sourceManifestSha256 || value?.applicationTree !== DIAGNOSTIC_OPERATOR.applicationTree || value?.buildInputContractSha256 !== DIAGNOSTIC_OPERATOR.buildInputContractSha256 || value?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || value?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || value?.attempts?.length !== 2 || value.attempts.some(row => row.passed !== true || row.fileCount !== 74 || row.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || row.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || row.files?.length !== 74) || JSON.stringify(value.attempts[0].files) !== JSON.stringify(value.attempts[1].files)) throw new Error("Complete passing read-only EAS export evidence is required.");
   const completed = Date.parse(value.completedAt);
   if (!Number.isFinite(completed) || completed > now || now - completed > maximumAgeMs) throw new Error("Read-only EAS export evidence is stale.");
   return { passed: true, checkId: value.checkId, completedAt: value.completedAt, evidenceSha256: sha256(Buffer.from(canonical(value))) };
@@ -127,12 +128,14 @@ export function runReadOnlyEasExportCheck(argv = process.argv.slice(2), dependen
   const spawn = dependencies.spawnSync || spawnSync;
   if (spawn("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).stdout.trim() !== authorization.sourceCommit || spawn("git", ["rev-parse", "HEAD:apps/restaurant"], { cwd: root, encoding: "utf8" }).stdout.trim() !== authorization.applicationTree) throw new Error("Reviewed read-only export checkpoint is not checked out.");
   if (!fs.existsSync(sourceManifestPath) || sha256(fs.readFileSync(sourceManifestPath)) !== authorization.sourceManifestSha256) throw new Error("Reviewed source manifest is required for the read-only export check.");
+  const buildInputContract = loadStagingBuildInputContract({ root });
+  if (buildInputContract.sha256 !== authorization.buildInputContractSha256) throw new Error("Reviewed Staging build-input contract is required for the read-only export check.");
   const evidenceRoot = path.resolve(dependencies.evidenceRoot || path.join(root, "secure/restaurant-alias-export-readiness"));
   initializeExclusiveEvidenceDirectory({ evidenceRoot, outputDirectory, checkId: authorization.checkId, initializedAt: iso(now), fileSystem: dependencies.fileSystem || fs });
   const progressPath = path.join(outputDirectory, "read-only-eas-export-progress.json");
   try {
-    const result = verifyExactProductionExportReadiness({ root, run: dependencies.run || spawnSync, outputVerifier: dependencies.outputVerifier || verifyLocalExportOutput, clock: dependencies.clock, onAttempt(progress) { atomicWrite(progressPath, { schemaVersion: 1, checkId: authorization.checkId, environment: authorization.environment, easProjectId: authorization.easProjectId, sourceCommit: authorization.sourceCommit, sourceManifestSha256: authorization.sourceManifestSha256, applicationTree: authorization.applicationTree, artifactManifestSha256: authorization.artifactManifestSha256, archiveSha256: authorization.archiveSha256, authorizationTextSha256: authorization.authorizationTextSha256, ...progress }); } });
-    const evidence = { schemaVersion: 1, checkId: authorization.checkId, disposition: "PASS", completedAt: iso(now), environment: authorization.environment, easProjectId: authorization.easProjectId, sourceCommit: authorization.sourceCommit, sourceManifestSha256: authorization.sourceManifestSha256, applicationTree: authorization.applicationTree, artifactManifestSha256: result.artifactManifestSha256, archiveSha256: result.archiveSha256, authorizationTextSha256: authorization.authorizationTextSha256, attempts: result.observations };
+    const result = verifyExactProductionExportReadiness({ root, run: dependencies.run || spawnSync, outputVerifier: dependencies.outputVerifier || verifyLocalExportOutput, clock: dependencies.clock, onAttempt(progress) { atomicWrite(progressPath, { schemaVersion: 1, checkId: authorization.checkId, environment: authorization.environment, easProjectId: authorization.easProjectId, sourceCommit: authorization.sourceCommit, sourceManifestSha256: authorization.sourceManifestSha256, applicationTree: authorization.applicationTree, buildInputContractSha256: authorization.buildInputContractSha256, artifactManifestSha256: authorization.artifactManifestSha256, archiveSha256: authorization.archiveSha256, authorizationTextSha256: authorization.authorizationTextSha256, ...progress }); } });
+    const evidence = { schemaVersion: 1, checkId: authorization.checkId, disposition: "PASS", completedAt: iso(now), environment: authorization.environment, easProjectId: authorization.easProjectId, sourceCommit: authorization.sourceCommit, sourceManifestSha256: authorization.sourceManifestSha256, applicationTree: authorization.applicationTree, buildInputContractSha256: authorization.buildInputContractSha256, artifactManifestSha256: result.artifactManifestSha256, archiveSha256: result.archiveSha256, authorizationTextSha256: authorization.authorizationTextSha256, attempts: result.observations };
     atomicWrite(path.join(outputDirectory, "read-only-eas-export-evidence.json"), evidence);
     return evidence;
   } catch (error) {

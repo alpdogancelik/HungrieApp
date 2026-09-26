@@ -92,7 +92,7 @@ test("pre-authority readiness runs the exact production diagnostic export path t
   assert.equal(calls.length, 2);
   for (const call of calls) {
     assert.equal(call.command, "npx");
-    assert.deepEqual(call.args, ["eas-cli@16.32.0", "env:exec", "preview", "npm run prepare:web && npx expo export --platform web --clear", "--non-interactive"]);
+    assert.deepEqual(call.args, ["eas-cli@16.32.0", "env:exec", "preview", "node ../../scripts/restaurant-alias-staging-public-build-inputs.mjs && npm run prepare:web && npx expo export --platform web --clear", "--non-interactive"]);
     assert.equal(call.cwd, path.join(root, "apps/restaurant"));
   }
 });
@@ -156,6 +156,7 @@ function approval(overrides = {}) {
     sourceCommit: fakeSourceCommit,
     sourceManifestSha256: fakeSourceManifestSha256,
     applicationTree: SUPPORT.applicationTree,
+    buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256,
     authorizedActions: [...SUPPORT.actions],
     authorizedSupportActions: [...SUPPORT.supportActions],
     authorizationText,
@@ -174,6 +175,7 @@ function authority() {
     environment: "staging",
     planSha256: DIAGNOSTIC_OPERATOR.planSha256,
     applicationTree: SUPPORT.applicationTree,
+    buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256,
     artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256,
     archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256,
     easProjectId: DIAGNOSTIC_OPERATOR.easProjectId,
@@ -400,6 +402,8 @@ function finalFixture({ rollbackCapturedAt = capturedAt } = {}) {
     sourceCommit: auth.sourceCommit,
     sourceManifestSha256: auth.sourceManifestSha256,
     applicationTree: SUPPORT.applicationTree,
+    buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256,
+    buildInputs: Array.from({ length: 9 }, (_, index) => ({ name: `EXPO_PUBLIC_FIXTURE_${index}`, passed: true })),
     artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256,
     archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256,
   };

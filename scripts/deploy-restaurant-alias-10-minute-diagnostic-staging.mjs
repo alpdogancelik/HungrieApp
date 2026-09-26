@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadStagingBuildInputContract } from "./restaurant-alias-staging-public-build-inputs.mjs";
 import { spawnSync } from "node:child_process";
 import {
   ALIAS_PARITY_DIAGNOSTIC_POLICY,
@@ -14,8 +15,9 @@ import {
 export const DIAGNOSTIC_OPERATOR = Object.freeze({
   planSha256: "47611c6cd93ab7d9595649db77589198d8d3f7bf4969c45062ae767d036d01fc",
   applicationTree: "7430599b150adbd19ddafadce1195f1e418daf8a",
-  artifactManifestSha256: "7ca81f0fdbc649e34a929956329bcaafc95ec357c84f342a01f2a0dab2836431",
-  archiveSha256: "dd416dd5f44a4f3dbb3443f7269c61f4d964fe3e3e4de3b38d873db553e183cb",
+  artifactManifestSha256: "d3af007214f8fd5cf200dbe8e81cef33a32d98e0fb889e63596dae856ac39e89",
+  archiveSha256: "b6294bb5195779e3d9fb2e412fb61e82d08a0ac2f0ea25deb283dc4094832862",
+  buildInputContractSha256: "f2c3e37d1e5699ea806e7fe2fd337aef4cb07ebb421ad2215209442546770c2e",
   easProjectId: "a2d5538b-bd0c-4205-8153-ba08a3a9b2b1",
   supabaseProjectRef: "rlrfvqskzvpysewdxqcr",
   firebaseProjectId: "hungrieapp-a2288",
@@ -85,6 +87,7 @@ export function validateAuthority(authority, options = {}) {
     applicationTree: DIAGNOSTIC_OPERATOR.applicationTree,
     artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256,
     archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256,
+    buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256,
     easProjectId: DIAGNOSTIC_OPERATOR.easProjectId,
     supabaseProjectRef: DIAGNOSTIC_OPERATOR.supabaseProjectRef,
     firebaseProjectId: DIAGNOSTIC_OPERATOR.firebaseProjectId,
@@ -458,7 +461,7 @@ function exactProtectedEvidence(rows) {
 }
 
 export function validatePromotionPrerequisites({ authority, artifact, artifactEntriesSha256, archiveEvidenceSha256, deployment, immutable, immutableEvidenceSha256, access, accessEvidenceSha256, rollback, rollbackEvidenceSha256, preflight, protectedEvidenceVerification, currentMs = Date.now() }) {
-  if (artifact?.runId !== authority.runId || artifact?.sourceCommit !== authority.sourceCommit || artifact?.sourceManifestSha256 !== authority.sourceManifestSha256 || artifact?.applicationTree !== DIAGNOSTIC_OPERATOR.applicationTree || artifact?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || artifact?.files?.length !== 74 || artifactEntriesSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || archiveEvidenceSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Accepted run-bound artifact evidence required.");
+  if (artifact?.runId !== authority.runId || artifact?.sourceCommit !== authority.sourceCommit || artifact?.sourceManifestSha256 !== authority.sourceManifestSha256 || artifact?.applicationTree !== DIAGNOSTIC_OPERATOR.applicationTree || artifact?.buildInputContractSha256 !== DIAGNOSTIC_OPERATOR.buildInputContractSha256 || artifact?.buildInputs?.length !== 9 || !artifact.buildInputs.every(row => row.passed === true) || artifact?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || artifact?.files?.length !== 74 || artifactEntriesSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || archiveEvidenceSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Accepted run-bound build-input and artifact evidence required.");
   if (!deployment?.deploymentIdentifier || REJECTED_DEPLOYMENTS.includes(deployment.deploymentIdentifier) || deployment.url !== immutable?.url || deployment.sourceCommit !== authority.sourceCommit || deployment.sourceManifestSha256 !== authority.sourceManifestSha256 || deployment.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256) throw new Error("Candidate deployment identity mismatch.");
   requireFresh("Immutable qualification", immutable?.completedAt, DIAGNOSTIC_OPERATOR.freshnessMs.immutable, currentMs);
   if (immutable?.passed !== true || immutable.runId !== authority.runId || immutable.deploymentIdentifier !== deployment.deploymentIdentifier || immutable.sourceCommit !== authority.sourceCommit || immutable.sourceManifestSha256 !== authority.sourceManifestSha256 || immutable.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || immutable.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || immutable.artifactFiles !== 74 || immutable.routes?.length !== 6 || !immutable.routes.every(row => row.passed) || immutable.criticalAssets?.length !== 5 || !immutable.criticalAssets.every(row => row.passed) || immutable.publishedFiles?.length !== 73 || !immutable.publishedFiles.every(row => row.passed) || immutable.deploymentControls?.length !== 1 || !immutable.deploymentControls.every(row => row.passed && row.path === "_expo/.routes.json" && row.publicUrlExpected === false && row.disposition === "consumed-as-static-routing-configuration") || immutable.publishedFiles.length + immutable.deploymentControls.length !== immutable.artifactFiles || immutable.externalRuntime?.length !== 2 || !immutable.externalRuntime.every(row => row.passed) || !/^[a-f0-9]{64}$/.test(immutableEvidenceSha256 || "")) throw new Error("Complete passing immutable-to-artifact qualification required.");
@@ -470,7 +473,7 @@ export function validatePromotionPrerequisites({ authority, artifact, artifactEn
   if (!/^[a-f0-9]{64}$/.test(rollbackEvidenceSha256 || "")) throw new Error("Hashed rollback reference required.");
   requireFresh("Staging promotion preflight", preflight?.capturedAt, DIAGNOSTIC_OPERATOR.freshnessMs.preflight, currentMs);
   if (preflight?.passed !== true || preflight.runId !== authority.runId || preflight.environment !== "staging" || preflight.identities?.supabaseProjectRef !== DIAGNOSTIC_OPERATOR.supabaseProjectRef || preflight.identities?.firebaseProjectId !== DIAGNOSTIC_OPERATOR.firebaseProjectId || preflight.identities?.easProjectId !== DIAGNOSTIC_OPERATOR.easProjectId || preflight.identities?.aliasId !== DIAGNOSTIC_OPERATOR.aliasId || preflight.identities?.aliasName !== DIAGNOSTIC_OPERATOR.aliasName || preflight.identities?.aliasUrl !== DIAGNOSTIC_OPERATOR.aliasUrl) throw new Error("Exact Staging identity preflight required.");
-  if (preflight.source?.commit !== authority.sourceCommit || preflight.source?.manifestSha256 !== authority.sourceManifestSha256 || preflight.source?.applicationTree !== DIAGNOSTIC_OPERATOR.applicationTree || preflight.artifact?.manifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || preflight.artifact?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Preflight source or artifact identity mismatch.");
+  if (preflight.source?.commit !== authority.sourceCommit || preflight.source?.manifestSha256 !== authority.sourceManifestSha256 || preflight.source?.applicationTree !== DIAGNOSTIC_OPERATOR.applicationTree || preflight.artifact?.manifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || preflight.artifact?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || preflight.artifact?.buildInputContractSha256 !== DIAGNOSTIC_OPERATOR.buildInputContractSha256) throw new Error("Preflight source, build-input, or artifact identity mismatch.");
   if (preflight.migration?.version !== DIAGNOSTIC_OPERATOR.conflictMigration.version || preflight.migration?.sha256 !== DIAGNOSTIC_OPERATOR.conflictMigration.sha256 || preflight.migration?.appliedExactlyOnce !== true || preflight.migration?.pendingCount !== 0) throw new Error("Accepted migration state with zero pending migrations required.");
   if (preflight.earnings?.capability !== "restaurant_earnings_v1" || preflight.earnings?.enabled !== false) throw new Error("Earnings-disabled preflight required.");
   if (!exactProtectedEvidence(preflight.protectedEvidence)) throw new Error("Unchanged protected prior-run evidence required.");
@@ -548,10 +551,12 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
   if (app.expo?.extra?.eas?.projectId !== DIAGNOSTIC_OPERATOR.easProjectId) throw new Error("Restaurant EAS project identity mismatch.");
 
   if (action === "export") {
-    const result = run("npx", ["eas-cli@16.32.0", "env:exec", "preview", "npm run prepare:web && npx expo export --platform web --clear", "--non-interactive"], { cwd: appRoot, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    const result = run("npx", ["eas-cli@16.32.0", "env:exec", "preview", "node ../../scripts/restaurant-alias-staging-public-build-inputs.mjs && npm run prepare:web && npx expo export --platform web --clear", "--non-interactive"], { cwd: appRoot, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
     if (result.status !== 0) throw new Error("Restaurant preview export failed; output withheld.");
+    const buildInputs = loadStagingBuildInputContract({ root: sourceRoot });
+    if (buildInputs.sha256 !== DIAGNOSTIC_OPERATOR.buildInputContractSha256) throw new Error("Reviewed Staging build-input contract differs from the diagnostic binding.");
     const { files, deploymentControls, artifactManifestSha256, archive } = verifyLocalExportOutput({ distDirectory: path.join(appRoot, "dist"), archivePath: path.join(runDirectory, "restaurant-static-export.tar"), spawn: run });
-    atomicWrite(path.join(runDirectory, "artifact-manifest.json"), { capturedAt: now(), runId: authority.runId, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree, files, deploymentControls, artifactManifestSha256, archiveSha256: archive.sha256, archiveBytes: archive.bytes });
+    atomicWrite(path.join(runDirectory, "artifact-manifest.json"), { capturedAt: now(), runId: authority.runId, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree, buildInputContractSha256: buildInputs.sha256, buildInputs: buildInputs.value.variables.map(row => ({ name: row.name, utf8Bytes: row.utf8Bytes, sha256: row.sha256, passed: true })), files, deploymentControls, artifactManifestSha256, archiveSha256: archive.sha256, archiveBytes: archive.bytes });
     return { passed: true, action, files: files.length, routes: 20 };
   }
 
@@ -559,7 +564,7 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
     const { attemptPath, attempt } = consumeDeploymentReservation({ runDirectory, authority });
     const artifact = JSON.parse(fs.readFileSync(path.join(runDirectory, "artifact-manifest.json"), "utf8"));
     const archivePath = path.join(runDirectory, "restaurant-static-export.tar");
-    if (artifact.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || !fs.existsSync(archivePath) || sha256(fs.readFileSync(archivePath)) !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Accepted artifact and deterministic archive evidence required.");
+    if (artifact.buildInputContractSha256 !== DIAGNOSTIC_OPERATOR.buildInputContractSha256 || artifact.buildInputs?.length !== 9 || !artifact.buildInputs.every(row => row.passed === true) || artifact.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || !fs.existsSync(archivePath) || sha256(fs.readFileSync(archivePath)) !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Accepted build inputs, artifact, and deterministic archive evidence required.");
     const result = run("npx", ["eas-cli@16.32.0", "deploy", "--environment", "preview", "--export-dir", "dist", "--json", "--non-interactive"], { cwd: appRoot, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
     if (result.status !== 0) throw new Error("Immutable deployment failed; output withheld.");
     const raw = parseJsonOutput(result.stdout), deploymentIdentifier = raw.identifier || raw.deploymentIdentifier, url = raw.url;

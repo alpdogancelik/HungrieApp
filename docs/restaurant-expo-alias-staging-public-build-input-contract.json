@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "identity": "restaurant-staging-preview-public-build-inputs-v1",
+  "environment": "staging",
+  "easEnvironment": "preview",
+  "easProjectId": "a2d5538b-bd0c-4205-8153-ba08a3a9b2b1",
+  "firebaseProjectId": "hungrieapp-a2288",
+  "supabaseProjectRef": "rlrfvqskzvpysewdxqcr",
+  "variables": [
+    { "name": "EXPO_PUBLIC_FIREBASE_API_KEY", "utf8Bytes": 39, "sha256": "0c02eddc9ca1a6fe3fb79c4528cb6367b03fc40bdea66a32d19915164984bc55" },
+    { "name": "EXPO_PUBLIC_FIREBASE_APP_ID", "utf8Bytes": 41, "sha256": "5c310b17a59fb1cd2d918d4ee1fa2a18b7cf2106df01be8a235f9cf2aab11fc5" },
+    { "name": "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN", "utf8Bytes": 32, "sha256": "827d15ceabe84664feb6935230c2cd4793fe0d9c057509e563ca510784e59d1f" },
+    { "name": "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID", "utf8Bytes": 12, "sha256": "97be130fd636a11322f5d1ca0afc5176a6b002ba46dd902ed93155a7d3ab9877" },
+    { "name": "EXPO_PUBLIC_FIREBASE_PROJECT_ID", "utf8Bytes": 16, "sha256": "3a6ddb832a5c589aba4921b1c89a68f1d87a035fe80a6b817bc11889e540286d" },
+    { "name": "EXPO_PUBLIC_FIREBASE_VAPID_KEY", "utf8Bytes": 87, "sha256": "36865a8d534b65dc37a8e4f0919c23a8b12d89ce5e773b7125f9122543e5e050" },
+    { "name": "EXPO_PUBLIC_RESTAURANT_POLL_MS", "utf8Bytes": 5, "sha256": "d4c999ae43633bd2036188d2bca68e1be8202b2cc1f3a1c42a728eaff7d2483d" },
+    { "name": "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "utf8Bytes": 208, "sha256": "80777a55a063e3c338c013c8de04539a65cca8d50907b53dae8b5a3a39ebeddf" },
+    { "name": "EXPO_PUBLIC_SUPABASE_URL", "utf8Bytes": 40, "sha256": "e701e91d7e96e6a885372d5423e23255fb013f4ef18f588ed3eb908ef741118c" }
+  ],
+  "sourceReferences": {
+    "EXPO_PUBLIC_FIREBASE_API_KEY": ["apps/restaurant/src/firebase.ts"],
+    "EXPO_PUBLIC_FIREBASE_APP_ID": ["apps/restaurant/src/firebase.ts"],
+    "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": ["apps/restaurant/src/firebase.ts"],
+    "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": ["apps/restaurant/src/firebase.ts"],
+    "EXPO_PUBLIC_FIREBASE_PROJECT_ID": ["apps/restaurant/src/firebase.ts"],
+    "EXPO_PUBLIC_FIREBASE_VAPID_KEY": ["apps/restaurant/src/NotificationCard.tsx"],
+    "EXPO_PUBLIC_RESTAURANT_POLL_MS": ["apps/restaurant/src/orders/useActiveOrders.ts", "apps/restaurant/src/orders/useOrderDetail.ts"],
+    "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": ["apps/restaurant/src/supabase.ts"],
+    "EXPO_PUBLIC_SUPABASE_URL": ["apps/restaurant/src/supabase.ts"]
+  }
+}

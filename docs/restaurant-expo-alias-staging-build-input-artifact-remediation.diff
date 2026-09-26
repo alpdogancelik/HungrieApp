@@ -1,0 +1,1209 @@
+diff --git a/docs/restaurant-expo-alias-ruip6ae-20260926l-read-only-eas-export-plan.md b/docs/restaurant-expo-alias-ruip6ae-20260926l-read-only-eas-export-plan.md
+new file mode 100644
+index 0000000..ce13259
+--- /dev/null
++++ b/docs/restaurant-expo-alias-ruip6ae-20260926l-read-only-eas-export-plan.md
+@@ -0,0 +1,45 @@
++# Restaurant Staging Public Build-Input Read-Only EAS Export Check
++
++**Status:** Plan only; no authority exists and no hosted request is authorized
++**Proposed check ID:** `ruip6ae_20260926l`
++**Environment:** EAS `preview` for Staging only
++**EAS project:** `a2d5538b-bd0c-4205-8153-ba08a3a9b2b1`
++**Build-input contract:** `f2c3e37d1e5699ea806e7fe2fd337aef4cb07ebb421ad2215209442546770c2e`
++**Candidate manifest:** `d3af007214f8fd5cf200dbe8e81cef33a32d98e0fb889e63596dae856ac39e89`
++**Canonical archive:** `b6294bb5195779e3d9fb2e412fb61e82d08a0ac2f0ea25deb283dc4094832862`
++
++## Purpose
++
++This separately authorized read-only check establishes that the actual EAS `preview` environment injects the nine reviewed Restaurant public build inputs and that two clean executions of the production diagnostic export reproduce the reviewed 74-file artifact and canonical USTAR archive. It cannot deploy, create a diagnostic attempt, assign an alias, roll back, modify an account, or mutate hosted state.
++
++## Preconditions
++
++A future audited direct-child checkpoint must bind its actual commit, source-manifest SHA-256, unchanged Restaurant tree, this plan, the build-input contract, candidate manifest, canonical archive, and the executable hashes. A fresh owner authorization must name `ruip6ae_20260926l`, reproduce those exact identities, contain the exact authorization-text digest, and be valid for at most two hours. The secure authority and source-manifest files must not exist before issuance. All prior check and diagnostic authority/evidence directories remain immutable and excluded from reuse.
++
++## Exact command
++
++The check operator invokes this command exactly twice from `apps/restaurant`, in separate processes:
++
++```text
++npx eas-cli@16.32.0 env:exec preview "node ../../scripts/restaurant-alias-staging-public-build-inputs.mjs && npm run prepare:web && npx expo export --platform web --clear" --non-interactive
++```
++
++The first command in the wrapper validates all nine injected values by UTF-8 length and SHA-256 and checks that the reviewed source-reference set has not drifted. It emits names and fingerprints only. Any absent or changed value stops before Metro export.
++
++Each successful export must have exactly 74 files and 20 HTML routes, exact manifest `d3af007214f8fd5cf200dbe8e81cef33a32d98e0fb889e63596dae856ac39e89`, exact canonical archive `b6294bb5195779e3d9fb2e412fb61e82d08a0ac2f0ea25deb283dc4094832862`, exact five critical assets, valid routing-control JSON, and the required PWA/runtime files. The two complete file inventories and archives must be byte identical.
++
++## Evidence and failure behavior
++
++The operator exclusively creates `secure/restaurant-alias-export-readiness/ruip6ae_20260926l` beneath a trusted mode-0700 parent and writes mode-0600 initialization, progress, and terminal evidence. Every attempt is persisted before comparison or failure. Evidence includes the source/artifact/archive/build-input-contract identities and sanitized file hashes; it excludes raw environment values and credentials.
++
++Missing input, fingerprint drift, wrapper failure, any file/hash/archive mismatch, a second invocation, stale authority, or incomplete evidence is `FAIL`. No retry is authorized by this plan. Passing evidence remains a prerequisite for a later diagnostic authority and is not deployment or Phase 6 approval.
++
++## Required future authorization
++
++Owner approval must explicitly authorize only two read-only EAS `preview` environment exports for check `ruip6ae_20260926l`, bind the future audited checkpoint/source manifest and the identities above, state that no deployment or hosted mutation is authorized, and provide concrete `issuedAt` and `expiresAt` timestamps no more than two hours apart. Until that separate approval is issued and validated, no EAS command may run.
++
++## Subsequent full diagnostic handoff
++
++A passing check may be consumed only by the separately authorized full diagnostic `ruip6ad_20260926j`. Its terminal evidence must be complete, bound to the same audited checkpoint, source manifest, Restaurant tree, build-input contract, 74-file artifact manifest, and canonical archive, and no more than 30 minutes old when `prepare-authority` validates it. The diagnostic requires a separate owner authorization and maintenance window; the read-only authorization cannot authorize a deployment or alias operation.
++
++The full diagnostic remains limited to one immutable deployment attempt, one alias assignment attempt, the reviewed 600-second observation, and one independently verified rollback assignment. A stale, failed, incomplete, differently bound, or previously consumed read-only result stops authority preparation. No action begins automatically after the read-only check.
+diff --git a/docs/restaurant-expo-alias-staging-public-build-input-contract.json b/docs/restaurant-expo-alias-staging-public-build-input-contract.json
+new file mode 100644
+index 0000000..5b59161
+--- /dev/null
++++ b/docs/restaurant-expo-alias-staging-public-build-input-contract.json
+@@ -0,0 +1,31 @@
++{
++  "schemaVersion": 1,
++  "identity": "restaurant-staging-preview-public-build-inputs-v1",
++  "environment": "staging",
++  "easEnvironment": "preview",
++  "easProjectId": "a2d5538b-bd0c-4205-8153-ba08a3a9b2b1",
++  "firebaseProjectId": "hungrieapp-a2288",
++  "supabaseProjectRef": "rlrfvqskzvpysewdxqcr",
++  "variables": [
++    { "name": "EXPO_PUBLIC_FIREBASE_API_KEY", "utf8Bytes": 39, "sha256": "0c02eddc9ca1a6fe3fb79c4528cb6367b03fc40bdea66a32d19915164984bc55" },
++    { "name": "EXPO_PUBLIC_FIREBASE_APP_ID", "utf8Bytes": 41, "sha256": "5c310b17a59fb1cd2d918d4ee1fa2a18b7cf2106df01be8a235f9cf2aab11fc5" },
++    { "name": "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN", "utf8Bytes": 32, "sha256": "827d15ceabe84664feb6935230c2cd4793fe0d9c057509e563ca510784e59d1f" },
++    { "name": "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID", "utf8Bytes": 12, "sha256": "97be130fd636a11322f5d1ca0afc5176a6b002ba46dd902ed93155a7d3ab9877" },
++    { "name": "EXPO_PUBLIC_FIREBASE_PROJECT_ID", "utf8Bytes": 16, "sha256": "3a6ddb832a5c589aba4921b1c89a68f1d87a035fe80a6b817bc11889e540286d" },
++    { "name": "EXPO_PUBLIC_FIREBASE_VAPID_KEY", "utf8Bytes": 87, "sha256": "36865a8d534b65dc37a8e4f0919c23a8b12d89ce5e773b7125f9122543e5e050" },
++    { "name": "EXPO_PUBLIC_RESTAURANT_POLL_MS", "utf8Bytes": 5, "sha256": "d4c999ae43633bd2036188d2bca68e1be8202b2cc1f3a1c42a728eaff7d2483d" },
++    { "name": "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "utf8Bytes": 208, "sha256": "80777a55a063e3c338c013c8de04539a65cca8d50907b53dae8b5a3a39ebeddf" },
++    { "name": "EXPO_PUBLIC_SUPABASE_URL", "utf8Bytes": 40, "sha256": "e701e91d7e96e6a885372d5423e23255fb013f4ef18f588ed3eb908ef741118c" }
++  ],
++  "sourceReferences": {
++    "EXPO_PUBLIC_FIREBASE_API_KEY": ["apps/restaurant/src/firebase.ts"],
++    "EXPO_PUBLIC_FIREBASE_APP_ID": ["apps/restaurant/src/firebase.ts"],
++    "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": ["apps/restaurant/src/firebase.ts"],
++    "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": ["apps/restaurant/src/firebase.ts"],
++    "EXPO_PUBLIC_FIREBASE_PROJECT_ID": ["apps/restaurant/src/firebase.ts"],
++    "EXPO_PUBLIC_FIREBASE_VAPID_KEY": ["apps/restaurant/src/NotificationCard.tsx"],
++    "EXPO_PUBLIC_RESTAURANT_POLL_MS": ["apps/restaurant/src/orders/useActiveOrders.ts", "apps/restaurant/src/orders/useOrderDetail.ts"],
++    "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": ["apps/restaurant/src/supabase.ts"],
++    "EXPO_PUBLIC_SUPABASE_URL": ["apps/restaurant/src/supabase.ts"]
++  }
++}
+diff --git a/docs/restaurant-expo-alias-staging-public-build-input-evidence/candidate-artifact-manifest.json b/docs/restaurant-expo-alias-staging-public-build-input-evidence/candidate-artifact-manifest.json
+new file mode 100644
+index 0000000..421289f
+--- /dev/null
++++ b/docs/restaurant-expo-alias-staging-public-build-input-evidence/candidate-artifact-manifest.json
+@@ -0,0 +1,457 @@
++{
++  "schemaVersion": 3,
++  "identity": "restaurant-staging-preview-public-build-inputs-v1",
++  "buildInputContractSha256": "f2c3e37d1e5699ea806e7fe2fd337aef4cb07ebb421ad2215209442546770c2e",
++  "fileCount": 74,
++  "artifactManifestSha256": "d3af007214f8fd5cf200dbe8e81cef33a32d98e0fb889e63596dae856ac39e89",
++  "files": [
++    {
++      "path": "+not-found.html",
++      "bytes": 17819,
++      "sha256": "9753a41c1da7b781968993800ac6df12d5e5b07ad4533b76473de0879baa0a4e"
++    },
++    {
++      "path": "_expo/.routes.json",
++      "bytes": 910,
++      "sha256": "8cb6aa9b635a26bf7b6efb4b4a79da483adbd7476ba3d003178981dd7a52c6ff"
++    },
++    {
++      "path": "_expo/static/css/components-1d9997ebe14e7e299d7e1eea098e7abf.css",
++      "bytes": 31975,
++      "sha256": "2cbc79f312e949a6beefb894a99b302a31bb78c86bd42546407b89f718acf80e"
++    },
++    {
++      "path": "_expo/static/css/responsive-777f71f805aea2eb8c3d70b285b5dafb.css",
++      "bytes": 9896,
++      "sha256": "d133c1bfddda136b74f2c580c8429f8aeee17d0c8e80a1825ce7b6b97d973e15"
++    },
++    {
++      "path": "_expo/static/css/tokens-1731bc7f30cf948ad47a5e0861d4f316.css",
++      "bytes": 1024,
++      "sha256": "b457868af74b5e594cb7cf07fc975ab43581f5454b94304ee73bdf95365ab61b"
++    },
++    {
++      "path": "_expo/static/css/typography-031cad9766837c47a6d915ff40a10222.css",
++      "bytes": 296,
++      "sha256": "773269ef61348ffd063ba575c3b200bce3ce68903612e0132c9f8c8e9cf6d276"
++    },
++    {
++      "path": "_expo/static/js/web/entry-deb618126de6ff234988f8f3ca2e7588.js",
++      "bytes": 3602706,
++      "sha256": "b96ac1cef877ed46e3af6c2d6a4815ceed256af887cee1f56e7987a4a5d0f3cd"
++    },
++    {
++      "path": "_sitemap.html",
++      "bytes": 17819,
++      "sha256": "9753a41c1da7b781968993800ac6df12d5e5b07ad4533b76473de0879baa0a4e"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/dm-sans/100Thin/DMSans_100Thin.aa895105c99cdda4f82dc9b5b1e26d87.ttf",
++      "bytes": 56344,
++      "sha256": "17644656eb1d025548a63f261b74b10b33daf8b6444338fc2d310893e2b6b414"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/dm-sans/100Thin_Italic/DMSans_100Thin_Italic.bcb8399c1cd3b407c9403b6738c0279f.ttf",
++      "bytes": 61324,
++      "sha256": "b22e856dd6a5059b3fcb50db2ec6127d253e475300d49101a6754e92f0015338"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/dm-sans/200ExtraLight/DMSans_200ExtraLight.3e25a281bdb7b15be3223f3ea14a78a9.ttf",
++      "bytes": 56412,
++      "sha256": "855f974f1d7074776df638f836ce7dd2d145d4bc97dbc8e487f1e2b9f921e536"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/dm-sans/200ExtraLight_Italic/DMSans_200ExtraLight_Italic.783b88f315f5e0d18b356e4c7f24ab49.ttf",
++      "bytes": 61368,
++      "sha256": "90b8f7e028ec67fa9513ab42bb33bbc16b2584b5c1a17585f400ac2c8a4646d6"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/dm-sans/300Light/DMSans_300Light.df43eeda0517a2dee06925d637bd6840.ttf",
++      "bytes": 56328,
++      "sha256": "869084eff954f945fb43658ed9ea594324d390b6a21b1b712e056cf6527f96d8"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/dm-sans/300Light_Italic/DMSans_300Light_Italic.80cec38fe494b2d8d9c1f7f1096e73f5.ttf",
++      "bytes": 61336,
++      "sha256": "263367df5e844028ea658d25597083988e051372261ea11ce9710963c2b508c8"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/dm-sans/400Regular/DMSans_400Regular.74f9bb7405caec741a24db735b2c5733.ttf",
++      "bytes": 56344,
++      "sha256": "20ccb90498d8ca511bb0be31a74eccd5f29fbe1161852ef72781b703929e98ec"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/dm-sans/400Regular_Italic/DMSans_400Regular_Italic.d456fd1a58332b02c79e9bda60c4853e.ttf",
++      "bytes": 61244,
++      "sha256": "2677138afc090d2b5e401bb107347601bb7eb015853be564c4cbfdf021de690a"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/dm-sans/500Medium/DMSans_500Medium.7da0c1626a365ce0164d2ae4ebb0573b.ttf",
++      "bytes": 56376,
++      "sha256": "568dafd2db3728534b42c064e63ed1ff45ec97739bc21e407123dfddcb2ad255"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/dm-sans/500Medium_Italic/DMSans_500Medium_Italic.fc3b9297fa9ed051f7649c8e756276b7.ttf",
++      "bytes": 61396,
++      "sha256": "ee3bb601737c8fde8af00efb09503d4138ac7f988c4c8cfd1a7aa0f4d4fb7269"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/dm-sans/600SemiBold/DMSans_600SemiBold.b68921520b1d885dd7f854427cde3e82.ttf",
++      "bytes": 56336,
++      "sha256": "b3ee9c6f271318066adae56c3033e6e4192f88f5d127cb507686d89a0a269168"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/dm-sans/600SemiBold_Italic/DMSans_600SemiBold_Italic.0f640fdba88da072848e514bf43c2b85.ttf",
++      "bytes": 61232,
++      "sha256": "f687d72597eccee00638b2558bb94853d865a04eb58c9329c7db0553aeb4f2a4"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/dm-sans/700Bold/DMSans_700Bold.7a6c1a2c6196d4d0e617b57adb997b3b.ttf",
++      "bytes": 56268,
++      "sha256": "3764a2ce62fa95596c3315c1a0ca379e7cf827ed397c97fc036925b9b20b74dc"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/dm-sans/700Bold_Italic/DMSans_700Bold_Italic.5af5d01e07e369ab645cbd92c05f89d5.ttf",
++      "bytes": 61168,
++      "sha256": "4fc78e9e6c6f77055d07cc5d382f449e764083019aae4246bd29df8a9ad7409d"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/dm-sans/800ExtraBold/DMSans_800ExtraBold.74a7c51e71e5be3e9878deb3b1dd8276.ttf",
++      "bytes": 56316,
++      "sha256": "25a515104f48016abc6fbb0d91308bcc155fc794d1ff9a52f14d0d628f8e5e82"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/dm-sans/800ExtraBold_Italic/DMSans_800ExtraBold_Italic.67790bc17c5b1ea7abef154cc8e21bc7.ttf",
++      "bytes": 61272,
++      "sha256": "c8042ff9bcacaa9f73f69558969b1302a091b3a9028597dd4f83cf62bbde800c"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/dm-sans/900Black/DMSans_900Black.e0062779393299c3012a239746c1830c.ttf",
++      "bytes": 56344,
++      "sha256": "c4fd707025c13cce30db67aef3d65e8ef652c6907d7111dbae258490dc64c0bb"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/dm-sans/900Black_Italic/DMSans_900Black_Italic.7c78541f1ece5c832d207df0be7b447f.ttf",
++      "bytes": 61232,
++      "sha256": "6465693ab8ab203ca6669b0b42f5946a5baf9ca24b6ced6e4b30d095f5290b8b"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/outfit/100Thin/Outfit_100Thin.9436ede677912e546299d6dc1759be53.ttf",
++      "bytes": 54580,
++      "sha256": "a99279798b78f5f47c5c86e387881532582d04856b4a9f3ac92171cac12567fd"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/outfit/200ExtraLight/Outfit_200ExtraLight.8e84d4d3b8cd14aa5ef5dc677d18787f.ttf",
++      "bytes": 54936,
++      "sha256": "598a991633b4ac40172151ac72794f4ec9b13fe19ceb53ba6ca8c3aaa85610a3"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/outfit/300Light/Outfit_300Light.61ca2433c112de1e9b1e3e8369e66862.ttf",
++      "bytes": 54856,
++      "sha256": "3b454ea6ea2fae8df2153cc3ad5c56de3b549d329307179682cfc075f0257bfd"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/outfit/400Regular/Outfit_400Regular.5fc3fef1a1a55711c147d344132a468d.ttf",
++      "bytes": 54912,
++      "sha256": "f24945365147c9e783e91d8649959b59be6b00c9ee4ecd2f6b33afbb2dd871fe"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/outfit/500Medium/Outfit_500Medium.3af2e072a31b85b3c0a55ede786b31ab.ttf",
++      "bytes": 54820,
++      "sha256": "1669995dee77438b732d6557d71ed4e807dd6ebb82704b55385938727c6841e2"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/outfit/600SemiBold/Outfit_600SemiBold.fff3440ed39188f5d5bf85305e8b6be8.ttf",
++      "bytes": 55492,
++      "sha256": "030d373c4e2a67d5e922a2694e1eaab3b9f1208f1301dba94a70bdebf52c1efa"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/outfit/700Bold/Outfit_700Bold.91486df4e5279497efb060b0d3cc797b.ttf",
++      "bytes": 55392,
++      "sha256": "6654b93d21301ec61887d3cedd6c11d9df1b1dfb63f9cf45ac7995f6e2235ab1"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/outfit/800ExtraBold/Outfit_800ExtraBold.4cd115d5b3ed69078a637417321cce18.ttf",
++      "bytes": 55308,
++      "sha256": "7f4529480402f47795b2b4dd494417b4ff1f0454da7d7ffb0b656ea90523ec47"
++    },
++    {
++      "path": "assets/__node_modules/@expo-google-fonts/outfit/900Black/Outfit_900Black.bde7a22c710d75af9c1bcffc02bd902b.ttf",
++      "bytes": 55372,
++      "sha256": "f240e6128c31a75aa3f456ea1ff3b0fda382176681788ae3d244d08e3fa7d6cd"
++    },
++    {
++      "path": "assets/__node_modules/@react-navigation/elements/lib/module/assets/back-icon-mask.0a328cd9c1afd0afe8e3b1ec5165b1b4.png",
++      "bytes": 653,
++      "sha256": "9adb8c5efca932e2b732b293da813bd2e31952263056bce9e2517fec0f0b6a76"
++    },
++    {
++      "path": "assets/__node_modules/@react-navigation/elements/lib/module/assets/back-icon.35ba0eaec5a4f5ed12ca16fabeae451d.png",
++      "bytes": 207,
++      "sha256": "84cf5eb3b20250f69e0e4733beb4da5f417f0682892a5ad1b5e62570753c21b1"
++    },
++    {
++      "path": "assets/__node_modules/@react-navigation/elements/lib/module/assets/clear-icon.c94f6478e7ae0cdd9f15de1fcb9e5e55.png",
++      "bytes": 220,
++      "sha256": "d03a5cd7a66ef10c5147916f9d5878b2d0a0a5ad46f405a31cd9967efaa55afd"
++    },
++    {
++      "path": "assets/__node_modules/@react-navigation/elements/lib/module/assets/clear-icon.c94f6478e7ae0cdd9f15de1fcb9e5e55@2x.png",
++      "bytes": 334,
++      "sha256": "ab5613d2ce70fa67c5926e831353664945199fc195fa6fe76c5fe3cec452e31a"
++    },
++    {
++      "path": "assets/__node_modules/@react-navigation/elements/lib/module/assets/clear-icon.c94f6478e7ae0cdd9f15de1fcb9e5e55@3x.png",
++      "bytes": 502,
++      "sha256": "c4e54e6a0a7de636aa153378fbc62ea4a41695bfedf807f90df7b18ffd733f67"
++    },
++    {
++      "path": "assets/__node_modules/@react-navigation/elements/lib/module/assets/clear-icon.c94f6478e7ae0cdd9f15de1fcb9e5e55@4x.png",
++      "bytes": 645,
++      "sha256": "c86bb485eee687e06c500fc4234f51a6784b4530c2ae11d0c76481110bce3105"
++    },
++    {
++      "path": "assets/__node_modules/@react-navigation/elements/lib/module/assets/close-icon.808e1b1b9b53114ec2838071a7e6daa7.png",
++      "bytes": 141,
++      "sha256": "b1bc1810ca23e2c38cd76971c43591d726161061240d8b792b05757196ddb528"
++    },
++    {
++      "path": "assets/__node_modules/@react-navigation/elements/lib/module/assets/close-icon.808e1b1b9b53114ec2838071a7e6daa7@2x.png",
++      "bytes": 201,
++      "sha256": "cbdf9213e55f65c48d076acd8423b7c9aee4f1b81101ff6c95a38c4cd8a86461"
++    },
++    {
++      "path": "assets/__node_modules/@react-navigation/elements/lib/module/assets/close-icon.808e1b1b9b53114ec2838071a7e6daa7@3x.png",
++      "bytes": 266,
++      "sha256": "d05c9d30d79f45a78e5585a2e7ec67c6a06a883dd9137e1d5059e8c87b33ce76"
++    },
++    {
++      "path": "assets/__node_modules/@react-navigation/elements/lib/module/assets/close-icon.808e1b1b9b53114ec2838071a7e6daa7@4x.png",
++      "bytes": 332,
++      "sha256": "2325c53a73e54c438cbbc60dffdd8b513d471ba42e2f56713ef404b95e0ca1fc"
++    },
++    {
++      "path": "assets/__node_modules/@react-navigation/elements/lib/module/assets/search-icon.286d67d3f74808a60a78d3ebf1a5fb57.png",
++      "bytes": 928,
++      "sha256": "5d075e0c287c4f4441b5b5c8fc7ea5cd27c11bb617ecea09755955bcb1889083"
++    },
++    {
++      "path": "assets/__node_modules/expo-router/assets/arrow_down.017bc6ba3fc25503e5eb5e53826d48a8.png",
++      "bytes": 9456,
++      "sha256": "6deca32b56b97fa1fa87facd6996b46cc45190a553400e7febdf1d2093099b57"
++    },
++    {
++      "path": "assets/__node_modules/expo-router/assets/error.d1ea1496f9057eb392d5bbf3732a61b7.png",
++      "bytes": 469,
++      "sha256": "c15ec72a74d13957211808313d5c35deb7f7606c6d22dbddceb0000d4e0547ad"
++    },
++    {
++      "path": "assets/__node_modules/expo-router/assets/file.19eeb73b9593a38f8e9f418337fc7d10.png",
++      "bytes": 138,
++      "sha256": "a69a2edb5b6c60b8433d5b6d23c69f520ccd8a602f3f60e7996e489718bc175c"
++    },
++    {
++      "path": "assets/__node_modules/expo-router/assets/forward.d8b800c443b8972542883e0b9de2bdc6.png",
++      "bytes": 188,
++      "sha256": "708a79cf561b8a2a4850ce0254584d3a5231046be08fb7fadf4b6edfdb31178b"
++    },
++    {
++      "path": "assets/__node_modules/expo-router/assets/pkg.ab19f4cbc543357183a20571f68380a3.png",
++      "bytes": 364,
++      "sha256": "27f4d229d440925bf7212d5dfffa45d596b2c7b3bb2905c96b839b2081a1dbeb"
++    },
++    {
++      "path": "assets/__node_modules/expo-router/assets/sitemap.412dd9275b6b48ad28f5e3d81bb1f626.png",
++      "bytes": 465,
++      "sha256": "acf691957a3bcce7d195856dce98a5cf14dce10bea28aa5c10b3550c078e23b5"
++    },
++    {
++      "path": "assets/__node_modules/expo-router/assets/unmatched.20e71bdf79e3a97bf55fd9e164041578.png",
++      "bytes": 4752,
++      "sha256": "efc79da3c4c97dfb1571bff6202958ab0529c5aa31e8392600578b3e359d1447"
++    },
++    {
++      "path": "dashboard.html",
++      "bytes": 17919,
++      "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++    },
++    {
++      "path": "earnings.html",
++      "bytes": 17919,
++      "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++    },
++    {
++      "path": "firebase-config.js",
++      "bytes": 249,
++      "sha256": "069af80d6a7c3dff0952651e6b077d943723ab19556eb6cf41d837f575ce3601"
++    },
++    {
++      "path": "forgot-password.html",
++      "bytes": 17919,
++      "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++    },
++    {
++      "path": "history.html",
++      "bytes": 17919,
++      "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++    },
++    {
++      "path": "index.html",
++      "bytes": 17919,
++      "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++    },
++    {
++      "path": "invite.html",
++      "bytes": 17919,
++      "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++    },
++    {
++      "path": "login.html",
++      "bytes": 17919,
++      "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++    },
++    {
++      "path": "manifest.webmanifest",
++      "bytes": 202,
++      "sha256": "53065c11762f2e90ad07ee4be07616a31f60418c8f770f1783648720816c87f1"
++    },
++    {
++      "path": "menu.html",
++      "bytes": 17919,
++      "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++    },
++    {
++      "path": "more.html",
++      "bytes": 17919,
++      "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++    },
++    {
++      "path": "orders.html",
++      "bytes": 17919,
++      "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++    },
++    {
++      "path": "orders/[orderId].html",
++      "bytes": 17919,
++      "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++    },
++    {
++      "path": "orders/detail.html",
++      "bytes": 17919,
++      "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++    },
++    {
++      "path": "pending.html",
++      "bytes": 17919,
++      "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++    },
++    {
++      "path": "restaurant.html",
++      "bytes": 17919,
++      "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++    },
++    {
++      "path": "reviews.html",
++      "bytes": 17919,
++      "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++    },
++    {
++      "path": "security.html",
++      "bytes": 17919,
++      "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++    },
++    {
++      "path": "settings.html",
++      "bytes": 17919,
++      "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++    },
++    {
++      "path": "suspended.html",
++      "bytes": 17919,
++      "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++    },
++    {
++      "path": "sw.js",
++      "bytes": 1301,
++      "sha256": "ef077262cd14ae536e2a61029b411997df5497ff7bda7c8d38e7ef6928ee3be0"
++    }
++  ],
++  "routes": [
++    "+not-found.html",
++    "_sitemap.html",
++    "dashboard.html",
++    "earnings.html",
++    "forgot-password.html",
++    "history.html",
++    "index.html",
++    "invite.html",
++    "login.html",
++    "menu.html",
++    "more.html",
++    "orders.html",
++    "orders/[orderId].html",
++    "orders/detail.html",
++    "pending.html",
++    "restaurant.html",
++    "reviews.html",
++    "security.html",
++    "settings.html",
++    "suspended.html"
++  ],
++  "criticalAssets": [
++    {
++      "path": "_expo/static/css/components-1d9997ebe14e7e299d7e1eea098e7abf.css",
++      "bytes": 31975,
++      "sha256": "2cbc79f312e949a6beefb894a99b302a31bb78c86bd42546407b89f718acf80e"
++    },
++    {
++      "path": "_expo/static/css/responsive-777f71f805aea2eb8c3d70b285b5dafb.css",
++      "bytes": 9896,
++      "sha256": "d133c1bfddda136b74f2c580c8429f8aeee17d0c8e80a1825ce7b6b97d973e15"
++    },
++    {
++      "path": "_expo/static/css/tokens-1731bc7f30cf948ad47a5e0861d4f316.css",
++      "bytes": 1024,
++      "sha256": "b457868af74b5e594cb7cf07fc975ab43581f5454b94304ee73bdf95365ab61b"
++    },
++    {
++      "path": "_expo/static/css/typography-031cad9766837c47a6d915ff40a10222.css",
++      "bytes": 296,
++      "sha256": "773269ef61348ffd063ba575c3b200bce3ce68903612e0132c9f8c8e9cf6d276"
++    },
++    {
++      "path": "_expo/static/js/web/entry-deb618126de6ff234988f8f3ca2e7588.js",
++      "bytes": 3602706,
++      "sha256": "b96ac1cef877ed46e3af6c2d6a4815ceed256af887cee1f56e7987a4a5d0f3cd"
++    }
++  ],
++  "runtimeFiles": {
++    "firebase-config.js": {
++      "path": "firebase-config.js",
++      "bytes": 249,
++      "sha256": "069af80d6a7c3dff0952651e6b077d943723ab19556eb6cf41d837f575ce3601"
++    },
++    "manifest.webmanifest": {
++      "path": "manifest.webmanifest",
++      "bytes": 202,
++      "sha256": "53065c11762f2e90ad07ee4be07616a31f60418c8f770f1783648720816c87f1"
++    },
++    "sw.js": {
++      "path": "sw.js",
++      "bytes": 1301,
++      "sha256": "ef077262cd14ae536e2a61029b411997df5497ff7bda7c8d38e7ef6928ee3be0"
++    }
++  },
++  "canonicalArchive": {
++    "format": "USTAR",
++    "pathOrder": "UTF-8 bytewise ascending relative POSIX path",
++    "mode": "0644",
++    "uid": 0,
++    "gid": 0,
++    "mtime": 0,
++    "uname": "",
++    "gname": "",
++    "bytes": 5642240,
++    "sha256": "b6294bb5195779e3d9fb2e412fb61e82d08a0ac2f0ea25deb283dc4094832862"
++  }
++}
+diff --git a/docs/restaurant-expo-alias-staging-public-build-input-evidence/complete-artifact-comparison.json b/docs/restaurant-expo-alias-staging-public-build-input-evidence/complete-artifact-comparison.json
+new file mode 100644
+index 0000000..3478d61
+--- /dev/null
++++ b/docs/restaurant-expo-alias-staging-public-build-input-evidence/complete-artifact-comparison.json
+@@ -0,0 +1,332 @@
++{
++  "schemaVersion": 1,
++  "historicalAcceptedArtifact": {
++    "manifestSha256": "7ca81f0fdbc649e34a929956329bcaafc95ec357c84f342a01f2a0dab2836431",
++    "archiveSha256": "dd416dd5f44a4f3dbb3443f7269c61f4d964fe3e3e4de3b38d873db553e183cb",
++    "status": "superseded-build-input-identity-preserved"
++  },
++  "replacementCandidate": {
++    "manifestSha256": "d3af007214f8fd5cf200dbe8e81cef33a32d98e0fb889e63596dae856ac39e89",
++    "archiveSha256": "b6294bb5195779e3d9fb2e412fb61e82d08a0ac2f0ea25deb283dc4094832862",
++    "buildInputContractSha256": "f2c3e37d1e5699ea806e7fe2fd337aef4cb07ebb421ad2215209442546770c2e"
++  },
++  "localCleanExports": [
++    {
++      "attempt": 1,
++      "fileCount": 74,
++      "htmlCount": 20,
++      "artifactManifestSha256": "d3af007214f8fd5cf200dbe8e81cef33a32d98e0fb889e63596dae856ac39e89",
++      "archive": {
++        "sha256": "b6294bb5195779e3d9fb2e412fb61e82d08a0ac2f0ea25deb283dc4094832862",
++        "bytes": 5642240
++      },
++      "javascript": [
++        {
++          "path": "_expo/static/js/web/entry-deb618126de6ff234988f8f3ca2e7588.js",
++          "bytes": 3602706,
++          "sha256": "b96ac1cef877ed46e3af6c2d6a4815ceed256af887cee1f56e7987a4a5d0f3cd"
++        }
++      ]
++    },
++    {
++      "attempt": 2,
++      "fileCount": 74,
++      "htmlCount": 20,
++      "artifactManifestSha256": "d3af007214f8fd5cf200dbe8e81cef33a32d98e0fb889e63596dae856ac39e89",
++      "archive": {
++        "sha256": "b6294bb5195779e3d9fb2e412fb61e82d08a0ac2f0ea25deb283dc4094832862",
++        "bytes": 5642240
++      },
++      "javascript": [
++        {
++          "path": "_expo/static/js/web/entry-deb618126de6ff234988f8f3ca2e7588.js",
++          "bytes": 3602706,
++          "sha256": "b96ac1cef877ed46e3af6c2d6a4815ceed256af887cee1f56e7987a4a5d0f3cd"
++        }
++      ]
++    }
++  ],
++  "byteIdenticalInventories": true,
++  "byteIdenticalArchives": true,
++  "preservedCheckKActual": {
++    "archiveSha256": "b6294bb5195779e3d9fb2e412fb61e82d08a0ac2f0ea25deb283dc4094832862",
++    "matchesReplacementArchive": true
++  },
++  "added": [
++    {
++      "path": "_expo/static/js/web/entry-deb618126de6ff234988f8f3ca2e7588.js",
++      "bytes": 3602706,
++      "sha256": "b96ac1cef877ed46e3af6c2d6a4815ceed256af887cee1f56e7987a4a5d0f3cd"
++    }
++  ],
++  "removed": [
++    {
++      "path": "_expo/static/js/web/entry-e60c059055bd9dd055f253e375b7f273.js",
++      "bytes": 3602617,
++      "sha256": "ad572298de4cd0214e550004cd2b69c97399827628fb646f41f0bb8074a52d47"
++    }
++  ],
++  "modified": [
++    {
++      "path": "+not-found.html",
++      "historical": {
++        "path": "+not-found.html",
++        "bytes": 17819,
++        "sha256": "3e55d52bdc5ff588efd1f3ac8f1a2b84747b36d7159463bda69707faa0405490"
++      },
++      "replacement": {
++        "path": "+not-found.html",
++        "bytes": 17819,
++        "sha256": "9753a41c1da7b781968993800ac6df12d5e5b07ad4533b76473de0879baa0a4e"
++      }
++    },
++    {
++      "path": "_sitemap.html",
++      "historical": {
++        "path": "_sitemap.html",
++        "bytes": 17819,
++        "sha256": "3e55d52bdc5ff588efd1f3ac8f1a2b84747b36d7159463bda69707faa0405490"
++      },
++      "replacement": {
++        "path": "_sitemap.html",
++        "bytes": 17819,
++        "sha256": "9753a41c1da7b781968993800ac6df12d5e5b07ad4533b76473de0879baa0a4e"
++      }
++    },
++    {
++      "path": "dashboard.html",
++      "historical": {
++        "path": "dashboard.html",
++        "bytes": 17919,
++        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
++      },
++      "replacement": {
++        "path": "dashboard.html",
++        "bytes": 17919,
++        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++      }
++    },
++    {
++      "path": "earnings.html",
++      "historical": {
++        "path": "earnings.html",
++        "bytes": 17919,
++        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
++      },
++      "replacement": {
++        "path": "earnings.html",
++        "bytes": 17919,
++        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++      }
++    },
++    {
++      "path": "forgot-password.html",
++      "historical": {
++        "path": "forgot-password.html",
++        "bytes": 17919,
++        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
++      },
++      "replacement": {
++        "path": "forgot-password.html",
++        "bytes": 17919,
++        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++      }
++    },
++    {
++      "path": "history.html",
++      "historical": {
++        "path": "history.html",
++        "bytes": 17919,
++        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
++      },
++      "replacement": {
++        "path": "history.html",
++        "bytes": 17919,
++        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++      }
++    },
++    {
++      "path": "index.html",
++      "historical": {
++        "path": "index.html",
++        "bytes": 17919,
++        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
++      },
++      "replacement": {
++        "path": "index.html",
++        "bytes": 17919,
++        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++      }
++    },
++    {
++      "path": "invite.html",
++      "historical": {
++        "path": "invite.html",
++        "bytes": 17919,
++        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
++      },
++      "replacement": {
++        "path": "invite.html",
++        "bytes": 17919,
++        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++      }
++    },
++    {
++      "path": "login.html",
++      "historical": {
++        "path": "login.html",
++        "bytes": 17919,
++        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
++      },
++      "replacement": {
++        "path": "login.html",
++        "bytes": 17919,
++        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++      }
++    },
++    {
++      "path": "menu.html",
++      "historical": {
++        "path": "menu.html",
++        "bytes": 17919,
++        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
++      },
++      "replacement": {
++        "path": "menu.html",
++        "bytes": 17919,
++        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++      }
++    },
++    {
++      "path": "more.html",
++      "historical": {
++        "path": "more.html",
++        "bytes": 17919,
++        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
++      },
++      "replacement": {
++        "path": "more.html",
++        "bytes": 17919,
++        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++      }
++    },
++    {
++      "path": "orders.html",
++      "historical": {
++        "path": "orders.html",
++        "bytes": 17919,
++        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
++      },
++      "replacement": {
++        "path": "orders.html",
++        "bytes": 17919,
++        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++      }
++    },
++    {
++      "path": "orders/[orderId].html",
++      "historical": {
++        "path": "orders/[orderId].html",
++        "bytes": 17919,
++        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
++      },
++      "replacement": {
++        "path": "orders/[orderId].html",
++        "bytes": 17919,
++        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++      }
++    },
++    {
++      "path": "orders/detail.html",
++      "historical": {
++        "path": "orders/detail.html",
++        "bytes": 17919,
++        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
++      },
++      "replacement": {
++        "path": "orders/detail.html",
++        "bytes": 17919,
++        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++      }
++    },
++    {
++      "path": "pending.html",
++      "historical": {
++        "path": "pending.html",
++        "bytes": 17919,
++        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
++      },
++      "replacement": {
++        "path": "pending.html",
++        "bytes": 17919,
++        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++      }
++    },
++    {
++      "path": "restaurant.html",
++      "historical": {
++        "path": "restaurant.html",
++        "bytes": 17919,
++        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
++      },
++      "replacement": {
++        "path": "restaurant.html",
++        "bytes": 17919,
++        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++      }
++    },
++    {
++      "path": "reviews.html",
++      "historical": {
++        "path": "reviews.html",
++        "bytes": 17919,
++        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
++      },
++      "replacement": {
++        "path": "reviews.html",
++        "bytes": 17919,
++        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++      }
++    },
++    {
++      "path": "security.html",
++      "historical": {
++        "path": "security.html",
++        "bytes": 17919,
++        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
++      },
++      "replacement": {
++        "path": "security.html",
++        "bytes": 17919,
++        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++      }
++    },
++    {
++      "path": "settings.html",
++      "historical": {
++        "path": "settings.html",
++        "bytes": 17919,
++        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
++      },
++      "replacement": {
++        "path": "settings.html",
++        "bytes": 17919,
++        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++      }
++    },
++    {
++      "path": "suspended.html",
++      "historical": {
++        "path": "suspended.html",
++        "bytes": 17919,
++        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
++      },
++      "replacement": {
++        "path": "suspended.html",
++        "bytes": 17919,
++        "sha256": "7a92f77b3ff18510ee0bbf37e2433d60e83fcdd09244ddb6724d885b795d1163"
++      }
++    }
++  ],
++  "unchangedCount": 53
++}
+diff --git a/docs/restaurant-expo-alias-staging-public-build-input-evidence/evidence-manifest.tsv b/docs/restaurant-expo-alias-staging-public-build-input-evidence/evidence-manifest.tsv
+new file mode 100644
+index 0000000..b89a774
+--- /dev/null
++++ b/docs/restaurant-expo-alias-staging-public-build-input-evidence/evidence-manifest.tsv
+@@ -0,0 +1,3 @@
++406dbf42ba8c9fefb4f37c3edc36bbbfd24240ff242eae0e4c1d6ba1d66b41b1	18317	candidate-artifact-manifest.json
++0316a14a1c8840691d27f7a2ed68c02938fd61dd8e6084136576a49da11e133a	10296	complete-artifact-comparison.json
++b6294bb5195779e3d9fb2e412fb61e82d08a0ac2f0ea25deb283dc4094832862	5642240	restaurant-static-export.tar
+diff --git a/scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs b/scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs
+index 5904c80..c402db8 100755
+--- a/scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs
++++ b/scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs
+@@ -5,0 +6 @@ import { fileURLToPath } from "node:url";
++import { loadStagingBuildInputContract } from "./restaurant-alias-staging-public-build-inputs.mjs";
+@@ -17,2 +18,3 @@ export const DIAGNOSTIC_OPERATOR = Object.freeze({
+-  artifactManifestSha256: "7ca81f0fdbc649e34a929956329bcaafc95ec357c84f342a01f2a0dab2836431",
+-  archiveSha256: "dd416dd5f44a4f3dbb3443f7269c61f4d964fe3e3e4de3b38d873db553e183cb",
++  artifactManifestSha256: "d3af007214f8fd5cf200dbe8e81cef33a32d98e0fb889e63596dae856ac39e89",
++  archiveSha256: "b6294bb5195779e3d9fb2e412fb61e82d08a0ac2f0ea25deb283dc4094832862",
++  buildInputContractSha256: "f2c3e37d1e5699ea806e7fe2fd337aef4cb07ebb421ad2215209442546770c2e",
+@@ -87,0 +90 @@ export function validateAuthority(authority, options = {}) {
++    buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256,
+@@ -461 +464 @@ export function validatePromotionPrerequisites({ authority, artifact, artifactEn
+-  if (artifact?.runId !== authority.runId || artifact?.sourceCommit !== authority.sourceCommit || artifact?.sourceManifestSha256 !== authority.sourceManifestSha256 || artifact?.applicationTree !== DIAGNOSTIC_OPERATOR.applicationTree || artifact?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || artifact?.files?.length !== 74 || artifactEntriesSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || archiveEvidenceSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Accepted run-bound artifact evidence required.");
++  if (artifact?.runId !== authority.runId || artifact?.sourceCommit !== authority.sourceCommit || artifact?.sourceManifestSha256 !== authority.sourceManifestSha256 || artifact?.applicationTree !== DIAGNOSTIC_OPERATOR.applicationTree || artifact?.buildInputContractSha256 !== DIAGNOSTIC_OPERATOR.buildInputContractSha256 || artifact?.buildInputs?.length !== 9 || !artifact.buildInputs.every(row => row.passed === true) || artifact?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || artifact?.files?.length !== 74 || artifactEntriesSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || archiveEvidenceSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Accepted run-bound build-input and artifact evidence required.");
+@@ -473 +476 @@ export function validatePromotionPrerequisites({ authority, artifact, artifactEn
+-  if (preflight.source?.commit !== authority.sourceCommit || preflight.source?.manifestSha256 !== authority.sourceManifestSha256 || preflight.source?.applicationTree !== DIAGNOSTIC_OPERATOR.applicationTree || preflight.artifact?.manifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || preflight.artifact?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Preflight source or artifact identity mismatch.");
++  if (preflight.source?.commit !== authority.sourceCommit || preflight.source?.manifestSha256 !== authority.sourceManifestSha256 || preflight.source?.applicationTree !== DIAGNOSTIC_OPERATOR.applicationTree || preflight.artifact?.manifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || preflight.artifact?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || preflight.artifact?.buildInputContractSha256 !== DIAGNOSTIC_OPERATOR.buildInputContractSha256) throw new Error("Preflight source, build-input, or artifact identity mismatch.");
+@@ -551 +554 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
+-    const result = run("npx", ["eas-cli@16.32.0", "env:exec", "preview", "npm run prepare:web && npx expo export --platform web --clear", "--non-interactive"], { cwd: appRoot, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
++    const result = run("npx", ["eas-cli@16.32.0", "env:exec", "preview", "node ../../scripts/restaurant-alias-staging-public-build-inputs.mjs && npm run prepare:web && npx expo export --platform web --clear", "--non-interactive"], { cwd: appRoot, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+@@ -552,0 +556,2 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
++    const buildInputs = loadStagingBuildInputContract({ root: sourceRoot });
++    if (buildInputs.sha256 !== DIAGNOSTIC_OPERATOR.buildInputContractSha256) throw new Error("Reviewed Staging build-input contract differs from the diagnostic binding.");
+@@ -554 +559 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
+-    atomicWrite(path.join(runDirectory, "artifact-manifest.json"), { capturedAt: now(), runId: authority.runId, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree, files, deploymentControls, artifactManifestSha256, archiveSha256: archive.sha256, archiveBytes: archive.bytes });
++    atomicWrite(path.join(runDirectory, "artifact-manifest.json"), { capturedAt: now(), runId: authority.runId, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree, buildInputContractSha256: buildInputs.sha256, buildInputs: buildInputs.value.variables.map(row => ({ name: row.name, utf8Bytes: row.utf8Bytes, sha256: row.sha256, passed: true })), files, deploymentControls, artifactManifestSha256, archiveSha256: archive.sha256, archiveBytes: archive.bytes });
+@@ -562 +567 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
+-    if (artifact.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || !fs.existsSync(archivePath) || sha256(fs.readFileSync(archivePath)) !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Accepted artifact and deterministic archive evidence required.");
++    if (artifact.buildInputContractSha256 !== DIAGNOSTIC_OPERATOR.buildInputContractSha256 || artifact.buildInputs?.length !== 9 || !artifact.buildInputs.every(row => row.passed === true) || artifact.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || !fs.existsSync(archivePath) || sha256(fs.readFileSync(archivePath)) !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Accepted build inputs, artifact, and deterministic archive evidence required.");
+diff --git a/scripts/restaurant-alias-diagnostic-execution-support.mjs b/scripts/restaurant-alias-diagnostic-execution-support.mjs
+index 9a8ed7d..06d4cba 100755
+--- a/scripts/restaurant-alias-diagnostic-execution-support.mjs
++++ b/scripts/restaurant-alias-diagnostic-execution-support.mjs
+@@ -22,5 +22,5 @@ export const SUPPORT = Object.freeze({
+-  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260926j-run-binding-contract.md",
+-  proposalSha256: "ecc346f1738bfb048e64e9281a1ac53270c92d00fe09e72614e470fc57a29b53",
+-  baseCheckpoint: "05f7308b11247a22fa3f6d0741a4b3b59a2ac201",
+-  baseSourceManifestSha256: "061385917032166e6795e346f683109e9512b95dd32dc5ba8f3e571d5f9a4aaf",
+-  baseSourceManifestFiles: 1547,
++  proposalPath: "docs/restaurant-expo-alias-ruip6ae-20260926l-read-only-eas-export-plan.md",
++  proposalSha256: "73023632e2e62feabb992100a76294df5bcfc10dc26a00700ccfe2634b9a3c9e",
++  baseCheckpoint: "eceac9a822f376af7b3f32c8131393d5634e2f5c",
++  baseSourceManifestSha256: "12b4cac7f8c0a209fbc0585bda67d0d110cd9735ccf992b09c241ed87b0c1dd1",
++  baseSourceManifestFiles: 1549,
+@@ -28,2 +28,9 @@ export const SUPPORT = Object.freeze({
+-    "docs/restaurant-expo-alias-read-only-eas-evidence-initialization-remediation-review.md",
+-    "docs/restaurant-expo-alias-ruip6ae-20260926k-check-binding-contract.md",
++    "docs/restaurant-expo-alias-staging-public-build-input-contract.json",
++    "docs/restaurant-expo-alias-staging-public-build-input-evidence/candidate-artifact-manifest.json",
++    "docs/restaurant-expo-alias-staging-public-build-input-evidence/complete-artifact-comparison.json",
++    "docs/restaurant-expo-alias-staging-public-build-input-evidence/evidence-manifest.tsv",
++    "docs/restaurant-expo-alias-staging-public-build-input-evidence/restaurant-static-export.tar",
++    "docs/restaurant-expo-alias-staging-build-input-artifact-remediation-review.md",
++    "docs/restaurant-expo-alias-staging-build-input-artifact-remediation.diff",
++    "docs/restaurant-expo-alias-ruip6ae-20260926l-read-only-eas-export-plan.md",
++    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs",
+@@ -30,0 +38,3 @@ export const SUPPORT = Object.freeze({
++    "scripts/restaurant-alias-staging-public-build-inputs.mjs",
++    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs",
++    "scripts/test-restaurant-alias-diagnostic-execution-support.mjs",
+@@ -31,0 +42 @@ export const SUPPORT = Object.freeze({
++    "scripts/test-restaurant-alias-staging-public-build-inputs.mjs",
+@@ -243,0 +255,14 @@ export const SUPPORT = Object.freeze({
++    Object.freeze({
++      commit: "eceac9a822f376af7b3f32c8131393d5634e2f5c",
++      parent: "05f7308b11247a22fa3f6d0741a4b3b59a2ac201",
++      sourceManifestSha256: "12b4cac7f8c0a209fbc0585bda67d0d110cd9735ccf992b09c241ed87b0c1dd1",
++      sourceManifestFiles: 1549,
++      applicationTree: "7430599b150adbd19ddafadce1195f1e418daf8a",
++      files: Object.freeze({
++        "docs/restaurant-expo-alias-read-only-eas-evidence-initialization-remediation-review.md": "0ffa35a792f82cf75939dcc1d449ca120ee295d263438a619a4ad5954f3a3e8a",
++        "docs/restaurant-expo-alias-ruip6ae-20260926k-check-binding-contract.md": "efb2ae4f7023cb0797d2b8ad6dc7fc109240e6746b31cf517fa0327c10dba9e9",
++        "scripts/restaurant-alias-diagnostic-execution-support.mjs": "b2ad374ec0d524472897a3f3e98386f190480bd18fce7ee228b77fae67ae682a",
++        "scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs": "153e1718f37e80fc65aabd75d06b2c35dd5aadd83208c3548dbc0b81983da09a",
++        "scripts/verify-restaurant-alias-production-export-readiness.mjs": "e061c83d72f3233909489c59e4981d08fb0ec6560e6aeaa461d0b2032ba4f1eb",
++      }),
++    }),
+@@ -251,3 +276,3 @@ export const SUPPORT = Object.freeze({
+-    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "865c1032ce89fef6efac32affcfb30f512a5743a91821c1079be7d599396c018",
+-    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "6fce949367cfdc4c985d9fe87f632dba2779f53e4d75235322d4063a3f23839a",
+-    "scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs": "153e1718f37e80fc65aabd75d06b2c35dd5aadd83208c3548dbc0b81983da09a",
++    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "0fd3bb82e8a619cb00e6de932846fffc4d1ce2946edbe78b7b7072daddd20b92",
++    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "80bf1f9a02a4901e85bb1b02b08e5f825460cb95a533aae332d0ac7d6062adad",
++    "scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs": "c5e0c9ad30db40567a6836ddcac94ffac348d25f330b9d42fe6188a3ecedd76a",
+@@ -255 +280,3 @@ export const SUPPORT = Object.freeze({
+-    "scripts/verify-restaurant-alias-production-export-readiness.mjs": "e061c83d72f3233909489c59e4981d08fb0ec6560e6aeaa461d0b2032ba4f1eb",
++    "scripts/verify-restaurant-alias-production-export-readiness.mjs": "4222eeafca09cc62f4079290fcb963d6fad8047ac090994ed71077a8038a9463",
++    "scripts/restaurant-alias-staging-public-build-inputs.mjs": "4aa0b89a932947fae65696bf6443b1613a62e9032bb983a1b9a37f915c9c4659",
++    "scripts/test-restaurant-alias-staging-public-build-inputs.mjs": "423fb4a83e416c14dd3e2348c5cf50b90da8599c8c678a0ce05b678f142377c6",
+@@ -426 +453 @@ export function validateOwnerAuthorization(input) {
+-    "proposalSha256", "checkpointParent", "sourceCommit", "sourceManifestSha256", "applicationTree", "authorizedActions", "authorizedSupportActions",
++    "proposalSha256", "checkpointParent", "sourceCommit", "sourceManifestSha256", "applicationTree", "buildInputContractSha256", "authorizedActions", "authorizedSupportActions",
+@@ -431 +458 @@ export function validateOwnerAuthorization(input) {
+-  if (input.runId !== SUPPORT.runId || input.proposalSha256 !== SUPPORT.proposalSha256 || input.checkpointParent !== SUPPORT.baseCheckpoint || !/^[a-f0-9]{40}$/.test(input.sourceCommit || "") || input.sourceCommit === SUPPORT.baseCheckpoint || !/^[a-f0-9]{64}$/.test(input.sourceManifestSha256 || "") || input.applicationTree !== SUPPORT.applicationTree) throw new Error("Owner authorization identity mismatch.");
++  if (input.runId !== SUPPORT.runId || input.proposalSha256 !== SUPPORT.proposalSha256 || input.checkpointParent !== SUPPORT.baseCheckpoint || !/^[a-f0-9]{40}$/.test(input.sourceCommit || "") || input.sourceCommit === SUPPORT.baseCheckpoint || !/^[a-f0-9]{64}$/.test(input.sourceManifestSha256 || "") || input.applicationTree !== SUPPORT.applicationTree || input.buildInputContractSha256 !== DIAGNOSTIC_OPERATOR.buildInputContractSha256) throw new Error("Owner authorization identity mismatch.");
+@@ -466,0 +494 @@ export function prepareAuthorityArtifacts({ repoRoot, approval, outputDirectory,
++    buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256,
+@@ -916 +944 @@ export function buildBaselinePreflight({ authority, reads, protectedEvidence, ca
+-    artifact: { manifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256 },
++    artifact: { manifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256 },
+@@ -929 +957 @@ export function buildFinalPreflight({ authority, reads, protectedEvidence, runDi
+-  if (artifact.value.runId !== authority.runId || artifact.value.sourceCommit !== authority.sourceCommit || artifact.value.sourceManifestSha256 !== authority.sourceManifestSha256 || artifact.value.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact.value.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Final artifact binding mismatch.");
++  if (artifact.value.runId !== authority.runId || artifact.value.sourceCommit !== authority.sourceCommit || artifact.value.sourceManifestSha256 !== authority.sourceManifestSha256 || artifact.value.buildInputContractSha256 !== DIAGNOSTIC_OPERATOR.buildInputContractSha256 || artifact.value.buildInputs?.length !== 9 || artifact.value.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact.value.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Final build-input and artifact binding mismatch.");
+@@ -950 +978 @@ export function buildFinalPreflight({ authority, reads, protectedEvidence, runDi
+-    artifact: { manifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256 },
++    artifact: { manifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256 },
+diff --git a/scripts/restaurant-alias-staging-public-build-inputs.mjs b/scripts/restaurant-alias-staging-public-build-inputs.mjs
+new file mode 100644
+index 0000000..2ab3e25
+--- /dev/null
++++ b/scripts/restaurant-alias-staging-public-build-inputs.mjs
+@@ -0,0 +1,75 @@
++#!/usr/bin/env node
++import crypto from "node:crypto";
++import fs from "node:fs";
++import path from "node:path";
++import { fileURLToPath } from "node:url";
++
++export const STAGING_BUILD_INPUT_CONTRACT_PATH = "docs/restaurant-expo-alias-staging-public-build-input-contract.json";
++const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
++const canonical = value => JSON.stringify(value, null, 2) + "\n";
++
++function exactKeys(value, expected, label) {
++  if (JSON.stringify(Object.keys(value || {}).sort()) !== JSON.stringify([...expected].sort())) throw new Error(`${label} fields differ from the reviewed schema.`);
++}
++
++export function loadStagingBuildInputContract({ root, contractPath = STAGING_BUILD_INPUT_CONTRACT_PATH } = {}) {
++  if (!root) throw new Error("Repository root is required.");
++  const absolute = path.resolve(root, contractPath);
++  const bytes = fs.readFileSync(absolute);
++  const value = JSON.parse(bytes);
++  exactKeys(value, ["schemaVersion", "identity", "environment", "easEnvironment", "easProjectId", "firebaseProjectId", "supabaseProjectRef", "variables", "sourceReferences"], "Build-input contract");
++  if (value.schemaVersion !== 1 || value.identity !== "restaurant-staging-preview-public-build-inputs-v1" || value.environment !== "staging" || value.easEnvironment !== "preview" || value.easProjectId !== "a2d5538b-bd0c-4205-8153-ba08a3a9b2b1" || value.firebaseProjectId !== "hungrieapp-a2288" || value.supabaseProjectRef !== "rlrfvqskzvpysewdxqcr") throw new Error("Build-input environment identity mismatch.");
++  if (!Array.isArray(value.variables) || value.variables.length !== 9) throw new Error("Exactly nine reviewed public build inputs are required.");
++  const names = value.variables.map(row => row.name);
++  if (new Set(names).size !== names.length || JSON.stringify(names) !== JSON.stringify([...names].sort())) throw new Error("Build-input names must be unique and sorted.");
++  for (const row of value.variables) {
++    exactKeys(row, ["name", "utf8Bytes", "sha256"], `Build input ${row.name || "unknown"}`);
++    if (!/^EXPO_PUBLIC_[A-Z0-9_]+$/.test(row.name || "") || !Number.isSafeInteger(row.utf8Bytes) || row.utf8Bytes < 1 || !/^[a-f0-9]{64}$/.test(row.sha256 || "")) throw new Error("Build-input fingerprint is invalid.");
++  }
++  if (JSON.stringify(Object.keys(value.sourceReferences).sort()) !== JSON.stringify(names)) throw new Error("Build-input source reference set differs from the reviewed variables.");
++  return { path: absolute, bytes, sha256: sha256(bytes), value };
++}
++
++export function discoverRestaurantPublicBuildInputs({ root, sourceReferences }) {
++  const discovered = new Map();
++  for (const [name, relatives] of Object.entries(sourceReferences)) {
++    if (!Array.isArray(relatives) || relatives.length < 1) throw new Error(`Source references are missing for ${name}.`);
++    for (const relative of relatives) {
++      const absolute = path.resolve(root, relative);
++      if (!absolute.startsWith(path.resolve(root) + path.sep) || !fs.existsSync(absolute)) throw new Error(`Reviewed source reference is missing for ${name}.`);
++      const matches = fs.readFileSync(absolute, "utf8").match(/process\.env\.(EXPO_PUBLIC_[A-Z0-9_]+)/g) || [];
++      for (const match of matches) {
++        const found = match.slice("process.env.".length);
++        if (!discovered.has(found)) discovered.set(found, new Set());
++        discovered.get(found).add(path.relative(root, absolute).split(path.sep).join("/"));
++      }
++    }
++  }
++  return Object.fromEntries([...discovered].sort(([a], [b]) => Buffer.from(a).compare(Buffer.from(b))).map(([name, files]) => [name, [...files].sort()]));
++}
++
++export function validateStagingPublicBuildInputs({ root, environment = process.env, contractPath = STAGING_BUILD_INPUT_CONTRACT_PATH } = {}) {
++  const contract = loadStagingBuildInputContract({ root, contractPath });
++  const discovered = discoverRestaurantPublicBuildInputs({ root, sourceReferences: contract.value.sourceReferences });
++  if (JSON.stringify(discovered) !== JSON.stringify(contract.value.sourceReferences)) throw new Error("Restaurant public build-input source references differ from the reviewed contract.");
++  const observations = contract.value.variables.map(row => {
++    const value = environment[row.name];
++    if (typeof value !== "string" || value.length === 0) throw new Error(`Required public build input is missing: ${row.name}.`);
++    const bytes = Buffer.from(value, "utf8");
++    const digest = sha256(bytes);
++    if (bytes.length !== row.utf8Bytes || digest !== row.sha256) throw new Error(`Public build input differs from the reviewed Staging value: ${row.name}.`);
++    return { name: row.name, utf8Bytes: bytes.length, sha256: digest, passed: true };
++  });
++  return { schemaVersion: 1, passed: true, environment: contract.value.environment, easEnvironment: contract.value.easEnvironment, easProjectId: contract.value.easProjectId, firebaseProjectId: contract.value.firebaseProjectId, supabaseProjectRef: contract.value.supabaseProjectRef, contractSha256: contract.sha256, observations };
++}
++
++if (process.argv[1] === fileURLToPath(import.meta.url)) {
++  try {
++    const root = path.resolve(import.meta.dirname, "..");
++    const result = validateStagingPublicBuildInputs({ root });
++    process.stdout.write(canonical(result));
++  } catch (error) {
++    process.stderr.write(canonical({ passed: false, error: { name: error?.name || "Error", message: String(error?.message || "Build-input validation failed.").slice(0, 300) } }));
++    process.exitCode = 1;
++  }
++}
+diff --git a/scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs b/scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs
+index 1f85727..cd058ac 100644
+--- a/scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs
++++ b/scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs
+@@ -45 +45 @@ test("reviewed candidate artifact evidence is complete and matches the fixed ide
+-  const evidence = path.join(root, "docs/restaurant-expo-alias-deterministic-metro-evidence");
++  const evidence = path.join(root, "docs/restaurant-expo-alias-staging-public-build-input-evidence");
+@@ -65,0 +66 @@ function authority(overrides = {}) {
++    buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256,
+@@ -116 +117 @@ function validPromotionEvidence() {
+-  const artifact = { runId: approved.runId, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, files: Array.from({ length: 74 }, (_, index) => ({ path: `file-${index}`, bytes: 1, sha256: evidenceHash("a") })) };
++  const artifact = { runId: approved.runId, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree, buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256, buildInputs: Array.from({ length: 9 }, (_, index) => ({ name: `EXPO_PUBLIC_FIXTURE_${index}`, passed: true })), artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, files: Array.from({ length: 74 }, (_, index) => ({ path: `file-${index}`, bytes: 1, sha256: evidenceHash("a") })) };
+@@ -123 +124 @@ function validPromotionEvidence() {
+-  const preflight = { passed: true, capturedAt, runId: approved.runId, environment: "staging", identities: { supabaseProjectRef: DIAGNOSTIC_OPERATOR.supabaseProjectRef, firebaseProjectId: DIAGNOSTIC_OPERATOR.firebaseProjectId, easProjectId: DIAGNOSTIC_OPERATOR.easProjectId, aliasId: DIAGNOSTIC_OPERATOR.aliasId, aliasName: DIAGNOSTIC_OPERATOR.aliasName, aliasUrl: DIAGNOSTIC_OPERATOR.aliasUrl }, source: { commit: approved.sourceCommit, manifestSha256: approved.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree }, artifact: { manifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256 }, migration: { ...DIAGNOSTIC_OPERATOR.conflictMigration, appliedExactlyOnce: true, pendingCount: 0 }, earnings: { capability: "restaurant_earnings_v1", enabled: false }, protectedEvidence: DIAGNOSTIC_OPERATOR.protectedEvidence.map(row => ({ ...row, passed: true })), candidate: { deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url, immutableEvidenceSha256, accessEvidenceSha256 }, rollback: { deploymentIdentifier: rollback.deploymentIdentifier, referenceSha256: rollbackEvidenceSha256, parityPassed: true } };
++  const preflight = { passed: true, capturedAt, runId: approved.runId, environment: "staging", identities: { supabaseProjectRef: DIAGNOSTIC_OPERATOR.supabaseProjectRef, firebaseProjectId: DIAGNOSTIC_OPERATOR.firebaseProjectId, easProjectId: DIAGNOSTIC_OPERATOR.easProjectId, aliasId: DIAGNOSTIC_OPERATOR.aliasId, aliasName: DIAGNOSTIC_OPERATOR.aliasName, aliasUrl: DIAGNOSTIC_OPERATOR.aliasUrl }, source: { commit: approved.sourceCommit, manifestSha256: approved.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree }, artifact: { manifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256 }, migration: { ...DIAGNOSTIC_OPERATOR.conflictMigration, appliedExactlyOnce: true, pendingCount: 0 }, earnings: { capability: "restaurant_earnings_v1", enabled: false }, protectedEvidence: DIAGNOSTIC_OPERATOR.protectedEvidence.map(row => ({ ...row, passed: true })), candidate: { deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url, immutableEvidenceSha256, accessEvidenceSha256 }, rollback: { deploymentIdentifier: rollback.deploymentIdentifier, referenceSha256: rollbackEvidenceSha256, parityPassed: true } };
+@@ -200 +201 @@ test("the complete local export gate accepts the reviewed 74-file artifact and c
+-  const artifact = path.join(root, "docs/restaurant-expo-alias-deterministic-metro-evidence/restaurant-static-export.tar"), dist = path.join(directory, "dist"), archive = path.join(directory, "rebuilt.tar");
++  const artifact = path.join(root, "docs/restaurant-expo-alias-staging-public-build-input-evidence/restaurant-static-export.tar"), dist = path.join(directory, "dist"), archive = path.join(directory, "rebuilt.tar");
+diff --git a/scripts/test-restaurant-alias-diagnostic-execution-support.mjs b/scripts/test-restaurant-alias-diagnostic-execution-support.mjs
+index 9a2e39c..bed1353 100644
+--- a/scripts/test-restaurant-alias-diagnostic-execution-support.mjs
++++ b/scripts/test-restaurant-alias-diagnostic-execution-support.mjs
+@@ -95 +95 @@ test("pre-authority readiness runs the exact production diagnostic export path t
+-    assert.deepEqual(call.args, ["eas-cli@16.32.0", "env:exec", "preview", "npm run prepare:web && npx expo export --platform web --clear", "--non-interactive"]);
++    assert.deepEqual(call.args, ["eas-cli@16.32.0", "env:exec", "preview", "node ../../scripts/restaurant-alias-staging-public-build-inputs.mjs && npm run prepare:web && npx expo export --platform web --clear", "--non-interactive"]);
+@@ -158,0 +159 @@ function approval(overrides = {}) {
++    buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256,
+@@ -176,0 +178 @@ function authority() {
++    buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256,
+@@ -402,0 +405,2 @@ function finalFixture({ rollbackCapturedAt = capturedAt } = {}) {
++    buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256,
++    buildInputs: Array.from({ length: 9 }, (_, index) => ({ name: `EXPO_PUBLIC_FIXTURE_${index}`, passed: true })),
+diff --git a/scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs b/scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs
+index 2d011ff..6f553ba 100644
+--- a/scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs
++++ b/scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs
+@@ -39,0 +40 @@ function authorization(overrides = {}) {
++    buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256,
+@@ -56,0 +58 @@ test("read-only authorization is exact, short-lived, Staging-only, and prohibits
++    { buildInputContractSha256: "0".repeat(64) },
+@@ -70 +72 @@ test("exact wrapper runs twice in fresh processes and retains full 74-file obser
+-  assert.ok(calls.every(call => !call.args.some(value => /deploy|alias|rollback|promote/i.test(value))));
++  assert.ok(calls.every(call => !call.args.some(value => /^(?:deploy|alias|rollback|promote)$/i.test(value))));
+@@ -144 +146 @@ test("passing evidence rejects tampering, staleness, wrong source, and incomplet
+-  const evidence = { schemaVersion: 1, checkId: "ruip6ae_20260926j", disposition: "PASS", completedAt: new Date(now - 1_000).toISOString(), environment: "staging", easProjectId: DIAGNOSTIC_OPERATOR.easProjectId, sourceCommit, sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, authorizationTextSha256: authorization().authorizationTextSha256, attempts: [1, 2].map(attempt => ({ attempt, passed: true, fileCount: 74, files, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256 })) };
++  const evidence = { schemaVersion: 1, checkId: "ruip6ae_20260926j", disposition: "PASS", completedAt: new Date(now - 1_000).toISOString(), environment: "staging", easProjectId: DIAGNOSTIC_OPERATOR.easProjectId, sourceCommit, sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree, buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, authorizationTextSha256: authorization().authorizationTextSha256, attempts: [1, 2].map(attempt => ({ attempt, passed: true, fileCount: 74, files, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256 })) };
+diff --git a/scripts/test-restaurant-alias-staging-public-build-inputs.mjs b/scripts/test-restaurant-alias-staging-public-build-inputs.mjs
+new file mode 100644
+index 0000000..e97df46
+--- /dev/null
++++ b/scripts/test-restaurant-alias-staging-public-build-inputs.mjs
+@@ -0,0 +1,43 @@
++import assert from "node:assert/strict";
++import fs from "node:fs";
++import path from "node:path";
++import test from "node:test";
++import { loadStagingBuildInputContract, validateStagingPublicBuildInputs } from "./restaurant-alias-staging-public-build-inputs.mjs";
++
++const root = path.resolve(import.meta.dirname, "..");
++const secure = JSON.parse(fs.readFileSync(path.join(root, "secure/restaurant-alias-build-inputs/staging-preview.json"), "utf8"));
++
++test("reviewed Staging contract covers every Restaurant public build input without raw values", () => {
++  const contract = loadStagingBuildInputContract({ root });
++  assert.equal(contract.value.variables.length, 9);
++  assert.equal(contract.value.sourceReferences.EXPO_PUBLIC_RESTAURANT_POLL_MS.length, 2);
++  assert.doesNotMatch(contract.bytes.toString("utf8"), /AIza|eyJ|B[A-Za-z0-9_-]{80,}/);
++});
++
++test("exact reviewed Staging values pass with sanitized fingerprints", () => {
++  const result = validateStagingPublicBuildInputs({ root, environment: secure.values });
++  assert.equal(result.passed, true);
++  assert.equal(result.observations.length, 9);
++  assert.ok(result.observations.every(row => !Object.hasOwn(row, "value")));
++});
++
++test("each missing or changed public input fails closed", () => {
++  for (const name of Object.keys(secure.values)) {
++    const missing = { ...secure.values }; delete missing[name];
++    assert.throws(() => validateStagingPublicBuildInputs({ root, environment: missing }), new RegExp(name));
++    assert.throws(() => validateStagingPublicBuildInputs({ root, environment: { ...secure.values, [name]: secure.values[name] + "x" } }), new RegExp(name));
++  }
++});
++
++test("contract identity or source-reference drift fails closed", () => {
++  const directory = fs.mkdtempSync("/tmp/restaurant-build-input-contract-");
++  try {
++    const original = loadStagingBuildInputContract({ root }).value;
++    const wrongIdentity = path.join(directory, "wrong-identity.json");
++    fs.writeFileSync(wrongIdentity, JSON.stringify({ ...original, easProjectId: "wrong" }));
++    assert.throws(() => validateStagingPublicBuildInputs({ root, environment: secure.values, contractPath: wrongIdentity }), /identity/i);
++    const wrongReferences = path.join(directory, "wrong-references.json");
++    fs.writeFileSync(wrongReferences, JSON.stringify({ ...original, sourceReferences: { ...original.sourceReferences, EXPO_PUBLIC_FIREBASE_VAPID_KEY: ["apps/restaurant/src/firebase.ts"] } }));
++    assert.throws(() => validateStagingPublicBuildInputs({ root, environment: secure.values, contractPath: wrongReferences }), /source reference/i);
++  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
++});
+diff --git a/scripts/verify-restaurant-alias-production-export-readiness.mjs b/scripts/verify-restaurant-alias-production-export-readiness.mjs
+index 93ba129..44d1a85 100644
+--- a/scripts/verify-restaurant-alias-production-export-readiness.mjs
++++ b/scripts/verify-restaurant-alias-production-export-readiness.mjs
+@@ -8,0 +9 @@ import { DIAGNOSTIC_OPERATOR, verifyLocalExportOutput } from "./deploy-restauran
++import { loadStagingBuildInputContract } from "./restaurant-alias-staging-public-build-inputs.mjs";
+@@ -14 +15 @@ export const READ_ONLY_EAS_EXPORT_CHECK = Object.freeze({
+-  command: Object.freeze(["eas-cli@16.32.0", "env:exec", "preview", "npm run prepare:web && npx expo export --platform web --clear", "--non-interactive"]),
++  command: Object.freeze(["eas-cli@16.32.0", "env:exec", "preview", "node ../../scripts/restaurant-alias-staging-public-build-inputs.mjs && npm run prepare:web && npx expo export --platform web --clear", "--non-interactive"]),
+@@ -64 +65 @@ export function validateReadOnlyEasExportAuthorization(input, { now = Date.now()
+-    "artifactManifestSha256", "archiveSha256", "authorizationText", "authorizationTextSha256", "issuedAt", "expiresAt",
++    "artifactManifestSha256", "archiveSha256", "buildInputContractSha256", "authorizationText", "authorizationTextSha256", "issuedAt", "expiresAt",
+@@ -69 +70 @@ export function validateReadOnlyEasExportAuthorization(input, { now = Date.now()
+-  if (!/^[a-f0-9]{40}$/.test(input.sourceCommit || "") || !/^[a-f0-9]{64}$/.test(input.sourceManifestSha256 || "") || input.applicationTree !== DIAGNOSTIC_OPERATOR.applicationTree || input.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || input.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Read-only EAS export source or artifact binding mismatch.");
++  if (!/^[a-f0-9]{40}$/.test(input.sourceCommit || "") || !/^[a-f0-9]{64}$/.test(input.sourceManifestSha256 || "") || input.applicationTree !== DIAGNOSTIC_OPERATOR.applicationTree || input.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || input.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || input.buildInputContractSha256 !== DIAGNOSTIC_OPERATOR.buildInputContractSha256) throw new Error("Read-only EAS export source, build-input, or artifact binding mismatch.");
+@@ -110 +111 @@ export function verifyReadOnlyEasExportEvidence(value, { sourceCommit, sourceMan
+-  if (value?.schemaVersion !== 1 || value?.disposition !== "PASS" || value?.environment !== "staging" || value?.easProjectId !== DIAGNOSTIC_OPERATOR.easProjectId || value?.sourceCommit !== sourceCommit || value?.sourceManifestSha256 !== sourceManifestSha256 || value?.applicationTree !== DIAGNOSTIC_OPERATOR.applicationTree || value?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || value?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || value?.attempts?.length !== 2 || value.attempts.some(row => row.passed !== true || row.fileCount !== 74 || row.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || row.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || row.files?.length !== 74) || JSON.stringify(value.attempts[0].files) !== JSON.stringify(value.attempts[1].files)) throw new Error("Complete passing read-only EAS export evidence is required.");
++  if (value?.schemaVersion !== 1 || value?.disposition !== "PASS" || value?.environment !== "staging" || value?.easProjectId !== DIAGNOSTIC_OPERATOR.easProjectId || value?.sourceCommit !== sourceCommit || value?.sourceManifestSha256 !== sourceManifestSha256 || value?.applicationTree !== DIAGNOSTIC_OPERATOR.applicationTree || value?.buildInputContractSha256 !== DIAGNOSTIC_OPERATOR.buildInputContractSha256 || value?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || value?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || value?.attempts?.length !== 2 || value.attempts.some(row => row.passed !== true || row.fileCount !== 74 || row.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || row.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || row.files?.length !== 74) || JSON.stringify(value.attempts[0].files) !== JSON.stringify(value.attempts[1].files)) throw new Error("Complete passing read-only EAS export evidence is required.");
+@@ -129,0 +131,2 @@ export function runReadOnlyEasExportCheck(argv = process.argv.slice(2), dependen
++  const buildInputContract = loadStagingBuildInputContract({ root });
++  if (buildInputContract.sha256 !== authorization.buildInputContractSha256) throw new Error("Reviewed Staging build-input contract is required for the read-only export check.");
+@@ -134,2 +137,2 @@ export function runReadOnlyEasExportCheck(argv = process.argv.slice(2), dependen
+-    const result = verifyExactProductionExportReadiness({ root, run: dependencies.run || spawnSync, outputVerifier: dependencies.outputVerifier || verifyLocalExportOutput, clock: dependencies.clock, onAttempt(progress) { atomicWrite(progressPath, { schemaVersion: 1, checkId: authorization.checkId, environment: authorization.environment, easProjectId: authorization.easProjectId, sourceCommit: authorization.sourceCommit, sourceManifestSha256: authorization.sourceManifestSha256, applicationTree: authorization.applicationTree, artifactManifestSha256: authorization.artifactManifestSha256, archiveSha256: authorization.archiveSha256, authorizationTextSha256: authorization.authorizationTextSha256, ...progress }); } });
+-    const evidence = { schemaVersion: 1, checkId: authorization.checkId, disposition: "PASS", completedAt: iso(now), environment: authorization.environment, easProjectId: authorization.easProjectId, sourceCommit: authorization.sourceCommit, sourceManifestSha256: authorization.sourceManifestSha256, applicationTree: authorization.applicationTree, artifactManifestSha256: result.artifactManifestSha256, archiveSha256: result.archiveSha256, authorizationTextSha256: authorization.authorizationTextSha256, attempts: result.observations };
++    const result = verifyExactProductionExportReadiness({ root, run: dependencies.run || spawnSync, outputVerifier: dependencies.outputVerifier || verifyLocalExportOutput, clock: dependencies.clock, onAttempt(progress) { atomicWrite(progressPath, { schemaVersion: 1, checkId: authorization.checkId, environment: authorization.environment, easProjectId: authorization.easProjectId, sourceCommit: authorization.sourceCommit, sourceManifestSha256: authorization.sourceManifestSha256, applicationTree: authorization.applicationTree, buildInputContractSha256: authorization.buildInputContractSha256, artifactManifestSha256: authorization.artifactManifestSha256, archiveSha256: authorization.archiveSha256, authorizationTextSha256: authorization.authorizationTextSha256, ...progress }); } });
++    const evidence = { schemaVersion: 1, checkId: authorization.checkId, disposition: "PASS", completedAt: iso(now), environment: authorization.environment, easProjectId: authorization.easProjectId, sourceCommit: authorization.sourceCommit, sourceManifestSha256: authorization.sourceManifestSha256, applicationTree: authorization.applicationTree, buildInputContractSha256: authorization.buildInputContractSha256, artifactManifestSha256: result.artifactManifestSha256, archiveSha256: result.archiveSha256, authorizationTextSha256: authorization.authorizationTextSha256, attempts: result.observations };
