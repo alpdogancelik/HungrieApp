@@ -115,7 +115,7 @@ function validPromotionEvidence() {
   const approved = authority(), deployment = { deploymentIdentifier: "new-candidate", url: "https://new-candidate.expo.app", sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256 };
   const artifact = { runId: approved.runId, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, files: Array.from({ length: 74 }, (_, index) => ({ path: `file-${index}`, bytes: 1, sha256: evidenceHash("a") })) };
   const immutableEvidenceSha256 = evidenceHash("d"), accessEvidenceSha256 = evidenceHash("e"), rollbackEvidenceSha256 = evidenceHash("f");
-  const immutable = { passed: true, completedAt: capturedAt, runId: approved.runId, deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, routes: Array.from({ length: 6 }, () => ({ passed: true })), criticalAssets: Array.from({ length: 5 }, () => ({ passed: true })), publishedFiles: Array.from({ length: 74 }, () => ({ passed: true })), externalRuntime: Array.from({ length: 2 }, () => ({ passed: true })) };
+  const immutable = { passed: true, completedAt: capturedAt, runId: approved.runId, deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, artifactFiles: 74, routes: Array.from({ length: 6 }, () => ({ passed: true })), criticalAssets: Array.from({ length: 5 }, () => ({ passed: true })), publishedFiles: Array.from({ length: 73 }, () => ({ passed: true })), deploymentControls: [{ path: "_expo/.routes.json", publicUrlExpected: false, disposition: "consumed-as-static-routing-configuration", passed: true }], externalRuntime: Array.from({ length: 2 }, () => ({ passed: true })) };
   const access = { passed: true, capturedAt, runId: approved.runId, qualificationId: `${approved.runId}:${deployment.deploymentIdentifier}:immutable-access`, deploymentIdentifier: deployment.deploymentIdentifier, immutableUrl: deployment.url, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, immutableEvidenceSha256, results: [["pending", "/pending"], ["suspended", "/suspended"], ["owner", "/dashboard"], ["manager", "/dashboard"]].map(([account, expectedPath]) => ({ passed: true, account, expectedPath })) };
   const rollbackAssets = [{ asset: "/old.js", bytes: 1, sha256: evidenceHash("2") }];
   const rollback = { passed: true, capturedAt, runId: approved.runId, deploymentIdentifier: DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment, deploymentUrl: "https://rollback.invalid", routes: Array.from({ length: 6 }, (_, index) => ({ route: `/route-${index}`, bytes: 1, sha256: evidenceHash("1"), referencedAssets: rollbackAssets.map(row => row.asset) })), criticalAssets: rollbackAssets, runtimeFiles: DIAGNOSTIC_OPERATOR.runtimeFiles.map((runtimePath, i) => ({ path: runtimePath, bytes: 1, sha256: hash("runtime" + i) })), externalRuntime: DIAGNOSTIC_OPERATOR.externalRuntime.map((row, i) => ({ url: row.url, bytes: i ? 37024 : 31766, sha256: row.sha256 })) };
@@ -132,6 +132,7 @@ function passingRollbackRecheck(value) {
 
 async function immutableFixture(mutate = () => {}) {
   const base = "https://candidate.example.invalid";
+  const routesConfiguration = { headers: { "Cache-Control": "private, no-cache", "Content-Security-Policy": "default-src 'self'; frame-ancestors 'none'", "X-Frame-Options": "DENY", "X-Content-Type-Options": "nosniff" }, redirects: [] };
   const html = Buffer.from('<!doctype html><link href="/_expo/static/a.css"><link href="/_expo/static/b.css"><link href="/_expo/static/c.css"><link href="/_expo/static/d.css"><script src="/_expo/static/e.js"></script>');
   const assets = new Map([["/_expo/static/a.css", Buffer.from("a")], ["/_expo/static/b.css", Buffer.from("b")], ["/_expo/static/c.css", Buffer.from("c")], ["/_expo/static/d.css", Buffer.from("d")], ["/_expo/static/e.js", Buffer.from("e")]]);
   const routePaths = [["/login", "login.html"], ["/dashboard", "dashboard.html"], ["/orders/detail?orderId=phase6", "orders/detail.html"], ["/menu", "menu.html"], ["/reviews", "reviews.html"], ["/earnings", "earnings.html"]];
@@ -140,19 +141,24 @@ async function immutableFixture(mutate = () => {}) {
   const sw = Buffer.from(`importScripts("${DIAGNOSTIC_OPERATOR.externalRuntime[0].url}","${DIAGNOSTIC_OPERATOR.externalRuntime[1].url}")`);
   const fileBodies = new Map(routePaths.map(([, file]) => [file, html]));
   for (const [asset, body] of assets) fileBodies.set(asset.slice(1), body);
+  fileBodies.set("_expo/.routes.json", Buffer.from(JSON.stringify(routesConfiguration)));
   fileBodies.set("manifest.webmanifest", Buffer.from("{}")); fileBodies.set("sw.js", sw); fileBodies.set("firebase-config.js", Buffer.from("config"));
   while (fileBodies.size < 74) fileBodies.set(`other-${fileBodies.size}.txt`, Buffer.from("x"));
   const files = [...fileBodies].map(([file, body]) => ({ path: file, bytes: body.length, sha256: hash(body) }));
-  const artifact = { artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, files };
-  const state = { status: 200, finalUrl: null, body: null }; mutate({ state, html, assets, artifact, fileBodies });
+  const controlFile = files.find(row => row.path === "_expo/.routes.json");
+  const artifact = { artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, files, deploymentControls: [{ path: controlFile.path, bytes: controlFile.bytes, sha256: controlFile.sha256, provider: "eas-cli@16.32.0", disposition: "consumed-as-static-routing-configuration", configuration: routesConfiguration }] };
+  const state = { status: 200, finalUrl: null, body: null, omitHeaders: false }; mutate({ state, html, assets, artifact, fileBodies });
   const snapshots = [];
+  const requestedPaths = [];
   const fetchImpl = async input => {
     const url = new URL(input);
+    requestedPaths.push(url.pathname);
     const body = state.body || (url.origin === "https://www.gstatic.com" ? (url.pathname.includes("messaging") ? messagingCompat : appCompat) : assets.get(url.pathname) || fileBodies.get(url.pathname.slice(1)) || html);
-    const response = new Response(body, { status: state.status }); Object.defineProperty(response, "url", { value: state.finalUrl || url.href }); return response;
+    const headers = url.origin === base && !state.omitHeaders ? { "cache-control": "no-cache, private", "content-security-policy": routesConfiguration.headers["Content-Security-Policy"], "x-content-type-options": "nosniff" } : {};
+    const response = new Response(body, { status: state.status, headers }); Object.defineProperty(response, "url", { value: state.finalUrl || url.href }); return response;
   };
   const evidence = await verifyImmutableArtifactParity({ base, deploymentIdentifier: "new-candidate", artifact, fetchImpl, persist: async value => snapshots.push(clone(value)), clock: { now: () => Date.parse("2026-09-25T10:00:00Z") } });
-  return { evidence, snapshots };
+  return { evidence, snapshots, requestedPaths };
 }
 
 test("authority is exact and fail-closed", () => {
@@ -162,9 +168,10 @@ test("authority is exact and fail-closed", () => {
   }
 });
 
-test("all rejected deployments, including ipcij64k47, are denied", () => {
+test("all rejected deployments, including retained aborted candidates, are denied", () => {
   assert.equal(DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment, "6jki82fy0u");
   assert.ok(REJECTED_DEPLOYMENTS.includes("ipcij64k47"));
+  assert.ok(REJECTED_DEPLOYMENTS.includes("tnc8x1kw9w"));
   for (const identifier of REJECTED_DEPLOYMENTS) assert.throws(() => promotionCommand(identifier), /new non-rejected/);
   assert.deepEqual(promotionCommand("new-candidate"), ["eas-cli@16.32.0", "deploy:alias", "--alias", "staging", "--id", "new-candidate", "--json", "--non-interactive"]);
 });
@@ -196,6 +203,9 @@ test("the complete local export gate accepts the reviewed 74-file artifact and c
     assert.equal(extracted.status, 0);
     const result = verifyLocalExportOutput({ distDirectory: dist, archivePath: archive });
     assert.equal(result.files.length, 74);
+    assert.equal(result.deploymentControls.length, 1);
+    assert.equal(result.deploymentControls[0].path, "_expo/.routes.json");
+    assert.equal(result.deploymentControls[0].configuration.headers["Content-Security-Policy"].includes("frame-ancestors 'none'"), true);
     assert.equal(result.artifactManifestSha256, DIAGNOSTIC_OPERATOR.artifactManifestSha256);
     assert.equal(result.archive.sha256, DIAGNOSTIC_OPERATOR.archiveSha256);
     assert.deepEqual(fs.readFileSync(archive), fs.readFileSync(artifact));
@@ -292,14 +302,24 @@ test("immutable qualification requires exact accepted route and asset bytes", as
   assert.equal(passing.evidence.passed, true);
   assert.equal(passing.evidence.routes.length, 6);
   assert.equal(passing.evidence.criticalAssets.length, 5);
+  assert.equal(passing.evidence.artifactFiles, 74);
+  assert.equal(passing.evidence.publishedFiles.length, 73);
+  assert.deepEqual(passing.evidence.deploymentControls.map(row => ({ path: row.path, publicUrlExpected: row.publicUrlExpected, passed: row.passed })), [{ path: "_expo/.routes.json", publicUrlExpected: false, passed: true }]);
+  assert.equal(passing.requestedPaths.includes("/_expo/.routes.json"), false);
   assert.ok(passing.snapshots.some(snapshot => snapshot.routes.length > 0 && snapshot.passed === false));
   assert.equal(passing.snapshots.at(-1).passed, true);
+
+  await assert.rejects(
+    () => immutableFixture(({ artifact }) => { artifact.deploymentControls = []; }),
+    /artifact evidence/i,
+  );
 
   for (const [name, mutation] of [
     ["status", ({ state }) => { state.status = 503; }],
     ["final URL", ({ state }) => { state.finalUrl = "https://other.example.invalid/wrong"; }],
     ["byte length and hash", ({ state }) => { state.body = Buffer.from("different"); }],
     ["asset references", ({ state, assets }) => { state.body = Buffer.from(`<script src="${[...assets.keys()][0]}"></script>`); }],
+    ["deployment control headers", ({ state }) => { state.omitHeaders = true; }],
   ]) {
     const result = await immutableFixture(mutation);
     assert.equal(result.evidence.passed, false, name);

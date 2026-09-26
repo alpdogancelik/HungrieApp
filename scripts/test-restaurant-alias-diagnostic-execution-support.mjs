@@ -279,6 +279,14 @@ function installVerifiedFreshRecapture(directory, auth, freshAt = capturedAt, re
   return { ...fresh, verification };
 }
 
+function installInitialRollback(directory, auth, at = capturedAt, suffix = "initial") {
+  const rollback = rollbackEvidence(at, suffix);
+  writeJson(directory, "rollback-reference.json", rollback.reference);
+  writeJson(directory, "rollback-capture-progress.json", rollback.progress);
+  writeJson(directory, "rollback-capture-initial-attempt.json", { schemaVersion: 1, runId: auth.runId, phase: "initial", state: "COMPLETE", contractSha256: rollback.reference.contractSha256 });
+  return rollback;
+}
+
 function installRegisteredDeployment(directory, auth, deployment) {
   initializeResourceInventory({ runDirectory: directory, authority: auth, capturedAt: "2026-09-25T11:00:00.000Z" });
   beginSingleDeploymentAttempt({ runDirectory: directory, authority: auth, capturedAt: "2026-09-25T11:01:00.000Z" });
@@ -416,17 +424,19 @@ test("authority rejects missing, placeholder, contradictory, and unapproved inpu
   assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260925c" })), /identity/i);
   assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260925d" })), /identity/i);
   assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260925e" })), /identity/i);
+  assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260926f" })), /identity/i);
 });
 
 test("new run owns isolated authority and evidence identities", () => {
-  assert.equal(SUPPORT.runId, "ruip6ad_20260926f");
-  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260926f");
+  assert.equal(SUPPORT.runId, "ruip6ad_20260926g");
+  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260926g");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925a");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925b");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925c");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925d");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925e");
-  for (const suffix of ["20260925a", "20260925b", "20260925c", "20260925d", "20260925e"]) assert.ok(!SUPPORT.evidenceDirectory.includes(suffix));
+  assert.notEqual(SUPPORT.runId, "ruip6ad_20260926f");
+  for (const suffix of ["20260925a", "20260925b", "20260925c", "20260925d", "20260925e", "20260926f"]) assert.ok(!SUPPORT.evidenceDirectory.includes(suffix));
 });
 
 test("new-run checkpoint contract passes only the exact reviewed synthetic child", () => {
@@ -667,7 +677,7 @@ test("terminal recording distinguishes no assignment, uncertain assignment, and 
       assert.equal(result.rollbackRequired, rollbackRequired);
       assert.equal(result.promotionRetryPermitted, false);
       if (expected === "not-attempted") assert.equal(JSON.parse(fs.readFileSync(path.join(directory, "promotion-attempt.json"), "utf8")).providerCommandInvoked, false);
-      if (rollbackRequired) assert.match(result.rollbackCommand, /:rollback:ruip6ad_20260926f/);
+      if (rollbackRequired) assert.match(result.rollbackCommand, /:rollback:ruip6ad_20260926g/);
       assert.throws(() => recordTerminalState({ runDirectory: directory, authority: authority(), classification: "ABORTED", reason: "again", capturedAt }), /overwrite prohibited/);
     } finally { fs.rmSync(directory, { recursive: true, force: true }); }
   }
@@ -724,7 +734,7 @@ test("real hosted-reader alias callback persists metadata failures without runti
     assert.equal(result.attempts.every(attempt => attempt.errors.some(row => row.stage === "metadata")), true);
     assert.equal(result.attempts.some(attempt => attempt.errors.some(row => /synthetic metadata transport failure/.test(row.error))), true, JSON.stringify(result.attempts[0], null, 2));
     const failedMetadata = result.attempts[0].observations.find(row => row.type === "metadata");
-    assert.match(failedMetadata.requestId, /^ruip6ad_20260926f:expo-alias-final-parity:1:/);
+    assert.match(failedMetadata.requestId, /^ruip6ad_20260926g:expo-alias-final-parity:1:/);
     assert.equal(failedMetadata.status, null);
     assert.match(failedMetadata.error, /synthetic metadata transport failure/);
     assert.ok(failedMetadata.startedAt && failedMetadata.completedAt);
@@ -887,7 +897,7 @@ test("final preflight requires verified fresh recapture and rejects altered evid
     directory => fs.rmSync(path.join(directory, "fresh-recapture-attempt.json")),
     directory => fs.rmSync(path.join(directory, "fresh-recapture-verification.json")),
     directory => { const file = path.join(directory, "fresh-recapture-attempt.json"); const value = JSON.parse(fs.readFileSync(file)); value.state = "READY_FOR_RECAPTURE"; fs.writeFileSync(file, canonical(value)); },
-    directory => fs.appendFileSync(path.join(directory, "rollback-history", "ruip6ad_20260926f_fresh-rollback-recapture", "rollback-reference.json"), " "),
+    directory => fs.appendFileSync(path.join(directory, "rollback-history", "ruip6ad_20260926g_fresh-rollback-recapture", "rollback-reference.json"), " "),
     directory => { const file = path.join(directory, "rollback-reference.json"); const value = JSON.parse(fs.readFileSync(file)); value.criticalAssets.pop(); fs.writeFileSync(file, canonical(value)); },
   ]) {
     const fixture = finalFixture();
@@ -967,6 +977,111 @@ test("expected final alias is exact, run-bound, and preserves the original rollb
   } finally { fs.rmSync(fixture.directory, { recursive: true, force: true }); }
 });
 
+test("terminal abort before deployment finalizes from the preserved initial rollback without recapture", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-terminal-before-deploy-"));
+  try {
+    const auth = authority();
+    writeJson(directory, "baseline-preflight.json", { passed: true, runId: SUPPORT.runId });
+    initializeResourceInventory({ runDirectory: directory, authority: auth, capturedAt });
+    const initial = installInitialRollback(directory, auth);
+    recordTerminalState({ runDirectory: directory, authority: auth, classification: "ABORTED", reason: "pre-deployment stop", capturedAt });
+    assert.throws(() => prepareFreshRollbackRecapture({ runDirectory: directory, authority: auth, capturedAt }), /Terminal runs.*preserved rollback/i);
+    assert.equal(fs.existsSync(path.join(directory, "fresh-recapture-attempt.json")), false);
+    const expectedAlias = buildExpectedFinalAliasReference({ runDirectory: directory, authority: auth, capturedAt });
+    assert.equal(expectedAlias.source.mode, "terminal-preserved");
+    assert.equal(expectedAlias.source.freshRecaptureVerificationSha256, null);
+    assert.equal(expectedAlias.source.rollbackReferenceSha256, hash(Buffer.from(canonical(initial.reference))));
+    const cleanup = buildCleanupDisposition({ runDirectory: directory, authority: auth, capturedAt });
+    assert.equal(cleanup.passed, true);
+    assert.deepEqual(cleanup.createdResources, []);
+    const result = await finalizeRun({ root, runDirectory: directory, authority: auth, expectedAlias, readers: finalReaders(), cleanup, capturedAt });
+    assert.equal(result.result, "FAIL");
+    assert.deepEqual(result.blockers, ["TERMINAL_NON_PASS_RUN"]);
+    assert.equal(result.missingEvidence.length, 0);
+    await assert.rejects(() => finalizeRun({ root, runDirectory: directory, authority: auth, expectedAlias, readers: finalReaders(), cleanup, capturedAt }), /cannot be retried/i);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(directory, "promotion-attempt.json"), "utf8")).promotionPermanentlyProhibited, true);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("terminal abort after deployment uses preserved rollback history and completes reconciliation", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-terminal-after-deploy-"));
+  try {
+    const auth = authority();
+    writeJson(directory, "baseline-preflight.json", { passed: true, runId: SUPPORT.runId });
+    const initial = installInitialRollback(directory, auth, "2026-09-25T11:40:00.000Z");
+    const deployment = { capturedAt, deploymentIdentifier: "rejected-candidate", url: "https://candidate.example.invalid", sourceCommit: auth.sourceCommit, sourceManifestSha256: auth.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, aliasAssigned: false };
+    installRegisteredDeployment(directory, auth, deployment);
+    recordTerminalState({ runDirectory: directory, authority: auth, classification: "ABORTED", reason: "immutable publication failed", capturedAt });
+    const terminalBefore = fs.readFileSync(path.join(directory, "terminal-record.json"));
+    const referenceBefore = fs.readFileSync(path.join(directory, "rollback-reference.json"));
+    assert.throws(() => prepareFreshRollbackRecapture({ runDirectory: directory, authority: auth, capturedAt }), /Terminal runs.*preserved rollback/i);
+    assert.deepEqual(fs.readFileSync(path.join(directory, "rollback-reference.json")), referenceBefore);
+    assert.deepEqual(fs.readFileSync(path.join(directory, "terminal-record.json")), terminalBefore);
+    const expectedAlias = buildExpectedFinalAliasReference({ runDirectory: directory, authority: auth, capturedAt });
+    assert.equal(expectedAlias.source.mode, "terminal-preserved");
+    assert.equal(expectedAlias.contractSha256, initial.reference.contractSha256);
+    const cleanup = buildCleanupDisposition({ runDirectory: directory, authority: auth, capturedAt });
+    const result = await finalizeRun({ root, runDirectory: directory, authority: auth, expectedAlias, readers: finalReaders(), cleanup, capturedAt });
+    assert.equal(result.result, "FAIL");
+    assert.deepEqual(result.blockers, ["TERMINAL_NON_PASS_RUN"]);
+    assert.equal(result.cleanupReconciliation.passed, true);
+    assert.equal(result.createdResources[0].id, "rejected-candidate");
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("terminal finalization consumes immutable historical rollback bytes after an interrupted recapture", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-terminal-interrupted-recapture-"));
+  try {
+    const auth = authority();
+    writeJson(directory, "baseline-preflight.json", { passed: true, runId: SUPPORT.runId });
+    initializeResourceInventory({ runDirectory: directory, authority: auth, capturedAt });
+    installInitialRollback(directory, auth, "2026-09-25T11:40:00.000Z");
+    prepareFreshRollbackRecapture({ runDirectory: directory, authority: auth, capturedAt: "2026-09-25T11:45:00.000Z" });
+    const attemptBefore = fs.readFileSync(path.join(directory, "fresh-recapture-attempt.json"));
+    const attempt = JSON.parse(attemptBefore);
+    const historicalBefore = fs.readFileSync(path.join(directory, attempt.historical.reference.path));
+    recordTerminalState({ runDirectory: directory, authority: auth, classification: "ABORTED", reason: "recapture interrupted", capturedAt });
+    const expectedAlias = buildExpectedFinalAliasReference({ runDirectory: directory, authority: auth, capturedAt });
+    assert.equal(expectedAlias.source.mode, "terminal-preserved");
+    assert.equal(expectedAlias.source.originalHistoricalReferenceSha256, hash(historicalBefore));
+    assert.deepEqual(fs.readFileSync(path.join(directory, attempt.historical.reference.path)), historicalBefore);
+    assert.deepEqual(fs.readFileSync(path.join(directory, "fresh-recapture-attempt.json")), attemptBefore);
+    const cleanup = buildCleanupDisposition({ runDirectory: directory, authority: auth, capturedAt });
+    const result = await finalizeRun({ root, runDirectory: directory, authority: auth, expectedAlias, readers: finalReaders(), cleanup, capturedAt });
+    assert.equal(result.result, "FAIL");
+    assert.deepEqual(result.blockers, ["TERMINAL_NON_PASS_RUN"]);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("uncertain alias assignment cannot finalize without independently verified rollback", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-terminal-uncertain-alias-"));
+  try {
+    const auth = authority();
+    writeJson(directory, "baseline-preflight.json", { passed: true, runId: SUPPORT.runId });
+    writeJson(directory, "artifact-manifest.json", { passed: true, runId: SUPPORT.runId });
+    const deployment = { capturedAt, deploymentIdentifier: "candidate", url: "https://candidate.example.invalid", sourceCommit: auth.sourceCommit, sourceManifestSha256: auth.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, aliasAssigned: false };
+    installRegisteredDeployment(directory, auth, deployment);
+    writeJson(directory, "immutable-smoke.json", { passed: true, deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url });
+    writeJson(directory, "immutable-access-qualification.json", { passed: true, deploymentIdentifier: deployment.deploymentIdentifier });
+    writeJson(directory, "promotion-preflight.json", { passed: true, runId: SUPPORT.runId });
+    const rollback = installInitialRollback(directory, auth);
+    writeJson(directory, "promotion-attempt.json", { runId: auth.runId, attemptedAt: capturedAt, deploymentIdentifier: "candidate", providerCommandInvoked: true });
+    const terminal = recordTerminalState({ runDirectory: directory, authority: auth, classification: "INCONCLUSIVE", reason: "assignment response uncertain", capturedAt });
+    assert.equal(terminal.rollbackRequired, true);
+    assert.throws(() => buildExpectedFinalAliasReference({ runDirectory: directory, authority: auth, capturedAt }), /requires independent rollback verification/i);
+    writeJson(directory, "rollback-attempt.json", { attemptedAt: capturedAt, deploymentIdentifier: rollback.reference.deploymentIdentifier });
+    writeJson(directory, "rollback-result.json", { completedAt: capturedAt, deploymentIdentifier: rollback.reference.deploymentIdentifier });
+    writeJson(directory, "rollback-verification-result.json", { passed: true, classification: "PASS", expected: { deploymentIdentifier: rollback.reference.deploymentIdentifier, routes: rollback.reference.routes, criticalAssets: rollback.reference.criticalAssets, runtimeFiles: rollback.reference.runtimeFiles, externalRuntime: rollback.reference.externalRuntime }, selectedAttempts: [{ number: 1 }, { number: 4 }] });
+    const expectedAlias = buildExpectedFinalAliasReference({ runDirectory: directory, authority: auth, capturedAt });
+    const cleanup = buildCleanupDisposition({ runDirectory: directory, authority: auth, capturedAt });
+    const result = await finalizeRun({ root, runDirectory: directory, authority: auth, expectedAlias, readers: finalReaders(), cleanup, capturedAt });
+    assert.equal(result.result, "FAIL");
+    assert.deepEqual(result.blockers, ["TERMINAL_NON_PASS_RUN"]);
+    assert.equal(result.missingEvidence.length, 0);
+    assert.throws(() => beginSingleDeploymentAttempt({ runDirectory: directory, authority: auth, capturedAt }), /clean initialized|exist/i);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
 test("interrupted finalization cannot produce PASS evidence and a completed promotion always requires rollback evidence", async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-finalization-interrupt-"));
   try {
@@ -976,6 +1091,39 @@ test("interrupted finalization cannot produce PASS evidence and a completed prom
     await assert.rejects(() => finalizeRun({ root, runDirectory: directory, authority: authority(), expectedAlias: evidence.expected, readers: finalReaders(), cleanup: evidence.cleanup, capturedAt, persist: (file, value) => { writes += 1; if (writes === 2) throw new Error("synthetic finalization interruption"); fs.writeFileSync(file, Buffer.isBuffer(value) ? value : canonical(value)); } }), /synthetic finalization interruption/);
     assert.equal(fs.existsSync(path.join(directory, "final-reconciliation.json")), false);
     assert.equal(JSON.parse(fs.readFileSync(path.join(directory, "finalization-attempt.json"), "utf8")).state, "STARTED");
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("interrupted finalization resumes from preserved evidence exactly once", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-finalization-resume-"));
+  try {
+    const evidence = writeSuccessfulRunEvidence(directory);
+    let writes = 0;
+    await assert.rejects(
+      () => finalizeRun({
+        root,
+        runDirectory: directory,
+        authority: authority(),
+        expectedAlias: evidence.expected,
+        readers: finalReaders(),
+        cleanup: evidence.cleanup,
+        capturedAt,
+        persist: (file, value) => {
+          writes += 1;
+          if (writes === 2) throw new Error("synthetic resumable finalization interruption");
+          fs.writeFileSync(file, Buffer.isBuffer(value) ? value : canonical(value));
+        },
+      }),
+      /synthetic resumable finalization interruption/,
+    );
+    assert.equal(JSON.parse(fs.readFileSync(path.join(directory, "finalization-attempt.json"), "utf8")).state, "STARTED");
+    const resumed = await finalizeRun({ root, runDirectory: directory, authority: authority(), expectedAlias: evidence.expected, readers: finalReaders(), cleanup: evidence.cleanup, capturedAt });
+    assert.equal(resumed.result, "PASS");
+    assert.equal(JSON.parse(fs.readFileSync(path.join(directory, "finalization-attempt.json"), "utf8")).state, "COMPLETE");
+    await assert.rejects(
+      () => finalizeRun({ root, runDirectory: directory, authority: authority(), expectedAlias: evidence.expected, readers: finalReaders(), cleanup: evidence.cleanup, capturedAt }),
+      /cannot be retried or rebound/i,
+    );
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 

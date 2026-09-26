@@ -1,0 +1,453 @@
+diff --git a/scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs b/scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs
+index 8098240..e784778 100755
+--- a/scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs
++++ b/scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs
+@@ -44,0 +45 @@ export const REJECTED_DEPLOYMENTS = Object.freeze([
++  "tnc8x1kw9w",
+@@ -68,0 +70,7 @@ const ROUTE_ARTIFACTS = Object.freeze([
++export const DEPLOYMENT_CONTROL_ARTIFACTS = Object.freeze([
++  Object.freeze({
++    path: "_expo/.routes.json",
++    provider: "eas-cli@16.32.0",
++    disposition: "consumed-as-static-routing-configuration",
++  }),
++]);
+@@ -214 +222,9 @@ export function verifyLocalExportOutput({ distDirectory, archivePath, spawn = sp
+-  return { files, artifactManifestSha256: manifestDigest(files), archive };
++  const deploymentControls = DEPLOYMENT_CONTROL_ARTIFACTS.map(control => {
++    const file = files.find(row => row.path === control.path);
++    let configuration;
++    try { configuration = JSON.parse(fs.readFileSync(path.join(distDirectory, control.path), "utf8")); }
++    catch { throw new Error("Deployment routing control is missing or invalid JSON."); }
++    if (!file || !configuration || typeof configuration.headers !== "object" || Array.isArray(configuration.headers) || !Array.isArray(configuration.redirects)) throw new Error("Deployment routing control schema is incomplete.");
++    return { ...control, bytes: file.bytes, sha256: file.sha256, configuration };
++  });
++  return { files, deploymentControls, artifactManifestSha256: manifestDigest(files), archive };
+@@ -229,0 +246,6 @@ export async function verifyImmutableArtifactParity({ base, deploymentIdentifier
++  const deploymentControls = DEPLOYMENT_CONTROL_ARTIFACTS.map(control => {
++    const recorded = artifact?.deploymentControls?.find(row => row.path === control.path);
++    return { ...control, ...fileByPath.get(control.path), configuration: recorded?.configuration };
++  });
++  const deploymentControlPaths = new Set(deploymentControls.map(control => control.path));
++  const publiclyServedFiles = files.filter(file => !deploymentControlPaths.has(file.path));
+@@ -232 +254 @@ export async function verifyImmutableArtifactParity({ base, deploymentIdentifier
+-  if (artifact?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || files.length !== 74 || expectedRoutes.some(row => !row.sha256 || !Number.isSafeInteger(row.bytes)) || expectedAssets.length !== 5 || files.some(row => !row.path || !Number.isSafeInteger(row.bytes) || !/^[a-f0-9]{64}$/.test(row.sha256 || ""))) throw new Error("Complete fixed accepted artifact evidence required.");
++  if (artifact?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || files.length !== 74 || publiclyServedFiles.length !== 73 || deploymentControls.length !== 1 || deploymentControls.some(row => !row.sha256 || !Number.isSafeInteger(row.bytes) || !row.configuration || typeof row.configuration.headers !== "object" || !Array.isArray(row.configuration.redirects)) || expectedRoutes.some(row => !row.sha256 || !Number.isSafeInteger(row.bytes)) || expectedAssets.length !== 5 || files.some(row => !row.path || !Number.isSafeInteger(row.bytes) || !/^[a-f0-9]{64}$/.test(row.sha256 || ""))) throw new Error("Complete fixed accepted artifact evidence required.");
+@@ -234 +256 @@ export async function verifyImmutableArtifactParity({ base, deploymentIdentifier
+-  const evidence = { schemaVersion: 2, capturedAt: new Date(clock.now()).toISOString(), passed: false, deploymentIdentifier, url: base, artifactManifestSha256: artifact.artifactManifestSha256, archiveSha256: artifact.archiveSha256, routes: [], criticalAssets: [], publishedFiles: [], externalRuntime: [], errors: [] };
++  const evidence = { schemaVersion: 3, capturedAt: new Date(clock.now()).toISOString(), passed: false, deploymentIdentifier, url: base, artifactManifestSha256: artifact.artifactManifestSha256, archiveSha256: artifact.archiveSha256, artifactFiles: files.length, routes: [], criticalAssets: [], publishedFiles: [], deploymentControls: deploymentControls.map(row => ({ path: row.path, expected: { bytes: row.bytes, sha256: row.sha256, configuration: row.configuration }, provider: row.provider, disposition: row.disposition, publicUrlExpected: false, routeSemanticsVerified: false, passed: false })), externalRuntime: [], errors: [] };
+@@ -240 +262 @@ export async function verifyImmutableArtifactParity({ base, deploymentIdentifier
+-      const actual = { status: response.status, finalUrl: response.url || requestedUrl.href, byteLength: body.length, sha256: sha256(body) };
++      const actual = { status: response.status, finalUrl: response.url || requestedUrl.href, byteLength: body.length, sha256: sha256(body), headers: Object.fromEntries([...response.headers.entries()].map(([name, value]) => [name.toLowerCase(), value])) };
+@@ -247 +269,11 @@ export async function verifyImmutableArtifactParity({ base, deploymentIdentifier
+-    if (result) { const refs = assetsReferenced(result.body, expectedAssets); const row = { route: expected.route, artifactPath: expected.artifactPath, expected: { status: 200, finalUrl: requestedUrl.href, byteLength: expected.bytes, sha256: expected.sha256, assets: expectedAssets.map(asset => asset.asset) }, actual: result.actual, comparison: { ...result.comparison, assetReferences: refs }, passed: result.passed && refs }; evidence.routes.push(row); await persist(evidence); }
++    if (result) {
++      const refs = assetsReferenced(result.body, expectedAssets);
++      const configuredHeaders = deploymentControls[0].configuration.headers;
++      const headerParity = Object.entries(configuredHeaders).every(([name, value]) => {
++        const actual = result.actual.headers[name.toLowerCase()] || "";
++        if (name.toLowerCase() === "x-frame-options") return configuredHeaders["Content-Security-Policy"]?.includes("frame-ancestors") && result.actual.headers["content-security-policy"] === configuredHeaders["Content-Security-Policy"];
++        if (name.toLowerCase() === "cache-control") return new Set(actual.split(",").map(token => token.trim())).size === new Set(String(value).split(",").map(token => token.trim())).size && String(value).split(",").map(token => token.trim()).every(token => new Set(actual.split(",").map(item => item.trim())).has(token));
++        return actual === value;
++      });
++      const row = { route: expected.route, artifactPath: expected.artifactPath, expected: { status: 200, finalUrl: requestedUrl.href, byteLength: expected.bytes, sha256: expected.sha256, assets: expectedAssets.map(asset => asset.asset), deploymentControlHeaders: configuredHeaders }, actual: result.actual, comparison: { ...result.comparison, assetReferences: refs, deploymentControlHeaders: headerParity }, passed: result.passed && refs && headerParity }; evidence.routes.push(row); await persist(evidence);
++    }
+@@ -249 +281 @@ export async function verifyImmutableArtifactParity({ base, deploymentIdentifier
+-  for (const expected of files) {
++  for (const expected of publiclyServedFiles) {
+@@ -252,0 +285,3 @@ export async function verifyImmutableArtifactParity({ base, deploymentIdentifier
++  const routeSemanticsVerified = evidence.routes.length === ROUTE_ARTIFACTS.length && evidence.routes.every(row => row.passed);
++  evidence.deploymentControls = evidence.deploymentControls.map(row => ({ ...row, routeSemanticsVerified, passed: routeSemanticsVerified }));
++  await persist(evidence);
+@@ -260 +295 @@ export async function verifyImmutableArtifactParity({ base, deploymentIdentifier
+-  evidence.passed = evidence.errors.length === 0 && evidence.routes.length === 6 && evidence.routes.every(row => row.passed) && evidence.criticalAssets.length === 5 && evidence.criticalAssets.every(row => row.passed) && evidence.publishedFiles.length === 74 && evidence.publishedFiles.every(row => row.passed) && evidence.externalRuntime.length === DIAGNOSTIC_OPERATOR.externalRuntime.length && evidence.externalRuntime.every(row => row.passed);
++  evidence.passed = evidence.errors.length === 0 && evidence.routes.length === 6 && evidence.routes.every(row => row.passed) && evidence.criticalAssets.length === 5 && evidence.criticalAssets.every(row => row.passed) && evidence.publishedFiles.length === 73 && evidence.publishedFiles.every(row => row.passed) && evidence.deploymentControls.length === 1 && evidence.deploymentControls.every(row => row.passed) && evidence.publishedFiles.length + evidence.deploymentControls.length === evidence.artifactFiles && evidence.externalRuntime.length === DIAGNOSTIC_OPERATOR.externalRuntime.length && evidence.externalRuntime.every(row => row.passed);
+@@ -428 +463 @@ export function validatePromotionPrerequisites({ authority, artifact, artifactEn
+-  if (immutable?.passed !== true || immutable.runId !== authority.runId || immutable.deploymentIdentifier !== deployment.deploymentIdentifier || immutable.sourceCommit !== authority.sourceCommit || immutable.sourceManifestSha256 !== authority.sourceManifestSha256 || immutable.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || immutable.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || immutable.routes?.length !== 6 || !immutable.routes.every(row => row.passed) || immutable.criticalAssets?.length !== 5 || !immutable.criticalAssets.every(row => row.passed) || immutable.publishedFiles?.length !== 74 || !immutable.publishedFiles.every(row => row.passed) || immutable.externalRuntime?.length !== 2 || !immutable.externalRuntime.every(row => row.passed) || !/^[a-f0-9]{64}$/.test(immutableEvidenceSha256 || "")) throw new Error("Complete passing immutable-to-artifact qualification required.");
++  if (immutable?.passed !== true || immutable.runId !== authority.runId || immutable.deploymentIdentifier !== deployment.deploymentIdentifier || immutable.sourceCommit !== authority.sourceCommit || immutable.sourceManifestSha256 !== authority.sourceManifestSha256 || immutable.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || immutable.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || immutable.artifactFiles !== 74 || immutable.routes?.length !== 6 || !immutable.routes.every(row => row.passed) || immutable.criticalAssets?.length !== 5 || !immutable.criticalAssets.every(row => row.passed) || immutable.publishedFiles?.length !== 73 || !immutable.publishedFiles.every(row => row.passed) || immutable.deploymentControls?.length !== 1 || !immutable.deploymentControls.every(row => row.passed && row.path === "_expo/.routes.json" && row.publicUrlExpected === false && row.disposition === "consumed-as-static-routing-configuration") || immutable.publishedFiles.length + immutable.deploymentControls.length !== immutable.artifactFiles || immutable.externalRuntime?.length !== 2 || !immutable.externalRuntime.every(row => row.passed) || !/^[a-f0-9]{64}$/.test(immutableEvidenceSha256 || "")) throw new Error("Complete passing immutable-to-artifact qualification required.");
+@@ -517,2 +552,2 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
+-    const { files, artifactManifestSha256, archive } = verifyLocalExportOutput({ distDirectory: path.join(appRoot, "dist"), archivePath: path.join(runDirectory, "restaurant-static-export.tar"), spawn: run });
+-    atomicWrite(path.join(runDirectory, "artifact-manifest.json"), { capturedAt: now(), runId: authority.runId, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree, files, artifactManifestSha256, archiveSha256: archive.sha256, archiveBytes: archive.bytes });
++    const { files, deploymentControls, artifactManifestSha256, archive } = verifyLocalExportOutput({ distDirectory: path.join(appRoot, "dist"), archivePath: path.join(runDirectory, "restaurant-static-export.tar"), spawn: run });
++    atomicWrite(path.join(runDirectory, "artifact-manifest.json"), { capturedAt: now(), runId: authority.runId, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree, files, deploymentControls, artifactManifestSha256, archiveSha256: archive.sha256, archiveBytes: archive.bytes });
+@@ -545,2 +580,2 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
+-    if (!qualified.passed) throw new Error("Immutable deployment differs from the fixed accepted local artifact.");
+-    return { passed: true, action, routes: qualified.routes.length, criticalAssets: qualified.criticalAssets.length };
++    if (!qualified.passed) throw new Error("Immutable deployment differs from the fixed accepted local artifact publication contract.");
++    return { passed: true, action, artifactFiles: qualified.artifactFiles, publishedFiles: qualified.publishedFiles.length, deploymentControls: qualified.deploymentControls.length, routes: qualified.routes.length, criticalAssets: qualified.criticalAssets.length };
+@@ -616,2 +651,2 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
+-    if (!fullParity.passed) throw new Error("Promoted alias does not publish the complete accepted 74-file artifact and PWA runtime.");
+-    return { passed: true, action, classification: evidence.classification, selectedAttempts: evidence.stability.selectedAttempts.map(row => row.number), publishedFiles: fullParity.publishedFiles.length };
++    if (!fullParity.passed) throw new Error("Promoted alias does not satisfy the complete accepted 74-file publication contract and PWA runtime.");
++    return { passed: true, action, classification: evidence.classification, selectedAttempts: evidence.stability.selectedAttempts.map(row => row.number), artifactFiles: fullParity.artifactFiles, publishedFiles: fullParity.publishedFiles.length, deploymentControls: fullParity.deploymentControls.length };
+diff --git a/scripts/restaurant-alias-diagnostic-execution-support.mjs b/scripts/restaurant-alias-diagnostic-execution-support.mjs
+index 1a2bf5b..e938219 100755
+--- a/scripts/restaurant-alias-diagnostic-execution-support.mjs
++++ b/scripts/restaurant-alias-diagnostic-execution-support.mjs
+@@ -20,5 +20,5 @@ export const SUPPORT = Object.freeze({
+-  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260926f-run-binding-contract.md",
+-  proposalSha256: "f0179ed7e632c38fcd47fc19e258270c8ed86420ac22f6f759da4424888dbdb2",
+-  baseCheckpoint: "05dccec2ee33567e2949323822ab7dbad5dde6b3",
+-  baseSourceManifestSha256: "71f84c4250b3b93ffb79b6449530b75284f541d3f6e7ea551801aac3cf5600d3",
+-  baseSourceManifestFiles: 1521,
++  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260926g-run-binding-contract.md",
++  proposalSha256: "aef672add1d009a502a9f0faa037ddbaee9a412a10a16c59390d00234194d62f",
++  baseCheckpoint: "7cc25e2d43d91c42fbcc3c9694e8792fc4042079",
++  baseSourceManifestSha256: "c7a5fcf1b65f0aa40a407c30590c301d3637b8b5b9a9a0b142d14e57353dc32f",
++  baseSourceManifestFiles: 1527,
+@@ -26,10 +26,3 @@ export const SUPPORT = Object.freeze({
+-    "docs/restaurant-expo-alias-artifact-remediation-evidence/candidate-artifact-manifest.json",
+-    "docs/restaurant-expo-alias-artifact-remediation-evidence/complete-artifact-comparison.json",
+-    "docs/restaurant-expo-alias-artifact-remediation-evidence/evidence-manifest.tsv",
+-    "docs/restaurant-expo-alias-artifact-remediation-evidence/historical-noncanonical-restaurant-static-export.tar",
+-    "docs/restaurant-expo-alias-artifact-remediation-evidence/restaurant-static-export.tar",
+-    "docs/restaurant-expo-alias-canonical-archive-remediation-review.md",
+-    "docs/restaurant-expo-alias-canonical-archive-remediation.diff",
+-    "docs/restaurant-expo-alias-ruip6ad-20260926f-run-binding-contract.md",
+-    "docs/restaurant-expo-alias-ruip6ad-20260926f-run-binding-implementation-review.md",
+-    "docs/restaurant-expo-alias-ruip6ad-20260926f-run-binding.diff",
++    "docs/restaurant-expo-alias-publication-and-aborted-finalization-correction-report.md",
++    "docs/restaurant-expo-alias-publication-and-aborted-finalization-correction.diff",
++    "docs/restaurant-expo-alias-ruip6ad-20260926g-run-binding-contract.md",
+@@ -158,0 +152,22 @@ export const SUPPORT = Object.freeze({
++    Object.freeze({
++      commit: "7cc25e2d43d91c42fbcc3c9694e8792fc4042079",
++      parent: "05dccec2ee33567e2949323822ab7dbad5dde6b3",
++      sourceManifestSha256: "c7a5fcf1b65f0aa40a407c30590c301d3637b8b5b9a9a0b142d14e57353dc32f",
++      sourceManifestFiles: 1527,
++      files: Object.freeze({
++        "docs/restaurant-expo-alias-artifact-remediation-evidence/candidate-artifact-manifest.json": "104d9af8d0f87ec2d631885567bef70bfe2fbbdc600989eaafffdbdfd6bfa54c",
++        "docs/restaurant-expo-alias-artifact-remediation-evidence/complete-artifact-comparison.json": "96fb81608763356ef6c6d00fa73082de30b0efd1d4e830cdb348347cc7a947bd",
++        "docs/restaurant-expo-alias-artifact-remediation-evidence/evidence-manifest.tsv": "24ea287ad87bc8cf33c41b3e38f42e2e4a636633acb8e4fcd7c16d0db3d141b2",
++        "docs/restaurant-expo-alias-artifact-remediation-evidence/historical-noncanonical-restaurant-static-export.tar": "952e7ceb40766f5cab55706418db4e88f403495e88cce04b3e613282c066a135",
++        "docs/restaurant-expo-alias-artifact-remediation-evidence/restaurant-static-export.tar": "477adc3170a52b095d8f92d49f46defa1d8001d7a647033d786590d2bda7184d",
++        "docs/restaurant-expo-alias-canonical-archive-remediation-review.md": "8da336c9e2f3772206f214f4dd973539520da03c86a4c0961f985ed52fff39b9",
++        "docs/restaurant-expo-alias-canonical-archive-remediation.diff": "283aa4155839162e9d7eba7e44c953748ce540c827cb1add52abf40ae3f9ead4",
++        "docs/restaurant-expo-alias-ruip6ad-20260926f-run-binding-contract.md": "f0179ed7e632c38fcd47fc19e258270c8ed86420ac22f6f759da4424888dbdb2",
++        "docs/restaurant-expo-alias-ruip6ad-20260926f-run-binding-implementation-review.md": "fe965b09e06c31b2e07a2fa7d36af1ec9041c912458cab4b2d38441fcca29ea6",
++        "docs/restaurant-expo-alias-ruip6ad-20260926f-run-binding.diff": "45db7c244b7021e9ff0b368da2c3e7ab4ef3806b2f7d0a54bba90c32946612b0",
++        "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "e723d48faad8f4bce0a30231133cb944729fba665c6d24a8a7862bb664710159",
++        "scripts/restaurant-alias-diagnostic-execution-support.mjs": "8a3a7de1a1cb48a2b4027951a8cd11858aeffd5d1e002fd6973f932cacfffe4d",
++        "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "113f6ab3f6af09d86d59d90fa7c9a8f4e325796b1579d60aa97326d9bc99d27c",
++        "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "68c33f3629427205eb08960b4da368d84495efc482aec21f9f6c60cbef11eb56",
++      }),
++    }),
+@@ -163,2 +178,2 @@ export const SUPPORT = Object.freeze({
+-    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "e723d48faad8f4bce0a30231133cb944729fba665c6d24a8a7862bb664710159",
+-    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "113f6ab3f6af09d86d59d90fa7c9a8f4e325796b1579d60aa97326d9bc99d27c",
++    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "c7d16e809bc570ba684aeefbfcd088534119c0805260d19fb6fbd97ea3bc7cae",
++    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "6394a896da8bc98dab3deb30c727595b586aea85d69b3b4dfdb57a66bf3d868e",
+@@ -169,2 +184,2 @@ export const SUPPORT = Object.freeze({
+-  runId: "ruip6ad_20260926f",
+-  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260926f",
++  runId: "ruip6ad_20260926g",
++  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260926g",
+@@ -474,0 +490 @@ export function prepareFreshRollbackRecapture({ runDirectory, authority, capture
++  if (fs.existsSync(path.join(runDirectory, "terminal-record.json"))) throw new Error("Terminal runs must finalize from preserved rollback evidence; fresh recapture is prohibited.");
+@@ -575,0 +592,36 @@ function consumeFreshRollbackRecapture(runDirectory, authority, currentMs) {
++function consumePreservedTerminalRollback(runDirectory, authority) {
++  const terminal = requireRunEvidence(path.join(runDirectory, "terminal-record.json"), "Terminal record");
++  if (terminal.value.runId !== authority.runId || !["FAIL", "INCONCLUSIVE", "ABORTED"].includes(terminal.value.classification) || terminal.value.promotionRetryPermitted !== false) throw new Error("Terminal rollback evidence is not bound to a fail-closed run.");
++  const promotion = requireRunEvidence(path.join(runDirectory, "promotion-attempt.json"), "Promotion prohibition");
++  const promotionWasAttempted = promotion.value.providerCommandInvoked === true || Boolean(promotion.value.attemptedAt && promotion.value.deploymentIdentifier) || fs.existsSync(path.join(runDirectory, "promotion-result.json"));
++  if (!promotionWasAttempted && (promotion.value.runId !== authority.runId || promotion.value.promotionPermanentlyProhibited !== true || promotion.value.providerCommandInvoked !== false)) throw new Error("Terminal run is not permanently prohibited from promotion.");
++
++  let reference;
++  let progress;
++  let originalHistoricalReferenceSha256 = null;
++  const attemptPath = path.join(runDirectory, "fresh-recapture-attempt.json");
++  if (fs.existsSync(attemptPath)) {
++    const attempt = requireRunEvidence(attemptPath, "Terminal recapture attempt");
++    if (attempt.value.runId !== authority.runId || attempt.value.attemptId !== authority.runId + ":fresh-rollback-recapture") throw new Error("Terminal recapture attempt belongs to another run.");
++    validateHistoricalRecapture(runDirectory, attempt.value);
++    const historicalReferencePath = path.join(runDirectory, attempt.value.historical.reference.path);
++    const historicalProgressPath = path.join(runDirectory, attempt.value.historical.progress.path);
++    reference = requireRunEvidence(historicalReferencePath, "Preserved historical rollback reference");
++    progress = requireRunEvidence(historicalProgressPath, "Preserved historical rollback progress");
++    if (reference.sha256 !== attempt.value.historical.reference.sha256 || progress.sha256 !== attempt.value.historical.progress.sha256) throw new Error("Preserved terminal rollback identities changed.");
++    originalHistoricalReferenceSha256 = reference.sha256;
++  } else {
++    reference = requireRunEvidence(path.join(runDirectory, "rollback-reference.json"), "Preserved rollback reference");
++    progress = requireRunEvidence(path.join(runDirectory, "rollback-capture-progress.json"), "Preserved rollback progress");
++  }
++  validateRollbackReference(reference.value, authority, "Preserved terminal rollback reference");
++  validateRollbackProgress(progress.value, authority, reference.value);
++  return { mode: "terminal-preserved", terminal, promotionWasAttempted, reference, progress, verification: null, originalHistoricalReferenceSha256 };
++}
++
++function resolveFinalRollbackEvidence(runDirectory, authority, currentMs) {
++  if (fs.existsSync(path.join(runDirectory, "terminal-record.json"))) return consumePreservedTerminalRollback(runDirectory, authority);
++  const fresh = consumeFreshRollbackRecapture(runDirectory, authority, currentMs);
++  return { mode: "fresh-verified", terminal: null, promotionWasAttempted: true, originalHistoricalReferenceSha256: fresh.verification.value.historical.reference.sha256, ...fresh };
++}
++
+@@ -719 +771,2 @@ export function buildCleanupDisposition({ runDirectory, authority, capturedAt })
+-  if (inventory.state !== "DEPLOYMENT_REGISTERED") incomplete.push("RESOURCE_INVENTORY_NOT_REGISTERED");
++  const terminalPreDeployment = fs.existsSync(path.join(runDirectory, "terminal-record.json")) && inventory.state === "INITIALIZED" && inventory.deploymentAttemptCount === 0 && inventory.resources.length === 0 && inventory.unexpectedResources.length === 0;
++  if (inventory.state !== "DEPLOYMENT_REGISTERED" && !terminalPreDeployment) incomplete.push("RESOURCE_INVENTORY_NOT_REGISTERED");
+@@ -728,2 +781,2 @@ export function buildExpectedFinalAliasReference({ runDirectory, authority, capt
+-  const fresh = consumeFreshRollbackRecapture(runDirectory, authority, Date.parse(capturedAt));
+-  const reference = fresh.reference.value;
++  const rollbackEvidence = resolveFinalRollbackEvidence(runDirectory, authority, Date.parse(capturedAt));
++  const reference = rollbackEvidence.reference.value;
+@@ -731 +783,0 @@ export function buildExpectedFinalAliasReference({ runDirectory, authority, capt
+-  const terminalExists = fs.existsSync(path.join(runDirectory, "terminal-record.json"));
+@@ -733 +785 @@ export function buildExpectedFinalAliasReference({ runDirectory, authority, capt
+-  if (promotionResultExists && !terminalExists) {
++  if (fs.existsSync(path.join(runDirectory, "rollback-verification-result.json"))) {
+@@ -738 +790,2 @@ export function buildExpectedFinalAliasReference({ runDirectory, authority, capt
+-  const value = { schemaVersion: 1, runId: authority.runId, capturedAt, deploymentIdentifier: reference.deploymentIdentifier, deploymentUrl: reference.deploymentUrl, routes: reference.routes, criticalAssets: reference.criticalAssets, runtimeFiles: reference.runtimeFiles, externalRuntime: reference.externalRuntime, contractSha256: reference.contractSha256, source: { rollbackReferenceSha256: fresh.reference.sha256, freshRecaptureVerificationSha256: fresh.verification.sha256, originalHistoricalReferenceSha256: fresh.verification.value.historical.reference.sha256, rollbackVerificationSha256 } };
++  if ((promotionResultExists || rollbackEvidence.terminal?.value.rollbackRequired === true) && !rollbackVerificationSha256) throw new Error("A changed or uncertain alias requires independent rollback verification before final reconciliation.");
++  const value = { schemaVersion: 1, runId: authority.runId, capturedAt, deploymentIdentifier: reference.deploymentIdentifier, deploymentUrl: reference.deploymentUrl, routes: reference.routes, criticalAssets: reference.criticalAssets, runtimeFiles: reference.runtimeFiles, externalRuntime: reference.externalRuntime, contractSha256: reference.contractSha256, source: { mode: rollbackEvidence.mode, rollbackReferenceSha256: rollbackEvidence.reference.sha256, rollbackProgressSha256: rollbackEvidence.progress.sha256, freshRecaptureVerificationSha256: rollbackEvidence.verification?.sha256 || null, originalHistoricalReferenceSha256: rollbackEvidence.originalHistoricalReferenceSha256, terminalRecordSha256: rollbackEvidence.terminal?.sha256 || null, rollbackVerificationSha256 } };
+@@ -877 +930,2 @@ function reconcileCleanup(runDirectory, authority, cleanup) {
+-  if (inventory?.schemaVersion !== 2 || inventory?.runId !== authority.runId || inventory?.sourceCommit !== authority.sourceCommit || inventory?.sourceManifestSha256 !== authority.sourceManifestSha256 || inventory?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || inventory?.deploymentAttemptCount !== 1 || !Array.isArray(inventory?.resources) || !Array.isArray(inventory?.unexpectedResources)) issues.push("CREATED_RESOURCE_INVENTORY_BINDING_INVALID");
++  const terminalNoDeployment = fs.existsSync(path.join(runDirectory, "terminal-record.json")) && inventory?.state === "INITIALIZED" && inventory?.deploymentAttemptCount === 0 && resources.length === 0 && unexpected.length === 0;
++  if (inventory?.schemaVersion !== 2 || inventory?.runId !== authority.runId || inventory?.sourceCommit !== authority.sourceCommit || inventory?.sourceManifestSha256 !== authority.sourceManifestSha256 || inventory?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || (inventory?.deploymentAttemptCount !== 1 && !terminalNoDeployment) || !Array.isArray(inventory?.resources) || !Array.isArray(inventory?.unexpectedResources)) issues.push("CREATED_RESOURCE_INVENTORY_BINDING_INVALID");
+@@ -899,2 +953,5 @@ function reconcileCleanup(runDirectory, authority, cleanup) {
+-  try {
+-    const deployment = JSON.parse(fs.readFileSync(path.join(runDirectory, "immutable-deployment.json"), "utf8"));
++  const deploymentPath = path.join(runDirectory, "immutable-deployment.json");
++  if (resources.length === 0 && cleanupRows.length === 0) {
++    if (fs.existsSync(deploymentPath) || inventory?.deploymentAttemptCount !== 0 || inventory?.state !== "INITIALIZED") issues.push("EMPTY_RESOURCE_INVENTORY_INCONSISTENT");
++  } else try {
++    const deployment = JSON.parse(fs.readFileSync(deploymentPath, "utf8"));
+@@ -910,2 +967,2 @@ export async function finalizeRun({ root, runDirectory, authority, expectedAlias
+-  const fresh = consumeFreshRollbackRecapture(runDirectory, authority, Date.parse(capturedAt));
+-  if (expectedAlias.source?.rollbackReferenceSha256 !== fresh.reference.sha256 || expectedAlias.source?.freshRecaptureVerificationSha256 !== fresh.verification.sha256 || JSON.stringify(expectedAlias.routes) !== JSON.stringify(fresh.reference.value.routes) || JSON.stringify(expectedAlias.criticalAssets) !== JSON.stringify(fresh.reference.value.criticalAssets) || JSON.stringify(expectedAlias.runtimeFiles) !== JSON.stringify(fresh.reference.value.runtimeFiles) || JSON.stringify(expectedAlias.externalRuntime) !== JSON.stringify(fresh.reference.value.externalRuntime) || expectedAlias.contractSha256 !== fresh.reference.value.contractSha256) throw new Error("Expected final alias is not derived from verified fresh rollback evidence.");
++  const rollbackEvidence = resolveFinalRollbackEvidence(runDirectory, authority, Date.parse(capturedAt));
++  if (expectedAlias.source?.mode !== rollbackEvidence.mode || expectedAlias.source?.rollbackReferenceSha256 !== rollbackEvidence.reference.sha256 || expectedAlias.source?.rollbackProgressSha256 !== rollbackEvidence.progress.sha256 || expectedAlias.source?.freshRecaptureVerificationSha256 !== (rollbackEvidence.verification?.sha256 || null) || expectedAlias.source?.terminalRecordSha256 !== (rollbackEvidence.terminal?.sha256 || null) || JSON.stringify(expectedAlias.routes) !== JSON.stringify(rollbackEvidence.reference.value.routes) || JSON.stringify(expectedAlias.criticalAssets) !== JSON.stringify(rollbackEvidence.reference.value.criticalAssets) || JSON.stringify(expectedAlias.runtimeFiles) !== JSON.stringify(rollbackEvidence.reference.value.runtimeFiles) || JSON.stringify(expectedAlias.externalRuntime) !== JSON.stringify(rollbackEvidence.reference.value.externalRuntime) || expectedAlias.contractSha256 !== rollbackEvidence.reference.value.contractSha256) throw new Error("Expected final alias is not derived from the required verified rollback evidence.");
+@@ -929 +986 @@ export async function finalizeRun({ root, runDirectory, authority, expectedAlias
+-  const required = ["baseline-preflight.json", "rollback-reference.json"];
++  const required = ["baseline-preflight.json"];
+@@ -935,0 +993,3 @@ export async function finalizeRun({ root, runDirectory, authority, expectedAlias
++  const terminalRecord = terminalExists ? JSON.parse(fs.readFileSync(path.join(runDirectory, "terminal-record.json"), "utf8")) : null;
++  const terminalRollbackRequired = terminalRecord?.rollbackRequired === true;
++  if (terminalRollbackRequired) required.push("rollback-attempt.json", "rollback-result.json", "rollback-verification-result.json");
+@@ -942,2 +1002,2 @@ export async function finalizeRun({ root, runDirectory, authority, expectedAlias
+-  if (promotionAttempted && !aliasParity?.passed) { result = "FAIL"; blockers.push("ROLLBACK_RESTORATION_NOT_VERIFIED"); }
+-  if (promotionAttempted && !terminalExists && fs.existsSync(path.join(runDirectory, "rollback-verification-result.json"))) {
++  if ((promotionAttempted || terminalRollbackRequired) && !aliasParity?.passed) { result = "FAIL"; blockers.push("ROLLBACK_RESTORATION_NOT_VERIFIED"); }
++  if (fs.existsSync(path.join(runDirectory, "rollback-verification-result.json"))) {
+diff --git a/scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs b/scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs
+index d572ad2..57b36c0 100644
+--- a/scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs
++++ b/scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs
+@@ -118 +118 @@ function validPromotionEvidence() {
+-  const immutable = { passed: true, completedAt: capturedAt, runId: approved.runId, deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, routes: Array.from({ length: 6 }, () => ({ passed: true })), criticalAssets: Array.from({ length: 5 }, () => ({ passed: true })), publishedFiles: Array.from({ length: 74 }, () => ({ passed: true })), externalRuntime: Array.from({ length: 2 }, () => ({ passed: true })) };
++  const immutable = { passed: true, completedAt: capturedAt, runId: approved.runId, deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, artifactFiles: 74, routes: Array.from({ length: 6 }, () => ({ passed: true })), criticalAssets: Array.from({ length: 5 }, () => ({ passed: true })), publishedFiles: Array.from({ length: 73 }, () => ({ passed: true })), deploymentControls: [{ path: "_expo/.routes.json", publicUrlExpected: false, disposition: "consumed-as-static-routing-configuration", passed: true }], externalRuntime: Array.from({ length: 2 }, () => ({ passed: true })) };
+@@ -134,0 +135 @@ async function immutableFixture(mutate = () => {}) {
++  const routesConfiguration = { headers: { "Cache-Control": "private, no-cache", "Content-Security-Policy": "default-src 'self'; frame-ancestors 'none'", "X-Frame-Options": "DENY", "X-Content-Type-Options": "nosniff" }, redirects: [] };
+@@ -142,0 +144 @@ async function immutableFixture(mutate = () => {}) {
++  fileBodies.set("_expo/.routes.json", Buffer.from(JSON.stringify(routesConfiguration)));
+@@ -146,2 +148,3 @@ async function immutableFixture(mutate = () => {}) {
+-  const artifact = { artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, files };
+-  const state = { status: 200, finalUrl: null, body: null }; mutate({ state, html, assets, artifact, fileBodies });
++  const controlFile = files.find(row => row.path === "_expo/.routes.json");
++  const artifact = { artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, files, deploymentControls: [{ path: controlFile.path, bytes: controlFile.bytes, sha256: controlFile.sha256, provider: "eas-cli@16.32.0", disposition: "consumed-as-static-routing-configuration", configuration: routesConfiguration }] };
++  const state = { status: 200, finalUrl: null, body: null, omitHeaders: false }; mutate({ state, html, assets, artifact, fileBodies });
+@@ -148,0 +152 @@ async function immutableFixture(mutate = () => {}) {
++  const requestedPaths = [];
+@@ -150,0 +155 @@ async function immutableFixture(mutate = () => {}) {
++    requestedPaths.push(url.pathname);
+@@ -152 +157,2 @@ async function immutableFixture(mutate = () => {}) {
+-    const response = new Response(body, { status: state.status }); Object.defineProperty(response, "url", { value: state.finalUrl || url.href }); return response;
++    const headers = url.origin === base && !state.omitHeaders ? { "cache-control": "no-cache, private", "content-security-policy": routesConfiguration.headers["Content-Security-Policy"], "x-content-type-options": "nosniff" } : {};
++    const response = new Response(body, { status: state.status, headers }); Object.defineProperty(response, "url", { value: state.finalUrl || url.href }); return response;
+@@ -155 +161 @@ async function immutableFixture(mutate = () => {}) {
+-  return { evidence, snapshots };
++  return { evidence, snapshots, requestedPaths };
+@@ -165 +171 @@ test("authority is exact and fail-closed", () => {
+-test("all rejected deployments, including ipcij64k47, are denied", () => {
++test("all rejected deployments, including retained aborted candidates, are denied", () => {
+@@ -167,0 +174 @@ test("all rejected deployments, including ipcij64k47, are denied", () => {
++  assert.ok(REJECTED_DEPLOYMENTS.includes("tnc8x1kw9w"));
+@@ -198,0 +206,3 @@ test("the complete local export gate accepts the reviewed 74-file artifact and c
++    assert.equal(result.deploymentControls.length, 1);
++    assert.equal(result.deploymentControls[0].path, "_expo/.routes.json");
++    assert.equal(result.deploymentControls[0].configuration.headers["Content-Security-Policy"].includes("frame-ancestors 'none'"), true);
+@@ -294,0 +305,4 @@ test("immutable qualification requires exact accepted route and asset bytes", as
++  assert.equal(passing.evidence.artifactFiles, 74);
++  assert.equal(passing.evidence.publishedFiles.length, 73);
++  assert.deepEqual(passing.evidence.deploymentControls.map(row => ({ path: row.path, publicUrlExpected: row.publicUrlExpected, passed: row.passed })), [{ path: "_expo/.routes.json", publicUrlExpected: false, passed: true }]);
++  assert.equal(passing.requestedPaths.includes("/_expo/.routes.json"), false);
+@@ -297,0 +312,5 @@ test("immutable qualification requires exact accepted route and asset bytes", as
++  await assert.rejects(
++    () => immutableFixture(({ artifact }) => { artifact.deploymentControls = []; }),
++    /artifact evidence/i,
++  );
++
+@@ -302,0 +322 @@ test("immutable qualification requires exact accepted route and asset bytes", as
++    ["deployment control headers", ({ state }) => { state.omitHeaders = true; }],
+diff --git a/scripts/test-restaurant-alias-diagnostic-execution-support.mjs b/scripts/test-restaurant-alias-diagnostic-execution-support.mjs
+index b331b5e..abb7493 100644
+--- a/scripts/test-restaurant-alias-diagnostic-execution-support.mjs
++++ b/scripts/test-restaurant-alias-diagnostic-execution-support.mjs
+@@ -281,0 +282,8 @@ function installVerifiedFreshRecapture(directory, auth, freshAt = capturedAt, re
++function installInitialRollback(directory, auth, at = capturedAt, suffix = "initial") {
++  const rollback = rollbackEvidence(at, suffix);
++  writeJson(directory, "rollback-reference.json", rollback.reference);
++  writeJson(directory, "rollback-capture-progress.json", rollback.progress);
++  writeJson(directory, "rollback-capture-initial-attempt.json", { schemaVersion: 1, runId: auth.runId, phase: "initial", state: "COMPLETE", contractSha256: rollback.reference.contractSha256 });
++  return rollback;
++}
++
+@@ -418,0 +427 @@ test("authority rejects missing, placeholder, contradictory, and unapproved inpu
++  assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260926f" })), /identity/i);
+@@ -422,2 +431,2 @@ test("new run owns isolated authority and evidence identities", () => {
+-  assert.equal(SUPPORT.runId, "ruip6ad_20260926f");
+-  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260926f");
++  assert.equal(SUPPORT.runId, "ruip6ad_20260926g");
++  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260926g");
+@@ -429 +438,2 @@ test("new run owns isolated authority and evidence identities", () => {
+-  for (const suffix of ["20260925a", "20260925b", "20260925c", "20260925d", "20260925e"]) assert.ok(!SUPPORT.evidenceDirectory.includes(suffix));
++  assert.notEqual(SUPPORT.runId, "ruip6ad_20260926f");
++  for (const suffix of ["20260925a", "20260925b", "20260925c", "20260925d", "20260925e", "20260926f"]) assert.ok(!SUPPORT.evidenceDirectory.includes(suffix));
+@@ -670 +680 @@ test("terminal recording distinguishes no assignment, uncertain assignment, and
+-      if (rollbackRequired) assert.match(result.rollbackCommand, /:rollback:ruip6ad_20260926f/);
++      if (rollbackRequired) assert.match(result.rollbackCommand, /:rollback:ruip6ad_20260926g/);
+@@ -727 +737 @@ test("real hosted-reader alias callback persists metadata failures without runti
+-    assert.match(failedMetadata.requestId, /^ruip6ad_20260926f:expo-alias-final-parity:1:/);
++    assert.match(failedMetadata.requestId, /^ruip6ad_20260926g:expo-alias-final-parity:1:/);
+@@ -890 +900 @@ test("final preflight requires verified fresh recapture and rejects altered evid
+-    directory => fs.appendFileSync(path.join(directory, "rollback-history", "ruip6ad_20260926f_fresh-rollback-recapture", "rollback-reference.json"), " "),
++    directory => fs.appendFileSync(path.join(directory, "rollback-history", "ruip6ad_20260926g_fresh-rollback-recapture", "rollback-reference.json"), " "),
+@@ -969,0 +980,105 @@ test("expected final alias is exact, run-bound, and preserves the original rollb
++test("terminal abort before deployment finalizes from the preserved initial rollback without recapture", async () => {
++  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-terminal-before-deploy-"));
++  try {
++    const auth = authority();
++    writeJson(directory, "baseline-preflight.json", { passed: true, runId: SUPPORT.runId });
++    initializeResourceInventory({ runDirectory: directory, authority: auth, capturedAt });
++    const initial = installInitialRollback(directory, auth);
++    recordTerminalState({ runDirectory: directory, authority: auth, classification: "ABORTED", reason: "pre-deployment stop", capturedAt });
++    assert.throws(() => prepareFreshRollbackRecapture({ runDirectory: directory, authority: auth, capturedAt }), /Terminal runs.*preserved rollback/i);
++    assert.equal(fs.existsSync(path.join(directory, "fresh-recapture-attempt.json")), false);
++    const expectedAlias = buildExpectedFinalAliasReference({ runDirectory: directory, authority: auth, capturedAt });
++    assert.equal(expectedAlias.source.mode, "terminal-preserved");
++    assert.equal(expectedAlias.source.freshRecaptureVerificationSha256, null);
++    assert.equal(expectedAlias.source.rollbackReferenceSha256, hash(Buffer.from(canonical(initial.reference))));
++    const cleanup = buildCleanupDisposition({ runDirectory: directory, authority: auth, capturedAt });
++    assert.equal(cleanup.passed, true);
++    assert.deepEqual(cleanup.createdResources, []);
++    const result = await finalizeRun({ root, runDirectory: directory, authority: auth, expectedAlias, readers: finalReaders(), cleanup, capturedAt });
++    assert.equal(result.result, "FAIL");
++    assert.deepEqual(result.blockers, ["TERMINAL_NON_PASS_RUN"]);
++    assert.equal(result.missingEvidence.length, 0);
++    await assert.rejects(() => finalizeRun({ root, runDirectory: directory, authority: auth, expectedAlias, readers: finalReaders(), cleanup, capturedAt }), /cannot be retried/i);
++    assert.equal(JSON.parse(fs.readFileSync(path.join(directory, "promotion-attempt.json"), "utf8")).promotionPermanentlyProhibited, true);
++  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
++});
++
++test("terminal abort after deployment uses preserved rollback history and completes reconciliation", async () => {
++  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-terminal-after-deploy-"));
++  try {
++    const auth = authority();
++    writeJson(directory, "baseline-preflight.json", { passed: true, runId: SUPPORT.runId });
++    const initial = installInitialRollback(directory, auth, "2026-09-25T11:40:00.000Z");
++    const deployment = { capturedAt, deploymentIdentifier: "rejected-candidate", url: "https://candidate.example.invalid", sourceCommit: auth.sourceCommit, sourceManifestSha256: auth.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, aliasAssigned: false };
++    installRegisteredDeployment(directory, auth, deployment);
++    recordTerminalState({ runDirectory: directory, authority: auth, classification: "ABORTED", reason: "immutable publication failed", capturedAt });
++    const terminalBefore = fs.readFileSync(path.join(directory, "terminal-record.json"));
++    const referenceBefore = fs.readFileSync(path.join(directory, "rollback-reference.json"));
++    assert.throws(() => prepareFreshRollbackRecapture({ runDirectory: directory, authority: auth, capturedAt }), /Terminal runs.*preserved rollback/i);
++    assert.deepEqual(fs.readFileSync(path.join(directory, "rollback-reference.json")), referenceBefore);
++    assert.deepEqual(fs.readFileSync(path.join(directory, "terminal-record.json")), terminalBefore);
++    const expectedAlias = buildExpectedFinalAliasReference({ runDirectory: directory, authority: auth, capturedAt });
++    assert.equal(expectedAlias.source.mode, "terminal-preserved");
++    assert.equal(expectedAlias.contractSha256, initial.reference.contractSha256);
++    const cleanup = buildCleanupDisposition({ runDirectory: directory, authority: auth, capturedAt });
++    const result = await finalizeRun({ root, runDirectory: directory, authority: auth, expectedAlias, readers: finalReaders(), cleanup, capturedAt });
++    assert.equal(result.result, "FAIL");
++    assert.deepEqual(result.blockers, ["TERMINAL_NON_PASS_RUN"]);
++    assert.equal(result.cleanupReconciliation.passed, true);
++    assert.equal(result.createdResources[0].id, "rejected-candidate");
++  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
++});
++
++test("terminal finalization consumes immutable historical rollback bytes after an interrupted recapture", async () => {
++  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-terminal-interrupted-recapture-"));
++  try {
++    const auth = authority();
++    writeJson(directory, "baseline-preflight.json", { passed: true, runId: SUPPORT.runId });
++    initializeResourceInventory({ runDirectory: directory, authority: auth, capturedAt });
++    installInitialRollback(directory, auth, "2026-09-25T11:40:00.000Z");
++    prepareFreshRollbackRecapture({ runDirectory: directory, authority: auth, capturedAt: "2026-09-25T11:45:00.000Z" });
++    const attemptBefore = fs.readFileSync(path.join(directory, "fresh-recapture-attempt.json"));
++    const attempt = JSON.parse(attemptBefore);
++    const historicalBefore = fs.readFileSync(path.join(directory, attempt.historical.reference.path));
++    recordTerminalState({ runDirectory: directory, authority: auth, classification: "ABORTED", reason: "recapture interrupted", capturedAt });
++    const expectedAlias = buildExpectedFinalAliasReference({ runDirectory: directory, authority: auth, capturedAt });
++    assert.equal(expectedAlias.source.mode, "terminal-preserved");
++    assert.equal(expectedAlias.source.originalHistoricalReferenceSha256, hash(historicalBefore));
++    assert.deepEqual(fs.readFileSync(path.join(directory, attempt.historical.reference.path)), historicalBefore);
++    assert.deepEqual(fs.readFileSync(path.join(directory, "fresh-recapture-attempt.json")), attemptBefore);
++    const cleanup = buildCleanupDisposition({ runDirectory: directory, authority: auth, capturedAt });
++    const result = await finalizeRun({ root, runDirectory: directory, authority: auth, expectedAlias, readers: finalReaders(), cleanup, capturedAt });
++    assert.equal(result.result, "FAIL");
++    assert.deepEqual(result.blockers, ["TERMINAL_NON_PASS_RUN"]);
++  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
++});
++
++test("uncertain alias assignment cannot finalize without independently verified rollback", async () => {
++  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-terminal-uncertain-alias-"));
++  try {
++    const auth = authority();
++    writeJson(directory, "baseline-preflight.json", { passed: true, runId: SUPPORT.runId });
++    writeJson(directory, "artifact-manifest.json", { passed: true, runId: SUPPORT.runId });
++    const deployment = { capturedAt, deploymentIdentifier: "candidate", url: "https://candidate.example.invalid", sourceCommit: auth.sourceCommit, sourceManifestSha256: auth.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, aliasAssigned: false };
++    installRegisteredDeployment(directory, auth, deployment);
++    writeJson(directory, "immutable-smoke.json", { passed: true, deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url });
++    writeJson(directory, "immutable-access-qualification.json", { passed: true, deploymentIdentifier: deployment.deploymentIdentifier });
++    writeJson(directory, "promotion-preflight.json", { passed: true, runId: SUPPORT.runId });
++    const rollback = installInitialRollback(directory, auth);
++    writeJson(directory, "promotion-attempt.json", { runId: auth.runId, attemptedAt: capturedAt, deploymentIdentifier: "candidate", providerCommandInvoked: true });
++    const terminal = recordTerminalState({ runDirectory: directory, authority: auth, classification: "INCONCLUSIVE", reason: "assignment response uncertain", capturedAt });
++    assert.equal(terminal.rollbackRequired, true);
++    assert.throws(() => buildExpectedFinalAliasReference({ runDirectory: directory, authority: auth, capturedAt }), /requires independent rollback verification/i);
++    writeJson(directory, "rollback-attempt.json", { attemptedAt: capturedAt, deploymentIdentifier: rollback.reference.deploymentIdentifier });
++    writeJson(directory, "rollback-result.json", { completedAt: capturedAt, deploymentIdentifier: rollback.reference.deploymentIdentifier });
++    writeJson(directory, "rollback-verification-result.json", { passed: true, classification: "PASS", expected: { deploymentIdentifier: rollback.reference.deploymentIdentifier, routes: rollback.reference.routes, criticalAssets: rollback.reference.criticalAssets, runtimeFiles: rollback.reference.runtimeFiles, externalRuntime: rollback.reference.externalRuntime }, selectedAttempts: [{ number: 1 }, { number: 4 }] });
++    const expectedAlias = buildExpectedFinalAliasReference({ runDirectory: directory, authority: auth, capturedAt });
++    const cleanup = buildCleanupDisposition({ runDirectory: directory, authority: auth, capturedAt });
++    const result = await finalizeRun({ root, runDirectory: directory, authority: auth, expectedAlias, readers: finalReaders(), cleanup, capturedAt });
++    assert.equal(result.result, "FAIL");
++    assert.deepEqual(result.blockers, ["TERMINAL_NON_PASS_RUN"]);
++    assert.equal(result.missingEvidence.length, 0);
++    assert.throws(() => beginSingleDeploymentAttempt({ runDirectory: directory, authority: auth, capturedAt }), /clean initialized|exist/i);
++  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
++});
++
+@@ -981,0 +1097,33 @@ test("interrupted finalization cannot produce PASS evidence and a completed prom
++test("interrupted finalization resumes from preserved evidence exactly once", async () => {
++  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-finalization-resume-"));
++  try {
++    const evidence = writeSuccessfulRunEvidence(directory);
++    let writes = 0;
++    await assert.rejects(
++      () => finalizeRun({
++        root,
++        runDirectory: directory,
++        authority: authority(),
++        expectedAlias: evidence.expected,
++        readers: finalReaders(),
++        cleanup: evidence.cleanup,
++        capturedAt,
++        persist: (file, value) => {
++          writes += 1;
++          if (writes === 2) throw new Error("synthetic resumable finalization interruption");
++          fs.writeFileSync(file, Buffer.isBuffer(value) ? value : canonical(value));
++        },
++      }),
++      /synthetic resumable finalization interruption/,
++    );
++    assert.equal(JSON.parse(fs.readFileSync(path.join(directory, "finalization-attempt.json"), "utf8")).state, "STARTED");
++    const resumed = await finalizeRun({ root, runDirectory: directory, authority: authority(), expectedAlias: evidence.expected, readers: finalReaders(), cleanup: evidence.cleanup, capturedAt });
++    assert.equal(resumed.result, "PASS");
++    assert.equal(JSON.parse(fs.readFileSync(path.join(directory, "finalization-attempt.json"), "utf8")).state, "COMPLETE");
++    await assert.rejects(
++      () => finalizeRun({ root, runDirectory: directory, authority: authority(), expectedAlias: evidence.expected, readers: finalReaders(), cleanup: evidence.cleanup, capturedAt }),
++      /cannot be retried or rebound/i,
++    );
++  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
++});
++

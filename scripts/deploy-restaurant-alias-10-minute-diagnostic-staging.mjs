@@ -42,6 +42,7 @@ export const REJECTED_DEPLOYMENTS = Object.freeze([
   "mn77ek9rg5",
   "bfh8u5a0dh",
   "ipcij64k47",
+  "tnc8x1kw9w",
 ]);
 
 const ACTIONS = new Set([
@@ -65,6 +66,13 @@ const ROUTE_ARTIFACTS = Object.freeze([
   Object.freeze({ route: "/menu", path: "menu.html" }),
   Object.freeze({ route: "/reviews", path: "reviews.html" }),
   Object.freeze({ route: "/earnings", path: "earnings.html" }),
+]);
+export const DEPLOYMENT_CONTROL_ARTIFACTS = Object.freeze([
+  Object.freeze({
+    path: "_expo/.routes.json",
+    provider: "eas-cli@16.32.0",
+    disposition: "consumed-as-static-routing-configuration",
+  }),
 ]);
 
 export function validateAuthority(authority, options = {}) {
@@ -211,7 +219,15 @@ export function verifyLocalExportOutput({ distDirectory, archivePath, spawn = sp
   if (!bundle.includes(DIAGNOSTIC_OPERATOR.firebaseProjectId) || !bundle.includes(DIAGNOSTIC_OPERATOR.supabaseProjectRef) || /phase5Adapter|MockProvider|restaurant-ui-mock/.test(bundle)) throw new Error("Exported configuration or production boundary mismatch.");
   const archive = createDeterministicArchive(distDirectory, archivePath, spawn);
   if (archive.sha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Deterministic archive differs from the accepted artifact.");
-  return { files, artifactManifestSha256: manifestDigest(files), archive };
+  const deploymentControls = DEPLOYMENT_CONTROL_ARTIFACTS.map(control => {
+    const file = files.find(row => row.path === control.path);
+    let configuration;
+    try { configuration = JSON.parse(fs.readFileSync(path.join(distDirectory, control.path), "utf8")); }
+    catch { throw new Error("Deployment routing control is missing or invalid JSON."); }
+    if (!file || !configuration || typeof configuration.headers !== "object" || Array.isArray(configuration.headers) || !Array.isArray(configuration.redirects)) throw new Error("Deployment routing control schema is incomplete.");
+    return { ...control, bytes: file.bytes, sha256: file.sha256, configuration };
+  });
+  return { files, deploymentControls, artifactManifestSha256: manifestDigest(files), archive };
 }
 
 export function verifyProtectedEvidence(root) {
@@ -227,29 +243,48 @@ export function verifyProtectedEvidence(root) {
 export async function verifyImmutableArtifactParity({ base, deploymentIdentifier, artifact, fetchImpl = fetch, persist = async () => {}, clock = { now: () => Date.now() } }) {
   const files = artifact?.files || [];
   const fileByPath = new Map(files.map(file => [file.path, file]));
+  const deploymentControls = DEPLOYMENT_CONTROL_ARTIFACTS.map(control => {
+    const recorded = artifact?.deploymentControls?.find(row => row.path === control.path);
+    return { ...control, ...fileByPath.get(control.path), configuration: recorded?.configuration };
+  });
+  const deploymentControlPaths = new Set(deploymentControls.map(control => control.path));
+  const publiclyServedFiles = files.filter(file => !deploymentControlPaths.has(file.path));
   const expectedRoutes = ROUTE_ARTIFACTS.map(({ route, path: artifactPath }) => ({ route, artifactPath, ...fileByPath.get(artifactPath) }));
   const expectedAssets = files.filter(file => /^(?:_expo\/static\/).+\.(?:js|css)$/.test(file.path)).map(file => ({ asset: `/${file.path}`, ...file }));
-  if (artifact?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || files.length !== 74 || expectedRoutes.some(row => !row.sha256 || !Number.isSafeInteger(row.bytes)) || expectedAssets.length !== 5 || files.some(row => !row.path || !Number.isSafeInteger(row.bytes) || !/^[a-f0-9]{64}$/.test(row.sha256 || ""))) throw new Error("Complete fixed accepted artifact evidence required.");
+  if (artifact?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || files.length !== 74 || publiclyServedFiles.length !== 73 || deploymentControls.length !== 1 || deploymentControls.some(row => !row.sha256 || !Number.isSafeInteger(row.bytes) || !row.configuration || typeof row.configuration.headers !== "object" || !Array.isArray(row.configuration.redirects)) || expectedRoutes.some(row => !row.sha256 || !Number.isSafeInteger(row.bytes)) || expectedAssets.length !== 5 || files.some(row => !row.path || !Number.isSafeInteger(row.bytes) || !/^[a-f0-9]{64}$/.test(row.sha256 || ""))) throw new Error("Complete fixed accepted artifact evidence required.");
   const publishedBodies = new Map();
-  const evidence = { schemaVersion: 2, capturedAt: new Date(clock.now()).toISOString(), passed: false, deploymentIdentifier, url: base, artifactManifestSha256: artifact.artifactManifestSha256, archiveSha256: artifact.archiveSha256, routes: [], criticalAssets: [], publishedFiles: [], externalRuntime: [], errors: [] };
+  const evidence = { schemaVersion: 3, capturedAt: new Date(clock.now()).toISOString(), passed: false, deploymentIdentifier, url: base, artifactManifestSha256: artifact.artifactManifestSha256, archiveSha256: artifact.archiveSha256, artifactFiles: files.length, routes: [], criticalAssets: [], publishedFiles: [], deploymentControls: deploymentControls.map(row => ({ path: row.path, expected: { bytes: row.bytes, sha256: row.sha256, configuration: row.configuration }, provider: row.provider, disposition: row.disposition, publicUrlExpected: false, routeSemanticsVerified: false, passed: false })), externalRuntime: [], errors: [] };
   await persist(evidence);
   const observeExpected = async (requestedUrl, expected, stage) => {
     try {
       const response = await fetchImpl(requestedUrl, { redirect: "follow", headers: { "cache-control": "no-cache", pragma: "no-cache" } });
       const body = Buffer.from(await response.arrayBuffer());
-      const actual = { status: response.status, finalUrl: response.url || requestedUrl.href, byteLength: body.length, sha256: sha256(body) };
+      const actual = { status: response.status, finalUrl: response.url || requestedUrl.href, byteLength: body.length, sha256: sha256(body), headers: Object.fromEntries([...response.headers.entries()].map(([name, value]) => [name.toLowerCase(), value])) };
       const comparison = { status: actual.status === 200, finalUrl: actual.finalUrl === requestedUrl.href, byteLength: actual.byteLength === expected.bytes, sha256: actual.sha256 === expected.sha256 };
       return { actual, comparison, passed: Object.values(comparison).every(Boolean), body };
     } catch (error) { evidence.errors.push({ stage, error: sanitizeError(error) }); await persist(evidence); return null; }
   };
   for (const expected of expectedRoutes) {
     const requestedUrl = new URL(expected.route, base), result = await observeExpected(requestedUrl, expected, `route:${expected.route}`);
-    if (result) { const refs = assetsReferenced(result.body, expectedAssets); const row = { route: expected.route, artifactPath: expected.artifactPath, expected: { status: 200, finalUrl: requestedUrl.href, byteLength: expected.bytes, sha256: expected.sha256, assets: expectedAssets.map(asset => asset.asset) }, actual: result.actual, comparison: { ...result.comparison, assetReferences: refs }, passed: result.passed && refs }; evidence.routes.push(row); await persist(evidence); }
+    if (result) {
+      const refs = assetsReferenced(result.body, expectedAssets);
+      const configuredHeaders = deploymentControls[0].configuration.headers;
+      const headerParity = Object.entries(configuredHeaders).every(([name, value]) => {
+        const actual = result.actual.headers[name.toLowerCase()] || "";
+        if (name.toLowerCase() === "x-frame-options") return configuredHeaders["Content-Security-Policy"]?.includes("frame-ancestors") && result.actual.headers["content-security-policy"] === configuredHeaders["Content-Security-Policy"];
+        if (name.toLowerCase() === "cache-control") return new Set(actual.split(",").map(token => token.trim())).size === new Set(String(value).split(",").map(token => token.trim())).size && String(value).split(",").map(token => token.trim()).every(token => new Set(actual.split(",").map(item => item.trim())).has(token));
+        return actual === value;
+      });
+      const row = { route: expected.route, artifactPath: expected.artifactPath, expected: { status: 200, finalUrl: requestedUrl.href, byteLength: expected.bytes, sha256: expected.sha256, assets: expectedAssets.map(asset => asset.asset), deploymentControlHeaders: configuredHeaders }, actual: result.actual, comparison: { ...result.comparison, assetReferences: refs, deploymentControlHeaders: headerParity }, passed: result.passed && refs && headerParity }; evidence.routes.push(row); await persist(evidence);
+    }
   }
-  for (const expected of files) {
+  for (const expected of publiclyServedFiles) {
     const requestedUrl = new URL(`/${expected.path}`, base), result = await observeExpected(requestedUrl, expected, `file:${expected.path}`);
     if (result) { publishedBodies.set(expected.path, result.body); evidence.publishedFiles.push({ path: expected.path, expected: { bytes: expected.bytes, sha256: expected.sha256 }, actual: result.actual, comparison: result.comparison, passed: result.passed }); await persist(evidence); }
   }
+  const routeSemanticsVerified = evidence.routes.length === ROUTE_ARTIFACTS.length && evidence.routes.every(row => row.passed);
+  evidence.deploymentControls = evidence.deploymentControls.map(row => ({ ...row, routeSemanticsVerified, passed: routeSemanticsVerified }));
+  await persist(evidence);
   evidence.criticalAssets = expectedAssets.map(expected => { const file = evidence.publishedFiles.find(row => row.path === expected.path); return { asset: expected.asset, artifactPath: expected.path, expected: file?.expected, actual: file?.actual, comparison: file?.comparison, passed: file?.passed === true }; });
   const sw = evidence.publishedFiles.find(row => row.path === "sw.js"), swText = publishedBodies.get("sw.js")?.toString("utf8") || "";
   if (sw?.passed) for (const required of DIAGNOSTIC_OPERATOR.externalRuntime) {
@@ -257,7 +292,7 @@ export async function verifyImmutableArtifactParity({ base, deploymentIdentifier
     const requestedUrl = new URL(required.url); const result = await observeExpected(requestedUrl, { bytes: required.url.includes("messaging") ? 37024 : 31766, sha256: required.sha256 }, `external:${required.url}`);
     if (result) { evidence.externalRuntime.push({ url: required.url, expectedSha256: required.sha256, actual: result.actual, passed: result.passed }); await persist(evidence); }
   }
-  evidence.passed = evidence.errors.length === 0 && evidence.routes.length === 6 && evidence.routes.every(row => row.passed) && evidence.criticalAssets.length === 5 && evidence.criticalAssets.every(row => row.passed) && evidence.publishedFiles.length === 74 && evidence.publishedFiles.every(row => row.passed) && evidence.externalRuntime.length === DIAGNOSTIC_OPERATOR.externalRuntime.length && evidence.externalRuntime.every(row => row.passed);
+  evidence.passed = evidence.errors.length === 0 && evidence.routes.length === 6 && evidence.routes.every(row => row.passed) && evidence.criticalAssets.length === 5 && evidence.criticalAssets.every(row => row.passed) && evidence.publishedFiles.length === 73 && evidence.publishedFiles.every(row => row.passed) && evidence.deploymentControls.length === 1 && evidence.deploymentControls.every(row => row.passed) && evidence.publishedFiles.length + evidence.deploymentControls.length === evidence.artifactFiles && evidence.externalRuntime.length === DIAGNOSTIC_OPERATOR.externalRuntime.length && evidence.externalRuntime.every(row => row.passed);
   evidence.completedAt = new Date(clock.now()).toISOString(); await persist(evidence); return evidence;
 }
 
@@ -425,7 +460,7 @@ export function validatePromotionPrerequisites({ authority, artifact, artifactEn
   if (artifact?.runId !== authority.runId || artifact?.sourceCommit !== authority.sourceCommit || artifact?.sourceManifestSha256 !== authority.sourceManifestSha256 || artifact?.applicationTree !== DIAGNOSTIC_OPERATOR.applicationTree || artifact?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || artifact?.files?.length !== 74 || artifactEntriesSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || archiveEvidenceSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Accepted run-bound artifact evidence required.");
   if (!deployment?.deploymentIdentifier || REJECTED_DEPLOYMENTS.includes(deployment.deploymentIdentifier) || deployment.url !== immutable?.url || deployment.sourceCommit !== authority.sourceCommit || deployment.sourceManifestSha256 !== authority.sourceManifestSha256 || deployment.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256) throw new Error("Candidate deployment identity mismatch.");
   requireFresh("Immutable qualification", immutable?.completedAt, DIAGNOSTIC_OPERATOR.freshnessMs.immutable, currentMs);
-  if (immutable?.passed !== true || immutable.runId !== authority.runId || immutable.deploymentIdentifier !== deployment.deploymentIdentifier || immutable.sourceCommit !== authority.sourceCommit || immutable.sourceManifestSha256 !== authority.sourceManifestSha256 || immutable.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || immutable.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || immutable.routes?.length !== 6 || !immutable.routes.every(row => row.passed) || immutable.criticalAssets?.length !== 5 || !immutable.criticalAssets.every(row => row.passed) || immutable.publishedFiles?.length !== 74 || !immutable.publishedFiles.every(row => row.passed) || immutable.externalRuntime?.length !== 2 || !immutable.externalRuntime.every(row => row.passed) || !/^[a-f0-9]{64}$/.test(immutableEvidenceSha256 || "")) throw new Error("Complete passing immutable-to-artifact qualification required.");
+  if (immutable?.passed !== true || immutable.runId !== authority.runId || immutable.deploymentIdentifier !== deployment.deploymentIdentifier || immutable.sourceCommit !== authority.sourceCommit || immutable.sourceManifestSha256 !== authority.sourceManifestSha256 || immutable.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || immutable.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || immutable.artifactFiles !== 74 || immutable.routes?.length !== 6 || !immutable.routes.every(row => row.passed) || immutable.criticalAssets?.length !== 5 || !immutable.criticalAssets.every(row => row.passed) || immutable.publishedFiles?.length !== 73 || !immutable.publishedFiles.every(row => row.passed) || immutable.deploymentControls?.length !== 1 || !immutable.deploymentControls.every(row => row.passed && row.path === "_expo/.routes.json" && row.publicUrlExpected === false && row.disposition === "consumed-as-static-routing-configuration") || immutable.publishedFiles.length + immutable.deploymentControls.length !== immutable.artifactFiles || immutable.externalRuntime?.length !== 2 || !immutable.externalRuntime.every(row => row.passed) || !/^[a-f0-9]{64}$/.test(immutableEvidenceSha256 || "")) throw new Error("Complete passing immutable-to-artifact qualification required.");
   requireFresh("Immutable access qualification", access?.capturedAt, DIAGNOSTIC_OPERATOR.freshnessMs.access, currentMs);
   const expectedAccess = new Map([["pending", "/pending"], ["suspended", "/suspended"], ["owner", "/dashboard"], ["manager", "/dashboard"]]);
   if (access?.passed !== true || access.runId !== authority.runId || access.qualificationId !== `${authority.runId}:${deployment.deploymentIdentifier}:immutable-access` || deployment.deploymentIdentifier !== access.deploymentIdentifier || access.immutableUrl !== deployment.url || access.sourceCommit !== authority.sourceCommit || access.sourceManifestSha256 !== authority.sourceManifestSha256 || access.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || access.immutableEvidenceSha256 !== immutableEvidenceSha256 || access.results?.length !== 4 || !/^[a-f0-9]{64}$/.test(accessEvidenceSha256 || "") || ![...expectedAccess].every(([name, expectedPath]) => { const row = access.results.find(value => value.account === name); return row?.passed === true && row.expectedPath === expectedPath; })) throw new Error("Complete candidate-bound four-state immutable access qualification required.");
@@ -514,8 +549,8 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
   if (action === "export") {
     const result = run("npx", ["eas-cli@16.32.0", "env:exec", "preview", "npm run prepare:web && npx expo export --platform web --clear", "--non-interactive"], { cwd: appRoot, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
     if (result.status !== 0) throw new Error("Restaurant preview export failed; output withheld.");
-    const { files, artifactManifestSha256, archive } = verifyLocalExportOutput({ distDirectory: path.join(appRoot, "dist"), archivePath: path.join(runDirectory, "restaurant-static-export.tar"), spawn: run });
-    atomicWrite(path.join(runDirectory, "artifact-manifest.json"), { capturedAt: now(), runId: authority.runId, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree, files, artifactManifestSha256, archiveSha256: archive.sha256, archiveBytes: archive.bytes });
+    const { files, deploymentControls, artifactManifestSha256, archive } = verifyLocalExportOutput({ distDirectory: path.join(appRoot, "dist"), archivePath: path.join(runDirectory, "restaurant-static-export.tar"), spawn: run });
+    atomicWrite(path.join(runDirectory, "artifact-manifest.json"), { capturedAt: now(), runId: authority.runId, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree, files, deploymentControls, artifactManifestSha256, archiveSha256: archive.sha256, archiveBytes: archive.bytes });
     return { passed: true, action, files: files.length, routes: 20 };
   }
 
@@ -542,8 +577,8 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
     const evidence = await verifyImmutableArtifactParity({ base: deployment.url, deploymentIdentifier: deployment.deploymentIdentifier, artifact, fetchImpl: dependencies.fetchImpl || fetch, persist: value => atomicWrite(progressPath, value) });
     const qualified = { ...evidence, runId: authority.runId, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256 };
     atomicWrite(path.join(runDirectory, "immutable-smoke.json"), qualified);
-    if (!qualified.passed) throw new Error("Immutable deployment differs from the fixed accepted local artifact.");
-    return { passed: true, action, routes: qualified.routes.length, criticalAssets: qualified.criticalAssets.length };
+    if (!qualified.passed) throw new Error("Immutable deployment differs from the fixed accepted local artifact publication contract.");
+    return { passed: true, action, artifactFiles: qualified.artifactFiles, publishedFiles: qualified.publishedFiles.length, deploymentControls: qualified.deploymentControls.length, routes: qualified.routes.length, criticalAssets: qualified.criticalAssets.length };
   }
 
   if (action === "capture-rollback") {
@@ -613,8 +648,8 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
     const artifact = JSON.parse(fs.readFileSync(path.join(runDirectory, "artifact-manifest.json"), "utf8"));
     const fullParity = await verifyImmutableArtifactParity({ base: DIAGNOSTIC_OPERATOR.aliasUrl, deploymentIdentifier: immutable.deploymentIdentifier, artifact, fetchImpl: dependencies.fetchImpl || fetch, persist: value => atomicWrite(path.join(runDirectory, "alias-full-artifact-progress.json"), value), clock: dependencies.clock || { now: () => Date.now() } });
     atomicWrite(path.join(runDirectory, "alias-full-artifact-result.json"), fullParity);
-    if (!fullParity.passed) throw new Error("Promoted alias does not publish the complete accepted 74-file artifact and PWA runtime.");
-    return { passed: true, action, classification: evidence.classification, selectedAttempts: evidence.stability.selectedAttempts.map(row => row.number), publishedFiles: fullParity.publishedFiles.length };
+    if (!fullParity.passed) throw new Error("Promoted alias does not satisfy the complete accepted 74-file publication contract and PWA runtime.");
+    return { passed: true, action, classification: evidence.classification, selectedAttempts: evidence.stability.selectedAttempts.map(row => row.number), artifactFiles: fullParity.artifactFiles, publishedFiles: fullParity.publishedFiles.length, deploymentControls: fullParity.deploymentControls.length };
   }
 
   if (action === "rollback") {

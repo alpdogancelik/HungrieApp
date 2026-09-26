@@ -17,22 +17,15 @@ import {
 import { sanitizeError } from "./restaurant-alias-parity-verifier.mjs";
 
 export const SUPPORT = Object.freeze({
-  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260926f-run-binding-contract.md",
-  proposalSha256: "f0179ed7e632c38fcd47fc19e258270c8ed86420ac22f6f759da4424888dbdb2",
-  baseCheckpoint: "05dccec2ee33567e2949323822ab7dbad5dde6b3",
-  baseSourceManifestSha256: "71f84c4250b3b93ffb79b6449530b75284f541d3f6e7ea551801aac3cf5600d3",
-  baseSourceManifestFiles: 1521,
+  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260926g-run-binding-contract.md",
+  proposalSha256: "aef672add1d009a502a9f0faa037ddbaee9a412a10a16c59390d00234194d62f",
+  baseCheckpoint: "7cc25e2d43d91c42fbcc3c9694e8792fc4042079",
+  baseSourceManifestSha256: "c7a5fcf1b65f0aa40a407c30590c301d3637b8b5b9a9a0b142d14e57353dc32f",
+  baseSourceManifestFiles: 1527,
   checkpointFiles: Object.freeze([
-    "docs/restaurant-expo-alias-artifact-remediation-evidence/candidate-artifact-manifest.json",
-    "docs/restaurant-expo-alias-artifact-remediation-evidence/complete-artifact-comparison.json",
-    "docs/restaurant-expo-alias-artifact-remediation-evidence/evidence-manifest.tsv",
-    "docs/restaurant-expo-alias-artifact-remediation-evidence/historical-noncanonical-restaurant-static-export.tar",
-    "docs/restaurant-expo-alias-artifact-remediation-evidence/restaurant-static-export.tar",
-    "docs/restaurant-expo-alias-canonical-archive-remediation-review.md",
-    "docs/restaurant-expo-alias-canonical-archive-remediation.diff",
-    "docs/restaurant-expo-alias-ruip6ad-20260926f-run-binding-contract.md",
-    "docs/restaurant-expo-alias-ruip6ad-20260926f-run-binding-implementation-review.md",
-    "docs/restaurant-expo-alias-ruip6ad-20260926f-run-binding.diff",
+    "docs/restaurant-expo-alias-publication-and-aborted-finalization-correction-report.md",
+    "docs/restaurant-expo-alias-publication-and-aborted-finalization-correction.diff",
+    "docs/restaurant-expo-alias-ruip6ad-20260926g-run-binding-contract.md",
     "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs",
     "scripts/restaurant-alias-diagnostic-execution-support.mjs",
     "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs",
@@ -156,18 +149,40 @@ export const SUPPORT = Object.freeze({
         "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "0572693b3a11a6a7a8ec3c3331c96eabf418150be92a7b95c2a97ddd2cff881a",
       }),
     }),
+    Object.freeze({
+      commit: "7cc25e2d43d91c42fbcc3c9694e8792fc4042079",
+      parent: "05dccec2ee33567e2949323822ab7dbad5dde6b3",
+      sourceManifestSha256: "c7a5fcf1b65f0aa40a407c30590c301d3637b8b5b9a9a0b142d14e57353dc32f",
+      sourceManifestFiles: 1527,
+      files: Object.freeze({
+        "docs/restaurant-expo-alias-artifact-remediation-evidence/candidate-artifact-manifest.json": "104d9af8d0f87ec2d631885567bef70bfe2fbbdc600989eaafffdbdfd6bfa54c",
+        "docs/restaurant-expo-alias-artifact-remediation-evidence/complete-artifact-comparison.json": "96fb81608763356ef6c6d00fa73082de30b0efd1d4e830cdb348347cc7a947bd",
+        "docs/restaurant-expo-alias-artifact-remediation-evidence/evidence-manifest.tsv": "24ea287ad87bc8cf33c41b3e38f42e2e4a636633acb8e4fcd7c16d0db3d141b2",
+        "docs/restaurant-expo-alias-artifact-remediation-evidence/historical-noncanonical-restaurant-static-export.tar": "952e7ceb40766f5cab55706418db4e88f403495e88cce04b3e613282c066a135",
+        "docs/restaurant-expo-alias-artifact-remediation-evidence/restaurant-static-export.tar": "477adc3170a52b095d8f92d49f46defa1d8001d7a647033d786590d2bda7184d",
+        "docs/restaurant-expo-alias-canonical-archive-remediation-review.md": "8da336c9e2f3772206f214f4dd973539520da03c86a4c0961f985ed52fff39b9",
+        "docs/restaurant-expo-alias-canonical-archive-remediation.diff": "283aa4155839162e9d7eba7e44c953748ce540c827cb1add52abf40ae3f9ead4",
+        "docs/restaurant-expo-alias-ruip6ad-20260926f-run-binding-contract.md": "f0179ed7e632c38fcd47fc19e258270c8ed86420ac22f6f759da4424888dbdb2",
+        "docs/restaurant-expo-alias-ruip6ad-20260926f-run-binding-implementation-review.md": "fe965b09e06c31b2e07a2fa7d36af1ec9041c912458cab4b2d38441fcca29ea6",
+        "docs/restaurant-expo-alias-ruip6ad-20260926f-run-binding.diff": "45db7c244b7021e9ff0b368da2c3e7ab4ef3806b2f7d0a54bba90c32946612b0",
+        "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "e723d48faad8f4bce0a30231133cb944729fba665c6d24a8a7862bb664710159",
+        "scripts/restaurant-alias-diagnostic-execution-support.mjs": "8a3a7de1a1cb48a2b4027951a8cd11858aeffd5d1e002fd6973f932cacfffe4d",
+        "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "113f6ab3f6af09d86d59d90fa7c9a8f4e325796b1579d60aa97326d9bc99d27c",
+        "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "68c33f3629427205eb08960b4da368d84495efc482aec21f9f6c60cbef11eb56",
+      }),
+    }),
   ]),
   diagnosticExecutableFiles: Object.freeze({
     "scripts/restaurant-alias-parity-verifier.mjs": "e563d7a5203aaf6ea0e04687063d63027568fd2906accec43c26daaeea4ca1d8",
     "scripts/test-restaurant-alias-parity-verifier.mjs": "6fa1ce21c047f93678be3c45fb71cd1f0e8167ed142fc259e55efddea1030afb",
-    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "e723d48faad8f4bce0a30231133cb944729fba665c6d24a8a7862bb664710159",
-    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "113f6ab3f6af09d86d59d90fa7c9a8f4e325796b1579d60aa97326d9bc99d27c",
+    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "c7d16e809bc570ba684aeefbfcd088534119c0805260d19fb6fbd97ea3bc7cae",
+    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "6394a896da8bc98dab3deb30c727595b586aea85d69b3b4dfdb57a66bf3d868e",
     "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "2e0189fca16b9bbd6a95d87685d38e92b8260f75e6a8225bed5221c3492c3c7d",
     "scripts/test-restaurant-alias-diagnostic-access-staging.mjs": "860e4b0589133bc7d452126e7652af6866b3ce7685db104b2c919e3fa9c76ee6",
   }),
   applicationTree: DIAGNOSTIC_OPERATOR.applicationTree,
-  runId: "ruip6ad_20260926f",
-  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260926f",
+  runId: "ruip6ad_20260926g",
+  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260926g",
   authorityDirectory: "secure/restaurant-alias-diagnostic-authority",
   migrationFunctions: Object.freeze({
     "private.raise_restaurant_order_conflict_v1(text)": Object.freeze({
@@ -472,6 +487,7 @@ function updateRecaptureAttempt(runDirectory, value) {
 export function prepareFreshRollbackRecapture({ runDirectory, authority, capturedAt, interruptAt = null }) {
   const attemptPath = path.join(runDirectory, "fresh-recapture-attempt.json");
   const verificationPath = path.join(runDirectory, "fresh-recapture-verification.json");
+  if (fs.existsSync(path.join(runDirectory, "terminal-record.json"))) throw new Error("Terminal runs must finalize from preserved rollback evidence; fresh recapture is prohibited.");
   if (fs.existsSync(verificationPath)) throw new Error("Fresh recapture is already verified; retry prohibited.");
   const attemptId = authority.runId + ":fresh-rollback-recapture";
   const attempt = { schemaVersion: 1, runId: authority.runId, attemptId, initiatedAt: capturedAt, state: "INITIATED", historical: null, quarantine: {}, failure: null };
@@ -571,6 +587,42 @@ function consumeFreshRollbackRecapture(runDirectory, authority, currentMs) {
   const capturedMs = Date.parse(reference.value.capturedAt);
   if (capturedMs > currentMs + 5_000 || currentMs - capturedMs > SUPPORT.freshnessMs.rollback) throw new Error("Verified fresh rollback evidence is stale.");
   return { attempt, verification, reference, progress };
+}
+
+function consumePreservedTerminalRollback(runDirectory, authority) {
+  const terminal = requireRunEvidence(path.join(runDirectory, "terminal-record.json"), "Terminal record");
+  if (terminal.value.runId !== authority.runId || !["FAIL", "INCONCLUSIVE", "ABORTED"].includes(terminal.value.classification) || terminal.value.promotionRetryPermitted !== false) throw new Error("Terminal rollback evidence is not bound to a fail-closed run.");
+  const promotion = requireRunEvidence(path.join(runDirectory, "promotion-attempt.json"), "Promotion prohibition");
+  const promotionWasAttempted = promotion.value.providerCommandInvoked === true || Boolean(promotion.value.attemptedAt && promotion.value.deploymentIdentifier) || fs.existsSync(path.join(runDirectory, "promotion-result.json"));
+  if (!promotionWasAttempted && (promotion.value.runId !== authority.runId || promotion.value.promotionPermanentlyProhibited !== true || promotion.value.providerCommandInvoked !== false)) throw new Error("Terminal run is not permanently prohibited from promotion.");
+
+  let reference;
+  let progress;
+  let originalHistoricalReferenceSha256 = null;
+  const attemptPath = path.join(runDirectory, "fresh-recapture-attempt.json");
+  if (fs.existsSync(attemptPath)) {
+    const attempt = requireRunEvidence(attemptPath, "Terminal recapture attempt");
+    if (attempt.value.runId !== authority.runId || attempt.value.attemptId !== authority.runId + ":fresh-rollback-recapture") throw new Error("Terminal recapture attempt belongs to another run.");
+    validateHistoricalRecapture(runDirectory, attempt.value);
+    const historicalReferencePath = path.join(runDirectory, attempt.value.historical.reference.path);
+    const historicalProgressPath = path.join(runDirectory, attempt.value.historical.progress.path);
+    reference = requireRunEvidence(historicalReferencePath, "Preserved historical rollback reference");
+    progress = requireRunEvidence(historicalProgressPath, "Preserved historical rollback progress");
+    if (reference.sha256 !== attempt.value.historical.reference.sha256 || progress.sha256 !== attempt.value.historical.progress.sha256) throw new Error("Preserved terminal rollback identities changed.");
+    originalHistoricalReferenceSha256 = reference.sha256;
+  } else {
+    reference = requireRunEvidence(path.join(runDirectory, "rollback-reference.json"), "Preserved rollback reference");
+    progress = requireRunEvidence(path.join(runDirectory, "rollback-capture-progress.json"), "Preserved rollback progress");
+  }
+  validateRollbackReference(reference.value, authority, "Preserved terminal rollback reference");
+  validateRollbackProgress(progress.value, authority, reference.value);
+  return { mode: "terminal-preserved", terminal, promotionWasAttempted, reference, progress, verification: null, originalHistoricalReferenceSha256 };
+}
+
+function resolveFinalRollbackEvidence(runDirectory, authority, currentMs) {
+  if (fs.existsSync(path.join(runDirectory, "terminal-record.json"))) return consumePreservedTerminalRollback(runDirectory, authority);
+  const fresh = consumeFreshRollbackRecapture(runDirectory, authority, currentMs);
+  return { mode: "fresh-verified", terminal: null, promotionWasAttempted: true, originalHistoricalReferenceSha256: fresh.verification.value.historical.reference.sha256, ...fresh };
 }
 
 function inventoryPath(runDirectory) { return path.join(runDirectory, "created-resources.json"); }
@@ -716,7 +768,8 @@ export function buildCleanupDisposition({ runDirectory, authority, capturedAt })
   const inventory = validateResourceInventory(record.value, authority);
   const createdResources = inventory.resources.map(row => ({ type: row.type, id: row.id, disposition: row.type === "immutable-deployment" ? "retained-provider-record" : "incomplete", verificationEvidence: row.evidence || null }));
   const incomplete = [];
-  if (inventory.state !== "DEPLOYMENT_REGISTERED") incomplete.push("RESOURCE_INVENTORY_NOT_REGISTERED");
+  const terminalPreDeployment = fs.existsSync(path.join(runDirectory, "terminal-record.json")) && inventory.state === "INITIALIZED" && inventory.deploymentAttemptCount === 0 && inventory.resources.length === 0 && inventory.unexpectedResources.length === 0;
+  if (inventory.state !== "DEPLOYMENT_REGISTERED" && !terminalPreDeployment) incomplete.push("RESOURCE_INVENTORY_NOT_REGISTERED");
   if (inventory.unexpectedResources.length) incomplete.push("UNEXPECTED_RESOURCES_REQUIRE_SEPARATE_RECONCILIATION");
   if (createdResources.some(row => row.disposition === "incomplete")) incomplete.push("UNSUPPORTED_RESOURCE_DISPOSITION");
   const value = { schemaVersion: 2, runId: authority.runId, capturedAt, manifestScoped: true, inventorySha256: record.sha256, createdResources, unexpectedResources: inventory.unexpectedResources, incomplete, passed: incomplete.length === 0 };
@@ -725,17 +778,17 @@ export function buildCleanupDisposition({ runDirectory, authority, capturedAt })
 }
 
 export function buildExpectedFinalAliasReference({ runDirectory, authority, capturedAt }) {
-  const fresh = consumeFreshRollbackRecapture(runDirectory, authority, Date.parse(capturedAt));
-  const reference = fresh.reference.value;
+  const rollbackEvidence = resolveFinalRollbackEvidence(runDirectory, authority, Date.parse(capturedAt));
+  const reference = rollbackEvidence.reference.value;
   const promotionResultExists = fs.existsSync(path.join(runDirectory, "promotion-result.json"));
-  const terminalExists = fs.existsSync(path.join(runDirectory, "terminal-record.json"));
   let rollbackVerificationSha256 = null;
-  if (promotionResultExists && !terminalExists) {
+  if (fs.existsSync(path.join(runDirectory, "rollback-verification-result.json"))) {
     const verified = requireRunEvidence(path.join(runDirectory, "rollback-verification-result.json"), "Independent rollback verification");
     if (verified.value.passed !== true || verified.value.classification !== "PASS" || verified.value.expected?.deploymentIdentifier !== reference.deploymentIdentifier || JSON.stringify(verified.value.expected.routes) !== JSON.stringify(reference.routes) || JSON.stringify(verified.value.expected.criticalAssets) !== JSON.stringify(reference.criticalAssets) || JSON.stringify(verified.value.expected.runtimeFiles) !== JSON.stringify(reference.runtimeFiles) || JSON.stringify(verified.value.expected.externalRuntime) !== JSON.stringify(reference.externalRuntime) || verified.value.selectedAttempts?.length < 2) throw new Error("Independent rollback verification does not match the frozen reference.");
     rollbackVerificationSha256 = verified.sha256;
   }
-  const value = { schemaVersion: 1, runId: authority.runId, capturedAt, deploymentIdentifier: reference.deploymentIdentifier, deploymentUrl: reference.deploymentUrl, routes: reference.routes, criticalAssets: reference.criticalAssets, runtimeFiles: reference.runtimeFiles, externalRuntime: reference.externalRuntime, contractSha256: reference.contractSha256, source: { rollbackReferenceSha256: fresh.reference.sha256, freshRecaptureVerificationSha256: fresh.verification.sha256, originalHistoricalReferenceSha256: fresh.verification.value.historical.reference.sha256, rollbackVerificationSha256 } };
+  if ((promotionResultExists || rollbackEvidence.terminal?.value.rollbackRequired === true) && !rollbackVerificationSha256) throw new Error("A changed or uncertain alias requires independent rollback verification before final reconciliation.");
+  const value = { schemaVersion: 1, runId: authority.runId, capturedAt, deploymentIdentifier: reference.deploymentIdentifier, deploymentUrl: reference.deploymentUrl, routes: reference.routes, criticalAssets: reference.criticalAssets, runtimeFiles: reference.runtimeFiles, externalRuntime: reference.externalRuntime, contractSha256: reference.contractSha256, source: { mode: rollbackEvidence.mode, rollbackReferenceSha256: rollbackEvidence.reference.sha256, rollbackProgressSha256: rollbackEvidence.progress.sha256, freshRecaptureVerificationSha256: rollbackEvidence.verification?.sha256 || null, originalHistoricalReferenceSha256: rollbackEvidence.originalHistoricalReferenceSha256, terminalRecordSha256: rollbackEvidence.terminal?.sha256 || null, rollbackVerificationSha256 } };
   writeExclusive(path.join(runDirectory, "expected-final-alias-reference.json"), value);
   return value;
 }
@@ -874,7 +927,8 @@ function reconcileCleanup(runDirectory, authority, cleanup) {
   catch (error) { issues.push("CREATED_RESOURCE_INVENTORY_MISSING_OR_INVALID"); }
   const resources = Array.isArray(inventory?.resources) ? inventory.resources : [];
   const unexpected = Array.isArray(inventory?.unexpectedResources) ? inventory.unexpectedResources : [];
-  if (inventory?.schemaVersion !== 2 || inventory?.runId !== authority.runId || inventory?.sourceCommit !== authority.sourceCommit || inventory?.sourceManifestSha256 !== authority.sourceManifestSha256 || inventory?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || inventory?.deploymentAttemptCount !== 1 || !Array.isArray(inventory?.resources) || !Array.isArray(inventory?.unexpectedResources)) issues.push("CREATED_RESOURCE_INVENTORY_BINDING_INVALID");
+  const terminalNoDeployment = fs.existsSync(path.join(runDirectory, "terminal-record.json")) && inventory?.state === "INITIALIZED" && inventory?.deploymentAttemptCount === 0 && resources.length === 0 && unexpected.length === 0;
+  if (inventory?.schemaVersion !== 2 || inventory?.runId !== authority.runId || inventory?.sourceCommit !== authority.sourceCommit || inventory?.sourceManifestSha256 !== authority.sourceManifestSha256 || inventory?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || (inventory?.deploymentAttemptCount !== 1 && !terminalNoDeployment) || !Array.isArray(inventory?.resources) || !Array.isArray(inventory?.unexpectedResources)) issues.push("CREATED_RESOURCE_INVENTORY_BINDING_INVALID");
   const inventoryBytes = fs.existsSync(path.join(runDirectory, "created-resources.json")) ? fs.readFileSync(path.join(runDirectory, "created-resources.json")) : null;
   if (cleanup?.schemaVersion !== 2 || cleanup?.runId !== authority.runId || cleanup?.inventorySha256 !== (inventoryBytes ? sha256(inventoryBytes) : null) || cleanup?.passed !== true) issues.push("CLEANUP_BINDING_INVALID");
   const inventoryIds = resources.map(resourceIdentity);
@@ -896,8 +950,11 @@ function reconcileCleanup(runDirectory, authority, cleanup) {
   if (persistedUnexpected.some(value => !value) || new Set(persistedUnexpected).size !== persistedUnexpected.length || declaredUnexpected.some(value => !value) || new Set(declaredUnexpected).size !== declaredUnexpected.length || JSON.stringify([...persistedUnexpected].sort()) !== JSON.stringify([...declaredUnexpected].sort())) issues.push("UNEXPECTED_RESOURCE_RECONCILIATION_MISMATCH");
   if (unexpected.length) issues.push("UNEXPECTED_RESOURCES_REMAIN");
   if (cleanup?.manifestScoped !== true || !Array.isArray(cleanup?.incomplete) || cleanup.incomplete.length) issues.push("CLEANUP_INCOMPLETE");
-  try {
-    const deployment = JSON.parse(fs.readFileSync(path.join(runDirectory, "immutable-deployment.json"), "utf8"));
+  const deploymentPath = path.join(runDirectory, "immutable-deployment.json");
+  if (resources.length === 0 && cleanupRows.length === 0) {
+    if (fs.existsSync(deploymentPath) || inventory?.deploymentAttemptCount !== 0 || inventory?.state !== "INITIALIZED") issues.push("EMPTY_RESOURCE_INVENTORY_INCONSISTENT");
+  } else try {
+    const deployment = JSON.parse(fs.readFileSync(deploymentPath, "utf8"));
     if (!deployment.deploymentIdentifier || !resources.some(row => row.type === "immutable-deployment" && row.id === deployment.deploymentIdentifier) || !cleanupRows.some(row => row.type === "immutable-deployment" && row.id === deployment.deploymentIdentifier && row.disposition === "retained-provider-record")) issues.push("IMMUTABLE_PROVIDER_DEPLOYMENT_UNACCOUNTED");
   } catch (error) { issues.push("IMMUTABLE_DEPLOYMENT_EVIDENCE_INVALID"); }
   return { passed: issues.length === 0, inventory, cleanup, issues };
@@ -907,8 +964,8 @@ export async function finalizeRun({ root, runDirectory, authority, expectedAlias
   if (expectedAlias?.schemaVersion !== 1 || expectedAlias.runId !== authority.runId || expectedAlias.deploymentIdentifier !== DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment || expectedAlias.routes?.length !== SUPPORT.rollbackContract.routes || !expectedAlias.criticalAssets?.length || expectedAlias.runtimeFiles?.length !== 3 || expectedAlias.externalRuntime?.length !== 2) throw new Error("Complete run-bound final alias reference required.");
   const expectedRecord = requireRunEvidence(path.join(runDirectory, "expected-final-alias-reference.json"), "Expected final alias reference");
   if (expectedRecord.sha256 !== sha256(Buffer.from(canonical(expectedAlias)))) throw new Error("Expected final alias input differs from persisted evidence.");
-  const fresh = consumeFreshRollbackRecapture(runDirectory, authority, Date.parse(capturedAt));
-  if (expectedAlias.source?.rollbackReferenceSha256 !== fresh.reference.sha256 || expectedAlias.source?.freshRecaptureVerificationSha256 !== fresh.verification.sha256 || JSON.stringify(expectedAlias.routes) !== JSON.stringify(fresh.reference.value.routes) || JSON.stringify(expectedAlias.criticalAssets) !== JSON.stringify(fresh.reference.value.criticalAssets) || JSON.stringify(expectedAlias.runtimeFiles) !== JSON.stringify(fresh.reference.value.runtimeFiles) || JSON.stringify(expectedAlias.externalRuntime) !== JSON.stringify(fresh.reference.value.externalRuntime) || expectedAlias.contractSha256 !== fresh.reference.value.contractSha256) throw new Error("Expected final alias is not derived from verified fresh rollback evidence.");
+  const rollbackEvidence = resolveFinalRollbackEvidence(runDirectory, authority, Date.parse(capturedAt));
+  if (expectedAlias.source?.mode !== rollbackEvidence.mode || expectedAlias.source?.rollbackReferenceSha256 !== rollbackEvidence.reference.sha256 || expectedAlias.source?.rollbackProgressSha256 !== rollbackEvidence.progress.sha256 || expectedAlias.source?.freshRecaptureVerificationSha256 !== (rollbackEvidence.verification?.sha256 || null) || expectedAlias.source?.terminalRecordSha256 !== (rollbackEvidence.terminal?.sha256 || null) || JSON.stringify(expectedAlias.routes) !== JSON.stringify(rollbackEvidence.reference.value.routes) || JSON.stringify(expectedAlias.criticalAssets) !== JSON.stringify(rollbackEvidence.reference.value.criticalAssets) || JSON.stringify(expectedAlias.runtimeFiles) !== JSON.stringify(rollbackEvidence.reference.value.runtimeFiles) || JSON.stringify(expectedAlias.externalRuntime) !== JSON.stringify(rollbackEvidence.reference.value.externalRuntime) || expectedAlias.contractSha256 !== rollbackEvidence.reference.value.contractSha256) throw new Error("Expected final alias is not derived from the required verified rollback evidence.");
   const cleanupRecord = requireRunEvidence(path.join(runDirectory, "cleanup-disposition.json"), "Cleanup disposition");
   if (cleanupRecord.sha256 !== sha256(Buffer.from(canonical(cleanup)))) throw new Error("Cleanup input differs from persisted evidence.");
   const finalizationAttempt = path.join(runDirectory, "finalization-attempt.json");
@@ -926,21 +983,24 @@ export async function finalizeRun({ root, runDirectory, authority, expectedAlias
   const aliasParity = await readers.verifyAliasParity(expectedAlias);
   const findings = credentialFindings(runDirectory);
   const cleanupReconciliation = reconcileCleanup(runDirectory, authority, cleanup);
-  const required = ["baseline-preflight.json", "rollback-reference.json"];
+  const required = ["baseline-preflight.json"];
   const promotionAttemptRecord = fs.existsSync(path.join(runDirectory, "promotion-attempt.json")) ? JSON.parse(fs.readFileSync(path.join(runDirectory, "promotion-attempt.json"), "utf8")) : null;
   const promotionAttempted = Boolean(promotionAttemptRecord?.providerCommandInvoked === true || (promotionAttemptRecord?.attemptedAt && promotionAttemptRecord?.deploymentIdentifier) || fs.existsSync(path.join(runDirectory, "promotion-result.json")));
   const terminalExists = fs.existsSync(path.join(runDirectory, "terminal-record.json"));
   if (promotionAttempted) required.push("artifact-manifest.json", "immutable-deployment.json", "immutable-smoke.json", "immutable-access-qualification.json", "promotion-preflight.json", "rollback-attempt.json");
   if (promotionAttempted && !terminalExists) required.push("promotion-result.json", "alias-observation-result.json", "alias-full-artifact-result.json", "rollback-result.json", "rollback-verification-result.json");
   if (!promotionAttempted) required.push("terminal-record.json");
+  const terminalRecord = terminalExists ? JSON.parse(fs.readFileSync(path.join(runDirectory, "terminal-record.json"), "utf8")) : null;
+  const terminalRollbackRequired = terminalRecord?.rollbackRequired === true;
+  if (terminalRollbackRequired) required.push("rollback-attempt.json", "rollback-result.json", "rollback-verification-result.json");
   const missingEvidence = required.filter(name => !fs.existsSync(path.join(runDirectory, name)));
   let result = "PASS";
   const blockers = [];
   if (!aliasParity?.passed || aliasParity.deploymentIdentifier !== expectedAlias.deploymentIdentifier || aliasParity.selectedAttempts?.length < 2) { result = "FAIL"; blockers.push("FINAL_ALIAS_PARITY_FAILED"); }
   if (!protectedEvidence.passed) { result = "FAIL"; blockers.push("PROTECTED_EVIDENCE_FAILED"); }
   if (terminalExists) { result = "FAIL"; blockers.push("TERMINAL_NON_PASS_RUN"); }
-  if (promotionAttempted && !aliasParity?.passed) { result = "FAIL"; blockers.push("ROLLBACK_RESTORATION_NOT_VERIFIED"); }
-  if (promotionAttempted && !terminalExists && fs.existsSync(path.join(runDirectory, "rollback-verification-result.json"))) {
+  if ((promotionAttempted || terminalRollbackRequired) && !aliasParity?.passed) { result = "FAIL"; blockers.push("ROLLBACK_RESTORATION_NOT_VERIFIED"); }
+  if (fs.existsSync(path.join(runDirectory, "rollback-verification-result.json"))) {
     const rollbackVerification = JSON.parse(fs.readFileSync(path.join(runDirectory, "rollback-verification-result.json"), "utf8"));
     if (rollbackVerification.passed !== true || rollbackVerification.classification !== "PASS" || rollbackVerification.expected?.deploymentIdentifier !== expectedAlias.deploymentIdentifier || rollbackVerification.selectedAttempts?.length < 2) { result = "FAIL"; blockers.push("RECORDED_ROLLBACK_VERIFICATION_FAILED"); }
   }
