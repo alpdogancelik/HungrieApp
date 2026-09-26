@@ -42,7 +42,7 @@ const evidenceHash = character => character.repeat(64);
 
 test("reviewed candidate artifact evidence is complete and matches the fixed identity", () => {
   const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
-  const evidence = path.join(root, "docs/restaurant-expo-alias-artifact-remediation-evidence");
+  const evidence = path.join(root, "docs/restaurant-expo-alias-deterministic-metro-evidence");
   const manifest = JSON.parse(fs.readFileSync(path.join(evidence, "candidate-artifact-manifest.json"), "utf8"));
   const rows = manifest.files.map(row => `${row.sha256}\t${row.bytes}\t${row.path}`).join("\n") + "\n";
   assert.equal(manifest.fileCount, 74);
@@ -197,7 +197,7 @@ test("artifact archives use canonical UTF-8 path order and deterministic USTAR b
 
 test("the complete local export gate accepts the reviewed 74-file artifact and canonical archive", () => {
   const root = path.resolve(import.meta.dirname, ".."), directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-export-gate-"));
-  const artifact = path.join(root, "docs/restaurant-expo-alias-artifact-remediation-evidence/restaurant-static-export.tar"), dist = path.join(directory, "dist"), archive = path.join(directory, "rebuilt.tar");
+  const artifact = path.join(root, "docs/restaurant-expo-alias-deterministic-metro-evidence/restaurant-static-export.tar"), dist = path.join(directory, "dist"), archive = path.join(directory, "rebuilt.tar");
   fs.mkdirSync(dist);
   try {
     const extracted = spawnSync("tar", ["-xf", artifact, "-C", dist], { encoding: "utf8" });

@@ -1,0 +1,288 @@
+{
+  "schemaVersion": 1,
+  "previous": {
+    "manifest": "a3a22439b973ed822aadbe13104daedb934b785f78c9a685cfab5a2995c3f9ae",
+    "archive": "477adc3170a52b095d8f92d49f46defa1d8001d7a647033d786590d2bda7184d"
+  },
+  "candidate": {
+    "manifest": "7ca81f0fdbc649e34a929956329bcaafc95ec357c84f342a01f2a0dab2836431",
+    "archive": "dd416dd5f44a4f3dbb3443f7269c61f4d964fe3e3e4de3b38d873db553e183cb"
+  },
+  "added": [
+    {
+      "path": "_expo/static/js/web/entry-e60c059055bd9dd055f253e375b7f273.js",
+      "bytes": 3602617,
+      "sha256": "ad572298de4cd0214e550004cd2b69c97399827628fb646f41f0bb8074a52d47"
+    }
+  ],
+  "removed": [
+    {
+      "path": "_expo/static/js/web/entry-8bdcb59ab19e86ceceec5a60058570bd.js",
+      "bytes": 3603320,
+      "sha256": "9acf32ed4d8f573e05ea1eb0dcd05ef966876cb63551de8acfe56a03f83d24d8"
+    }
+  ],
+  "modified": [
+    {
+      "path": "+not-found.html",
+      "previous": {
+        "path": "+not-found.html",
+        "bytes": 17819,
+        "sha256": "638aaddf5803fc3c911ce597d832e9504ca0313c472ecaa37795fe75618fe801"
+      },
+      "candidate": {
+        "path": "+not-found.html",
+        "bytes": 17819,
+        "sha256": "3e55d52bdc5ff588efd1f3ac8f1a2b84747b36d7159463bda69707faa0405490"
+      }
+    },
+    {
+      "path": "_sitemap.html",
+      "previous": {
+        "path": "_sitemap.html",
+        "bytes": 17819,
+        "sha256": "638aaddf5803fc3c911ce597d832e9504ca0313c472ecaa37795fe75618fe801"
+      },
+      "candidate": {
+        "path": "_sitemap.html",
+        "bytes": 17819,
+        "sha256": "3e55d52bdc5ff588efd1f3ac8f1a2b84747b36d7159463bda69707faa0405490"
+      }
+    },
+    {
+      "path": "dashboard.html",
+      "previous": {
+        "path": "dashboard.html",
+        "bytes": 17919,
+        "sha256": "fcaedaa55749b75a186a688f48943381aa9d02e8ab6b724108f5d03807038709"
+      },
+      "candidate": {
+        "path": "dashboard.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      }
+    },
+    {
+      "path": "earnings.html",
+      "previous": {
+        "path": "earnings.html",
+        "bytes": 17919,
+        "sha256": "fcaedaa55749b75a186a688f48943381aa9d02e8ab6b724108f5d03807038709"
+      },
+      "candidate": {
+        "path": "earnings.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      }
+    },
+    {
+      "path": "forgot-password.html",
+      "previous": {
+        "path": "forgot-password.html",
+        "bytes": 17919,
+        "sha256": "fcaedaa55749b75a186a688f48943381aa9d02e8ab6b724108f5d03807038709"
+      },
+      "candidate": {
+        "path": "forgot-password.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      }
+    },
+    {
+      "path": "history.html",
+      "previous": {
+        "path": "history.html",
+        "bytes": 17919,
+        "sha256": "fcaedaa55749b75a186a688f48943381aa9d02e8ab6b724108f5d03807038709"
+      },
+      "candidate": {
+        "path": "history.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      }
+    },
+    {
+      "path": "index.html",
+      "previous": {
+        "path": "index.html",
+        "bytes": 17919,
+        "sha256": "fcaedaa55749b75a186a688f48943381aa9d02e8ab6b724108f5d03807038709"
+      },
+      "candidate": {
+        "path": "index.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      }
+    },
+    {
+      "path": "invite.html",
+      "previous": {
+        "path": "invite.html",
+        "bytes": 17919,
+        "sha256": "fcaedaa55749b75a186a688f48943381aa9d02e8ab6b724108f5d03807038709"
+      },
+      "candidate": {
+        "path": "invite.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      }
+    },
+    {
+      "path": "login.html",
+      "previous": {
+        "path": "login.html",
+        "bytes": 17919,
+        "sha256": "fcaedaa55749b75a186a688f48943381aa9d02e8ab6b724108f5d03807038709"
+      },
+      "candidate": {
+        "path": "login.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      }
+    },
+    {
+      "path": "menu.html",
+      "previous": {
+        "path": "menu.html",
+        "bytes": 17919,
+        "sha256": "fcaedaa55749b75a186a688f48943381aa9d02e8ab6b724108f5d03807038709"
+      },
+      "candidate": {
+        "path": "menu.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      }
+    },
+    {
+      "path": "more.html",
+      "previous": {
+        "path": "more.html",
+        "bytes": 17919,
+        "sha256": "fcaedaa55749b75a186a688f48943381aa9d02e8ab6b724108f5d03807038709"
+      },
+      "candidate": {
+        "path": "more.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      }
+    },
+    {
+      "path": "orders.html",
+      "previous": {
+        "path": "orders.html",
+        "bytes": 17919,
+        "sha256": "fcaedaa55749b75a186a688f48943381aa9d02e8ab6b724108f5d03807038709"
+      },
+      "candidate": {
+        "path": "orders.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      }
+    },
+    {
+      "path": "orders/[orderId].html",
+      "previous": {
+        "path": "orders/[orderId].html",
+        "bytes": 17919,
+        "sha256": "fcaedaa55749b75a186a688f48943381aa9d02e8ab6b724108f5d03807038709"
+      },
+      "candidate": {
+        "path": "orders/[orderId].html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      }
+    },
+    {
+      "path": "orders/detail.html",
+      "previous": {
+        "path": "orders/detail.html",
+        "bytes": 17919,
+        "sha256": "fcaedaa55749b75a186a688f48943381aa9d02e8ab6b724108f5d03807038709"
+      },
+      "candidate": {
+        "path": "orders/detail.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      }
+    },
+    {
+      "path": "pending.html",
+      "previous": {
+        "path": "pending.html",
+        "bytes": 17919,
+        "sha256": "fcaedaa55749b75a186a688f48943381aa9d02e8ab6b724108f5d03807038709"
+      },
+      "candidate": {
+        "path": "pending.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      }
+    },
+    {
+      "path": "restaurant.html",
+      "previous": {
+        "path": "restaurant.html",
+        "bytes": 17919,
+        "sha256": "fcaedaa55749b75a186a688f48943381aa9d02e8ab6b724108f5d03807038709"
+      },
+      "candidate": {
+        "path": "restaurant.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      }
+    },
+    {
+      "path": "reviews.html",
+      "previous": {
+        "path": "reviews.html",
+        "bytes": 17919,
+        "sha256": "fcaedaa55749b75a186a688f48943381aa9d02e8ab6b724108f5d03807038709"
+      },
+      "candidate": {
+        "path": "reviews.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      }
+    },
+    {
+      "path": "security.html",
+      "previous": {
+        "path": "security.html",
+        "bytes": 17919,
+        "sha256": "fcaedaa55749b75a186a688f48943381aa9d02e8ab6b724108f5d03807038709"
+      },
+      "candidate": {
+        "path": "security.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      }
+    },
+    {
+      "path": "settings.html",
+      "previous": {
+        "path": "settings.html",
+        "bytes": 17919,
+        "sha256": "fcaedaa55749b75a186a688f48943381aa9d02e8ab6b724108f5d03807038709"
+      },
+      "candidate": {
+        "path": "settings.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      }
+    },
+    {
+      "path": "suspended.html",
+      "previous": {
+        "path": "suspended.html",
+        "bytes": 17919,
+        "sha256": "fcaedaa55749b75a186a688f48943381aa9d02e8ab6b724108f5d03807038709"
+      },
+      "candidate": {
+        "path": "suspended.html",
+        "bytes": 17919,
+        "sha256": "6a691073291b99409b69aed9f3997584204b11918efc893e69bd85e26b8388e4"
+      }
+    }
+  ],
+  "unchangedCount": 53
+}

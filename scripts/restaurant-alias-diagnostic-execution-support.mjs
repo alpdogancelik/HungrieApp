@@ -15,19 +15,32 @@ import {
   requireMaintenanceWindow,
 } from "./deploy-restaurant-alias-10-minute-diagnostic-staging.mjs";
 import { sanitizeError } from "./restaurant-alias-parity-verifier.mjs";
+import { verifyReadOnlyEasExportEvidence } from "./verify-restaurant-alias-production-export-readiness.mjs";
 
 export const SUPPORT = Object.freeze({
-  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260926i-run-binding-contract.md",
-  proposalSha256: "038183d452ae0ad65319e5b7bb7fcc45c2c59f49a20f407c645733b0c3cac9a7",
-  baseCheckpoint: "a93735ede9be8e8177e7034afdf9f19b3c176c3d",
-  baseSourceManifestSha256: "96916aff299d24d367b637c41ce3094e440f69db06c6dd5c192b368f43f561e6",
-  baseSourceManifestFiles: 1533,
+  historicalApplicationTree: "ae03238ac8c34f4ef11365b5a5c51dee81187812",
+  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260926j-run-binding-contract.md",
+  proposalSha256: "ecc346f1738bfb048e64e9281a1ac53270c92d00fe09e72614e470fc57a29b53",
+  baseCheckpoint: "a1cf25b443441d424259af2568ced55b00d5560a",
+  baseSourceManifestSha256: "a2e022bdbbc494f9125c23b7f72cc784a4a37a0ac8d3f1e897388e24bc81e052",
+  baseSourceManifestFiles: 1536,
   checkpointFiles: Object.freeze([
-    "docs/restaurant-expo-alias-firebase-admin-dependency-correction-report.md",
-    "docs/restaurant-expo-alias-firebase-admin-dependency-correction.diff",
-    "docs/restaurant-expo-alias-ruip6ad-20260926i-run-binding-contract.md",
+    "apps/restaurant/metro.config.js",
+    "apps/restaurant/scripts/deterministic-metro-module-ids.cjs",
+    "apps/restaurant/scripts/deterministic-metro-module-map.json",
+    "docs/restaurant-expo-alias-deterministic-metro-evidence/candidate-artifact-manifest.json",
+    "docs/restaurant-expo-alias-deterministic-metro-evidence/complete-artifact-comparison.json",
+    "docs/restaurant-expo-alias-deterministic-metro-evidence/evidence-manifest.tsv",
+    "docs/restaurant-expo-alias-deterministic-metro-evidence/restaurant-static-export.tar",
+    "docs/restaurant-expo-alias-deterministic-metro-export-remediation-review.md",
+    "docs/restaurant-expo-alias-ruip6ad-20260926j-run-binding-contract.md",
+    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs",
     "scripts/restaurant-alias-diagnostic-execution-support.mjs",
     "scripts/test-restaurant-alias-diagnostic-execution-support.mjs",
+    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs",
+    "scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs",
+    "scripts/test-restaurant-deterministic-metro-module-ids.mjs",
+    "scripts/verify-restaurant-alias-production-export-readiness.mjs",
   ]),
   acceptedLineage: Object.freeze([
     Object.freeze({
@@ -201,18 +214,37 @@ export const SUPPORT = Object.freeze({
         "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "a7229b45a05b61daddc1787e0d9680040b631cf1b7a4004141e4b6875a75bc48",
       }),
     }),
+    Object.freeze({
+      commit: "a1cf25b443441d424259af2568ced55b00d5560a",
+      parent: "a93735ede9be8e8177e7034afdf9f19b3c176c3d",
+      sourceManifestSha256: "a2e022bdbbc494f9125c23b7f72cc784a4a37a0ac8d3f1e897388e24bc81e052",
+      sourceManifestFiles: 1536,
+      files: Object.freeze({
+        "docs/restaurant-expo-alias-firebase-admin-dependency-correction-report.md": "3c6c6efa969d5a3f2c0a7702768b15325dc2ec6a34bb342607d869305f9dee12",
+        "docs/restaurant-expo-alias-firebase-admin-dependency-correction.diff": "4cee2a51c3a6f61e99f2facd3a482cf6147a17c719bf950275c9f43c2414d95d",
+        "docs/restaurant-expo-alias-ruip6ad-20260926i-run-binding-contract.md": "038183d452ae0ad65319e5b7bb7fcc45c2c59f49a20f407c645733b0c3cac9a7",
+        "scripts/restaurant-alias-diagnostic-execution-support.mjs": "f4e15824c2a0a4a1a61bb233250722e0ae99b5b4a3fc0f0fb34cfb45cee2a8ce",
+        "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "4c35efb102bbe56feb412ba6641aa4cb43fe1515ce4b311e038f5341262927ee",
+      }),
+    }),
   ]),
   diagnosticExecutableFiles: Object.freeze({
+    "apps/restaurant/metro.config.js": "c1c09a3089568b12c4aeb9c1d30afb47bb7722dc9605fe534152424a4a2e64ad",
+    "apps/restaurant/scripts/deterministic-metro-module-ids.cjs": "6201d56d5a815a5827d0625ac72878fed89fd9bb7255ca52cbfd0a690b74e54a",
+    "apps/restaurant/scripts/deterministic-metro-module-map.json": "928fcbe1ba9aead4c2f180503254a4a6826033c33eabbad8f29fca24e4a056c8",
     "scripts/restaurant-alias-parity-verifier.mjs": "e563d7a5203aaf6ea0e04687063d63027568fd2906accec43c26daaeea4ca1d8",
     "scripts/test-restaurant-alias-parity-verifier.mjs": "6fa1ce21c047f93678be3c45fb71cd1f0e8167ed142fc259e55efddea1030afb",
-    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "befeeeb14b81aa969b9ba62951df52d1e3b9d0d54b111f094206d578db675025",
-    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "f04b10d579767ea03a22b1dea4fef144087ea6099ab93a851c3e2be3fb88c3c7",
+    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "865c1032ce89fef6efac32affcfb30f512a5743a91821c1079be7d599396c018",
+    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "6fce949367cfdc4c985d9fe87f632dba2779f53e4d75235322d4063a3f23839a",
+    "scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs": "5ba2c364a4e7e46fb5ef40a34fefb99f1165d7bb9ad93ed7c3cc417c7f76a016",
+    "scripts/test-restaurant-deterministic-metro-module-ids.mjs": "c262a93e6788b0508bd07fdcb612f1126d9c440274ce4ea04901be7ff5930213",
+    "scripts/verify-restaurant-alias-production-export-readiness.mjs": "451ab6f2b0e3b68a1ea1fd58eeb99ef0e8e1dd2920a4dc5ca479b1767e430684",
     "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "e2621bd4f6f300daf3a9c997990c244680b8e09bf7b7801dbd2d65d59c593828",
     "scripts/test-restaurant-alias-diagnostic-access-staging.mjs": "01a4a6c21809133620fd1610c3a7fd5e7d8d499b1438b76d8c0a9c26d19cd51c",
   }),
   applicationTree: DIAGNOSTIC_OPERATOR.applicationTree,
-  runId: "ruip6ad_20260926i",
-  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260926i",
+  runId: "ruip6ad_20260926j",
+  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260926j",
   authorityDirectory: "secure/restaurant-alias-diagnostic-authority",
   migrationFunctions: Object.freeze({
     "private.raise_restaurant_order_conflict_v1(text)": Object.freeze({
@@ -361,7 +393,7 @@ export function verifyAcceptedCheckpointLineage({ repoRoot, spawn = spawnSync, m
     const manifest = manifestBuilder(repoRoot, checkpoint.commit, spawn);
     if (manifest.sha256 !== checkpoint.sourceManifestSha256 || manifest.files !== checkpoint.sourceManifestFiles) throw new Error("Accepted checkpoint source manifest mismatch: " + checkpoint.commit + ".");
     const applicationTree = String(gitResult(repoRoot, ["rev-parse", checkpoint.commit + ":apps/restaurant"], spawn)).trim();
-    if (applicationTree !== SUPPORT.applicationTree) throw new Error("Accepted checkpoint Restaurant tree mismatch: " + checkpoint.commit + ".");
+    if (applicationTree !== SUPPORT.historicalApplicationTree) throw new Error("Accepted checkpoint Restaurant tree mismatch: " + checkpoint.commit + ".");
   }
   return { passed: true, checkpoints: SUPPORT.acceptedLineage.map(value => value.commit) };
 }
@@ -1275,6 +1307,9 @@ export async function runSupport(argv = process.argv.slice(2), dependencies = {}
   if (action === "prepare-authority") {
     (dependencies.prerequisiteVerifier || verifyLocalDiagnosticPrerequisites)({ root });
     const approval = JSON.parse(fs.readFileSync(path.resolve(required(values.approval, "Approval path")), "utf8"));
+    const exportEvidencePath = path.resolve(required(values["export-readiness-evidence"], "Read-only EAS export evidence path"));
+    if (!fs.existsSync(exportEvidencePath)) throw new Error("Passing read-only EAS export evidence is required before diagnostic authority preparation.");
+    (dependencies.exportEvidenceVerifier || verifyReadOnlyEasExportEvidence)(JSON.parse(fs.readFileSync(exportEvidencePath, "utf8")), { sourceCommit: approval.sourceCommit, sourceManifestSha256: approval.sourceManifestSha256 });
     const output = path.resolve(required(values.output, "Authority output directory"));
     return prepareAuthorityArtifacts({ repoRoot: root, approval, outputDirectory: output, spawn: dependencies.spawnSync || spawnSync });
   }

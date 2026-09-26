@@ -36,6 +36,7 @@ import {
   verifyReviewedCandidateCheckpoint,
 } from "./restaurant-alias-diagnostic-execution-support.mjs";
 import { DIAGNOSTIC_OPERATOR, rollbackContractDigest } from "./deploy-restaurant-alias-10-minute-diagnostic-staging.mjs";
+import { verifyExactProductionExportReadiness } from "./verify-restaurant-alias-production-export-readiness.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const hash = value => crypto.createHash("sha256").update(value).digest("hex");
@@ -71,6 +72,39 @@ test("local prerequisite verification rejects a missing or mismatched lockfile i
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
+test("pre-authority readiness runs the exact production diagnostic export path twice", () => {
+  const calls = [];
+  const result = verifyExactProductionExportReadiness({
+    root,
+    run(command, args, options) {
+      calls.push({ command, args, cwd: options.cwd });
+      return { status: 0, stdout: "", stderr: "" };
+    },
+    outputVerifier() {
+      return {
+        files: Array.from({ length: 74 }, (_, index) => ({ path: String(index) })),
+        artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256,
+        archive: { sha256: DIAGNOSTIC_OPERATOR.archiveSha256, bytes: 1 },
+      };
+    },
+  });
+  assert.equal(result.passed, true);
+  assert.equal(calls.length, 2);
+  for (const call of calls) {
+    assert.equal(call.command, "npx");
+    assert.deepEqual(call.args, ["eas-cli@16.32.0", "env:exec", "preview", "npm run prepare:web && npx expo export --platform web --clear", "--non-interactive"]);
+    assert.equal(call.cwd, path.join(root, "apps/restaurant"));
+  }
+});
+
+test("pre-authority readiness rejects any exact-path artifact mismatch", () => {
+  assert.throws(() => verifyExactProductionExportReadiness({
+    root,
+    run: () => ({ status: 0, stdout: "", stderr: "" }),
+    outputVerifier: () => ({ files: Array.from({ length: 74 }), artifactManifestSha256: "0".repeat(64), archive: { sha256: DIAGNOSTIC_OPERATOR.archiveSha256 } }),
+  }), /differs from the accepted artifact/i);
+});
+
 test("authority preparation cannot consume approval before prerequisite readiness passes", async () => {
   let calls = 0;
   await assert.rejects(
@@ -78,6 +112,35 @@ test("authority preparation cannot consume approval before prerequisite readines
     /synthetic local prerequisite failure/,
   );
   assert.equal(calls, 1);
+});
+
+test("authority preparation requires separately persisted read-only EAS export evidence", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-missing-export-evidence-"));
+  const approvalPath = path.join(directory, "approval.json");
+  fs.writeFileSync(approvalPath, "{}\n");
+  try {
+    await assert.rejects(
+      () => runSupport(["prepare-authority", `--approval=${approvalPath}`, `--output=${path.join(directory, "authority")}`], { prerequisiteVerifier: () => ({ passed: true }) }),
+      /read-only EAS export evidence path/i,
+    );
+    assert.equal(fs.existsSync(path.join(directory, "authority")), false);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("authority preparation verifies read-only export evidence before creating authority artifacts", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-export-evidence-gate-"));
+  const approvalPath = path.join(directory, "approval.json"), evidencePath = path.join(directory, "export-evidence.json"), output = path.join(directory, "authority");
+  fs.writeFileSync(approvalPath, canonical({ sourceCommit: fakeSourceCommit, sourceManifestSha256: fakeSourceManifestSha256 }));
+  fs.writeFileSync(evidencePath, "{}\n");
+  let calls = 0;
+  try {
+    await assert.rejects(
+      () => runSupport(["prepare-authority", `--approval=${approvalPath}`, `--export-readiness-evidence=${evidencePath}`, `--output=${output}`], { prerequisiteVerifier: () => ({ passed: true }), exportEvidenceVerifier: (_value, binding) => { calls += 1; assert.equal(binding.sourceCommit, fakeSourceCommit); assert.equal(binding.sourceManifestSha256, fakeSourceManifestSha256); throw new Error("synthetic export evidence rejection"); } }),
+      /synthetic export evidence rejection/,
+    );
+    assert.equal(calls, 1);
+    assert.equal(fs.existsSync(output), false);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
 function approval(overrides = {}) {
@@ -460,18 +523,24 @@ test("authority rejects missing, placeholder, contradictory, and unapproved inpu
   assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260925d" })), /identity/i);
   assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260925e" })), /identity/i);
   assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260926f" })), /identity/i);
+  assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260926g" })), /identity/i);
+  assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260926h" })), /identity/i);
+  assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260926i" })), /identity/i);
 });
 
 test("new run owns isolated authority and evidence identities", () => {
-  assert.equal(SUPPORT.runId, "ruip6ad_20260926i");
-  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260926i");
+  assert.equal(SUPPORT.runId, "ruip6ad_20260926j");
+  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260926j");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925a");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925b");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925c");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925d");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925e");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260926f");
-  for (const suffix of ["20260925a", "20260925b", "20260925c", "20260925d", "20260925e", "20260926f"]) assert.ok(!SUPPORT.evidenceDirectory.includes(suffix));
+  assert.notEqual(SUPPORT.runId, "ruip6ad_20260926g");
+  assert.notEqual(SUPPORT.runId, "ruip6ad_20260926h");
+  assert.notEqual(SUPPORT.runId, "ruip6ad_20260926i");
+  for (const suffix of ["20260925a", "20260925b", "20260925c", "20260925d", "20260925e", "20260926f", "20260926g", "20260926h", "20260926i"]) assert.ok(!SUPPORT.evidenceDirectory.includes(suffix));
 });
 
 test("new-run checkpoint contract passes only the exact reviewed synthetic child", () => {
