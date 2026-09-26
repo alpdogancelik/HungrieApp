@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { closeChrome, evaluateBrowserQualification, openChrome, sanitizeRequest, sanitizeResponse, waitForServiceWorkerReady } from "./qualify-restaurant-alias-diagnostic-access-staging.mjs";
+import { closeChrome, evaluateBrowserQualification, openChrome, qualifyAccount, routeStateReady, sanitizeDiagnosticText, sanitizeObservedUrl, sanitizeRequest, sanitizeResponse, waitForServiceWorkerReady } from "./qualify-restaurant-alias-diagnostic-access-staging.mjs";
 
 const base = "https://candidate.example.invalid";
 const state = (path, operational = true) => ({ path, heading: "Dashboard", blank: false, operational, earningsLink: false, diagnostic: { errors: [], navigations: [], protectedBeforeReady: false } });
@@ -25,6 +25,19 @@ test("suspended renders without operational shell", () => { const suspended = st
 test("manager operational rendering passes without Earnings", () => assert.equal(evaluateBrowserQualification(valid({ accountName: "manager" })).passed, true));
 test("service-worker readiness waits for activation", async () => { let calls = 0, sleeps = 0; const result = await waitForServiceWorkerReady(async () => ({ supported: true, ready: ++calls === 3, registrations: [] }), { attempts: 4, intervalMs: 1, sleep: async () => { sleeps += 1; } }); assert.equal(result.ready, true); assert.equal(result.attempt, 3); assert.equal(sleeps, 2); });
 test("service-worker readiness remains fail closed after the bound", async () => { const result = await waitForServiceWorkerReady(async () => ({ supported: true, ready: false, registrations: [{ scope: base + "/", installing: "installing" }] }), { attempts: 3, intervalMs: 1, sleep: async () => {} }); assert.equal(result.ready, false); assert.equal(result.attempt, 3); });
+test("protected route readiness requires operational rendering and resolved access", () => {
+  assert.equal(routeStateReady(state("/dashboard"), "/dashboard", { operational: true }), false);
+  assert.equal(routeStateReady({ ...state("/dashboard"), diagnostic: { ...state("/dashboard").diagnostic, accessResolved: true } }, "/dashboard", { operational: true }), true);
+  assert.equal(routeStateReady({ ...state("/dashboard"), overlay: true, diagnostic: { accessResolved: true } }, "/dashboard", { operational: true }), false);
+});
+test("diagnostic text redacts credential-shaped values", () => {
+  const sanitized = sanitizeDiagnosticText("Bearer top-secret password=hunter2 user@example.com eyJabc.def.ghi");
+  assert.equal(sanitized.includes("top-secret"), false);
+  assert.equal(sanitized.includes("hunter2"), false);
+  assert.equal(sanitized.includes("user@example.com"), false);
+  assert.equal(sanitized.includes("eyJabc.def.ghi"), false);
+  assert.equal(sanitizeObservedUrl(`${base}/login?token=secret&reason=session-expired`), `${base}/login?token=%5BREDACTED%5D&reason=%5BREDACTED%5D`);
+});
 
 class FakeSocket {
   addEventListener(type, callback) { if (type === "open") queueMicrotask(callback); }
@@ -62,4 +75,158 @@ test("a reachable stale DevTools endpoint is ignored when the spawned profile ha
     /DevTools endpoint unavailable/,
   );
   assert.equal(fetchCalls, 0);
+});
+
+class QualificationCdp {
+  constructor(mode) { this.mode = mode; this.listeners = []; this.signedIn = false; this.direct = false; this.directSnapshots = 0; }
+  on(listener) { this.listeners.push(listener); }
+  emit(method, params) { this.listeners.forEach(listener => listener({ method, params })); }
+  currentState() {
+    const diagnostic = { errors: [], navigations: [], protectedBeforeReady: false, accessResolved: this.signedIn };
+    if (!this.signedIn) return { url: `${base}/login`, path: "/login", heading: "Sign in", blank: false, operational: false, overlay: false, loginFormVisible: true, earningsLink: false, diagnostic };
+    if (!this.direct) return { url: `${base}/dashboard`, path: "/dashboard", heading: "Operations overview", blank: false, operational: true, overlay: false, loginFormVisible: false, earningsLink: false, diagnostic };
+    this.directSnapshots += 1;
+    if (this.mode === "delayed" && this.directSnapshots < 3) return { url: `${base}/login`, path: "/login", heading: "Sign in", blank: false, operational: false, overlay: false, loginFormVisible: true, earningsLink: false, diagnostic: { ...diagnostic, accessResolved: false } };
+    if (this.mode === "redirect" || this.mode === "timeout") return { url: `${base}/login`, path: "/login", heading: "Sign in", blank: false, operational: false, overlay: false, loginFormVisible: true, earningsLink: false, diagnostic: { ...diagnostic, accessResolved: false } };
+    if (this.mode === "overlay") return { url: `${base}/orders`, path: "/orders", heading: "Loading", blank: false, operational: false, overlay: true, loginFormVisible: false, earningsLink: false, diagnostic };
+    return { url: `${base}/orders`, path: "/orders", heading: "Live orders", blank: false, operational: true, overlay: false, loginFormVisible: false, earningsLink: false, diagnostic };
+  }
+  async send(method, params = {}) {
+    if (method === "Page.navigate") {
+      if (new URL(params.url).pathname === "/orders") {
+        this.direct = true;
+        this.emit("Page.lifecycleEvent", { name: "init", frameId: "frame", loaderId: "direct-loader" });
+        if (this.mode === "navigate-error") throw new Error("navigation failed token=top-secret");
+        if (this.mode === "http") this.emit("Network.responseReceived", { requestId: "404", type: "Document", response: { url: `${base}/orders`, status: 404, mimeType: "text/html" } });
+        if (this.mode === "timeout") {
+          this.emit("Runtime.consoleAPICalled", { type: "error", args: [{ value: "Bearer top-secret manager@example.com" }] });
+          this.emit("Network.requestWillBeSent", { requestId: "secret", type: "Fetch", request: { method: "GET", url: `${base}/orders?token=top-secret`, headers: { Authorization: "Bearer top-secret" } } });
+        }
+        return { frameId: "frame", loaderId: "direct-loader" };
+      }
+      this.emit("Page.lifecycleEvent", { name: "init", frameId: "frame", loaderId: "login-loader" });
+      return { frameId: "frame", loaderId: "login-loader" };
+    }
+    if (method === "Page.reload") return { frameId: "frame", loaderId: "reload-loader" };
+    if (method === "Runtime.evaluate") {
+      if (params.expression === "!!document.querySelector('input[type=email]')") return { result: { value: !this.signedIn } };
+      if (params.expression.includes("button[type=submit]")) { this.signedIn = true; return { result: { value: true } }; }
+      if (params.expression.includes("serviceWorker.getRegistrations")) return { result: { value: { supported: true, ready: true, controller: true, registrations: [{ scope: `${base}/`, active: "activated", waiting: null, installing: null }] } } };
+      if (params.expression.startsWith("({url:location.href")) return { result: { value: this.currentState() } };
+      return { result: { value: true } };
+    }
+    if (method === "Accessibility.getFullAXTree") return { nodes: [{ ignored: false, role: { value: "main" } }] };
+    if (method === "Page.captureScreenshot") return { data: Buffer.from("fixture screenshot").toString("base64") };
+    return {};
+  }
+  close() { this.closed = true; }
+}
+
+async function runQualificationFixture(t, mode, overrides = {}) {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), `alias-access-${mode}-`));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const cdp = new QualificationCdp(mode);
+  let closed = false, profilePath = null;
+  const options = {
+    accountName: "manager",
+    account: { email: "manager@example.invalid", password: "fixture-password" },
+    expectedPath: "/dashboard",
+    directPath: "/orders",
+    baseUrl: base,
+    directory,
+    chromePath: "fixture-chrome",
+    openChromeImpl: async (_chromePath, profile) => { profilePath = profile; return { version: { Browser: "Chrome/fixture" }, port: 43128, cdp, processHandle: { exitCode: 0 } }; },
+    closeChromeImpl: async () => { closed = true; cdp.close(); },
+    sleep: async () => {},
+    waitAttempts: 4,
+    waitIntervalMs: 0,
+    ...overrides,
+  };
+  return { directory, cdp, options, wasClosed: () => closed, profileRemoved: () => Boolean(profilePath && !fs.existsSync(profilePath)) };
+}
+
+test("real qualification flow persists successful direct-route restoration evidence", async t => {
+  const fixture = await runQualificationFixture(t, "success");
+  const result = await qualifyAccount(fixture.options);
+  assert.equal(result.passed, true);
+  assert.equal(result.authenticated.operational, true);
+  assert.equal(result.authenticated.diagnostic.accessResolved, true);
+  assert.equal(result.restored.path, "/orders");
+  assert.equal(result.navigationObservations.length, 2);
+  assert.ok(result.lifecycleObservations.length >= 2);
+  assert.equal(result.screenshot.captured, true);
+  const persisted = fs.readFileSync(path.join(fixture.directory, "immutable-manager-access-evidence.json"), "utf8");
+  assert.equal(persisted.includes("manager@example.invalid"), false);
+  assert.equal(persisted.includes("fixture-password"), false);
+  assert.equal(fixture.wasClosed(), true);
+  assert.equal(fixture.profileRemoved(), true);
+});
+
+test("delayed direct-route restoration succeeds without weakening the final criterion", async t => {
+  const fixture = await runQualificationFixture(t, "delayed");
+  const result = await qualifyAccount(fixture.options);
+  assert.equal(result.passed, true);
+  assert.equal(result.restored.path, "/orders");
+  assert.equal(result.restored.operational, true);
+  assert.equal(fixture.cdp.directSnapshots, 3);
+});
+
+for (const [mode, classification, expectedPath] of [
+  ["redirect", "DIRECT_ROUTE_TIMEOUT", "/login"],
+  ["overlay", "DIRECT_ROUTE_TIMEOUT", "/orders"],
+]) {
+  test(`${mode} failure persists final browser state before throwing`, async t => {
+    const fixture = await runQualificationFixture(t, mode);
+    await assert.rejects(() => qualifyAccount(fixture.options), /did not reach \/orders/);
+    const evidence = JSON.parse(fs.readFileSync(path.join(fixture.directory, "immutable-manager-access-evidence.json"), "utf8"));
+    assert.equal(evidence.passed, false);
+    assert.equal(evidence.failureClassification, classification);
+    assert.equal(evidence.finalState.path, expectedPath);
+    assert.equal(evidence.finalUrl, `${base}${expectedPath}`);
+    assert.equal(evidence.screenshot.captured, true);
+    assert.equal(evidence.navigationObservations.at(-1).result.loaderId, "direct-loader");
+    assert.equal(evidence.serviceWorkerReady, true);
+    assert.equal(fixture.wasClosed(), true);
+  });
+}
+
+test("same-origin HTTP failure is classified and persisted after rendering", async t => {
+  const fixture = await runQualificationFixture(t, "http");
+  await assert.rejects(() => qualifyAccount(fixture.options), /SAME_ORIGIN_HTTP_ERROR/);
+  const evidence = JSON.parse(fs.readFileSync(path.join(fixture.directory, "immutable-manager-access-evidence.json"), "utf8"));
+  assert.equal(evidence.failureClassification, "QUALIFICATION_FAILED");
+  assert.equal(evidence.finalState.path, "/orders");
+  assert.equal(evidence.httpErrors.length, 1);
+  assert.equal(evidence.httpErrors[0].status, 404);
+  assert.ok(evidence.blockers.includes("SAME_ORIGIN_HTTP_ERROR"));
+});
+
+test("timeout evidence is sanitized, complete, and cleanup is deterministic", async t => {
+  const fixture = await runQualificationFixture(t, "timeout");
+  await assert.rejects(() => qualifyAccount(fixture.options), /did not reach \/orders/);
+  const evidencePath = path.join(fixture.directory, "immutable-manager-access-evidence.json");
+  const text = fs.readFileSync(evidencePath, "utf8"), evidence = JSON.parse(text);
+  assert.equal(text.includes("top-secret"), false);
+  assert.equal(text.includes("manager@example.com"), false);
+  assert.equal(evidence.requestInventory[0].path, "/orders");
+  assert.deepEqual(evidence.requestInventory[0].queryParameterNames, ["token"]);
+  assert.deepEqual(evidence.requestInventory[0].credentialHeaderNames, ["authorization"]);
+  assert.equal(evidence.failureClassification, "DIRECT_ROUTE_TIMEOUT");
+  assert.equal(evidence.finalState.path, "/login");
+  assert.equal(evidence.observableAuthentication.accessResolved, false);
+  assert.equal(evidence.screenshot.captured, true);
+  assert.equal(fixture.wasClosed(), true);
+  assert.equal(fixture.profileRemoved(), true);
+});
+
+test("navigation exceptions persist the failed attempt before propagating", async t => {
+  const fixture = await runQualificationFixture(t, "navigate-error");
+  await assert.rejects(() => qualifyAccount(fixture.options), /navigation failed/);
+  const text = fs.readFileSync(path.join(fixture.directory, "immutable-manager-access-evidence.json"), "utf8"), evidence = JSON.parse(text);
+  assert.equal(text.includes("top-secret"), false);
+  assert.equal(evidence.failureClassification, "DIRECT_ROUTE_NAVIGATION_FAILED");
+  assert.equal(evidence.navigationObservations.at(-1).result, null);
+  assert.equal(evidence.navigationObservations.at(-1).error, "navigation failed token=[REDACTED]");
+  assert.ok(evidence.navigationObservations.at(-1).completedAt);
+  assert.equal(evidence.screenshot.captured, true);
 });

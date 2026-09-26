@@ -534,8 +534,8 @@ test("authority rejects missing, placeholder, contradictory, and unapproved inpu
 });
 
 test("new run owns isolated authority and evidence identities", () => {
-  assert.equal(SUPPORT.runId, "ruip6ad_20260926k");
-  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260926k");
+  assert.equal(SUPPORT.runId, "ruip6ad_20260927l");
+  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260927l");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925a");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925b");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925c");
@@ -546,6 +546,7 @@ test("new run owns isolated authority and evidence identities", () => {
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260926h");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260926i");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260926j");
+  assert.notEqual(SUPPORT.runId, "ruip6ad_20260926k");
   for (const suffix of ["20260925a", "20260925b", "20260925c", "20260925d", "20260925e", "20260926f", "20260926g", "20260926h", "20260926i", "20260926j"]) assert.ok(!SUPPORT.evidenceDirectory.includes(suffix));
 });
 

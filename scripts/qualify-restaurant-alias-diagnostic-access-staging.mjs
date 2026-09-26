@@ -52,6 +52,41 @@ export function sanitizeResponse(response) {
   };
 }
 
+export function sanitizeDiagnosticText(value) {
+  return String(value || "")
+    .replace(/Bearer\s+[^\s"']+/gi, "Bearer [REDACTED]")
+    .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, "[REDACTED_JWT]")
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[REDACTED_EMAIL]")
+    .replace(/\b(authorization|cookie|password|token|api[-_]?key)\s*[:=]\s*[^\s,;]+/gi, "$1=[REDACTED]");
+}
+
+export function sanitizeObservedUrl(value) {
+  try {
+    const url = new URL(value);
+    for (const key of [...url.searchParams.keys()]) url.searchParams.set(key, "[REDACTED]");
+    url.hash = "";
+    return url.href;
+  } catch { return null; }
+}
+
+const sanitizePageState = state => state && typeof state === "object" ? {
+  ...state,
+  url: sanitizeObservedUrl(state.url),
+  diagnostic: state.diagnostic ? { ...state.diagnostic, errors: (state.diagnostic.errors || []).map(sanitizeDiagnosticText) } : state.diagnostic,
+} : state;
+
+const sanitizeNavigationResult = result => result ? {
+  frameId: result.frameId || null,
+  loaderId: result.loaderId || null,
+  errorText: result.errorText ? sanitizeDiagnosticText(result.errorText) : null,
+  isDownload: Boolean(result.isDownload),
+} : null;
+
+export function routeStateReady(state, expectedPath, { operational = false } = {}) {
+  if (state?.path !== expectedPath || !state.heading || state.blank || state.overlay) return false;
+  return !operational || Boolean(state.operational && state.diagnostic?.accessResolved);
+}
+
 class Cdp {
   constructor(socket) {
     this.socket = socket; this.identifier = 0; this.pending = new Map(); this.listeners = [];
@@ -145,20 +180,106 @@ export async function waitForServiceWorkerReady(evaluate, { attempts = 100, inte
   return { supported: false, ready: false, registrations: [], attempt: 0 };
 }
 
-export async function qualifyAccount({ accountName, account, expectedPath, directPath, baseUrl, directory, chromePath }) {
+export async function qualifyAccount({
+  accountName,
+  account,
+  expectedPath,
+  directPath,
+  baseUrl,
+  directory,
+  chromePath,
+  openChromeImpl = openChrome,
+  closeChromeImpl = closeChrome,
+  sleep = delay,
+  waitAttempts = 600,
+  waitIntervalMs = 50,
+}) {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), `restaurant-alias-diagnostic-${accountName}-`));
-  let browser;
+  let browser, version, cdp, evaluate, snapshot, authenticated = null, restored = null, serviceWorker = null, mainCount = null;
+  let evidencePersisted = false, stage = "BROWSER_START", failureClassification = "BROWSER_QUALIFICATION_EXCEPTION", qualificationBlockers = [];
+  const exceptions = [], consoleErrors = [], failedRequests = [], httpErrors = [], responses = [], requests = [], lifecycle = [], navigations = [];
+  const evidencePath = path.join(directory, `immutable-${accountName}-access-evidence.json`);
+  const screenshotName = `immutable-${accountName}-access.png`, screenshotPath = path.join(directory, screenshotName);
+
+  const captureScreenshot = async () => {
+    if (!cdp) return { file: screenshotName, captured: false, error: "CDP_UNAVAILABLE" };
+    try {
+      const screenshot = await cdp.send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
+      fs.writeFileSync(screenshotPath, Buffer.from(screenshot.data, "base64"), { mode: 0o600 });
+      return { file: screenshotName, captured: true, sha256: sha256(fs.readFileSync(screenshotPath)) };
+    } catch (error) {
+      return { file: screenshotName, captured: false, error: sanitizeDiagnosticText(error?.message || error) };
+    }
+  };
+  const observeServiceWorker = async () => serviceWorker || (evaluate
+    ? waitForServiceWorkerReady(evaluate, { attempts: 1, intervalMs: 0, sleep })
+    : { supported: false, ready: false, registrations: [], attempt: 0, error: "EVALUATOR_UNAVAILABLE" });
+  const persistFailure = async error => {
+    if (evidencePersisted) return;
+    const finalState = snapshot
+      ? await snapshot().catch(snapshotError => ({ evaluationError: sanitizeDiagnosticText(snapshotError?.message || snapshotError) }))
+      : null;
+    const finalServiceWorker = await observeServiceWorker();
+    const screenshot = await captureScreenshot();
+    const failure = {
+      schemaVersion: 2,
+      capturedAt: new Date().toISOString(),
+      passed: false,
+      account: accountName,
+      stage,
+      failureClassification,
+      error: sanitizeDiagnosticText(error?.message || error),
+      browser: version?.Browser || null,
+      browserPort: browser?.port || null,
+      profileOwnedEndpoint: Boolean(browser),
+      expectedPath,
+      directPath,
+      finalUrl: finalState?.url || null,
+      finalState,
+      authenticated,
+      restored,
+      mainCount,
+      observableAuthentication: {
+        loginFormVisible: Boolean(finalState?.loginFormVisible),
+        accessResolved: Boolean(finalState?.diagnostic?.accessResolved),
+        operationalRuntimeVisible: Boolean(finalState?.operational),
+      },
+      navigationObservations: navigations,
+      lifecycleObservations: lifecycle,
+      uncaughtErrors: exceptions.map(sanitizeDiagnosticText),
+      consoleErrors: consoleErrors.map(sanitizeDiagnosticText),
+      failedRequests,
+      httpErrors,
+      responseInventory: responses,
+      requestInventory: requests,
+      serviceWorker: finalServiceWorker,
+      serviceWorkerReady: Boolean(finalServiceWorker.ready),
+      screenshot,
+      blockers: qualificationBlockers.length ? qualificationBlockers : [failureClassification],
+      credentialValuesPersisted: false,
+    };
+    atomicWrite(evidencePath, failure);
+    evidencePersisted = true;
+  };
+
   try {
-    browser = await openChrome(chromePath, profile);
-    const { version, cdp } = browser;
-    await Promise.all([cdp.send("Page.enable"), cdp.send("Runtime.enable"), cdp.send("Network.enable"), cdp.send("Accessibility.enable")]);
+    browser = await openChromeImpl(chromePath, profile);
+    ({ version, cdp } = browser);
+    stage = "BROWSER_INITIALIZATION";
+    await Promise.all([
+      cdp.send("Page.enable"),
+      cdp.send("Runtime.enable"),
+      cdp.send("Network.enable"),
+      cdp.send("Accessibility.enable"),
+      cdp.send("Page.setLifecycleEventsEnabled", { enabled: true }),
+    ]);
     await cdp.send("Emulation.setDeviceMetricsOverride", { width: 1024, height: 768, deviceScaleFactor: 1, mobile: false });
     await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: `window.__diagnostic={navigations:[],mutations:0,errors:[],accessResolved:false,protectedBeforeReady:false};const originalFetch=window.fetch.bind(window);window.fetch=async(...args)=>{const response=await originalFetch(...args);try{const requestUrl=new URL(typeof args[0]==='string'?args[0]:args[0].url,location.href);if(requestUrl.pathname.endsWith('/get_my_access_context_v1'))window.__diagnostic.accessResolved=true}catch{}return response};for(const key of ['pushState','replaceState']){const original=history[key];history[key]=function(...args){const result=original.apply(this,args);__diagnostic.navigations.push({type:key,path:location.pathname});return result}}addEventListener('popstate',()=>__diagnostic.navigations.push({type:'popstate',path:location.pathname}));addEventListener('error',event=>__diagnostic.errors.push(String(event.error?.message||event.message)));addEventListener('unhandledrejection',event=>__diagnostic.errors.push(String(event.reason?.message||event.reason)));addEventListener('DOMContentLoaded',()=>new MutationObserver(()=>{__diagnostic.mutations++;const main=document.querySelector('.app-shell main');if(main&&!__diagnostic.accessResolved)__diagnostic.protectedBeforeReady=true}).observe(document.body,{subtree:true,childList:true,attributes:true}));` });
-    const exceptions = [], consoleErrors = [], failedRequests = [], httpErrors = [], responses = [], requests = [];
     cdp.on(message => {
-      if (message.method === "Runtime.exceptionThrown") exceptions.push(message.params.exceptionDetails?.exception?.description || message.params.exceptionDetails?.text);
-      if (message.method === "Runtime.consoleAPICalled" && ["error", "assert"].includes(message.params.type)) consoleErrors.push(message.params.args.map(value => value.value || value.description || value.type).join(" "));
-      if (message.method === "Network.loadingFailed" && !String(message.params.errorText || "").includes("ERR_ABORTED") && message.params.type !== "Other") failedRequests.push({ type: message.params.type, errorText: message.params.errorText });
+      if (message.method === "Page.lifecycleEvent") lifecycle.push({ observedAt: new Date().toISOString(), name: message.params.name, frameId: message.params.frameId || null, loaderId: message.params.loaderId || null });
+      if (message.method === "Runtime.exceptionThrown") exceptions.push(sanitizeDiagnosticText(message.params.exceptionDetails?.exception?.description || message.params.exceptionDetails?.text));
+      if (message.method === "Runtime.consoleAPICalled" && ["error", "assert"].includes(message.params.type)) consoleErrors.push(sanitizeDiagnosticText(message.params.args.map(value => value.value || value.description || value.type).join(" ")));
+      if (message.method === "Network.loadingFailed" && !String(message.params.errorText || "").includes("ERR_ABORTED") && message.params.type !== "Other") failedRequests.push({ type: message.params.type, errorText: sanitizeDiagnosticText(message.params.errorText) });
       if (message.method === "Network.requestWillBeSent") requests.push({ observedAt: new Date().toISOString(), requestId: message.params.requestId, type: message.params.type, ...sanitizeRequest(message.params.request) });
       if (message.method === "Network.responseReceived") {
         const response = message.params.response, row = { observedAt: new Date().toISOString(), requestId: message.params.requestId, type: message.params.type, ...sanitizeResponse(response) };
@@ -167,38 +288,97 @@ export async function qualifyAccount({ accountName, account, expectedPath, direc
         if (new URL(response.url).pathname.endsWith("/get_my_access_context_v1")) cdp.send("Runtime.evaluate", { expression: "window.__diagnostic.accessResolved=true" }).catch(() => {});
       }
     });
-    const evaluate = async expression => { const result = await cdp.send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true }); if (result.exceptionDetails) throw new Error(result.exceptionDetails.exception?.description || result.exceptionDetails.text); return result.result.value; };
-    const snapshot = () => evaluate(`({path:location.pathname,heading:document.querySelector('main h1')?.textContent?.trim()||null,blank:!document.body.innerText.trim(),operational:Boolean(document.querySelector('.app-shell main')),earningsLink:Boolean(document.querySelector('a[href="/earnings"]')),diagnostic:window.__diagnostic})`);
-    const waitFor = async expected => { for (let attempt = 0; attempt < 600; attempt += 1) { const state = await snapshot().catch(() => null); if (state?.path === expected && state.heading && !state.blank) return state; await delay(50); } throw new Error(`${accountName} did not reach ${expected}.`); };
-    await cdp.send("Page.navigate", { url: new URL("/dashboard", baseUrl).href });
-    for (let attempt = 0; attempt < 600 && !(await evaluate("!!document.querySelector('input[type=email]')").catch(() => false)); attempt += 1) await delay(50);
+    evaluate = async expression => {
+      const result = await cdp.send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true });
+      if (result.exceptionDetails) throw new Error(result.exceptionDetails.exception?.description || result.exceptionDetails.text);
+      return result.result.value;
+    };
+    snapshot = () => evaluate(`({url:location.href,path:location.pathname,heading:document.querySelector('main h1')?.textContent?.trim()||null,blank:!document.body.innerText.trim(),operational:Boolean(document.querySelector('.app-shell main')),overlay:Boolean(document.querySelector('.access-overlay')),loginFormVisible:Boolean(document.querySelector('input[type=email]')),earningsLink:Boolean(document.querySelector('a[href="/earnings"]')),diagnostic:window.__diagnostic||{navigations:[],mutations:0,errors:[],accessResolved:false,protectedBeforeReady:false}})`).then(sanitizePageState);
+    const waitFor = async (expected, options = {}) => {
+      let lastState = null;
+      for (let attempt = 1; attempt <= waitAttempts; attempt += 1) {
+        lastState = await snapshot().catch(error => ({ evaluationError: sanitizeDiagnosticText(error?.message || error) }));
+        if (routeStateReady(lastState, expected, options)) return lastState;
+        if (attempt < waitAttempts) await sleep(waitIntervalMs);
+      }
+      const error = new Error(`${accountName} did not reach ${expected}.`);
+      error.lastState = lastState;
+      throw error;
+    };
+    const navigate = async (navigationStage, requestedUrl, operation) => {
+      const observation = { stage: navigationStage, requestedUrl, startedAt: new Date().toISOString(), completedAt: null, result: null, error: null };
+      navigations.push(observation);
+      try {
+        const result = await operation();
+        observation.result = sanitizeNavigationResult(result);
+        observation.completedAt = new Date().toISOString();
+        return result;
+      } catch (error) {
+        observation.error = sanitizeDiagnosticText(error?.message || error);
+        observation.completedAt = new Date().toISOString();
+        failureClassification = navigationStage === "DIRECT_ROUTE_RESTORATION"
+          ? "DIRECT_ROUTE_NAVIGATION_FAILED"
+          : navigationStage === "SESSION_RESTORATION"
+            ? "SESSION_RELOAD_FAILED"
+            : "INITIAL_NAVIGATION_FAILED";
+        throw error;
+      }
+    };
+
+    stage = "LOGIN_FORM";
+    const initialUrl = new URL("/dashboard", baseUrl).href;
+    await navigate(stage, initialUrl, () => cdp.send("Page.navigate", { url: initialUrl }));
+    for (let attempt = 0; attempt < waitAttempts && !(await evaluate("!!document.querySelector('input[type=email]')").catch(() => false)); attempt += 1) await sleep(waitIntervalMs);
     if (!(await evaluate("!!document.querySelector('input[type=email]')"))) {
-      const preLogin = await snapshot().catch(() => null);
-      const failure = { schemaVersion: 1, capturedAt: new Date().toISOString(), passed: false, account: accountName, stage: "LOGIN_FORM", browser: version.Browser, browserPort: browser.port, profileOwnedEndpoint: true, expectedPath, directPath, preLogin, uncaughtErrors: exceptions, consoleErrors, failedRequests, httpErrors, responseInventory: responses, requestInventory: requests, blockers: ["LOGIN_FORM_UNAVAILABLE"], credentialValuesPersisted: false };
-      atomicWrite(path.join(directory, `immutable-${accountName}-access-evidence.json`), failure);
+      failureClassification = "LOGIN_FORM_UNAVAILABLE";
       throw new Error(`${accountName} login form unavailable.`);
     }
-    await evaluate("document.querySelector('input[type=email]').focus()"); await cdp.send("Input.insertText", { text: account.email });
-    await evaluate("document.querySelector('input[type=password]').focus()"); await cdp.send("Input.insertText", { text: account.password });
+    await evaluate("document.querySelector('input[type=email]').focus()");
+    await cdp.send("Input.insertText", { text: account.email });
+    await evaluate("document.querySelector('input[type=password]').focus()");
+    await cdp.send("Input.insertText", { text: account.password });
     await evaluate("document.querySelector('button[type=submit],form button')?.click()");
-    const authenticated = await waitFor(expectedPath);
-    let restored = null;
-    if (directPath) { await cdp.send("Page.navigate", { url: new URL(directPath, baseUrl).href }); restored = await waitFor(directPath); }
-    else { await cdp.send("Page.reload", { ignoreCache: true }); restored = await waitFor(expectedPath); }
+
+    stage = "AUTHENTICATED_ROUTE";
+    failureClassification = "AUTHENTICATED_ROUTE_TIMEOUT";
+    authenticated = await waitFor(expectedPath, { operational: expectedPath === "/dashboard" });
+    if (directPath) {
+      stage = "DIRECT_ROUTE_RESTORATION";
+      failureClassification = "DIRECT_ROUTE_TIMEOUT";
+      const requestedUrl = new URL(directPath, baseUrl).href;
+      await navigate(stage, requestedUrl, () => cdp.send("Page.navigate", { url: requestedUrl }));
+      restored = await waitFor(directPath, { operational: true });
+    } else {
+      stage = "SESSION_RESTORATION";
+      failureClassification = "SESSION_RESTORATION_TIMEOUT";
+      const requestedUrl = new URL(expectedPath, baseUrl).href;
+      await navigate(stage, requestedUrl, () => cdp.send("Page.reload", { ignoreCache: true }));
+      restored = await waitFor(expectedPath);
+    }
+
+    stage = "QUALIFICATION";
+    failureClassification = "QUALIFICATION_FAILED";
     const ax = await cdp.send("Accessibility.getFullAXTree");
-    const mainCount = ax.nodes.filter(node => !node.ignored && node.role?.value === "main").length;
+    mainCount = ax.nodes.filter(node => !node.ignored && node.role?.value === "main").length;
     const accessRequests = requests.filter(request => request.path.endsWith("/get_my_access_context_v1")).length;
-    const serviceWorker = await waitForServiceWorkerReady(evaluate);
+    serviceWorker = await waitForServiceWorkerReady(evaluate);
     const serviceWorkerReady = serviceWorker.ready;
     const decision = evaluateBrowserQualification({ accountName, expectedPath, directPath, baseUrl, authenticated, restored, mainCount, exceptions, consoleErrors, failedRequests, httpErrors, requests, serviceWorkerReady });
-    const accountEvidence = { schemaVersion: 1, capturedAt: new Date().toISOString(), passed: decision.passed, account: accountName, browser: version.Browser, expectedPath, directPath, authenticated, restored, mainCount, accessRequests, earningsRequests: decision.earningsRequests, uncaughtErrors: decision.errors, failedRequests, httpErrors: decision.httpErrors, ignoredOptionalHttpErrors: decision.ignoredOptionalHttpErrors, unexpectedRequests: decision.unexpectedRequests, responseInventory: responses, serviceWorker, serviceWorkerReady, requestInventory: requests, blockers: decision.blockers, credentialValuesPersisted: false };
-    atomicWrite(path.join(directory, `immutable-${accountName}-access-evidence.json`), accountEvidence);
+    qualificationBlockers = decision.blockers;
     if (!decision.passed) throw new Error(`${accountName} immutable access qualification failed: ${decision.blockers.join(",")}.`);
-    const screenshot = await cdp.send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
-    const screenshotName = `immutable-${accountName}-access.png`, screenshotPath = path.join(directory, screenshotName);
-    fs.writeFileSync(screenshotPath, Buffer.from(screenshot.data, "base64"), { mode: 0o600 });
-    return { ...accountEvidence, screenshot: { file: screenshotName, sha256: sha256(fs.readFileSync(screenshotPath)) } };
-  } finally { if (browser) await closeChrome(browser); fs.rmSync(profile, { recursive: true, force: true }); }
+    const screenshot = await captureScreenshot();
+    if (!screenshot.captured) throw new Error(`${accountName} screenshot capture failed.`);
+    const accountEvidence = { schemaVersion: 2, capturedAt: new Date().toISOString(), passed: true, account: accountName, browser: version.Browser, expectedPath, directPath, authenticated, restored, mainCount, accessRequests, earningsRequests: decision.earningsRequests, uncaughtErrors: decision.errors, failedRequests, httpErrors: decision.httpErrors, ignoredOptionalHttpErrors: decision.ignoredOptionalHttpErrors, unexpectedRequests: decision.unexpectedRequests, responseInventory: responses, serviceWorker, serviceWorkerReady, requestInventory: requests, navigationObservations: navigations, lifecycleObservations: lifecycle, screenshot, blockers: [], credentialValuesPersisted: false };
+    atomicWrite(evidencePath, accountEvidence);
+    evidencePersisted = true;
+    return accountEvidence;
+  } catch (error) {
+    await persistFailure(error);
+    throw error;
+  } finally {
+    if (browser) await closeChromeImpl(browser);
+    fs.rmSync(profile, { recursive: true, force: true });
+  }
 }
 
 export async function runAccessQualification(argv = process.argv.slice(2)) {
