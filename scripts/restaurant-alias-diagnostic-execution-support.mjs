@@ -17,20 +17,16 @@ import {
 import { sanitizeError } from "./restaurant-alias-parity-verifier.mjs";
 
 export const SUPPORT = Object.freeze({
-  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260926h-run-binding-contract.md",
-  proposalSha256: "9eaaa418496ddd838ad5464d7393bbc25a094084b9a6374f51058a283a9ae4bd",
-  baseCheckpoint: "7262b4815ded41845f7cd431704ac3594933f70b",
-  baseSourceManifestSha256: "b8a19211bc1421ce4ce51517afdab01970aeb5171753596b93c84d2bab7ceb2f",
-  baseSourceManifestFiles: 1530,
+  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260926i-run-binding-contract.md",
+  proposalSha256: "038183d452ae0ad65319e5b7bb7fcc45c2c59f49a20f407c645733b0c3cac9a7",
+  baseCheckpoint: "a93735ede9be8e8177e7034afdf9f19b3c176c3d",
+  baseSourceManifestSha256: "96916aff299d24d367b637c41ce3094e440f69db06c6dd5c192b368f43f561e6",
+  baseSourceManifestFiles: 1533,
   checkpointFiles: Object.freeze([
-    "docs/restaurant-expo-alias-pending-access-firebase-finalization-remediation-report.md",
-    "docs/restaurant-expo-alias-pending-access-firebase-finalization-remediation.diff",
-    "docs/restaurant-expo-alias-ruip6ad-20260926h-run-binding-contract.md",
-    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs",
-    "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs",
+    "docs/restaurant-expo-alias-firebase-admin-dependency-correction-report.md",
+    "docs/restaurant-expo-alias-firebase-admin-dependency-correction.diff",
+    "docs/restaurant-expo-alias-ruip6ad-20260926i-run-binding-contract.md",
     "scripts/restaurant-alias-diagnostic-execution-support.mjs",
-    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs",
-    "scripts/test-restaurant-alias-diagnostic-access-staging.mjs",
     "scripts/test-restaurant-alias-diagnostic-execution-support.mjs",
   ]),
   acceptedLineage: Object.freeze([
@@ -188,6 +184,23 @@ export const SUPPORT = Object.freeze({
         "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "89b1225469e7f8e41f7046580339218a396a38847ef817dab76ab214051dbf05",
       }),
     }),
+    Object.freeze({
+      commit: "a93735ede9be8e8177e7034afdf9f19b3c176c3d",
+      parent: "7262b4815ded41845f7cd431704ac3594933f70b",
+      sourceManifestSha256: "96916aff299d24d367b637c41ce3094e440f69db06c6dd5c192b368f43f561e6",
+      sourceManifestFiles: 1533,
+      files: Object.freeze({
+        "docs/restaurant-expo-alias-pending-access-firebase-finalization-remediation-report.md": "83abfadba24f6fb1e7838775e95774821326c81aba67a4eeb79d4c06a5b4bd00",
+        "docs/restaurant-expo-alias-pending-access-firebase-finalization-remediation.diff": "60a0f3d3411afa303cf28181a4ecfcf9b52ce301957834f971daabdc0875bb77",
+        "docs/restaurant-expo-alias-ruip6ad-20260926h-run-binding-contract.md": "9eaaa418496ddd838ad5464d7393bbc25a094084b9a6374f51058a283a9ae4bd",
+        "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "befeeeb14b81aa969b9ba62951df52d1e3b9d0d54b111f094206d578db675025",
+        "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "e2621bd4f6f300daf3a9c997990c244680b8e09bf7b7801dbd2d65d59c593828",
+        "scripts/restaurant-alias-diagnostic-execution-support.mjs": "d9246b103665fc71db72b0c9b041391dc938f6d363ca8ac6ce51726824bf2add",
+        "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "f04b10d579767ea03a22b1dea4fef144087ea6099ab93a851c3e2be3fb88c3c7",
+        "scripts/test-restaurant-alias-diagnostic-access-staging.mjs": "01a4a6c21809133620fd1610c3a7fd5e7d8d499b1438b76d8c0a9c26d19cd51c",
+        "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "a7229b45a05b61daddc1787e0d9680040b631cf1b7a4004141e4b6875a75bc48",
+      }),
+    }),
   ]),
   diagnosticExecutableFiles: Object.freeze({
     "scripts/restaurant-alias-parity-verifier.mjs": "e563d7a5203aaf6ea0e04687063d63027568fd2906accec43c26daaeea4ca1d8",
@@ -198,8 +211,8 @@ export const SUPPORT = Object.freeze({
     "scripts/test-restaurant-alias-diagnostic-access-staging.mjs": "01a4a6c21809133620fd1610c3a7fd5e7d8d499b1438b76d8c0a9c26d19cd51c",
   }),
   applicationTree: DIAGNOSTIC_OPERATOR.applicationTree,
-  runId: "ruip6ad_20260926h",
-  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260926h",
+  runId: "ruip6ad_20260926i",
+  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260926i",
   authorityDirectory: "secure/restaurant-alias-diagnostic-authority",
   migrationFunctions: Object.freeze({
     "private.raise_restaurant_order_conflict_v1(text)": Object.freeze({
@@ -236,6 +249,43 @@ const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 const canonical = value => JSON.stringify(value, null, 2) + "\n";
 const placeholder = value => typeof value !== "string" || !value.trim() || /<[^>]+>|placeholder|todo|replace[_ -]?me|example authorization/i.test(value);
 const iso = milliseconds => new Date(milliseconds).toISOString();
+
+export function verifyLocalDiagnosticPrerequisites({
+  root,
+  chromePath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  requireFactory = createRequire,
+} = {}) {
+  if (!root) throw new Error("Repository root is required for local prerequisite verification.");
+  const functionsRoot = path.join(root, "functions");
+  const packagePath = path.join(functionsRoot, "package.json");
+  const lockPath = path.join(functionsRoot, "package-lock.json");
+  const installedPackagePath = path.join(functionsRoot, "node_modules/firebase-admin/package.json");
+  for (const file of [packagePath, lockPath, installedPackagePath, chromePath]) {
+    if (!fs.existsSync(file)) throw new Error(`Required local diagnostic prerequisite is missing: ${path.relative(root, file) || file}.`);
+  }
+  const packageJson = JSON.parse(fs.readFileSync(packagePath, "utf8"));
+  const lock = JSON.parse(fs.readFileSync(lockPath, "utf8"));
+  const installed = JSON.parse(fs.readFileSync(installedPackagePath, "utf8"));
+  const lockedAdmin = lock.packages?.["node_modules/firebase-admin"]?.version;
+  const lockedFunctions = lock.packages?.["node_modules/firebase-functions"]?.version;
+  if (lock.lockfileVersion !== 3 || lockedAdmin !== installed.version || packageJson.dependencies?.["firebase-admin"] !== lock.packages?.[""]?.dependencies?.["firebase-admin"] || packageJson.dependencies?.["firebase-functions"] !== lock.packages?.[""]?.dependencies?.["firebase-functions"] || !lockedFunctions) throw new Error("Functions dependencies do not match the exact lockfile-defined installation.");
+  const functionsRequire = requireFactory(packagePath);
+  const adminApp = functionsRequire("firebase-admin/app");
+  const adminExports = ["cert", "initializeApp", "deleteApp", "getApps"];
+  if (adminExports.some(name => typeof adminApp[name] !== "function")) throw new Error("firebase-admin/app does not expose the required diagnostic lifecycle API.");
+  functionsRequire.resolve("firebase-functions");
+  if (typeof fetch !== "function" || typeof WebSocket !== "function") throw new Error("The diagnostic Node runtime lacks required fetch or WebSocket support.");
+  const nodeMajor = Number(process.versions.node.split(".")[0]);
+  if (!Number.isSafeInteger(nodeMajor) || nodeMajor < 22) throw new Error("Node 22 or newer is required for the diagnostic operator.");
+  return {
+    passed: true,
+    firebaseAdminVersion: lockedAdmin,
+    firebaseFunctionsVersion: lockedFunctions,
+    firebaseAdminApp: functionsRequire.resolve("firebase-admin/app"),
+    chromePath,
+    node: process.versions.node,
+  };
+}
 
 export function sanitizeSupportError(error) {
   return sanitizeError(error);
@@ -1150,8 +1200,8 @@ export function createHostedReaders({ root, runId, runDirectory, evidencePrefix,
     persistEvidence(firebaseLifecyclePath, { schemaVersion: 1, runId, stage: evidencePrefix, events: firebaseLifecycleEvents });
   };
   if (!firebaseApp) {
-    const require = createRequire(import.meta.url);
-    const adminApp = require(path.join(root, "functions/node_modules/firebase-admin/app"));
+    const functionsRequire = createRequire(path.join(root, "functions/package.json"));
+    const adminApp = functionsRequire("firebase-admin/app");
     firebaseCredentialProvider = adminApp.cert(firebaseCredential);
     const appName = "alias-support-" + runId + "-" + Date.now();
     firebaseApp = adminApp.initializeApp({ credential: firebaseCredentialProvider, projectId: DIAGNOSTIC_OPERATOR.firebaseProjectId }, appName);
@@ -1223,6 +1273,7 @@ export async function runSupport(argv = process.argv.slice(2), dependencies = {}
   const { action, values } = parseOptions(argv);
   const root = path.resolve(import.meta.dirname, "..");
   if (action === "prepare-authority") {
+    (dependencies.prerequisiteVerifier || verifyLocalDiagnosticPrerequisites)({ root });
     const approval = JSON.parse(fs.readFileSync(path.resolve(required(values.approval, "Approval path")), "utf8"));
     const output = path.resolve(required(values.output, "Authority output directory"));
     return prepareAuthorityArtifacts({ repoRoot: root, approval, outputDirectory: output, spawn: dependencies.spawnSync || spawnSync });

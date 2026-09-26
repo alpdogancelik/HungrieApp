@@ -26,11 +26,13 @@ import {
   recordDeploymentUncertainty,
   reconcileDeploymentObservation,
   registerSingleDeployment,
+  runSupport,
   sanitizeSupportError,
   validateOwnerAuthorization,
   verifyAcceptedCheckpointLineage,
   verifyAcceptedDiagnosticExecutables,
   verifyFreshRollbackRecapture,
+  verifyLocalDiagnosticPrerequisites,
   verifyReviewedCandidateCheckpoint,
 } from "./restaurant-alias-diagnostic-execution-support.mjs";
 import { DIAGNOSTIC_OPERATOR, rollbackContractDigest } from "./deploy-restaurant-alias-10-minute-diagnostic-staging.mjs";
@@ -45,6 +47,38 @@ const fakeBlob = Buffer.from("fixture\n");
 const fakeManifestBytes = Buffer.from(hash(fakeBlob) + "\t" + fakeBlob.length + "\tsupport.txt\n");
 const fakeSourceManifestSha256 = hash(fakeManifestBytes);
 const protectedRows = DIAGNOSTIC_OPERATOR.protectedEvidence.map(value => ({ ...value, passed: true }));
+
+test("actual diagnostic execution context resolves exact locked local dependencies", () => {
+  const result = verifyLocalDiagnosticPrerequisites({ root });
+  assert.equal(result.passed, true);
+  assert.equal(result.firebaseAdminVersion, "13.8.0");
+  assert.equal(result.firebaseFunctionsVersion, "7.2.5");
+  assert.match(result.firebaseAdminApp, /functions\/node_modules\/firebase-admin\/lib\/app\/index\.js$/);
+});
+
+test("local prerequisite verification rejects a missing or mismatched lockfile installation", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-prerequisites-"));
+  try {
+    const functionsRoot = path.join(directory, "functions"), installedRoot = path.join(functionsRoot, "node_modules/firebase-admin");
+    fs.mkdirSync(installedRoot, { recursive: true });
+    fs.writeFileSync(path.join(directory, "chrome"), "fixture");
+    fs.writeFileSync(path.join(functionsRoot, "package.json"), canonical({ dependencies: { "firebase-admin": "^13.8.0", "firebase-functions": "^7.2.5" } }));
+    fs.writeFileSync(path.join(functionsRoot, "package-lock.json"), canonical({ lockfileVersion: 3, packages: { "": { dependencies: { "firebase-admin": "^13.8.0", "firebase-functions": "^7.2.5" } }, "node_modules/firebase-admin": { version: "13.8.0" }, "node_modules/firebase-functions": { version: "7.2.5" } } }));
+    fs.writeFileSync(path.join(installedRoot, "package.json"), canonical({ version: "13.7.0" }));
+    assert.throws(() => verifyLocalDiagnosticPrerequisites({ root: directory, chromePath: path.join(directory, "chrome"), requireFactory: () => { throw new Error("must not resolve mismatched installation"); } }), /lockfile-defined installation/i);
+    fs.rmSync(path.join(installedRoot, "package.json"));
+    assert.throws(() => verifyLocalDiagnosticPrerequisites({ root: directory, chromePath: path.join(directory, "chrome") }), /missing/i);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("authority preparation cannot consume approval before prerequisite readiness passes", async () => {
+  let calls = 0;
+  await assert.rejects(
+    () => runSupport(["prepare-authority", "--approval=/not-read.json", "--output=/not-written"], { prerequisiteVerifier: () => { calls += 1; throw new Error("synthetic local prerequisite failure"); } }),
+    /synthetic local prerequisite failure/,
+  );
+  assert.equal(calls, 1);
+});
 
 function approval(overrides = {}) {
   const authorizationText = `I authorize the one-run Staging diagnostic ${SUPPORT.runId}, including independent rollback, while Earnings remains disabled and Development and Production remain prohibited.`;
@@ -429,8 +463,8 @@ test("authority rejects missing, placeholder, contradictory, and unapproved inpu
 });
 
 test("new run owns isolated authority and evidence identities", () => {
-  assert.equal(SUPPORT.runId, "ruip6ad_20260926h");
-  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260926h");
+  assert.equal(SUPPORT.runId, "ruip6ad_20260926i");
+  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260926i");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925a");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925b");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925c");
@@ -678,7 +712,7 @@ test("terminal recording distinguishes no assignment, uncertain assignment, and 
       assert.equal(result.rollbackRequired, rollbackRequired);
       assert.equal(result.promotionRetryPermitted, false);
       if (expected === "not-attempted") assert.equal(JSON.parse(fs.readFileSync(path.join(directory, "promotion-attempt.json"), "utf8")).providerCommandInvoked, false);
-      if (rollbackRequired) assert.match(result.rollbackCommand, /:rollback:ruip6ad_20260926h/);
+      if (rollbackRequired) assert.match(result.rollbackCommand, new RegExp(`:rollback:${SUPPORT.runId}`));
       assert.throws(() => recordTerminalState({ runDirectory: directory, authority: authority(), classification: "ABORTED", reason: "again", capturedAt }), /overwrite prohibited/);
     } finally { fs.rmSync(directory, { recursive: true, force: true }); }
   }
@@ -735,7 +769,7 @@ test("real hosted-reader alias callback persists metadata failures without runti
     assert.equal(result.attempts.every(attempt => attempt.errors.some(row => row.stage === "metadata")), true);
     assert.equal(result.attempts.some(attempt => attempt.errors.some(row => /synthetic metadata transport failure/.test(row.error))), true, JSON.stringify(result.attempts[0], null, 2));
     const failedMetadata = result.attempts[0].observations.find(row => row.type === "metadata");
-    assert.match(failedMetadata.requestId, /^ruip6ad_20260926h:expo-alias-final-parity:1:/);
+    assert.match(failedMetadata.requestId, new RegExp(`^${SUPPORT.runId}:expo-alias-final-parity:1:`));
     assert.equal(failedMetadata.status, null);
     assert.match(failedMetadata.error, /synthetic metadata transport failure/);
     assert.ok(failedMetadata.startedAt && failedMetadata.completedAt);
@@ -898,7 +932,7 @@ test("final preflight requires verified fresh recapture and rejects altered evid
     directory => fs.rmSync(path.join(directory, "fresh-recapture-attempt.json")),
     directory => fs.rmSync(path.join(directory, "fresh-recapture-verification.json")),
     directory => { const file = path.join(directory, "fresh-recapture-attempt.json"); const value = JSON.parse(fs.readFileSync(file)); value.state = "READY_FOR_RECAPTURE"; fs.writeFileSync(file, canonical(value)); },
-    directory => fs.appendFileSync(path.join(directory, "rollback-history", "ruip6ad_20260926h_fresh-rollback-recapture", "rollback-reference.json"), " "),
+    directory => fs.appendFileSync(path.join(directory, "rollback-history", `${SUPPORT.runId}_fresh-rollback-recapture`, "rollback-reference.json"), " "),
     directory => { const file = path.join(directory, "rollback-reference.json"); const value = JSON.parse(fs.readFileSync(file)); value.criticalAssets.pop(); fs.writeFileSync(file, canonical(value)); },
   ]) {
     const fixture = finalFixture();
