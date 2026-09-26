@@ -19,29 +19,21 @@ import { verifyReadOnlyEasExportEvidence } from "./verify-restaurant-alias-produ
 
 export const SUPPORT = Object.freeze({
   historicalApplicationTree: "ae03238ac8c34f4ef11365b5a5c51dee81187812",
-  proposalPath: "docs/restaurant-expo-alias-ruip6ae-20260926l-read-only-eas-export-plan.md",
-  proposalSha256: "73023632e2e62feabb992100a76294df5bcfc10dc26a00700ccfe2634b9a3c9e",
-  baseCheckpoint: "eceac9a822f376af7b3f32c8131393d5634e2f5c",
-  baseSourceManifestSha256: "12b4cac7f8c0a209fbc0585bda67d0d110cd9735ccf992b09c241ed87b0c1dd1",
-  baseSourceManifestFiles: 1549,
+  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260926k-run-binding-contract.md",
+  proposalSha256: "e6a69f4235395a1107d0671abc0381b6d81629ae19a745b7c57f91e55f07c746",
+  baseCheckpoint: "041dc3ec4b0f4f1112bc0b052d7b86f59829f59e",
+  baseSourceManifestSha256: "fcf09671b2b7dcf25acfe7355be24b00cdd1dfd9f2b57406cde367eea60cf5e4",
+  baseSourceManifestFiles: 1559,
   checkpointFiles: Object.freeze([
-    "docs/restaurant-expo-alias-staging-public-build-input-contract.json",
-    "docs/restaurant-expo-alias-staging-public-build-input-evidence/candidate-artifact-manifest.json",
-    "docs/restaurant-expo-alias-staging-public-build-input-evidence/complete-artifact-comparison.json",
-    "docs/restaurant-expo-alias-staging-public-build-input-evidence/evidence-manifest.tsv",
-    "docs/restaurant-expo-alias-staging-public-build-input-evidence/restaurant-static-export.tar",
-    "docs/restaurant-expo-alias-staging-build-input-artifact-remediation-review.md",
-    "docs/restaurant-expo-alias-staging-build-input-artifact-remediation.diff",
-    "docs/restaurant-expo-alias-ruip6ae-20260926l-read-only-eas-export-plan.md",
-    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs",
+    "docs/restaurant-expo-alias-run-j-suspended-access-finalization-local-correction-report.md",
+    "docs/restaurant-expo-alias-run-j-suspended-access-finalization-local-correction.diff",
+    "docs/restaurant-expo-alias-ruip6ad-20260926k-run-binding-contract.md",
+    "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs",
     "scripts/restaurant-alias-diagnostic-execution-support.mjs",
-    "scripts/restaurant-alias-staging-public-build-inputs.mjs",
-    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs",
+    "scripts/test-restaurant-alias-diagnostic-access-staging.mjs",
     "scripts/test-restaurant-alias-diagnostic-execution-support.mjs",
-    "scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs",
-    "scripts/test-restaurant-alias-staging-public-build-inputs.mjs",
-    "scripts/verify-restaurant-alias-production-export-readiness.mjs",
   ]),
+
   acceptedLineage: Object.freeze([
     Object.freeze({
       commit: "1a64f4ddd59114af9ad8d7968bfdc9729f2f0e92",
@@ -266,6 +258,31 @@ export const SUPPORT = Object.freeze({
         "scripts/verify-restaurant-alias-production-export-readiness.mjs": "e061c83d72f3233909489c59e4981d08fb0ec6560e6aeaa461d0b2032ba4f1eb",
       }),
     }),
+    Object.freeze({
+      commit: "041dc3ec4b0f4f1112bc0b052d7b86f59829f59e",
+      parent: "eceac9a822f376af7b3f32c8131393d5634e2f5c",
+      sourceManifestSha256: "fcf09671b2b7dcf25acfe7355be24b00cdd1dfd9f2b57406cde367eea60cf5e4",
+      sourceManifestFiles: 1559,
+      applicationTree: "7430599b150adbd19ddafadce1195f1e418daf8a",
+      files: Object.freeze({
+        "docs/restaurant-expo-alias-ruip6ae-20260926l-read-only-eas-export-plan.md": "73023632e2e62feabb992100a76294df5bcfc10dc26a00700ccfe2634b9a3c9e",
+        "docs/restaurant-expo-alias-staging-build-input-artifact-remediation-review.md": "ad40fcb53448598f63a66bae913978f46f0ff5adeeff3f8ae3e83ded1cc8eaff",
+        "docs/restaurant-expo-alias-staging-build-input-artifact-remediation.diff": "6bf61c7bdaf2787b46c42e8e4f8ef9a20c220a9a03b81164c4410db8143db408",
+        "docs/restaurant-expo-alias-staging-public-build-input-contract.json": "f2c3e37d1e5699ea806e7fe2fd337aef4cb07ebb421ad2215209442546770c2e",
+        "docs/restaurant-expo-alias-staging-public-build-input-evidence/candidate-artifact-manifest.json": "406dbf42ba8c9fefb4f37c3edc36bbbfd24240ff242eae0e4c1d6ba1d66b41b1",
+        "docs/restaurant-expo-alias-staging-public-build-input-evidence/complete-artifact-comparison.json": "0316a14a1c8840691d27f7a2ed68c02938fd61dd8e6084136576a49da11e133a",
+        "docs/restaurant-expo-alias-staging-public-build-input-evidence/evidence-manifest.tsv": "80b796f3a1a8fad6b5c229c9967f205c52919fef88f9d2ebd6494d06fe96c13d",
+        "docs/restaurant-expo-alias-staging-public-build-input-evidence/restaurant-static-export.tar": "b6294bb5195779e3d9fb2e412fb61e82d08a0ac2f0ea25deb283dc4094832862",
+        "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "0fd3bb82e8a619cb00e6de932846fffc4d1ce2946edbe78b7b7072daddd20b92",
+        "scripts/restaurant-alias-diagnostic-execution-support.mjs": "e2332568bb8c2ae65581588453b19bc49e727538986061e8772c2e09827d687a",
+        "scripts/restaurant-alias-staging-public-build-inputs.mjs": "4aa0b89a932947fae65696bf6443b1613a62e9032bb983a1b9a37f915c9c4659",
+        "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "80bf1f9a02a4901e85bb1b02b08e5f825460cb95a533aae332d0ac7d6062adad",
+        "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "f878bedbd380feb82eeec7e60289ad9e1d8731dd57e419120632e6eb048d2ef2",
+        "scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs": "c5e0c9ad30db40567a6836ddcac94ffac348d25f330b9d42fe6188a3ecedd76a",
+        "scripts/test-restaurant-alias-staging-public-build-inputs.mjs": "423fb4a83e416c14dd3e2348c5cf50b90da8599c8c678a0ce05b678f142377c6",
+        "scripts/verify-restaurant-alias-production-export-readiness.mjs": "4222eeafca09cc62f4079290fcb963d6fad8047ac090994ed71077a8038a9463",
+      }),
+    }),
   ]),
   diagnosticExecutableFiles: Object.freeze({
     "apps/restaurant/metro.config.js": "c1c09a3089568b12c4aeb9c1d30afb47bb7722dc9605fe534152424a4a2e64ad",
@@ -280,12 +297,12 @@ export const SUPPORT = Object.freeze({
     "scripts/verify-restaurant-alias-production-export-readiness.mjs": "4222eeafca09cc62f4079290fcb963d6fad8047ac090994ed71077a8038a9463",
     "scripts/restaurant-alias-staging-public-build-inputs.mjs": "4aa0b89a932947fae65696bf6443b1613a62e9032bb983a1b9a37f915c9c4659",
     "scripts/test-restaurant-alias-staging-public-build-inputs.mjs": "423fb4a83e416c14dd3e2348c5cf50b90da8599c8c678a0ce05b678f142377c6",
-    "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "e2621bd4f6f300daf3a9c997990c244680b8e09bf7b7801dbd2d65d59c593828",
-    "scripts/test-restaurant-alias-diagnostic-access-staging.mjs": "01a4a6c21809133620fd1610c3a7fd5e7d8d499b1438b76d8c0a9c26d19cd51c",
+    "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "e1b92b167f335961cf41c7eb1e11e941f4c1e9a0a01d5d3d3de58602bfc63504",
+    "scripts/test-restaurant-alias-diagnostic-access-staging.mjs": "cde26eaa19597bda32cbe1e4720dca04d0e1f55a9c2bcea0e70d9f95106b8ed2",
   }),
   applicationTree: DIAGNOSTIC_OPERATOR.applicationTree,
-  runId: "ruip6ad_20260926j",
-  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260926j",
+  runId: "ruip6ad_20260926k",
+  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260926k",
   authorityDirectory: "secure/restaurant-alias-diagnostic-authority",
   migrationFunctions: Object.freeze({
     "private.raise_restaurant_order_conflict_v1(text)": Object.freeze({
@@ -791,6 +808,9 @@ export function initializeResourceInventory({ runDirectory, authority, capturedA
 }
 
 export function beginSingleDeploymentAttempt({ runDirectory, authority, capturedAt }) {
+  if (fs.existsSync(path.join(runDirectory, "terminal-record.json")) || fs.existsSync(path.join(runDirectory, "promotion-attempt.json"))) {
+    throw new Error("A terminal or promotion-prohibited run cannot begin a deployment attempt.");
+  }
   const record = requireRunEvidence(inventoryPath(runDirectory), "Created-resource inventory");
   const inventory = validateResourceInventory(record.value, authority);
   if (inventory.state !== "INITIALIZED" || inventory.deploymentAttemptCount !== 0 || inventory.resources.length || inventory.unexpectedResources.length) throw new Error("A clean initialized inventory is required before the one deployment attempt.");
@@ -1119,8 +1139,11 @@ export async function finalizeRun({ root, runDirectory, authority, expectedAlias
   try { protectedRows = verifyProtectedEvidenceImpl(root); } catch (error) { protectedError = error; }
   const protectedEvidence = reconcileProtectedEvidence(protectedRows, protectedError);
   const reads = await readers.collect();
-  persist(path.join(runDirectory, "finalization-reads.json"), { schemaVersion: 1, runId: authority.runId, reads });
-  const snapshot = validateSnapshotReads(reads, "finalization", { runId: authority.runId, stage: "finalization", capturedAt, maximumAgeMs: SUPPORT.freshnessMs.final });
+  const completedObservationTimes = Object.values(reads).map(value => Date.parse(value?.completedAt));
+  if (completedObservationTimes.length !== 6 || completedObservationTimes.some(value => !Number.isFinite(value))) throw new Error("Finalization observations lack complete timestamps.");
+  const observationsCapturedAt = new Date(Math.max(...completedObservationTimes)).toISOString();
+  persist(path.join(runDirectory, "finalization-reads.json"), { schemaVersion: 1, runId: authority.runId, capturedAt: observationsCapturedAt, reads });
+  const snapshot = validateSnapshotReads(reads, "finalization", { runId: authority.runId, stage: "finalization", capturedAt: observationsCapturedAt, maximumAgeMs: SUPPORT.freshnessMs.final });
   const aliasParity = await readers.verifyAliasParity(expectedAlias);
   const firebaseAdminLifecycle = readers.close ? await readers.close() : { state: "NOT_APPLICABLE", passed: true };
   if (firebaseAdminLifecycle?.passed !== true) throw new Error("Firebase Admin temporary app cleanup is incomplete.");

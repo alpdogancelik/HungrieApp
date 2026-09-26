@@ -1,0 +1,297 @@
+diff --git a/scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs b/scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs
+index b5b01b9..ccbfd6c 100644
+--- a/scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs
++++ b/scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs
+@@ -41,0 +42,13 @@ export function sanitizeRequest(request) {
++export function sanitizeResponse(response) {
++  const url = new URL(response.url);
++  return {
++    protocol: url.protocol,
++    origin: url.origin,
++    host: url.host,
++    path: url.pathname,
++    queryParameterNames: [...url.searchParams.keys()].sort(),
++    status: response.status,
++    mimeType: response.mimeType,
++  };
++}
++
+@@ -58,3 +71,4 @@ class Cdp {
+-async function openChrome(chromePath, profile, port) {
+-  const processHandle = spawn(chromePath, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check", `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, "about:blank"], { stdio: "ignore" });
+-  let version;
++export async function openChrome(chromePath, profile, { spawnImpl = spawn, fetchImpl = fetch, socketFactory = url => new WebSocket(url), sleep = delay } = {}) {
++  const processHandle = spawnImpl(chromePath, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check", "--remote-debugging-port=0", `--user-data-dir=${profile}`, "about:blank"], { stdio: "ignore" });
++  const activePortFile = path.join(profile, "DevToolsActivePort");
++  let version, port, browserSocketPath;
+@@ -62,2 +76,14 @@ async function openChrome(chromePath, profile, port) {
+-    try { const response = await fetch(`http://127.0.0.1:${port}/json/version`); if (response.ok) { version = await response.json(); break; } } catch {}
+-    await delay(100);
++    if (processHandle.exitCode !== null) break;
++    try {
++      const [portText, socketPath] = fs.readFileSync(activePortFile, "utf8").trim().split(/\r?\n/);
++      const discoveredPort = Number(portText);
++      if (!Number.isInteger(discoveredPort) || discoveredPort < 1 || discoveredPort > 65535 || !/^\/devtools\/browser\/[A-Za-z0-9-]+$/.test(socketPath || "")) throw new Error("Invalid owned Chrome DevTools endpoint.");
++      const response = await fetchImpl(`http://127.0.0.1:${discoveredPort}/json/version`);
++      if (response.ok) {
++        const candidate = await response.json();
++        const endpoint = new URL(candidate.webSocketDebuggerUrl);
++        if (endpoint.hostname !== "127.0.0.1" || Number(endpoint.port) !== discoveredPort || endpoint.pathname !== socketPath) throw new Error("Chrome DevTools endpoint does not belong to the spawned profile.");
++        version = candidate; port = discoveredPort; browserSocketPath = socketPath; break;
++      }
++    } catch {}
++    await sleep(100);
+@@ -66,2 +92,6 @@ async function openChrome(chromePath, profile, port) {
+-  const page = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: "PUT" })).json();
+-  const socket = new WebSocket(page.webSocketDebuggerUrl);
++  const pageResponse = await fetchImpl(`http://127.0.0.1:${port}/json/new?about:blank`, { method: "PUT" });
++  if (!pageResponse.ok) { processHandle.kill("SIGTERM"); throw new Error("Owned Chrome page endpoint unavailable."); }
++  const page = await pageResponse.json();
++  const pageEndpoint = new URL(page.webSocketDebuggerUrl);
++  if (pageEndpoint.hostname !== "127.0.0.1" || Number(pageEndpoint.port) !== port || !pageEndpoint.pathname.startsWith("/devtools/page/")) { processHandle.kill("SIGTERM"); throw new Error("Chrome page endpoint does not belong to the spawned profile."); }
++  const socket = socketFactory(page.webSocketDebuggerUrl);
+@@ -69 +99,12 @@ async function openChrome(chromePath, profile, port) {
+-  return { processHandle, version, cdp: new Cdp(socket) };
++  return { processHandle, version, port, browserSocketPath, profile, cdp: new Cdp(socket) };
++}
++
++export async function closeChrome(browser, { sleep = delay } = {}) {
++  browser.cdp.close();
++  if (browser.processHandle.exitCode === null) browser.processHandle.kill("SIGTERM");
++  for (let attempt = 0; attempt < 40 && browser.processHandle.exitCode === null; attempt += 1) await sleep(50);
++  if (browser.processHandle.exitCode === null) {
++    browser.processHandle.kill("SIGKILL");
++    for (let attempt = 0; attempt < 20 && browser.processHandle.exitCode === null; attempt += 1) await sleep(50);
++  }
++  if (browser.processHandle.exitCode === null) throw new Error("Owned Chrome process did not terminate.");
+@@ -77 +118 @@ export function evaluateBrowserQualification({ accountName, expectedPath, direct
+-    try { return response.status === 404 && response.type === "Other" && new URL(response.url).pathname === "/favicon.ico"; } catch { return false; }
++    try { return response.status === 404 && response.type === "Other" && (response.path || new URL(response.url).pathname) === "/favicon.ico"; } catch { return false; }
+@@ -107 +148 @@ export async function waitForServiceWorkerReady(evaluate, { attempts = 100, inte
+-async function qualifyAccount({ accountName, account, expectedPath, directPath, baseUrl, directory, chromePath, port }) {
++export async function qualifyAccount({ accountName, account, expectedPath, directPath, baseUrl, directory, chromePath }) {
+@@ -109 +150 @@ async function qualifyAccount({ accountName, account, expectedPath, directPath,
+-  const { processHandle, version, cdp } = await openChrome(chromePath, profile, port);
++  let browser;
+@@ -110,0 +152,2 @@ async function qualifyAccount({ accountName, account, expectedPath, directPath,
++    browser = await openChrome(chromePath, profile);
++    const { version, cdp } = browser;
+@@ -113 +156 @@ async function qualifyAccount({ accountName, account, expectedPath, directPath,
+-    await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: `window.__diagnostic={navigations:[],mutations:0,errors:[],accessResolved:false,protectedBeforeReady:false};for(const key of ['pushState','replaceState']){const original=history[key];history[key]=function(...args){const result=original.apply(this,args);__diagnostic.navigations.push({type:key,path:location.pathname});return result}}addEventListener('popstate',()=>__diagnostic.navigations.push({type:'popstate',path:location.pathname}));addEventListener('error',event=>__diagnostic.errors.push(String(event.error?.message||event.message)));addEventListener('unhandledrejection',event=>__diagnostic.errors.push(String(event.reason?.message||event.reason)));addEventListener('DOMContentLoaded',()=>new MutationObserver(()=>{__diagnostic.mutations++;const main=document.querySelector('.app-shell main');if(main&&!__diagnostic.accessResolved)__diagnostic.protectedBeforeReady=true}).observe(document.body,{subtree:true,childList:true,attributes:true}));` });
++    await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: `window.__diagnostic={navigations:[],mutations:0,errors:[],accessResolved:false,protectedBeforeReady:false};const originalFetch=window.fetch.bind(window);window.fetch=async(...args)=>{const response=await originalFetch(...args);try{const requestUrl=new URL(typeof args[0]==='string'?args[0]:args[0].url,location.href);if(requestUrl.pathname.endsWith('/get_my_access_context_v1'))window.__diagnostic.accessResolved=true}catch{}return response};for(const key of ['pushState','replaceState']){const original=history[key];history[key]=function(...args){const result=original.apply(this,args);__diagnostic.navigations.push({type:key,path:location.pathname});return result}}addEventListener('popstate',()=>__diagnostic.navigations.push({type:'popstate',path:location.pathname}));addEventListener('error',event=>__diagnostic.errors.push(String(event.error?.message||event.message)));addEventListener('unhandledrejection',event=>__diagnostic.errors.push(String(event.reason?.message||event.reason)));addEventListener('DOMContentLoaded',()=>new MutationObserver(()=>{__diagnostic.mutations++;const main=document.querySelector('.app-shell main');if(main&&!__diagnostic.accessResolved)__diagnostic.protectedBeforeReady=true}).observe(document.body,{subtree:true,childList:true,attributes:true}));` });
+@@ -121 +164 @@ async function qualifyAccount({ accountName, account, expectedPath, directPath,
+-        const response = message.params.response, row = { observedAt: new Date().toISOString(), requestId: message.params.requestId, url: response.url, status: response.status, mimeType: response.mimeType, type: message.params.type };
++        const response = message.params.response, row = { observedAt: new Date().toISOString(), requestId: message.params.requestId, type: message.params.type, ...sanitizeResponse(response) };
+@@ -132 +175,6 @@ async function qualifyAccount({ accountName, account, expectedPath, directPath,
+-    if (!(await evaluate("!!document.querySelector('input[type=email]')"))) throw new Error(`${accountName} login form unavailable.`);
++    if (!(await evaluate("!!document.querySelector('input[type=email]')"))) {
++      const preLogin = await snapshot().catch(() => null);
++      const failure = { schemaVersion: 1, capturedAt: new Date().toISOString(), passed: false, account: accountName, stage: "LOGIN_FORM", browser: version.Browser, browserPort: browser.port, profileOwnedEndpoint: true, expectedPath, directPath, preLogin, uncaughtErrors: exceptions, consoleErrors, failedRequests, httpErrors, responseInventory: responses, requestInventory: requests, blockers: ["LOGIN_FORM_UNAVAILABLE"], credentialValuesPersisted: false };
++      atomicWrite(path.join(directory, `immutable-${accountName}-access-evidence.json`), failure);
++      throw new Error(`${accountName} login form unavailable.`);
++    }
+@@ -153 +201 @@ async function qualifyAccount({ accountName, account, expectedPath, directPath,
+-  } finally { cdp.close(); processHandle.kill("SIGTERM"); await delay(150); fs.rmSync(profile, { recursive: true, force: true }); }
++  } finally { if (browser) await closeChrome(browser); fs.rmSync(profile, { recursive: true, force: true }); }
+@@ -174 +222 @@ export async function runAccessQualification(argv = process.argv.slice(2)) {
+-  for (let index = 0; index < cases.length; index += 1) results.push(await qualifyAccount({ accountName: cases[index].name, account: accounts[cases[index].name], expectedPath: cases[index].expected, directPath: cases[index].direct, baseUrl: deployment.url, directory, chromePath, port: 9580 + index }));
++  for (const item of cases) results.push(await qualifyAccount({ accountName: item.name, account: accounts[item.name], expectedPath: item.expected, directPath: item.direct, baseUrl: deployment.url, directory, chromePath }));
+diff --git a/scripts/restaurant-alias-diagnostic-execution-support.mjs b/scripts/restaurant-alias-diagnostic-execution-support.mjs
+index 06d4cba..e47b509 100755
+--- a/scripts/restaurant-alias-diagnostic-execution-support.mjs
++++ b/scripts/restaurant-alias-diagnostic-execution-support.mjs
+@@ -22,5 +22,5 @@ export const SUPPORT = Object.freeze({
+-  proposalPath: "docs/restaurant-expo-alias-ruip6ae-20260926l-read-only-eas-export-plan.md",
+-  proposalSha256: "73023632e2e62feabb992100a76294df5bcfc10dc26a00700ccfe2634b9a3c9e",
+-  baseCheckpoint: "eceac9a822f376af7b3f32c8131393d5634e2f5c",
+-  baseSourceManifestSha256: "12b4cac7f8c0a209fbc0585bda67d0d110cd9735ccf992b09c241ed87b0c1dd1",
+-  baseSourceManifestFiles: 1549,
++  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260926k-run-binding-contract.md",
++  proposalSha256: "e6a69f4235395a1107d0671abc0381b6d81629ae19a745b7c57f91e55f07c746",
++  baseCheckpoint: "041dc3ec4b0f4f1112bc0b052d7b86f59829f59e",
++  baseSourceManifestSha256: "fcf09671b2b7dcf25acfe7355be24b00cdd1dfd9f2b57406cde367eea60cf5e4",
++  baseSourceManifestFiles: 1559,
+@@ -28,9 +28,4 @@ export const SUPPORT = Object.freeze({
+-    "docs/restaurant-expo-alias-staging-public-build-input-contract.json",
+-    "docs/restaurant-expo-alias-staging-public-build-input-evidence/candidate-artifact-manifest.json",
+-    "docs/restaurant-expo-alias-staging-public-build-input-evidence/complete-artifact-comparison.json",
+-    "docs/restaurant-expo-alias-staging-public-build-input-evidence/evidence-manifest.tsv",
+-    "docs/restaurant-expo-alias-staging-public-build-input-evidence/restaurant-static-export.tar",
+-    "docs/restaurant-expo-alias-staging-build-input-artifact-remediation-review.md",
+-    "docs/restaurant-expo-alias-staging-build-input-artifact-remediation.diff",
+-    "docs/restaurant-expo-alias-ruip6ae-20260926l-read-only-eas-export-plan.md",
+-    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs",
++    "docs/restaurant-expo-alias-run-j-suspended-access-finalization-local-correction-report.md",
++    "docs/restaurant-expo-alias-run-j-suspended-access-finalization-local-correction.diff",
++    "docs/restaurant-expo-alias-ruip6ad-20260926k-run-binding-contract.md",
++    "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs",
+@@ -38,2 +33 @@ export const SUPPORT = Object.freeze({
+-    "scripts/restaurant-alias-staging-public-build-inputs.mjs",
+-    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs",
++    "scripts/test-restaurant-alias-diagnostic-access-staging.mjs",
+@@ -41,3 +34,0 @@ export const SUPPORT = Object.freeze({
+-    "scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs",
+-    "scripts/test-restaurant-alias-staging-public-build-inputs.mjs",
+-    "scripts/verify-restaurant-alias-production-export-readiness.mjs",
+@@ -44,0 +36 @@ export const SUPPORT = Object.freeze({
++
+@@ -268,0 +261,25 @@ export const SUPPORT = Object.freeze({
++    Object.freeze({
++      commit: "041dc3ec4b0f4f1112bc0b052d7b86f59829f59e",
++      parent: "eceac9a822f376af7b3f32c8131393d5634e2f5c",
++      sourceManifestSha256: "fcf09671b2b7dcf25acfe7355be24b00cdd1dfd9f2b57406cde367eea60cf5e4",
++      sourceManifestFiles: 1559,
++      applicationTree: "7430599b150adbd19ddafadce1195f1e418daf8a",
++      files: Object.freeze({
++        "docs/restaurant-expo-alias-ruip6ae-20260926l-read-only-eas-export-plan.md": "73023632e2e62feabb992100a76294df5bcfc10dc26a00700ccfe2634b9a3c9e",
++        "docs/restaurant-expo-alias-staging-build-input-artifact-remediation-review.md": "ad40fcb53448598f63a66bae913978f46f0ff5adeeff3f8ae3e83ded1cc8eaff",
++        "docs/restaurant-expo-alias-staging-build-input-artifact-remediation.diff": "6bf61c7bdaf2787b46c42e8e4f8ef9a20c220a9a03b81164c4410db8143db408",
++        "docs/restaurant-expo-alias-staging-public-build-input-contract.json": "f2c3e37d1e5699ea806e7fe2fd337aef4cb07ebb421ad2215209442546770c2e",
++        "docs/restaurant-expo-alias-staging-public-build-input-evidence/candidate-artifact-manifest.json": "406dbf42ba8c9fefb4f37c3edc36bbbfd24240ff242eae0e4c1d6ba1d66b41b1",
++        "docs/restaurant-expo-alias-staging-public-build-input-evidence/complete-artifact-comparison.json": "0316a14a1c8840691d27f7a2ed68c02938fd61dd8e6084136576a49da11e133a",
++        "docs/restaurant-expo-alias-staging-public-build-input-evidence/evidence-manifest.tsv": "80b796f3a1a8fad6b5c229c9967f205c52919fef88f9d2ebd6494d06fe96c13d",
++        "docs/restaurant-expo-alias-staging-public-build-input-evidence/restaurant-static-export.tar": "b6294bb5195779e3d9fb2e412fb61e82d08a0ac2f0ea25deb283dc4094832862",
++        "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "0fd3bb82e8a619cb00e6de932846fffc4d1ce2946edbe78b7b7072daddd20b92",
++        "scripts/restaurant-alias-diagnostic-execution-support.mjs": "e2332568bb8c2ae65581588453b19bc49e727538986061e8772c2e09827d687a",
++        "scripts/restaurant-alias-staging-public-build-inputs.mjs": "4aa0b89a932947fae65696bf6443b1613a62e9032bb983a1b9a37f915c9c4659",
++        "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "80bf1f9a02a4901e85bb1b02b08e5f825460cb95a533aae332d0ac7d6062adad",
++        "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "f878bedbd380feb82eeec7e60289ad9e1d8731dd57e419120632e6eb048d2ef2",
++        "scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs": "c5e0c9ad30db40567a6836ddcac94ffac348d25f330b9d42fe6188a3ecedd76a",
++        "scripts/test-restaurant-alias-staging-public-build-inputs.mjs": "423fb4a83e416c14dd3e2348c5cf50b90da8599c8c678a0ce05b678f142377c6",
++        "scripts/verify-restaurant-alias-production-export-readiness.mjs": "4222eeafca09cc62f4079290fcb963d6fad8047ac090994ed71077a8038a9463",
++      }),
++    }),
+@@ -283,2 +300,2 @@ export const SUPPORT = Object.freeze({
+-    "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "e2621bd4f6f300daf3a9c997990c244680b8e09bf7b7801dbd2d65d59c593828",
+-    "scripts/test-restaurant-alias-diagnostic-access-staging.mjs": "01a4a6c21809133620fd1610c3a7fd5e7d8d499b1438b76d8c0a9c26d19cd51c",
++    "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "e1b92b167f335961cf41c7eb1e11e941f4c1e9a0a01d5d3d3de58602bfc63504",
++    "scripts/test-restaurant-alias-diagnostic-access-staging.mjs": "cde26eaa19597bda32cbe1e4720dca04d0e1f55a9c2bcea0e70d9f95106b8ed2",
+@@ -287,2 +304,2 @@ export const SUPPORT = Object.freeze({
+-  runId: "ruip6ad_20260926j",
+-  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260926j",
++  runId: "ruip6ad_20260926k",
++  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260926k",
+@@ -793,0 +811,3 @@ export function beginSingleDeploymentAttempt({ runDirectory, authority, captured
++  if (fs.existsSync(path.join(runDirectory, "terminal-record.json")) || fs.existsSync(path.join(runDirectory, "promotion-attempt.json"))) {
++    throw new Error("A terminal or promotion-prohibited run cannot begin a deployment attempt.");
++  }
+@@ -1122,2 +1142,5 @@ export async function finalizeRun({ root, runDirectory, authority, expectedAlias
+-  persist(path.join(runDirectory, "finalization-reads.json"), { schemaVersion: 1, runId: authority.runId, reads });
+-  const snapshot = validateSnapshotReads(reads, "finalization", { runId: authority.runId, stage: "finalization", capturedAt, maximumAgeMs: SUPPORT.freshnessMs.final });
++  const completedObservationTimes = Object.values(reads).map(value => Date.parse(value?.completedAt));
++  if (completedObservationTimes.length !== 6 || completedObservationTimes.some(value => !Number.isFinite(value))) throw new Error("Finalization observations lack complete timestamps.");
++  const observationsCapturedAt = new Date(Math.max(...completedObservationTimes)).toISOString();
++  persist(path.join(runDirectory, "finalization-reads.json"), { schemaVersion: 1, runId: authority.runId, capturedAt: observationsCapturedAt, reads });
++  const snapshot = validateSnapshotReads(reads, "finalization", { runId: authority.runId, stage: "finalization", capturedAt: observationsCapturedAt, maximumAgeMs: SUPPORT.freshnessMs.final });
+diff --git a/scripts/test-restaurant-alias-diagnostic-access-staging.mjs b/scripts/test-restaurant-alias-diagnostic-access-staging.mjs
+index e05a9b9..0b2257c 100644
+--- a/scripts/test-restaurant-alias-diagnostic-access-staging.mjs
++++ b/scripts/test-restaurant-alias-diagnostic-access-staging.mjs
+@@ -1,0 +2,3 @@ import assert from "node:assert/strict";
++import fs from "node:fs";
++import os from "node:os";
++import path from "node:path";
+@@ -3 +6 @@ import test from "node:test";
+-import { evaluateBrowserQualification, sanitizeRequest, waitForServiceWorkerReady } from "./qualify-restaurant-alias-diagnostic-access-staging.mjs";
++import { closeChrome, evaluateBrowserQualification, openChrome, sanitizeRequest, sanitizeResponse, waitForServiceWorkerReady } from "./qualify-restaurant-alias-diagnostic-access-staging.mjs";
+@@ -16,0 +20 @@ test("sanitized runtime requests retain origin without credential or query value
++test("sanitized runtime responses preserve diagnostics without credential-shaped values", () => { const response = sanitizeResponse({ url: base + "/identity?key=secret&token=private", status: 401, mimeType: "application/json" }); assert.equal(response.origin, base); assert.equal(response.path, "/identity"); assert.deepEqual(response.queryParameterNames, ["key", "token"]); assert.equal(response.status, 401); assert.equal(JSON.stringify(response).includes("secret"), false); assert.equal(JSON.stringify(response).includes("private"), false); });
+@@ -23,0 +28,38 @@ test("service-worker readiness remains fail closed after the bound", async () =>
++
++class FakeSocket {
++  addEventListener(type, callback) { if (type === "open") queueMicrotask(callback); }
++  send() {}
++  close() { this.closed = true; }
++}
++
++test("Chrome qualification binds DevTools to the newly spawned profile instead of a fixed stale port", async t => {
++  const profile = fs.mkdtempSync(path.join(os.tmpdir(), "alias-access-owned-profile-"));
++  t.after(() => fs.rmSync(profile, { recursive: true, force: true }));
++  const processHandle = { exitCode: null, kill(signal) { this.signal = signal; this.exitCode = 0; return true; } };
++  let args;
++  const spawnImpl = (_binary, values) => { args = values; fs.writeFileSync(path.join(profile, "DevToolsActivePort"), "43127\n/devtools/browser/owned-fixture\n"); return processHandle; };
++  const fetchImpl = async (url, options) => {
++    assert.match(url, /^http:\/\/127\.0\.0\.1:43127\/json\/(?:version|new\?about:blank)$/);
++    if (options?.method === "PUT") return { ok: true, async json() { return { webSocketDebuggerUrl: "ws://127.0.0.1:43127/devtools/page/owned-page" }; } };
++    return { ok: true, async json() { return { Browser: "Chrome/fixture", webSocketDebuggerUrl: "ws://127.0.0.1:43127/devtools/browser/owned-fixture" }; } };
++  };
++  const browser = await openChrome("chrome", profile, { spawnImpl, fetchImpl, socketFactory: () => new FakeSocket(), sleep: async () => {} });
++  assert.ok(args.includes("--remote-debugging-port=0"));
++  assert.equal(args.some(value => value === "--remote-debugging-port=9580" || value === "--remote-debugging-port=9581"), false);
++  assert.equal(browser.port, 43127);
++  assert.equal(browser.browserSocketPath, "/devtools/browser/owned-fixture");
++  await closeChrome(browser, { sleep: async () => {} });
++  assert.equal(processHandle.signal, "SIGTERM");
++});
++
++test("a reachable stale DevTools endpoint is ignored when the spawned profile has no ownership marker", async t => {
++  const profile = fs.mkdtempSync(path.join(os.tmpdir(), "alias-access-missing-owned-endpoint-"));
++  t.after(() => fs.rmSync(profile, { recursive: true, force: true }));
++  const processHandle = { exitCode: null, kill() { this.exitCode = 0; return true; } };
++  let fetchCalls = 0, sleeps = 0;
++  await assert.rejects(
++    () => openChrome("chrome", profile, { spawnImpl: () => processHandle, fetchImpl: async () => { fetchCalls += 1; return { ok: true }; }, socketFactory: () => new FakeSocket(), sleep: async () => { if (++sleeps === 2) processHandle.exitCode = 1; } }),
++    /DevTools endpoint unavailable/,
++  );
++  assert.equal(fetchCalls, 0);
++});
+diff --git a/scripts/test-restaurant-alias-diagnostic-execution-support.mjs b/scripts/test-restaurant-alias-diagnostic-execution-support.mjs
+index bed1353..d24c492 100644
+--- a/scripts/test-restaurant-alias-diagnostic-execution-support.mjs
++++ b/scripts/test-restaurant-alias-diagnostic-execution-support.mjs
+@@ -532,0 +533 @@ test("authority rejects missing, placeholder, contradictory, and unapproved inpu
++  assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260926j" })), /identity/i);
+@@ -536,2 +537,2 @@ test("new run owns isolated authority and evidence identities", () => {
+-  assert.equal(SUPPORT.runId, "ruip6ad_20260926j");
+-  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260926j");
++  assert.equal(SUPPORT.runId, "ruip6ad_20260926k");
++  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260926k");
+@@ -547 +548,2 @@ test("new run owns isolated authority and evidence identities", () => {
+-  for (const suffix of ["20260925a", "20260925b", "20260925c", "20260925d", "20260925e", "20260926f", "20260926g", "20260926h", "20260926i"]) assert.ok(!SUPPORT.evidenceDirectory.includes(suffix));
++  assert.notEqual(SUPPORT.runId, "ruip6ad_20260926j");
++  for (const suffix of ["20260925a", "20260925b", "20260925c", "20260925d", "20260925e", "20260926f", "20260926g", "20260926h", "20260926i", "20260926j"]) assert.ok(!SUPPORT.evidenceDirectory.includes(suffix));
+@@ -1025 +1027 @@ test("resource inventory records exactly one deployment and prohibits a second a
+-    assert.throws(() => beginSingleDeploymentAttempt({ runDirectory: directory, authority: auth, capturedAt }), /clean initialized|exist/i);
++    assert.throws(() => beginSingleDeploymentAttempt({ runDirectory: directory, authority: auth, capturedAt }), /terminal|promotion-prohibited|clean initialized|exist/i);
+@@ -1143,0 +1146,38 @@ test("terminal abort after deployment uses preserved rollback history and comple
++test("terminal reconciliation timestamps asynchronous reads after their completion without reopening the run", async () => {
++  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-terminal-async-observations-"));
++  try {
++    const auth = authority();
++    writeJson(directory, "baseline-preflight.json", { passed: true, runId: SUPPORT.runId });
++    initializeResourceInventory({ runDirectory: directory, authority: auth, capturedAt });
++    installInitialRollback(directory, auth);
++    recordTerminalState({ runDirectory: directory, authority: auth, classification: "FAIL", reason: "access qualification failed", capturedAt });
++    const expectedAlias = buildExpectedFinalAliasReference({ runDirectory: directory, authority: auth, capturedAt });
++    const cleanup = buildCleanupDisposition({ runDirectory: directory, authority: auth, capturedAt });
++    const completed = "2026-09-25T11:59:01.000Z";
++    const delayed = reads({}, "finalization");
++    for (const value of Object.values(delayed)) value.completedAt = completed;
++    const result = await finalizeRun({ root, runDirectory: directory, authority: auth, expectedAlias, readers: { collect: async () => delayed, verifyAliasParity: finalReaders().verifyAliasParity }, cleanup, capturedAt: "2026-09-25T11:59:00.000Z" });
++    assert.equal(result.result, "FAIL");
++    assert.deepEqual(result.blockers, ["TERMINAL_NON_PASS_RUN"]);
++    assert.equal(JSON.parse(fs.readFileSync(path.join(directory, "finalization-reads.json"), "utf8")).capturedAt, completed);
++    assert.equal(JSON.parse(fs.readFileSync(path.join(directory, "promotion-attempt.json"), "utf8")).promotionPermanentlyProhibited, true);
++    assert.throws(() => beginSingleDeploymentAttempt({ runDirectory: directory, authority: auth, capturedAt }), /terminal|promotion-prohibited|clean initialized|exist/i);
++  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
++});
++
++test("final reconciliation still rejects a completed observation outside the strict freshness boundary", async () => {
++  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-final-stale-observation-"));
++  try {
++    const evidence = writeSuccessfulRunEvidence(directory);
++    const stale = reads({}, "finalization");
++    stale.supabaseProject.startedAt = "2026-09-25T11:48:58.999Z";
++    stale.supabaseProject.completedAt = "2026-09-25T11:48:59.999Z";
++    await assert.rejects(
++      () => finalizeRun({ root, runDirectory: directory, authority: authority(), expectedAlias: evidence.expected, readers: { collect: async () => stale, verifyAliasParity: finalReaders().verifyAliasParity }, cleanup: evidence.cleanup, capturedAt }),
++      /stale/i,
++    );
++    assert.equal(fs.existsSync(path.join(directory, "final-reconciliation.json")), false);
++    assert.equal(JSON.parse(fs.readFileSync(path.join(directory, "finalization-attempt.json"), "utf8")).state, "STARTED");
++  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
++});
++
+@@ -1193 +1233 @@ test("uncertain alias assignment cannot finalize without independently verified
+-    assert.throws(() => beginSingleDeploymentAttempt({ runDirectory: directory, authority: auth, capturedAt }), /clean initialized|exist/i);
++    assert.throws(() => beginSingleDeploymentAttempt({ runDirectory: directory, authority: auth, capturedAt }), /terminal|promotion-prohibited|clean initialized|exist/i);
