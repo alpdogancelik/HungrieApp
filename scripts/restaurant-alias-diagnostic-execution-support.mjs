@@ -21,25 +21,14 @@ export const SUPPORT = Object.freeze({
   historicalApplicationTree: "ae03238ac8c34f4ef11365b5a5c51dee81187812",
   proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260926j-run-binding-contract.md",
   proposalSha256: "ecc346f1738bfb048e64e9281a1ac53270c92d00fe09e72614e470fc57a29b53",
-  baseCheckpoint: "a1cf25b443441d424259af2568ced55b00d5560a",
-  baseSourceManifestSha256: "a2e022bdbbc494f9125c23b7f72cc784a4a37a0ac8d3f1e897388e24bc81e052",
-  baseSourceManifestFiles: 1536,
+  baseCheckpoint: "05f7308b11247a22fa3f6d0741a4b3b59a2ac201",
+  baseSourceManifestSha256: "061385917032166e6795e346f683109e9512b95dd32dc5ba8f3e571d5f9a4aaf",
+  baseSourceManifestFiles: 1547,
   checkpointFiles: Object.freeze([
-    "apps/restaurant/metro.config.js",
-    "apps/restaurant/scripts/deterministic-metro-module-ids.cjs",
-    "apps/restaurant/scripts/deterministic-metro-module-map.json",
-    "docs/restaurant-expo-alias-deterministic-metro-evidence/candidate-artifact-manifest.json",
-    "docs/restaurant-expo-alias-deterministic-metro-evidence/complete-artifact-comparison.json",
-    "docs/restaurant-expo-alias-deterministic-metro-evidence/evidence-manifest.tsv",
-    "docs/restaurant-expo-alias-deterministic-metro-evidence/restaurant-static-export.tar",
-    "docs/restaurant-expo-alias-deterministic-metro-export-remediation-review.md",
-    "docs/restaurant-expo-alias-ruip6ad-20260926j-run-binding-contract.md",
-    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs",
+    "docs/restaurant-expo-alias-read-only-eas-evidence-initialization-remediation-review.md",
+    "docs/restaurant-expo-alias-ruip6ae-20260926k-check-binding-contract.md",
     "scripts/restaurant-alias-diagnostic-execution-support.mjs",
-    "scripts/test-restaurant-alias-diagnostic-execution-support.mjs",
-    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs",
     "scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs",
-    "scripts/test-restaurant-deterministic-metro-module-ids.mjs",
     "scripts/verify-restaurant-alias-production-export-readiness.mjs",
   ]),
   acceptedLineage: Object.freeze([
@@ -227,6 +216,31 @@ export const SUPPORT = Object.freeze({
         "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "4c35efb102bbe56feb412ba6641aa4cb43fe1515ce4b311e038f5341262927ee",
       }),
     }),
+    Object.freeze({
+      commit: "05f7308b11247a22fa3f6d0741a4b3b59a2ac201",
+      parent: "a1cf25b443441d424259af2568ced55b00d5560a",
+      sourceManifestSha256: "061385917032166e6795e346f683109e9512b95dd32dc5ba8f3e571d5f9a4aaf",
+      sourceManifestFiles: 1547,
+      applicationTree: "7430599b150adbd19ddafadce1195f1e418daf8a",
+      files: Object.freeze({
+        "apps/restaurant/metro.config.js": "c1c09a3089568b12c4aeb9c1d30afb47bb7722dc9605fe534152424a4a2e64ad",
+        "apps/restaurant/scripts/deterministic-metro-module-ids.cjs": "6201d56d5a815a5827d0625ac72878fed89fd9bb7255ca52cbfd0a690b74e54a",
+        "apps/restaurant/scripts/deterministic-metro-module-map.json": "928fcbe1ba9aead4c2f180503254a4a6826033c33eabbad8f29fca24e4a056c8",
+        "docs/restaurant-expo-alias-deterministic-metro-evidence/candidate-artifact-manifest.json": "358490e8f5b22801e61bc94e7364d824df19198419565205ca0e8806cf5e4f26",
+        "docs/restaurant-expo-alias-deterministic-metro-evidence/complete-artifact-comparison.json": "55ed718035aa9ef2266631b1de620d1f5b2debc142baf8d717abc77c2a21df08",
+        "docs/restaurant-expo-alias-deterministic-metro-evidence/evidence-manifest.tsv": "6ccfd9a802c1cbd1b68ff7f569c959b405296c014e07e9cbee83a2cc3de658c4",
+        "docs/restaurant-expo-alias-deterministic-metro-evidence/restaurant-static-export.tar": "dd416dd5f44a4f3dbb3443f7269c61f4d964fe3e3e4de3b38d873db553e183cb",
+        "docs/restaurant-expo-alias-deterministic-metro-export-remediation-review.md": "87b4ff457fc7f8fbd066f27960c2a95ea6f62b0d03e364ac434baf3246804d33",
+        "docs/restaurant-expo-alias-ruip6ad-20260926j-run-binding-contract.md": "ecc346f1738bfb048e64e9281a1ac53270c92d00fe09e72614e470fc57a29b53",
+        "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "865c1032ce89fef6efac32affcfb30f512a5743a91821c1079be7d599396c018",
+        "scripts/restaurant-alias-diagnostic-execution-support.mjs": "d6d97de33a8873bcd29de07bc6d623a3dfd3455da1faa3c929beab60d1ae50b4",
+        "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "6fce949367cfdc4c985d9fe87f632dba2779f53e4d75235322d4063a3f23839a",
+        "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "ed88a2a80044301cbea126cb8edf26f9413904255d62408225329dfd670d0f21",
+        "scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs": "5ba2c364a4e7e46fb5ef40a34fefb99f1165d7bb9ad93ed7c3cc417c7f76a016",
+        "scripts/test-restaurant-deterministic-metro-module-ids.mjs": "c262a93e6788b0508bd07fdcb612f1126d9c440274ce4ea04901be7ff5930213",
+        "scripts/verify-restaurant-alias-production-export-readiness.mjs": "451ab6f2b0e3b68a1ea1fd58eeb99ef0e8e1dd2920a4dc5ca479b1767e430684",
+      }),
+    }),
   ]),
   diagnosticExecutableFiles: Object.freeze({
     "apps/restaurant/metro.config.js": "c1c09a3089568b12c4aeb9c1d30afb47bb7722dc9605fe534152424a4a2e64ad",
@@ -236,9 +250,9 @@ export const SUPPORT = Object.freeze({
     "scripts/test-restaurant-alias-parity-verifier.mjs": "6fa1ce21c047f93678be3c45fb71cd1f0e8167ed142fc259e55efddea1030afb",
     "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "865c1032ce89fef6efac32affcfb30f512a5743a91821c1079be7d599396c018",
     "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "6fce949367cfdc4c985d9fe87f632dba2779f53e4d75235322d4063a3f23839a",
-    "scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs": "5ba2c364a4e7e46fb5ef40a34fefb99f1165d7bb9ad93ed7c3cc417c7f76a016",
+    "scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs": "153e1718f37e80fc65aabd75d06b2c35dd5aadd83208c3548dbc0b81983da09a",
     "scripts/test-restaurant-deterministic-metro-module-ids.mjs": "c262a93e6788b0508bd07fdcb612f1126d9c440274ce4ea04901be7ff5930213",
-    "scripts/verify-restaurant-alias-production-export-readiness.mjs": "451ab6f2b0e3b68a1ea1fd58eeb99ef0e8e1dd2920a4dc5ca479b1767e430684",
+    "scripts/verify-restaurant-alias-production-export-readiness.mjs": "e061c83d72f3233909489c59e4981d08fb0ec6560e6aeaa461d0b2032ba4f1eb",
     "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "e2621bd4f6f300daf3a9c997990c244680b8e09bf7b7801dbd2d65d59c593828",
     "scripts/test-restaurant-alias-diagnostic-access-staging.mjs": "01a4a6c21809133620fd1610c3a7fd5e7d8d499b1438b76d8c0a9c26d19cd51c",
   }),
@@ -393,7 +407,7 @@ export function verifyAcceptedCheckpointLineage({ repoRoot, spawn = spawnSync, m
     const manifest = manifestBuilder(repoRoot, checkpoint.commit, spawn);
     if (manifest.sha256 !== checkpoint.sourceManifestSha256 || manifest.files !== checkpoint.sourceManifestFiles) throw new Error("Accepted checkpoint source manifest mismatch: " + checkpoint.commit + ".");
     const applicationTree = String(gitResult(repoRoot, ["rev-parse", checkpoint.commit + ":apps/restaurant"], spawn)).trim();
-    if (applicationTree !== SUPPORT.historicalApplicationTree) throw new Error("Accepted checkpoint Restaurant tree mismatch: " + checkpoint.commit + ".");
+    if (applicationTree !== (checkpoint.applicationTree || SUPPORT.historicalApplicationTree)) throw new Error("Accepted checkpoint Restaurant tree mismatch: " + checkpoint.commit + ".");
   }
   return { passed: true, checkpoints: SUPPORT.acceptedLineage.map(value => value.commit) };
 }

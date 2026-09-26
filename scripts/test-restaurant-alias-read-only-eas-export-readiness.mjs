@@ -7,6 +7,7 @@ import test from "node:test";
 import { DIAGNOSTIC_OPERATOR } from "./deploy-restaurant-alias-10-minute-diagnostic-staging.mjs";
 import {
   READ_ONLY_EAS_EXPORT_CHECK,
+  initializeExclusiveEvidenceDirectory,
   runReadOnlyEasExportCheck,
   validateReadOnlyEasExportAuthorization,
   verifyExactProductionExportReadiness,
@@ -79,17 +80,63 @@ test("mismatch or wrapper failure persists a failed observation and cannot pass"
 
 test("standalone check writes separate exclusive sanitized evidence without run authority or attempt markers", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "read-only-eas-export-test-"));
-  const approvalPath = path.join(directory, "approval.json"), manifestPath = path.join(directory, "source-manifest.tsv"), outputPath = path.join(directory, "evidence");
+  const approvalPath = path.join(directory, "approval.json"), manifestPath = path.join(directory, "source-manifest.tsv"), evidenceRoot = path.join(directory, "evidence"), outputPath = path.join(evidenceRoot, "ruip6ae_20260926j");
   fs.writeFileSync(approvalPath, JSON.stringify(authorization()));
   fs.writeFileSync(manifestPath, manifestBytes);
   const spawn = (_command, args) => ({ status: 0, stdout: args[1] === "HEAD" ? `${sourceCommit}\n` : `${DIAGNOSTIC_OPERATOR.applicationTree}\n` });
   try {
-    const result = runReadOnlyEasExportCheck([`--authorization=${approvalPath}`, `--source-manifest=${manifestPath}`, `--output=${outputPath}`, "--confirm=staging:restaurant-alias:read-only-eas-export:ruip6ae_20260926j"], { now: () => now, clock: { now: () => now }, spawnSync: spawn, run: () => ({ status: 0 }), outputVerifier: output });
+    const result = runReadOnlyEasExportCheck([`--authorization=${approvalPath}`, `--source-manifest=${manifestPath}`, `--output=${outputPath}`, "--confirm=staging:restaurant-alias:read-only-eas-export:ruip6ae_20260926j"], { now: () => now, clock: { now: () => now }, evidenceRoot, spawnSync: spawn, run: () => ({ status: 0 }), outputVerifier: output });
     assert.equal(result.disposition, "PASS");
-    assert.deepEqual(fs.readdirSync(outputPath).sort(), ["read-only-eas-export-evidence.json", "read-only-eas-export-progress.json"]);
+    assert.deepEqual(fs.readdirSync(outputPath).sort(), ["read-only-eas-export-evidence.json", "read-only-eas-export-initialization.json", "read-only-eas-export-progress.json"]);
     assert.doesNotMatch(fs.readFileSync(path.join(outputPath, "read-only-eas-export-evidence.json"), "utf8"), /Bearer|password|cookie/i);
     assert.equal(verifyReadOnlyEasExportEvidence(result, { sourceCommit, sourceManifestSha256, now }).passed, true);
-    assert.throws(() => runReadOnlyEasExportCheck([`--authorization=${approvalPath}`, `--source-manifest=${manifestPath}`, `--output=${outputPath}`, "--confirm=staging:restaurant-alias:read-only-eas-export:ruip6ae_20260926j"], { now: () => now, spawnSync: spawn }), /already exists/i);
+    assert.throws(() => runReadOnlyEasExportCheck([`--authorization=${approvalPath}`, `--source-manifest=${manifestPath}`, `--output=${outputPath}`, "--confirm=staging:restaurant-alias:read-only-eas-export:ruip6ae_20260926j"], { now: () => now, evidenceRoot, spawnSync: spawn }), /already exists/i);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("missing trusted parent is created before the exclusive check directory without contacting EAS", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "read-only-eas-export-parent-"));
+  const evidenceRoot = path.join(directory, "missing", "trusted-root");
+  const outputDirectory = path.join(evidenceRoot, "ruip6ae_20260926k");
+  try {
+    initializeExclusiveEvidenceDirectory({ evidenceRoot, outputDirectory, checkId: "ruip6ae_20260926k", initializedAt: new Date(now).toISOString() });
+    assert.equal(fs.statSync(evidenceRoot).mode & 0o777, 0o700);
+    assert.equal(fs.statSync(outputDirectory).mode & 0o777, 0o700);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(outputDirectory, "read-only-eas-export-initialization.json"), "utf8")).state, "INITIALIZED");
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("an existing check directory fails closed without overwriting its evidence", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "read-only-eas-export-existing-"));
+  const outputDirectory = path.join(directory, "ruip6ae_20260926k");
+  fs.mkdirSync(outputDirectory);
+  const preserved = path.join(outputDirectory, "preserved.json");
+  fs.writeFileSync(preserved, "preserved\n");
+  try {
+    assert.throws(() => initializeExclusiveEvidenceDirectory({ evidenceRoot: directory, outputDirectory, checkId: "ruip6ae_20260926k", initializedAt: new Date(now).toISOString() }), /exist/i);
+    assert.equal(fs.readFileSync(preserved, "utf8"), "preserved\n");
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("trusted-parent permission errors fail before a check directory is created", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "read-only-eas-export-permission-"));
+  const evidenceRoot = path.join(directory, "trusted-root"), outputDirectory = path.join(evidenceRoot, "ruip6ae_20260926k");
+  const denied = { ...fs, mkdirSync(target, options) { if (path.resolve(target) === path.resolve(evidenceRoot)) { const error = new Error("permission denied"); error.code = "EACCES"; throw error; } return fs.mkdirSync(target, options); } };
+  try {
+    assert.throws(() => initializeExclusiveEvidenceDirectory({ evidenceRoot, outputDirectory, checkId: "ruip6ae_20260926k", initializedAt: new Date(now).toISOString(), fileSystem: denied }), /permission denied/i);
+    assert.equal(fs.existsSync(outputDirectory), false);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("interrupted initialization preserves the exclusive directory and prohibits reuse", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "read-only-eas-export-interrupted-"));
+  const outputDirectory = path.join(directory, "ruip6ae_20260926k");
+  let interrupted = false;
+  const failing = { ...fs, writeFileSync(target, value, options) { if (!interrupted && String(target).includes("read-only-eas-export-initialization.json")) { interrupted = true; throw new Error("synthetic initialization interruption"); } return fs.writeFileSync(target, value, options); } };
+  try {
+    assert.throws(() => initializeExclusiveEvidenceDirectory({ evidenceRoot: directory, outputDirectory, checkId: "ruip6ae_20260926k", initializedAt: new Date(now).toISOString(), fileSystem: failing }), /interruption/i);
+    assert.equal(fs.existsSync(outputDirectory), true);
+    assert.throws(() => initializeExclusiveEvidenceDirectory({ evidenceRoot: directory, outputDirectory, checkId: "ruip6ae_20260926k", initializedAt: new Date(now).toISOString() }), /exist/i);
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 

@@ -31,13 +31,30 @@ function safeError(error) {
   return { name, message };
 }
 
-function atomicWrite(file, value) {
-  fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
-  fs.chmodSync(path.dirname(file), 0o700);
+function atomicWrite(file, value, fileSystem = fs) {
+  fileSystem.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
+  fileSystem.chmodSync(path.dirname(file), 0o700);
   const temporary = `${file}.${process.pid}.tmp`;
-  fs.writeFileSync(temporary, canonical(value), { mode: 0o600 });
-  fs.renameSync(temporary, file);
-  fs.chmodSync(file, 0o600);
+  fileSystem.writeFileSync(temporary, canonical(value), { mode: 0o600 });
+  fileSystem.renameSync(temporary, file);
+  fileSystem.chmodSync(file, 0o600);
+}
+
+export function initializeExclusiveEvidenceDirectory({ evidenceRoot, outputDirectory, checkId, initializedAt, fileSystem = fs }) {
+  const trustedRoot = path.resolve(evidenceRoot);
+  const expectedOutput = path.join(trustedRoot, checkId);
+  if (path.resolve(outputDirectory) !== expectedOutput) throw new Error("Read-only EAS export evidence path is outside the trusted check directory.");
+  fileSystem.mkdirSync(trustedRoot, { recursive: true, mode: 0o700 });
+  fileSystem.chmodSync(trustedRoot, 0o700);
+  fileSystem.mkdirSync(expectedOutput, { recursive: false, mode: 0o700 });
+  fileSystem.chmodSync(expectedOutput, 0o700);
+  atomicWrite(path.join(expectedOutput, "read-only-eas-export-initialization.json"), {
+    schemaVersion: 1,
+    checkId,
+    initializedAt,
+    state: "INITIALIZED",
+  }, fileSystem);
+  return expectedOutput;
 }
 
 export function validateReadOnlyEasExportAuthorization(input, { now = Date.now() } = {}) {
@@ -110,7 +127,8 @@ export function runReadOnlyEasExportCheck(argv = process.argv.slice(2), dependen
   const spawn = dependencies.spawnSync || spawnSync;
   if (spawn("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).stdout.trim() !== authorization.sourceCommit || spawn("git", ["rev-parse", "HEAD:apps/restaurant"], { cwd: root, encoding: "utf8" }).stdout.trim() !== authorization.applicationTree) throw new Error("Reviewed read-only export checkpoint is not checked out.");
   if (!fs.existsSync(sourceManifestPath) || sha256(fs.readFileSync(sourceManifestPath)) !== authorization.sourceManifestSha256) throw new Error("Reviewed source manifest is required for the read-only export check.");
-  fs.mkdirSync(outputDirectory, { recursive: false, mode: 0o700 });
+  const evidenceRoot = path.resolve(dependencies.evidenceRoot || path.join(root, "secure/restaurant-alias-export-readiness"));
+  initializeExclusiveEvidenceDirectory({ evidenceRoot, outputDirectory, checkId: authorization.checkId, initializedAt: iso(now), fileSystem: dependencies.fileSystem || fs });
   const progressPath = path.join(outputDirectory, "read-only-eas-export-progress.json");
   try {
     const result = verifyExactProductionExportReadiness({ root, run: dependencies.run || spawnSync, outputVerifier: dependencies.outputVerifier || verifyLocalExportOutput, clock: dependencies.clock, onAttempt(progress) { atomicWrite(progressPath, { schemaVersion: 1, checkId: authorization.checkId, environment: authorization.environment, easProjectId: authorization.easProjectId, sourceCommit: authorization.sourceCommit, sourceManifestSha256: authorization.sourceManifestSha256, applicationTree: authorization.applicationTree, artifactManifestSha256: authorization.artifactManifestSha256, archiveSha256: authorization.archiveSha256, authorizationTextSha256: authorization.authorizationTextSha256, ...progress }); } });
