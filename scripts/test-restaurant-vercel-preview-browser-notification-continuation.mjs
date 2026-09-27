@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { CONTINUATION, assertUniqueBypassSecret, buildAuthorizationText, buildBypassApiRequest, buildProtectedBrowserBootstrap, classifySafetyError, executeControlledContinuation, generateBypassSecret, sanitizeContinuationError, sha256, validateApproval, validateBypassSecret, validateProtectedBrowserRequest, verifyBypassApiResponse } from "./restaurant-vercel-preview-browser-notification-continuation.mjs";
+import { CONTINUATION, assertUniqueBypassSecret, buildAuthorizationText, buildBypassApiRequest, buildProtectedBrowserBootstrap, buildProtectedRedirectRequest, classifySafetyError, executeControlledContinuation, generateBypassSecret, sanitizeContinuationError, sanitizeProtectedBootstrapEvidence, sha256, validateApproval, validateBypassSecret, validateProtectedBootstrapResponse, validateProtectedBrowserRequest, verifyBypassApiResponse, verifyBypassInventoryTransition } from "./restaurant-vercel-preview-browser-notification-continuation.mjs";
 
 const bindings = { sourceCommit: "a".repeat(40), sourceManifestSha256: "b".repeat(64), operatorSha256: "c".repeat(64), qualifierSha256: "d".repeat(64) };
 const approval = (overrides = {}) => {
@@ -46,10 +46,43 @@ test("the consumed 64-character secret is rejected before request construction",
 test("creation and revocation requests use the exact project, PATCH method, scope, and schema", () => {
   const secret = "ab".repeat(16), create = buildBypassApiRequest({ action: "generate", secret }), revoke = buildBypassApiRequest({ action: "revoke", secret });
   assert.deepEqual(create, { endpoint: `/v1/projects/${CONTINUATION.projectId}/protection-bypass`, method: "PATCH", scope: CONTINUATION.scope, body: { generate: { secret, note: CONTINUATION.qualificationId } } });
-  assert.deepEqual(revoke.body, { revoke: { secret } });
+  assert.deepEqual(revoke.body, { revoke: { secret, regenerate: false } });
   assert.deepEqual(verifyBypassApiResponse({ protectionBypass: { baseline: {}, [secret]: { note: CONTINUATION.qualificationId } } }, { secret, expectedPresent: true }), { passed: true, present: true, inventoryCount: 2, secretSha256: sha256(Buffer.from(secret)), secretPersisted: false });
   assert.equal(verifyBypassApiResponse({ protectionBypass: { baseline: {} } }, { secret, expectedPresent: false }).present, false);
   assert.throws(() => verifyBypassApiResponse({ protectionBypass: [] }, { secret, expectedPresent: true }), /shape/);
+});
+
+const validBootstrapHeaders = () => ({ location: "/", "set-cookie": "_vercel_jwt=header.payload.signature_value_1234567890; Path=/; Secure; HttpOnly; SameSite=Lax" });
+
+test("documented HTTP 302 bootstrap validates cookie, redirect, and follow-up request", () => {
+  const bootstrap = validateProtectedBootstrapResponse({ requestUrl: `${CONTINUATION.origin}/`, status: 302, headers: validBootstrapHeaders() });
+  assert.equal(bootstrap.redirectUrl, `${CONTINUATION.origin}/`);
+  const follow = buildProtectedRedirectRequest(bootstrap);
+  assert.deepEqual(follow, { url: `${CONTINUATION.origin}/`, method: "GET", headers: { Cookie: `_vercel_jwt=${bootstrap.cookie.value}`, "x-vercel-skip-toolbar": "1" }, redirect: "manual" });
+  const evidence = sanitizeProtectedBootstrapEvidence(bootstrap);
+  assert.equal(evidence.cookieValueBytes, Buffer.byteLength(bootstrap.cookie.value));
+  assert.equal(evidence.credentialValuePersisted, false);
+  assert.equal(JSON.stringify(evidence).includes(bootstrap.cookie.value), false);
+  assert.equal(sanitizeContinuationError(new Error(`_vercel_jwt=${bootstrap.cookie.value} x-vercel-protection-bypass=${"ab".repeat(16)}`)).includes(bootstrap.cookie.value), false);
+});
+
+test("bootstrap rejects missing cookies, HTTP 200, unexpected redirects, and malformed cookies", () => {
+  const requestUrl = `${CONTINUATION.origin}/`;
+  for (const fixture of [
+    { status: 302, headers: { location: "/" }, pattern: /exactly one/ },
+    { status: 200, headers: validBootstrapHeaders(), pattern: /HTTP 302/ },
+    { status: 302, headers: { ...validBootstrapHeaders(), location: "https://firebase.googleapis.com/" }, pattern: /escaped/ },
+    { status: 302, headers: { ...validBootstrapHeaders(), location: "/?x-vercel-protection-bypass=leak" }, pattern: /escaped/ },
+    { status: 302, headers: { location: "/", "set-cookie": "_vercel_jwt=short; Path=/; Secure; HttpOnly; SameSite=Lax" }, pattern: /malformed/ },
+    { status: 302, headers: { location: ["/", "/dashboard"], "set-cookie": validBootstrapHeaders()["set-cookie"] }, pattern: /unambiguous/ },
+  ]) assert.throws(() => validateProtectedBootstrapResponse({ requestUrl, ...fixture }), fixture.pattern);
+});
+
+test("revocation removes only the qualification-specific bypass", () => {
+  const secret = "ab".repeat(16), baseline = { ["cd".repeat(16)]: { note: "unrelated", isEnvVar: true } }, before = { ...baseline, [secret]: { note: CONTINUATION.qualificationId, isEnvVar: false } };
+  assert.deepEqual(verifyBypassInventoryTransition({ before, after: baseline, secret }), { passed: true, removedSecretSha256: sha256(Buffer.from(secret)), preservedRecords: 1, secretPersisted: false });
+  assert.throws(() => verifyBypassInventoryTransition({ before, after: {}, secret }), /unrelated/);
+  assert.throws(() => verifyBypassInventoryTransition({ before, after: before, secret }), /cleanup state/);
 });
 
 test("bootstrap contains the credential only for the exact origin and evidence errors redact it", () => {
@@ -90,24 +123,24 @@ test("complete no-network lifecycle uses the reviewed API and browser contracts"
   const secret = generateBypassSecret(() => Buffer.from("0123456789abcdeffedcba9876543210", "hex"));
   const inventory = { "00000000000000000000000000000000": { note: "unrelated" } };
   assertUniqueBypassSecret(secret, inventory);
-  const requests = [];
+  const requests = [], bootstrapResponse = validateProtectedBootstrapResponse({ requestUrl: `${CONTINUATION.origin}/`, status: 302, headers: validBootstrapHeaders() });
   const op = operations({
     createBypass: async () => {
       const request = buildBypassApiRequest({ action: "generate", secret }); requests.push(request);
       verifyBypassApiResponse({ protectionBypass: { ...inventory, [secret]: { note: CONTINUATION.qualificationId } } }, { secret, expectedPresent: true });
     },
     bootstrapProtectedBrowser: async () => {
-      const request = buildProtectedBrowserBootstrap(secret); requests.push(request);
+      const request = buildProtectedBrowserBootstrap(secret); requests.push(request, buildProtectedRedirectRequest(bootstrapResponse));
       assert.equal(new URL(request.url).origin, CONTINUATION.origin);
     },
     revokeBypass: async () => requests.push(buildBypassApiRequest({ action: "revoke", secret })),
-    verifyBypassRevoked: async () => verifyBypassApiResponse({ protectionBypass: inventory }, { secret, expectedPresent: false }),
+    verifyBypassRevoked: async () => { verifyBypassApiResponse({ protectionBypass: inventory }, { secret, expectedPresent: false }); verifyBypassInventoryTransition({ before: { ...inventory, [secret]: { note: CONTINUATION.qualificationId } }, after: inventory, secret }); },
   });
   const result = await executeControlledContinuation({ operations: op });
   assert.equal(result.classification, "PASS");
-  assert.equal(requests.length, 3);
+  assert.equal(requests.length, 4);
   assert.equal(requests.filter(request => request.method === "PATCH").length, 2);
-  assert.equal(requests.filter(request => request.url === `${CONTINUATION.origin}/`).length, 1);
+  assert.equal(requests.filter(request => request.url === `${CONTINUATION.origin}/`).length, 2);
   assert.equal(JSON.stringify(result).includes(secret), false);
 });
 test("unsupported real click is inconclusive without weakening delivery requirements", async () => {

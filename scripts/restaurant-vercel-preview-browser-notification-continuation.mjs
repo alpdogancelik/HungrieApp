@@ -7,8 +7,11 @@ import { spawnSync } from "node:child_process";
 export const CONTINUATION = Object.freeze({
   schemaVersion: 1,
   kind: "restaurant_vercel_preview_browser_notification_continuation",
-  qualificationId: "restaurant-vercel-browser-notification-qualification-20260928c",
-  consumedQualificationId: "restaurant-vercel-browser-notification-qualification-20260928b",
+  qualificationId: "restaurant-vercel-browser-notification-qualification-20260928d",
+  consumedQualifications: Object.freeze([
+    Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928b", manifest: "evidence-manifest.tsv", manifestSha256: "8b478d63808742057429821a5704db22d2e6cf4343ce82fe18189db96ba3c592", authoritySha256: "2d4af7ec3c33bbb6fb3836bf3754857be9109c20fe7cb43b5bbfd6aef3f765e6", sourceManifestSha256: "33f95fc58475b5ea3e91c0cf8b6aef045fcde9f043af82abcca05eb7d5811b85" }),
+    Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928c", manifest: "evidence-manifest-final.tsv", manifestSha256: "6dc2701f56fddaf341519b4a6ad78ab88a6d037d8d0993ece3e91ad691ce399f", authoritySha256: "219381cafd5c1ec678a0a3936fc48ebecc7e961fac4a597d8b391eb229a3428e", sourceManifestSha256: "18ddf144ad7e237a3f286557cbd02c54b7be1b126a36d24c44006c1771a16fda" }),
+  ]),
   deploymentId: "dpl_8CM3s16BZRwK9Ls1eMMJCVKmWyYt",
   origin: "https://hungrie-restaurant-web-staging-eval-20260927a-h9m8zpwol.vercel.app",
   projectId: "prj_PrVORzWTAxmAHL0SqNcA9WXJppS4",
@@ -24,10 +27,7 @@ export const CONTINUATION = Object.freeze({
   normalRoot: Object.freeze({ bytes: 18082, sha256: "18f1015e99ceb70ce8656b59259e0274f77bedc3440e5a9222ce0e8fb09f68a2", injectionBytes: 163 }),
   historicalQualificationManifestSha256: "b57ef17c2871ac322afc70148f72d7cc23de02b2ebaf3f9620c0a144e718cfff",
   toolbarInvestigationManifestSha256: "49273bb907a2571847cb7b4e4fb73d494536a16c398d4c40be448f76c39458ee",
-  consumedQualificationManifestSha256: "8b478d63808742057429821a5704db22d2e6cf4343ce82fe18189db96ba3c592",
-  consumedAuthoritySha256: "2d4af7ec3c33bbb6fb3836bf3754857be9109c20fe7cb43b5bbfd6aef3f765e6",
-  consumedSourceManifestSha256: "33f95fc58475b5ea3e91c0cf8b6aef045fcde9f043af82abcca05eb7d5811b85",
-  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260928c",
+  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260928d",
   authorityDirectory: "secure/restaurant-vercel-browser-notification-qualification-authority",
   limits: Object.freeze({ bypassCreates: 1, bypassRevokes: 1, accountContexts: 4, concurrentAccountContexts: 1, pushRegistrations: 1, foregroundFcmSends: 1, backgroundFcmSends: 1, pushUnregistrations: 1, retries: 0, authorityValidityMs: 2 * 60 * 60 * 1000 }),
 });
@@ -57,8 +57,60 @@ export function buildBypassApiRequest({ action, secret }) {
   validateBypassSecret(secret);
   if (!['generate', 'revoke'].includes(action)) throw new Error("Unsupported Vercel bypass action.");
   const endpoint = `/v1/projects/${CONTINUATION.projectId}/protection-bypass`;
-  const body = action === "generate" ? { generate: { secret, note: CONTINUATION.qualificationId } } : { revoke: { secret } };
+  const body = action === "generate" ? { generate: { secret, note: CONTINUATION.qualificationId } } : { revoke: { secret, regenerate: false } };
   return { endpoint, method: "PATCH", scope: CONTINUATION.scope, body };
+}
+
+function responseHeaderValues(headers, wanted) {
+  const normalized = wanted.toLowerCase();
+  if (headers instanceof Headers) {
+    if (normalized === "set-cookie" && typeof headers.getSetCookie === "function") return headers.getSetCookie();
+    const value = headers.get(wanted);
+    return value === null ? [] : [value];
+  }
+  if (Array.isArray(headers)) return headers.filter(([name]) => String(name).toLowerCase() === normalized).flatMap(([, value]) => Array.isArray(value) ? value : [value]).map(String);
+  if (headers && typeof headers === "object") return Object.entries(headers).filter(([name]) => name.toLowerCase() === normalized).flatMap(([, value]) => Array.isArray(value) ? value : [value]).map(String);
+  throw new Error("Protected bootstrap response headers are malformed.");
+}
+
+export function validateProtectedBootstrapResponse({ requestUrl, status, headers }) {
+  const requested = new URL(requestUrl);
+  if (requested.origin !== CONTINUATION.origin || requested.pathname !== "/" || requested.search || requested.hash) throw Object.assign(new Error("Protected bootstrap request identity mismatch."), { code: "UNEXPECTED_ORIGIN" });
+  if (status !== 302) throw new Error(`Protected bootstrap must return the documented HTTP 302 response; received ${status}.`);
+  const locations = responseHeaderValues(headers, "location");
+  if (locations.length !== 1) throw new Error("Protected bootstrap must return one unambiguous redirect location.");
+  const redirectUrl = new URL(locations[0], requested);
+  if (redirectUrl.origin !== CONTINUATION.origin || redirectUrl.pathname !== requested.pathname || redirectUrl.username || redirectUrl.password || redirectUrl.hash || [...redirectUrl.searchParams.keys()].some(key => /^x-vercel-(?:protection-bypass|set-bypass-cookie)$/i.test(key))) throw Object.assign(new Error("Protected bootstrap redirect escaped the reviewed exact-origin route."), { code: "UNEXPECTED_ORIGIN" });
+  const cookies = responseHeaderValues(headers, "set-cookie").map(value => {
+    const parts = value.split(";").map(part => part.trim()), separator = parts[0]?.indexOf("=") ?? -1;
+    return { name: separator > 0 ? parts[0].slice(0, separator) : "", value: separator > 0 ? parts[0].slice(separator + 1) : "", attributes: parts.slice(1).map(part => part.toLowerCase()) };
+  }).filter(cookie => cookie.name === "_vercel_jwt");
+  if (cookies.length !== 1) throw new Error("Protected bootstrap must return exactly one _vercel_jwt cookie.");
+  const cookie = cookies[0];
+  if (!/^[A-Za-z0-9._~-]{32,8192}$/.test(cookie.value) || !cookie.attributes.includes("secure") || !cookie.attributes.includes("httponly") || !cookie.attributes.includes("path=/") || !cookie.attributes.includes("samesite=lax")) throw new Error("Protected bootstrap cookie is malformed or lacks required security attributes.");
+  return { passed: true, redirectUrl: redirectUrl.href, cookie: { name: cookie.name, value: cookie.value }, cookiePersisted: false };
+}
+
+export function buildProtectedRedirectRequest(bootstrap) {
+  if (!bootstrap?.passed || bootstrap.cookie?.name !== "_vercel_jwt" || !/^[A-Za-z0-9._~-]{32,8192}$/.test(bootstrap.cookie.value)) throw new Error("Validated protected bootstrap evidence is required.");
+  const target = new URL(bootstrap.redirectUrl);
+  if (target.origin !== CONTINUATION.origin) throw Object.assign(new Error("Protected redirect target origin mismatch."), { code: "UNEXPECTED_ORIGIN" });
+  return { url: target.href, method: "GET", headers: { Cookie: `${bootstrap.cookie.name}=${bootstrap.cookie.value}`, "x-vercel-skip-toolbar": "1" }, redirect: "manual" };
+}
+
+export function sanitizeProtectedBootstrapEvidence(bootstrap) {
+  if (!bootstrap?.passed || bootstrap.cookie?.name !== "_vercel_jwt") throw new Error("Validated protected bootstrap evidence is required.");
+  const redirect = new URL(bootstrap.redirectUrl);
+  return { passed: true, status: 302, redirectOrigin: redirect.origin, redirectPath: `${redirect.pathname}${redirect.search}`, cookieName: bootstrap.cookie.name, cookieValueBytes: Buffer.byteLength(bootstrap.cookie.value), cookieValueSha256: sha256(Buffer.from(bootstrap.cookie.value)), credentialValuePersisted: false };
+}
+
+export function verifyBypassInventoryTransition({ before, after, secret }) {
+  validateBypassSecret(secret);
+  for (const [label, inventory] of [["before", before], ["after", after]]) if (!inventory || typeof inventory !== "object" || Array.isArray(inventory)) throw new Error(`Vercel ${label} bypass inventory shape is invalid.`);
+  if (!Object.prototype.hasOwnProperty.call(before, secret) || Object.prototype.hasOwnProperty.call(after, secret)) throw new Error("Qualification-specific bypass cleanup state is invalid.");
+  const remaining = Object.fromEntries(Object.entries(before).filter(([key]) => key !== secret));
+  if (canonical(remaining) !== canonical(after)) throw new Error("Bypass cleanup changed an unrelated record.");
+  return { passed: true, removedSecretSha256: sha256(Buffer.from(secret)), preservedRecords: Object.keys(after).length, secretPersisted: false };
 }
 
 export function verifyBypassApiResponse(payload, { secret, expectedPresent }) {
@@ -83,7 +135,7 @@ export function validateProtectedBrowserRequest({ url, resourceType, headerNames
 }
 
 export function sanitizeContinuationError(error) {
-  return String(error?.message || error).replace(/\b[a-f0-9]{32}\b/gi, "[REDACTED_BYPASS_SECRET]").replace(/Bearer\s+[^\s"']+/gi, "Bearer [REDACTED]").slice(0, 500);
+  return String(error?.message || error).replace(/\b[a-f0-9]{32}\b/gi, "[REDACTED_BYPASS_SECRET]").replace(/(_vercel_jwt=)[^;\s"']+/gi, "$1[REDACTED]").replace(/(x-vercel-protection-bypass\s*[:=]\s*)[^\s,"']+/gi, "$1[REDACTED]").replace(/Bearer\s+[^\s"']+/gi, "Bearer [REDACTED]").slice(0, 500);
 }
 
 export function buildSourceManifest(repoRoot, commit, spawn = spawnSync) {
@@ -131,10 +183,13 @@ export function verifyLocalBindings({ repoRoot, approval, operatorPath = "script
   if (sha256(read(operatorPath)) !== approval.operatorSha256 || sha256(read(qualifierPath)) !== approval.qualifierSha256) throw new Error("Executable binding mismatch.");
   const historical = path.join(repoRoot, "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260928a/evidence-manifest.tsv");
   const toolbar = path.join(repoRoot, "secure/restaurant-vercel-toolbar-investigation/restaurant-vercel-toolbar-investigation-20260928a/evidence-manifest.tsv");
-  const consumed = path.join(repoRoot, `secure/restaurant-vercel-browser-notification-qualification/${CONTINUATION.consumedQualificationId}/evidence-manifest.tsv`);
-  const consumedAuthority = path.join(repoRoot, CONTINUATION.authorityDirectory, `${CONTINUATION.consumedQualificationId}.json`);
-  const consumedManifest = path.join(repoRoot, CONTINUATION.authorityDirectory, `${CONTINUATION.consumedQualificationId}-source-manifest.tsv`);
-  if (sha256(fs.readFileSync(historical)) !== CONTINUATION.historicalQualificationManifestSha256 || sha256(fs.readFileSync(toolbar)) !== CONTINUATION.toolbarInvestigationManifestSha256 || sha256(fs.readFileSync(consumed)) !== CONTINUATION.consumedQualificationManifestSha256 || sha256(fs.readFileSync(consumedAuthority)) !== CONTINUATION.consumedAuthoritySha256 || sha256(fs.readFileSync(consumedManifest)) !== CONTINUATION.consumedSourceManifestSha256) throw new Error("Protected prerequisite evidence changed.");
+  if (sha256(fs.readFileSync(historical)) !== CONTINUATION.historicalQualificationManifestSha256 || sha256(fs.readFileSync(toolbar)) !== CONTINUATION.toolbarInvestigationManifestSha256) throw new Error("Protected prerequisite evidence changed.");
+  for (const consumed of CONTINUATION.consumedQualifications) {
+    const evidenceManifest = path.join(repoRoot, `secure/restaurant-vercel-browser-notification-qualification/${consumed.id}/${consumed.manifest}`);
+    const authority = path.join(repoRoot, CONTINUATION.authorityDirectory, `${consumed.id}.json`);
+    const sourceManifest = path.join(repoRoot, CONTINUATION.authorityDirectory, `${consumed.id}-source-manifest.tsv`);
+    if (sha256(fs.readFileSync(evidenceManifest)) !== consumed.manifestSha256 || sha256(fs.readFileSync(authority)) !== consumed.authoritySha256 || sha256(fs.readFileSync(sourceManifest)) !== consumed.sourceManifestSha256) throw new Error("Consumed qualification evidence changed.");
+  }
   for (const target of [path.join(repoRoot, CONTINUATION.evidenceDirectory), path.join(repoRoot, CONTINUATION.authorityDirectory, `${CONTINUATION.qualificationId}.json`)]) if (fs.existsSync(target)) throw new Error("Exclusive continuation path already exists.");
   return { head, manifest, historicalEvidence: true };
 }
