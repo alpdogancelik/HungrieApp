@@ -50,6 +50,7 @@
     "expo:config": "npm --prefix mobile run expo:config",
     "build:packages": "npm run build --workspace @hungrie/config && npm run build --workspace @hungrie/domain && npm run build --workspace @hungrie/database-types",
     "build:proof": "npm run build:packages && npm run export:web --workspace @hungrie/restaurant && npm run build --workspace @hungrie/admin-web",
+    "qualify:restaurant:local-release": "node scripts/qualify-restaurant-local-release.mjs",
     "test:proof-output": "node scripts/check-phase1-web-output.mjs",
     "test:proof-hosting": "node scripts/check-phase1-hosting.mjs",
     "phase1:operations:local": "node scripts/check-phase1-operations.mjs",

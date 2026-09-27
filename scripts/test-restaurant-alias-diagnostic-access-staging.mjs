@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { classifyHttpFailure, closeChrome, evaluateBrowserQualification, openChrome, qualifyAccount, routeStateReady, sanitizeDiagnosticText, sanitizeErrorBody, sanitizeInitiator, sanitizeObservedUrl, sanitizeRequest, sanitizeResponse, sanitizeResponseHeaders, waitForServiceWorkerReady } from "./qualify-restaurant-alias-diagnostic-access-staging.mjs";
+import { classifyHttpFailure, closeChrome, evaluateBrowserQualification, isSafetyQualificationError, openChrome, qualifyAccount, qualifyAccountsExhaustively, routeStateReady, sanitizeDiagnosticText, sanitizeErrorBody, sanitizeInitiator, sanitizeObservedUrl, sanitizeRequest, sanitizeResponse, sanitizeResponseHeaders, waitForServiceWorkerReady } from "./qualify-restaurant-alias-diagnostic-access-staging.mjs";
 
 const base = "https://candidate.example.invalid";
 const state = (path, operational = true) => ({ path, heading: "Dashboard", blank: false, operational, earningsLink: false, diagnostic: { errors: [], navigations: [], protectedBeforeReady: false } });
@@ -239,6 +239,33 @@ test("same-origin HTTP failure is classified and persisted after rendering", asy
   assert.equal(evidence.httpErrors.length, 1);
   assert.equal(evidence.httpErrors[0].status, 404);
   assert.ok(evidence.blockers.includes("SAME_ORIGIN_HTTP_ERROR"));
+});
+
+test("HTTP 401, 403, and 500 remain mandatory qualification failures", () => {
+  for (const status of [401, 403, 500]) {
+    const result = evaluateBrowserQualification(valid({ httpErrors: [{ url: `${base}/required.json`, path: "/required.json", status, type: "Fetch" }] }));
+    assert.equal(result.passed, false);
+    assert.ok(result.blockers.includes("SAME_ORIGIN_HTTP_ERROR"));
+  }
+});
+
+test("exhaustive account qualification continues after ordinary failures", async () => {
+  const cases = [{ name: "pending", expected: "/pending" }, { name: "suspended", expected: "/suspended" }, { name: "owner", expected: "/dashboard", direct: "/orders" }, { name: "manager", expected: "/dashboard", direct: "/orders" }];
+  const seen = [];
+  const result = await qualifyAccountsExhaustively({ cases, qualify: async item => { seen.push(item.name); if (["pending", "owner"].includes(item.name)) throw new Error("ordinary failure"); return { account: item.name, passed: true }; } });
+  assert.deepEqual(seen, cases.map(item => item.name));
+  assert.equal(result.classification, "FAIL");
+  assert.deepEqual(result.results.map(row => row.status), ["FAIL", "PASS", "FAIL", "PASS"]);
+});
+
+test("exhaustive account qualification stops only for a safety condition", async () => {
+  const cases = [{ name: "pending", expected: "/pending" }, { name: "suspended", expected: "/suspended" }, { name: "owner", expected: "/dashboard" }];
+  const seen = [], error = new Error("identity mismatch"); error.code = "IDENTITY_MISMATCH";
+  const result = await qualifyAccountsExhaustively({ cases, qualify: async item => { seen.push(item.name); if (item.name === "suspended") throw error; return { account: item.name, passed: true }; } });
+  assert.equal(isSafetyQualificationError(error), true);
+  assert.deepEqual(seen, ["pending", "suspended"]);
+  assert.equal(result.classification, "BLOCKED");
+  assert.deepEqual(result.results.map(row => row.status), ["PASS", "BLOCKED", "NOT EXECUTED"]);
 });
 
 test("HTTP 429 persists delivery metadata and hashed body before throwing", async t => {

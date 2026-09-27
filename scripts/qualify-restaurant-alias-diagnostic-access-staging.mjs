@@ -466,6 +466,57 @@ export async function qualifyAccount({
   }
 }
 
+export function isSafetyQualificationError(error) {
+  return [
+    "AUTHORIZATION_VIOLATION",
+    "CREDENTIAL_EXPOSURE",
+    "EVIDENCE_INTEGRITY_FAILURE",
+    "IDENTITY_MISMATCH",
+    "RESOURCE_SAFETY_LIMIT",
+    "UNEXPECTED_HOSTED_MUTATION",
+  ].includes(error?.code);
+}
+
+export async function qualifyAccountsExhaustively({ cases, qualify, onResult = async () => {} }) {
+  const results = [];
+  let safetyStop = null;
+  for (let index = 0; index < cases.length; index += 1) {
+    const item = cases[index];
+    if (safetyStop) {
+      const result = { account: item.name, expectedPath: item.expected, directPath: item.direct || null, passed: false, status: "NOT EXECUTED", blockers: ["SAFETY_STOP"] };
+      results.push(result);
+      await onResult(result);
+      continue;
+    }
+    try {
+      const evidence = await qualify(item);
+      const result = { ...evidence, status: evidence.passed === true ? "PASS" : "FAIL" };
+      results.push(result);
+      await onResult(result);
+    } catch (error) {
+      const safety = isSafetyQualificationError(error);
+      const result = {
+        account: item.name,
+        expectedPath: item.expected,
+        directPath: item.direct || null,
+        passed: false,
+        status: safety ? "BLOCKED" : "FAIL",
+        blockers: [safety ? error.code : "QUALIFICATION_EXCEPTION"],
+        error: sanitizeDiagnosticText(error?.message || error),
+      };
+      results.push(result);
+      await onResult(result);
+      if (safety) safetyStop = { account: item.name, code: error.code };
+    }
+  }
+  return {
+    passed: results.length === cases.length && results.every(result => result.status === "PASS"),
+    classification: safetyStop ? "BLOCKED" : results.every(result => result.status === "PASS") ? "PASS" : "FAIL",
+    safetyStop,
+    results,
+  };
+}
+
 export async function runAccessQualification(argv = process.argv.slice(2)) {
   const values = parseOptions(argv);
   if (values.environment !== "staging" || !values.authority || !values.accounts || !values["source-manifest"] || !values.confirm) throw new Error("Staging authority, source manifest, accounts, and confirmation are required.");
@@ -483,10 +534,18 @@ export async function runAccessQualification(argv = process.argv.slice(2)) {
   for (const name of ["pending", "suspended", "owner", "manager"]) if (!accounts[name]?.email || !accounts[name]?.password) throw new Error(`Missing ${name} qualification identity.`);
   const chromePath = values.chrome || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
   const cases = [{ name: "pending", expected: "/pending" }, { name: "suspended", expected: "/suspended" }, { name: "owner", expected: "/dashboard", direct: "/orders" }, { name: "manager", expected: "/dashboard", direct: "/orders" }];
-  const results = [];
-  for (const item of cases) results.push(await qualifyAccount({ accountName: item.name, account: accounts[item.name], expectedPath: item.expected, directPath: item.direct, baseUrl: deployment.url, directory, chromePath }));
-  const evidence = { schemaVersion: 1, passed: true, capturedAt: new Date().toISOString(), runId: authority.runId, qualificationId: `${authority.runId}:${deployment.deploymentIdentifier}:immutable-access`, deploymentIdentifier: deployment.deploymentIdentifier, immutableUrl: deployment.url, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, immutableEvidenceSha256, credentialValuesPersisted: false, results };
+  const progressPath = path.join(directory, "immutable-access-qualification-progress.json");
+  if (fs.existsSync(progressPath) || fs.existsSync(path.join(directory, "immutable-access-qualification.json"))) throw new Error("Immutable access qualification evidence already exists; replay is prohibited.");
+  atomicWrite(progressPath, { schemaVersion: 1, runId: authority.runId, deploymentIdentifier: deployment.deploymentIdentifier, capturedAt: new Date().toISOString(), results: [] });
+  const exhaustive = await qualifyAccountsExhaustively({
+    cases,
+    qualify: item => qualifyAccount({ accountName: item.name, account: accounts[item.name], expectedPath: item.expected, directPath: item.direct, baseUrl: deployment.url, directory, chromePath }),
+    onResult: async result => atomicWrite(progressPath, { schemaVersion: 1, runId: authority.runId, deploymentIdentifier: deployment.deploymentIdentifier, capturedAt: new Date().toISOString(), results: [...(fs.existsSync(progressPath) ? JSON.parse(fs.readFileSync(progressPath, "utf8")).results : []), result] }),
+  });
+  const results = exhaustive.results;
+  const evidence = { schemaVersion: 2, passed: exhaustive.passed, classification: exhaustive.classification, capturedAt: new Date().toISOString(), runId: authority.runId, qualificationId: `${authority.runId}:${deployment.deploymentIdentifier}:immutable-access`, deploymentIdentifier: deployment.deploymentIdentifier, immutableUrl: deployment.url, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, immutableEvidenceSha256, credentialValuesPersisted: false, boundedConcurrency: 1, safetyStop: exhaustive.safetyStop, results };
   const evidencePath = path.join(directory, "immutable-access-qualification.json"); atomicWrite(evidencePath, evidence);
+  if (!exhaustive.passed) throw new Error(`Immutable access qualification ${exhaustive.classification.toLowerCase()}; complete evidence persisted.`);
   return { passed: true, deploymentIdentifier: deployment.deploymentIdentifier, cases: results.map(result => ({ account: result.account, path: result.restored.path, navigationCount: result.restored.diagnostic.navigations.length, screenshotSha256: result.screenshot.sha256 })), evidenceSha256: sha256(fs.readFileSync(evidencePath)) };
 }
 
