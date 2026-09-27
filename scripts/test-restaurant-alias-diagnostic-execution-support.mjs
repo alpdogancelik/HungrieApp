@@ -487,7 +487,7 @@ test("future compatibility checkpoint must retain diagnostic executables and rev
   }
 });
 
-test("terminal run-L binding cannot prepare another hosted diagnostic authority", () => {
+test("fresh run-M binding prepares exactly one exclusive authority pair", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-authority-"));
   const calls = [];
   const spawn = (program, args) => {
@@ -502,11 +502,12 @@ test("terminal run-L binding cannot prepare another hosted diagnostic authority"
     throw new Error("Unexpected local git command: " + args.join(" "));
   };
   try {
-    assert.throws(
-      () => prepareAuthorityArtifacts({ repoRoot: root, approval: approval(), outputDirectory: directory, spawn, lineageVerifier: () => ({ passed: true }), executableVerifier: () => ({ passed: true }) }),
-      /authority preparation is disabled/i,
-    );
-    assert.deepEqual(fs.readdirSync(directory), []);
+    const prepared = prepareAuthorityArtifacts({ repoRoot: root, approval: approval(), outputDirectory: directory, spawn, lineageVerifier: () => ({ passed: true }), executableVerifier: () => ({ passed: true }) });
+    assert.deepEqual(fs.readdirSync(directory).sort(), [`${SUPPORT.runId}-authority.json`, `${SUPPORT.runId}-source-manifest.tsv`]);
+    assert.equal(prepared.authority.runId, SUPPORT.runId);
+    assert.equal(prepared.authority.sourceCommit, fakeSourceCommit);
+    assert.equal(prepared.sourceManifestSha256, fakeSourceManifestSha256);
+    assert.throws(() => prepareAuthorityArtifacts({ repoRoot: root, approval: approval(), outputDirectory: directory, spawn, lineageVerifier: () => ({ passed: true }), executableVerifier: () => ({ passed: true }) }), /overwrite prohibited/i);
     assert.ok(calls.every(([program]) => program === "git"));
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
@@ -530,11 +531,13 @@ test("authority rejects missing, placeholder, contradictory, and unapproved inpu
   assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260926h" })), /identity/i);
   assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260926i" })), /identity/i);
   assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260926j" })), /identity/i);
+  assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260926k" })), /identity/i);
+  assert.throws(() => validateOwnerAuthorization(approval({ runId: "ruip6ad_20260927l" })), /identity/i);
 });
 
 test("new run owns isolated authority and evidence identities", () => {
-  assert.equal(SUPPORT.runId, "ruip6ad_20260927l");
-  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260927l");
+  assert.equal(SUPPORT.runId, "ruip6ad_20260927m");
+  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260927m");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925a");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925b");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925c");
@@ -546,7 +549,8 @@ test("new run owns isolated authority and evidence identities", () => {
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260926i");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260926j");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260926k");
-  for (const suffix of ["20260925a", "20260925b", "20260925c", "20260925d", "20260925e", "20260926f", "20260926g", "20260926h", "20260926i", "20260926j"]) assert.ok(!SUPPORT.evidenceDirectory.includes(suffix));
+  assert.notEqual(SUPPORT.runId, "ruip6ad_20260927l");
+  for (const suffix of ["20260925a", "20260925b", "20260925c", "20260925d", "20260925e", "20260926f", "20260926g", "20260926h", "20260926i", "20260926j", "20260926k", "20260927l"]) assert.ok(!SUPPORT.evidenceDirectory.includes(suffix));
 });
 
 test("new-run checkpoint contract passes only the exact reviewed synthetic child", () => {
