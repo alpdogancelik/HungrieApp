@@ -109,7 +109,7 @@ export async function observeRequest({
   }
 }
 
-function expectedReference(expected) {
+export function validateAliasParityReference(expected) {
   if (!expected?.deploymentIdentifier || !Array.isArray(expected.routes) || !Array.isArray(expected.criticalAssets)) throw new Error("A fixed immutable parity reference is required.");
   const routes = expected.routes.map(row => ({ route: row.route, sha256: row.sha256 }));
   const assets = [...new Map(expected.criticalAssets.map(row => [row.asset, { asset: row.asset, sha256: row.sha256 }])).values()];
@@ -169,7 +169,7 @@ export async function verifyAliasParity({
   policy = ALIAS_PARITY_POLICY,
   deadlineSignal = remainingMs => AbortSignal.timeout(Math.max(1, remainingMs)),
 }) {
-  const expected = expectedReference(inputExpected);
+  const expected = validateAliasParityReference(inputExpected);
   const mode = policyMode(policy);
   const evidence = {
     schemaVersion: 1,

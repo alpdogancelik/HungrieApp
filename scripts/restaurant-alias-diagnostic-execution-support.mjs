@@ -12,6 +12,7 @@ import {
   verifyProtectedEvidence,
   verifyRollbackParity,
   validateRollbackReference as validateDeploymentRollbackReference,
+  validateImmutableParityReference,
   requireMaintenanceWindow,
 } from "./deploy-restaurant-alias-10-minute-diagnostic-staging.mjs";
 import { sanitizeError } from "./restaurant-alias-parity-verifier.mjs";
@@ -19,16 +20,23 @@ import { verifyReadOnlyEasExportEvidence } from "./verify-restaurant-alias-produ
 
 export const SUPPORT = Object.freeze({
   historicalApplicationTree: "ae03238ac8c34f4ef11365b5a5c51dee81187812",
-  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260927m-run-binding-contract.md",
-  proposalSha256: "cab627e96eaa768b1a0e9bb12efe962a9d20744790114fd83dfaee4356b46f86",
-  baseCheckpoint: "fbe71ca29ac630246f57a41d2099c71d10e10aa3",
-  baseSourceManifestSha256: "71640e60d2234466e75a3d63ed62ded30fcea6d28ff6cc3ba993290e3d268790",
-  baseSourceManifestFiles: 1570,
+  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260927n-single-approval-contract.md",
+  proposalSha256: "5bac2915ae05fa97f136862294d04042c53d1d3a992463612484f2b5d8dea29a",
+  baseCheckpoint: "d657ef6f20af98c1fd2674d098b0f2906a3abe70",
+  baseSourceManifestSha256: "e80aad3ebea4044bc1ab1983669846af81ddc20d7ec12612849f46aadd789667",
+  baseSourceManifestFiles: 1571,
   hostedAuthorityPreparationEnabled: true,
   checkpointFiles: Object.freeze([
-    "docs/restaurant-expo-alias-ruip6ad-20260927m-run-binding-contract.md",
+    "docs/restaurant-expo-alias-ruip6ad-20260927n-single-approval-contract.md",
+    "docs/restaurant-run-m-parity-reference-remediation-report.md",
+    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs",
+    "scripts/qualify-restaurant-local-release.mjs",
     "scripts/restaurant-alias-diagnostic-execution-support.mjs",
+    "scripts/restaurant-alias-parity-verifier.mjs",
+    "scripts/run-restaurant-alias-single-approval-staging.mjs",
+    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs",
     "scripts/test-restaurant-alias-diagnostic-execution-support.mjs",
+    "scripts/test-restaurant-alias-single-approval-staging.mjs",
   ]),
 
   acceptedLineage: Object.freeze([
@@ -365,15 +373,27 @@ export const SUPPORT = Object.freeze({
         "scripts/validate-restaurant-run-l-http429-observation-authority.mjs": "28b1053c7ba23510a0b356127132e0c6b253ebc7703d06535746dfafa8e8114d",
       }),
     }),
+    Object.freeze({
+      commit: "d657ef6f20af98c1fd2674d098b0f2906a3abe70",
+      parent: "fbe71ca29ac630246f57a41d2099c71d10e10aa3",
+      sourceManifestSha256: "e80aad3ebea4044bc1ab1983669846af81ddc20d7ec12612849f46aadd789667",
+      sourceManifestFiles: 1571,
+      applicationTree: "7430599b150adbd19ddafadce1195f1e418daf8a",
+      files: Object.freeze({
+        "docs/restaurant-expo-alias-ruip6ad-20260927m-run-binding-contract.md": "cab627e96eaa768b1a0e9bb12efe962a9d20744790114fd83dfaee4356b46f86",
+        "scripts/restaurant-alias-diagnostic-execution-support.mjs": "9e5828794b526318d58fc5d554c41a2ba8c2951e5bd90d3e5451c908e0621c2c",
+        "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "c3eafeca98a98ea918780930aa91391e331696f79d9ffbb85fe4203069b5d5b2",
+      }),
+    }),
   ]),
   diagnosticExecutableFiles: Object.freeze({
     "apps/restaurant/metro.config.js": "c1c09a3089568b12c4aeb9c1d30afb47bb7722dc9605fe534152424a4a2e64ad",
     "apps/restaurant/scripts/deterministic-metro-module-ids.cjs": "6201d56d5a815a5827d0625ac72878fed89fd9bb7255ca52cbfd0a690b74e54a",
     "apps/restaurant/scripts/deterministic-metro-module-map.json": "928fcbe1ba9aead4c2f180503254a4a6826033c33eabbad8f29fca24e4a056c8",
-    "scripts/restaurant-alias-parity-verifier.mjs": "e563d7a5203aaf6ea0e04687063d63027568fd2906accec43c26daaeea4ca1d8",
+    "scripts/restaurant-alias-parity-verifier.mjs": "79917030a568a8c1a5ab932965ede371370df2122e1a6f5bc6068fdd4aae3205",
     "scripts/test-restaurant-alias-parity-verifier.mjs": "6fa1ce21c047f93678be3c45fb71cd1f0e8167ed142fc259e55efddea1030afb",
-    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "0fd3bb82e8a619cb00e6de932846fffc4d1ce2946edbe78b7b7072daddd20b92",
-    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "80bf1f9a02a4901e85bb1b02b08e5f825460cb95a533aae332d0ac7d6062adad",
+    "scripts/deploy-restaurant-alias-10-minute-diagnostic-staging.mjs": "d6994f3881866adaf93535f033d502f03059bea5196d5d2806c8ff4a0b92bbcf",
+    "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs": "2d5ca6771b58349c189f9d89eb93f635048229a39e60c6a665bba4b262f5f13b",
     "scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs": "c5e0c9ad30db40567a6836ddcac94ffac348d25f330b9d42fe6188a3ecedd76a",
     "scripts/test-restaurant-deterministic-metro-module-ids.mjs": "c262a93e6788b0508bd07fdcb612f1126d9c440274ce4ea04901be7ff5930213",
     "scripts/verify-restaurant-alias-production-export-readiness.mjs": "4222eeafca09cc62f4079290fcb963d6fad8047ac090994ed71077a8038a9463",
@@ -381,10 +401,14 @@ export const SUPPORT = Object.freeze({
     "scripts/test-restaurant-alias-staging-public-build-inputs.mjs": "423fb4a83e416c14dd3e2348c5cf50b90da8599c8c678a0ce05b678f142377c6",
     "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "a8c066e9a756fa27586ebe717f652befc6dd1011507ae1af30ad07bafe99a509",
     "scripts/test-restaurant-alias-diagnostic-access-staging.mjs": "65695a6a5041f9e3be57be2d1a435687ce7e93bf562c43b99ce1a57fa0b7a1cb",
+    "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "541cf437daa8df6fc9aaebcea5b98b304b96529d649323379db3e9c360310d3f",
+    "scripts/run-restaurant-alias-single-approval-staging.mjs": "b60cc0b2277777ea21a6bc713c3cba60fd9d1b5da07a51d11f80f8be4f28e7b0",
+    "scripts/test-restaurant-alias-single-approval-staging.mjs": "8893d14805508b957e2ca4cfc37d97783d5416d10a4ea6c89ba36b2334ef2725",
+    "scripts/qualify-restaurant-local-release.mjs": "399b5b0b6ef6925e9253bc3fa641c79fece94f6ca07fa02312c90a5d69df1689",
   }),
   applicationTree: DIAGNOSTIC_OPERATOR.applicationTree,
-  runId: "ruip6ad_20260927m",
-  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260927m",
+  runId: "ruip6ad_20260927n",
+  evidenceDirectory: "secure/restaurant-alias-diagnostic/ruip6ad_20260927n",
   authorityDirectory: "secure/restaurant-alias-diagnostic-authority",
   migrationFunctions: Object.freeze({
     "private.raise_restaurant_order_conflict_v1(text)": Object.freeze({
@@ -493,17 +517,39 @@ function exactKeys(value, expected, label) {
 }
 
 export function buildSourceManifest(repoRoot, commit = SUPPORT.baseCheckpoint, spawn = spawnSync) {
-  const tree = spawn("git", ["ls-tree", "-r", "--name-only", "-z", commit], { cwd: repoRoot, encoding: null, maxBuffer: 128 * 1024 * 1024 });
+  const tree = spawn("git", ["ls-tree", "-r", "-z", commit], { cwd: repoRoot, encoding: null, maxBuffer: 128 * 1024 * 1024 });
   if (tree.status !== 0) throw new Error("Unable to enumerate accepted checkpoint.");
-  const paths = tree.stdout.toString("utf8").split("\0").filter(Boolean).sort();
+  const rows = tree.stdout.toString("utf8").split("\0").filter(Boolean);
+  const entries = rows.map(row => {
+    const match = row.match(/^\d+\s+blob\s+([a-f0-9]+)\t(.+)$/s);
+    return match ? { object: match[1], path: match[2] } : { object: null, path: row };
+  }).sort((left, right) => left.path < right.path ? -1 : left.path > right.path ? 1 : 0);
+  if (entries.some(row => row.object === null)) {
+    const lines = entries.map(entry => {
+      const blob = spawn("git", ["show", commit + ":" + entry.path], { cwd: repoRoot, encoding: null, maxBuffer: 128 * 1024 * 1024 });
+      if (blob.status !== 0) throw new Error("Unable to read checkpoint blob: " + entry.path);
+      return sha256(blob.stdout) + "\t" + blob.stdout.length + "\t" + entry.path + "\n";
+    });
+    const bytes = Buffer.from(lines.join(""));
+    return { commit, files: entries.length, bytes, sha256: sha256(bytes) };
+  }
+  const batch = spawn("git", ["cat-file", "--batch"], { cwd: repoRoot, encoding: null, input: Buffer.from(entries.map(row => row.object + "\n").join("")), maxBuffer: 256 * 1024 * 1024 });
+  if (batch.status !== 0) throw new Error("Unable to read accepted checkpoint blobs.");
+  let offset = 0;
   const lines = [];
-  for (const relative of paths) {
-    const blob = spawn("git", ["show", commit + ":" + relative], { cwd: repoRoot, encoding: null, maxBuffer: 128 * 1024 * 1024 });
-    if (blob.status !== 0) throw new Error("Unable to read checkpoint blob: " + relative);
-    lines.push(sha256(blob.stdout) + "\t" + blob.stdout.length + "\t" + relative + "\n");
+  for (const entry of entries) {
+    const newline = batch.stdout.indexOf(10, offset);
+    if (newline < 0) throw new Error("Accepted checkpoint batch header is incomplete.");
+    const header = batch.stdout.subarray(offset, newline).toString("utf8").split(" ");
+    const bytes = Number(header[2]);
+    if (header[0] !== entry.object || header[1] !== "blob" || !Number.isSafeInteger(bytes)) throw new Error("Accepted checkpoint batch identity mismatch.");
+    const blob = batch.stdout.subarray(newline + 1, newline + 1 + bytes);
+    if (blob.length !== bytes || batch.stdout[newline + 1 + bytes] !== 10) throw new Error("Accepted checkpoint batch content is incomplete.");
+    lines.push(sha256(blob) + "\t" + bytes + "\t" + entry.path + "\n");
+    offset = newline + 2 + bytes;
   }
   const bytes = Buffer.from(lines.join(""));
-  return { commit, files: paths.length, bytes, sha256: sha256(bytes) };
+  return { commit, files: entries.length, bytes, sha256: sha256(bytes) };
 }
 
 function gitResult(repoRoot, args, spawn, encoding = "utf8") {
@@ -1054,11 +1100,13 @@ export function buildFinalPreflight({ authority, reads, protectedEvidence, runDi
   const artifact = requireRunEvidence(path.join(runDirectory, "artifact-manifest.json"), "Artifact");
   const deployment = requireRunEvidence(path.join(runDirectory, "immutable-deployment.json"), "Deployment");
   const immutable = requireRunEvidence(path.join(runDirectory, "immutable-smoke.json"), "Immutable parity");
+  const parityReference = requireRunEvidence(path.join(runDirectory, "immutable-parity-reference.json"), "Immutable observation parity reference");
   const access = requireRunEvidence(path.join(runDirectory, "immutable-access-qualification.json"), "Immutable access");
   const fresh = consumeFreshRollbackRecapture(runDirectory, authority, currentMs);
   const rollback = fresh.reference;
   if (artifact.value.runId !== authority.runId || artifact.value.sourceCommit !== authority.sourceCommit || artifact.value.sourceManifestSha256 !== authority.sourceManifestSha256 || artifact.value.buildInputContractSha256 !== DIAGNOSTIC_OPERATOR.buildInputContractSha256 || artifact.value.buildInputs?.length !== 9 || artifact.value.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact.value.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Final build-input and artifact binding mismatch.");
   if (!deployment.value.deploymentIdentifier || deployment.value.url !== immutable.value.url || immutable.value.passed !== true || immutable.value.deploymentIdentifier !== deployment.value.deploymentIdentifier) throw new Error("Final immutable candidate mismatch.");
+  validateImmutableParityReference({ authority, deployment: deployment.value, immutable: immutable.value, immutableEvidenceSha256: immutable.sha256, reference: parityReference.value, referenceEvidenceSha256: parityReference.sha256, currentMs });
   const resourceInventory = consumeRegisteredDeployment(runDirectory, authority, deployment);
   if (access.value.passed !== true || access.value.deploymentIdentifier !== deployment.value.deploymentIdentifier || access.value.immutableUrl !== deployment.value.url || access.value.immutableEvidenceSha256 !== immutable.sha256) throw new Error("Final access evidence mismatch.");
   if (rollback.value.passed !== true || rollback.value.deploymentIdentifier !== DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment) throw new Error("Final rollback identity mismatch.");
@@ -1082,7 +1130,7 @@ export function buildFinalPreflight({ authority, reads, protectedEvidence, runDi
     migration: snapshot.migration,
     earnings: snapshot.earnings,
     protectedEvidence,
-    candidate: { deploymentIdentifier: deployment.value.deploymentIdentifier, url: deployment.value.url, immutableEvidenceSha256: immutable.sha256, accessEvidenceSha256: access.sha256 },
+    candidate: { deploymentIdentifier: deployment.value.deploymentIdentifier, url: deployment.value.url, immutableEvidenceSha256: immutable.sha256, parityReferenceSha256: parityReference.sha256, accessEvidenceSha256: access.sha256 },
     rollback: { deploymentIdentifier: rollback.value.deploymentIdentifier, referenceSha256: rollback.sha256, parityPassed: true, freshRecaptureVerificationSha256: fresh.verification.sha256, originalHistoricalReferenceSha256: fresh.verification.value.historical.reference.sha256 },
     resourceInventory: { sha256: resourceInventory.sha256, state: resourceInventory.value.state, deploymentAttemptCount: resourceInventory.value.deploymentAttemptCount },
     observationEvidence: Object.fromEntries(Object.entries(snapshot.observations).map(([name, row]) => [name, { requestId: row.requestId, payloadSha256: row.payloadSha256, completedAt: row.completedAt }])),

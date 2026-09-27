@@ -11,6 +11,7 @@ import {
   classifyVerificationNextAction,
   createDeterministicArchive,
   consumeDeploymentReservation,
+  buildImmutableParityReference,
   executePromotionBoundary,
   performSinglePromotion,
   promotionCommand,
@@ -21,6 +22,7 @@ import {
   validateAuthority,
   validateRollbackReference,
   validateImmediateRollbackRecheck,
+  validateImmutableParityReference,
   validatePromotionPrerequisites,
   verifyImmutableArtifactParity,
   verifyLocalExportOutput,
@@ -28,6 +30,7 @@ import {
   verifyRollbackParity,
 } from "./deploy-restaurant-alias-10-minute-diagnostic-staging.mjs";
 import { sanitizeRequest } from "./qualify-restaurant-alias-diagnostic-access-staging.mjs";
+import { validateAliasParityReference } from "./restaurant-alias-parity-verifier.mjs";
 
 const hash = value => crypto.createHash("sha256").update(value).digest("hex");
 const candidateHtml = Buffer.from('<!doctype html><link href="/app.css" rel="stylesheet"><script src="/app.js"></script>');
@@ -115,14 +118,15 @@ function validPromotionEvidence() {
   const currentMs = Date.parse("2026-09-25T10:00:00.000Z"), capturedAt = new Date(currentMs - 10_000).toISOString();
   const approved = authority(), deployment = { deploymentIdentifier: "new-candidate", url: "https://new-candidate.expo.app", sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256 };
   const artifact = { runId: approved.runId, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree, buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256, buildInputs: Array.from({ length: 9 }, (_, index) => ({ name: `EXPO_PUBLIC_FIXTURE_${index}`, passed: true })), artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, files: Array.from({ length: 74 }, (_, index) => ({ path: `file-${index}`, bytes: 1, sha256: evidenceHash("a") })) };
-  const immutableEvidenceSha256 = evidenceHash("d"), accessEvidenceSha256 = evidenceHash("e"), rollbackEvidenceSha256 = evidenceHash("f");
-  const immutable = { passed: true, completedAt: capturedAt, runId: approved.runId, deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, artifactFiles: 74, routes: Array.from({ length: 6 }, () => ({ passed: true })), criticalAssets: Array.from({ length: 5 }, () => ({ passed: true })), publishedFiles: Array.from({ length: 73 }, () => ({ passed: true })), deploymentControls: [{ path: "_expo/.routes.json", publicUrlExpected: false, disposition: "consumed-as-static-routing-configuration", passed: true }], externalRuntime: Array.from({ length: 2 }, () => ({ passed: true })) };
+  const immutableEvidenceSha256 = evidenceHash("d"), parityReferenceEvidenceSha256 = evidenceHash("7"), accessEvidenceSha256 = evidenceHash("e"), rollbackEvidenceSha256 = evidenceHash("f");
+  const immutable = { passed: true, completedAt: capturedAt, runId: approved.runId, deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, artifactFiles: 74, routes: Array.from({ length: 6 }, (_, index) => ({ route: `/route-${index}`, passed: true, expected: { sha256: evidenceHash(String(index + 1)) }, actual: { sha256: evidenceHash(String(index + 1)) } })), criticalAssets: Array.from({ length: 5 }, (_, index) => ({ asset: `/asset-${index}.js`, passed: true, expected: { sha256: evidenceHash(String(index + 1)) }, actual: { sha256: evidenceHash(String(index + 1)) } })), publishedFiles: Array.from({ length: 73 }, () => ({ passed: true })), deploymentControls: [{ path: "_expo/.routes.json", publicUrlExpected: false, disposition: "consumed-as-static-routing-configuration", passed: true }], externalRuntime: Array.from({ length: 2 }, () => ({ passed: true })) };
+  const parityReference = { schemaVersion: 1, passed: true, capturedAt, runId: approved.runId, deploymentIdentifier: deployment.deploymentIdentifier, immutableUrl: deployment.url, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, immutableEvidenceSha256, routes: immutable.routes.map(row => ({ route: row.route, sha256: row.expected.sha256 })), criticalAssets: immutable.criticalAssets.map(row => ({ asset: row.asset, sha256: row.expected.sha256 })) };
   const access = { passed: true, capturedAt, runId: approved.runId, qualificationId: `${approved.runId}:${deployment.deploymentIdentifier}:immutable-access`, deploymentIdentifier: deployment.deploymentIdentifier, immutableUrl: deployment.url, sourceCommit: approved.sourceCommit, sourceManifestSha256: approved.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, immutableEvidenceSha256, results: [["pending", "/pending"], ["suspended", "/suspended"], ["owner", "/dashboard"], ["manager", "/dashboard"]].map(([account, expectedPath]) => ({ passed: true, account, expectedPath })) };
   const rollbackAssets = [{ asset: "/old.js", bytes: 1, sha256: evidenceHash("2") }];
   const rollback = { passed: true, capturedAt, runId: approved.runId, deploymentIdentifier: DIAGNOSTIC_OPERATOR.lastVerifiedRollbackDeployment, deploymentUrl: "https://rollback.invalid", routes: Array.from({ length: 6 }, (_, index) => ({ route: `/route-${index}`, bytes: 1, sha256: evidenceHash("1"), referencedAssets: rollbackAssets.map(row => row.asset) })), criticalAssets: rollbackAssets, runtimeFiles: DIAGNOSTIC_OPERATOR.runtimeFiles.map((runtimePath, i) => ({ path: runtimePath, bytes: 1, sha256: hash("runtime" + i) })), externalRuntime: DIAGNOSTIC_OPERATOR.externalRuntime.map((row, i) => ({ url: row.url, bytes: i ? 37024 : 31766, sha256: row.sha256 })) };
   rollback.contractSha256 = rollbackContractDigest(rollback);
-  const preflight = { passed: true, capturedAt, runId: approved.runId, environment: "staging", identities: { supabaseProjectRef: DIAGNOSTIC_OPERATOR.supabaseProjectRef, firebaseProjectId: DIAGNOSTIC_OPERATOR.firebaseProjectId, easProjectId: DIAGNOSTIC_OPERATOR.easProjectId, aliasId: DIAGNOSTIC_OPERATOR.aliasId, aliasName: DIAGNOSTIC_OPERATOR.aliasName, aliasUrl: DIAGNOSTIC_OPERATOR.aliasUrl }, source: { commit: approved.sourceCommit, manifestSha256: approved.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree }, artifact: { manifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256 }, migration: { ...DIAGNOSTIC_OPERATOR.conflictMigration, appliedExactlyOnce: true, pendingCount: 0 }, earnings: { capability: "restaurant_earnings_v1", enabled: false }, protectedEvidence: DIAGNOSTIC_OPERATOR.protectedEvidence.map(row => ({ ...row, passed: true })), candidate: { deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url, immutableEvidenceSha256, accessEvidenceSha256 }, rollback: { deploymentIdentifier: rollback.deploymentIdentifier, referenceSha256: rollbackEvidenceSha256, parityPassed: true } };
-  return { authority: approved, artifact, artifactEntriesSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveEvidenceSha256: DIAGNOSTIC_OPERATOR.archiveSha256, deployment, immutable, immutableEvidenceSha256, access, accessEvidenceSha256, rollback, rollbackEvidenceSha256, preflight, protectedEvidenceVerification: DIAGNOSTIC_OPERATOR.protectedEvidence.map(row => ({ ...row, passed: true })), currentMs };
+  const preflight = { passed: true, capturedAt, runId: approved.runId, environment: "staging", identities: { supabaseProjectRef: DIAGNOSTIC_OPERATOR.supabaseProjectRef, firebaseProjectId: DIAGNOSTIC_OPERATOR.firebaseProjectId, easProjectId: DIAGNOSTIC_OPERATOR.easProjectId, aliasId: DIAGNOSTIC_OPERATOR.aliasId, aliasName: DIAGNOSTIC_OPERATOR.aliasName, aliasUrl: DIAGNOSTIC_OPERATOR.aliasUrl }, source: { commit: approved.sourceCommit, manifestSha256: approved.sourceManifestSha256, applicationTree: DIAGNOSTIC_OPERATOR.applicationTree }, artifact: { manifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256 }, migration: { ...DIAGNOSTIC_OPERATOR.conflictMigration, appliedExactlyOnce: true, pendingCount: 0 }, earnings: { capability: "restaurant_earnings_v1", enabled: false }, protectedEvidence: DIAGNOSTIC_OPERATOR.protectedEvidence.map(row => ({ ...row, passed: true })), candidate: { deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url, immutableEvidenceSha256, parityReferenceSha256: parityReferenceEvidenceSha256, accessEvidenceSha256 }, rollback: { deploymentIdentifier: rollback.deploymentIdentifier, referenceSha256: rollbackEvidenceSha256, parityPassed: true } };
+  return { authority: approved, artifact, artifactEntriesSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveEvidenceSha256: DIAGNOSTIC_OPERATOR.archiveSha256, deployment, immutable, immutableEvidenceSha256, parityReference, parityReferenceEvidenceSha256, access, accessEvidenceSha256, rollback, rollbackEvidenceSha256, preflight, protectedEvidenceVerification: DIAGNOSTIC_OPERATOR.protectedEvidence.map(row => ({ ...row, passed: true })), currentMs };
 }
 
 function clone(value) { return structuredClone(value); }
@@ -331,6 +335,40 @@ test("immutable qualification requires exact accepted route and asset bytes", as
 test("promotion prerequisites accept only the complete fresh bound evidence set", () => {
   const evidence = validPromotionEvidence();
   assert.equal(validatePromotionPrerequisites(evidence), true);
+});
+
+test("run-M nested immutable evidence reproduces the incomplete observation reference defect", () => {
+  const evidence = validPromotionEvidence();
+  const runMShape = { deploymentIdentifier: evidence.immutable.deploymentIdentifier, routes: evidence.immutable.routes, criticalAssets: evidence.immutable.criticalAssets };
+  assert.throws(() => validateAliasParityReference(runMShape), /incomplete/i);
+  assert.doesNotThrow(() => validateAliasParityReference(evidence.parityReference));
+});
+
+test("immutable parity reference builder creates the exact six-route and five-asset observation contract", () => {
+  const evidence = validPromotionEvidence();
+  const built = buildImmutableParityReference({ authority: evidence.authority, deployment: evidence.deployment, immutable: evidence.immutable, immutableEvidenceSha256: evidence.immutableEvidenceSha256, capturedAt: evidence.parityReference.capturedAt });
+  assert.deepEqual(built.routes, evidence.parityReference.routes);
+  assert.deepEqual(built.criticalAssets, evidence.parityReference.criticalAssets);
+  assert.doesNotThrow(() => validateAliasParityReference(built));
+});
+
+test("pre-promotion parity reference rejects missing, malformed, stale, and identity-mismatched evidence", () => {
+  const cases = [
+    value => { value.parityReference = null; },
+    value => { delete value.parityReference.routes[0].sha256; },
+    value => { value.parityReference.capturedAt = "2026-09-25T07:00:00.000Z"; },
+    value => { value.parityReference.runId = "ruip6ad_other"; },
+    value => { value.parityReference.deploymentIdentifier = "other"; },
+    value => { value.parityReference.immutableEvidenceSha256 = evidenceHash("0"); },
+    value => { value.parityReference.routes.pop(); },
+    value => { value.parityReference.criticalAssets.pop(); },
+    value => { value.parityReferenceEvidenceSha256 = "bad"; },
+    value => { value.preflight.candidate.parityReferenceSha256 = evidenceHash("0"); },
+  ];
+  for (const mutate of cases) {
+    const value = validPromotionEvidence(); mutate(value);
+    assert.throws(() => validatePromotionPrerequisites(value));
+  }
 });
 
 test("promotion rejects every missing, stale, failed, or mismatched immutable prerequisite", () => {

@@ -9,6 +9,7 @@ import {
   ALIAS_PARITY_DIAGNOSTIC_POLICY,
   observeRequest,
   sanitizeError,
+  validateAliasParityReference,
   verifyAliasParity,
 } from "./restaurant-alias-parity-verifier.mjs";
 
@@ -460,11 +461,49 @@ function exactProtectedEvidence(rows) {
   });
 }
 
-export function validatePromotionPrerequisites({ authority, artifact, artifactEntriesSha256, archiveEvidenceSha256, deployment, immutable, immutableEvidenceSha256, access, accessEvidenceSha256, rollback, rollbackEvidenceSha256, preflight, protectedEvidenceVerification, currentMs = Date.now() }) {
+export function buildImmutableParityReference({ authority, deployment, immutable, immutableEvidenceSha256, capturedAt = now() }) {
+  if (immutable?.passed !== true || immutable.runId !== authority.runId || immutable.deploymentIdentifier !== deployment.deploymentIdentifier || immutable.url !== deployment.url) throw new Error("Passing run-bound immutable evidence is required to build the parity reference.");
+  if (!/^[a-f0-9]{64}$/.test(immutableEvidenceSha256 || "")) throw new Error("Hashed immutable evidence is required to build the parity reference.");
+  const reference = {
+    schemaVersion: 1,
+    passed: true,
+    capturedAt,
+    runId: authority.runId,
+    deploymentIdentifier: deployment.deploymentIdentifier,
+    immutableUrl: deployment.url,
+    sourceCommit: authority.sourceCommit,
+    sourceManifestSha256: authority.sourceManifestSha256,
+    artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256,
+    immutableEvidenceSha256,
+    routes: (immutable.routes || []).map(row => ({ route: row.route, sha256: row.expected?.sha256 })),
+    criticalAssets: (immutable.criticalAssets || []).map(row => ({ asset: row.asset, sha256: row.expected?.sha256 })),
+  };
+  validateImmutableParityReference({ authority, deployment, immutable, immutableEvidenceSha256, reference, referenceEvidenceSha256: sha256(Buffer.from(canonical(reference))), currentMs: Date.parse(capturedAt) });
+  return reference;
+}
+
+export function validateImmutableParityReference({ authority, deployment, immutable, immutableEvidenceSha256, reference, referenceEvidenceSha256, currentMs = Date.now() }) {
+  requireFresh("Immutable parity reference", reference?.capturedAt, DIAGNOSTIC_OPERATOR.freshnessMs.immutable, currentMs);
+  const normalized = validateAliasParityReference(reference);
+  if (reference?.schemaVersion !== 1 || reference.passed !== true || reference.runId !== authority.runId || reference.deploymentIdentifier !== deployment.deploymentIdentifier || reference.immutableUrl !== deployment.url || reference.sourceCommit !== authority.sourceCommit || reference.sourceManifestSha256 !== authority.sourceManifestSha256 || reference.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || reference.immutableEvidenceSha256 !== immutableEvidenceSha256 || !/^[a-f0-9]{64}$/.test(referenceEvidenceSha256 || "")) throw new Error("Immutable parity reference identity mismatch.");
+  if (normalized.routes.length !== 6 || normalized.criticalAssets.length !== 5 || new Set(normalized.routes.map(row => row.route)).size !== 6 || new Set(normalized.criticalAssets.map(row => row.asset)).size !== 5) throw new Error("Immutable parity reference does not contain the complete six-route and five-asset set.");
+  for (const row of immutable.routes || []) {
+    const actual = normalized.routes.find(value => value.route === row.route);
+    if (row.passed !== true || !row.expected?.sha256 || row.expected.sha256 !== row.actual?.sha256 || actual?.sha256 !== row.expected.sha256) throw new Error("Immutable parity route reference differs from verified publication evidence.");
+  }
+  for (const row of immutable.criticalAssets || []) {
+    const actual = normalized.criticalAssets.find(value => value.asset === row.asset);
+    if (row.passed !== true || !row.expected?.sha256 || row.expected.sha256 !== row.actual?.sha256 || actual?.sha256 !== row.expected.sha256) throw new Error("Immutable parity asset reference differs from verified publication evidence.");
+  }
+  return normalized;
+}
+
+export function validatePromotionPrerequisites({ authority, artifact, artifactEntriesSha256, archiveEvidenceSha256, deployment, immutable, immutableEvidenceSha256, parityReference, parityReferenceEvidenceSha256, access, accessEvidenceSha256, rollback, rollbackEvidenceSha256, preflight, protectedEvidenceVerification, currentMs = Date.now() }) {
   if (artifact?.runId !== authority.runId || artifact?.sourceCommit !== authority.sourceCommit || artifact?.sourceManifestSha256 !== authority.sourceManifestSha256 || artifact?.applicationTree !== DIAGNOSTIC_OPERATOR.applicationTree || artifact?.buildInputContractSha256 !== DIAGNOSTIC_OPERATOR.buildInputContractSha256 || artifact?.buildInputs?.length !== 9 || !artifact.buildInputs.every(row => row.passed === true) || artifact?.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || artifact?.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || artifact?.files?.length !== 74 || artifactEntriesSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || archiveEvidenceSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Accepted run-bound build-input and artifact evidence required.");
   if (!deployment?.deploymentIdentifier || REJECTED_DEPLOYMENTS.includes(deployment.deploymentIdentifier) || deployment.url !== immutable?.url || deployment.sourceCommit !== authority.sourceCommit || deployment.sourceManifestSha256 !== authority.sourceManifestSha256 || deployment.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256) throw new Error("Candidate deployment identity mismatch.");
   requireFresh("Immutable qualification", immutable?.completedAt, DIAGNOSTIC_OPERATOR.freshnessMs.immutable, currentMs);
   if (immutable?.passed !== true || immutable.runId !== authority.runId || immutable.deploymentIdentifier !== deployment.deploymentIdentifier || immutable.sourceCommit !== authority.sourceCommit || immutable.sourceManifestSha256 !== authority.sourceManifestSha256 || immutable.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || immutable.archiveSha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || immutable.artifactFiles !== 74 || immutable.routes?.length !== 6 || !immutable.routes.every(row => row.passed) || immutable.criticalAssets?.length !== 5 || !immutable.criticalAssets.every(row => row.passed) || immutable.publishedFiles?.length !== 73 || !immutable.publishedFiles.every(row => row.passed) || immutable.deploymentControls?.length !== 1 || !immutable.deploymentControls.every(row => row.passed && row.path === "_expo/.routes.json" && row.publicUrlExpected === false && row.disposition === "consumed-as-static-routing-configuration") || immutable.publishedFiles.length + immutable.deploymentControls.length !== immutable.artifactFiles || immutable.externalRuntime?.length !== 2 || !immutable.externalRuntime.every(row => row.passed) || !/^[a-f0-9]{64}$/.test(immutableEvidenceSha256 || "")) throw new Error("Complete passing immutable-to-artifact qualification required.");
+  validateImmutableParityReference({ authority, deployment, immutable, immutableEvidenceSha256, reference: parityReference, referenceEvidenceSha256: parityReferenceEvidenceSha256, currentMs });
   requireFresh("Immutable access qualification", access?.capturedAt, DIAGNOSTIC_OPERATOR.freshnessMs.access, currentMs);
   const expectedAccess = new Map([["pending", "/pending"], ["suspended", "/suspended"], ["owner", "/dashboard"], ["manager", "/dashboard"]]);
   if (access?.passed !== true || access.runId !== authority.runId || access.qualificationId !== `${authority.runId}:${deployment.deploymentIdentifier}:immutable-access` || deployment.deploymentIdentifier !== access.deploymentIdentifier || access.immutableUrl !== deployment.url || access.sourceCommit !== authority.sourceCommit || access.sourceManifestSha256 !== authority.sourceManifestSha256 || access.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || access.immutableEvidenceSha256 !== immutableEvidenceSha256 || access.results?.length !== 4 || !/^[a-f0-9]{64}$/.test(accessEvidenceSha256 || "") || ![...expectedAccess].every(([name, expectedPath]) => { const row = access.results.find(value => value.account === name); return row?.passed === true && row.expectedPath === expectedPath; })) throw new Error("Complete candidate-bound four-state immutable access qualification required.");
@@ -478,7 +517,7 @@ export function validatePromotionPrerequisites({ authority, artifact, artifactEn
   if (preflight.earnings?.capability !== "restaurant_earnings_v1" || preflight.earnings?.enabled !== false) throw new Error("Earnings-disabled preflight required.");
   if (!exactProtectedEvidence(preflight.protectedEvidence)) throw new Error("Unchanged protected prior-run evidence required.");
   if (!exactProtectedEvidence(protectedEvidenceVerification)) throw new Error("Independent protected prior-run evidence verification required.");
-  if (preflight.candidate?.deploymentIdentifier !== deployment.deploymentIdentifier || preflight.candidate?.url !== deployment.url || preflight.candidate?.immutableEvidenceSha256 !== immutableEvidenceSha256 || preflight.candidate?.accessEvidenceSha256 !== accessEvidenceSha256 || preflight.rollback?.deploymentIdentifier !== rollback.deploymentIdentifier || preflight.rollback?.referenceSha256 !== rollbackEvidenceSha256 || preflight.rollback?.parityPassed !== true) throw new Error("Preflight candidate or rollback evidence binding mismatch.");
+  if (preflight.candidate?.deploymentIdentifier !== deployment.deploymentIdentifier || preflight.candidate?.url !== deployment.url || preflight.candidate?.immutableEvidenceSha256 !== immutableEvidenceSha256 || preflight.candidate?.parityReferenceSha256 !== parityReferenceEvidenceSha256 || preflight.candidate?.accessEvidenceSha256 !== accessEvidenceSha256 || preflight.rollback?.deploymentIdentifier !== rollback.deploymentIdentifier || preflight.rollback?.referenceSha256 !== rollbackEvidenceSha256 || preflight.rollback?.parityPassed !== true) throw new Error("Preflight candidate or rollback evidence binding mismatch.");
   return true;
 }
 
@@ -488,14 +527,14 @@ export function validateImmediateRollbackRecheck({ evidence, rollback, completed
   return true;
 }
 
-export async function executePromotionBoundary({ authority, artifact, artifactEntriesSha256, archiveEvidenceSha256, deployment, immutable, immutableEvidenceSha256, access, accessEvidenceSha256, rollback, rollbackEvidenceSha256, preflight, preflightEvidenceSha256, protectedEvidenceVerification, currentMs = Date.now(), recheckRollback, runDirectory, appRoot, spawn = spawnSync }) {
+export async function executePromotionBoundary({ authority, artifact, artifactEntriesSha256, archiveEvidenceSha256, deployment, immutable, immutableEvidenceSha256, parityReference, parityReferenceEvidenceSha256, access, accessEvidenceSha256, rollback, rollbackEvidenceSha256, preflight, preflightEvidenceSha256, protectedEvidenceVerification, currentMs = Date.now(), recheckRollback, runDirectory, appRoot, spawn = spawnSync }) {
   if (!/^[a-f0-9]{64}$/.test(preflightEvidenceSha256 || "")) throw new Error("Hashed promotion preflight evidence required.");
-  validatePromotionPrerequisites({ authority, artifact, artifactEntriesSha256, archiveEvidenceSha256, deployment, immutable, immutableEvidenceSha256, access, accessEvidenceSha256, rollback, rollbackEvidenceSha256, preflight, protectedEvidenceVerification, currentMs });
+  validatePromotionPrerequisites({ authority, artifact, artifactEntriesSha256, archiveEvidenceSha256, deployment, immutable, immutableEvidenceSha256, parityReference, parityReferenceEvidenceSha256, access, accessEvidenceSha256, rollback, rollbackEvidenceSha256, preflight, protectedEvidenceVerification, currentMs });
   const recheck = await recheckRollback();
   const promotionMs = recheck.currentMs ?? Date.now();
   validateImmediateRollbackRecheck({ evidence: recheck.evidence, rollback, completedEvidenceSha256: recheck.sha256, currentMs: promotionMs });
-  validatePromotionPrerequisites({ authority, artifact, artifactEntriesSha256, archiveEvidenceSha256, deployment, immutable, immutableEvidenceSha256, access, accessEvidenceSha256, rollback, rollbackEvidenceSha256, preflight, protectedEvidenceVerification, currentMs: promotionMs });
-  const record = { attemptedAt: new Date(promotionMs).toISOString(), runId: authority.runId, aliasId: DIAGNOSTIC_OPERATOR.aliasId, aliasName: DIAGNOSTIC_OPERATOR.aliasName, deploymentIdentifier: deployment.deploymentIdentifier, preflightSha256: preflightEvidenceSha256, rollbackReferenceSha256: rollbackEvidenceSha256, rollbackRecheckSha256: recheck.sha256, immutableEvidenceSha256, accessEvidenceSha256 };
+  validatePromotionPrerequisites({ authority, artifact, artifactEntriesSha256, archiveEvidenceSha256, deployment, immutable, immutableEvidenceSha256, parityReference, parityReferenceEvidenceSha256, access, accessEvidenceSha256, rollback, rollbackEvidenceSha256, preflight, protectedEvidenceVerification, currentMs: promotionMs });
+  const record = { attemptedAt: new Date(promotionMs).toISOString(), runId: authority.runId, aliasId: DIAGNOSTIC_OPERATOR.aliasId, aliasName: DIAGNOSTIC_OPERATOR.aliasName, deploymentIdentifier: deployment.deploymentIdentifier, preflightSha256: preflightEvidenceSha256, rollbackReferenceSha256: rollbackEvidenceSha256, rollbackRecheckSha256: recheck.sha256, immutableEvidenceSha256, parityReferenceSha256: parityReferenceEvidenceSha256, accessEvidenceSha256 };
   const promoted = performSinglePromotion({ runDirectory, record, appRoot, spawn });
   return { promoted, record, rollbackRecheck: recheck.evidence };
 }
@@ -582,9 +621,13 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
     const progressPath = path.join(runDirectory, "immutable-smoke-progress.json");
     const evidence = await verifyImmutableArtifactParity({ base: deployment.url, deploymentIdentifier: deployment.deploymentIdentifier, artifact, fetchImpl: dependencies.fetchImpl || fetch, persist: value => atomicWrite(progressPath, value) });
     const qualified = { ...evidence, runId: authority.runId, sourceCommit: authority.sourceCommit, sourceManifestSha256: authority.sourceManifestSha256 };
-    atomicWrite(path.join(runDirectory, "immutable-smoke.json"), qualified);
+    const immutablePath = path.join(runDirectory, "immutable-smoke.json");
+    atomicWrite(immutablePath, qualified);
     if (!qualified.passed) throw new Error("Immutable deployment differs from the fixed accepted local artifact publication contract.");
-    return { passed: true, action, artifactFiles: qualified.artifactFiles, publishedFiles: qualified.publishedFiles.length, deploymentControls: qualified.deploymentControls.length, routes: qualified.routes.length, criticalAssets: qualified.criticalAssets.length };
+    const parityReference = buildImmutableParityReference({ authority, deployment, immutable: qualified, immutableEvidenceSha256: sha256(fs.readFileSync(immutablePath)) });
+    const parityReferencePath = path.join(runDirectory, "immutable-parity-reference.json");
+    atomicWrite(parityReferencePath, parityReference);
+    return { passed: true, action, artifactFiles: qualified.artifactFiles, publishedFiles: qualified.publishedFiles.length, deploymentControls: qualified.deploymentControls.length, routes: qualified.routes.length, criticalAssets: qualified.criticalAssets.length, parityReferenceSha256: sha256(fs.readFileSync(parityReferencePath)) };
   }
 
   if (action === "capture-rollback") {
@@ -603,7 +646,7 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
 
   if (action === "promote") {
     const readEvidence = name => { const file = path.join(runDirectory, name); if (!fs.existsSync(file)) throw new Error(`Mandatory promotion evidence missing: ${name}.`); return { file, value: JSON.parse(fs.readFileSync(file, "utf8")), sha256: sha256(fs.readFileSync(file)) }; };
-    const artifactRecord = readEvidence("artifact-manifest.json"), deploymentRecord = readEvidence("immutable-deployment.json"), immutableRecord = readEvidence("immutable-smoke.json"), accessRecord = readEvidence("immutable-access-qualification.json"), rollbackRecord = readEvidence("rollback-reference.json"), preflightRecord = readEvidence("promotion-preflight.json");
+    const artifactRecord = readEvidence("artifact-manifest.json"), deploymentRecord = readEvidence("immutable-deployment.json"), immutableRecord = readEvidence("immutable-smoke.json"), parityReferenceRecord = readEvidence("immutable-parity-reference.json"), accessRecord = readEvidence("immutable-access-qualification.json"), rollbackRecord = readEvidence("rollback-reference.json"), preflightRecord = readEvidence("promotion-preflight.json");
     const artifact = artifactRecord.value;
     const deployment = deploymentRecord.value;
     const smoke = immutableRecord.value;
@@ -615,7 +658,7 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
     const protectedEvidenceVerification = verifyProtectedEvidence(root);
     const sessionSecret = dependencies.retrieveAliasMetadata ? null : expoSessionSecret();
     const boundary = await executePromotionBoundary({
-      authority, artifact, artifactEntriesSha256: manifestDigest(artifact.files || []), archiveEvidenceSha256: sha256(fs.readFileSync(archivePath)), deployment, immutable: smoke, immutableEvidenceSha256: immutableRecord.sha256, access, accessEvidenceSha256: accessRecord.sha256, rollback, rollbackEvidenceSha256: rollbackRecord.sha256, preflight, preflightEvidenceSha256: preflightRecord.sha256, protectedEvidenceVerification, currentMs: Date.now(), runDirectory, appRoot, spawn: run,
+      authority, artifact, artifactEntriesSha256: manifestDigest(artifact.files || []), archiveEvidenceSha256: sha256(fs.readFileSync(archivePath)), deployment, immutable: smoke, immutableEvidenceSha256: immutableRecord.sha256, parityReference: parityReferenceRecord.value, parityReferenceEvidenceSha256: parityReferenceRecord.sha256, access, accessEvidenceSha256: accessRecord.sha256, rollback, rollbackEvidenceSha256: rollbackRecord.sha256, preflight, preflightEvidenceSha256: preflightRecord.sha256, protectedEvidenceVerification, currentMs: Date.now(), runDirectory, appRoot, spawn: run,
       recheckRollback: async () => {
         const rollbackRecheck = await verifyRollbackParity({
           aliasUrl: DIAGNOSTIC_OPERATOR.aliasUrl,
@@ -631,19 +674,27 @@ export async function runDiagnosticOperator(argv = process.argv.slice(2), depend
         return { evidence: rollbackRecheck, sha256: sha256(fs.readFileSync(file)), currentMs: dependencies.clock?.now?.() || Date.now() };
       },
     });
-    atomicWrite(path.join(runDirectory, "promotion-result.json"), { completedAt: now(), deploymentIdentifier: deployment.deploymentIdentifier, evidence: { preflightSha256: preflightRecord.sha256, rollbackReferenceSha256: rollbackRecord.sha256, rollbackRecheckSha256: boundary.record.rollbackRecheckSha256, immutableEvidenceSha256: immutableRecord.sha256, accessEvidenceSha256: accessRecord.sha256 }, response: boundary.promoted.raw });
+    atomicWrite(path.join(runDirectory, "promotion-result.json"), { completedAt: now(), deploymentIdentifier: deployment.deploymentIdentifier, evidence: { preflightSha256: preflightRecord.sha256, rollbackReferenceSha256: rollbackRecord.sha256, rollbackRecheckSha256: boundary.record.rollbackRecheckSha256, immutableEvidenceSha256: immutableRecord.sha256, parityReferenceSha256: parityReferenceRecord.sha256, accessEvidenceSha256: accessRecord.sha256 }, response: boundary.promoted.raw });
     return { passed: true, action, deploymentIdentifier: deployment.deploymentIdentifier };
   }
 
   if (action === "observe-alias") {
     const promotion = JSON.parse(fs.readFileSync(path.join(runDirectory, "promotion-result.json"), "utf8"));
     const immutable = JSON.parse(fs.readFileSync(path.join(runDirectory, "immutable-smoke.json"), "utf8"));
+    const deployment = JSON.parse(fs.readFileSync(path.join(runDirectory, "immutable-deployment.json"), "utf8"));
+    const immutablePath = path.join(runDirectory, "immutable-smoke.json");
+    const parityReferencePath = path.join(runDirectory, "immutable-parity-reference.json");
+    if (!fs.existsSync(parityReferencePath)) throw new Error("Immutable parity reference is missing after promotion; rollback required.");
+    const parityReference = JSON.parse(fs.readFileSync(parityReferencePath, "utf8"));
+    const parityReferenceSha256 = sha256(fs.readFileSync(parityReferencePath));
     if (promotion.deploymentIdentifier !== immutable.deploymentIdentifier) throw new Error("Promotion and immutable reference differ.");
+    if (promotion.evidence?.parityReferenceSha256 !== parityReferenceSha256) throw new Error("Promotion and immutable parity reference evidence differ.");
+    validateImmutableParityReference({ authority, deployment, immutable, immutableEvidenceSha256: sha256(fs.readFileSync(immutablePath)), reference: parityReference, referenceEvidenceSha256: parityReferenceSha256 });
     const sessionSecret = expoSessionSecret();
     const evidence = await verifyAliasParity({
       aliasUrl: DIAGNOSTIC_OPERATOR.aliasUrl,
       runId: authority.runId,
-      expected: { deploymentIdentifier: immutable.deploymentIdentifier, routes: immutable.routes, criticalAssets: immutable.criticalAssets },
+      expected: parityReference,
       retrieveMetadata: args => retrieveAliasMetadata({ ...args, sessionSecret }),
       persist: value => atomicWrite(path.join(runDirectory, "alias-observation-progress.json"), value),
       policy: ALIAS_PARITY_DIAGNOSTIC_POLICY,

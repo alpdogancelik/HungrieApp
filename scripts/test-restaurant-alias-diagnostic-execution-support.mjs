@@ -408,8 +408,24 @@ function finalFixture({ rollbackCapturedAt = capturedAt } = {}) {
     archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256,
   };
   const deployment = { capturedAt, deploymentIdentifier: "new-candidate", url: "https://candidate.example.invalid", sourceCommit: auth.sourceCommit, sourceManifestSha256: auth.sourceManifestSha256, artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, aliasAssigned: false };
-  const immutable = { passed: true, deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url };
+  const immutable = {
+    passed: true, completedAt: capturedAt, runId: auth.runId,
+    deploymentIdentifier: deployment.deploymentIdentifier, url: deployment.url,
+    sourceCommit: auth.sourceCommit, sourceManifestSha256: auth.sourceManifestSha256,
+    artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256,
+    routes: Array.from({ length: 6 }, (_, index) => ({ route: `/route-${index}`, passed: true, expected: { sha256: String(index + 1).repeat(64) }, actual: { sha256: String(index + 1).repeat(64) } })),
+    criticalAssets: Array.from({ length: 5 }, (_, index) => ({ asset: `/asset-${index}.js`, passed: true, expected: { sha256: String(index + 1).repeat(64) }, actual: { sha256: String(index + 1).repeat(64) } })),
+  };
   const immutableRecord = writeJson(directory, "immutable-smoke.json", immutable);
+  writeJson(directory, "immutable-parity-reference.json", {
+    schemaVersion: 1, passed: true, capturedAt, runId: auth.runId,
+    deploymentIdentifier: deployment.deploymentIdentifier, immutableUrl: deployment.url,
+    sourceCommit: auth.sourceCommit, sourceManifestSha256: auth.sourceManifestSha256,
+    artifactManifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256,
+    immutableEvidenceSha256: immutableRecord.sha256,
+    routes: immutable.routes.map(row => ({ route: row.route, sha256: row.expected.sha256 })),
+    criticalAssets: immutable.criticalAssets.map(row => ({ asset: row.asset, sha256: row.expected.sha256 })),
+  });
   const access = { passed: true, deploymentIdentifier: deployment.deploymentIdentifier, immutableUrl: deployment.url, immutableEvidenceSha256: immutableRecord.sha256 };
   writeJson(directory, "artifact-manifest.json", artifact);
   installRegisteredDeployment(directory, auth, deployment);
@@ -536,8 +552,8 @@ test("authority rejects missing, placeholder, contradictory, and unapproved inpu
 });
 
 test("new run owns isolated authority and evidence identities", () => {
-  assert.equal(SUPPORT.runId, "ruip6ad_20260927m");
-  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260927m");
+  assert.equal(SUPPORT.runId, "ruip6ad_20260927n");
+  assert.equal(SUPPORT.evidenceDirectory, "secure/restaurant-alias-diagnostic/ruip6ad_20260927n");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925a");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925b");
   assert.notEqual(SUPPORT.runId, "ruip6ad_20260925c");

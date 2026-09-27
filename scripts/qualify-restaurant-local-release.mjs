@@ -84,7 +84,7 @@ try {
     ["responsive-ui-phase4", "application", "npm", ["run", "test:restaurant-responsive-ui-phase4"]],
     ["responsive-ui-phase5", "application", "npm", ["run", "test:restaurant-responsive-ui-phase5"]],
     ["auth-access-exhaustive", "qualification", "node", ["--test", "scripts/test-restaurant-alias-diagnostic-access-staging.mjs"]],
-    ["diagnostic-operator", "qualification", "node", ["--test", "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs", "scripts/test-restaurant-alias-parity-verifier.mjs", "scripts/test-restaurant-alias-diagnostic-execution-support.mjs"]],
+    ["diagnostic-operator", "qualification", "node", ["--test", "scripts/test-restaurant-alias-10-minute-diagnostic-operator.mjs", "scripts/test-restaurant-alias-parity-verifier.mjs", "scripts/test-restaurant-alias-diagnostic-execution-support.mjs", "scripts/test-restaurant-alias-single-approval-staging.mjs"]],
     ["build-input-and-export-contracts", "qualification", "node", ["--test", "scripts/test-restaurant-alias-staging-public-build-inputs.mjs", "scripts/test-restaurant-alias-read-only-eas-export-readiness.mjs"]],
     ["notification-worker", "application", "npm", ["run", "notification-worker:test"]],
     ["review-repositories", "application", "npm", ["run", "test:review-v2-repositories"]],
