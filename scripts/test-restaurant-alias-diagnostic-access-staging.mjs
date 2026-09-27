@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { classifyHttpFailure, closeChrome, evaluateBrowserQualification, isSafetyQualificationError, openChrome, qualifyAccount, qualifyAccountsExhaustively, routeStateReady, sanitizeDiagnosticText, sanitizeErrorBody, sanitizeInitiator, sanitizeObservedUrl, sanitizeRequest, sanitizeResponse, sanitizeResponseHeaders, waitForServiceWorkerReady } from "./qualify-restaurant-alias-diagnostic-access-staging.mjs";
+import { classifyHttpFailure, closeChrome, documentScopedAutomationHeaders, evaluateBrowserQualification, isSafetyQualificationError, mergeDocumentAutomationHeaders, openChrome, qualifyAccount, qualifyAccountsExhaustively, routeStateReady, sanitizeDiagnosticText, sanitizeErrorBody, sanitizeInitiator, sanitizeObservedUrl, sanitizeRequest, sanitizeResponse, sanitizeResponseHeaders, waitForServiceWorkerReady } from "./qualify-restaurant-alias-diagnostic-access-staging.mjs";
 
 const base = "https://candidate.example.invalid";
 const state = (path, operational = true) => ({ path, heading: "Dashboard", blank: false, operational, earningsLink: false, diagnostic: { errors: [], navigations: [], protectedBeforeReady: false } });
@@ -67,6 +67,19 @@ test("diagnostic text redacts credential-shaped values", () => {
   assert.equal(sanitized.includes("user@example.com"), false);
   assert.equal(sanitized.includes("eyJabc.def.ghi"), false);
   assert.equal(sanitizeObservedUrl(`${base}/login?token=secret&reason=session-expired`), `${base}/login?token=%5BREDACTED%5D&reason=%5BREDACTED%5D`);
+});
+
+test("toolbar suppression is attached only to exact-origin document requests", () => {
+  assert.deepEqual(documentScopedAutomationHeaders({ requestUrl: `${base}/orders`, resourceType: "Document", exactOrigin: base }), [{ name: "x-vercel-skip-toolbar", value: "1" }]);
+  assert.deepEqual(documentScopedAutomationHeaders({ requestUrl: `${base}/app.js`, resourceType: "Script", exactOrigin: base }), []);
+  assert.deepEqual(documentScopedAutomationHeaders({ requestUrl: "https://identitytoolkit.googleapis.com/v1/accounts", resourceType: "Document", exactOrigin: base }), []);
+  assert.deepEqual(documentScopedAutomationHeaders({ requestUrl: "https://project.supabase.co/auth", resourceType: "Document", exactOrigin: base }), []);
+});
+
+test("document header merge rejects protection credentials and duplicate toolbar controls", () => {
+  assert.deepEqual(mergeDocumentAutomationHeaders([{ name: "Accept", value: "text/html" }], [{ name: "x-vercel-skip-toolbar", value: "1" }]), [{ name: "Accept", value: "text/html" }, { name: "x-vercel-skip-toolbar", value: "1" }]);
+  assert.throws(() => mergeDocumentAutomationHeaders([{ name: "x-vercel-protection-bypass", value: "secret" }], []), /protected automation header/);
+  assert.throws(() => mergeDocumentAutomationHeaders([{ name: "X-Vercel-Skip-Toolbar", value: "1" }], []), /protected automation header/);
 });
 
 class FakeSocket {

@@ -152,6 +152,19 @@ export function routeStateReady(state, expectedPath, { operational = false } = {
   return !operational || Boolean(state.operational && state.diagnostic?.accessResolved);
 }
 
+export function documentScopedAutomationHeaders({ requestUrl, resourceType, exactOrigin }) {
+  let url;
+  try { url = new URL(requestUrl); } catch { throw new Error("Paused browser request URL is invalid."); }
+  if (resourceType !== "Document" || url.origin !== exactOrigin) return [];
+  return [{ name: "x-vercel-skip-toolbar", value: "1" }];
+}
+
+export function mergeDocumentAutomationHeaders(existing = [], additions = []) {
+  const forbidden = existing.filter(header => /^(?:x-vercel-skip-toolbar|x-vercel-protection-bypass|x-vercel-set-bypass-cookie)$/i.test(header.name || ""));
+  if (forbidden.length) throw new Error("Browser request already contains a protected automation header.");
+  return [...existing.map(header => ({ name: String(header.name), value: String(header.value) })), ...additions];
+}
+
 class Cdp {
   constructor(socket) {
     this.socket = socket; this.identifier = 0; this.pending = new Map(); this.listeners = [];
@@ -258,12 +271,14 @@ export async function qualifyAccount({
   sleep = delay,
   waitAttempts = 600,
   waitIntervalMs = 50,
+  documentAutomationOrigin = null,
+  prepareBrowser = async () => {},
 }) {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), `restaurant-alias-diagnostic-${accountName}-`));
   let browser, version, cdp, evaluate, snapshot, authenticated = null, restored = null, serviceWorker = null, mainCount = null;
   let evidencePersisted = false, stage = "BROWSER_START", failureClassification = "BROWSER_QUALIFICATION_EXCEPTION", qualificationBlockers = [];
   const exceptions = [], consoleErrors = [], failedRequests = [], httpErrors = [], responses = [], requests = [], lifecycle = [], navigations = [];
-  const responsesByRequestId = new Map(), networkEvidenceTasks = [];
+  const responsesByRequestId = new Map(), networkEvidenceTasks = [], automationHeaderObservations = [];
   const evidencePath = path.join(directory, `immutable-${accountName}-access-evidence.json`);
   const screenshotName = `immutable-${accountName}-access.png`, screenshotPath = path.join(directory, screenshotName);
 
@@ -320,6 +335,7 @@ export async function qualifyAccount({
       },
       navigationObservations: navigations,
       lifecycleObservations: lifecycle,
+      automationHeaderObservations,
       uncaughtErrors: exceptions.map(sanitizeDiagnosticText),
       consoleErrors: consoleErrors.map(sanitizeDiagnosticText),
       failedRequests,
@@ -347,9 +363,22 @@ export async function qualifyAccount({
       cdp.send("Accessibility.enable"),
       cdp.send("Page.setLifecycleEventsEnabled", { enabled: true }),
     ]);
+    if (documentAutomationOrigin) {
+      if (new URL(baseUrl).origin !== documentAutomationOrigin) throw new Error("Document automation origin differs from the qualification origin.");
+      await cdp.send("Fetch.enable", { patterns: [{ urlPattern: `${documentAutomationOrigin}/*`, resourceType: "Document", requestStage: "Request" }] });
+    }
+    await prepareBrowser({ browser, cdp, baseUrl });
     await cdp.send("Emulation.setDeviceMetricsOverride", { width: 1024, height: 768, deviceScaleFactor: 1, mobile: false });
     await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: `window.__diagnostic={navigations:[],mutations:0,errors:[],accessResolved:false,protectedBeforeReady:false};const originalFetch=window.fetch.bind(window);window.fetch=async(...args)=>{const response=await originalFetch(...args);try{const requestUrl=new URL(typeof args[0]==='string'?args[0]:args[0].url,location.href);if(requestUrl.pathname.endsWith('/get_my_access_context_v1'))window.__diagnostic.accessResolved=true}catch{}return response};for(const key of ['pushState','replaceState']){const original=history[key];history[key]=function(...args){const result=original.apply(this,args);__diagnostic.navigations.push({type:key,path:location.pathname});return result}}addEventListener('popstate',()=>__diagnostic.navigations.push({type:'popstate',path:location.pathname}));addEventListener('error',event=>__diagnostic.errors.push(String(event.error?.message||event.message)));addEventListener('unhandledrejection',event=>__diagnostic.errors.push(String(event.reason?.message||event.reason)));addEventListener('DOMContentLoaded',()=>new MutationObserver(()=>{__diagnostic.mutations++;const main=document.querySelector('.app-shell main');if(main&&!__diagnostic.accessResolved)__diagnostic.protectedBeforeReady=true}).observe(document.body,{subtree:true,childList:true,attributes:true}));` });
     cdp.on(message => {
+      if (message.method === "Fetch.requestPaused") {
+        const additions = documentScopedAutomationHeaders({ requestUrl: message.params.request.url, resourceType: message.params.resourceType, exactOrigin: documentAutomationOrigin });
+        const row = { observedAt: new Date().toISOString(), origin: new URL(message.params.request.url).origin, resourceType: message.params.resourceType, headerNames: additions.map(value => value.name), attached: additions.length === 1 };
+        automationHeaderObservations.push(row);
+        const task = cdp.send("Fetch.continueRequest", { requestId: message.params.requestId, headers: mergeDocumentAutomationHeaders(message.params.request.headers ? Object.entries(message.params.request.headers).map(([name, value]) => ({ name, value })) : [], additions) })
+          .catch(error => { exceptions.push(`DOCUMENT_AUTOMATION_HEADER_FAILED: ${sanitizeDiagnosticText(error?.message || error)}`); });
+        networkEvidenceTasks.push(task);
+      }
       if (message.method === "Page.lifecycleEvent") lifecycle.push({ observedAt: new Date().toISOString(), name: message.params.name, frameId: message.params.frameId || null, loaderId: message.params.loaderId || null });
       if (message.method === "Runtime.exceptionThrown") exceptions.push(sanitizeDiagnosticText(message.params.exceptionDetails?.exception?.description || message.params.exceptionDetails?.text));
       if (message.method === "Runtime.consoleAPICalled" && ["error", "assert"].includes(message.params.type)) consoleErrors.push(sanitizeDiagnosticText(message.params.args.map(value => value.value || value.description || value.type).join(" ")));
@@ -453,7 +482,7 @@ export async function qualifyAccount({
     if (!decision.passed) throw new Error(`${accountName} immutable access qualification failed: ${decision.blockers.join(",")}.`);
     const screenshot = await captureScreenshot();
     if (!screenshot.captured) throw new Error(`${accountName} screenshot capture failed.`);
-    const accountEvidence = { schemaVersion: 2, capturedAt: new Date().toISOString(), passed: true, account: accountName, browser: version.Browser, expectedPath, directPath, authenticated, restored, mainCount, accessRequests, earningsRequests: decision.earningsRequests, uncaughtErrors: decision.errors, failedRequests, httpErrors: decision.httpErrors, ignoredOptionalHttpErrors: decision.ignoredOptionalHttpErrors, unexpectedRequests: decision.unexpectedRequests, responseInventory: responses, serviceWorker, serviceWorkerReady, requestInventory: requests, navigationObservations: navigations, lifecycleObservations: lifecycle, screenshot, blockers: [], credentialValuesPersisted: false };
+    const accountEvidence = { schemaVersion: 2, capturedAt: new Date().toISOString(), passed: true, account: accountName, browser: version.Browser, expectedPath, directPath, authenticated, restored, mainCount, accessRequests, earningsRequests: decision.earningsRequests, uncaughtErrors: decision.errors, failedRequests, httpErrors: decision.httpErrors, ignoredOptionalHttpErrors: decision.ignoredOptionalHttpErrors, unexpectedRequests: decision.unexpectedRequests, responseInventory: responses, serviceWorker, serviceWorkerReady, requestInventory: requests, navigationObservations: navigations, lifecycleObservations: lifecycle, automationHeaderObservations, screenshot, blockers: [], credentialValuesPersisted: false };
     atomicWrite(evidencePath, accountEvidence);
     evidencePersisted = true;
     return accountEvidence;
