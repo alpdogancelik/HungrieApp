@@ -13,13 +13,16 @@ import {
   evaluateContinuationDecisionPath,
   finalizeEvidence,
   parsePulledEnvironment,
+  parsePreviewDeploymentOutput,
   planEnvironmentReconciliation,
   previewDeploymentArgs,
   validateAuthenticatedAccount,
   validateConsumedProgress,
+  validateContainmentEvidence,
   validateLocalProjectLink,
   validateRemoteProject,
   validateTeamInventory,
+  validatePreviewDeploymentCommand,
   validateVercelProjectConfiguration,
   verifyEffectivePreviewValues,
   VERCEL_STAGING_DEPLOYMENT,
@@ -175,18 +178,52 @@ test("accepted artifact includes routes, critical assets, fonts, worker, and run
 test("deployment continuation is isolated, preview-only, one-shot, and exactly scope-bound", () => {
   const plan = deploymentPlan("nurlan-ildirimli-s-projects");
   assert.equal(VERCEL_STAGING_DEPLOYMENT.project, "hungrie-restaurant-web-staging-eval-20260927a");
-  assert.equal(VERCEL_STAGING_DEPLOYMENT.actionId, "restaurant-vercel-staging-evaluation-20260927f");
+  assert.equal(VERCEL_STAGING_DEPLOYMENT.actionId, "restaurant-vercel-staging-evaluation-20260928g");
   assert.equal(VERCEL_STAGING_DEPLOYMENT.environment, "preview");
   assert.equal(VERCEL_STAGING_DEPLOYMENT.expectedVariables.length, 9);
   assert.equal(plan.length, 6);
   const serialized = plan.map(row => row.command || "").join("\n");
   assert.doesNotMatch(serialized, /--prod|\s(?:alias|promote|domains?)\s/i);
+  assert.match(serialized, /--target=preview/);
+  assert.match(serialized, /--json/);
   assert.match(serialized, /--archive=tgz/);
   assert.match(serialized, /--scope nurlan-ildirimli-s-projects/);
   assert.match(serialized, /--local-config apps\/restaurant\/vercel\.json/);
   assert.match(serialized, /project inspect hungrie-restaurant-web-staging-eval-20260927a --json/);
   assert.doesNotMatch(serialized, /project ls|vercel@60\.1\.3 link/);
   assert.throws(() => deploymentPlan("reviewed-team"), /exact reviewed Vercel scope/);
+});
+
+test("deployment submission requires an explicit Preview target", () => {
+  const args = previewDeploymentArgs(VERCEL_STAGING_DEPLOYMENT.scope);
+  assert.deepEqual(args, ["deploy", "--yes", "--archive=tgz", "--target=preview", "--json", "--scope", VERCEL_STAGING_DEPLOYMENT.scope]);
+  assert.equal(validatePreviewDeploymentCommand(args, VERCEL_STAGING_DEPLOYMENT.scope), true);
+  assert.throws(() => validatePreviewDeploymentCommand(["deploy", "--yes", "--archive=tgz", "--json", "--scope", VERCEL_STAGING_DEPLOYMENT.scope], VERCEL_STAGING_DEPLOYMENT.scope), /explicitly target Preview/);
+  assert.throws(() => validatePreviewDeploymentCommand(["deploy", "--yes", "--archive=tgz", "--target=production", "--json", "--scope", VERCEL_STAGING_DEPLOYMENT.scope], VERCEL_STAGING_DEPLOYMENT.scope), /explicitly target Preview/);
+  assert.throws(() => validatePreviewDeploymentCommand([...args, "--target=preview"], VERCEL_STAGING_DEPLOYMENT.scope), /exactly once/);
+  assert.throws(() => validatePreviewDeploymentCommand([...args, "--prod"], VERCEL_STAGING_DEPLOYMENT.scope), /Production targeting/);
+  assert.throws(() => validatePreviewDeploymentCommand([...args, "--skip-domain"], VERCEL_STAGING_DEPLOYMENT.scope), /Production-only/);
+});
+
+test("pinned Vercel CLI leaves an omitted deployment target undefined", async () => {
+  const npxRoot = path.join(os.homedir(), ".npm/_npx");
+  const installation = fs.readdirSync(npxRoot).map(name => path.join(npxRoot, name, "node_modules/vercel")).find(directory => fs.existsSync(path.join(directory, "package.json")) && JSON.parse(fs.readFileSync(path.join(directory, "package.json"), "utf8")).version === VERCEL_STAGING_DEPLOYMENT.cliVersion);
+  assert.ok(installation, "pinned Vercel CLI must be locally installed");
+  const targetChunk = await import(path.join(installation, "dist/chunks/chunk-R3B67TKQ.js"));
+  assert.equal(targetChunk.parseTarget({ flagName: "target", flags: {} }), undefined);
+  assert.equal(targetChunk.parseTarget({ flagName: "target", flags: { "--target": "preview" } }), "preview");
+  assert.equal(targetChunk.parseTarget({ flagName: "target", flags: { "--prod": true } }), "production");
+});
+
+test("structured deployment output rejects the observed Production classification", () => {
+  const preview = { id: "dpl_Example123", url: `https://${VERCEL_STAGING_DEPLOYMENT.project}-abc123.vercel.app`, readyState: "READY", target: "preview" };
+  assert.deepEqual(parsePreviewDeploymentOutput({ status: 0, stdout: JSON.stringify(preview) }), preview);
+  assert.throws(() => parsePreviewDeploymentOutput({ status: 0, stdout: JSON.stringify({ ...preview, target: "production" }) }), /outside Preview/);
+  assert.throws(() => parsePreviewDeploymentOutput({ status: 0, stdout: JSON.stringify({ ...preview, readyState: "BUILDING" }) }), /not ready/);
+  assert.throws(() => parsePreviewDeploymentOutput({ status: 0, stdout: "}" }), /malformed structured output/);
+  assert.throws(() => parsePreviewDeploymentOutput({ status: 0, stdout: JSON.stringify({ ...preview, id: "bad" }) }), /identity.*malformed/);
+  assert.throws(() => parsePreviewDeploymentOutput({ status: 0, stdout: JSON.stringify({ ...preview, url: "https://other-project.vercel.app" }) }), /reviewed isolated project/);
+  assert.throws(() => parsePreviewDeploymentOutput({ status: 1, stdout: "" }), /attempt failed/);
 });
 
 const digest = value => crypto.createHash("sha256").update(value).digest("hex");
@@ -297,10 +334,21 @@ test("authenticated username, team slug, and opaque org ID are validated indepen
   assert.throws(() => validateTeamInventory({ teams: [] }, link), /missing or ambiguous/);
 });
 
-test("consumed attempt records one failed deployment and no Preview URL", () => {
-  const evidencePath = path.join(root, "secure/restaurant-vercel-staging-deployment/restaurant-vercel-staging-evaluation-20260927e/progress.json");
+test("consumed attempt records the contained unexpected Production deployment", () => {
+  const evidencePath = path.join(root, "secure/restaurant-vercel-staging-deployment/restaurant-vercel-staging-evaluation-20260927f/progress.json");
   const bytes = fs.readFileSync(evidencePath);
-  assert.deepEqual(validateConsumedProgress(JSON.parse(bytes), bytes), { completedProjectCreationInOriginalAttempt: true, successfulEnvironmentWrites: 0, deploymentCommands: 1 });
-  const changed = Buffer.from(bytes.toString().replace('"terminal": "FAIL"', '"terminal": "PASS"'));
+  assert.deepEqual(validateConsumedProgress(JSON.parse(bytes), bytes), { completedProjectCreationInOriginalAttempt: true, successfulEnvironmentWrites: 0, deploymentCommands: 1, unexpectedProductionDeploymentContained: true });
+  const changed = Buffer.from(bytes.toString().replace('"terminal": "DEPLOYED_PENDING_HOSTED_QUALIFICATION"', '"terminal": "PASS"'));
   assert.throws(() => validateConsumedProgress(JSON.parse(changed), changed), /hash mismatch/);
+});
+
+test("exclusive containment evidence is complete and bound to the preserved deployment", () => {
+  const directory = path.join(root, "secure/restaurant-vercel-staging-containment", VERCEL_STAGING_DEPLOYMENT.containmentRecordId);
+  assert.equal(validateContainmentEvidence(directory), true);
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "vercel-containment-tamper-"));
+  try {
+    for (const name of ["progress.json", "terminal-result.json", "post-containment-http-verification.json", "evidence-manifest.tsv"]) fs.copyFileSync(path.join(directory, name), path.join(temporary, name));
+    fs.appendFileSync(path.join(temporary, "terminal-result.json"), " ");
+    assert.throws(() => validateContainmentEvidence(temporary), /evidence mismatch/);
+  } finally { fs.rmSync(temporary, { recursive: true, force: true }); }
 });
