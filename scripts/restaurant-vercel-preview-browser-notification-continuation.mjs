@@ -7,10 +7,11 @@ import { spawnSync } from "node:child_process";
 export const CONTINUATION = Object.freeze({
   schemaVersion: 1,
   kind: "restaurant_vercel_preview_browser_notification_continuation",
-  qualificationId: "restaurant-vercel-browser-notification-qualification-20260928d",
+  qualificationId: "restaurant-vercel-browser-notification-qualification-20260928e",
   consumedQualifications: Object.freeze([
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928b", manifest: "evidence-manifest.tsv", manifestSha256: "8b478d63808742057429821a5704db22d2e6cf4343ce82fe18189db96ba3c592", authoritySha256: "2d4af7ec3c33bbb6fb3836bf3754857be9109c20fe7cb43b5bbfd6aef3f765e6", sourceManifestSha256: "33f95fc58475b5ea3e91c0cf8b6aef045fcde9f043af82abcca05eb7d5811b85" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928c", manifest: "evidence-manifest-final.tsv", manifestSha256: "6dc2701f56fddaf341519b4a6ad78ab88a6d037d8d0993ece3e91ad691ce399f", authoritySha256: "219381cafd5c1ec678a0a3936fc48ebecc7e961fac4a597d8b391eb229a3428e", sourceManifestSha256: "18ddf144ad7e237a3f286557cbd02c54b7be1b126a36d24c44006c1771a16fda" }),
+    Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928d", manifest: "evidence-manifest-final.tsv", manifestSha256: "c3527e2fb8b5b8f3c3ddc2c73ab99102f25de34fda018e75df520192b5b55243", authoritySha256: "4685ce3d4796fdf78d1ae132184b351c64876fe5967bee1f3252cd3fbc016be5", sourceManifestSha256: "35f0170b113fa91c693c070d1b0a4602c0963b1903315612526417e5cecc31dc" }),
   ]),
   deploymentId: "dpl_8CM3s16BZRwK9Ls1eMMJCVKmWyYt",
   origin: "https://hungrie-restaurant-web-staging-eval-20260927a-h9m8zpwol.vercel.app",
@@ -27,7 +28,7 @@ export const CONTINUATION = Object.freeze({
   normalRoot: Object.freeze({ bytes: 18082, sha256: "18f1015e99ceb70ce8656b59259e0274f77bedc3440e5a9222ce0e8fb09f68a2", injectionBytes: 163 }),
   historicalQualificationManifestSha256: "b57ef17c2871ac322afc70148f72d7cc23de02b2ebaf3f9620c0a144e718cfff",
   toolbarInvestigationManifestSha256: "49273bb907a2571847cb7b4e4fb73d494536a16c398d4c40be448f76c39458ee",
-  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260928d",
+  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260928e",
   authorityDirectory: "secure/restaurant-vercel-browser-notification-qualification-authority",
   limits: Object.freeze({ bypassCreates: 1, bypassRevokes: 1, accountContexts: 4, concurrentAccountContexts: 1, pushRegistrations: 1, foregroundFcmSends: 1, backgroundFcmSends: 1, pushUnregistrations: 1, retries: 0, authorityValidityMs: 2 * 60 * 60 * 1000 }),
 });
@@ -170,7 +171,17 @@ export function validateApproval(approval, { now = Date.now() } = {}) {
   return approval;
 }
 
-export function verifyLocalBindings({ repoRoot, approval, operatorPath = "scripts/restaurant-vercel-preview-browser-notification-continuation.mjs", qualifierPath = "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs", spawn = spawnSync }) {
+function continuationPaths(repoRoot) {
+  const authorityDirectory = path.join(repoRoot, CONTINUATION.authorityDirectory);
+  return {
+    authorityDirectory,
+    authorityPath: path.join(authorityDirectory, `${CONTINUATION.qualificationId}.json`),
+    sourceManifestPath: path.join(authorityDirectory, `${CONTINUATION.qualificationId}-source-manifest.tsv`),
+    evidenceDirectory: path.join(repoRoot, CONTINUATION.evidenceDirectory),
+  };
+}
+
+function verifyCoreBindings({ repoRoot, approval, operatorPath = "scripts/restaurant-vercel-preview-browser-notification-continuation.mjs", qualifierPath = "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs", spawn = spawnSync }) {
   const head = spawn("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).stdout.trim();
   if (head !== approval.sourceCommit) throw new Error("Checkpoint mismatch.");
   const manifest = buildSourceManifest(repoRoot, head, spawn);
@@ -190,23 +201,125 @@ export function verifyLocalBindings({ repoRoot, approval, operatorPath = "script
     const sourceManifest = path.join(repoRoot, CONTINUATION.authorityDirectory, `${consumed.id}-source-manifest.tsv`);
     if (sha256(fs.readFileSync(evidenceManifest)) !== consumed.manifestSha256 || sha256(fs.readFileSync(authority)) !== consumed.authoritySha256 || sha256(fs.readFileSync(sourceManifest)) !== consumed.sourceManifestSha256) throw new Error("Consumed qualification evidence changed.");
   }
-  for (const target of [path.join(repoRoot, CONTINUATION.evidenceDirectory), path.join(repoRoot, CONTINUATION.authorityDirectory, `${CONTINUATION.qualificationId}.json`)]) if (fs.existsSync(target)) throw new Error("Exclusive continuation path already exists.");
   return { head, manifest, historicalEvidence: true };
+}
+
+export function verifyLocalBindings(options) {
+  const verified = verifyCoreBindings(options);
+  const paths = continuationPaths(options.repoRoot);
+  for (const target of [paths.authorityPath, paths.sourceManifestPath, paths.evidenceDirectory]) if (fs.existsSync(target)) throw Object.assign(new Error("Exclusive continuation path already exists."), { code: "EVIDENCE_INTEGRITY" });
+  return verified;
 }
 
 export function prepareAuthority({ repoRoot, approval, now = Date.now(), spawn = spawnSync }) {
   validateApproval(approval, { now });
   const verified = verifyLocalBindings({ repoRoot, approval, spawn });
-  const directory = path.join(repoRoot, CONTINUATION.authorityDirectory);
+  const paths = continuationPaths(repoRoot), directory = paths.authorityDirectory;
   fs.mkdirSync(directory, { recursive: true, mode: 0o700 }); fs.chmodSync(directory, 0o700);
-  const authorityPath = path.join(directory, `${CONTINUATION.qualificationId}.json`);
-  const manifestPath = path.join(directory, `${CONTINUATION.qualificationId}-source-manifest.tsv`);
+  const authorityPath = paths.authorityPath, manifestPath = paths.sourceManifestPath;
   if (fs.existsSync(authorityPath) || fs.existsSync(manifestPath) || fs.existsSync(path.join(repoRoot, CONTINUATION.evidenceDirectory))) throw new Error("Continuation authority or evidence path already exists.");
   const authority = { ...approval, ownerApprovalSha256: sha256(Buffer.from(canonical(approval))) };
   for (const [file, bytes] of [[authorityPath, Buffer.from(canonical(authority))], [manifestPath, verified.manifest.bytes]]) {
     const descriptor = fs.openSync(file, "wx", 0o600); try { fs.writeFileSync(descriptor, bytes); } finally { fs.closeSync(descriptor); } fs.chmodSync(file, 0o600);
   }
   return { authorityPath, manifestPath, authoritySha256: sha256(fs.readFileSync(authorityPath)), sourceManifestSha256: sha256(fs.readFileSync(manifestPath)) };
+}
+
+export function validatePreparedAuthority({ repoRoot, now = Date.now(), spawn = spawnSync }) {
+  const paths = continuationPaths(repoRoot);
+  if (!fs.existsSync(paths.authorityPath) || !fs.existsSync(paths.sourceManifestPath)) throw Object.assign(new Error("Prepared continuation authority is incomplete."), { code: "AUTHORIZATION" });
+  if (fs.existsSync(paths.evidenceDirectory)) throw Object.assign(new Error("Exclusive continuation evidence path already exists."), { code: "EVIDENCE_INTEGRITY" });
+  const authority = JSON.parse(fs.readFileSync(paths.authorityPath, "utf8"));
+  exactKeys(authority, ["schemaVersion", "kind", "decision", "qualificationId", "issuedAt", "expiresAt", "authorizationText", "authorizationTextSha256", "sourceCommit", "sourceManifestSha256", "operatorSha256", "qualifierSha256", "deploymentId", "origin", "evidenceDirectory", "limits", "ownerApprovalSha256"], "Prepared authority");
+  const approval = { ...authority }; delete approval.ownerApprovalSha256;
+  validateApproval(approval, { now });
+  if (authority.ownerApprovalSha256 !== sha256(Buffer.from(canonical(approval)))) throw Object.assign(new Error("Prepared authority owner-approval digest mismatch."), { code: "AUTHORIZATION" });
+  const verified = verifyCoreBindings({ repoRoot, approval, spawn });
+  const sourceManifest = fs.readFileSync(paths.sourceManifestPath);
+  if (!sourceManifest.equals(verified.manifest.bytes) || sha256(sourceManifest) !== approval.sourceManifestSha256) throw Object.assign(new Error("Prepared source manifest differs from the audited checkpoint."), { code: "EVIDENCE_INTEGRITY" });
+  return { approval, authority, authoritySha256: sha256(fs.readFileSync(paths.authorityPath)), paths, verified };
+}
+
+export function reserveQualificationEvidence({ repoRoot, now = Date.now(), spawn = spawnSync, randomBytes = crypto.randomBytes, validatePrepared = validatePreparedAuthority }) {
+  const prepared = validatePrepared({ repoRoot, now, spawn });
+  const paths = prepared.paths || continuationPaths(repoRoot);
+  const token = randomBytes(32).toString("hex");
+  if (!/^[a-f0-9]{64}$/.test(token)) throw Object.assign(new Error("Evidence reservation token generation failed."), { code: "EVIDENCE_INTEGRITY" });
+  fs.mkdirSync(path.dirname(paths.evidenceDirectory), { recursive: true, mode: 0o700 });
+  try { fs.mkdirSync(paths.evidenceDirectory, { mode: 0o700 }); }
+  catch (error) {
+    if (error?.code === "EEXIST") throw Object.assign(new Error("Exclusive continuation evidence reservation already exists."), { code: "EVIDENCE_INTEGRITY" });
+    throw error;
+  }
+  fs.chmodSync(paths.evidenceDirectory, 0o700);
+  const reservation = {
+    schemaVersion: 1,
+    kind: "restaurant_vercel_qualification_evidence_reservation",
+    qualificationId: CONTINUATION.qualificationId,
+    reservedAt: new Date(now).toISOString(),
+    sourceCommit: prepared.approval.sourceCommit,
+    sourceManifestSha256: prepared.approval.sourceManifestSha256,
+    authoritySha256: prepared.authoritySha256,
+    reservationTokenSha256: sha256(Buffer.from(token)),
+    owner: "checkpointed-qualification-runner",
+  };
+  const reservationPath = path.join(paths.evidenceDirectory, "evidence-reservation.json");
+  try {
+    const descriptor = fs.openSync(reservationPath, "wx", 0o600);
+    try { fs.writeFileSync(descriptor, Buffer.from(canonical(reservation))); } finally { fs.closeSync(descriptor); }
+  } catch (error) {
+    const failure = { schemaVersion: 1, qualificationId: CONTINUATION.qualificationId, classification: "ABORTED", reason: "EVIDENCE_RESERVATION_INITIALIZATION_FAILED", capturedAt: new Date(now).toISOString() };
+    fs.writeFileSync(path.join(paths.evidenceDirectory, "reservation-failure.json"), canonical(failure), { flag: "wx", mode: 0o600 });
+    throw Object.assign(new Error("Evidence reservation marker creation failed."), { code: "EVIDENCE_INTEGRITY", cause: error });
+  }
+  return { ...prepared, reservation, reservationPath, reservationToken: token };
+}
+
+export function verifyEvidenceReservation({ evidenceDirectory, reservationToken }) {
+  const reservationPath = path.join(evidenceDirectory, "evidence-reservation.json");
+  if (!fs.existsSync(reservationPath)) throw Object.assign(new Error("Runner-owned evidence reservation is missing."), { code: "EVIDENCE_INTEGRITY" });
+  const reservation = JSON.parse(fs.readFileSync(reservationPath, "utf8"));
+  if (reservation.schemaVersion !== 1 || reservation.kind !== "restaurant_vercel_qualification_evidence_reservation" || reservation.qualificationId !== CONTINUATION.qualificationId || reservation.owner !== "checkpointed-qualification-runner" || reservation.reservationTokenSha256 !== sha256(Buffer.from(reservationToken || ""))) throw Object.assign(new Error("Runner-owned evidence reservation identity mismatch."), { code: "EVIDENCE_INTEGRITY" });
+  return reservation;
+}
+
+export function persistReservedEvidence({ evidenceDirectory, reservationToken, name, value }) {
+  verifyEvidenceReservation({ evidenceDirectory, reservationToken });
+  if (!/^[a-z0-9][a-z0-9.-]*\.json$/.test(name) || ["evidence-reservation.json", "terminal-result.json"].includes(name)) throw Object.assign(new Error("Reserved evidence filename is not permitted."), { code: "EVIDENCE_INTEGRITY" });
+  const target = path.join(evidenceDirectory, name), temporary = `${target}.${process.pid}.tmp`;
+  fs.writeFileSync(temporary, canonical(value), { mode: 0o600 }); fs.renameSync(temporary, target); fs.chmodSync(target, 0o600);
+  return { path: target, sha256: sha256(fs.readFileSync(target)) };
+}
+
+export function finalizeQualificationEvidence({ evidenceDirectory, reservationToken, terminal }) {
+  verifyEvidenceReservation({ evidenceDirectory, reservationToken });
+  const terminalPath = path.join(evidenceDirectory, "terminal-result.json"), manifestPath = path.join(evidenceDirectory, "evidence-manifest.tsv");
+  const terminalBytes = Buffer.from(canonical(terminal));
+  if (fs.existsSync(terminalPath) || fs.existsSync(manifestPath)) {
+    if (!fs.existsSync(terminalPath) || !fs.existsSync(manifestPath) || !fs.readFileSync(terminalPath).equals(terminalBytes)) throw Object.assign(new Error("Terminal evidence was already finalized with different content."), { code: "EVIDENCE_INTEGRITY" });
+    return { terminalSha256: sha256(terminalBytes), manifestSha256: sha256(fs.readFileSync(manifestPath)), repeated: true };
+  }
+  fs.writeFileSync(terminalPath, terminalBytes, { flag: "wx", mode: 0o600 });
+  const files = fs.readdirSync(evidenceDirectory).filter(name => name !== "evidence-manifest.tsv").sort();
+  const manifest = Buffer.from(`path\tbytes\tsha256\n${files.map(name => { const bytes = fs.readFileSync(path.join(evidenceDirectory, name)); return `${name}\t${bytes.length}\t${sha256(bytes)}`; }).join("\n")}\n`);
+  fs.writeFileSync(manifestPath, manifest, { flag: "wx", mode: 0o600 });
+  return { terminalSha256: sha256(terminalBytes), manifestSha256: sha256(manifest), repeated: false };
+}
+
+export async function executeReservedQualification({ repoRoot, operations, now = Date.now(), spawn = spawnSync, randomBytes = crypto.randomBytes, validatePrepared = validatePreparedAuthority }) {
+  let reservation;
+  try {
+    reservation = reserveQualificationEvidence({ repoRoot, now, spawn, randomBytes, validatePrepared });
+    persistReservedEvidence({ evidenceDirectory: reservation.paths.evidenceDirectory, reservationToken: reservation.reservationToken, name: "progress.json", value: { schemaVersion: 1, qualificationId: CONTINUATION.qualificationId, startedAt: new Date(now).toISOString(), classification: "STARTED" } });
+    const result = await executeControlledContinuation({ operations, persist: state => persistReservedEvidence({ evidenceDirectory: reservation.paths.evidenceDirectory, reservationToken: reservation.reservationToken, name: "progress.json", value: { schemaVersion: 1, qualificationId: CONTINUATION.qualificationId, updatedAt: new Date().toISOString(), ...state } }) });
+    const terminal = { schemaVersion: 1, qualificationId: CONTINUATION.qualificationId, completedAt: new Date().toISOString(), ...result, retryEligible: false };
+    return { result, evidence: finalizeQualificationEvidence({ evidenceDirectory: reservation.paths.evidenceDirectory, reservationToken: reservation.reservationToken, terminal }) };
+  } catch (error) {
+    if (!reservation) throw error;
+    const terminal = { schemaVersion: 1, qualificationId: CONTINUATION.qualificationId, classification: "ABORTED", reason: sanitizeContinuationError(error), completedAt: new Date().toISOString(), retryEligible: false };
+    finalizeQualificationEvidence({ evidenceDirectory: reservation.paths.evidenceDirectory, reservationToken: reservation.reservationToken, terminal });
+    throw error;
+  }
 }
 
 export function classifySafetyError(error) {

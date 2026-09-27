@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
-import { CONTINUATION, assertUniqueBypassSecret, buildAuthorizationText, buildBypassApiRequest, buildProtectedBrowserBootstrap, buildProtectedRedirectRequest, classifySafetyError, executeControlledContinuation, generateBypassSecret, sanitizeContinuationError, sanitizeProtectedBootstrapEvidence, sha256, validateApproval, validateBypassSecret, validateProtectedBootstrapResponse, validateProtectedBrowserRequest, verifyBypassApiResponse, verifyBypassInventoryTransition } from "./restaurant-vercel-preview-browser-notification-continuation.mjs";
+import { CONTINUATION, assertUniqueBypassSecret, buildAuthorizationText, buildBypassApiRequest, buildProtectedBrowserBootstrap, buildProtectedRedirectRequest, classifySafetyError, executeControlledContinuation, executeReservedQualification, finalizeQualificationEvidence, generateBypassSecret, persistReservedEvidence, reserveQualificationEvidence, sanitizeContinuationError, sanitizeProtectedBootstrapEvidence, sha256, validateApproval, validateBypassSecret, validateProtectedBootstrapResponse, validateProtectedBrowserRequest, verifyBypassApiResponse, verifyBypassInventoryTransition, verifyEvidenceReservation } from "./restaurant-vercel-preview-browser-notification-continuation.mjs";
 
 const bindings = { sourceCommit: "a".repeat(40), sourceManifestSha256: "b".repeat(64), operatorSha256: "c".repeat(64), qualifierSha256: "d".repeat(64) };
 const approval = (overrides = {}) => {
@@ -16,6 +19,10 @@ test("changed text, deployment, origin, limits, or evidence path fails", () => {
     { deploymentId: "wrong" }, { origin: "https://wrong.invalid" }, { evidenceDirectory: "secure/wrong" },
     { limits: { ...CONTINUATION.limits, foregroundFcmSends: 2 } },
   ]) assert.throws(() => validateApproval(approval(changed), { now: Date.parse("2026-09-28T01:00:00Z") }));
+});
+test("consumed or malformed authority cannot reach evidence reservation", () => {
+  assert.throws(() => validateApproval(approval({ qualificationId: "restaurant-vercel-browser-notification-qualification-20260928d" }), { now: Date.parse("2026-09-28T01:00:00Z") }), /Exact continuation approval/);
+  assert.throws(() => validateApproval({ ...approval(), unexpected: true }, { now: Date.parse("2026-09-28T01:00:00Z") }), /fields differ/);
 });
 test("safety errors are distinct from ordinary qualification failures", () => {
   assert.equal(classifySafetyError(Object.assign(new Error(), { code: "UNEXPECTED_ORIGIN" })), true);
@@ -113,6 +120,55 @@ function operations(overrides = {}) {
   return op;
 }
 
+function reservationFixture(t) {
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "vercel-qualification-reservation-"));
+  t.after(() => fs.rmSync(repoRoot, { recursive: true, force: true }));
+  const evidenceDirectory = path.join(repoRoot, CONTINUATION.evidenceDirectory);
+  const prepared = { approval: { sourceCommit: "a".repeat(40), sourceManifestSha256: "b".repeat(64) }, authoritySha256: "c".repeat(64), paths: { evidenceDirectory } };
+  return { repoRoot, evidenceDirectory, prepared, validatePrepared: () => prepared };
+}
+
+test("qualification D ordering defect is reproduced deterministically", t => {
+  const fixture = reservationFixture(t), calls = [];
+  fs.mkdirSync(fixture.evidenceDirectory, { recursive: true }); calls.push("create-evidence");
+  const checkpointedValidator = () => { calls.push("validate-exclusive-path"); if (fs.existsSync(fixture.evidenceDirectory)) throw new Error("Exclusive continuation path already exists."); };
+  assert.throws(checkpointedValidator, /already exists/);
+  assert.deepEqual(calls, ["create-evidence", "validate-exclusive-path"]);
+});
+
+test("prepared authority validates before the absent path is atomically reserved", t => {
+  const fixture = reservationFixture(t), calls = [];
+  const reserved = reserveQualificationEvidence({ repoRoot: fixture.repoRoot, now: Date.parse("2026-09-28T01:00:00Z"), randomBytes: () => Buffer.alloc(32, 1), validatePrepared: () => { calls.push(fs.existsSync(fixture.evidenceDirectory) ? "path-present" : "path-absent"); return fixture.prepared; } });
+  assert.deepEqual(calls, ["path-absent"]);
+  assert.equal(fs.existsSync(path.join(fixture.evidenceDirectory, "evidence-reservation.json")), true);
+  assert.equal(verifyEvidenceReservation({ evidenceDirectory: fixture.evidenceDirectory, reservationToken: reserved.reservationToken }).qualificationId, CONTINUATION.qualificationId);
+  assert.throws(() => verifyEvidenceReservation({ evidenceDirectory: fixture.evidenceDirectory, reservationToken: "wrong" }), /identity mismatch/);
+});
+
+test("pre-existing and simultaneous reservations fail closed", t => {
+  const first = reservationFixture(t); fs.mkdirSync(first.evidenceDirectory, { recursive: true });
+  assert.throws(() => reserveQualificationEvidence({ repoRoot: first.repoRoot, validatePrepared: first.validatePrepared }), error => error.code === "EVIDENCE_INTEGRITY");
+  const second = reservationFixture(t);
+  reserveQualificationEvidence({ repoRoot: second.repoRoot, randomBytes: () => Buffer.alloc(32, 2), validatePrepared: second.validatePrepared });
+  assert.throws(() => reserveQualificationEvidence({ repoRoot: second.repoRoot, randomBytes: () => Buffer.alloc(32, 3), validatePrepared: second.validatePrepared }), error => error.code === "EVIDENCE_INTEGRITY");
+});
+
+test("interruption before reservation creates no path", t => {
+  const fixture = reservationFixture(t);
+  assert.throws(() => reserveQualificationEvidence({ repoRoot: fixture.repoRoot, validatePrepared: () => { throw Object.assign(new Error("interrupted"), { code: "AUTHORIZATION" }); } }), /interrupted/);
+  assert.equal(fs.existsSync(fixture.evidenceDirectory), false);
+});
+
+test("reserved evidence finalization is integrity-bound and idempotent", t => {
+  const fixture = reservationFixture(t), reserved = reserveQualificationEvidence({ repoRoot: fixture.repoRoot, randomBytes: () => Buffer.alloc(32, 4), validatePrepared: fixture.validatePrepared });
+  persistReservedEvidence({ evidenceDirectory: fixture.evidenceDirectory, reservationToken: reserved.reservationToken, name: "progress.json", value: { classification: "STARTED" } });
+  const terminal = { classification: "ABORTED", reason: "INTERRUPTED", retryEligible: false };
+  const first = finalizeQualificationEvidence({ evidenceDirectory: fixture.evidenceDirectory, reservationToken: reserved.reservationToken, terminal });
+  const repeated = finalizeQualificationEvidence({ evidenceDirectory: fixture.evidenceDirectory, reservationToken: reserved.reservationToken, terminal });
+  assert.equal(first.repeated, false); assert.equal(repeated.repeated, true); assert.equal(first.manifestSha256, repeated.manifestSha256);
+  assert.throws(() => finalizeQualificationEvidence({ evidenceDirectory: fixture.evidenceDirectory, reservationToken: reserved.reservationToken, terminal: { ...terminal, reason: "CHANGED" } }), /different content/);
+});
+
 test("complete workflow passes and always cleans token, browser, and bypass", async () => {
   const op = operations(), result = await executeControlledContinuation({ operations: op });
   assert.equal(result.classification, "PASS");
@@ -142,6 +198,23 @@ test("complete no-network lifecycle uses the reviewed API and browser contracts"
   assert.equal(requests.filter(request => request.method === "PATCH").length, 2);
   assert.equal(requests.filter(request => request.url === `${CONTINUATION.origin}/`).length, 2);
   assert.equal(JSON.stringify(result).includes(secret), false);
+});
+test("reserved no-network lifecycle covers bootstrap, four accounts, notifications, and cleanup", async t => {
+  const fixture = reservationFixture(t), op = operations();
+  const completed = await executeReservedQualification({ repoRoot: fixture.repoRoot, operations: op, now: Date.parse("2026-09-28T01:00:00Z"), randomBytes: () => Buffer.alloc(32, 5), validatePrepared: fixture.validatePrepared });
+  assert.equal(completed.result.classification, "PASS");
+  assert.deepEqual(op.calls, ["verify", "create-bypass", "bootstrap", "parity", "accounts", "worker", "open", "register", "foreground", "background", "click", "unregister", "close", "revoke", "verify-revoked"]);
+  assert.equal(fs.existsSync(path.join(fixture.evidenceDirectory, "evidence-reservation.json")), true);
+  assert.equal(fs.existsSync(path.join(fixture.evidenceDirectory, "terminal-result.json")), true);
+  assert.equal(fs.existsSync(path.join(fixture.evidenceDirectory, "evidence-manifest.tsv")), true);
+});
+test("post-reservation safety interruption persists terminal evidence", async t => {
+  const fixture = reservationFixture(t), interruption = Object.assign(new Error("operator interrupted"), { code: "EVIDENCE_INTEGRITY" });
+  const completed = await executeReservedQualification({ repoRoot: fixture.repoRoot, operations: operations({ verifyPrerequisites: async () => { throw interruption; } }), now: Date.parse("2026-09-28T01:00:00Z"), randomBytes: () => Buffer.alloc(32, 6), validatePrepared: fixture.validatePrepared });
+  assert.equal(completed.result.classification, "ABORTED");
+  const terminal = JSON.parse(fs.readFileSync(path.join(fixture.evidenceDirectory, "terminal-result.json"), "utf8"));
+  assert.equal(terminal.classification, "ABORTED"); assert.equal(terminal.retryEligible, false);
+  assert.equal(fs.existsSync(path.join(fixture.evidenceDirectory, "evidence-manifest.tsv")), true);
 });
 test("unsupported real click is inconclusive without weakening delivery requirements", async () => {
   const result = await executeControlledContinuation({ operations: operations({ verifyRealClick: async () => false }) });
