@@ -1,0 +1,58 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm --workspace @hungrie/restaurant run export:web",
+  "outputDirectory": "apps/restaurant/dist",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' https://www.gstatic.com 'sha256-67fhrP0+BkBqmgGGXTtgiVO/9EQs3QruYNU/7fnRkI8='; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com https://fcmregistrations.googleapis.com https://firebaseinstallations.googleapis.com https://*.firebaseio.com https://*.firebase.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'" },
+        { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" }
+      ]
+    },
+    {
+      "source": "/_expo/static/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
+        { "key": "Service-Worker-Allowed", "value": "/" }
+      ]
+    },
+    {
+      "source": "/firebase-config.js",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/manifest.webmanifest",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/:route(+not-found|_sitemap|dashboard|earnings|forgot-password|history|invite|login|menu|more|orders|pending|restaurant|reviews|security|settings|suspended)",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/orders/:orderId",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
+    }
+  ],
+  "rewrites": [
+    { "source": "/orders/:orderId", "destination": "/orders/[orderId]" }
+  ]
+}
