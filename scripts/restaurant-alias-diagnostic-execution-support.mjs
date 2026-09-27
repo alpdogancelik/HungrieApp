@@ -19,13 +19,14 @@ import { verifyReadOnlyEasExportEvidence } from "./verify-restaurant-alias-produ
 
 export const SUPPORT = Object.freeze({
   historicalApplicationTree: "ae03238ac8c34f4ef11365b5a5c51dee81187812",
-  proposalPath: "docs/restaurant-expo-alias-ruip6ad-20260927l-run-binding-contract.md",
-  proposalSha256: "da0782c36df13f41026a17bb826437f363612498a0dffdb3b106f315d27760c0",
-  baseCheckpoint: "ca638cb72318e6e41f6840c72f4ebdd4c4a5a27e",
-  baseSourceManifestSha256: "2ce34b087b669dc021fd06475d3d2757bb87b7195d34a02926e12a329e898b76",
-  baseSourceManifestFiles: 1562,
+  proposalPath: "docs/restaurant-run-l-http429-read-only-observation-proposal.md",
+  proposalSha256: "7c6328dae803cece8e070762950537af966297242c23609fe82e36278095fbd8",
+  baseCheckpoint: "f037b205a14408e2f410d7010650ccb3ca368d2b",
+  baseSourceManifestSha256: "bf9d09d3679b95f9ae14c77da2ec0e098eb8d864f41b161baa4205e1bf3caf39",
+  baseSourceManifestFiles: 1563,
+  hostedAuthorityPreparationEnabled: false,
   checkpointFiles: Object.freeze([
-    "docs/restaurant-expo-alias-ruip6ad-20260927l-run-binding-contract.md",
+    "docs/restaurant-run-l-http429-read-only-observation-proposal.md",
     "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs",
     "scripts/restaurant-alias-diagnostic-execution-support.mjs",
     "scripts/test-restaurant-alias-diagnostic-access-staging.mjs",
@@ -297,6 +298,20 @@ export const SUPPORT = Object.freeze({
         "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "78be7419863e50ec0c34dbba1c9c6782101e1ee501cf1e76cc332a06935fef45",
       }),
     }),
+    Object.freeze({
+      commit: "f037b205a14408e2f410d7010650ccb3ca368d2b",
+      parent: "ca638cb72318e6e41f6840c72f4ebdd4c4a5a27e",
+      sourceManifestSha256: "bf9d09d3679b95f9ae14c77da2ec0e098eb8d864f41b161baa4205e1bf3caf39",
+      sourceManifestFiles: 1563,
+      applicationTree: "7430599b150adbd19ddafadce1195f1e418daf8a",
+      files: Object.freeze({
+        "docs/restaurant-expo-alias-ruip6ad-20260927l-run-binding-contract.md": "da0782c36df13f41026a17bb826437f363612498a0dffdb3b106f315d27760c0",
+        "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "885f373a773ee461f54edea1d5145f3920e00233901451fe45edbeaad9b95116",
+        "scripts/restaurant-alias-diagnostic-execution-support.mjs": "1e94aeed0d3081df8c9ee9f179bd8ffa78a96fc955562e6d32560fdf0eeb5983",
+        "scripts/test-restaurant-alias-diagnostic-access-staging.mjs": "2fc22acbb5861ea012047596006afaab1262b8def2fe1eacc94bed22835a0326",
+        "scripts/test-restaurant-alias-diagnostic-execution-support.mjs": "33971df3fa5a52ee1649a506f891455444bc1aed0bfe3cfe7b4920c400a922f3",
+      }),
+    }),
   ]),
   diagnosticExecutableFiles: Object.freeze({
     "apps/restaurant/metro.config.js": "c1c09a3089568b12c4aeb9c1d30afb47bb7722dc9605fe534152424a4a2e64ad",
@@ -311,8 +326,8 @@ export const SUPPORT = Object.freeze({
     "scripts/verify-restaurant-alias-production-export-readiness.mjs": "4222eeafca09cc62f4079290fcb963d6fad8047ac090994ed71077a8038a9463",
     "scripts/restaurant-alias-staging-public-build-inputs.mjs": "4aa0b89a932947fae65696bf6443b1613a62e9032bb983a1b9a37f915c9c4659",
     "scripts/test-restaurant-alias-staging-public-build-inputs.mjs": "423fb4a83e416c14dd3e2348c5cf50b90da8599c8c678a0ce05b678f142377c6",
-    "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "885f373a773ee461f54edea1d5145f3920e00233901451fe45edbeaad9b95116",
-    "scripts/test-restaurant-alias-diagnostic-access-staging.mjs": "2fc22acbb5861ea012047596006afaab1262b8def2fe1eacc94bed22835a0326",
+    "scripts/qualify-restaurant-alias-diagnostic-access-staging.mjs": "2e9aec915812b82d6df6e98025c332bdd9decd9ff730183f5a7678022479cb8d",
+    "scripts/test-restaurant-alias-diagnostic-access-staging.mjs": "371ae1af413e439bd49616f724f9a65905349e044d94f917ab4f0380d848fe15",
   }),
   applicationTree: DIAGNOSTIC_OPERATOR.applicationTree,
   runId: "ruip6ad_20260927l",
@@ -513,6 +528,7 @@ export function verifyReviewedCandidateCheckpoint({ repoRoot, approval, spawn = 
 
 export function prepareAuthorityArtifacts({ repoRoot, approval, outputDirectory, spawn = spawnSync, lineageVerifier = verifyAcceptedCheckpointLineage, executableVerifier = verifyAcceptedDiagnosticExecutables }) {
   const verified = verifyReviewedCandidateCheckpoint({ repoRoot, approval, spawn, lineageVerifier, executableVerifier });
+  if (!SUPPORT.hostedAuthorityPreparationEnabled) throw new Error("Hosted diagnostic authority preparation is disabled pending a separately reviewed new-run binding.");
   const manifest = verified.manifest;
   const authority = {
     contractVersion: 1,

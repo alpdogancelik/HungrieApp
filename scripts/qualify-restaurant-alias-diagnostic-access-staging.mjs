@@ -24,7 +24,7 @@ function atomicWrite(file, value) {
   fs.chmodSync(file, 0o600);
 }
 
-export function sanitizeRequest(request) {
+export function sanitizeRequest(request, { initiator = null, documentURL = null } = {}) {
   const url = new URL(request.url);
   const headerNames = Object.keys(request.headers || {}).map(value => value.toLowerCase()).sort();
   return {
@@ -36,10 +36,66 @@ export function sanitizeRequest(request) {
     queryParameterNames: [...url.searchParams.keys()].sort(),
     headerNames,
     credentialHeaderNames: headerNames.filter(value => /authorization|cookie|token|api[-_]?key/i.test(value)),
+    initiator: sanitizeInitiator(initiator, documentURL),
   };
 }
 
-export function sanitizeResponse(response) {
+const SAFE_RESPONSE_HEADERS = new Set([
+  "age", "cache-control", "cf-cache-status", "cf-ray", "content-length", "content-type",
+  "date", "etag", "last-modified", "retry-after", "server", "server-timing", "via",
+  "x-cache", "x-cache-hits", "x-request-id", "x-served-by", "x-timer",
+]);
+const ERROR_BODY_LIMIT = 64 * 1024;
+
+export function sanitizeResponseHeaders(headers = {}) {
+  return Object.fromEntries(Object.entries(headers)
+    .map(([name, value]) => [String(name).toLowerCase(), value])
+    .filter(([name]) => SAFE_RESPONSE_HEADERS.has(name))
+    .map(([name, value]) => [name, sanitizeDiagnosticText(String(value)).slice(0, 512)])
+    .sort(([left], [right]) => left.localeCompare(right)));
+}
+
+export function sanitizeInitiator(initiator, documentURL) {
+  const frames = (initiator?.stack?.callFrames || []).slice(0, 8).map(frame => ({
+    functionName: sanitizeDiagnosticText(frame.functionName || "").slice(0, 160),
+    url: sanitizeObservedUrl(frame.url),
+    lineNumber: Number.isInteger(frame.lineNumber) ? frame.lineNumber : null,
+    columnNumber: Number.isInteger(frame.columnNumber) ? frame.columnNumber : null,
+  }));
+  return {
+    type: sanitizeDiagnosticText(initiator?.type || "unknown").slice(0, 64),
+    url: sanitizeObservedUrl(initiator?.url),
+    lineNumber: Number.isInteger(initiator?.lineNumber) ? initiator.lineNumber : null,
+    columnNumber: Number.isInteger(initiator?.columnNumber) ? initiator.columnNumber : null,
+    stack: frames,
+    documentUrl: sanitizeObservedUrl(documentURL),
+  };
+}
+
+export function classifyHttpFailure({ status, path: responsePath, type }) {
+  if (status === 404 && type === "Other" && responsePath === "/favicon.ico") return "OPTIONAL_FAVICON_NOT_FOUND";
+  if (status === 429) return "RATE_LIMIT_RESPONSE";
+  if (status === 404) return "REQUIRED_RESOURCE_NOT_FOUND";
+  if (status >= 500) return "UPSTREAM_SERVER_ERROR";
+  return "HTTP_ERROR_RESPONSE";
+}
+
+export function sanitizeErrorBody(body, { base64Encoded = false } = {}) {
+  try {
+    const bytes = Buffer.from(String(body || ""), base64Encoded ? "base64" : "utf8");
+    return {
+      available: true,
+      byteLength: bytes.length,
+      sha256: sha256(bytes),
+      withinCaptureLimit: bytes.length <= ERROR_BODY_LIMIT,
+      contentPersisted: false,
+    };
+  } catch (error) {
+    return { available: false, byteLength: null, sha256: null, withinCaptureLimit: false, contentPersisted: false, error: sanitizeDiagnosticText(error?.message || error) };
+  }
+}
+
+export function sanitizeResponse(response, { type = null } = {}) {
   const url = new URL(response.url);
   return {
     protocol: url.protocol,
@@ -49,6 +105,15 @@ export function sanitizeResponse(response) {
     queryParameterNames: [...url.searchParams.keys()].sort(),
     status: response.status,
     mimeType: response.mimeType,
+    httpProtocol: sanitizeDiagnosticText(response.protocol || "").slice(0, 32) || null,
+    remoteEndpoint: response.remoteIPAddress ? { address: sanitizeDiagnosticText(response.remoteIPAddress).slice(0, 128), port: Number.isInteger(response.remotePort) ? response.remotePort : null } : null,
+    cache: {
+      fromDiskCache: Boolean(response.fromDiskCache),
+      fromPrefetchCache: Boolean(response.fromPrefetchCache),
+      fromServiceWorker: Boolean(response.fromServiceWorker),
+    },
+    safeHeaders: sanitizeResponseHeaders(response.headers),
+    failureClassification: response.status >= 400 ? classifyHttpFailure({ status: response.status, path: url.pathname, type }) : null,
   };
 }
 
@@ -198,12 +263,14 @@ export async function qualifyAccount({
   let browser, version, cdp, evaluate, snapshot, authenticated = null, restored = null, serviceWorker = null, mainCount = null;
   let evidencePersisted = false, stage = "BROWSER_START", failureClassification = "BROWSER_QUALIFICATION_EXCEPTION", qualificationBlockers = [];
   const exceptions = [], consoleErrors = [], failedRequests = [], httpErrors = [], responses = [], requests = [], lifecycle = [], navigations = [];
+  const responsesByRequestId = new Map(), networkEvidenceTasks = [];
   const evidencePath = path.join(directory, `immutable-${accountName}-access-evidence.json`);
   const screenshotName = `immutable-${accountName}-access.png`, screenshotPath = path.join(directory, screenshotName);
 
   const captureScreenshot = async () => {
     if (!cdp) return { file: screenshotName, captured: false, error: "CDP_UNAVAILABLE" };
     try {
+      await cdp.send("Runtime.evaluate", { expression: `(()=>{for(const input of document.querySelectorAll('input,textarea'))input.value='[REDACTED]';const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);for(let node;node=walker.nextNode();)if(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(node.nodeValue||''))node.nodeValue=(node.nodeValue||'').replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,'[REDACTED_EMAIL]')})()` }).catch(() => {});
       const screenshot = await cdp.send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
       fs.writeFileSync(screenshotPath, Buffer.from(screenshot.data, "base64"), { mode: 0o600 });
       return { file: screenshotName, captured: true, sha256: sha256(fs.readFileSync(screenshotPath)) };
@@ -214,8 +281,15 @@ export async function qualifyAccount({
   const observeServiceWorker = async () => serviceWorker || (evaluate
     ? waitForServiceWorkerReady(evaluate, { attempts: 1, intervalMs: 0, sleep })
     : { supported: false, ready: false, registrations: [], attempt: 0, error: "EVALUATOR_UNAVAILABLE" });
+  const drainNetworkEvidence = async () => {
+    await Promise.allSettled([...networkEvidenceTasks]);
+    for (const row of httpErrors) {
+      if (!row.errorBody) row.errorBody = { available: false, byteLength: null, sha256: null, withinCaptureLimit: false, contentPersisted: false, error: "BODY_CAPTURE_INCOMPLETE" };
+    }
+  };
   const persistFailure = async error => {
     if (evidencePersisted) return;
+    await drainNetworkEvidence();
     const finalState = snapshot
       ? await snapshot().catch(snapshotError => ({ evaluationError: sanitizeDiagnosticText(snapshotError?.message || snapshotError) }))
       : null;
@@ -279,13 +353,23 @@ export async function qualifyAccount({
       if (message.method === "Page.lifecycleEvent") lifecycle.push({ observedAt: new Date().toISOString(), name: message.params.name, frameId: message.params.frameId || null, loaderId: message.params.loaderId || null });
       if (message.method === "Runtime.exceptionThrown") exceptions.push(sanitizeDiagnosticText(message.params.exceptionDetails?.exception?.description || message.params.exceptionDetails?.text));
       if (message.method === "Runtime.consoleAPICalled" && ["error", "assert"].includes(message.params.type)) consoleErrors.push(sanitizeDiagnosticText(message.params.args.map(value => value.value || value.description || value.type).join(" ")));
-      if (message.method === "Network.loadingFailed" && !String(message.params.errorText || "").includes("ERR_ABORTED") && message.params.type !== "Other") failedRequests.push({ type: message.params.type, errorText: sanitizeDiagnosticText(message.params.errorText) });
-      if (message.method === "Network.requestWillBeSent") requests.push({ observedAt: new Date().toISOString(), requestId: message.params.requestId, type: message.params.type, ...sanitizeRequest(message.params.request) });
+      if (message.method === "Network.loadingFailed" && !String(message.params.errorText || "").includes("ERR_ABORTED") && message.params.type !== "Other") failedRequests.push({ observedAt: new Date().toISOString(), requestId: message.params.requestId || null, type: message.params.type, errorText: sanitizeDiagnosticText(message.params.errorText), canceled: Boolean(message.params.canceled), blockedReason: message.params.blockedReason ? sanitizeDiagnosticText(message.params.blockedReason) : null });
+      if (message.method === "Network.requestWillBeSent") requests.push({ observedAt: new Date().toISOString(), requestId: message.params.requestId, type: message.params.type, ...sanitizeRequest(message.params.request, { initiator: message.params.initiator, documentURL: message.params.documentURL }) });
       if (message.method === "Network.responseReceived") {
-        const response = message.params.response, row = { observedAt: new Date().toISOString(), requestId: message.params.requestId, type: message.params.type, ...sanitizeResponse(response) };
+        const response = message.params.response, row = { observedAt: new Date().toISOString(), requestId: message.params.requestId, type: message.params.type, ...sanitizeResponse(response, { type: message.params.type }) };
         responses.push(row);
+        responsesByRequestId.set(message.params.requestId, row);
         try { if (new URL(response.url).origin === new URL(baseUrl).origin && response.status >= 400) httpErrors.push(row); } catch {}
         if (new URL(response.url).pathname.endsWith("/get_my_access_context_v1")) cdp.send("Runtime.evaluate", { expression: "window.__diagnostic.accessResolved=true" }).catch(() => {});
+      }
+      if (message.method === "Network.loadingFinished") {
+        const row = responsesByRequestId.get(message.params.requestId);
+        if (row?.status >= 400 && !row.errorBody) {
+          const task = cdp.send("Network.getResponseBody", { requestId: message.params.requestId })
+            .then(result => { row.errorBody = sanitizeErrorBody(result?.body, { base64Encoded: Boolean(result?.base64Encoded) }); })
+            .catch(error => { row.errorBody = { available: false, byteLength: Number.isFinite(message.params.encodedDataLength) ? message.params.encodedDataLength : null, sha256: null, withinCaptureLimit: false, contentPersisted: false, error: sanitizeDiagnosticText(error?.message || error) }; });
+          networkEvidenceTasks.push(task);
+        }
       }
     });
     evaluate = async expression => {
@@ -358,6 +442,7 @@ export async function qualifyAccount({
 
     stage = "QUALIFICATION";
     failureClassification = "QUALIFICATION_FAILED";
+    await drainNetworkEvidence();
     const ax = await cdp.send("Accessibility.getFullAXTree");
     mainCount = ax.nodes.filter(node => !node.ignored && node.role?.value === "main").length;
     const accessRequests = requests.filter(request => request.path.endsWith("/get_my_access_context_v1")).length;

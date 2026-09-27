@@ -487,7 +487,7 @@ test("future compatibility checkpoint must retain diagnostic executables and rev
   }
 });
 
-test("authority preparation binds exact owner authorization and writes protected artifacts", () => {
+test("terminal run-L binding cannot prepare another hosted diagnostic authority", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "alias-support-authority-"));
   const calls = [];
   const spawn = (program, args) => {
@@ -502,12 +502,11 @@ test("authority preparation binds exact owner authorization and writes protected
     throw new Error("Unexpected local git command: " + args.join(" "));
   };
   try {
-    const result = prepareAuthorityArtifacts({ repoRoot: root, approval: approval(), outputDirectory: directory, spawn, lineageVerifier: () => ({ passed: true }), executableVerifier: () => ({ passed: true }) });
-    assert.equal(result.sourceManifestSha256, fakeSourceManifestSha256);
-    assert.equal(result.authority.ownerAuthorizationSha256, approval().authorizationTextSha256);
-    assert.equal(result.authority.sourceCommit, fakeSourceCommit);
-    assert.equal(fs.statSync(result.authorityPath).mode & 0o777, 0o600);
-    assert.equal(fs.statSync(result.manifestPath).mode & 0o777, 0o600);
+    assert.throws(
+      () => prepareAuthorityArtifacts({ repoRoot: root, approval: approval(), outputDirectory: directory, spawn, lineageVerifier: () => ({ passed: true }), executableVerifier: () => ({ passed: true }) }),
+      /authority preparation is disabled/i,
+    );
+    assert.deepEqual(fs.readdirSync(directory), []);
     assert.ok(calls.every(([program]) => program === "git"));
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });

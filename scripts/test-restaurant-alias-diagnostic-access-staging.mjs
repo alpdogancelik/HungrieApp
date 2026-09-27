@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { closeChrome, evaluateBrowserQualification, openChrome, qualifyAccount, routeStateReady, sanitizeDiagnosticText, sanitizeObservedUrl, sanitizeRequest, sanitizeResponse, waitForServiceWorkerReady } from "./qualify-restaurant-alias-diagnostic-access-staging.mjs";
+import { classifyHttpFailure, closeChrome, evaluateBrowserQualification, openChrome, qualifyAccount, routeStateReady, sanitizeDiagnosticText, sanitizeErrorBody, sanitizeInitiator, sanitizeObservedUrl, sanitizeRequest, sanitizeResponse, sanitizeResponseHeaders, waitForServiceWorkerReady } from "./qualify-restaurant-alias-diagnostic-access-staging.mjs";
 
 const base = "https://candidate.example.invalid";
 const state = (path, operational = true) => ({ path, heading: "Dashboard", blank: false, operational, earningsLink: false, diagnostic: { errors: [], navigations: [], protectedBeforeReady: false } });
@@ -18,6 +18,36 @@ test("unexpected runtime origin fails", () => assert.ok(evaluateBrowserQualifica
 test("browser-internal requests are outside the application runtime origin contract", () => assert.equal(evaluateBrowserQualification(valid({ requests: [{ url: "chrome-extension://fixture/background.js", path: "/background.js" }] })).passed, true));
 test("sanitized runtime requests retain origin without credential or query values", () => { const request = sanitizeRequest({ method: "GET", url: base + "/dashboard?token=secret", headers: { Authorization: "Bearer secret", "X-Test": "value" } }); assert.equal(request.origin, base); assert.equal(request.protocol, "https:"); assert.deepEqual(request.queryParameterNames, ["token"]); assert.deepEqual(request.credentialHeaderNames, ["authorization"]); assert.equal(JSON.stringify(request).includes("secret"), false); assert.equal(evaluateBrowserQualification(valid({ requests: [request] })).passed, true); });
 test("sanitized runtime responses preserve diagnostics without credential-shaped values", () => { const response = sanitizeResponse({ url: base + "/identity?key=secret&token=private", status: 401, mimeType: "application/json" }); assert.equal(response.origin, base); assert.equal(response.path, "/identity"); assert.deepEqual(response.queryParameterNames, ["key", "token"]); assert.equal(response.status, 401); assert.equal(JSON.stringify(response).includes("secret"), false); assert.equal(JSON.stringify(response).includes("private"), false); });
+test("HTTP 429 captures only safe delivery headers, protocol, cache, and remote endpoint", () => {
+  const response = sanitizeResponse({ url: base + "/asset.css?token=secret", status: 429, mimeType: "text/html", protocol: "h2", remoteIPAddress: "203.0.113.5", remotePort: 443, fromDiskCache: false, fromPrefetchCache: false, fromServiceWorker: false, headers: { Server: "cloudflare", "CF-Ray": "fixture-IST", "Retry-After": "5", "CF-Cache-Status": "DYNAMIC", Cookie: "secret", Authorization: "Bearer secret", "Set-Cookie": "private" } }, { type: "Stylesheet" });
+  assert.equal(response.failureClassification, "RATE_LIMIT_RESPONSE");
+  assert.deepEqual(response.safeHeaders, { "cf-cache-status": "DYNAMIC", "cf-ray": "fixture-IST", "retry-after": "5", server: "cloudflare" });
+  assert.deepEqual(response.remoteEndpoint, { address: "203.0.113.5", port: 443 });
+  assert.equal(response.httpProtocol, "h2");
+  assert.equal(JSON.stringify(response).includes("secret"), false);
+});
+test("missing response headers produce a complete empty safe-header record", () => assert.deepEqual(sanitizeResponseHeaders(), {}));
+test("error body evidence stores length and hash but never content", () => {
+  const body = "token=secret password=hunter2 manager@example.invalid";
+  const evidence = sanitizeErrorBody(body);
+  assert.equal(evidence.byteLength, Buffer.byteLength(body));
+  assert.match(evidence.sha256, /^[a-f0-9]{64}$/);
+  assert.equal(evidence.contentPersisted, false);
+  assert.equal(JSON.stringify(evidence).includes("secret"), false);
+  assert.equal(JSON.stringify(evidence).includes("hunter2"), false);
+});
+test("initiator evidence sanitizes URLs and bounds stack frames", () => {
+  const evidence = sanitizeInitiator({ type: "script", url: `${base}/entry.js?token=secret`, stack: { callFrames: Array.from({ length: 12 }, (_, index) => ({ functionName: `load${index}`, url: `${base}/bundle.js?key=private`, lineNumber: index, columnNumber: 1 })) } }, `${base}/orders?session=private`);
+  assert.equal(evidence.stack.length, 8);
+  assert.equal(JSON.stringify(evidence).includes("secret"), false);
+  assert.equal(JSON.stringify(evidence).includes("private"), false);
+  assert.match(evidence.documentUrl, /%5BREDACTED%5D/);
+});
+test("favicon classification remains narrow while favicon 429 remains an HTTP failure", () => {
+  assert.equal(classifyHttpFailure({ status: 404, path: "/favicon.ico", type: "Other" }), "OPTIONAL_FAVICON_NOT_FOUND");
+  assert.equal(classifyHttpFailure({ status: 429, path: "/favicon.ico", type: "Other" }), "RATE_LIMIT_RESPONSE");
+  assert.equal(classifyHttpFailure({ status: 404, path: "/required.css", type: "Stylesheet" }), "REQUIRED_RESOURCE_NOT_FOUND");
+});
 test("incomplete rendering and missing service worker fail", () => { const result = evaluateBrowserQualification(valid({ restored: { ...state("/orders"), heading: null }, serviceWorkerReady: false })); assert.ok(result.blockers.includes("INCOMPLETE_OPERATIONAL_RENDERING")); assert.ok(result.blockers.includes("SERVICE_WORKER_NOT_READY")); });
 test("manager earnings request fails", () => assert.ok(evaluateBrowserQualification(valid({ accountName: "manager", requests: [{ url: base + "/rest/v1/rpc/restaurant_get_earnings", path: "/rest/v1/rpc/restaurant_get_earnings" }] })).blockers.includes("MANAGER_FINANCIAL_ACCESS")));
 test("pending renders without operational shell", () => { const pending = state("/pending", false); assert.equal(evaluateBrowserQualification(valid({ accountName: "pending", expectedPath: "/pending", directPath: null, authenticated: pending, restored: pending })).passed, true); });
@@ -97,7 +127,13 @@ class QualificationCdp {
         this.direct = true;
         this.emit("Page.lifecycleEvent", { name: "init", frameId: "frame", loaderId: "direct-loader" });
         if (this.mode === "navigate-error") throw new Error("navigation failed token=top-secret");
-        if (this.mode === "http") this.emit("Network.responseReceived", { requestId: "404", type: "Document", response: { url: `${base}/orders`, status: 404, mimeType: "text/html" } });
+        if (["http", "http429", "incomplete-body"].includes(this.mode)) {
+          const status = this.mode === "http429" || this.mode === "incomplete-body" ? 429 : 404;
+          this.emit("Network.requestWillBeSent", { requestId: "http-error", type: "Stylesheet", documentURL: `${base}/orders?session=private`, initiator: { type: "parser", url: `${base}/orders?token=secret` }, request: { method: "GET", url: `${base}/required.css?token=secret`, headers: { Referer: `${base}/orders`, Authorization: "Bearer secret" } } });
+          this.emit("Network.responseReceived", { requestId: "http-error", type: "Stylesheet", response: { url: `${base}/required.css?token=secret`, status, mimeType: "text/html", protocol: "h2", remoteIPAddress: "203.0.113.9", remotePort: 443, headers: { Server: "cloudflare", "CF-Ray": "fixture-IST", "Retry-After": "3", "Set-Cookie": "private" } } });
+          this.emit("Network.loadingFinished", { requestId: "http-error", encodedDataLength: 128 });
+        }
+        if (this.mode === "loading-failed") this.emit("Network.loadingFailed", { requestId: "partial", type: "Stylesheet", errorText: "net::ERR_CONNECTION_RESET token=secret", canceled: false, blockedReason: "other" });
         if (this.mode === "timeout") {
           this.emit("Runtime.consoleAPICalled", { type: "error", args: [{ value: "Bearer top-secret manager@example.com" }] });
           this.emit("Network.requestWillBeSent", { requestId: "secret", type: "Fetch", request: { method: "GET", url: `${base}/orders?token=top-secret`, headers: { Authorization: "Bearer top-secret" } } });
@@ -117,6 +153,10 @@ class QualificationCdp {
     }
     if (method === "Accessibility.getFullAXTree") return { nodes: [{ ignored: false, role: { value: "main" } }] };
     if (method === "Page.captureScreenshot") return { data: Buffer.from("fixture screenshot").toString("base64") };
+    if (method === "Network.getResponseBody") {
+      if (this.mode === "incomplete-body") throw new Error("No resource with given identifier token=private");
+      return { body: "rate limit response password=secret", base64Encoded: false };
+    }
     return {};
   }
   close() { this.closed = true; }
@@ -199,6 +239,51 @@ test("same-origin HTTP failure is classified and persisted after rendering", asy
   assert.equal(evidence.httpErrors.length, 1);
   assert.equal(evidence.httpErrors[0].status, 404);
   assert.ok(evidence.blockers.includes("SAME_ORIGIN_HTTP_ERROR"));
+});
+
+test("HTTP 429 persists delivery metadata and hashed body before throwing", async t => {
+  const fixture = await runQualificationFixture(t, "http429");
+  await assert.rejects(() => qualifyAccount(fixture.options), /SAME_ORIGIN_HTTP_ERROR/);
+  const text = fs.readFileSync(path.join(fixture.directory, "immutable-manager-access-evidence.json"), "utf8"), evidence = JSON.parse(text);
+  const row = evidence.httpErrors[0];
+  assert.equal(row.status, 429);
+  assert.equal(row.failureClassification, "RATE_LIMIT_RESPONSE");
+  assert.equal(row.safeHeaders.server, "cloudflare");
+  assert.equal(row.safeHeaders["cf-ray"], "fixture-IST");
+  assert.equal(row.safeHeaders["retry-after"], "3");
+  assert.equal(row.errorBody.available, true);
+  assert.match(row.errorBody.sha256, /^[a-f0-9]{64}$/);
+  assert.equal(row.errorBody.contentPersisted, false);
+  assert.equal(evidence.requestInventory.at(-1).initiator.type, "parser");
+  assert.equal(text.includes("Bearer secret"), false);
+  assert.equal(text.includes("password=secret"), false);
+  assert.equal(text.includes("Set-Cookie"), false);
+  assert.equal(text.includes("token=secret"), false);
+});
+
+test("incomplete CDP response-body capture remains explicit and fail closed", async t => {
+  const fixture = await runQualificationFixture(t, "incomplete-body");
+  await assert.rejects(() => qualifyAccount(fixture.options), /SAME_ORIGIN_HTTP_ERROR/);
+  const text = fs.readFileSync(path.join(fixture.directory, "immutable-manager-access-evidence.json"), "utf8"), evidence = JSON.parse(text);
+  assert.equal(evidence.passed, false);
+  assert.equal(evidence.httpErrors[0].status, 429);
+  assert.equal(evidence.httpErrors[0].errorBody.available, false);
+  assert.equal(evidence.httpErrors[0].errorBody.byteLength, 128);
+  assert.match(evidence.httpErrors[0].errorBody.error, /token=\[REDACTED\]/);
+  assert.equal(text.includes("private"), false);
+});
+
+test("partial network failure is sanitized and atomically persisted before throwing", async t => {
+  const fixture = await runQualificationFixture(t, "loading-failed");
+  await assert.rejects(() => qualifyAccount(fixture.options), /NETWORK_LOADING_FAILURE/);
+  const text = fs.readFileSync(path.join(fixture.directory, "immutable-manager-access-evidence.json"), "utf8"), evidence = JSON.parse(text);
+  assert.equal(evidence.passed, false);
+  assert.equal(evidence.failedRequests.length, 1);
+  assert.equal(evidence.failedRequests[0].requestId, "partial");
+  assert.equal(evidence.failedRequests[0].errorText, "net::ERR_CONNECTION_RESET token=[REDACTED]");
+  assert.equal(text.includes("token=secret"), false);
+  assert.ok(evidence.blockers.includes("NETWORK_LOADING_FAILURE"));
+  assert.equal(fixture.wasClosed(), true);
 });
 
 test("timeout evidence is sanitized, complete, and cleanup is deterministic", async t => {
