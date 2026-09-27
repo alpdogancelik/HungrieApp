@@ -5,10 +5,15 @@ import path from "node:path";
 import test from "node:test";
 import vm from "node:vm";
 import crypto from "node:crypto";
+import os from "node:os";
 import {
   classifyReviewedVariables,
   deploymentPlan,
+  environmentMutationArgs,
+  evaluateContinuationDecisionPath,
+  finalizeEvidence,
   planEnvironmentReconciliation,
+  previewDeploymentArgs,
   validateAuthenticatedAccount,
   validateConsumedProgress,
   validateLocalProjectLink,
@@ -138,7 +143,7 @@ test("accepted artifact includes routes, critical assets, fonts, worker, and run
 test("deployment continuation is isolated, preview-only, one-shot, and exactly scope-bound", () => {
   const plan = deploymentPlan("nurlan-ildirimli-s-projects");
   assert.equal(VERCEL_STAGING_DEPLOYMENT.project, "hungrie-restaurant-web-staging-eval-20260927a");
-  assert.equal(VERCEL_STAGING_DEPLOYMENT.actionId, "restaurant-vercel-staging-evaluation-20260927c");
+  assert.equal(VERCEL_STAGING_DEPLOYMENT.actionId, "restaurant-vercel-staging-evaluation-20260927d");
   assert.equal(VERCEL_STAGING_DEPLOYMENT.environment, "preview");
   assert.equal(VERCEL_STAGING_DEPLOYMENT.expectedVariables.length, 9);
   assert.equal(plan.length, 6);
@@ -154,7 +159,8 @@ test("deployment continuation is isolated, preview-only, one-shot, and exactly s
 
 const digest = value => crypto.createHash("sha256").update(value).digest("hex");
 const values = Object.fromEntries(VERCEL_STAGING_DEPLOYMENT.expectedVariables.map((name, index) => [name, `public-${index}`]));
-const observations = VERCEL_STAGING_DEPLOYMENT.expectedVariables.map(name => ({ name, bytes: Buffer.byteLength(values[name]), sha256: digest(values[name]) }));
+values.EXPO_PUBLIC_FIREBASE_APP_ID = "public-ü";
+const observations = VERCEL_STAGING_DEPLOYMENT.expectedVariables.map(name => ({ name, utf8Bytes: Buffer.byteLength(values[name], "utf8"), sha256: digest(values[name]), passed: true }));
 
 test("all nine EXPO_PUBLIC inputs use Vercel config type and never sensitive/secret type", () => {
   const classified = classifyReviewedVariables(VERCEL_STAGING_DEPLOYMENT.expectedVariables);
@@ -178,6 +184,51 @@ test("missing and partial Preview variables reconcile without duplicates", () =>
   assert.equal(mismatch[0].action, "replace");
   assert.throws(() => planEnvironmentReconciliation({ envs: [one[0], one[0]] }, observations, values), /Duplicate/);
   assert.throws(() => planEnvironmentReconciliation({ envs: [{ key: "UNREVIEWED", type: "config", target: ["preview"], value: "x" }] }, observations, values), /Unexpected/);
+});
+
+test("canonical utf8Bytes observation schema reproduces and fixes the consumed field mismatch", () => {
+  const obsolete = observations.map(({ name, utf8Bytes, sha256, passed }) => ({ name, bytes: utf8Bytes, sha256, passed }));
+  assert.throws(() => planEnvironmentReconciliation([], obsolete, values), /observation schema mismatch/);
+  assert.equal(planEnvironmentReconciliation([], observations, values).length, 9);
+  assert.equal(observations[1].utf8Bytes, Buffer.byteLength(values[observations[1].name], "utf8"));
+  assert.notEqual(observations[1].utf8Bytes, values[observations[1].name].length);
+  assert.throws(() => planEnvironmentReconciliation([], observations.map((row, index) => index === 0 ? { ...row, utf8Bytes: row.utf8Bytes + 1 } : row), values), /fingerprint mismatch/);
+  assert.throws(() => planEnvironmentReconciliation([], observations.map((row, index) => index === 0 ? { ...row, extra: true } : row), values), /schema mismatch/);
+});
+
+test("all nine Preview variables cover missing, exact, conflicting, duplicate, malformed, and unexpected states", () => {
+  const exact = observations.map(row => ({ key: row.name, type: "encrypted", target: ["preview"], value: values[row.name] }));
+  assert.ok(planEnvironmentReconciliation({ envs: exact }, observations, values).every(row => row.action === "skip"));
+  const conflicting = exact.map(row => ({ ...row, value: `${row.value}-wrong` }));
+  assert.ok(planEnvironmentReconciliation({ envs: conflicting }, observations, values).every(row => row.action === "replace"));
+  assert.throws(() => planEnvironmentReconciliation({ envs: [exact[0], exact[0], ...exact.slice(1)] }, observations, values), /Duplicate/);
+  assert.throws(() => planEnvironmentReconciliation({ invalid: [] }, observations, values), /malformed/);
+  assert.throws(() => planEnvironmentReconciliation({ envs: [...exact, { key: "OTHER", type: "plain", target: ["preview"], value: "x" }] }, observations, values), /Unexpected/);
+});
+
+test("full no-network decision path constructs only Preview config writes and one Preview deployment", () => {
+  const link = JSON.parse(read(".vercel/project.json"));
+  const project = { name: VERCEL_STAGING_DEPLOYMENT.project, id: link.projectId, owner: { name: "Nurlan Ildirimli's projects", slug: VERCEL_STAGING_DEPLOYMENT.scope }, buildCommand: "npm --workspace @hungrie/restaurant run export:web", outputDirectory: "apps/restaurant/dist", rootDirectory: null };
+  const result = evaluateContinuationDecisionPath({ scope: VERCEL_STAGING_DEPLOYMENT.scope, link, account: { username: VERCEL_STAGING_DEPLOYMENT.account }, teams: { teams: [{ id: link.orgId, slug: VERCEL_STAGING_DEPLOYMENT.scope, name: "Nurlan Ildirimli's projects" }] }, project, inventory: { envs: [] }, observations, values });
+  assert.equal(result.terminal, "DRY_RUN_READY");
+  assert.equal(result.environmentCommands.length, 9);
+  assert.ok(result.environmentCommands.every(args => args.includes("preview") && args.includes("--type") && args.includes("config") && !args.includes("secret") && !args.includes("--sensitive")));
+  assert.deepEqual(result.deploymentCommand, previewDeploymentArgs(VERCEL_STAGING_DEPLOYMENT.scope));
+  assert.deepEqual(environmentMutationArgs(observations[0].name, VERCEL_STAGING_DEPLOYMENT.scope), ["env", "add", observations[0].name, "preview", "--force", "--type", "config", "--scope", VERCEL_STAGING_DEPLOYMENT.scope]);
+  assert.deepEqual({ networkRequests: result.networkRequests, mutations: result.mutations, evidenceDirectoriesCreated: result.evidenceDirectoriesCreated }, { networkRequests: 0, mutations: 0, evidenceDirectoriesCreated: 0 });
+});
+
+test("dry-run evidence finalization is deterministic and contains no values", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "vercel-continuation-dry-run-"));
+  try {
+    fs.writeFileSync(path.join(directory, "progress.json"), JSON.stringify({ terminal: "DRY_RUN_READY", networkRequests: 0, mutations: 0 }) + "\n", { mode: 0o600 });
+    const first = finalizeEvidence(directory);
+    const bytes = fs.readFileSync(path.join(directory, "evidence-manifest.tsv"));
+    assert.match(bytes.toString(), /^path\tbytes\tsha256\nprogress\.json\t/);
+    assert.doesNotMatch(bytes.toString(), /EXPO_PUBLIC|public-/);
+    fs.rmSync(path.join(directory, "evidence-manifest.tsv"));
+    assert.deepEqual(finalizeEvidence(directory), first);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
 test("actual project-inspect response shape maps owner slug without conflating opaque IDs", () => {
@@ -204,7 +255,7 @@ test("authenticated username, team slug, and opaque org ID are validated indepen
 });
 
 test("consumed attempt permits only the reviewed create/link then failed first variable write", () => {
-  const evidencePath = path.join(root, "secure/restaurant-vercel-staging-deployment/restaurant-vercel-staging-evaluation-20260927b/progress.json");
+  const evidencePath = path.join(root, "secure/restaurant-vercel-staging-deployment/restaurant-vercel-staging-evaluation-20260927c/progress.json");
   const bytes = fs.readFileSync(evidencePath);
   assert.deepEqual(validateConsumedProgress(JSON.parse(bytes), bytes), { completedProjectCreationInOriginalAttempt: true, successfulEnvironmentWrites: 0, deploymentCommands: 0 });
   const changed = Buffer.from(bytes.toString().replace('"terminal": "FAIL"', '"terminal": "PASS"'));

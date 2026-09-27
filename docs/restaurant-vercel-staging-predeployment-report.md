@@ -20,11 +20,15 @@ Continuation B (`restaurant-vercel-staging-evaluation-20260927b`) is also consum
 
 The read-only CLI response was independently reproduced with response SHA-256 `ecffad83ba6cc6e805c642201cce6c5ce57d3a97c7acdfedc646ea239f0e1d50`. Its project name is the reviewed project, its project-ID fingerprint is `b4845746ef4b9dc3a66dd84b7de8e4f57814f1273bf137c244614e9141d04a8f`, its owner slug is `nurlan-ildirimli-s-projects`, and its owner display name is `Nurlan Ildirimli's projects`. The unique team record with that slug has ID fingerprint `8928fd7f108505fa35d1906b2926cbee6c4f240bc029a715ff25b5c498407951`, exactly matching the local link's `orgId` fingerprint. `vercel whoami` independently identifies the authenticated username as `nurlanildirimli00-3449`. These are separate semantics: username identifies the authenticated user; slug selects the team scope; the opaque team ID binds that slug to local `orgId`; project ID binds the local link to the inspected project; and owner name is only a display label.
 
-The fresh continuation ID is `restaurant-vercel-staging-evaluation-20260927c`. It uses the new exclusive directory `secure/restaurant-vercel-staging-deployment/restaurant-vercel-staging-evaluation-20260927c` and cannot reuse either consumed directory.
+Continuation C (`restaurant-vercel-staging-evaluation-20260927c`) is consumed as well. Its account, team, project, and environment inventory reads all passed; then it stopped before mutation because reconciliation read a nonexistent `bytes` property while the canonical validator returns `utf8Bytes`. C issued zero environment writes and zero deployments. Its progress SHA-256 is `0f34c3dd73db0ddb8493ba60cf17a9cb3eeca8df03814115c02af6c75733632f` and its evidence-manifest SHA-256 is `2a9bd1a393eff2a2a97e5984299c876d80d0e5acbb3449f943b2c2f8cc5b46bc`.
+
+The canonical observation schema is now exactly `{ name, utf8Bytes, sha256, passed }`. Reconciliation rejects missing, extra, reordered, invalid, or obsolete fields rather than applying a fallback. UTF-8 byte lengths and SHA-256 fingerprints are verified for every reviewed local and remote value.
+
+The fresh continuation ID is `restaurant-vercel-staging-evaluation-20260927d`. It uses the new exclusive directory `secure/restaurant-vercel-staging-deployment/restaurant-vercel-staging-evaluation-20260927d` and cannot reuse any consumed directory.
 
 Before a mutation, the continuation verifies:
 
-- both consumed attempts’ exact progress/evidence hashes and terminal schemas;
+- all three consumed attempts’ exact progress/evidence hashes and terminal schemas;
 - the authenticated Vercel username, without equating it to a team name or slug;
 - the unique approved team slug and its opaque team ID, which must exactly match the locally linked `orgId`;
 - the local link’s project name and project/organization ID fingerprints;
@@ -65,7 +69,7 @@ No Restaurant application, AuthGate, routing, notification, backend, Firebase, S
 
 ## Local verification
 
-- Vercel contract tests: 16/16 PASS, including the actual CLI 60.1.3 project/owner response shape, username validation, unique team-slug-to-team-ID mapping, wrong-project/wrong-scope/wrong-org rejection, and ambiguous identity rejection.
+- Vercel contract tests: 20/20 PASS, including the canonical `utf8Bytes` schema, all-nine-variable reconciliation states, the full no-network/no-mutation decision path, deterministic evidence finalization, the actual CLI 60.1.3 project/owner response shape, username validation, unique team-slug-to-team-ID mapping, wrong-project/wrong-scope/wrong-org rejection, and ambiguous identity rejection.
 - Complete Vercel local qualification: PASS, including exact fresh export/archive, 74 files, 20 routes, 50 assets, three runtime files, dynamic order route, missing-asset 404, four isolated account flows, notification worker, TypeScript, and diff check.
 - Responsive UI Phase 1–5: 51/51 PASS.
 - Reviews: 35/35 PASS.
@@ -83,7 +87,7 @@ The exact continuation command, which still requires separate owner approval, is
 node scripts/deploy-restaurant-vercel-staging.mjs \
   --scope=nurlan-ildirimli-s-projects \
   --execute=true \
-  --confirm=continue-verified-existing-restaurant-vercel-staging-preview
+  --confirm=continue-fully-verified-restaurant-vercel-staging-preview
 ```
 
 This will first verify the authenticated username and exact team-slug-to-team-ID mapping, then perform read-only project and environment inspection, reconcile the nine Preview config values, verify the resulting environment, and issue exactly one Preview deployment. It does not create another project.
