@@ -9,9 +9,13 @@ import {
   validateOwnerApproval,
 } from "./validate-restaurant-run-l-http429-observation-authority.mjs";
 import {
+  classifyPausedRequest,
   classifyObservation,
+  collectBrowserObservations,
   collectDirectGetObservations,
   executeObservation,
+  reconcileObservationTerminal,
+  verifyEvidenceManifest,
 } from "./observe-restaurant-run-l-http429-read-only.mjs";
 
 const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
@@ -53,6 +57,7 @@ function browser({ rateLimit = true, failures = [], count = 2 } = {}) {
     requestStarts: Array.from({ length: 10 }, (_, index) => ({ url: `${CONTRACT.origin}/asset-${index}` })),
     responses: rateLimit ? [{ status: 429, safeHeaders: headers, path: CONTRACT.resources[0].path }] : [{ status: 200, safeHeaders: headers }],
     failures,
+    cleanup: { browserClosed: true, profileRemoved: true, error: null },
   };
 }
 function direct({ status = 200, headers: responseHeaders = headers, count = 6 } = {}) {
@@ -142,9 +147,114 @@ test("exclusive evidence path blocks repeated execution", async () => {
 
 test("credential-shaped observation evidence fails before persistence", async () => {
   const fixture = executionFixture();
-  const result = await executeObservation({ repoRoot: fixture.root, authorityPath: fixture.authorityPath, sourceManifestPath: fixture.manifestPath, confirm: `OBSERVE_HTTP429_READ_ONLY_${CONTRACT.observationId}`, now: () => now, authorityValidator: () => ({ approval: { sourceCommit: "1".repeat(40), sourceManifestSha256: "2".repeat(64) } }), protectedVerifier: () => ({ passed: true }), browserCollector: async () => ({ ...browser(), responses: [{ status: 429, safeHeaders: { server: "Bearer abc.def.ghi" } }] }), directCollector: async () => direct() });
+  const credentialShapedHeader = ["Be", "arer ", "abc", ".def", ".ghi"].join("");
+  const result = await executeObservation({ repoRoot: fixture.root, authorityPath: fixture.authorityPath, sourceManifestPath: fixture.manifestPath, confirm: `OBSERVE_HTTP429_READ_ONLY_${CONTRACT.observationId}`, now: () => now, authorityValidator: () => ({ approval: { sourceCommit: "1".repeat(40), sourceManifestSha256: "2".repeat(64) } }), protectedVerifier: () => ({ passed: true }), browserCollector: async () => ({ ...browser(), responses: [{ status: 429, safeHeaders: { server: credentialShapedHeader } }] }), directCollector: async () => direct() });
   assert.equal(result.classification, "FAIL");
   assert.equal(result.reason, "CREDENTIAL_EXPOSURE");
+});
+
+test("bare token words are safe metadata while true credential headers fail", () => {
+  const allowed = new Set(["/suspended"]);
+  const lexical = classifyPausedRequest({ url: "https://securetoken.googleapis.com/v1/token", method: "GET", headers: {} }, allowed);
+  assert.equal(lexical.code, "UNEXPECTED_ORIGIN");
+  assert.deepEqual(lexical.row.credentialHeaderNames, []);
+  const credentialValue = ["Be", "arer ", "synthetic", "-credential"].join("");
+  const credential = classifyPausedRequest({ url: `${CONTRACT.origin}/suspended`, method: "GET", headers: { Authorization: credentialValue } }, allowed);
+  assert.equal(credential.code, "CREDENTIAL_BEARING_REQUEST");
+  assert.deepEqual(credential.row.credentialHeaderNames, ["authorization"]);
+  assert.equal(JSON.stringify(credential.row).includes(credentialValue), false);
+});
+
+test("unexpected same-origin resources and non-GET methods remain fail closed", () => {
+  const allowed = new Set(["/suspended"]);
+  assert.equal(classifyPausedRequest({ url: `${CONTRACT.origin}/not-reviewed`, method: "GET", headers: {} }, allowed).code, "UNEXPECTED_RESOURCE_ACCESS");
+  assert.equal(classifyPausedRequest({ url: `${CONTRACT.origin}/suspended`, method: "POST", headers: {} }, allowed).code, "UNAUTHORIZED_METHOD");
+});
+
+test("asynchronous CDP listener exceptions stop loading, persist failure, and clean browser", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "http429-listener-")), directory = path.join(root, "evidence");
+  fs.mkdirSync(directory);
+  let listener, closed = 0, stopped = 0, fetchDisabled = 0;
+  const cdp = {
+    on(value) { listener = value; },
+    async send(method) {
+      if (method === "Page.navigate") setTimeout(() => listener({ method: "Fetch.requestPaused", params: { requestId: "unsafe", resourceType: "XHR", request: { url: "https://securetoken.googleapis.com/v1/token", method: "GET", headers: {} } } }), 0);
+      if (method === "Page.stopLoading") stopped += 1;
+      if (method === "Fetch.disable") fetchDisabled += 1;
+      return {};
+    },
+  };
+  await assert.rejects(() => collectBrowserObservations({ repoRoot: process.cwd(), directory, now: () => now, wait: milliseconds => new Promise(resolve => setTimeout(resolve, Math.min(milliseconds, 25))), openChromeImpl: async () => ({ version: "SyntheticChrome", cdp }), closeChromeImpl: async () => { closed += 1; } }), error => error.code === "UNEXPECTED_ORIGIN");
+  const evidence = JSON.parse(fs.readFileSync(path.join(directory, "browser-observations.json")));
+  assert.equal(evidence.failures[0].code, "UNEXPECTED_ORIGIN");
+  assert.equal(evidence.requestStarts[0].url, "https://securetoken.googleapis.com/v1/token");
+  assert.deepEqual(evidence.requestStarts[0].queryParameterNames, []);
+  assert.deepEqual(evidence.cleanup, { browserClosed: true, profileRemoved: true, error: null });
+  assert.equal(closed, 1); assert.equal(stopped > 0, true); assert.equal(fetchDisabled > 0, true);
+});
+
+test("partial CDP response-body capture stays bounded and explicit", () => {
+  const result = classifyObservation({ ...browser(), responses: [{ status: 429, safeHeaders: headers, errorBody: { byteLength: 123, sha256: null, withinLimit: false, contentPersisted: false, error: "BODY_CAPTURE_INCOMPLETE" } }] }, direct());
+  assert.equal(result.classification, "PASS");
+  assert.equal(result.http429, 1);
+});
+
+test("missing CDP response body is persisted without losing the HTTP observation", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "http429-partial-cdp-")), directory = path.join(root, "evidence");
+  fs.mkdirSync(directory);
+  let listener, navigation = 0;
+  const cdp = {
+    on(value) { listener = value; },
+    async send(method) {
+      if (method === "Page.navigate") {
+        navigation += 1;
+        const requestId = `request-${navigation}`;
+        setTimeout(() => {
+          listener({ method: "Fetch.requestPaused", params: { requestId: `fetch-${navigation}`, resourceType: "Document", request: { url: `${CONTRACT.origin}/suspended`, method: "GET", headers: {} } } });
+          listener({ method: "Network.responseReceived", params: { requestId, type: "Document", response: { url: `${CONTRACT.origin}/suspended`, status: 429, protocol: "h2", headers, fromDiskCache: false, fromPrefetchCache: false, fromServiceWorker: false } } });
+          listener({ method: "Network.loadingFinished", params: { requestId, encodedDataLength: 321 } });
+        }, 0);
+      }
+      if (method === "Network.getResponseBody") throw new Error("body unavailable");
+      if (method === "Runtime.evaluate") return { result: { value: { supported: true, controller: false, registrations: [] } } };
+      return {};
+    },
+  };
+  const result = await collectBrowserObservations({ repoRoot: process.cwd(), directory, now: () => now, wait: milliseconds => new Promise(resolve => setTimeout(resolve, Math.min(milliseconds, 25))), openChromeImpl: async () => ({ version: "SyntheticChrome", cdp }), closeChromeImpl: async () => {} });
+  assert.equal(result.responses.length, 2);
+  assert.equal(result.responses.every(row => row.status === 429 && row.errorBody?.contentPersisted === false && row.errorBody?.error === "body unavailable"), true);
+  assert.equal(result.cleanup.browserClosed, true);
+});
+
+test("browser cleanup failure remains a terminal operator error", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "http429-cleanup-")), directory = path.join(root, "evidence");
+  fs.mkdirSync(directory);
+  const cdp = { on() {}, async send(method) { if (method === "Runtime.evaluate") return { result: { value: {} } }; return {}; } };
+  await assert.rejects(() => collectBrowserObservations({ repoRoot: process.cwd(), directory, now: () => now, wait: async () => {}, openChromeImpl: async () => ({ version: "SyntheticChrome", cdp }), closeChromeImpl: async () => { throw new Error("synthetic close failure"); } }), error => error.code === "BROWSER_CLEANUP_FAILED");
+  const evidence = JSON.parse(fs.readFileSync(path.join(directory, "browser-observations.json")));
+  assert.equal(evidence.cleanup.browserClosed, false);
+  assert.equal(evidence.cleanup.profileRemoved, true);
+});
+
+test("terminal reconciliation is idempotent and manifest detects tampering", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "http429-reconcile-"));
+  fs.writeFileSync(path.join(directory, "browser-observations.json"), JSON.stringify(browser()) + "\n");
+  fs.writeFileSync(path.join(directory, "direct-get-observations.json"), JSON.stringify(direct()) + "\n");
+  const terminal = { schemaVersion: 1, observationId: CONTRACT.observationId, deploymentId: CONTRACT.deploymentId, completedAt: new Date(now).toISOString(), classification: "PASS", passed: true, reason: "RATE_LIMIT_LAYER_METADATA_CAPTURED", promotionEligible: false, deploymentEligible: false, mutationPerformed: false, credentialValuesPersisted: false };
+  const first = reconcileObservationTerminal({ directory, terminal, now: () => now });
+  const firstTerminal = fs.readFileSync(path.join(directory, "terminal-result.json"));
+  const second = reconcileObservationTerminal({ directory, terminal: { ...terminal, reason: "MUST_NOT_REWRITE" }, now: () => now + 1000 });
+  assert.equal(first.idempotent, false); assert.equal(second.idempotent, true);
+  assert.equal(fs.readFileSync(path.join(directory, "terminal-result.json")).equals(firstTerminal), true);
+  assert.equal(verifyEvidenceManifest(directory).passed, true);
+  fs.appendFileSync(path.join(directory, "browser-observations.json"), "tamper");
+  assert.throws(() => verifyEvidenceManifest(directory), /integrity mismatch/);
+});
+
+test("consumed authority replay remains rejected by exclusive evidence paths", async () => {
+  const fixture = executionFixture(), consumed = path.join(fixture.root, CONTRACT.evidenceDirectory);
+  fs.mkdirSync(consumed, { recursive: true });
+  await assert.rejects(() => executeObservation({ repoRoot: fixture.root, authorityPath: fixture.authorityPath, sourceManifestPath: fixture.manifestPath, confirm: `OBSERVE_HTTP429_READ_ONLY_${CONTRACT.observationId}`, now: () => now, authorityValidator: () => ({ approval: { sourceCommit: "1".repeat(40), sourceManifestSha256: "2".repeat(64) } }), protectedVerifier: () => ({ passed: true }), browserCollector: async () => browser(), directCollector: async () => direct() }), /EEXIST/);
 });
 
 test("operator source contains no deployment, alias, rollback, Firebase, Supabase, or account client", () => {

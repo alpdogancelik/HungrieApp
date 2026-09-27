@@ -7,22 +7,26 @@ import { spawnSync } from "node:child_process";
 export const CONTRACT = Object.freeze({
   schemaVersion: 1,
   kind: "restaurant_http429_read_only_observation",
-  observationId: "ruip6ao_20260927a",
+  observationId: "ruip6ao_20260927b",
+  consumedObservationId: "ruip6ao_20260927a",
   deploymentId: "qi1cdfilti",
   origin: "https://hungrie-restaurant--qi1cdfilti.expo.app",
-  baseCheckpoint: "8800dc04967f3c6b34418c7c6a507ce90b32c784",
-  baseSourceManifestSha256: "60c678761aa4da6b6de29311237851cd5bb99a87d11ed939626a0eba989ef90c",
-  proposalPath: "docs/restaurant-run-l-http429-read-only-observation-proposal.md",
-  proposalSha256: "7c6328dae803cece8e070762950537af966297242c23609fe82e36278095fbd8",
+  baseCheckpoint: "148decfacf1333e271352e43a97bfb1c0796054b",
+  baseSourceManifestSha256: "8ef1f21d3e9321740eecb0c0a09859f452809e2419117dcf6dbccb513baa5696",
+  proposalPath: "docs/restaurant-run-l-http429-read-only-observation-b-proposal.md",
+  proposalSha256: "00e7331f5c595f53d45b6d5a5fb171af810f15dc42087aef01ae8beb3ec88f15",
   applicationTree: "7430599b150adbd19ddafadce1195f1e418daf8a",
   artifactManifestPath: "docs/restaurant-expo-alias-staging-public-build-input-evidence/candidate-artifact-manifest.json",
   artifactManifestFileSha256: "406dbf42ba8c9fefb4f37c3edc36bbbfd24240ff242eae0e4c1d6ba1d66b41b1",
   acceptedArtifactManifestSha256: "d3af007214f8fd5cf200dbe8e81cef33a32d98e0fb889e63596dae856ac39e89",
   protectedRunLManifestPath: "secure/restaurant-alias-diagnostic/ruip6ad_20260927l/evidence-manifest.tsv",
   protectedRunLManifestSha256: "d9c2a388f3a9abcc0bdf1d97998614f691bb16c28b3519eb2d253a6633a53f7c",
-  evidenceDirectory: "secure/restaurant-alias-http-observation/ruip6ao_20260927a",
+  evidenceDirectory: "secure/restaurant-alias-http-observation/ruip6ao_20260927b",
+  consumedEvidenceDirectory: "secure/restaurant-alias-http-observation/ruip6ao_20260927a",
   authorityDirectory: "secure/restaurant-alias-http-observation-authority",
   checkpointFiles: Object.freeze([
+    "docs/restaurant-run-l-http429-aborted-observation-supplemental-forensic-record.md",
+    "docs/restaurant-run-l-http429-read-only-observation-b-proposal.md",
     "scripts/observe-restaurant-run-l-http429-read-only.mjs",
     "scripts/test-restaurant-run-l-http429-read-only.mjs",
     "scripts/validate-restaurant-run-l-http429-observation-authority.mjs",
@@ -46,6 +50,16 @@ export const CONTRACT = Object.freeze({
     Object.freeze({ path: "/assets/__node_modules/@expo-google-fonts/outfit/600SemiBold/Outfit_600SemiBold.fff3440ed39188f5d5bf85305e8b6be8.ttf", bytes: 55492, sha256: "030d373c4e2a67d5e922a2694e1eaab3b9f1208f1301dba94a70bdebf52c1efa" }),
     Object.freeze({ path: "/assets/__node_modules/@expo-google-fonts/outfit/700Bold/Outfit_700Bold.91486df4e5279497efb060b0d3cc797b.ttf", bytes: 55392, sha256: "6654b93d21301ec61887d3cedd6c11d9df1b1dfb63f9cf45ac7995f6e2235ab1" }),
   ]),
+});
+
+const CONSUMED_FILES = Object.freeze({
+  "authority-validation.json": "823becd7941819d074c731dbe1e5f56ec3d8876df6dc6b1a596459e7b3303945",
+  "browser-observations.json": "4900e98d7607cbfc013a22240e3024c462c6e828e9b81eac415140181fe237c1",
+  "progress.json": "f96573588285918f52d97d04eb237027298da06130833181e2f95d011e00de3b",
+});
+const CONSUMED_AUTHORITY_FILES = Object.freeze({
+  "ruip6ao_20260927a-authority.json": "59b14eb585a0a38b9e4ec216b0b7e0c4572e407ad03a8d1d74b7354519edba28",
+  "ruip6ao_20260927a-source-manifest.tsv": "8ef1f21d3e9321740eecb0c0a09859f452809e2419117dcf6dbccb513baa5696",
 });
 
 export const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
@@ -95,6 +109,20 @@ export function verifyProtectedManifest(repoRoot) {
   return { passed: true, files: rows.length, manifestSha256: CONTRACT.protectedRunLManifestSha256 };
 }
 
+export function verifyConsumedObservation(repoRoot) {
+  const directory = path.join(repoRoot, CONTRACT.consumedEvidenceDirectory);
+  const actual = fs.existsSync(directory) ? fs.readdirSync(directory).filter(name => fs.statSync(path.join(directory, name)).isFile()).sort() : [];
+  if (JSON.stringify(actual) !== JSON.stringify(Object.keys(CONSUMED_FILES).sort())) throw new Error("Consumed observation inventory changed.");
+  for (const [name, expected] of Object.entries(CONSUMED_FILES)) if (sha256(fs.readFileSync(path.join(directory, name))) !== expected) throw new Error(`Consumed observation file changed: ${name}.`);
+  for (const [name, expected] of Object.entries(CONSUMED_AUTHORITY_FILES)) {
+    const file = path.join(repoRoot, CONTRACT.authorityDirectory, name);
+    if (!fs.existsSync(file) || sha256(fs.readFileSync(file)) !== expected) throw new Error(`Consumed observation authority history changed: ${name}.`);
+  }
+  const approval = path.join(repoRoot, "docs/restaurant-run-l-http429-read-only-observation-owner-approval-completed.json");
+  if (!fs.existsSync(approval) || sha256(fs.readFileSync(approval)) !== "6e6cc10910392070a7680d6d8db9300a5f9c06cc98ccce836b1ccb7a6bcc9f89") throw new Error("Consumed observation owner approval changed.");
+  return { passed: true, files: actual.length, hashes: CONSUMED_FILES };
+}
+
 export function validateOwnerApproval(value, now = Date.now()) {
   const fields = ["schemaVersion", "kind", "decision", "approvedForHostedReadOnlyObservation", "observationId", "issuedAt", "expiresAt", "authorizationText", "authorizationTextSha256", "sourceCommit", "sourceManifestSha256", "proposalSha256", "operatorSha256", "validatorSha256", "deploymentId", "origin", "evidenceDirectory", "resources", "limits", "allowedMethods", "allowAuthentication", "allowHostedMutation"];
   exactKeys(value, fields, "Owner approval");
@@ -126,6 +154,7 @@ export function verifyCheckpoint({ repoRoot, approval, spawn = spawnSync }) {
   const validator = "scripts/validate-restaurant-run-l-http429-observation-authority.mjs";
   if (commitBlobSha(repoRoot, head, operator, spawn) !== approval.operatorSha256 || commitBlobSha(repoRoot, head, validator, spawn) !== approval.validatorSha256) throw new Error("Approved executable digest mismatch.");
   verifyProtectedManifest(repoRoot);
+  verifyConsumedObservation(repoRoot);
   return { passed: true, head, parent, inventory, manifest };
 }
 

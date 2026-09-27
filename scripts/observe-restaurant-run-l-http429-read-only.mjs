@@ -14,7 +14,7 @@ import {
 } from "./validate-restaurant-run-l-http429-observation-authority.mjs";
 
 const SAFE_HEADERS = new Set(["age", "cache-control", "cf-cache-status", "cf-ray", "content-length", "content-type", "date", "etag", "last-modified", "retry-after", "server", "server-timing", "via", "x-cache", "x-cache-hits", "x-request-id", "x-served-by", "x-timer"]);
-const CREDENTIAL_PATTERN = /(?:bearer\s+\S+|authorization|cookie|password|secret|token|api[-_]?key|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/i;
+const CREDENTIAL_VALUE_PATTERN = /(?:bearer\s+(?!\[REDACTED\])\S+|\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}|"(?:authorization|cookie|password|secret|token|api[-_]?key)"\s*:\s*"(?!\[REDACTED\])[^"\s]+)/i;
 const canonical = value => `${JSON.stringify(value, null, 2)}\n`;
 const sleep = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 
@@ -54,7 +54,20 @@ function safetyError(code, message) {
 
 function assertSanitized(value) {
   const serialized = JSON.stringify(value);
-  if (CREDENTIAL_PATTERN.test(serialized.replace(/credentialValuesPersisted|allowAuthentication|authorizationTextSha256|authorityValidation/gi, ""))) throw safetyError("CREDENTIAL_EXPOSURE", "Credential-shaped value detected in observation evidence.");
+  if (CREDENTIAL_VALUE_PATTERN.test(serialized)) throw safetyError("CREDENTIAL_EXPOSURE", "Credential value detected in observation evidence.");
+}
+
+export function classifyPausedRequest(request, allowed) {
+  const url = new URL(request.url), isHttp = ["http:", "https:"].includes(url.protocol);
+  const headerNames = Object.keys(request.headers || {}).map(name => name.toLowerCase()).sort();
+  const credentialHeaderNames = headerNames.filter(name => /authorization|cookie|proxy-authorization|x-api-key/i.test(name));
+  const row = { method: request.method, protocol: url.protocol, url: url.origin === CONTRACT.origin ? sanitizeUrl(request.url) : isHttp ? `${url.protocol}//${url.host}${url.pathname}` : null, path: isHttp ? url.pathname : null, resourceType: null, headerNames, credentialHeaderNames, queryParameterNames: isHttp ? [...url.searchParams.keys()].sort() : [] };
+  let code = null;
+  if (credentialHeaderNames.length) code = "CREDENTIAL_BEARING_REQUEST";
+  else if (isHttp && url.origin !== CONTRACT.origin) code = "UNEXPECTED_ORIGIN";
+  else if (isHttp && request.method !== "GET") code = "UNAUTHORIZED_METHOD";
+  else if (isHttp && !allowed.has(url.pathname)) code = "UNEXPECTED_RESOURCE_ACCESS";
+  return { row, isHttp, code };
 }
 
 function createEvidenceDirectory(repoRoot) {
@@ -140,28 +153,44 @@ async function closeChrome(browser) {
   if (browser.child.exitCode === null) browser.child.kill("SIGKILL");
 }
 
-export async function collectBrowserObservations({ repoRoot, directory, chromePath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", now = () => Date.now(), wait = sleep }) {
+export async function collectBrowserObservations({ repoRoot, directory, chromePath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", now = () => Date.now(), wait = sleep, openChromeImpl = openChrome, closeChromeImpl = closeChrome }) {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), "restaurant-http429-observation-"));
   const allowed = allowedArtifactPaths(repoRoot);
   const evidence = { schemaVersion: 1, observationId: CONTRACT.observationId, deploymentId: CONTRACT.deploymentId, origin: CONTRACT.origin, browser: null, startedAt: new Date(now()).toISOString(), completedAt: null, documentLoads: [], requestStarts: [], responses: [], failures: [], serviceWorker: null, credentialValuesPersisted: false };
-  let browser;
+  let browser, controlledError = null, cleanupDisposition = null;
   const persist = () => writeEvidence(directory, "browser-observations.json", evidence);
+  let rejectFatal;
+  const fatal = new Promise((_, reject) => { rejectFatal = reject; });
+  fatal.catch(() => {});
+  const stop = error => {
+    if (controlledError) return;
+    controlledError = error instanceof Error ? error : new Error(String(error));
+    evidence.failures.push({ code: controlledError.code || "ASYNC_LISTENER_EXCEPTION", observedAt: new Date(now()).toISOString(), error: sanitizeText(controlledError.message) });
+    try { persist(); } catch (persistError) { controlledError = safetyError("EVIDENCE_INTEGRITY_FAILURE", sanitizeText(persistError.message)); }
+    if (browser) {
+      browser.cdp.send("Page.stopLoading").catch(() => {});
+      browser.cdp.send("Fetch.disable").catch(() => {});
+    }
+    rejectFatal(controlledError);
+  };
+  const waitControlled = promise => Promise.race([promise, fatal]);
   try {
-    browser = await openChrome(chromePath, profile); evidence.browser = browser.version; persist();
+    browser = await openChromeImpl(chromePath, profile); evidence.browser = browser.version; persist();
     const cdp = browser.cdp, bodyTasks = [], responseRows = new Map();
     await Promise.all([cdp.send("Page.enable"), cdp.send("Network.enable"), cdp.send("Runtime.enable"), cdp.send("Fetch.enable", { patterns: [{ urlPattern: "*", requestStage: "Request" }] })]);
-    cdp.on(message => {
+    const handleMessage = async message => {
       if (message.method === "Fetch.requestPaused") {
-        const request = message.params.request, url = new URL(request.url);
-        const isHttp = ["http:", "https:"].includes(url.protocol);
-        const row = { requestId: message.params.requestId, observedAt: new Date(now()).toISOString(), method: request.method, protocol: url.protocol, url: url.origin === CONTRACT.origin ? sanitizeUrl(request.url) : isHttp ? `${url.protocol}//${url.host}${url.pathname}` : null, path: isHttp ? url.pathname : null, resourceType: message.params.resourceType || null };
+        const { row: sanitized, isHttp, code } = classifyPausedRequest(message.params.request, allowed);
+        const row = { requestId: message.params.requestId, observedAt: new Date(now()).toISOString(), ...sanitized, resourceType: message.params.resourceType || null };
         evidence.requestStarts.push(row); persist();
-        if (!isHttp) return cdp.send("Fetch.continueRequest", { requestId: message.params.requestId }).catch(() => {});
-        if (url.origin !== CONTRACT.origin || request.method !== "GET" || !allowed.has(url.pathname) || evidence.requestStarts.filter(item => item.url?.startsWith(CONTRACT.origin)).length > CONTRACT.limits.browserSameOriginRequestStarts) {
-          evidence.failures.push({ code: url.origin !== CONTRACT.origin ? "UNEXPECTED_ORIGIN" : request.method !== "GET" ? "UNAUTHORIZED_METHOD" : !allowed.has(url.pathname) ? "UNEXPECTED_RESOURCE_ACCESS" : "REQUEST_BUDGET_EXHAUSTED", observedAt: row.observedAt, path: url.pathname }); persist();
-          return cdp.send("Fetch.failRequest", { requestId: message.params.requestId, errorReason: "BlockedByClient" }).catch(() => {});
+        const overBudget = evidence.requestStarts.filter(item => item.url?.startsWith(CONTRACT.origin)).length > CONTRACT.limits.browserSameOriginRequestStarts;
+        if (code || overBudget) {
+          const failure = safetyError(code === "CREDENTIAL_BEARING_REQUEST" ? "CREDENTIAL_EXPOSURE" : code || "REQUEST_BUDGET_EXHAUSTED", code || "Browser request budget exhausted.");
+          await cdp.send("Fetch.failRequest", { requestId: message.params.requestId, errorReason: "BlockedByClient" }).catch(() => {});
+          throw failure;
         }
-        cdp.send("Fetch.continueRequest", { requestId: message.params.requestId }).catch(() => {});
+        await cdp.send("Fetch.continueRequest", { requestId: message.params.requestId });
+        return;
       }
       if (message.method === "Network.responseReceived") {
         try {
@@ -169,7 +198,7 @@ export async function collectBrowserObservations({ repoRoot, directory, chromePa
           if (url.origin !== CONTRACT.origin) return;
           const row = { requestId: message.params.requestId, observedAt: new Date(now()).toISOString(), url: sanitizeUrl(response.url), path: url.pathname, resourceType: message.params.type || null, status: response.status, protocol: sanitizeText(response.protocol).slice(0, 32), timing: response.timing ? { requestTime: response.timing.requestTime ?? null, receiveHeadersEnd: response.timing.receiveHeadersEnd ?? null } : null, safeHeaders: safeHeaders(response.headers), cache: { fromDiskCache: Boolean(response.fromDiskCache), fromPrefetchCache: Boolean(response.fromPrefetchCache), fromServiceWorker: Boolean(response.fromServiceWorker) }, remoteEndpoint: response.remoteIPAddress ? { address: sanitizeText(response.remoteIPAddress).slice(0, 128), port: Number.isInteger(response.remotePort) ? response.remotePort : null } : null, errorBody: null };
           evidence.responses.push(row); responseRows.set(message.params.requestId, row); persist();
-        } catch (error) { evidence.failures.push({ code: "RESPONSE_SANITIZATION_FAILED", observedAt: new Date(now()).toISOString(), error: sanitizeText(error.message) }); persist(); }
+        } catch (error) { throw safetyError("RESPONSE_SANITIZATION_FAILED", error.message); }
       }
       if (message.method === "Network.requestWillBeSent") {
         const last = evidence.requestStarts.findLast(row => row.path === (() => { try { return new URL(message.params.request.url).pathname; } catch { return null; } })());
@@ -185,25 +214,35 @@ export async function collectBrowserObservations({ repoRoot, directory, chromePa
           }).catch(error => { row.errorBody = { byteLength: Number.isFinite(message.params.encodedDataLength) ? message.params.encodedDataLength : null, sha256: null, withinLimit: false, contentPersisted: false, error: sanitizeText(error.message) }; persist(); }));
         }
       }
-    });
+    };
+    cdp.on(message => { Promise.resolve().then(() => handleMessage(message)).catch(stop); });
     const navigate = async (kind, ignoreCache) => {
       const row = { kind, startedAt: new Date(now()).toISOString(), completedAt: null };
       evidence.documentLoads.push(row); persist();
-      if (ignoreCache) await cdp.send("Network.setCacheDisabled", { cacheDisabled: true });
-      await cdp.send("Page.navigate", { url: `${CONTRACT.origin}/suspended` });
-      await wait(5000);
+      if (ignoreCache) await waitControlled(cdp.send("Network.setCacheDisabled", { cacheDisabled: true }));
+      await waitControlled(cdp.send("Page.navigate", { url: `${CONTRACT.origin}/suspended` }));
+      await waitControlled(wait(5000));
       row.completedAt = new Date(now()).toISOString(); persist();
     };
     await navigate("INITIAL", false);
     await navigate("CACHE_BYPASS_RESTORATION", true);
-    await Promise.allSettled(bodyTasks);
+    await waitControlled(Promise.allSettled(bodyTasks));
+    if (controlledError) throw controlledError;
     evidence.serviceWorker = await cdp.send("Runtime.evaluate", { expression: `(async()=>{if(!('serviceWorker' in navigator))return {supported:false,controller:false,registrations:[]};const registrations=await navigator.serviceWorker.getRegistrations();return {supported:true,controller:Boolean(navigator.serviceWorker.controller),registrations:registrations.map(value=>({scope:value.scope,active:value.active?.state||null}))}})()`, awaitPromise: true, returnByValue: true }).then(result => result.result.value).catch(error => ({ error: sanitizeText(error.message) }));
     evidence.completedAt = new Date(now()).toISOString(); persist();
-    return evidence;
+  } catch (error) {
+    if (!controlledError) stop(error);
+    throw controlledError || error;
   } finally {
-    if (browser) await closeChrome(browser);
-    fs.rmSync(profile, { recursive: true, force: true });
+    let browserClosed = !browser, profileRemoved = false, cleanupError = null;
+    try { if (browser) { await closeChromeImpl(browser); browserClosed = true; } } catch (error) { cleanupError = sanitizeText(error.message); }
+    try { fs.rmSync(profile, { recursive: true, force: true }); profileRemoved = !fs.existsSync(profile); } catch (error) { cleanupError ||= sanitizeText(error.message); }
+    cleanupDisposition = { browserClosed, profileRemoved, error: cleanupError };
+    evidence.cleanup = cleanupDisposition;
+    try { persist(); } catch (error) { if (!controlledError) controlledError = safetyError("EVIDENCE_INTEGRITY_FAILURE", error.message); }
   }
+  if (!cleanupDisposition?.browserClosed || !cleanupDisposition?.profileRemoved || cleanupDisposition.error) throw safetyError("BROWSER_CLEANUP_FAILED", cleanupDisposition?.error || "Browser cleanup incomplete.");
+  return evidence;
 }
 
 export async function collectDirectGetObservations({ directory, fetchImpl = fetch, now = () => Date.now() }) {
@@ -246,11 +285,46 @@ function evidenceManifest(directory) {
   return Buffer.from(files.map(name => { const file = path.join(directory, name), content = fs.readFileSync(file); return `${sha256(content)}\t${content.length}\t${name}\n`; }).join(""));
 }
 
+export function verifyEvidenceManifest(directory) {
+  const manifestPath = path.join(directory, "evidence-manifest.tsv");
+  if (!fs.existsSync(manifestPath)) throw new Error("Evidence manifest is absent.");
+  const rows = fs.readFileSync(manifestPath, "utf8").trim().split("\n").filter(Boolean);
+  for (const row of rows) {
+    const [expected, bytes, name] = row.split("\t"), file = path.join(directory, name);
+    if (!fs.existsSync(file)) throw new Error(`Evidence file is absent: ${name}.`);
+    const content = fs.readFileSync(file);
+    if (content.length !== Number(bytes) || sha256(content) !== expected) throw new Error(`Evidence file integrity mismatch: ${name}.`);
+  }
+  return { passed: true, files: rows.length, manifestSha256: sha256(fs.readFileSync(manifestPath)) };
+}
+
+const readJson = file => fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : null;
+
+export function reconcileObservationTerminal({ directory, terminal, now = () => Date.now() }) {
+  const terminalPath = path.join(directory, "terminal-result.json"), manifestPath = path.join(directory, "evidence-manifest.tsv");
+  if (fs.existsSync(terminalPath) || fs.existsSync(manifestPath)) {
+    if (!fs.existsSync(terminalPath) || !fs.existsSync(manifestPath)) throw new Error("Partial terminal reconciliation is preserved and cannot be silently completed.");
+    const integrity = verifyEvidenceManifest(directory), existing = readJson(terminalPath);
+    return { terminal: existing, integrity, idempotent: true };
+  }
+  const browser = readJson(path.join(directory, "browser-observations.json")), direct = readJson(path.join(directory, "direct-get-observations.json"));
+  const requestCounts = { browser: browser?.requestStarts?.length || 0, direct: direct?.observations?.length || 0, total: (browser?.requestStarts?.length || 0) + (direct?.observations?.length || 0) };
+  const cleanup = { browser: browser?.cleanup || null, browserCleanupComplete: Boolean(browser?.cleanup?.browserClosed && browser?.cleanup?.profileRemoved && !browser?.cleanup?.error), hostedRetryAllowed: false, authorityReuseAllowed: false };
+  const cleanupBlocksCompletion = !cleanup.browserCleanupComplete && ["PASS", "INCONCLUSIVE"].includes(terminal.classification);
+  const finalTerminal = { ...terminal, ...(cleanupBlocksCompletion ? { classification: "ABORTED", passed: false, reason: "BROWSER_CLEANUP_INCOMPLETE" } : {}), requestCounts, cleanupComplete: cleanup.browserCleanupComplete };
+  writeEvidence(directory, "progress.json", { schemaVersion: 1, state: "TERMINAL", observationId: CONTRACT.observationId, completedAt: finalTerminal.completedAt || new Date(now()).toISOString(), requestCounts, hostedRetryAllowed: false });
+  writeEvidence(directory, "terminal-result.json", finalTerminal);
+  writeEvidence(directory, "integrity-and-cleanup.json", { schemaVersion: 1, observationId: CONTRACT.observationId, capturedAt: new Date(now()).toISOString(), cleanup, credentialValuesPersisted: false, terminalResultSha256: sha256(fs.readFileSync(terminalPath)) });
+  atomicWrite(manifestPath, evidenceManifest(directory));
+  return { terminal: finalTerminal, integrity: verifyEvidenceManifest(directory), idempotent: false };
+}
+
 export async function executeObservation({ repoRoot, authorityPath, sourceManifestPath, confirm, now = () => Date.now(), browserCollector = collectBrowserObservations, directCollector = collectDirectGetObservations, authorityValidator = validatePreparedAuthority, protectedVerifier = verifyProtectedManifest }) {
   const validated = authorityValidator({ repoRoot, authorityPath, sourceManifestPath, now: now() });
   if (confirm !== `OBSERVE_HTTP429_READ_ONLY_${CONTRACT.observationId}`) throw new Error("Action-specific confirmation mismatch.");
   const directory = createEvidenceDirectory(repoRoot);
   const started = now();
+  writeEvidence(directory, "observation-attempt.json", { schemaVersion: 1, observationId: CONTRACT.observationId, startedAt: new Date(started).toISOString(), hostedObservationConsumed: true, hostedRetryAllowed: false, authorityReuseAllowed: false });
   writeEvidence(directory, "authority-validation.json", { schemaVersion: 1, observationId: CONTRACT.observationId, validatedAt: new Date(started).toISOString(), authoritySha256: sha256(fs.readFileSync(authorityPath)), sourceManifestSha256: validated.approval.sourceManifestSha256, sourceCommit: validated.approval.sourceCommit, deploymentId: CONTRACT.deploymentId, origin: CONTRACT.origin, limits: CONTRACT.limits, credentialValuesPersisted: false });
   writeEvidence(directory, "progress.json", { schemaVersion: 1, state: "STARTED", observationId: CONTRACT.observationId, startedAt: new Date(started).toISOString(), browserComplete: false, directComplete: false });
   let terminal;
@@ -258,21 +332,22 @@ export async function executeObservation({ repoRoot, authorityPath, sourceManife
     writeEvidence(directory, "browser-observations.json", { schemaVersion: 1, observationId: CONTRACT.observationId, deploymentId: CONTRACT.deploymentId, origin: CONTRACT.origin, state: "INITIALIZING", requestStarts: [], responses: [], failures: [], credentialValuesPersisted: false });
     const browser = await browserCollector({ repoRoot, directory, now });
     assertSanitized(browser);
+    writeEvidence(directory, "browser-observations.json", browser);
     if (now() - started >= CONTRACT.limits.observationDurationMs) throw safetyError("OBSERVATION_DURATION_EXHAUSTED", "Observation duration exhausted before direct GETs.");
     writeEvidence(directory, "progress.json", { schemaVersion: 1, state: "BROWSER_COMPLETE", observationId: CONTRACT.observationId, startedAt: new Date(started).toISOString(), browserComplete: true, directComplete: false });
     writeEvidence(directory, "direct-get-observations.json", { schemaVersion: 1, observationId: CONTRACT.observationId, deploymentId: CONTRACT.deploymentId, state: "INITIALIZING", observations: [], credentialValuesPersisted: false });
     const direct = await directCollector({ directory, now });
     assertSanitized(direct);
+    writeEvidence(directory, "direct-get-observations.json", direct);
     if (now() - started > CONTRACT.limits.observationDurationMs) throw safetyError("OBSERVATION_DURATION_EXHAUSTED", "Observation duration exceeded.");
     const decision = classifyObservation(browser, direct);
     terminal = { schemaVersion: 1, observationId: CONTRACT.observationId, deploymentId: CONTRACT.deploymentId, completedAt: new Date(now()).toISOString(), ...decision, promotionEligible: false, deploymentEligible: false, mutationPerformed: false, credentialValuesPersisted: false };
   } catch (error) {
     terminal = { schemaVersion: 1, observationId: CONTRACT.observationId, deploymentId: CONTRACT.deploymentId, completedAt: new Date(now()).toISOString(), classification: error.code?.startsWith("UNEXPECTED") || error.code === "CREDENTIAL_EXPOSURE" || error.code === "EVIDENCE_INTEGRITY_FAILURE" ? "FAIL" : "ABORTED", passed: false, reason: error.code || "OPERATOR_EXCEPTION", error: sanitizeText(error.message), promotionEligible: false, deploymentEligible: false, mutationPerformed: false, credentialValuesPersisted: false };
   }
-  writeEvidence(directory, "terminal-result.json", terminal);
-  const manifest = evidenceManifest(directory); atomicWrite(path.join(directory, "evidence-manifest.tsv"), manifest);
+  const reconciled = reconcileObservationTerminal({ directory, terminal, now });
   protectedVerifier(repoRoot);
-  return terminal;
+  return { ...reconciled.terminal, evidenceManifestSha256: reconciled.integrity.manifestSha256 };
 }
 
 function options(argv) {
