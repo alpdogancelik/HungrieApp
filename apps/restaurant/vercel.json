@@ -44,7 +44,71 @@
       "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
     },
     {
-      "source": "/:route(+not-found|_sitemap|dashboard|earnings|forgot-password|history|invite|login|menu|more|orders|pending|restaurant|reviews|security|settings|suspended)",
+      "source": "/\\+not-found",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/_sitemap",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/dashboard",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/earnings",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/forgot-password",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/history",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/invite",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/login",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/menu",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/more",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/orders",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/pending",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/restaurant",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/reviews",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/security",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/settings",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/suspended",
       "headers": [{ "key": "Cache-Control", "value": "private, no-cache, no-store, max-age=0, must-revalidate" }]
     },
     {

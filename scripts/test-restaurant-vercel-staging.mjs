@@ -20,6 +20,7 @@ import {
   validateLocalProjectLink,
   validateRemoteProject,
   validateTeamInventory,
+  validateVercelProjectConfiguration,
   verifyEffectivePreviewValues,
   VERCEL_STAGING_DEPLOYMENT,
 } from "./deploy-restaurant-vercel-staging.mjs";
@@ -46,6 +47,35 @@ test("all twenty static HTML entries resolve through clean URLs", () => {
   assert.deepEqual(htmlRoutes, artifact.routes);
   assert.ok(config.rewrites.some(row => row.source === "/orders/:orderId" && row.destination === "/orders/[orderId]"));
   assert.equal(config.rewrites.length, 1);
+});
+
+test("all extensionless HTML paths use supported literal header sources", () => {
+  const literalSources = ["/\\+not-found", "/_sitemap", "/dashboard", "/earnings", "/forgot-password", "/history", "/invite", "/login", "/menu", "/more", "/orders", "/pending", "/restaurant", "/reviews", "/security", "/settings", "/suspended"];
+  assert.equal(validateVercelProjectConfiguration(config), true);
+  for (const source of literalSources) {
+    const matches = config.headers.filter(row => row.source === source);
+    assert.equal(matches.length, 1, source);
+    assert.match(matches[0].headers.find(row => row.key === "Cache-Control").value, /no-store/);
+  }
+  assert.ok(config.headers.findIndex(row => row.source === "/_expo/static/(.*)") < config.headers.findIndex(row => row.source === "/\\+not-found"));
+  assert.ok(config.headers.findIndex(row => row.source === "/assets/(.*)") < config.headers.findIndex(row => row.source === "/\\+not-found"));
+  assert.equal(config.headers.some(row => row.source.includes(":route(")), false);
+});
+
+test("pinned Vercel CLI schema and route transformer accept the complete project configuration", async () => {
+  const npxRoot = path.join(os.homedir(), ".npm/_npx");
+  const installations = fs.readdirSync(npxRoot).map(name => path.join(npxRoot, name, "node_modules/vercel")).filter(directory => fs.existsSync(path.join(directory, "package.json")) && JSON.parse(fs.readFileSync(path.join(directory, "package.json"), "utf8")).version === VERCEL_STAGING_DEPLOYMENT.cliVersion);
+  assert.ok(installations.length > 0, "pinned Vercel CLI must be locally installed");
+  const installation = installations[0];
+  const schema = await import(path.join(installation, "dist/chunks/chunk-LAYFSD5A.js"));
+  const routeChunk = await import(path.join(installation, "dist/chunks/chunk-OCWSKPV4.js"));
+  assert.equal(schema.validateConfig(config), null);
+  const transformed = routeChunk.require_dist().getTransformedRoutes(config);
+  assert.equal(transformed.error, null);
+  assert.ok(transformed.routes.length > config.headers.length);
+  const rejected = structuredClone(config);
+  rejected.headers.find(row => row.source === "/\\+not-found").source = "/:route(+not-found|dashboard)";
+  assert.match(routeChunk.require_dist().getTransformedRoutes(rejected).error.message, /invalid `source` regular expression/);
 });
 
 test("security headers preserve the Expo hosting policy", () => {
@@ -145,7 +175,7 @@ test("accepted artifact includes routes, critical assets, fonts, worker, and run
 test("deployment continuation is isolated, preview-only, one-shot, and exactly scope-bound", () => {
   const plan = deploymentPlan("nurlan-ildirimli-s-projects");
   assert.equal(VERCEL_STAGING_DEPLOYMENT.project, "hungrie-restaurant-web-staging-eval-20260927a");
-  assert.equal(VERCEL_STAGING_DEPLOYMENT.actionId, "restaurant-vercel-staging-evaluation-20260927e");
+  assert.equal(VERCEL_STAGING_DEPLOYMENT.actionId, "restaurant-vercel-staging-evaluation-20260927f");
   assert.equal(VERCEL_STAGING_DEPLOYMENT.environment, "preview");
   assert.equal(VERCEL_STAGING_DEPLOYMENT.expectedVariables.length, 9);
   assert.equal(plan.length, 6);
@@ -267,10 +297,10 @@ test("authenticated username, team slug, and opaque org ID are validated indepen
   assert.throws(() => validateTeamInventory({ teams: [] }, link), /missing or ambiguous/);
 });
 
-test("consumed attempt records all nine writes and no deployment", () => {
-  const evidencePath = path.join(root, "secure/restaurant-vercel-staging-deployment/restaurant-vercel-staging-evaluation-20260927d/progress.json");
+test("consumed attempt records one failed deployment and no Preview URL", () => {
+  const evidencePath = path.join(root, "secure/restaurant-vercel-staging-deployment/restaurant-vercel-staging-evaluation-20260927e/progress.json");
   const bytes = fs.readFileSync(evidencePath);
-  assert.deepEqual(validateConsumedProgress(JSON.parse(bytes), bytes), { completedProjectCreationInOriginalAttempt: true, successfulEnvironmentWrites: 9, deploymentCommands: 0 });
+  assert.deepEqual(validateConsumedProgress(JSON.parse(bytes), bytes), { completedProjectCreationInOriginalAttempt: true, successfulEnvironmentWrites: 0, deploymentCommands: 1 });
   const changed = Buffer.from(bytes.toString().replace('"terminal": "FAIL"', '"terminal": "PASS"'));
   assert.throws(() => validateConsumedProgress(JSON.parse(changed), changed), /hash mismatch/);
 });

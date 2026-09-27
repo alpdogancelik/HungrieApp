@@ -7,6 +7,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { DIAGNOSTIC_OPERATOR, verifyLocalExportOutput } from "./deploy-restaurant-alias-10-minute-diagnostic-staging.mjs";
 import { validateStagingPublicBuildInputs } from "./restaurant-alias-staging-public-build-inputs.mjs";
+import { validateVercelProjectConfiguration } from "./deploy-restaurant-vercel-staging.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const appRoot = path.join(root, "apps/restaurant");
@@ -99,11 +100,15 @@ async function qualifyHttp(files) {
     }
     const missing = await fetch(`${origin}/missing-required-asset.js`);
     if (missing.status !== 404) throw new Error("Missing assets must remain HTTP 404.");
-    record("vercel-compatible-http-delivery", "PASS", { routes: routes.length, assets: files.filter(row => /^(?:_expo\/static\/|assets\/)/.test(row.path)).length, runtimeFiles: 3, dynamicOrderRoute: true, missingAssetStatus: 404 });
+    const favicon = await fetch(`${origin}/favicon.ico`);
+    if (favicon.status !== 404) throw new Error("Absent optional favicon must remain HTTP 404.");
+    record("vercel-compatible-http-delivery", "PASS", { routes: routes.length, assets: files.filter(row => /^(?:_expo\/static\/|assets\/)/.test(row.path)).length, runtimeFiles: 3, dynamicOrderRoute: true, missingAssetStatus: 404, optionalFaviconStatus: 404 });
   } finally { await new Promise(resolve => server.close(resolve)); }
 }
 
 try {
+  validateVercelProjectConfiguration(config);
+  record("vercel-project-configuration", "PASS", { headerRules: config.headers.length, rewriteRules: config.rewrites.length, rejectedExpressionAbsent: true });
   const environment = loadEnvironment();
   fs.rmSync(dist, { recursive: true, force: true });
   if (!run("restaurant-static-export", "npm", ["run", "export:web", "--", "--clear"], { cwd: appRoot, env: environment })) throw new Error("Restaurant export failed.");

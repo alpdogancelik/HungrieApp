@@ -8,27 +8,30 @@ import { fileURLToPath } from "node:url";
 import { validateStagingPublicBuildInputs } from "./restaurant-alias-staging-public-build-inputs.mjs";
 
 export const VERCEL_STAGING_DEPLOYMENT = Object.freeze({
-  actionId: "restaurant-vercel-staging-evaluation-20260927e",
-  consumedActionId: "restaurant-vercel-staging-evaluation-20260927d",
-  previousActionId: "restaurant-vercel-staging-evaluation-20260927c",
-  priorActionId: "restaurant-vercel-staging-evaluation-20260927b",
+  actionId: "restaurant-vercel-staging-evaluation-20260927f",
+  consumedActionId: "restaurant-vercel-staging-evaluation-20260927e",
+  previousActionId: "restaurant-vercel-staging-evaluation-20260927d",
+  priorActionId: "restaurant-vercel-staging-evaluation-20260927c",
+  earlierActionId: "restaurant-vercel-staging-evaluation-20260927b",
   originalActionId: "restaurant-vercel-staging-evaluation-20260927a",
   project: "hungrie-restaurant-web-staging-eval-20260927a",
   scope: "nurlan-ildirimli-s-projects",
   account: "nurlanildirimli00-3449",
   cliVersion: "60.1.3",
-  confirmation: "continue-effective-env-verified-restaurant-vercel-preview",
+  confirmation: "continue-route-validated-restaurant-vercel-preview",
   environment: "preview",
   artifactManifestSha256: "d3af007214f8fd5cf200dbe8e81cef33a32d98e0fb889e63596dae856ac39e89",
   archiveSha256: "b6294bb5195779e3d9fb2e412fb61e82d08a0ac2f0ea25deb283dc4094832862",
   buildInputContractSha256: "f2c3e37d1e5699ea806e7fe2fd337aef4cb07ebb421ad2215209442546770c2e",
   originalProgressSha256: "eef7fea0705809035b4ace7c49c1a366512280397e42068c9a7fef4fe6b8297c",
-  priorProgressSha256: "94709e5228f9233fb2f7c14a124273591f38f070ee5df5731b172ed11e6d43d5",
-  priorManifestSha256: "64f47c26808d6a6594d74adfe4c2ac29ddd5b3e60df3f0a4bd869c3c52143aff",
-  previousProgressSha256: "0f34c3dd73db0ddb8493ba60cf17a9cb3eeca8df03814115c02af6c75733632f",
-  previousManifestSha256: "2a9bd1a393eff2a2a97e5984299c876d80d0e5acbb3449f943b2c2f8cc5b46bc",
-  consumedProgressSha256: "6f85a5c61f8973d6d739b429575185696b41733af4e24d808893618625c67cab",
-  consumedManifestSha256: "87cab7e473a3be51108b0062f34349cdb647c5f02ec5312bebd3dbbd668a4a66",
+  earlierProgressSha256: "94709e5228f9233fb2f7c14a124273591f38f070ee5df5731b172ed11e6d43d5",
+  earlierManifestSha256: "64f47c26808d6a6594d74adfe4c2ac29ddd5b3e60df3f0a4bd869c3c52143aff",
+  priorProgressSha256: "0f34c3dd73db0ddb8493ba60cf17a9cb3eeca8df03814115c02af6c75733632f",
+  priorManifestSha256: "2a9bd1a393eff2a2a97e5984299c876d80d0e5acbb3449f943b2c2f8cc5b46bc",
+  previousProgressSha256: "6f85a5c61f8973d6d739b429575185696b41733af4e24d808893618625c67cab",
+  previousManifestSha256: "87cab7e473a3be51108b0062f34349cdb647c5f02ec5312bebd3dbbd668a4a66",
+  consumedProgressSha256: "d738b62419514f3e079477a29f745c215ad01362498819963371705955b515ef",
+  consumedManifestSha256: "1a96c5b712e6b4fe5a49ef969638c18c716931ea2ff0f80312382cb0c07068c9",
   linkedOrgIdSha256: "8928fd7f108505fa35d1906b2926cbee6c4f240bc029a715ff25b5c498407951",
   linkedProjectIdSha256: "b4845746ef4b9dc3a66dd84b7de8e4f57814f1273bf137c244614e9141d04a8f",
   expectedVariables: [
@@ -46,6 +49,7 @@ const evidenceRoot = path.join(evidenceParent, VERCEL_STAGING_DEPLOYMENT.actionI
 const consumedRoot = path.join(evidenceParent, VERCEL_STAGING_DEPLOYMENT.consumedActionId);
 const previousRoot = path.join(evidenceParent, VERCEL_STAGING_DEPLOYMENT.previousActionId);
 const priorRoot = path.join(evidenceParent, VERCEL_STAGING_DEPLOYMENT.priorActionId);
+const earlierRoot = path.join(evidenceParent, VERCEL_STAGING_DEPLOYMENT.earlierActionId);
 const originalRoot = path.join(evidenceParent, VERCEL_STAGING_DEPLOYMENT.originalActionId);
 const linkPath = path.join(root, ".vercel/project.json");
 const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
@@ -75,11 +79,24 @@ export function classifyReviewedVariables(names) {
 export function validateConsumedProgress(progress, bytes) {
   if (sha256(bytes) !== VERCEL_STAGING_DEPLOYMENT.consumedProgressSha256) throw new Error("Consumed attempt evidence hash mismatch.");
   if (progress?.actionId !== VERCEL_STAGING_DEPLOYMENT.consumedActionId || progress?.scope !== VERCEL_STAGING_DEPLOYMENT.scope || progress?.project !== VERCEL_STAGING_DEPLOYMENT.project || progress?.environment !== "preview") throw new Error("Consumed attempt identity mismatch.");
-  if (progress?.continuationOf !== VERCEL_STAGING_DEPLOYMENT.previousActionId || progress?.schemaVersion !== 2 || progress?.terminal !== "FAIL" || progress?.error !== "Preview environment reconciliation did not converge to the exact reviewed values.") throw new Error("Consumed continuation terminal state mismatch.");
-  const prefixes = ["verify-authenticated-account", "verify-scope-organization-mapping", "verify-existing-project", "inspect-preview-environment"];
-  if (!Array.isArray(progress.steps) || progress.steps.length !== 14 || progress.steps.slice(0, 4).some((step, index) => step?.action !== prefixes[index] || step?.status !== 0) || progress.steps.slice(4, 13).some(step => step?.action !== "reconcile-preview-build-input" || step?.status !== 0) || progress.steps[13]?.action !== "verify-preview-environment" || progress.steps[13]?.status !== 0) throw new Error("Consumed continuation progress is not the reviewed environment-write state.");
-  if (progress.steps.some(step => step.action === "deploy-preview-once")) throw new Error("Consumed continuation contains an unexpected deployment action.");
-  return { completedProjectCreationInOriginalAttempt: true, successfulEnvironmentWrites: 9, deploymentCommands: 0 };
+  if (progress?.continuationOf !== VERCEL_STAGING_DEPLOYMENT.previousActionId || progress?.schemaVersion !== 2 || progress?.terminal !== "FAIL" || progress?.error !== "The single Vercel Preview deployment attempt failed.") throw new Error("Consumed continuation terminal state mismatch.");
+  const prefixes = ["verify-authenticated-account", "verify-scope-organization-mapping", "verify-existing-project", "inspect-preview-environment", "pull-effective-preview-environment"];
+  if (!Array.isArray(progress.steps) || progress.steps.length !== 17 || progress.steps.slice(0, 5).some((step, index) => step?.action !== prefixes[index] || step?.status !== 0) || progress.steps.slice(5, 14).some(step => step?.action !== "reconcile-preview-build-input" || step?.status !== 0 || step?.disposition !== "already-exact") || progress.steps[14]?.action !== "verify-preview-environment" || progress.steps[14]?.status !== 0 || progress.steps[15]?.action !== "verify-effective-preview-environment" || progress.steps[15]?.status !== 0 || progress.steps[16]?.action !== "deploy-preview-once" || progress.steps[16]?.status !== 1 || progress.steps[16]?.deploymentUrl !== null) throw new Error("Consumed continuation progress is not the reviewed failed-deployment state.");
+  return { completedProjectCreationInOriginalAttempt: true, successfulEnvironmentWrites: 0, deploymentCommands: 1 };
+}
+
+export function validateVercelProjectConfiguration(config) {
+  const noStore = "private, no-cache, no-store, max-age=0, must-revalidate";
+  const routeSources = ["/\\+not-found", "/_sitemap", "/dashboard", "/earnings", "/forgot-password", "/history", "/invite", "/login", "/menu", "/more", "/orders", "/pending", "/restaurant", "/reviews", "/security", "/settings", "/suspended"];
+  if (config?.$schema !== "https://openapi.vercel.sh/vercel.json" || config?.buildCommand !== "npm --workspace @hungrie/restaurant run export:web" || config?.outputDirectory !== "apps/restaurant/dist" || config?.cleanUrls !== true || config?.trailingSlash !== false) throw new Error("Vercel project configuration identity mismatch.");
+  if (!Array.isArray(config.headers) || !Array.isArray(config.rewrites) || config.rewrites.length !== 1 || config.rewrites[0]?.source !== "/orders/:orderId" || config.rewrites[0]?.destination !== "/orders/[orderId]") throw new Error("Vercel route configuration mismatch.");
+  const cache = source => config.headers.filter(row => row?.source === source).flatMap(row => row.headers || []).find(row => row?.key === "Cache-Control")?.value;
+  if (cache("/") !== noStore || cache("/firebase-config.js") !== noStore || cache("/_expo/static/(.*)") !== "public, max-age=31536000, immutable" || cache("/assets/(.*)") !== "public, max-age=31536000, immutable") throw new Error("Vercel cache-control contract mismatch.");
+  if (routeSources.some(source => config.headers.filter(row => row?.source === source).length !== 1 || cache(source) !== noStore) || cache("/orders/:orderId") !== noStore) throw new Error("Vercel HTML route cache-control contract mismatch.");
+  const worker = config.headers.find(row => row?.source === "/sw.js")?.headers || [];
+  if (worker.find(row => row?.key === "Service-Worker-Allowed")?.value !== "/" || worker.find(row => row?.key === "Cache-Control")?.value !== "public, max-age=0, must-revalidate") throw new Error("Vercel service-worker delivery contract mismatch.");
+  if (config.headers.some(row => row?.source === "/:route(+not-found|_sitemap|dashboard|earnings|forgot-password|history|invite|login|menu|more|orders|pending|restaurant|reviews|security|settings|suspended)")) throw new Error("Rejected Vercel route expression remains present.");
+  return true;
 }
 
 export function validateLocalProjectLink(link) {
@@ -251,9 +268,11 @@ async function main() {
   if (sha256(fs.readFileSync(path.join(consumedRoot, "evidence-manifest.tsv"))) !== VERCEL_STAGING_DEPLOYMENT.consumedManifestSha256) throw new Error("Consumed continuation evidence manifest mismatch.");
   if (sha256(fs.readFileSync(path.join(previousRoot, "progress.json"))) !== VERCEL_STAGING_DEPLOYMENT.previousProgressSha256 || sha256(fs.readFileSync(path.join(previousRoot, "evidence-manifest.tsv"))) !== VERCEL_STAGING_DEPLOYMENT.previousManifestSha256) throw new Error("Previous continuation evidence mismatch.");
   if (sha256(fs.readFileSync(path.join(priorRoot, "progress.json"))) !== VERCEL_STAGING_DEPLOYMENT.priorProgressSha256 || sha256(fs.readFileSync(path.join(priorRoot, "evidence-manifest.tsv"))) !== VERCEL_STAGING_DEPLOYMENT.priorManifestSha256) throw new Error("Prior continuation evidence mismatch.");
+  if (sha256(fs.readFileSync(path.join(earlierRoot, "progress.json"))) !== VERCEL_STAGING_DEPLOYMENT.earlierProgressSha256 || sha256(fs.readFileSync(path.join(earlierRoot, "evidence-manifest.tsv"))) !== VERCEL_STAGING_DEPLOYMENT.earlierManifestSha256) throw new Error("Earlier continuation evidence mismatch.");
   if (sha256(fs.readFileSync(path.join(originalRoot, "progress.json"))) !== VERCEL_STAGING_DEPLOYMENT.originalProgressSha256) throw new Error("Original attempt evidence mismatch.");
   const link = JSON.parse(fs.readFileSync(linkPath, "utf8"));
   validateLocalProjectLink(link);
+  validateVercelProjectConfiguration(JSON.parse(fs.readFileSync(path.join(root, localConfig), "utf8")));
   const stat = fs.statSync(secureInputPath);
   if ((stat.mode & 0o077) !== 0) throw new Error("The reviewed build-input file must be mode 0600 or stricter.");
   const secure = JSON.parse(fs.readFileSync(secureInputPath, "utf8"));
