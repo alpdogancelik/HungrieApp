@@ -9,9 +9,11 @@ import {
   classifyReviewedVariables,
   deploymentPlan,
   planEnvironmentReconciliation,
+  validateAuthenticatedAccount,
   validateConsumedProgress,
   validateLocalProjectLink,
   validateRemoteProject,
+  validateTeamInventory,
   VERCEL_STAGING_DEPLOYMENT,
 } from "./deploy-restaurant-vercel-staging.mjs";
 
@@ -136,10 +138,10 @@ test("accepted artifact includes routes, critical assets, fonts, worker, and run
 test("deployment continuation is isolated, preview-only, one-shot, and exactly scope-bound", () => {
   const plan = deploymentPlan("nurlan-ildirimli-s-projects");
   assert.equal(VERCEL_STAGING_DEPLOYMENT.project, "hungrie-restaurant-web-staging-eval-20260927a");
-  assert.equal(VERCEL_STAGING_DEPLOYMENT.actionId, "restaurant-vercel-staging-evaluation-20260927b");
+  assert.equal(VERCEL_STAGING_DEPLOYMENT.actionId, "restaurant-vercel-staging-evaluation-20260927c");
   assert.equal(VERCEL_STAGING_DEPLOYMENT.environment, "preview");
   assert.equal(VERCEL_STAGING_DEPLOYMENT.expectedVariables.length, 9);
-  assert.equal(plan.length, 4);
+  assert.equal(plan.length, 6);
   const serialized = plan.map(row => row.command || "").join("\n");
   assert.doesNotMatch(serialized, /--prod|\s(?:alias|promote|domains?)\s/i);
   assert.match(serialized, /--archive=tgz/);
@@ -178,20 +180,33 @@ test("missing and partial Preview variables reconcile without duplicates", () =>
   assert.throws(() => planEnvironmentReconciliation({ envs: [{ key: "UNREVIEWED", type: "config", target: ["preview"], value: "x" }] }, observations, values), /Unexpected/);
 });
 
-test("existing project continuation rejects project identity and configuration mismatches", () => {
+test("actual project-inspect response shape maps owner slug without conflating opaque IDs", () => {
   const link = { projectName: VERCEL_STAGING_DEPLOYMENT.project, orgId: "org", projectId: "project" };
-  const remote = { name: VERCEL_STAGING_DEPLOYMENT.project, id: "project", accountId: "org", buildCommand: "npm --workspace @hungrie/restaurant run export:web", outputDirectory: "apps/restaurant/dist", rootDirectory: null };
+  const remote = { name: VERCEL_STAGING_DEPLOYMENT.project, id: "project", owner: { name: "Nurlan Ildirimli's projects", slug: "nurlan-ildirimli-s-projects" }, buildCommand: "npm --workspace @hungrie/restaurant run export:web", outputDirectory: "apps/restaurant/dist", rootDirectory: null };
   assert.equal(validateRemoteProject(remote, link), true);
   assert.equal(validateRemoteProject({ ...remote, buildCommand: null, outputDirectory: null }, link), true);
   assert.throws(() => validateRemoteProject({ ...remote, id: "wrong" }, link), /identity mismatch/);
+  assert.throws(() => validateRemoteProject({ ...remote, owner: { ...remote.owner, slug: "wrong-scope" } }, link), /owner scope mismatch/);
+  assert.throws(() => validateRemoteProject({ ...remote, orgId: "wrong" }, link), /conflicting opaque scope/);
   assert.throws(() => validateRemoteProject({ ...remote, outputDirectory: "dist" }, link), /configuration conflicts/);
   assert.throws(() => validateLocalProjectLink({ projectName: "wrong", orgId: "x", projectId: "y" }), /name mismatch/);
 });
 
+test("authenticated username, team slug, and opaque org ID are validated independently", () => {
+  const link = { orgId: "team-id" };
+  const team = { id: "team-id", slug: "nurlan-ildirimli-s-projects", name: "Nurlan Ildirimli's projects" };
+  assert.equal(validateAuthenticatedAccount({ username: "nurlanildirimli00-3449" }), true);
+  assert.throws(() => validateAuthenticatedAccount({ username: "wrong-user" }), /account mismatch/);
+  assert.equal(validateTeamInventory({ teams: [team] }, link), true);
+  assert.throws(() => validateTeamInventory({ teams: [{ ...team, id: "wrong" }] }, link), /does not map/);
+  assert.throws(() => validateTeamInventory({ teams: [team, { ...team }] }, link), /ambiguous/);
+  assert.throws(() => validateTeamInventory({ teams: [] }, link), /missing or ambiguous/);
+});
+
 test("consumed attempt permits only the reviewed create/link then failed first variable write", () => {
-  const evidencePath = path.join(root, "secure/restaurant-vercel-staging-deployment/restaurant-vercel-staging-evaluation-20260927a/progress.json");
+  const evidencePath = path.join(root, "secure/restaurant-vercel-staging-deployment/restaurant-vercel-staging-evaluation-20260927b/progress.json");
   const bytes = fs.readFileSync(evidencePath);
-  assert.deepEqual(validateConsumedProgress(JSON.parse(bytes), bytes), { completedProjectCreation: true, successfulEnvironmentWrites: 0, deploymentCommands: 0 });
-  const changed = Buffer.from(bytes.toString().replace('"status": 1', '"status": 0'));
+  assert.deepEqual(validateConsumedProgress(JSON.parse(bytes), bytes), { completedProjectCreationInOriginalAttempt: true, successfulEnvironmentWrites: 0, deploymentCommands: 0 });
+  const changed = Buffer.from(bytes.toString().replace('"terminal": "FAIL"', '"terminal": "PASS"'));
   assert.throws(() => validateConsumedProgress(JSON.parse(changed), changed), /hash mismatch/);
 });

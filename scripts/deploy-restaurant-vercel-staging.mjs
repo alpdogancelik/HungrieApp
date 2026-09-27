@@ -7,18 +7,21 @@ import { fileURLToPath } from "node:url";
 import { validateStagingPublicBuildInputs } from "./restaurant-alias-staging-public-build-inputs.mjs";
 
 export const VERCEL_STAGING_DEPLOYMENT = Object.freeze({
-  actionId: "restaurant-vercel-staging-evaluation-20260927b",
-  consumedActionId: "restaurant-vercel-staging-evaluation-20260927a",
+  actionId: "restaurant-vercel-staging-evaluation-20260927c",
+  consumedActionId: "restaurant-vercel-staging-evaluation-20260927b",
+  originalActionId: "restaurant-vercel-staging-evaluation-20260927a",
   project: "hungrie-restaurant-web-staging-eval-20260927a",
   scope: "nurlan-ildirimli-s-projects",
   account: "nurlanildirimli00-3449",
   cliVersion: "60.1.3",
-  confirmation: "continue-existing-isolated-restaurant-vercel-staging-preview",
+  confirmation: "continue-verified-existing-restaurant-vercel-staging-preview",
   environment: "preview",
   artifactManifestSha256: "d3af007214f8fd5cf200dbe8e81cef33a32d98e0fb889e63596dae856ac39e89",
   archiveSha256: "b6294bb5195779e3d9fb2e412fb61e82d08a0ac2f0ea25deb283dc4094832862",
   buildInputContractSha256: "f2c3e37d1e5699ea806e7fe2fd337aef4cb07ebb421ad2215209442546770c2e",
-  consumedProgressSha256: "eef7fea0705809035b4ace7c49c1a366512280397e42068c9a7fef4fe6b8297c",
+  originalProgressSha256: "eef7fea0705809035b4ace7c49c1a366512280397e42068c9a7fef4fe6b8297c",
+  consumedProgressSha256: "94709e5228f9233fb2f7c14a124273591f38f070ee5df5731b172ed11e6d43d5",
+  consumedManifestSha256: "64f47c26808d6a6594d74adfe4c2ac29ddd5b3e60df3f0a4bd869c3c52143aff",
   linkedOrgIdSha256: "8928fd7f108505fa35d1906b2926cbee6c4f240bc029a715ff25b5c498407951",
   linkedProjectIdSha256: "b4845746ef4b9dc3a66dd84b7de8e4f57814f1273bf137c244614e9141d04a8f",
   expectedVariables: [
@@ -34,6 +37,7 @@ const secureInputPath = path.join(root, "secure/restaurant-alias-build-inputs/st
 const evidenceParent = path.join(root, "secure/restaurant-vercel-staging-deployment");
 const evidenceRoot = path.join(evidenceParent, VERCEL_STAGING_DEPLOYMENT.actionId);
 const consumedRoot = path.join(evidenceParent, VERCEL_STAGING_DEPLOYMENT.consumedActionId);
+const originalRoot = path.join(evidenceParent, VERCEL_STAGING_DEPLOYMENT.originalActionId);
 const linkPath = path.join(root, ".vercel/project.json");
 const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 const canonical = value => `${JSON.stringify(value, null, 2)}\n`;
@@ -62,10 +66,10 @@ export function classifyReviewedVariables(names) {
 export function validateConsumedProgress(progress, bytes) {
   if (sha256(bytes) !== VERCEL_STAGING_DEPLOYMENT.consumedProgressSha256) throw new Error("Consumed attempt evidence hash mismatch.");
   if (progress?.actionId !== VERCEL_STAGING_DEPLOYMENT.consumedActionId || progress?.scope !== VERCEL_STAGING_DEPLOYMENT.scope || progress?.project !== VERCEL_STAGING_DEPLOYMENT.project || progress?.environment !== "preview") throw new Error("Consumed attempt identity mismatch.");
-  const expected = [["require-isolated-project-name-unused", 0], ["link-or-create-isolated-project", 0], ["set-preview-build-input", 1]];
-  if (!Array.isArray(progress.steps) || progress.steps.length !== 3 || progress.steps.some((step, i) => step?.action !== expected[i][0] || step?.status !== expected[i][1])) throw new Error("Consumed attempt progress is not the reviewed partial state.");
-  if (progress.steps[2]?.name !== VERCEL_STAGING_DEPLOYMENT.expectedVariables[0] || progress.steps.some(step => step.action === "deploy-preview") || progress.terminal) throw new Error("Consumed attempt contains an unexpected deployment or terminal action.");
-  return { completedProjectCreation: true, successfulEnvironmentWrites: 0, deploymentCommands: 0 };
+  if (progress?.continuationOf !== VERCEL_STAGING_DEPLOYMENT.originalActionId || progress?.schemaVersion !== 2 || progress?.terminal !== "FAIL" || progress?.error !== "Remote Vercel project scope identity mismatch.") throw new Error("Consumed continuation terminal state mismatch.");
+  if (!Array.isArray(progress.steps) || progress.steps.length !== 1 || progress.steps[0]?.action !== "verify-existing-project" || progress.steps[0]?.status !== 0) throw new Error("Consumed continuation progress is not the reviewed read-only state.");
+  if (progress.steps.some(step => /environment|deploy-preview/.test(step.action))) throw new Error("Consumed continuation contains an unexpected environment or deployment action.");
+  return { completedProjectCreationInOriginalAttempt: true, successfulEnvironmentWrites: 0, deploymentCommands: 0 };
 }
 
 export function validateLocalProjectLink(link) {
@@ -77,8 +81,25 @@ export function validateLocalProjectLink(link) {
 export function validateRemoteProject(remote, link) {
   const project = remote?.project || remote;
   if (project?.name !== VERCEL_STAGING_DEPLOYMENT.project || project?.id !== link.projectId) throw new Error("Remote Vercel project identity mismatch.");
-  if ((project?.accountId || project?.orgId || project?.teamId) !== link.orgId) throw new Error("Remote Vercel project scope identity mismatch.");
+  if (!project?.owner || typeof project.owner.name !== "string" || !project.owner.name || project.owner.slug !== VERCEL_STAGING_DEPLOYMENT.scope) throw new Error("Remote Vercel project owner scope mismatch.");
+  if (["accountId", "orgId", "teamId"].some(key => key in project && project[key] !== link.orgId)) throw new Error("Remote Vercel project returned a conflicting opaque scope identity.");
   if (![null, undefined, "", "npm --workspace @hungrie/restaurant run export:web"].includes(project?.buildCommand) || ![null, undefined, "", "apps/restaurant/dist"].includes(project?.outputDirectory) || ![null, undefined, ""].includes(project?.rootDirectory)) throw new Error("Remote Vercel project configuration conflicts with the reviewed local configuration.");
+  return true;
+}
+
+export function validateAuthenticatedAccount(payload) {
+  const username = typeof payload === "string" ? payload.trim() : payload?.username;
+  if (username !== VERCEL_STAGING_DEPLOYMENT.account) throw new Error("Authenticated Vercel account mismatch.");
+  return true;
+}
+
+export function validateTeamInventory(payload, link) {
+  const teams = Array.isArray(payload) ? payload : payload?.teams;
+  if (!Array.isArray(teams)) throw new Error("Vercel team inventory response was malformed.");
+  const matches = teams.filter(team => team?.slug === VERCEL_STAGING_DEPLOYMENT.scope);
+  if (matches.length !== 1) throw new Error("Approved Vercel scope is missing or ambiguous.");
+  const team = matches[0];
+  if (typeof team.name !== "string" || !team.name || team.id !== link.orgId) throw new Error("Approved Vercel scope does not map to the locally linked organization.");
   return true;
 }
 
@@ -111,6 +132,8 @@ export function deploymentPlan(scope) {
   if (scope !== VERCEL_STAGING_DEPLOYMENT.scope) throw new Error("The exact reviewed Vercel scope is required.");
   return [
     { action: "verify-consumed-attempt-and-local-link", hosted: false },
+    { action: "verify-authenticated-account", command: `npx --yes vercel@${VERCEL_STAGING_DEPLOYMENT.cliVersion} whoami --json --local-config ${localConfig}` },
+    { action: "verify-scope-to-organization-mapping", command: `npx --yes vercel@${VERCEL_STAGING_DEPLOYMENT.cliVersion} teams ls --json --local-config ${localConfig}` },
     { action: "inspect-existing-project", command: `npx --yes vercel@${VERCEL_STAGING_DEPLOYMENT.cliVersion} project inspect ${VERCEL_STAGING_DEPLOYMENT.project} --json --scope ${scope} --local-config ${localConfig}` },
     { action: "inspect-and-reconcile-nine-preview-config-values", command: `npx --yes vercel@${VERCEL_STAGING_DEPLOYMENT.cliVersion} env ls preview --json --scope ${scope} --local-config ${localConfig}`, valuesPrinted: false },
     { action: "deploy-preview-once", command: `npx --yes vercel@${VERCEL_STAGING_DEPLOYMENT.cliVersion} deploy --yes --archive=tgz --scope ${scope} --local-config ${localConfig}` },
@@ -131,6 +154,8 @@ async function main() {
 
   const consumedBytes = fs.readFileSync(path.join(consumedRoot, "progress.json"));
   validateConsumedProgress(JSON.parse(consumedBytes), consumedBytes);
+  if (sha256(fs.readFileSync(path.join(consumedRoot, "evidence-manifest.tsv"))) !== VERCEL_STAGING_DEPLOYMENT.consumedManifestSha256) throw new Error("Consumed continuation evidence manifest mismatch.");
+  if (sha256(fs.readFileSync(path.join(originalRoot, "progress.json"))) !== VERCEL_STAGING_DEPLOYMENT.originalProgressSha256) throw new Error("Original attempt evidence mismatch.");
   const link = JSON.parse(fs.readFileSync(linkPath, "utf8"));
   validateLocalProjectLink(link);
   const stat = fs.statSync(secureInputPath);
@@ -153,6 +178,12 @@ async function main() {
   const persist = () => fs.writeFileSync(progressPath, canonical(progress), { mode: 0o600 });
   persist();
   try {
+    const account = runVercel(["whoami", "--json"]);
+    progress.steps.push({ action: "verify-authenticated-account", completedAt: new Date().toISOString(), ...safeResult(account) }); persist();
+    validateAuthenticatedAccount(parseJsonOutput(account, "Authenticated Vercel account"));
+    const teams = runVercel(["teams", "ls", "--json"]);
+    progress.steps.push({ action: "verify-scope-organization-mapping", completedAt: new Date().toISOString(), ...safeResult(teams) }); persist();
+    validateTeamInventory(parseJsonOutput(teams, "Vercel team inventory"), link);
     const inspected = runVercel(["project", "inspect", VERCEL_STAGING_DEPLOYMENT.project, "--json", "--scope", scope]);
     progress.steps.push({ action: "verify-existing-project", completedAt: new Date().toISOString(), ...safeResult(inspected) }); persist();
     validateRemoteProject(parseJsonOutput(inspected, "Existing Vercel project inspection"), link);
