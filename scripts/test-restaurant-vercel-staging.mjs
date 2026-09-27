@@ -12,6 +12,7 @@ import {
   environmentMutationArgs,
   evaluateContinuationDecisionPath,
   finalizeEvidence,
+  parsePulledEnvironment,
   planEnvironmentReconciliation,
   previewDeploymentArgs,
   validateAuthenticatedAccount,
@@ -19,6 +20,7 @@ import {
   validateLocalProjectLink,
   validateRemoteProject,
   validateTeamInventory,
+  verifyEffectivePreviewValues,
   VERCEL_STAGING_DEPLOYMENT,
 } from "./deploy-restaurant-vercel-staging.mjs";
 
@@ -143,7 +145,7 @@ test("accepted artifact includes routes, critical assets, fonts, worker, and run
 test("deployment continuation is isolated, preview-only, one-shot, and exactly scope-bound", () => {
   const plan = deploymentPlan("nurlan-ildirimli-s-projects");
   assert.equal(VERCEL_STAGING_DEPLOYMENT.project, "hungrie-restaurant-web-staging-eval-20260927a");
-  assert.equal(VERCEL_STAGING_DEPLOYMENT.actionId, "restaurant-vercel-staging-evaluation-20260927d");
+  assert.equal(VERCEL_STAGING_DEPLOYMENT.actionId, "restaurant-vercel-staging-evaluation-20260927e");
   assert.equal(VERCEL_STAGING_DEPLOYMENT.environment, "preview");
   assert.equal(VERCEL_STAGING_DEPLOYMENT.expectedVariables.length, 9);
   assert.equal(plan.length, 6);
@@ -161,6 +163,7 @@ const digest = value => crypto.createHash("sha256").update(value).digest("hex");
 const values = Object.fromEntries(VERCEL_STAGING_DEPLOYMENT.expectedVariables.map((name, index) => [name, `public-${index}`]));
 values.EXPO_PUBLIC_FIREBASE_APP_ID = "public-ü";
 const observations = VERCEL_STAGING_DEPLOYMENT.expectedVariables.map(name => ({ name, utf8Bytes: Buffer.byteLength(values[name], "utf8"), sha256: digest(values[name]), passed: true }));
+const inventoryRow = row => ({ key: row.name, type: "encrypted", visibility: "config", target: ["preview"], configurationId: null, value: "encrypted-metadata" });
 
 test("all nine EXPO_PUBLIC inputs use Vercel config type and never sensitive/secret type", () => {
   const classified = classifyReviewedVariables(VERCEL_STAGING_DEPLOYMENT.expectedVariables);
@@ -173,43 +176,53 @@ test("all nine EXPO_PUBLIC inputs use Vercel config type and never sensitive/sec
 });
 
 test("missing and partial Preview variables reconcile without duplicates", () => {
-  const empty = planEnvironmentReconciliation([], observations, values);
+  const empty = planEnvironmentReconciliation([], observations, values, {});
   assert.ok(empty.every(row => row.action === "add"));
-  const one = [{ key: observations[0].name, type: "config", target: ["preview"], value: values[observations[0].name] }];
-  const partial = planEnvironmentReconciliation({ envs: one }, observations, values);
+  const one = [inventoryRow(observations[0])];
+  const partial = planEnvironmentReconciliation({ envs: one }, observations, values, { [observations[0].name]: values[observations[0].name] });
   assert.equal(partial[0].action, "skip");
   assert.ok(partial.slice(1).every(row => row.action === "add"));
-  assert.equal(planEnvironmentReconciliation({ envs: [{ ...one[0], type: "encrypted" }] }, observations, values)[0].action, "skip");
-  const mismatch = planEnvironmentReconciliation({ envs: [{ ...one[0], type: "secret" }] }, observations, values);
+  const mismatch = planEnvironmentReconciliation({ envs: [{ ...one[0], visibility: "secret" }] }, observations, values, { [observations[0].name]: values[observations[0].name] });
   assert.equal(mismatch[0].action, "replace");
-  assert.throws(() => planEnvironmentReconciliation({ envs: [one[0], one[0]] }, observations, values), /Duplicate/);
-  assert.throws(() => planEnvironmentReconciliation({ envs: [{ key: "UNREVIEWED", type: "config", target: ["preview"], value: "x" }] }, observations, values), /Unexpected/);
+  assert.throws(() => planEnvironmentReconciliation({ envs: [one[0], one[0]] }, observations, values, { [observations[0].name]: values[observations[0].name] }), /Duplicate/);
+  assert.throws(() => planEnvironmentReconciliation({ envs: [{ ...one[0], key: "UNREVIEWED" }] }, observations, values, {}), /Unexpected/);
 });
 
 test("canonical utf8Bytes observation schema reproduces and fixes the consumed field mismatch", () => {
   const obsolete = observations.map(({ name, utf8Bytes, sha256, passed }) => ({ name, bytes: utf8Bytes, sha256, passed }));
-  assert.throws(() => planEnvironmentReconciliation([], obsolete, values), /observation schema mismatch/);
-  assert.equal(planEnvironmentReconciliation([], observations, values).length, 9);
+  assert.throws(() => planEnvironmentReconciliation([], obsolete, values, {}), /observation schema mismatch/);
+  assert.equal(planEnvironmentReconciliation([], observations, values, {}).length, 9);
   assert.equal(observations[1].utf8Bytes, Buffer.byteLength(values[observations[1].name], "utf8"));
   assert.notEqual(observations[1].utf8Bytes, values[observations[1].name].length);
-  assert.throws(() => planEnvironmentReconciliation([], observations.map((row, index) => index === 0 ? { ...row, utf8Bytes: row.utf8Bytes + 1 } : row), values), /fingerprint mismatch/);
-  assert.throws(() => planEnvironmentReconciliation([], observations.map((row, index) => index === 0 ? { ...row, extra: true } : row), values), /schema mismatch/);
+  assert.throws(() => planEnvironmentReconciliation([], observations.map((row, index) => index === 0 ? { ...row, utf8Bytes: row.utf8Bytes + 1 } : row), values, {}), /fingerprint mismatch/);
+  assert.throws(() => planEnvironmentReconciliation([], observations.map((row, index) => index === 0 ? { ...row, extra: true } : row), values, {}), /schema mismatch/);
 });
 
 test("all nine Preview variables cover missing, exact, conflicting, duplicate, malformed, and unexpected states", () => {
-  const exact = observations.map(row => ({ key: row.name, type: "encrypted", target: ["preview"], value: values[row.name] }));
-  assert.ok(planEnvironmentReconciliation({ envs: exact }, observations, values).every(row => row.action === "skip"));
-  const conflicting = exact.map(row => ({ ...row, value: `${row.value}-wrong` }));
-  assert.ok(planEnvironmentReconciliation({ envs: conflicting }, observations, values).every(row => row.action === "replace"));
-  assert.throws(() => planEnvironmentReconciliation({ envs: [exact[0], exact[0], ...exact.slice(1)] }, observations, values), /Duplicate/);
-  assert.throws(() => planEnvironmentReconciliation({ invalid: [] }, observations, values), /malformed/);
-  assert.throws(() => planEnvironmentReconciliation({ envs: [...exact, { key: "OTHER", type: "plain", target: ["preview"], value: "x" }] }, observations, values), /Unexpected/);
+  const exact = observations.map(inventoryRow);
+  assert.ok(planEnvironmentReconciliation({ envs: exact }, observations, values, values).every(row => row.action === "skip"));
+  const conflictingValues = Object.fromEntries(Object.entries(values).map(([name, value]) => [name, `${value}-wrong`]));
+  assert.ok(planEnvironmentReconciliation({ envs: exact }, observations, values, conflictingValues).every(row => row.action === "replace"));
+  assert.throws(() => planEnvironmentReconciliation({ envs: [exact[0], exact[0], ...exact.slice(1)] }, observations, values, values), /Duplicate/);
+  assert.throws(() => planEnvironmentReconciliation({ invalid: [] }, observations, values, values), /malformed/);
+  assert.throws(() => planEnvironmentReconciliation({ envs: [...exact, { ...exact[0], key: "OTHER" }] }, observations, values, values), /Unexpected/);
+});
+
+test("actual Vercel metadata is encrypted config while pulled effective values are independently verifiable", () => {
+  const metadata = observations.map(inventoryRow);
+  assert.ok(metadata.every(row => row.type === "encrypted" && row.visibility === "config" && row.target[0] === "preview" && row.configurationId === null && row.value === "encrypted-metadata"));
+  assert.ok(planEnvironmentReconciliation({ envs: metadata }, observations, values, values).every(row => row.action === "skip"));
+  assert.equal(verifyEffectivePreviewValues(observations, values), true);
+  assert.throws(() => verifyEffectivePreviewValues(observations, { ...values, [observations[0].name]: "wrong" }), /differs/);
+  const pulled = parsePulledEnvironment(Buffer.from('EXPO_PUBLIC_FIREBASE_API_KEY="abc\\nvalue"\nVERCEL="1"\n'));
+  assert.deepEqual(pulled, { EXPO_PUBLIC_FIREBASE_API_KEY: "abc\nvalue", VERCEL: "1" });
+  assert.throws(() => parsePulledEnvironment(Buffer.from("DUP=x\nDUP=y\n")), /duplicate/);
 });
 
 test("full no-network decision path constructs only Preview config writes and one Preview deployment", () => {
   const link = JSON.parse(read(".vercel/project.json"));
   const project = { name: VERCEL_STAGING_DEPLOYMENT.project, id: link.projectId, owner: { name: "Nurlan Ildirimli's projects", slug: VERCEL_STAGING_DEPLOYMENT.scope }, buildCommand: "npm --workspace @hungrie/restaurant run export:web", outputDirectory: "apps/restaurant/dist", rootDirectory: null };
-  const result = evaluateContinuationDecisionPath({ scope: VERCEL_STAGING_DEPLOYMENT.scope, link, account: { username: VERCEL_STAGING_DEPLOYMENT.account }, teams: { teams: [{ id: link.orgId, slug: VERCEL_STAGING_DEPLOYMENT.scope, name: "Nurlan Ildirimli's projects" }] }, project, inventory: { envs: [] }, observations, values });
+  const result = evaluateContinuationDecisionPath({ scope: VERCEL_STAGING_DEPLOYMENT.scope, link, account: { username: VERCEL_STAGING_DEPLOYMENT.account }, teams: { teams: [{ id: link.orgId, slug: VERCEL_STAGING_DEPLOYMENT.scope, name: "Nurlan Ildirimli's projects" }] }, project, inventory: { envs: [] }, observations, values, effectiveValues: {} });
   assert.equal(result.terminal, "DRY_RUN_READY");
   assert.equal(result.environmentCommands.length, 9);
   assert.ok(result.environmentCommands.every(args => args.includes("preview") && args.includes("--type") && args.includes("config") && !args.includes("secret") && !args.includes("--sensitive")));
@@ -254,10 +267,10 @@ test("authenticated username, team slug, and opaque org ID are validated indepen
   assert.throws(() => validateTeamInventory({ teams: [] }, link), /missing or ambiguous/);
 });
 
-test("consumed attempt permits only the reviewed create/link then failed first variable write", () => {
-  const evidencePath = path.join(root, "secure/restaurant-vercel-staging-deployment/restaurant-vercel-staging-evaluation-20260927c/progress.json");
+test("consumed attempt records all nine writes and no deployment", () => {
+  const evidencePath = path.join(root, "secure/restaurant-vercel-staging-deployment/restaurant-vercel-staging-evaluation-20260927d/progress.json");
   const bytes = fs.readFileSync(evidencePath);
-  assert.deepEqual(validateConsumedProgress(JSON.parse(bytes), bytes), { completedProjectCreationInOriginalAttempt: true, successfulEnvironmentWrites: 0, deploymentCommands: 0 });
+  assert.deepEqual(validateConsumedProgress(JSON.parse(bytes), bytes), { completedProjectCreationInOriginalAttempt: true, successfulEnvironmentWrites: 9, deploymentCommands: 0 });
   const changed = Buffer.from(bytes.toString().replace('"terminal": "FAIL"', '"terminal": "PASS"'));
   assert.throws(() => validateConsumedProgress(JSON.parse(changed), changed), /hash mismatch/);
 });
