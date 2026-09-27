@@ -7,7 +7,8 @@ import { spawnSync } from "node:child_process";
 export const CONTINUATION = Object.freeze({
   schemaVersion: 1,
   kind: "restaurant_vercel_preview_browser_notification_continuation",
-  qualificationId: "restaurant-vercel-browser-notification-qualification-20260928b",
+  qualificationId: "restaurant-vercel-browser-notification-qualification-20260928c",
+  consumedQualificationId: "restaurant-vercel-browser-notification-qualification-20260928b",
   deploymentId: "dpl_8CM3s16BZRwK9Ls1eMMJCVKmWyYt",
   origin: "https://hungrie-restaurant-web-staging-eval-20260927a-h9m8zpwol.vercel.app",
   projectId: "prj_PrVORzWTAxmAHL0SqNcA9WXJppS4",
@@ -23,13 +24,67 @@ export const CONTINUATION = Object.freeze({
   normalRoot: Object.freeze({ bytes: 18082, sha256: "18f1015e99ceb70ce8656b59259e0274f77bedc3440e5a9222ce0e8fb09f68a2", injectionBytes: 163 }),
   historicalQualificationManifestSha256: "b57ef17c2871ac322afc70148f72d7cc23de02b2ebaf3f9620c0a144e718cfff",
   toolbarInvestigationManifestSha256: "49273bb907a2571847cb7b4e4fb73d494536a16c398d4c40be448f76c39458ee",
-  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260928b",
+  consumedQualificationManifestSha256: "8b478d63808742057429821a5704db22d2e6cf4343ce82fe18189db96ba3c592",
+  consumedAuthoritySha256: "2d4af7ec3c33bbb6fb3836bf3754857be9109c20fe7cb43b5bbfd6aef3f765e6",
+  consumedSourceManifestSha256: "33f95fc58475b5ea3e91c0cf8b6aef045fcde9f043af82abcca05eb7d5811b85",
+  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260928c",
   authorityDirectory: "secure/restaurant-vercel-browser-notification-qualification-authority",
   limits: Object.freeze({ bypassCreates: 1, bypassRevokes: 1, accountContexts: 4, concurrentAccountContexts: 1, pushRegistrations: 1, foregroundFcmSends: 1, backgroundFcmSends: 1, pushUnregistrations: 1, retries: 0, authorityValidityMs: 2 * 60 * 60 * 1000 }),
 });
 
 export const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 export const canonical = value => `${JSON.stringify(value, null, 2)}\n`;
+export const BYPASS_SECRET_PATTERN = /^[a-f0-9]{32}$/;
+
+export function generateBypassSecret(randomBytes = crypto.randomBytes) {
+  const secret = randomBytes(16).toString("hex");
+  return validateBypassSecret(secret);
+}
+
+export function validateBypassSecret(secret) {
+  if (typeof secret !== "string" || !BYPASS_SECRET_PATTERN.test(secret)) throw new Error("Vercel automation bypass secret must contain exactly 32 lowercase hexadecimal characters.");
+  return secret;
+}
+
+export function assertUniqueBypassSecret(secret, protectionBypass) {
+  validateBypassSecret(secret);
+  if (!protectionBypass || typeof protectionBypass !== "object" || Array.isArray(protectionBypass)) throw new Error("Vercel bypass inventory shape is invalid.");
+  if (Object.prototype.hasOwnProperty.call(protectionBypass, secret)) throw new Error("Generated Vercel automation bypass secret is not unique.");
+  return secret;
+}
+
+export function buildBypassApiRequest({ action, secret }) {
+  validateBypassSecret(secret);
+  if (!['generate', 'revoke'].includes(action)) throw new Error("Unsupported Vercel bypass action.");
+  const endpoint = `/v1/projects/${CONTINUATION.projectId}/protection-bypass`;
+  const body = action === "generate" ? { generate: { secret, note: CONTINUATION.qualificationId } } : { revoke: { secret } };
+  return { endpoint, method: "PATCH", scope: CONTINUATION.scope, body };
+}
+
+export function verifyBypassApiResponse(payload, { secret, expectedPresent }) {
+  validateBypassSecret(secret);
+  if (!payload || typeof payload !== "object" || !payload.protectionBypass || typeof payload.protectionBypass !== "object" || Array.isArray(payload.protectionBypass)) throw new Error("Vercel bypass response shape is invalid.");
+  const present = Object.prototype.hasOwnProperty.call(payload.protectionBypass, secret);
+  if (present !== expectedPresent) throw new Error(expectedPresent ? "Created Vercel bypass is absent from the response inventory." : "Revoked Vercel bypass remains in the response inventory.");
+  return { passed: true, present, inventoryCount: Object.keys(payload.protectionBypass).length, secretSha256: sha256(Buffer.from(secret)), secretPersisted: false };
+}
+
+export function buildProtectedBrowserBootstrap(secret) {
+  validateBypassSecret(secret);
+  return { url: `${CONTINUATION.origin}/`, method: "GET", headers: { "x-vercel-protection-bypass": secret, "x-vercel-set-bypass-cookie": "true", "x-vercel-skip-toolbar": "1" }, redirect: "manual" };
+}
+
+export function validateProtectedBrowserRequest({ url, resourceType, headerNames = [] }) {
+  const origin = new URL(url).origin, normalized = headerNames.map(value => String(value).toLowerCase());
+  if (normalized.includes("x-vercel-protection-bypass") || normalized.includes("x-vercel-set-bypass-cookie")) throw Object.assign(new Error("Protection credentials may only be used by the exact-origin bootstrap request."), { code: "CREDENTIAL_EXPOSURE" });
+  const toolbar = normalized.includes("x-vercel-skip-toolbar");
+  if (toolbar && (origin !== CONTINUATION.origin || resourceType !== "Document")) throw Object.assign(new Error("Toolbar automation header escaped the exact-origin Document boundary."), { code: "UNEXPECTED_ORIGIN" });
+  return { passed: true, toolbar };
+}
+
+export function sanitizeContinuationError(error) {
+  return String(error?.message || error).replace(/\b[a-f0-9]{32}\b/gi, "[REDACTED_BYPASS_SECRET]").replace(/Bearer\s+[^\s"']+/gi, "Bearer [REDACTED]").slice(0, 500);
+}
 
 export function buildSourceManifest(repoRoot, commit, spawn = spawnSync) {
   const tree = spawn("git", ["ls-tree", "-r", "--name-only", "-z", commit], { cwd: repoRoot, encoding: null, maxBuffer: 128 * 1024 * 1024 });
@@ -76,7 +131,10 @@ export function verifyLocalBindings({ repoRoot, approval, operatorPath = "script
   if (sha256(read(operatorPath)) !== approval.operatorSha256 || sha256(read(qualifierPath)) !== approval.qualifierSha256) throw new Error("Executable binding mismatch.");
   const historical = path.join(repoRoot, "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260928a/evidence-manifest.tsv");
   const toolbar = path.join(repoRoot, "secure/restaurant-vercel-toolbar-investigation/restaurant-vercel-toolbar-investigation-20260928a/evidence-manifest.tsv");
-  if (sha256(fs.readFileSync(historical)) !== CONTINUATION.historicalQualificationManifestSha256 || sha256(fs.readFileSync(toolbar)) !== CONTINUATION.toolbarInvestigationManifestSha256) throw new Error("Protected prerequisite evidence changed.");
+  const consumed = path.join(repoRoot, `secure/restaurant-vercel-browser-notification-qualification/${CONTINUATION.consumedQualificationId}/evidence-manifest.tsv`);
+  const consumedAuthority = path.join(repoRoot, CONTINUATION.authorityDirectory, `${CONTINUATION.consumedQualificationId}.json`);
+  const consumedManifest = path.join(repoRoot, CONTINUATION.authorityDirectory, `${CONTINUATION.consumedQualificationId}-source-manifest.tsv`);
+  if (sha256(fs.readFileSync(historical)) !== CONTINUATION.historicalQualificationManifestSha256 || sha256(fs.readFileSync(toolbar)) !== CONTINUATION.toolbarInvestigationManifestSha256 || sha256(fs.readFileSync(consumed)) !== CONTINUATION.consumedQualificationManifestSha256 || sha256(fs.readFileSync(consumedAuthority)) !== CONTINUATION.consumedAuthoritySha256 || sha256(fs.readFileSync(consumedManifest)) !== CONTINUATION.consumedSourceManifestSha256) throw new Error("Protected prerequisite evidence changed.");
   for (const target of [path.join(repoRoot, CONTINUATION.evidenceDirectory), path.join(repoRoot, CONTINUATION.authorityDirectory, `${CONTINUATION.qualificationId}.json`)]) if (fs.existsSync(target)) throw new Error("Exclusive continuation path already exists.");
   return { head, manifest, historicalEvidence: true };
 }
@@ -102,10 +160,11 @@ export function classifySafetyError(error) {
 
 export async function executeControlledContinuation({ operations, persist = async () => {} }) {
   const results = { prerequisites: "NOT_EXECUTED", accounts: {}, notifications: {}, cleanup: {}, classification: "ABORTED" };
-  let bypassCreated = false, tokenRegistered = false, browser = null;
+  let bypassAttempted = false, bypassCreated = false, tokenRegistered = false, browser = null;
   try {
     await operations.verifyPrerequisites(); results.prerequisites = "PASS"; await persist(results);
-    await operations.createBypass(); bypassCreated = true; await persist(results);
+    bypassAttempted = true; await operations.createBypass(); bypassCreated = true; await persist(results);
+    await operations.bootstrapProtectedBrowser(); results.bootstrap = "PASS"; await persist(results);
     await operations.verifyParityEvidence();
     const matrix = await operations.qualifyAccounts(); results.accounts = matrix; await persist(results);
     const mandatoryBrowserPass = ["pending", "suspended", "owner", "manager"].every(name => matrix[name] === "PASS") && await operations.verifyServiceWorker();
@@ -119,12 +178,19 @@ export async function executeControlledContinuation({ operations, persist = asyn
     return results;
   } catch (error) {
     results.classification = classifySafetyError(error) ? "ABORTED" : "FAIL";
-    results.error = String(error?.message || error).slice(0, 500);
+    results.error = sanitizeContinuationError(error);
     return results;
   } finally {
     if (tokenRegistered) { try { await operations.unregisterToken(browser); results.cleanup.token = "PASS"; } catch { results.cleanup.token = "FAIL"; results.classification = "ABORTED"; } }
     if (browser) { try { await operations.closeBrowser(browser); results.cleanup.browser = "PASS"; } catch { results.cleanup.browser = "FAIL"; results.classification = "ABORTED"; } }
-    if (bypassCreated) { try { await operations.revokeBypass(); results.cleanup.bypass = "PASS"; } catch { results.cleanup.bypass = "FAIL"; results.classification = "ABORTED"; } }
+    if (bypassAttempted && !bypassCreated) {
+      try { bypassCreated = await operations.reconcileBypassCreation(); results.cleanup.creationReconciliation = bypassCreated ? "PRESENT_REQUIRES_REVOCATION" : "ABSENT_VERIFIED"; }
+      catch { results.cleanup.creationReconciliation = "FAILED"; results.classification = "ABORTED"; }
+    }
+    if (bypassCreated) {
+      try { await operations.revokeBypass(); await operations.verifyBypassRevoked(); results.cleanup.bypass = "PASS"; }
+      catch { results.cleanup.bypass = "FAIL"; results.classification = "ABORTED"; }
+    }
     await persist(results);
   }
 }
