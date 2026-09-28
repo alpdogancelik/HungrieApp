@@ -171,6 +171,12 @@ test("manifest keeps root identity, start URL, and scope", () => {
   assert.equal(manifest.display, "standalone");
 });
 
+test("web manifest sends the protected Preview cookie without forwarding automation headers", () => {
+  const document = read("apps/restaurant/app/+html.tsx");
+  assert.match(document, /rel="manifest" href="\/manifest\.webmanifest" crossOrigin="use-credentials"/);
+  assert.doesNotMatch(document, /x-vercel-(?:protection-bypass|skip-toolbar)/);
+});
+
 test("accepted artifact includes routes, critical assets, fonts, worker, and runtime config", () => {
   assert.equal(artifact.files.length, 74);
   assert.equal(artifact.criticalAssets.length, 5);

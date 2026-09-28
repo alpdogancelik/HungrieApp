@@ -27,6 +27,7 @@ test("HTTP 429 captures only safe delivery headers, protocol, cache, and remote 
   assert.equal(JSON.stringify(response).includes("secret"), false);
 });
 test("missing response headers produce a complete empty safe-header record", () => assert.deepEqual(sanitizeResponseHeaders(), {}));
+test("CSP diagnostics preserve policy text while excluding credential headers", () => assert.deepEqual(sanitizeResponseHeaders({ "Content-Security-Policy": "default-src 'self'; manifest-src 'self'", "Content-Security-Policy-Report-Only": "connect-src 'self'", "Set-Cookie": "secret" }), { "content-security-policy": "default-src 'self'; manifest-src 'self'", "content-security-policy-report-only": "connect-src 'self'" }));
 test("error body evidence stores length and hash but never content", () => {
   const body = "token=secret password=hunter2 manager@example.invalid";
   const evidence = sanitizeErrorBody(body);

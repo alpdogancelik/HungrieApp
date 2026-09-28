@@ -42,6 +42,7 @@ export function sanitizeRequest(request, { initiator = null, documentURL = null 
 
 const SAFE_RESPONSE_HEADERS = new Set([
   "age", "cache-control", "cf-cache-status", "cf-ray", "content-length", "content-type",
+  "content-security-policy", "content-security-policy-report-only",
   "date", "etag", "last-modified", "retry-after", "server", "server-timing", "via",
   "x-cache", "x-cache-hits", "x-request-id", "x-served-by", "x-timer",
 ]);
@@ -382,7 +383,24 @@ export async function qualifyAccount({
       if (message.method === "Page.lifecycleEvent") lifecycle.push({ observedAt: new Date().toISOString(), name: message.params.name, frameId: message.params.frameId || null, loaderId: message.params.loaderId || null });
       if (message.method === "Runtime.exceptionThrown") exceptions.push(sanitizeDiagnosticText(message.params.exceptionDetails?.exception?.description || message.params.exceptionDetails?.text));
       if (message.method === "Runtime.consoleAPICalled" && ["error", "assert"].includes(message.params.type)) consoleErrors.push(sanitizeDiagnosticText(message.params.args.map(value => value.value || value.description || value.type).join(" ")));
-      if (message.method === "Network.loadingFailed" && !String(message.params.errorText || "").includes("ERR_ABORTED") && message.params.type !== "Other") failedRequests.push({ observedAt: new Date().toISOString(), requestId: message.params.requestId || null, type: message.params.type, errorText: sanitizeDiagnosticText(message.params.errorText), canceled: Boolean(message.params.canceled), blockedReason: message.params.blockedReason ? sanitizeDiagnosticText(message.params.blockedReason) : null });
+      if (message.method === "Network.loadingFailed" && !String(message.params.errorText || "").includes("ERR_ABORTED") && message.params.type !== "Other") {
+        const request = requests.find(row => row.requestId === message.params.requestId) || null;
+        failedRequests.push({
+          observedAt: new Date().toISOString(),
+          requestId: message.params.requestId || null,
+          type: message.params.type,
+          method: request?.method || null,
+          origin: request?.origin || null,
+          path: request?.path || null,
+          errorText: sanitizeDiagnosticText(message.params.errorText),
+          canceled: Boolean(message.params.canceled),
+          blockedReason: message.params.blockedReason ? sanitizeDiagnosticText(message.params.blockedReason) : null,
+          corsErrorStatus: message.params.corsErrorStatus ? {
+            corsError: sanitizeDiagnosticText(message.params.corsErrorStatus.corsError).slice(0, 120),
+            failedParameter: sanitizeDiagnosticText(message.params.corsErrorStatus.failedParameter).slice(0, 200),
+          } : null,
+        });
+      }
       if (message.method === "Network.requestWillBeSent") requests.push({ observedAt: new Date().toISOString(), requestId: message.params.requestId, type: message.params.type, ...sanitizeRequest(message.params.request, { initiator: message.params.initiator, documentURL: message.params.documentURL }) });
       if (message.method === "Network.responseReceived") {
         const response = message.params.response, row = { observedAt: new Date().toISOString(), requestId: message.params.requestId, type: message.params.type, ...sanitizeResponse(response, { type: message.params.type }) };
