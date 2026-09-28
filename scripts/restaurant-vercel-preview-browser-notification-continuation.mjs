@@ -239,7 +239,7 @@ function responseHeaderValues(headers, wanted) {
 export function validateProtectedBootstrapResponse({ requestUrl, status, headers }) {
   const requested = new URL(requestUrl);
   if (requested.origin !== CONTINUATION.origin || requested.pathname !== "/" || requested.search || requested.hash) throw Object.assign(new Error("Protected bootstrap request identity mismatch."), { code: "UNEXPECTED_ORIGIN" });
-  if (status !== 302) throw new Error(`Protected bootstrap must return the documented HTTP 302 response; received ${status}.`);
+  if (status !== 302 && status !== 307) throw new Error(`Protected bootstrap must return the reviewed HTTP 302 or 307 redirect response; received ${status}.`);
   const locations = responseHeaderValues(headers, "location");
   if (locations.length !== 1) throw new Error("Protected bootstrap must return one unambiguous redirect location.");
   const redirectUrl = new URL(locations[0], requested);
@@ -255,7 +255,7 @@ export function validateProtectedBootstrapResponse({ requestUrl, status, headers
   if (cookies.length !== 1) throw new Error("Protected bootstrap must return exactly one _vercel_jwt cookie.");
   const cookie = cookies[0];
   if (!/^[A-Za-z0-9._~-]{32,8192}$/.test(cookie.value) || !cookie.attributes.includes("secure") || !cookie.attributes.includes("httponly") || !cookie.attributes.includes("path=/") || !cookie.attributes.includes("samesite=lax")) throw new Error("Protected bootstrap cookie is malformed or lacks required security attributes.");
-  return { passed: true, redirectUrl: redirectUrl.href, cookie: { name: cookie.name, value: cookie.value }, cookiePersisted: false };
+  return { passed: true, status, redirectUrl: redirectUrl.href, cookie: { name: cookie.name, value: cookie.value }, cookiePersisted: false };
 }
 
 export function buildProtectedRedirectRequest(bootstrap) {
@@ -268,7 +268,7 @@ export function buildProtectedRedirectRequest(bootstrap) {
 export function sanitizeProtectedBootstrapEvidence(bootstrap) {
   if (!bootstrap?.passed || bootstrap.cookie?.name !== "_vercel_jwt") throw new Error("Validated protected bootstrap evidence is required.");
   const redirect = new URL(bootstrap.redirectUrl);
-  return { passed: true, status: 302, redirectOrigin: redirect.origin, redirectPath: `${redirect.pathname}${redirect.search}`, cookieName: bootstrap.cookie.name, cookieValueBytes: Buffer.byteLength(bootstrap.cookie.value), cookieValueSha256: sha256(Buffer.from(bootstrap.cookie.value)), credentialValuePersisted: false };
+  return { passed: true, status: bootstrap.status, redirectOrigin: redirect.origin, redirectPath: `${redirect.pathname}${redirect.search}`, cookieName: bootstrap.cookie.name, cookieValueBytes: Buffer.byteLength(bootstrap.cookie.value), cookieValueSha256: sha256(Buffer.from(bootstrap.cookie.value)), credentialValuePersisted: false };
 }
 
 export function verifyBypassInventoryTransition({ before, after, secret }) {
