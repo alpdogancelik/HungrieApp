@@ -512,7 +512,7 @@ export async function qualifyAccount({
       const qualifiedPath = directPath || expectedPath;
       stage = "SERVICE_WORKER_CONTROLLER_RESTORATION";
       failureClassification = "SERVICE_WORKER_CONTROLLER_TIMEOUT";
-      await navigate(stage, new URL(qualifiedPath, baseUrl).href, reloadAndWaitForNewDocument);
+      await navigate(stage, new URL(qualifiedPath, baseUrl).href, () => cdp.send("Page.navigate", { url: new URL(qualifiedPath, baseUrl).href }));
       await waitFor(qualifiedPath, { operational: qualifiedPath === "/dashboard" || Boolean(directPath) });
       serviceWorker = { ...(await waitForServiceWorkerReady(evaluate)), recoveryReload: true };
     }
