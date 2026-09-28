@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 export const CONTINUATION = Object.freeze({
   schemaVersion: 1,
   kind: "restaurant_vercel_preview_browser_notification_continuation",
-  qualificationId: "restaurant-vercel-browser-notification-qualification-20260928h",
+  qualificationId: "restaurant-vercel-browser-notification-qualification-20260928i",
   consumedQualifications: Object.freeze([
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928b", manifest: "evidence-manifest.tsv", manifestSha256: "8b478d63808742057429821a5704db22d2e6cf4343ce82fe18189db96ba3c592", authoritySha256: "2d4af7ec3c33bbb6fb3836bf3754857be9109c20fe7cb43b5bbfd6aef3f765e6", sourceManifestSha256: "33f95fc58475b5ea3e91c0cf8b6aef045fcde9f043af82abcca05eb7d5811b85" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928c", manifest: "evidence-manifest-final.tsv", manifestSha256: "6dc2701f56fddaf341519b4a6ad78ab88a6d037d8d0993ece3e91ad691ce399f", authoritySha256: "219381cafd5c1ec678a0a3936fc48ebecc7e961fac4a597d8b391eb229a3428e", sourceManifestSha256: "18ddf144ad7e237a3f286557cbd02c54b7be1b126a36d24c44006c1771a16fda" }),
@@ -15,6 +15,7 @@ export const CONTINUATION = Object.freeze({
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928e", manifest: "evidence-manifest.tsv", manifestSha256: "018b0f2675f014efb4a4ebe96b0371658af9580f347c1d89c016acd2cfbdb3b1", authoritySha256: "74e019de4ec5977e82a78a781e4e84faacc48b13e30d090bfc4c70da406bfa2b", sourceManifestSha256: "68d73ae369d2d5e491b42f5f54d4f85ea2cd897b6dead2eb615476a992d38d4a" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928f", manifest: "evidence-manifest.tsv", manifestSha256: "91a91d1d44b431dfa6906b101c262cb45b3e18962462af86c10ff1b3f3ec2de7", authoritySha256: "bdd9415ee191f025b7e0568340b77af9c7b94a3715131db4aecc51acc744ad10", sourceManifestSha256: "794e388e5c2f81927f29df7ea0e143fb2d2405944bbd5872c9bd085e8a7014b8" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928g", manifest: "evidence-manifest.tsv", manifestSha256: "5f6bdfcaec098a679169010db5853ccc1e28a3f218aa697870b94f9486ea49ee", authoritySha256: "ec8c2745c64b55836273f4d5c9268ddd92b360514e2c09a337f20093338d3e29", sourceManifestSha256: "7e2639d62c5370ace2f3d33264e08c73b68952e43a0aae80ba9df9de7f345359" }),
+    Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928h", manifest: "evidence-manifest.tsv", manifestSha256: "8aa3883f5889ca5ee8625337859055976ae7792e952c6d9d47eb5d151aa265d4", authoritySha256: "c8ec6499c1cb039284c71ac15498c2bad9a0855b371f62dc04e36846d3438d18", sourceManifestSha256: "96a2316548e671e61045c2bb33c9358e6e4aa4472a5aabbde48cbeef69e9f7cd" }),
   ]),
   deploymentId: "dpl_8CM3s16BZRwK9Ls1eMMJCVKmWyYt",
   origin: "https://hungrie-restaurant-web-staging-eval-20260927a-h9m8zpwol.vercel.app",
@@ -49,7 +50,7 @@ export const CONTINUATION = Object.freeze({
     inspectionSha256: "2c760c7dc043372a6c57a23084d3437ed74bfa8e0102b941146caa5be853e79e",
     terminalSha256: "d6d3bcc66e6264f2a050bbb07c849bc399c21d75739f85fdb6644a123340210c",
   }),
-  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260928h",
+  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260928i",
   authorityDirectory: "secure/restaurant-vercel-browser-notification-qualification-authority",
   limits: Object.freeze({ bypassCreates: 1, bypassRevokes: 1, postRevokeProjectGets: 1, preliminaryBypassInventoryGets: 0, accountContexts: 4, concurrentAccountContexts: 1, pushRegistrations: 1, foregroundFcmSends: 1, backgroundFcmSends: 1, pushUnregistrations: 1, retries: 0, authorityValidityMs: 2 * 60 * 60 * 1000 }),
 });
@@ -239,7 +240,11 @@ export function validateProtectedBootstrapResponse({ requestUrl, status, headers
   const locations = responseHeaderValues(headers, "location");
   if (locations.length !== 1) throw new Error("Protected bootstrap must return one unambiguous redirect location.");
   const redirectUrl = new URL(locations[0], requested);
-  if (redirectUrl.origin !== CONTINUATION.origin || redirectUrl.pathname !== requested.pathname || redirectUrl.username || redirectUrl.password || redirectUrl.hash || [...redirectUrl.searchParams.keys()].some(key => /^x-vercel-(?:protection-bypass|set-bypass-cookie)$/i.test(key))) throw Object.assign(new Error("Protected bootstrap redirect escaped the reviewed exact-origin route."), { code: "UNEXPECTED_ORIGIN" });
+  if (redirectUrl.origin !== CONTINUATION.origin) throw Object.assign(new Error("Protected bootstrap redirect origin mismatch."), { code: "UNEXPECTED_ORIGIN" });
+  if (redirectUrl.pathname !== requested.pathname || redirectUrl.username || redirectUrl.password || redirectUrl.hash) throw Object.assign(new Error("Protected bootstrap redirect path or authority mismatch."), { code: "UNEXPECTED_ORIGIN" });
+  if ([...redirectUrl.searchParams.keys()].some(key => key.toLowerCase() === "x-vercel-protection-bypass")) throw Object.assign(new Error("Protected bootstrap redirect exposed the bypass secret parameter."), { code: "CREDENTIAL_EXPOSURE" });
+  const redirectQuery = [...redirectUrl.searchParams.entries()];
+  if (redirectQuery.some(([key, value]) => key.toLowerCase() !== "x-vercel-set-bypass-cookie" || value !== "true") || redirectQuery.length > 1) throw Object.assign(new Error("Protected bootstrap redirect query differs from the documented cookie-control redirect."), { code: "UNEXPECTED_ORIGIN" });
   const cookies = responseHeaderValues(headers, "set-cookie").map(value => {
     const parts = value.split(";").map(part => part.trim()), separator = parts[0]?.indexOf("=") ?? -1;
     return { name: separator > 0 ? parts[0].slice(0, separator) : "", value: separator > 0 ? parts[0].slice(separator + 1) : "", attributes: parts.slice(1).map(part => part.toLowerCase()) };

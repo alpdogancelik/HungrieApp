@@ -21,7 +21,7 @@ test("changed text, deployment, origin, limits, or evidence path fails", () => {
   ]) assert.throws(() => validateApproval(approval(changed), { now: Date.parse("2026-09-28T01:00:00Z") }));
 });
 test("consumed or malformed authority cannot reach evidence reservation", () => {
-  for (const qualificationId of ["restaurant-vercel-browser-notification-qualification-20260928d", "restaurant-vercel-browser-notification-qualification-20260928e", "restaurant-vercel-browser-notification-qualification-20260928f", "restaurant-vercel-browser-notification-qualification-20260928g"]) assert.throws(() => validateApproval(approval({ qualificationId }), { now: Date.parse("2026-09-28T01:00:00Z") }), /Exact continuation approval/);
+  for (const qualificationId of ["restaurant-vercel-browser-notification-qualification-20260928d", "restaurant-vercel-browser-notification-qualification-20260928e", "restaurant-vercel-browser-notification-qualification-20260928f", "restaurant-vercel-browser-notification-qualification-20260928g", "restaurant-vercel-browser-notification-qualification-20260928h"]) assert.throws(() => validateApproval(approval({ qualificationId }), { now: Date.parse("2026-09-28T01:00:00Z") }), /Exact continuation approval/);
   assert.throws(() => validateApproval({ ...approval(), unexpected: true }, { now: Date.parse("2026-09-28T01:00:00Z") }), /fields differ/);
 });
 
@@ -240,13 +240,20 @@ test("documented HTTP 302 bootstrap validates cookie, redirect, and follow-up re
   assert.equal(sanitizeContinuationError(new Error(`_vercel_jwt=${bootstrap.cookie.value} x-vercel-protection-bypass=${"ab".repeat(16)}`)).includes(bootstrap.cookie.value), false);
 });
 
+test("documented same-origin cookie-control redirect is accepted without exposing the bypass secret", () => {
+  const bootstrap = validateProtectedBootstrapResponse({ requestUrl: `${CONTINUATION.origin}/`, status: 302, headers: { ...validBootstrapHeaders(), location: "/?x-vercel-set-bypass-cookie=true" } });
+  assert.equal(bootstrap.redirectUrl, `${CONTINUATION.origin}/?x-vercel-set-bypass-cookie=true`);
+});
+
 test("bootstrap rejects missing cookies, HTTP 200, unexpected redirects, and malformed cookies", () => {
   const requestUrl = `${CONTINUATION.origin}/`;
   for (const fixture of [
     { status: 302, headers: { location: "/" }, pattern: /exactly one/ },
     { status: 200, headers: validBootstrapHeaders(), pattern: /HTTP 302/ },
-    { status: 302, headers: { ...validBootstrapHeaders(), location: "https://firebase.googleapis.com/" }, pattern: /escaped/ },
-    { status: 302, headers: { ...validBootstrapHeaders(), location: "/?x-vercel-protection-bypass=leak" }, pattern: /escaped/ },
+    { status: 302, headers: { ...validBootstrapHeaders(), location: "https://firebase.googleapis.com/" }, pattern: /origin mismatch/ },
+    { status: 302, headers: { ...validBootstrapHeaders(), location: "/?x-vercel-protection-bypass=leak" }, pattern: /bypass secret/ },
+    { status: 302, headers: { ...validBootstrapHeaders(), location: "/?x-vercel-set-bypass-cookie=false" }, pattern: /cookie-control/ },
+    { status: 302, headers: { ...validBootstrapHeaders(), location: "/?other=value" }, pattern: /cookie-control/ },
     { status: 302, headers: { location: "/", "set-cookie": "_vercel_jwt=short; Path=/; Secure; HttpOnly; SameSite=Lax" }, pattern: /malformed/ },
     { status: 302, headers: { location: ["/", "/dashboard"], "set-cookie": validBootstrapHeaders()["set-cookie"] }, pattern: /unambiguous/ },
   ]) assert.throws(() => validateProtectedBootstrapResponse({ requestUrl, ...fixture }), fixture.pattern);
