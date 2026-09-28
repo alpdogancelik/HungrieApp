@@ -33,7 +33,7 @@ test("fresh continuation consumes the immutable passing Firebase inspection with
 
 test("fresh continuation consumes the completed Vercel project/protection inspection", () => {
   const verified = verifyCompletedVercelInspection(path.resolve(import.meta.dirname, ".."));
-  assert.deepEqual(verified, { passed: true, inspectionId: "restaurant-vercel-project-protection-inspection-20260928a", targetNullReviewed: false, evidenceManifestSha256: "850a3ca589c061cc9127902e2eb42bc980e1f4d56406a3c3216e1edc54bab838" });
+  assert.deepEqual(verified, { passed: true, inspectionId: "restaurant-vercel-project-protection-inspection-20260928a", targetNullReviewed: true, evidenceManifestSha256: "850a3ca589c061cc9127902e2eb42bc980e1f4d56406a3c3216e1edc54bab838" });
   assert.match(buildAuthorizationText(bindings), /without repeating either inspection/);
 });
 
@@ -50,7 +50,7 @@ test("altered completed Vercel inspection evidence fails closed", t => {
   for (const relative of [`${authorityRoot}/${CONTINUATION.vercelInspection.id}.json`, `${authorityRoot}/${CONTINUATION.vercelInspection.id}-source-manifest.tsv`, `${evidenceRoot}/evidence-manifest.tsv`, `${evidenceRoot}/inspection.json`, `${evidenceRoot}/terminal-result.json`]) {
     fs.mkdirSync(path.dirname(path.join(fixtureRoot, relative)), { recursive: true }); fs.copyFileSync(path.join(sourceRoot, relative), path.join(fixtureRoot, relative));
   }
-  assert.equal(verifyCompletedVercelInspection(fixtureRoot).targetNullReviewed, false);
+  assert.equal(verifyCompletedVercelInspection(fixtureRoot).targetNullReviewed, true);
   fs.appendFileSync(path.join(fixtureRoot, evidenceRoot, "inspection.json"), " ");
   assert.throws(() => verifyCompletedVercelInspection(fixtureRoot), error => error.code === "EVIDENCE_INTEGRITY");
 });
