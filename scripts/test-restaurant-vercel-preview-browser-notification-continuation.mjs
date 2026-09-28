@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { BASELINE_FIREBASE_AUTHORIZED_DOMAINS, CONTINUATION, EXPECTED_FIREBASE_AUTHORIZED_DOMAINS, FIREBASE_AUTH_CONFIG_SCOPE, FIREBASE_AUTH_CONFIG_URL, FIREBASE_PROJECT_IDENTITY, assertUniqueBypassSecret, buildAuthorizationText, buildBypassApiRequest, buildFirebaseAuthorizedDomainInspectionRequest, buildProtectedBrowserBootstrap, buildProtectedRedirectRequest, classifySafetyError, createFirebaseAuthorizedDomainTransport, executeControlledContinuation, executeReservedQualification, finalizeQualificationEvidence, generateBypassSecret, inspectFirebaseAuthorizedDomains, persistReservedEvidence, reserveQualificationEvidence, runFirebaseAuthorizedDomainPreflight, runVercelQualificationPreflight, sanitizeContinuationError, sanitizeProtectedBootstrapEvidence, sha256, validateApproval, validateBypassSecret, validateFirebaseAuthorizedDomainResponse, validateFirebaseConfigResourceName, validateProtectedBootstrapResponse, validateProtectedBrowserRequest, validateTrustedFirebaseProjectIdentity, validateVercelQualificationPreflight, verifyBypassApiResponse, verifyBypassInventoryTransition, verifyCompletedFirebaseInspection, verifyCompletedVercelInspection, verifyEvidenceReservation } from "./restaurant-vercel-preview-browser-notification-continuation.mjs";
+import { BASELINE_FIREBASE_AUTHORIZED_DOMAINS, CONTINUATION, EXPECTED_FIREBASE_AUTHORIZED_DOMAINS, FIREBASE_AUTH_CONFIG_SCOPE, FIREBASE_AUTH_CONFIG_URL, FIREBASE_PROJECT_IDENTITY, buildAuthorizationText, buildBypassApiRequest, buildFirebaseAuthorizedDomainInspectionRequest, buildPostRevokeProjectVerificationRequest, buildProtectedBrowserBootstrap, buildProtectedRedirectRequest, classifySafetyError, createFirebaseAuthorizedDomainTransport, executeControlledContinuation, executeReservedQualification, finalizeQualificationEvidence, generateBypassSecret, inspectFirebaseAuthorizedDomains, persistReservedEvidence, reserveQualificationEvidence, runFirebaseAuthorizedDomainPreflight, runVercelQualificationPreflight, sanitizeContinuationError, sanitizeProtectedBootstrapEvidence, sha256, validateApproval, validateBypassSecret, validateFirebaseAuthorizedDomainResponse, validateFirebaseConfigResourceName, validateProtectedBootstrapResponse, validateProtectedBrowserRequest, validateTrustedFirebaseProjectIdentity, validateVercelQualificationPreflight, verifyBypassApiResponse, verifyBypassInventoryTransition, verifyCompletedFirebaseInspection, verifyCompletedVercelInspection, verifyEvidenceReservation, verifyPostRevokeProjectResponse } from "./restaurant-vercel-preview-browser-notification-continuation.mjs";
 
 const bindings = { sourceCommit: "a".repeat(40), sourceManifestSha256: "b".repeat(64), operatorSha256: "c".repeat(64), qualifierSha256: "d".repeat(64) };
 const approval = (overrides = {}) => {
@@ -21,7 +21,7 @@ test("changed text, deployment, origin, limits, or evidence path fails", () => {
   ]) assert.throws(() => validateApproval(approval(changed), { now: Date.parse("2026-09-28T01:00:00Z") }));
 });
 test("consumed or malformed authority cannot reach evidence reservation", () => {
-  for (const qualificationId of ["restaurant-vercel-browser-notification-qualification-20260928d", "restaurant-vercel-browser-notification-qualification-20260928e", "restaurant-vercel-browser-notification-qualification-20260928f"]) assert.throws(() => validateApproval(approval({ qualificationId }), { now: Date.parse("2026-09-28T01:00:00Z") }), /Exact continuation approval/);
+  for (const qualificationId of ["restaurant-vercel-browser-notification-qualification-20260928d", "restaurant-vercel-browser-notification-qualification-20260928e", "restaurant-vercel-browser-notification-qualification-20260928f", "restaurant-vercel-browser-notification-qualification-20260928g"]) assert.throws(() => validateApproval(approval({ qualificationId }), { now: Date.parse("2026-09-28T01:00:00Z") }), /Exact continuation approval/);
   assert.throws(() => validateApproval({ ...approval(), unexpected: true }, { now: Date.parse("2026-09-28T01:00:00Z") }), /fields differ/);
 });
 
@@ -35,6 +35,12 @@ test("fresh continuation consumes the completed Vercel inspection proving the re
   const verified = verifyCompletedVercelInspection(path.resolve(import.meta.dirname, ".."));
   assert.deepEqual(verified, { passed: true, inspectionId: "restaurant-vercel-project-protection-inspection-20260928a", targetNullReviewed: true, evidenceManifestSha256: "850a3ca589c061cc9127902e2eb42bc980e1f4d56406a3c3216e1edc54bab838" });
   assert.match(buildAuthorizationText(bindings), /without repeating either inspection/);
+});
+
+test("authorization explicitly prohibits the obsolete preliminary bypass inventory GET", () => {
+  const text = buildAuthorizationText(bindings);
+  assert.match(text, /no preliminary Protection Bypass inventory GET is authorized/);
+  assert.match(text, /exactly one documented project GET to independently verify revocation/);
 });
 
 test("altered completed Vercel inspection evidence fails closed", t => {
@@ -185,13 +191,11 @@ test("bypass generation is cryptographically sourced as exactly 32 lowercase hex
   assert.equal(generated, supplied.toString("hex")); assert.match(generated, /^[a-f0-9]{32}$/);
 });
 
-test("generated bypass secrets must be unique against the verified remote inventory", () => {
+test("generated bypass secrets are independently random without an undocumented preliminary inventory GET", () => {
   const first = generateBypassSecret(() => Buffer.alloc(16, 1));
   const second = generateBypassSecret(() => Buffer.alloc(16, 2));
   assert.notEqual(first, second);
-  assert.equal(assertUniqueBypassSecret(second, { [first]: { note: "existing" } }), second);
-  assert.throws(() => assertUniqueBypassSecret(first, { [first]: { note: "existing" } }), /not unique/);
-  assert.throws(() => assertUniqueBypassSecret(second, []), /inventory shape/);
+  assert.equal(CONTINUATION.limits.preliminaryBypassInventoryGets, 0);
 });
 
 test("the consumed 64-character secret is rejected before request construction", () => {
@@ -203,10 +207,23 @@ test("the consumed 64-character secret is rejected before request construction",
 test("creation and revocation requests use the exact project, PATCH method, scope, and schema", () => {
   const secret = "ab".repeat(16), create = buildBypassApiRequest({ action: "generate", secret }), revoke = buildBypassApiRequest({ action: "revoke", secret });
   assert.deepEqual(create, { endpoint: `/v1/projects/${CONTINUATION.projectId}/protection-bypass`, method: "PATCH", scope: CONTINUATION.scope, body: { generate: { secret, note: CONTINUATION.qualificationId } } });
-  assert.deepEqual(revoke.body, { revoke: { secret, regenerate: false } });
+  assert.deepEqual(revoke, { endpoint: `/v1/projects/${CONTINUATION.projectId}/protection-bypass`, method: "PATCH", scope: CONTINUATION.scope, body: { revoke: { secret, regenerate: false } } });
+  assert.deepEqual(buildPostRevokeProjectVerificationRequest(), { endpoint: `/v9/projects/${CONTINUATION.projectId}`, method: "GET", scope: CONTINUATION.scope, body: null });
   assert.deepEqual(verifyBypassApiResponse({ protectionBypass: { baseline: {}, [secret]: { note: CONTINUATION.qualificationId } } }, { secret, expectedPresent: true }), { passed: true, present: true, inventoryCount: 2, secretSha256: sha256(Buffer.from(secret)), secretPersisted: false });
   assert.equal(verifyBypassApiResponse({ protectionBypass: { baseline: {} } }, { secret, expectedPresent: false }).present, false);
   assert.throws(() => verifyBypassApiResponse({ protectionBypass: [] }, { secret, expectedPresent: true }), /shape/);
+  assert.throws(() => verifyBypassApiResponse({ protectionBypass: { [secret]: { note: "another-qualification" } } }, { secret, expectedPresent: true }), /ownership/);
+});
+
+test("post-revocation project read verifies identity, protection, absence, and unrelated records", () => {
+  const secret = "ab".repeat(16), unrelated = "cd".repeat(16);
+  const createdInventory = { [unrelated]: { note: "unrelated" }, [secret]: { note: CONTINUATION.qualificationId } };
+  const revokedInventory = { [unrelated]: { note: "unrelated" } };
+  const payload = vercelProject({ protectionBypass: revokedInventory });
+  assert.deepEqual(verifyPostRevokeProjectResponse(payload, { secret, createdInventory, revokedInventory }), { passed: true, projectId: CONTINUATION.projectId, accountId: CONTINUATION.teamId, protectionType: "all_except_custom_domains", previewToolbar: false, preservedRecords: 1, removedSecretSha256: sha256(Buffer.from(secret)), secretPersisted: false, rawResponsePersisted: false });
+  assert.throws(() => verifyPostRevokeProjectResponse(vercelProject({ accountId: "wrong", protectionBypass: revokedInventory }), { secret, createdInventory, revokedInventory }), /identity mismatch/);
+  assert.throws(() => verifyPostRevokeProjectResponse(vercelProject({ protectionBypass: {} }), { secret, createdInventory, revokedInventory }), /does not match/);
+  assert.throws(() => verifyPostRevokeProjectResponse(vercelProject({ protectionBypass: [] }), { secret, createdInventory, revokedInventory }), /malformed/);
 });
 
 const validBootstrapHeaders = () => ({ location: "/", "set-cookie": "_vercel_jwt=header.payload.signature_value_1234567890; Path=/; Secure; HttpOnly; SameSite=Lax" });
@@ -328,24 +345,30 @@ test("complete workflow passes and always cleans token, browser, and bypass", as
 test("complete no-network lifecycle uses the reviewed API and browser contracts", async () => {
   const secret = generateBypassSecret(() => Buffer.from("0123456789abcdeffedcba9876543210", "hex"));
   const inventory = { "00000000000000000000000000000000": { note: "unrelated" } };
-  assertUniqueBypassSecret(secret, inventory);
+  const createdInventory = { ...inventory, [secret]: { note: CONTINUATION.qualificationId } };
   const requests = [], bootstrapResponse = validateProtectedBootstrapResponse({ requestUrl: `${CONTINUATION.origin}/`, status: 302, headers: validBootstrapHeaders() });
   const op = operations({
     createBypass: async () => {
       const request = buildBypassApiRequest({ action: "generate", secret }); requests.push(request);
-      verifyBypassApiResponse({ protectionBypass: { ...inventory, [secret]: { note: CONTINUATION.qualificationId } } }, { secret, expectedPresent: true });
+      verifyBypassApiResponse({ protectionBypass: createdInventory }, { secret, expectedPresent: true });
     },
     bootstrapProtectedBrowser: async () => {
       const request = buildProtectedBrowserBootstrap(secret); requests.push(request, buildProtectedRedirectRequest(bootstrapResponse));
       assert.equal(new URL(request.url).origin, CONTINUATION.origin);
     },
     revokeBypass: async () => requests.push(buildBypassApiRequest({ action: "revoke", secret })),
-    verifyBypassRevoked: async () => { verifyBypassApiResponse({ protectionBypass: inventory }, { secret, expectedPresent: false }); verifyBypassInventoryTransition({ before: { ...inventory, [secret]: { note: CONTINUATION.qualificationId } }, after: inventory, secret }); },
+    verifyBypassRevoked: async () => {
+      const request = buildPostRevokeProjectVerificationRequest(); requests.push(request);
+      verifyBypassApiResponse({ protectionBypass: inventory }, { secret, expectedPresent: false });
+      verifyPostRevokeProjectResponse(vercelProject({ protectionBypass: inventory }), { secret, createdInventory, revokedInventory: inventory });
+    },
   });
   const result = await executeControlledContinuation({ operations: op });
   assert.equal(result.classification, "PASS");
-  assert.equal(requests.length, 4);
+  assert.equal(requests.length, 5);
   assert.equal(requests.filter(request => request.method === "PATCH").length, 2);
+  assert.equal(requests.filter(request => request.method === "GET" && request.endpoint?.includes("/protection-bypass")).length, 0);
+  assert.equal(requests.filter(request => request.endpoint === `/v9/projects/${CONTINUATION.projectId}`).length, 1);
   assert.equal(requests.filter(request => request.url === `${CONTINUATION.origin}/`).length, 2);
   assert.equal(JSON.stringify(result).includes(secret), false);
 });

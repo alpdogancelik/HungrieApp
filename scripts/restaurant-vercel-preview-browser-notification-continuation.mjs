@@ -7,19 +7,21 @@ import { spawnSync } from "node:child_process";
 export const CONTINUATION = Object.freeze({
   schemaVersion: 1,
   kind: "restaurant_vercel_preview_browser_notification_continuation",
-  qualificationId: "restaurant-vercel-browser-notification-qualification-20260928g",
+  qualificationId: "restaurant-vercel-browser-notification-qualification-20260928h",
   consumedQualifications: Object.freeze([
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928b", manifest: "evidence-manifest.tsv", manifestSha256: "8b478d63808742057429821a5704db22d2e6cf4343ce82fe18189db96ba3c592", authoritySha256: "2d4af7ec3c33bbb6fb3836bf3754857be9109c20fe7cb43b5bbfd6aef3f765e6", sourceManifestSha256: "33f95fc58475b5ea3e91c0cf8b6aef045fcde9f043af82abcca05eb7d5811b85" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928c", manifest: "evidence-manifest-final.tsv", manifestSha256: "6dc2701f56fddaf341519b4a6ad78ab88a6d037d8d0993ece3e91ad691ce399f", authoritySha256: "219381cafd5c1ec678a0a3936fc48ebecc7e961fac4a597d8b391eb229a3428e", sourceManifestSha256: "18ddf144ad7e237a3f286557cbd02c54b7be1b126a36d24c44006c1771a16fda" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928d", manifest: "evidence-manifest-final.tsv", manifestSha256: "c3527e2fb8b5b8f3c3ddc2c73ab99102f25de34fda018e75df520192b5b55243", authoritySha256: "4685ce3d4796fdf78d1ae132184b351c64876fe5967bee1f3252cd3fbc016be5", sourceManifestSha256: "35f0170b113fa91c693c070d1b0a4602c0963b1903315612526417e5cecc31dc" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928e", manifest: "evidence-manifest.tsv", manifestSha256: "018b0f2675f014efb4a4ebe96b0371658af9580f347c1d89c016acd2cfbdb3b1", authoritySha256: "74e019de4ec5977e82a78a781e4e84faacc48b13e30d090bfc4c70da406bfa2b", sourceManifestSha256: "68d73ae369d2d5e491b42f5f54d4f85ea2cd897b6dead2eb615476a992d38d4a" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928f", manifest: "evidence-manifest.tsv", manifestSha256: "91a91d1d44b431dfa6906b101c262cb45b3e18962462af86c10ff1b3f3ec2de7", authoritySha256: "bdd9415ee191f025b7e0568340b77af9c7b94a3715131db4aecc51acc744ad10", sourceManifestSha256: "794e388e5c2f81927f29df7ea0e143fb2d2405944bbd5872c9bd085e8a7014b8" }),
+    Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928g", manifest: "evidence-manifest.tsv", manifestSha256: "5f6bdfcaec098a679169010db5853ccc1e28a3f218aa697870b94f9486ea49ee", authoritySha256: "ec8c2745c64b55836273f4d5c9268ddd92b360514e2c09a337f20093338d3e29", sourceManifestSha256: "7e2639d62c5370ace2f3d33264e08c73b68952e43a0aae80ba9df9de7f345359" }),
   ]),
   deploymentId: "dpl_8CM3s16BZRwK9Ls1eMMJCVKmWyYt",
   origin: "https://hungrie-restaurant-web-staging-eval-20260927a-h9m8zpwol.vercel.app",
   projectId: "prj_PrVORzWTAxmAHL0SqNcA9WXJppS4",
   projectName: "hungrie-restaurant-web-staging-eval-20260927a",
   scope: "nurlan-ildirimli-s-projects",
+  teamId: "team_799flI3SHCD8C2AXbbQ6NlBX",
   firebaseProjectId: "hungrieapp-a2288",
   firebaseProjectNumber: "405094874808",
   firebaseAppId: "1:405094874808:web:34b9ea3e4b1d3b70a6fe4d",
@@ -47,9 +49,9 @@ export const CONTINUATION = Object.freeze({
     inspectionSha256: "2c760c7dc043372a6c57a23084d3437ed74bfa8e0102b941146caa5be853e79e",
     terminalSha256: "d6d3bcc66e6264f2a050bbb07c849bc399c21d75739f85fdb6644a123340210c",
   }),
-  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260928g",
+  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260928h",
   authorityDirectory: "secure/restaurant-vercel-browser-notification-qualification-authority",
-  limits: Object.freeze({ bypassCreates: 1, bypassRevokes: 1, accountContexts: 4, concurrentAccountContexts: 1, pushRegistrations: 1, foregroundFcmSends: 1, backgroundFcmSends: 1, pushUnregistrations: 1, retries: 0, authorityValidityMs: 2 * 60 * 60 * 1000 }),
+  limits: Object.freeze({ bypassCreates: 1, bypassRevokes: 1, postRevokeProjectGets: 1, preliminaryBypassInventoryGets: 0, accountContexts: 4, concurrentAccountContexts: 1, pushRegistrations: 1, foregroundFcmSends: 1, backgroundFcmSends: 1, pushUnregistrations: 1, retries: 0, authorityValidityMs: 2 * 60 * 60 * 1000 }),
 });
 
 export const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
@@ -206,19 +208,16 @@ export function validateBypassSecret(secret) {
   return secret;
 }
 
-export function assertUniqueBypassSecret(secret, protectionBypass) {
-  validateBypassSecret(secret);
-  if (!protectionBypass || typeof protectionBypass !== "object" || Array.isArray(protectionBypass)) throw new Error("Vercel bypass inventory shape is invalid.");
-  if (Object.prototype.hasOwnProperty.call(protectionBypass, secret)) throw new Error("Generated Vercel automation bypass secret is not unique.");
-  return secret;
-}
-
 export function buildBypassApiRequest({ action, secret }) {
   validateBypassSecret(secret);
   if (!['generate', 'revoke'].includes(action)) throw new Error("Unsupported Vercel bypass action.");
   const endpoint = `/v1/projects/${CONTINUATION.projectId}/protection-bypass`;
   const body = action === "generate" ? { generate: { secret, note: CONTINUATION.qualificationId } } : { revoke: { secret, regenerate: false } };
   return { endpoint, method: "PATCH", scope: CONTINUATION.scope, body };
+}
+
+export function buildPostRevokeProjectVerificationRequest() {
+  return { endpoint: `/v9/projects/${CONTINUATION.projectId}`, method: "GET", scope: CONTINUATION.scope, body: null };
 }
 
 function responseHeaderValues(headers, wanted) {
@@ -278,7 +277,25 @@ export function verifyBypassApiResponse(payload, { secret, expectedPresent }) {
   if (!payload || typeof payload !== "object" || !payload.protectionBypass || typeof payload.protectionBypass !== "object" || Array.isArray(payload.protectionBypass)) throw new Error("Vercel bypass response shape is invalid.");
   const present = Object.prototype.hasOwnProperty.call(payload.protectionBypass, secret);
   if (present !== expectedPresent) throw new Error(expectedPresent ? "Created Vercel bypass is absent from the response inventory." : "Revoked Vercel bypass remains in the response inventory.");
+  if (present) {
+    const owned = payload.protectionBypass[secret];
+    if (!owned || typeof owned !== "object" || Array.isArray(owned) || owned.note !== CONTINUATION.qualificationId) throw new Error("Created Vercel bypass ownership metadata is invalid.");
+  }
   return { passed: true, present, inventoryCount: Object.keys(payload.protectionBypass).length, secretSha256: sha256(Buffer.from(secret)), secretPersisted: false };
+}
+
+export function verifyPostRevokeProjectResponse(payload, { secret, createdInventory, revokedInventory }) {
+  validateBypassSecret(secret);
+  for (const [label, inventory] of [["created", createdInventory], ["revoked", revokedInventory]]) if (!inventory || typeof inventory !== "object" || Array.isArray(inventory)) throw new Error(`Vercel ${label} bypass inventory shape is invalid.`);
+  const project = unwrapProviderObject(payload, "project");
+  if (!project) throw new Error("Post-revocation Vercel project response is malformed.");
+  if (project.id !== CONTINUATION.projectId || project.name !== CONTINUATION.projectName || project.accountId !== CONTINUATION.teamId) throw Object.assign(new Error("Post-revocation Vercel project identity mismatch."), { code: "IDENTITY" });
+  if ((project.ssoProtection?.deploymentType ?? project.protectionType) !== "all_except_custom_domains" || project.enablePreviewFeedback !== false) throw Object.assign(new Error("Post-revocation Vercel protection state mismatch."), { code: "IDENTITY" });
+  const inventory = project.protectionBypass;
+  if (!inventory || typeof inventory !== "object" || Array.isArray(inventory)) throw new Error("Post-revocation Vercel project bypass inventory is malformed.");
+  verifyBypassInventoryTransition({ before: createdInventory, after: revokedInventory, secret });
+  if (canonical(revokedInventory) !== canonical(inventory)) throw new Error("Post-revocation project read does not match the revocation response.");
+  return { passed: true, projectId: project.id, accountId: project.accountId, protectionType: "all_except_custom_domains", previewToolbar: false, preservedRecords: Object.keys(inventory).length, removedSecretSha256: sha256(Buffer.from(secret)), secretPersisted: false, rawResponsePersisted: false };
 }
 
 export function buildProtectedBrowserBootstrap(secret) {
@@ -311,7 +328,7 @@ export function buildSourceManifest(repoRoot, commit, spawn = spawnSync) {
 }
 
 export function buildAuthorizationText({ sourceCommit, sourceManifestSha256, operatorSha256, qualifierSha256 }) {
-  return `I authorize one controlled continuation of browser and notification qualification for qualification ${CONTINUATION.qualificationId}, bound to checkpoint ${sourceCommit}, complete source-manifest SHA-256 ${sourceManifestSha256}, continuation operator SHA-256 ${operatorSha256}, browser qualifier SHA-256 ${qualifierSha256}, immutable Vercel Preview deployment ${CONTINUATION.deploymentId} at ${CONTINUATION.origin}, project ${CONTINUATION.projectId} in scope ${CONTINUATION.scope}, accepted artifact manifest ${CONTINUATION.acceptedArtifactManifestSha256}, canonical archive ${CONTINUATION.canonicalArchiveSha256}, build-input contract ${CONTINUATION.buildInputContractSha256}, completed read-only Firebase authorized-domain inspection ${CONTINUATION.firebaseInspection.id} with evidence-manifest SHA-256 ${CONTINUATION.firebaseInspection.evidenceManifestSha256}, and completed read-only Vercel project/protection inspection ${CONTINUATION.vercelInspection.id} with evidence-manifest SHA-256 ${CONTINUATION.vercelInspection.evidenceManifestSha256}. I authorize creation and revocation of exactly one short-lived Vercel Protection Bypass for Automation secret while Vercel Authentication remains enabled; use of x-vercel-skip-toolbar: 1 only on Document requests whose origin exactly equals the immutable Preview origin; reuse of the independently verified 73-resource parity evidence, the separate ordinary-root mismatch and automation-header exact-root evidence, and the immutable passing Firebase and Vercel inspection evidence without repeating either inspection; sequential isolated Pending, Suspended, Owner, and Manager browser qualification using the existing approved non-production accounts; and, only after all mandatory identity, parity, browser, runtime, service-worker, and four-account gates pass, exactly one Owner FCM token registration through restaurant_register_web_push_v1, one direct token-targeted foreground test message, one separate direct token-targeted background test message, real notification-click navigation verification where the test platform supports it, and exactly one scoped cleanup through restaurant_unregister_web_push_v1, Firebase deleteToken, ephemeral browser-profile removal, and bypass-secret revocation. I authorize no rebuild, deployment, alias or domain change, Vercel or Firebase configuration change or inspection, public exposure, account or password change, Firebase identity change, backend schema change, Expo action, Production access, Earnings activation, order/review/payment mutation, notification-infrastructure change, retry, or unrelated mutation. Protection credentials and account credentials must never be persisted in evidence or forwarded to Firebase, Supabase, Google, or any origin other than the exact Vercel Preview origin. Ordinary qualification failures must be recorded while remaining independent account checks continue; any identity, authorization, credential-exposure, unexpected-origin, evidence-integrity, or cleanup safety failure must stop further qualification without retry. Safe authorized cleanup remains mandatory after every terminal outcome. This authorization does not constitute Phase 6 acceptance.`;
+  return `I authorize one controlled continuation of browser and notification qualification for qualification ${CONTINUATION.qualificationId}, bound to checkpoint ${sourceCommit}, complete source-manifest SHA-256 ${sourceManifestSha256}, continuation operator SHA-256 ${operatorSha256}, browser qualifier SHA-256 ${qualifierSha256}, immutable Vercel Preview deployment ${CONTINUATION.deploymentId} at ${CONTINUATION.origin}, project ${CONTINUATION.projectId} in scope ${CONTINUATION.scope}, accepted artifact manifest ${CONTINUATION.acceptedArtifactManifestSha256}, canonical archive ${CONTINUATION.canonicalArchiveSha256}, build-input contract ${CONTINUATION.buildInputContractSha256}, completed read-only Firebase authorized-domain inspection ${CONTINUATION.firebaseInspection.id} with evidence-manifest SHA-256 ${CONTINUATION.firebaseInspection.evidenceManifestSha256}, and completed read-only Vercel project/protection inspection ${CONTINUATION.vercelInspection.id} with evidence-manifest SHA-256 ${CONTINUATION.vercelInspection.evidenceManifestSha256}. I authorize exactly one documented PATCH generation and exactly one documented PATCH revocation of one short-lived Vercel Protection Bypass for Automation secret for the exact project and scope while Vercel Authentication remains enabled, followed by exactly one documented project GET to independently verify revocation; no preliminary Protection Bypass inventory GET is authorized. I authorize use of x-vercel-skip-toolbar: 1 only on Document requests whose origin exactly equals the immutable Preview origin; reuse of the independently verified 73-resource parity evidence, the separate ordinary-root mismatch and automation-header exact-root evidence, and the immutable passing Firebase and Vercel inspection evidence without repeating either inspection; sequential isolated Pending, Suspended, Owner, and Manager browser qualification using the existing approved non-production accounts; and, only after all mandatory identity, parity, browser, runtime, service-worker, and four-account gates pass, exactly one Owner FCM token registration through restaurant_register_web_push_v1, one direct token-targeted foreground test message, one separate direct token-targeted background test message, real notification-click navigation verification where the test platform supports it, and exactly one scoped cleanup through restaurant_unregister_web_push_v1, Firebase deleteToken, ephemeral browser-profile removal, bypass-secret revocation, and the independent post-revocation project verification. I authorize no rebuild, deployment, alias or domain change, Vercel or Firebase configuration change or inspection beyond the single post-revocation project GET, public exposure, account or password change, Firebase identity change, backend schema change, Expo action, Production access, Earnings activation, order/review/payment mutation, notification-infrastructure change, retry, or unrelated mutation. Protection credentials and account credentials must never be persisted in evidence or forwarded to Firebase, Supabase, Google, or any origin other than the exact Vercel Preview origin. Ordinary qualification failures must be recorded while remaining independent account checks continue; any identity, authorization, credential-exposure, unexpected-origin, evidence-integrity, or cleanup safety failure must stop further qualification without retry. Safe authorized cleanup remains mandatory after every terminal outcome. This authorization does not constitute Phase 6 acceptance.`;
 }
 
 function exactKeys(value, keys, label) {
