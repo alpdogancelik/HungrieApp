@@ -284,7 +284,7 @@ function operations(overrides = {}) {
   const calls = [];
   const op = {
     calls,
-    verifyPrerequisites: async () => calls.push("verify"), createBypass: async () => calls.push("create-bypass"), bootstrapProtectedBrowser: async () => calls.push("bootstrap"),
+    verifyPrerequisites: async () => calls.push("verify"), createBypass: async () => calls.push("create-bypass"), awaitBypassPropagation: async () => calls.push("await-bypass-propagation"), bootstrapProtectedBrowser: async () => calls.push("bootstrap"),
     verifyParityEvidence: async () => calls.push("parity"),
     qualifyAccounts: async () => (calls.push("accounts"), { pending: "PASS", suspended: "PASS", owner: "PASS", manager: "PASS" }),
     verifyServiceWorker: async () => (calls.push("worker"), true), openOwnerNotificationContext: async () => (calls.push("open"), { id: 1 }),
@@ -347,7 +347,7 @@ test("reserved evidence finalization is integrity-bound and idempotent", t => {
 test("complete workflow passes and always cleans token, browser, and bypass", async () => {
   const op = operations(), result = await executeControlledContinuation({ operations: op });
   assert.equal(result.classification, "PASS");
-  assert.deepEqual(op.calls, ["verify", "create-bypass", "bootstrap", "parity", "accounts", "worker", "open", "register", "foreground", "background", "click", "unregister", "close", "revoke", "verify-revoked"]);
+  assert.deepEqual(op.calls, ["verify", "create-bypass", "await-bypass-propagation", "bootstrap", "parity", "accounts", "worker", "open", "register", "foreground", "background", "click", "unregister", "close", "revoke", "verify-revoked"]);
 });
 
 test("complete no-network lifecycle uses the reviewed API and browser contracts", async () => {
@@ -384,7 +384,7 @@ test("reserved no-network lifecycle covers bootstrap, four accounts, notificatio
   const fixture = reservationFixture(t), op = operations();
   const completed = await executeReservedQualification({ repoRoot: fixture.repoRoot, operations: op, now: Date.parse("2026-09-28T01:00:00Z"), randomBytes: () => Buffer.alloc(32, 5), validatePrepared: fixture.validatePrepared });
   assert.equal(completed.result.classification, "PASS");
-  assert.deepEqual(op.calls, ["verify", "create-bypass", "bootstrap", "parity", "accounts", "worker", "open", "register", "foreground", "background", "click", "unregister", "close", "revoke", "verify-revoked"]);
+  assert.deepEqual(op.calls, ["verify", "create-bypass", "await-bypass-propagation", "bootstrap", "parity", "accounts", "worker", "open", "register", "foreground", "background", "click", "unregister", "close", "revoke", "verify-revoked"]);
   assert.equal(fs.existsSync(path.join(fixture.evidenceDirectory, "evidence-reservation.json")), true);
   assert.equal(fs.existsSync(path.join(fixture.evidenceDirectory, "terminal-result.json")), true);
   assert.equal(fs.existsSync(path.join(fixture.evidenceDirectory, "evidence-manifest.tsv")), true);

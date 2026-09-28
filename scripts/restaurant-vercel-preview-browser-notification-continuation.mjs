@@ -67,6 +67,7 @@ export const CONTINUATION = Object.freeze({
 export const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 export const canonical = value => `${JSON.stringify(value, null, 2)}\n`;
 export const BYPASS_SECRET_PATTERN = /^[a-f0-9]{32}$/;
+export const BYPASS_PROPAGATION_DELAY_MS = 5_000;
 export const FIREBASE_AUTH_CONFIG_SCOPE = "https://www.googleapis.com/auth/identitytoolkit";
 export const FIREBASE_AUTH_CONFIG_URL = `https://identitytoolkit.googleapis.com/admin/v2/projects/${CONTINUATION.firebaseProjectId}/config`;
 export const BASELINE_FIREBASE_AUTHORIZED_DOMAINS = Object.freeze([
@@ -607,6 +608,7 @@ export async function executeControlledContinuation({ operations, persist = asyn
   try {
     await operations.verifyPrerequisites(); results.prerequisites = "PASS"; await persist(results);
     bypassAttempted = true; await operations.createBypass(); bypassCreated = true; await persist(results);
+    await operations.awaitBypassPropagation(); results.bypassPropagation = "PASS"; await persist(results);
     await operations.bootstrapProtectedBrowser(); results.bootstrap = "PASS"; await persist(results);
     await operations.verifyParityEvidence();
     const matrix = await operations.qualifyAccounts(); results.accounts = matrix; await persist(results);
