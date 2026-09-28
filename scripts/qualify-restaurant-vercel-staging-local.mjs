@@ -8,6 +8,7 @@ import { spawnSync } from "node:child_process";
 import { DIAGNOSTIC_OPERATOR, verifyLocalExportOutput } from "./deploy-restaurant-alias-10-minute-diagnostic-staging.mjs";
 import { validateStagingPublicBuildInputs } from "./restaurant-alias-staging-public-build-inputs.mjs";
 import { validateVercelProjectConfiguration } from "./deploy-restaurant-vercel-staging.mjs";
+import { VERCEL_STAGING_ARTIFACT } from "./restaurant-vercel-staging-artifact-contract.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const appRoot = path.join(root, "apps/restaurant");
@@ -113,8 +114,8 @@ try {
   fs.rmSync(dist, { recursive: true, force: true });
   if (!run("restaurant-static-export", "npm", ["run", "export:web", "--", "--clear"], { cwd: appRoot, env: environment })) throw new Error("Restaurant export failed.");
   const archivePath = path.join(temporary, "restaurant-static-export.tar");
-  const verified = verifyLocalExportOutput({ distDirectory: dist, archivePath });
-  if (verified.artifactManifestSha256 !== DIAGNOSTIC_OPERATOR.artifactManifestSha256 || verified.archive.sha256 !== DIAGNOSTIC_OPERATOR.archiveSha256 || verified.files.length !== 74) throw new Error("Fresh export differs from the accepted 74-file artifact.");
+  const verified = verifyLocalExportOutput({ distDirectory: dist, archivePath, expected: VERCEL_STAGING_ARTIFACT });
+  if (verified.artifactManifestSha256 !== VERCEL_STAGING_ARTIFACT.artifactManifestSha256 || verified.archive.sha256 !== VERCEL_STAGING_ARTIFACT.archiveSha256 || verified.files.length !== VERCEL_STAGING_ARTIFACT.files) throw new Error("Fresh export differs from the accepted Vercel 74-file artifact.");
   record("accepted-artifact-parity", "PASS", { files: verified.files.length, artifactManifestSha256: verified.artifactManifestSha256, archiveSha256: verified.archive.sha256 });
   await qualifyHttp(verified.files);
   run("vercel-contract-tests", "node", ["--test", "scripts/test-restaurant-vercel-staging.mjs"]);
@@ -127,7 +128,7 @@ try {
 }
 
 const passed = results.length > 0 && results.every(row => row.status === "PASS");
-const report = { schemaVersion: 1, capturedAt: new Date().toISOString(), classification: passed ? "PASS" : "FAIL", passed, mode: "local-only Vercel-compatible static delivery; no Vercel API or deployment access", checkpoint: spawnSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).stdout.trim(), applicationTree: spawnSync("git", ["rev-parse", "HEAD:apps/restaurant"], { cwd: root, encoding: "utf8" }).stdout.trim(), acceptedArtifact: { manifestSha256: DIAGNOSTIC_OPERATOR.artifactManifestSha256, archiveSha256: DIAGNOSTIC_OPERATOR.archiveSha256, buildInputContractSha256: DIAGNOSTIC_OPERATOR.buildInputContractSha256 }, results, hostedRequests: 0, credentialsPersisted: false };
+const report = { schemaVersion: 1, capturedAt: new Date().toISOString(), classification: passed ? "PASS" : "FAIL", passed, mode: "local-only Vercel-compatible static delivery; no Vercel API or deployment access", checkpoint: spawnSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).stdout.trim(), applicationTree: spawnSync("git", ["rev-parse", "HEAD:apps/restaurant"], { cwd: root, encoding: "utf8" }).stdout.trim(), acceptedArtifact: { manifestSha256: VERCEL_STAGING_ARTIFACT.artifactManifestSha256, archiveSha256: VERCEL_STAGING_ARTIFACT.archiveSha256, buildInputContractSha256: VERCEL_STAGING_ARTIFACT.buildInputContractSha256 }, results, hostedRequests: 0, credentialsPersisted: false };
 fs.writeFileSync(outputPath, `${JSON.stringify(report, null, 2)}\n`);
 process.stdout.write(`${JSON.stringify({ passed, outputPath, reportSha256: sha256(fs.readFileSync(outputPath)) })}\n`);
 fs.rmSync(temporary, { recursive: true, force: true });

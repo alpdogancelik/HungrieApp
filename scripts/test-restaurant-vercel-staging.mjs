@@ -187,7 +187,7 @@ test("accepted artifact includes routes, critical assets, fonts, worker, and run
 test("deployment continuation is isolated, preview-only, one-shot, and exactly scope-bound", () => {
   const plan = deploymentPlan("nurlan-ildirimli-s-projects");
   assert.equal(VERCEL_STAGING_DEPLOYMENT.project, "hungrie-restaurant-web-staging-eval-20260927a");
-  assert.equal(VERCEL_STAGING_DEPLOYMENT.actionId, "restaurant-vercel-staging-evaluation-20260928h");
+  assert.equal(VERCEL_STAGING_DEPLOYMENT.actionId, "restaurant-vercel-staging-evaluation-20260928i");
   assert.equal(VERCEL_STAGING_DEPLOYMENT.environment, "preview");
   assert.equal(VERCEL_STAGING_DEPLOYMENT.expectedVariables.length, 9);
   assert.equal(plan.length, 7);
@@ -353,8 +353,8 @@ test("authenticated username, team slug, and opaque org ID are validated indepen
   assert.throws(() => validateTeamInventory({ teams: [] }, link), /missing or ambiguous/);
 });
 
-test("consumed attempt records the null-target Preview deployment that was rejected before qualification", () => {
-  const evidencePath = path.join(root, "secure/restaurant-vercel-staging-deployment/restaurant-vercel-staging-evaluation-20260928g/progress.json");
+test("latest consumed attempt records the null-target Preview deployment that was rejected before qualification", () => {
+  const evidencePath = path.join(root, "secure/restaurant-vercel-staging-deployment/restaurant-vercel-staging-evaluation-20260928h/progress.json");
   const bytes = fs.readFileSync(evidencePath);
   assert.deepEqual(validateConsumedProgress(JSON.parse(bytes), bytes), { deploymentCommands: 1, immediateTargetRepresentationRejected: "NULL", hostedQualificationStarted: false });
   const changed = Buffer.from(bytes.toString().replace('"terminal": "FAIL"', '"terminal": "PASS"'));

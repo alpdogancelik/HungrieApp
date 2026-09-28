@@ -217,13 +217,14 @@ export function createDeterministicArchive(sourceDirectory, archivePath, spawn =
   return { sha256: sha256(fs.readFileSync(archivePath)), bytes: fs.statSync(archivePath).size };
 }
 
-export function verifyLocalExportOutput({ distDirectory, archivePath, spawn = spawnSync }) {
+export function verifyLocalExportOutput({ distDirectory, archivePath, spawn = spawnSync, expected = DIAGNOSTIC_OPERATOR }) {
   const files = canonicalFiles(distDirectory);
-  if (files.length !== 74 || files.filter(file => file.path.endsWith(".html")).length !== 20 || manifestDigest(files) !== DIAGNOSTIC_OPERATOR.artifactManifestSha256) throw new Error("Export differs from the accepted artifact manifest.");
+  const expectedFiles = expected.files ?? 74, expectedHtmlFiles = expected.htmlFiles ?? 20;
+  if (files.length !== expectedFiles || files.filter(file => file.path.endsWith(".html")).length !== expectedHtmlFiles || manifestDigest(files) !== expected.artifactManifestSha256) throw new Error("Export differs from the accepted artifact manifest.");
   const bundle = files.filter(file => /\.(?:html|js|css)$/.test(file.path)).map(file => fs.readFileSync(path.join(distDirectory, file.path), "utf8")).join("\n");
   if (!bundle.includes(DIAGNOSTIC_OPERATOR.firebaseProjectId) || !bundle.includes(DIAGNOSTIC_OPERATOR.supabaseProjectRef) || /phase5Adapter|MockProvider|restaurant-ui-mock/.test(bundle)) throw new Error("Exported configuration or production boundary mismatch.");
   const archive = createDeterministicArchive(distDirectory, archivePath, spawn);
-  if (archive.sha256 !== DIAGNOSTIC_OPERATOR.archiveSha256) throw new Error("Deterministic archive differs from the accepted artifact.");
+  if (archive.sha256 !== expected.archiveSha256 || (expected.archiveBytes !== undefined && archive.bytes !== expected.archiveBytes)) throw new Error("Deterministic archive differs from the accepted artifact.");
   const deploymentControls = DEPLOYMENT_CONTROL_ARTIFACTS.map(control => {
     const file = files.find(row => row.path === control.path);
     let configuration;
