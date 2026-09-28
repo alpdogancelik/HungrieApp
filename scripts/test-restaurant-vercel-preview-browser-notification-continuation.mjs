@@ -321,7 +321,7 @@ function operations(overrides = {}) {
     calls,
     verifyPrerequisites: async () => calls.push("verify"), createBypass: async () => calls.push("create-bypass"), awaitBypassPropagation: async () => calls.push("await-bypass-propagation"), bootstrapProtectedBrowser: async () => calls.push("bootstrap"),
     verifyParityEvidence: async () => calls.push("parity"),
-    qualifyAccounts: async () => (calls.push("accounts"), { pending: "PASS", suspended: "PASS", owner: "PASS", manager: "PASS" }),
+    qualifyAccounts: async () => (calls.push("accounts"), { owner: "PASS" }),
     verifyServiceWorker: async () => (calls.push("worker"), true), openOwnerNotificationContext: async () => (calls.push("open"), { id: 1 }),
     registerToken: async () => calls.push("register"), sendForeground: async () => calls.push("foreground"), sendBackground: async () => calls.push("background"),
     verifyRealClick: async () => (calls.push("click"), true), reconcileTokenRegistration: async () => (calls.push("reconcile-token"), false), unregisterToken: async () => calls.push("unregister"), closeBrowser: async () => calls.push("close"), reconcileBypassCreation: async () => (calls.push("reconcile-create"), false), revokeBypass: async () => calls.push("revoke"), verifyBypassRevoked: async () => calls.push("verify-revoked"),
