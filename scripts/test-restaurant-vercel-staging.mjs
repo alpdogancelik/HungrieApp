@@ -87,6 +87,7 @@ test("security headers preserve the Expo hosting policy", () => {
   const global = config.headers.find(row => row.source === "/(.*)");
   const headers = Object.fromEntries(global.headers.map(row => [row.key, row.value]));
   assert.match(headers["Content-Security-Policy"], /worker-src 'self'/);
+  assert.match(headers["Content-Security-Policy"], /manifest-src 'self'/);
   assert.match(headers["Content-Security-Policy"], /fcmregistrations\.googleapis\.com/);
   assert.match(headers["Content-Security-Policy"], /firebaseinstallations\.googleapis\.com/);
   assert.equal(headers["X-Frame-Options"], "DENY");
