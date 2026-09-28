@@ -19,6 +19,7 @@ export const CONTINUATION = Object.freeze({
   projectName: "hungrie-restaurant-web-staging-eval-20260927a",
   scope: "nurlan-ildirimli-s-projects",
   firebaseProjectId: "hungrieapp-a2288",
+  firebaseProjectNumber: "405094874808",
   firebaseAppId: "1:405094874808:web:34b9ea3e4b1d3b70a6fe4d",
   firebaseAuthorizedDomain: "hungrie-restaurant-web-staging-eval-20260927a-h9m8zpwol.vercel.app",
   acceptedArtifactManifestSha256: "d3af007214f8fd5cf200dbe8e81cef33a32d98e0fb889e63596dae856ac39e89",
@@ -48,6 +49,11 @@ export const EXPECTED_FIREBASE_AUTHORIZED_DOMAINS = Object.freeze([
   ...BASELINE_FIREBASE_AUTHORIZED_DOMAINS,
   CONTINUATION.firebaseAuthorizedDomain,
 ].sort());
+export const FIREBASE_PROJECT_IDENTITY = Object.freeze({
+  projectId: CONTINUATION.firebaseProjectId,
+  projectNumber: CONTINUATION.firebaseProjectNumber,
+  firebaseAppId: CONTINUATION.firebaseAppId,
+});
 
 function firebaseInspectionFailure(kind, detail = {}) {
   return {
@@ -103,12 +109,29 @@ function sanitizedGoogleError(error) {
   return { httpStatus: Number.isInteger(status) && status >= 100 && status <= 599 ? status : null, providerCode, providerMessageBytes, providerMessageSha256, responseBytes, responseSha256 };
 }
 
-export function validateFirebaseAuthorizedDomainResponse(response) {
+export function validateTrustedFirebaseProjectIdentity(identity = FIREBASE_PROJECT_IDENTITY) {
+  if (!identity || Object.keys(identity).sort().join(",") !== "firebaseAppId,projectId,projectNumber" || identity.projectId !== CONTINUATION.firebaseProjectId || identity.projectNumber !== CONTINUATION.firebaseProjectNumber || identity.firebaseAppId !== CONTINUATION.firebaseAppId || !new RegExp(`^1:${identity.projectNumber}:web:[a-f0-9]+$`).test(identity.firebaseAppId)) return null;
+  return identity;
+}
+
+export function validateFirebaseConfigResourceName(name, identity = FIREBASE_PROJECT_IDENTITY) {
+  const trusted = validateTrustedFirebaseProjectIdentity(identity);
+  if (!trusted) return firebaseInspectionFailure("PROJECT_SELECTION", { httpStatus: 200, assertion: "trusted_project_mapping_invalid" });
+  if (typeof name !== "string" || !name) return firebaseInspectionFailure("RESPONSE_SCHEMA", { httpStatus: 200, assertion: "config_name_missing" });
+  const match = /^projects\/([^/]+)\/config$/.exec(name);
+  if (!match) return firebaseInspectionFailure("RESPONSE_SCHEMA", { httpStatus: 200, assertion: "config_name_malformed", observedNameSha256: sha256(Buffer.from(name)) });
+  const identifier = match[1];
+  if (identifier !== trusted.projectId && identifier !== trusted.projectNumber) return firebaseInspectionFailure("PROJECT_SELECTION", { httpStatus: 200, assertion: "config_project_identifier_mismatch", observedNameSha256: sha256(Buffer.from(name)) });
+  return { status: "PASS", configName: name, configProjectIdentifierType: identifier === trusted.projectNumber ? "PROJECT_NUMBER" : "PROJECT_ID" };
+}
+
+export function validateFirebaseAuthorizedDomainResponse(response, trustedIdentity = FIREBASE_PROJECT_IDENTITY) {
   if (!response || typeof response !== "object" || Array.isArray(response)) return firebaseInspectionFailure("RESPONSE_SCHEMA", { assertion: "response_object_required" });
   if (response.status !== 200) return firebaseInspectionFailure(response.status === 401 ? "AUTHENTICATION_FAILURE" : response.status === 403 ? "PERMISSION_FAILURE" : "HTTP_OR_PROVIDER_FAILURE", { httpStatus: Number.isInteger(response.status) ? response.status : null });
   const data = response.data;
   if (!data || typeof data !== "object" || Array.isArray(data)) return firebaseInspectionFailure("RESPONSE_SCHEMA", { httpStatus: 200, assertion: "config_object_required" });
-  if (data.name !== `projects/${CONTINUATION.firebaseProjectId}/config`) return firebaseInspectionFailure("PROJECT_SELECTION", { httpStatus: 200, assertion: "config_name_mismatch", observedNameSha256: typeof data.name === "string" ? sha256(Buffer.from(data.name)) : null });
+  const resourceIdentity = validateFirebaseConfigResourceName(data.name, trustedIdentity);
+  if (resourceIdentity.status !== "PASS") return resourceIdentity;
   if (!Array.isArray(data.authorizedDomains) || data.authorizedDomains.some(domain => typeof domain !== "string" || !domain || domain !== domain.toLowerCase()) || new Set(data.authorizedDomains).size !== data.authorizedDomains.length) return firebaseInspectionFailure("RESPONSE_SCHEMA", { httpStatus: 200, assertion: "authorized_domains_malformed" });
   const actual = [...data.authorizedDomains].sort();
   const actualSha256 = sha256(Buffer.from(canonical(actual)));
@@ -124,7 +147,8 @@ export function validateFirebaseAuthorizedDomainResponse(response) {
     scope: FIREBASE_AUTH_CONFIG_SCOPE,
     status: "PASS",
     httpStatus: 200,
-    configName: data.name,
+    configName: resourceIdentity.configName,
+    configProjectIdentifierType: resourceIdentity.configProjectIdentifierType,
     authorizedDomainCount: actual.length,
     authorizedDomainsSha256: actualSha256,
     requiredDomainPresent,

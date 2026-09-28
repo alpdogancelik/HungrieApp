@@ -7,11 +7,12 @@ import { BASELINE_FIREBASE_AUTHORIZED_DOMAINS, CONTINUATION, EXPECTED_FIREBASE_A
 import { INSPECTION, buildInspectionAuthorizationText, executeInspection, selectInspectionCredential, validateInspectionApproval } from "./inspect-restaurant-vercel-firebase-authorized-domain.mjs";
 
 const bindings = { sourceCommit: "a".repeat(40), sourceManifestSha256: "b".repeat(64), operatorSha256: "c".repeat(64), inspectorSha256: "d".repeat(64) };
-const approval = (overrides = {}) => { const authorizationText = buildInspectionAuthorizationText(bindings); return { schemaVersion: 1, kind: INSPECTION.kind, decision: "APPROVE_READ_ONLY_FIREBASE_AUTH_CONFIG_INSPECTION", inspectionId: INSPECTION.inspectionId, issuedAt: "2026-09-28T00:00:00.000Z", expiresAt: "2026-09-28T02:00:00.000Z", authorizationText, authorizationTextSha256: sha256(Buffer.from(authorizationText)), ...bindings, projectId: INSPECTION.projectId, requiredDomain: INSPECTION.requiredDomain, evidenceDirectory: INSPECTION.evidenceDirectory, limits: INSPECTION.limits, ...overrides }; };
+const approval = (overrides = {}) => { const authorizationText = buildInspectionAuthorizationText(bindings); return { schemaVersion: 1, kind: INSPECTION.kind, decision: "APPROVE_READ_ONLY_FIREBASE_AUTH_CONFIG_INSPECTION", inspectionId: INSPECTION.inspectionId, issuedAt: "2026-09-28T00:00:00.000Z", expiresAt: "2026-09-28T02:00:00.000Z", authorizationText, authorizationTextSha256: sha256(Buffer.from(authorizationText)), ...bindings, projectId: INSPECTION.projectId, projectNumber: INSPECTION.projectNumber, requiredDomain: INSPECTION.requiredDomain, evidenceDirectory: INSPECTION.evidenceDirectory, limits: INSPECTION.limits, ...overrides }; };
 
 test("exact inspection approval is required and expires after exactly two hours", () => {
   assert.equal(validateInspectionApproval(approval(), { now: Date.parse("2026-09-28T01:00:00Z") }).inspectionId, INSPECTION.inspectionId);
   assert.throws(() => validateInspectionApproval(approval({ limits: { ...INSPECTION.limits, getRequests: 2 } }), { now: Date.parse("2026-09-28T01:00:00Z") }));
+  assert.throws(() => validateInspectionApproval(approval({ projectNumber: "999999999999" }), { now: Date.parse("2026-09-28T01:00:00Z") }));
   assert.throws(() => validateInspectionApproval(approval(), { now: Date.parse("2026-09-28T02:00:00Z") }));
 });
 
@@ -33,12 +34,12 @@ function executionFixture() {
   return { root, evidenceDirectory, validatePrepared: () => ({ paths: { evidenceDirectory } }) };
 }
 
-const config = domains => ({ status: 200, data: { name: `projects/${CONTINUATION.firebaseProjectId}/config`, authorizedDomains: domains } });
+const config = (domains, projectIdentifier = CONTINUATION.firebaseProjectId) => ({ status: 200, data: { name: `projects/${projectIdentifier}/config`, authorizedDomains: domains } });
 
 test("execution performs exactly one GET and classifies present and absent without mutation", async () => {
-  for (const [domains, classification] of [[EXPECTED_FIREBASE_AUTHORIZED_DOMAINS, "PASS_AUTHORIZED_DOMAIN_PRESENT"], [BASELINE_FIREBASE_AUTHORIZED_DOMAINS, "PASS_AUTHORIZED_DOMAIN_ABSENT"]]) {
+  for (const [domains, classification, projectIdentifier] of [[EXPECTED_FIREBASE_AUTHORIZED_DOMAINS, "PASS_AUTHORIZED_DOMAIN_PRESENT", CONTINUATION.firebaseProjectId], [BASELINE_FIREBASE_AUTHORIZED_DOMAINS, "PASS_AUTHORIZED_DOMAIN_ABSENT", CONTINUATION.firebaseProjectNumber], [EXPECTED_FIREBASE_AUTHORIZED_DOMAINS, "PASS_AUTHORIZED_DOMAIN_PRESENT", CONTINUATION.firebaseProjectNumber]]) {
     const fixture = executionFixture(); let requests = 0;
-    const result = await executeInspection({ repoRoot: fixture.root, now: Date.parse("2026-09-28T01:00:00Z"), validatePrepared: fixture.validatePrepared, transport: async request => { requests++; assert.equal(request.method, "GET"); return config(domains); } });
+    const result = await executeInspection({ repoRoot: fixture.root, now: Date.parse("2026-09-28T01:00:00Z"), validatePrepared: fixture.validatePrepared, transport: async request => { requests++; assert.equal(request.method, "GET"); return config(domains, projectIdentifier); } });
     assert.equal(requests, 1); assert.equal(result.terminal.classification, classification); assert.equal(result.terminal.configurationMutations, 0); assert.equal(fs.existsSync(path.join(fixture.evidenceDirectory, "evidence-manifest.tsv")), true);
     fs.rmSync(fixture.root, { recursive: true, force: true });
   }

@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { BASELINE_FIREBASE_AUTHORIZED_DOMAINS, CONTINUATION, EXPECTED_FIREBASE_AUTHORIZED_DOMAINS, FIREBASE_AUTH_CONFIG_SCOPE, FIREBASE_AUTH_CONFIG_URL, assertUniqueBypassSecret, buildAuthorizationText, buildBypassApiRequest, buildFirebaseAuthorizedDomainInspectionRequest, buildProtectedBrowserBootstrap, buildProtectedRedirectRequest, classifySafetyError, createFirebaseAuthorizedDomainTransport, executeControlledContinuation, executeReservedQualification, finalizeQualificationEvidence, generateBypassSecret, inspectFirebaseAuthorizedDomains, persistReservedEvidence, reserveQualificationEvidence, runFirebaseAuthorizedDomainPreflight, sanitizeContinuationError, sanitizeProtectedBootstrapEvidence, sha256, validateApproval, validateBypassSecret, validateFirebaseAuthorizedDomainResponse, validateProtectedBootstrapResponse, validateProtectedBrowserRequest, verifyBypassApiResponse, verifyBypassInventoryTransition, verifyEvidenceReservation } from "./restaurant-vercel-preview-browser-notification-continuation.mjs";
+import { BASELINE_FIREBASE_AUTHORIZED_DOMAINS, CONTINUATION, EXPECTED_FIREBASE_AUTHORIZED_DOMAINS, FIREBASE_AUTH_CONFIG_SCOPE, FIREBASE_AUTH_CONFIG_URL, FIREBASE_PROJECT_IDENTITY, assertUniqueBypassSecret, buildAuthorizationText, buildBypassApiRequest, buildFirebaseAuthorizedDomainInspectionRequest, buildProtectedBrowserBootstrap, buildProtectedRedirectRequest, classifySafetyError, createFirebaseAuthorizedDomainTransport, executeControlledContinuation, executeReservedQualification, finalizeQualificationEvidence, generateBypassSecret, inspectFirebaseAuthorizedDomains, persistReservedEvidence, reserveQualificationEvidence, runFirebaseAuthorizedDomainPreflight, sanitizeContinuationError, sanitizeProtectedBootstrapEvidence, sha256, validateApproval, validateBypassSecret, validateFirebaseAuthorizedDomainResponse, validateFirebaseConfigResourceName, validateProtectedBootstrapResponse, validateProtectedBrowserRequest, validateTrustedFirebaseProjectIdentity, verifyBypassApiResponse, verifyBypassInventoryTransition, verifyEvidenceReservation } from "./restaurant-vercel-preview-browser-notification-continuation.mjs";
 
 const bindings = { sourceCommit: "a".repeat(40), sourceManifestSha256: "b".repeat(64), operatorSha256: "c".repeat(64), qualifierSha256: "d".repeat(64) };
 const approval = (overrides = {}) => {
@@ -46,7 +46,24 @@ test("Firebase authorized-domain response accepts only the exact baseline with o
   assert.equal(validateFirebaseAuthorizedDomainResponse({ status: 200, data: firebaseConfig({ name: "projects/wrong/config" }) }).failureKind, "PROJECT_SELECTION");
   assert.equal(validateFirebaseAuthorizedDomainResponse({ status: 200, data: firebaseConfig({ authorizedDomains: ["unexpected.example"] }) }).failureKind, "AUTHORIZED_DOMAIN_STATE_UNEXPECTED");
   assert.equal(validateFirebaseAuthorizedDomainResponse({ status: 200, data: firebaseConfig({ authorizedDomains: [...EXPECTED_FIREBASE_AUTHORIZED_DOMAINS, EXPECTED_FIREBASE_AUTHORIZED_DOMAINS[0]] }) }).failureKind, "RESPONSE_SCHEMA");
-  assert.equal(validateFirebaseAuthorizedDomainResponse({ status: 200, data: { authorizedDomains: EXPECTED_FIREBASE_AUTHORIZED_DOMAINS } }).failureKind, "PROJECT_SELECTION");
+  assert.equal(validateFirebaseAuthorizedDomainResponse({ status: 200, data: { authorizedDomains: EXPECTED_FIREBASE_AUTHORIZED_DOMAINS } }).failureKind, "RESPONSE_SCHEMA");
+});
+
+test("Firebase Config identity accepts only the trusted textual ID or canonical project number", () => {
+  assert.equal(validateFirebaseConfigResourceName(`projects/${CONTINUATION.firebaseProjectId}/config`).configProjectIdentifierType, "PROJECT_ID");
+  assert.equal(validateFirebaseConfigResourceName(`projects/${CONTINUATION.firebaseProjectNumber}/config`).configProjectIdentifierType, "PROJECT_NUMBER");
+  for (const name of ["projects/wrong-project/config", "projects/999999999999/config"]) assert.equal(validateFirebaseConfigResourceName(name).failureKind, "PROJECT_SELECTION");
+  for (const name of [undefined, "", `projects/${CONTINUATION.firebaseProjectId}`, `projects/${CONTINUATION.firebaseProjectId}/config/extra`, `projects//config`]) assert.equal(validateFirebaseConfigResourceName(name).failureKind, "RESPONSE_SCHEMA");
+  assert.equal(validateFirebaseConfigResourceName(`projects/${CONTINUATION.firebaseProjectNumber}/config`, { ...FIREBASE_PROJECT_IDENTITY, projectNumber: "999999999999" }).failureKind, "PROJECT_SELECTION");
+  assert.equal(validateTrustedFirebaseProjectIdentity({ ...FIREBASE_PROJECT_IDENTITY, firebaseAppId: "1:999999999999:web:bad" }), null);
+});
+
+test("consumed HTTP-200 numeric-name fixture reaches authorized-domain validation", () => {
+  const present = validateFirebaseAuthorizedDomainResponse({ status: 200, data: firebaseConfig({ name: `projects/${CONTINUATION.firebaseProjectNumber}/config` }) });
+  assert.equal(present.status, "PASS"); assert.equal(present.configProjectIdentifierType, "PROJECT_NUMBER"); assert.equal(present.domainState, "AUTHORIZED_DOMAIN_PRESENT");
+  const absent = validateFirebaseAuthorizedDomainResponse({ status: 200, data: firebaseConfig({ name: `projects/${CONTINUATION.firebaseProjectNumber}/config`, authorizedDomains: BASELINE_FIREBASE_AUTHORIZED_DOMAINS }) });
+  assert.equal(absent.status, "PASS"); assert.equal(absent.domainState, "AUTHORIZED_DOMAIN_ABSENT");
+  assert.equal(validateFirebaseAuthorizedDomainResponse({ status: 200, data: { name: `projects/${CONTINUATION.firebaseProjectNumber}/config` } }).failureKind, "RESPONSE_SCHEMA");
 });
 
 test("Firebase inspection distinguishes authentication, permission, HTTP, schema, and transport failures without persisting bodies", async () => {

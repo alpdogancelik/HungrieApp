@@ -17,13 +17,20 @@ import {
 export const INSPECTION = Object.freeze({
   schemaVersion: 1,
   kind: "restaurant_vercel_firebase_authorized_domain_inspection",
-  inspectionId: "restaurant-vercel-firebase-domain-inspection-20260928a",
+  inspectionId: "restaurant-vercel-firebase-domain-inspection-20260928b",
   projectId: "hungrieapp-a2288",
+  projectNumber: "405094874808",
   requiredDomain: CONTINUATION.firebaseAuthorizedDomain,
   authorityDirectory: "secure/restaurant-vercel-firebase-domain-inspection-authority",
-  evidenceDirectory: "secure/restaurant-vercel-firebase-domain-inspection/restaurant-vercel-firebase-domain-inspection-20260928a",
+  evidenceDirectory: "secure/restaurant-vercel-firebase-domain-inspection/restaurant-vercel-firebase-domain-inspection-20260928b",
   credentialRegistry: "secure/phase7/firebase-credential-candidates.json",
   limits: Object.freeze({ getRequests: 1, retries: 0, configurationMutations: 0, accountMutations: 0, vercelActions: 0, authorityValidityMs: 2 * 60 * 60 * 1000 }),
+  consumedInspection: Object.freeze({
+    inspectionId: "restaurant-vercel-firebase-domain-inspection-20260928a",
+    authoritySha256: "f1b9c1cc711cb4de95a9c3b62252c517e21675012e3551ed5c48b93f51466811",
+    sourceManifestSha256: "deafdc435677986e870d45148e9b7a3f3ce4f3c22523257c50f16ec76784dc10",
+    evidenceManifestSha256: "2df39a17c458e82c3aff0597a2e0ab7ac4411053a72fa07037b5c5db96892235",
+  }),
 });
 
 const exactKeys = (value, keys, label) => {
@@ -46,15 +53,15 @@ const atomicJson = (target, value, flag = "wx") => {
 };
 
 export function buildInspectionAuthorizationText({ sourceCommit, sourceManifestSha256, operatorSha256, inspectorSha256 }) {
-  return `I authorize one strictly read-only Firebase Authentication configuration inspection for inspection ${INSPECTION.inspectionId}, bound to checkpoint ${sourceCommit}, complete source-manifest SHA-256 ${sourceManifestSha256}, inspection operator SHA-256 ${operatorSha256}, Firebase inspection implementation SHA-256 ${inspectorSha256}, Firebase project ${INSPECTION.projectId}, and required Preview hostname ${INSPECTION.requiredDomain}. I authorize exactly one authenticated HTTPS GET to https://identitytoolkit.googleapis.com/admin/v2/projects/${INSPECTION.projectId}/config using the documented https://www.googleapis.com/auth/identitytoolkit OAuth scope and existing approved operator credentials. I authorize zero retries, zero request body, zero Firebase configuration mutation, zero authorized-domain change, zero account or identity mutation, zero Vercel action, zero browser session, zero bypass creation, zero FCM registration, and zero notification send. The operator may persist only sanitized request identity, HTTP status, provider error code, response and error-message byte lengths and SHA-256 fingerprints, exact project validation, authorized-domain count and set SHA-256, required-hostname presence, terminal classification, and evidence integrity. It must never persist the raw response body, OAuth token, API key, service-account material, account credentials, or unrelated Firebase configuration values. Any authority, checkpoint, executable, project, method, endpoint, scope, credential identity, request-count, response-schema, evidence-path, or evidence-integrity mismatch must stop without retry. This authorization does not authorize browser or notification qualification and does not constitute Phase 6 acceptance.`;
+  return `I authorize one strictly read-only Firebase Authentication configuration inspection for inspection ${INSPECTION.inspectionId}, bound to checkpoint ${sourceCommit}, complete source-manifest SHA-256 ${sourceManifestSha256}, inspection operator SHA-256 ${operatorSha256}, Firebase inspection implementation SHA-256 ${inspectorSha256}, Firebase project ID ${INSPECTION.projectId}, trusted project number ${INSPECTION.projectNumber}, and required Preview hostname ${INSPECTION.requiredDomain}. I authorize exactly one authenticated HTTPS GET to https://identitytoolkit.googleapis.com/admin/v2/projects/${INSPECTION.projectId}/config using the documented https://www.googleapis.com/auth/identitytoolkit OAuth scope and existing approved operator credentials. I authorize zero retries, zero request body, zero Firebase configuration mutation, zero authorized-domain change, zero account or identity mutation, zero Vercel action, zero browser session, zero bypass creation, zero FCM registration, and zero notification send. The operator may persist only sanitized request identity, HTTP status, provider error code, response and error-message byte lengths and SHA-256 fingerprints, exact trusted project validation, authorized-domain count and set SHA-256, required-hostname presence, terminal classification, and evidence integrity. It must never persist the raw response body, OAuth token, API key, service-account material, account credentials, or unrelated Firebase configuration values. Any authority, checkpoint, executable, trusted project mapping, method, endpoint, scope, credential identity, request-count, response-schema, evidence-path, or evidence-integrity mismatch must stop without retry. This authorization does not authorize browser or notification qualification and does not constitute Phase 6 acceptance.`;
 }
 
 export function validateInspectionApproval(approval, { now = Date.now() } = {}) {
-  exactKeys(approval, ["schemaVersion", "kind", "decision", "inspectionId", "issuedAt", "expiresAt", "authorizationText", "authorizationTextSha256", "sourceCommit", "sourceManifestSha256", "operatorSha256", "inspectorSha256", "projectId", "requiredDomain", "evidenceDirectory", "limits"], "Inspection approval");
+  exactKeys(approval, ["schemaVersion", "kind", "decision", "inspectionId", "issuedAt", "expiresAt", "authorizationText", "authorizationTextSha256", "sourceCommit", "sourceManifestSha256", "operatorSha256", "inspectorSha256", "projectId", "projectNumber", "requiredDomain", "evidenceDirectory", "limits"], "Inspection approval");
   if (approval.schemaVersion !== 1 || approval.kind !== INSPECTION.kind || approval.decision !== "APPROVE_READ_ONLY_FIREBASE_AUTH_CONFIG_INSPECTION" || approval.inspectionId !== INSPECTION.inspectionId) throw new Error("Exact Firebase inspection approval is required.");
   if (!/^[a-f0-9]{40}$/.test(approval.sourceCommit || "")) throw new Error("Inspection checkpoint is invalid.");
   for (const key of ["sourceManifestSha256", "operatorSha256", "inspectorSha256", "authorizationTextSha256"]) if (!/^[a-f0-9]{64}$/.test(approval[key] || "")) throw new Error(`Invalid ${key}.`);
-  if (approval.projectId !== INSPECTION.projectId || approval.requiredDomain !== INSPECTION.requiredDomain || approval.evidenceDirectory !== INSPECTION.evidenceDirectory || JSON.stringify(approval.limits) !== JSON.stringify(INSPECTION.limits)) throw new Error("Inspection identity or limits mismatch.");
+  if (approval.projectId !== INSPECTION.projectId || approval.projectNumber !== INSPECTION.projectNumber || approval.requiredDomain !== INSPECTION.requiredDomain || approval.evidenceDirectory !== INSPECTION.evidenceDirectory || JSON.stringify(approval.limits) !== JSON.stringify(INSPECTION.limits)) throw new Error("Inspection identity or limits mismatch.");
   const text = buildInspectionAuthorizationText(approval);
   if (approval.authorizationText !== text || sha256(Buffer.from(text)) !== approval.authorizationTextSha256) throw new Error("Inspection authorization text or digest mismatch.");
   const issued = Date.parse(approval.issuedAt), expires = Date.parse(approval.expiresAt);
@@ -73,6 +80,10 @@ function verifyBindings({ repoRoot, approval, spawn = spawnSync }) {
     return result.stdout;
   };
   if (sha256(committed("scripts/inspect-restaurant-vercel-firebase-authorized-domain.mjs")) !== approval.operatorSha256 || sha256(committed("scripts/restaurant-vercel-preview-browser-notification-continuation.mjs")) !== approval.inspectorSha256) throw new Error("Inspection executable binding mismatch.");
+  const firebaseProject = JSON.parse(committed("mobile/google-services.json").toString("utf8")).project_info;
+  if (firebaseProject?.project_id !== INSPECTION.projectId || firebaseProject?.project_number !== INSPECTION.projectNumber) throw new Error("Committed trusted Firebase project mapping mismatch.");
+  const consumed = INSPECTION.consumedInspection, consumedAuthority = path.join(repoRoot, INSPECTION.authorityDirectory, `${consumed.inspectionId}.json`), consumedSourceManifest = path.join(repoRoot, INSPECTION.authorityDirectory, `${consumed.inspectionId}-source-manifest.tsv`), consumedEvidenceManifest = path.join(repoRoot, `secure/restaurant-vercel-firebase-domain-inspection/${consumed.inspectionId}/evidence-manifest.tsv`);
+  if (sha256(fs.readFileSync(consumedAuthority)) !== consumed.authoritySha256 || sha256(fs.readFileSync(consumedSourceManifest)) !== consumed.sourceManifestSha256 || sha256(fs.readFileSync(consumedEvidenceManifest)) !== consumed.evidenceManifestSha256) throw new Error("Consumed Firebase inspection authority or evidence changed.");
   return { head: approval.sourceCommit, manifest };
 }
 
