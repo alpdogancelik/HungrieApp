@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { BASELINE_FIREBASE_AUTHORIZED_DOMAINS, CONTINUATION, EXPECTED_FIREBASE_AUTHORIZED_DOMAINS, FIREBASE_AUTH_CONFIG_SCOPE, FIREBASE_AUTH_CONFIG_URL, FIREBASE_PROJECT_IDENTITY, buildAuthorizationText, buildBypassApiRequest, buildFirebaseAuthorizedDomainInspectionRequest, buildPostRevokeProjectVerificationRequest, buildProtectedBrowserBootstrap, buildProtectedRedirectRequest, classifySafetyError, createFirebaseAuthorizedDomainTransport, executeControlledContinuation, executeReservedQualification, finalizeQualificationEvidence, generateBypassSecret, inspectFirebaseAuthorizedDomains, persistReservedEvidence, reserveQualificationEvidence, runFirebaseAuthorizedDomainPreflight, runVercelQualificationPreflight, sanitizeContinuationError, sanitizeProtectedBootstrapEvidence, sha256, validateApproval, validateBypassSecret, validateFirebaseAuthorizedDomainResponse, validateFirebaseConfigResourceName, validateProtectedBootstrapResponse, validateProtectedBrowserRequest, validateTrustedFirebaseProjectIdentity, validateVercelQualificationPreflight, verifyBypassApiResponse, verifyBypassInventoryTransition, verifyCompletedFirebaseInspection, verifyCompletedVercelInspection, verifyEvidenceReservation, verifyPostRevokeProjectResponse } from "./restaurant-vercel-preview-browser-notification-continuation.mjs";
+import { BASELINE_FIREBASE_AUTHORIZED_DOMAINS, CONTINUATION, EXPECTED_FIREBASE_AUTHORIZED_DOMAINS, FIREBASE_AUTH_CONFIG_SCOPE, FIREBASE_AUTH_CONFIG_URL, FIREBASE_PROJECT_IDENTITY, buildAuthorizationText, buildBypassApiRequest, buildFirebaseAuthorizedDomainInspectionRequest, buildPostRevokeProjectVerificationRequest, buildProtectedBrowserBootstrap, buildProtectedRedirectRequest, classifySafetyError, createFirebaseAuthorizedDomainTransport, establishOwnerNotificationRoute, executeControlledContinuation, executeReservedQualification, finalizeQualificationEvidence, generateBypassSecret, inspectFirebaseAuthorizedDomains, persistReservedEvidence, reserveQualificationEvidence, runFirebaseAuthorizedDomainPreflight, runVercelQualificationPreflight, sanitizeContinuationError, sanitizeProtectedBootstrapEvidence, sha256, validateApproval, validateBypassSecret, validateFirebaseAuthorizedDomainResponse, validateFirebaseConfigResourceName, validateProtectedBootstrapResponse, validateProtectedBrowserRequest, validateTrustedFirebaseProjectIdentity, validateVercelQualificationPreflight, verifyBypassApiResponse, verifyBypassInventoryTransition, verifyCompletedFirebaseInspection, verifyCompletedVercelInspection, verifyEvidenceReservation, verifyPostRevokeProjectResponse } from "./restaurant-vercel-preview-browser-notification-continuation.mjs";
 
 const bindings = { sourceCommit: "a".repeat(40), sourceManifestSha256: "b".repeat(64), operatorSha256: "c".repeat(64), qualifierSha256: "d".repeat(64) };
 const approval = (overrides = {}) => {
@@ -278,6 +278,28 @@ test("post-bootstrap requests cannot forward credentials and toolbar suppression
   assert.equal(validateProtectedBrowserRequest({ url: `${CONTINUATION.origin}/orders`, resourceType: "Document", headerNames: ["x-vercel-skip-toolbar"] }).toolbar, true);
   for (const [url, resourceType] of [["https://identitytoolkit.googleapis.com/v1/accounts", "Document"], [`${CONTINUATION.origin}/app.js`, "Script"]]) assert.throws(() => validateProtectedBrowserRequest({ url, resourceType, headerNames: ["x-vercel-skip-toolbar"] }));
   assert.throws(() => validateProtectedBrowserRequest({ url: "https://project.supabase.co/rest", resourceType: "XHR", headerNames: ["x-vercel-protection-bypass"] }), error => error.code === "CREDENTIAL_EXPOSURE");
+});
+
+test("owner notification context waits for authentication then explicitly opens operational settings", async () => {
+  let observations = 0, navigated = null;
+  const result = await establishOwnerNotificationRoute({
+    origin: CONTINUATION.origin,
+    cdp: { send: async (method, params) => { assert.equal(method, "Page.navigate"); navigated = params.url; return { frameId: "owner-frame", loaderId: "settings-loader" }; } },
+    evaluate: async expression => expression.startsWith("({path:")
+      ? (++observations < 2 ? { path: "/login", operational: false, loginFormVisible: true } : { path: "/dashboard", operational: true, loginFormVisible: false })
+      : true,
+    attempts: 3,
+    intervalMs: 0,
+    sleep: async () => {},
+  });
+  assert.equal(navigated, `${CONTINUATION.origin}/settings`);
+  assert.equal(result.status, "PASS");
+  assert.equal(result.requestedPath, "/settings");
+});
+
+test("owner notification context fails closed when authentication or settings readiness is absent", async () => {
+  await assert.rejects(() => establishOwnerNotificationRoute({ origin: CONTINUATION.origin, cdp: { send: async () => ({}) }, evaluate: async () => ({ operational: false, loginFormVisible: true }), attempts: 2, intervalMs: 0, sleep: async () => {} }), /authenticated operational session/);
+  await assert.rejects(() => establishOwnerNotificationRoute({ origin: CONTINUATION.origin, cdp: { send: async () => ({}) }, evaluate: async expression => expression.startsWith("({path:") ? { operational: true, loginFormVisible: false } : false, attempts: 2, intervalMs: 0, sleep: async () => {} }), /settings route/);
 });
 
 function operations(overrides = {}) {

@@ -67,6 +67,7 @@ export const CONTINUATION = Object.freeze({
 
 export const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 export const canonical = value => `${JSON.stringify(value, null, 2)}\n`;
+const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 export const BYPASS_SECRET_PATTERN = /^[a-f0-9]{32}$/;
 export const BYPASS_PROPAGATION_DELAY_MS = 5_000;
 export const FIREBASE_AUTH_CONFIG_SCOPE = "https://www.googleapis.com/auth/identitytoolkit";
@@ -317,6 +318,26 @@ export function verifyPostRevokeProjectResponse(payload, { secret, createdInvent
 export function buildProtectedBrowserBootstrap(secret) {
   validateBypassSecret(secret);
   return { url: `${CONTINUATION.origin}/`, method: "GET", headers: { "x-vercel-protection-bypass": secret, "x-vercel-set-bypass-cookie": "true", "x-vercel-skip-toolbar": "1" }, redirect: "manual" };
+}
+
+export async function establishOwnerNotificationRoute({ cdp, evaluate, origin, attempts = 600, intervalMs = 50, sleep = delay }) {
+  if (!cdp || typeof cdp.send !== "function" || typeof evaluate !== "function") throw new Error("Owner notification browser controls are required.");
+  if (new URL(origin).origin !== origin) throw Object.assign(new Error("Owner notification origin must be exact."), { code: "UNEXPECTED_ORIGIN" });
+  let authenticated = false;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const state = await evaluate("({path:location.pathname,operational:Boolean(document.querySelector('.app-shell main')),loginFormVisible:Boolean(document.querySelector('input[type=email]'))})").catch(() => null);
+    if (state?.operational && !state.loginFormVisible) { authenticated = true; break; }
+    if (attempt < attempts) await sleep(intervalMs);
+  }
+  if (!authenticated) throw new Error("Owner notification browser did not establish an authenticated operational session.");
+  const requestedUrl = `${origin}/settings`;
+  const navigation = await cdp.send("Page.navigate", { url: requestedUrl });
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const ready = await evaluate("location.pathname==='/settings'&&Boolean(document.querySelector('.app-shell main'))&&Boolean(document.querySelector('.alerts-page'))").catch(() => false);
+    if (ready) return { status: "PASS", requestedPath: "/settings", navigation: { frameId: navigation?.frameId || null, loaderId: navigation?.loaderId || null }, attempts: attempt };
+    if (attempt < attempts) await sleep(intervalMs);
+  }
+  throw new Error("Owner notification settings route did not become operational.");
 }
 
 export function validateProtectedBrowserRequest({ url, resourceType, headerNames = [] }) {
