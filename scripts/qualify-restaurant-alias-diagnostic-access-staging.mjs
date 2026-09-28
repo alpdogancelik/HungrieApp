@@ -459,6 +459,16 @@ export async function qualifyAccount({
         throw error;
       }
     };
+    const reloadAndWaitForNewDocument = async () => {
+      const previousTimeOrigin = await evaluate("performance.timeOrigin");
+      const result = await cdp.send("Page.reload", { ignoreCache: true });
+      for (let attempt = 1; attempt <= waitAttempts; attempt += 1) {
+        const currentTimeOrigin = await evaluate("performance.timeOrigin").catch(() => null);
+        if (typeof currentTimeOrigin === "number" && currentTimeOrigin !== previousTimeOrigin) return { ...result, documentReplaced: true };
+        if (attempt < waitAttempts) await sleep(waitIntervalMs);
+      }
+      throw new Error("Cache-bypassing reload did not create a new browser document within the bound.");
+    };
 
     stage = "LOGIN_FORM";
     const initialUrl = new URL("/dashboard", baseUrl).href;
@@ -487,7 +497,7 @@ export async function qualifyAccount({
       stage = "SESSION_RESTORATION";
       failureClassification = "SESSION_RESTORATION_TIMEOUT";
       const requestedUrl = new URL(expectedPath, baseUrl).href;
-      await navigate(stage, requestedUrl, () => cdp.send("Page.reload", { ignoreCache: true }));
+      await navigate(stage, requestedUrl, reloadAndWaitForNewDocument);
       restored = await waitFor(expectedPath);
     }
 
@@ -502,7 +512,7 @@ export async function qualifyAccount({
       const qualifiedPath = directPath || expectedPath;
       stage = "SERVICE_WORKER_CONTROLLER_RESTORATION";
       failureClassification = "SERVICE_WORKER_CONTROLLER_TIMEOUT";
-      await navigate(stage, new URL(qualifiedPath, baseUrl).href, () => cdp.send("Page.reload", { ignoreCache: true }));
+      await navigate(stage, new URL(qualifiedPath, baseUrl).href, reloadAndWaitForNewDocument);
       await waitFor(qualifiedPath, { operational: qualifiedPath === "/dashboard" || Boolean(directPath) });
       serviceWorker = { ...(await waitForServiceWorkerReady(evaluate)), recoveryReload: true };
     }
