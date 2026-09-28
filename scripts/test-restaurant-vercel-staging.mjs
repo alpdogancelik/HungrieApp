@@ -237,7 +237,11 @@ test("structured deployment output requires independent inspection for the CLI s
   assert.deepEqual(parsePreviewDeploymentOutput({ status: 0, stdout: JSON.stringify(stagingTarget) }, { ...inspected, target: "preview" }), { ...stagingTarget, submissionTarget: "staging", target: "preview", targetRepresentation: "LITERAL_PREVIEW", independentlyInspected: true });
   assert.throws(() => validateInspectedPreviewDeployment(nullTarget, { ...inspected, target: "production" }), /non-Preview/);
   assert.throws(() => validateInspectedPreviewDeployment(nullTarget, { ...inspected, projectId: "wrong" }), /identity/);
-  assert.throws(() => parsePreviewDeploymentOutput({ status: 0, stdout: JSON.stringify({ ...preview, target: "production" }) }), /outside Preview/);
+  const misleadingImmediateTarget = { ...preview, target: "production" };
+  assert.throws(() => parsePreviewDeploymentOutput({ status: 0, stdout: JSON.stringify(misleadingImmediateTarget) }), /requires independent/);
+  assert.deepEqual(parsePreviewDeploymentOutput({ status: 0, stdout: JSON.stringify(misleadingImmediateTarget) }, inspected), { ...misleadingImmediateTarget, submissionTarget: "production", target: null, targetRepresentation: "REVIEWED_NULL_PREVIEW", independentlyInspected: true });
+  assert.throws(() => parsePreviewDeploymentOutput({ status: 0, stdout: JSON.stringify(misleadingImmediateTarget) }, { ...inspected, target: "production" }), /non-Preview/);
+  assert.throws(() => parsePreviewDeploymentOutput({ status: 0, stdout: JSON.stringify(misleadingImmediateTarget) }, { ...inspected, alias: ["production.example"] }), /alias assignment/);
   assert.throws(() => parsePreviewDeploymentOutput({ status: 0, stdout: JSON.stringify({ ...preview, readyState: "BUILDING" }) }), /not ready/);
   assert.throws(() => parsePreviewDeploymentOutput({ status: 0, stdout: "}" }), /malformed structured output/);
   assert.throws(() => parsePreviewDeploymentOutput({ status: 0, stdout: JSON.stringify({ ...preview, id: "bad" }) }), /identity.*malformed/);

@@ -250,7 +250,7 @@ export function parsePreviewDeploymentSubmission(result) {
   let payload;
   try { payload = JSON.parse(String(result.stdout || "")); } catch { throw new Error("Vercel deployment returned malformed structured output."); }
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new Error("Vercel deployment returned an invalid result.");
-  if (!["preview", "staging", null].includes(payload.target)) throw new Error("Vercel classified the deployment outside Preview; hosted qualification is prohibited.");
+  if (!["preview", "staging", null, "production"].includes(payload.target)) throw new Error("Vercel returned an unknown deployment target representation.");
   if (payload.readyState !== "READY") throw new Error("Vercel Preview deployment is not ready for hosted qualification.");
   if (!/^dpl_[A-Za-z0-9]+$/.test(payload.id || "")) throw new Error("Vercel deployment identity is missing or malformed.");
   let url;
@@ -265,7 +265,8 @@ export function validateInspectedPreviewDeployment(submitted, payload) {
   const expectedHost = new URL(submitted.url).hostname;
   if (deployment.id !== submitted.id || deployment.projectId !== "prj_PrVORzWTAxmAHL0SqNcA9WXJppS4" || deployment.name !== VERCEL_STAGING_DEPLOYMENT.project || deployment.url !== expectedHost || deployment.readyState !== "READY") throw new Error("Independent Vercel deployment identity or readiness mismatch.");
   if (deployment.target !== "preview" && deployment.target !== null) throw new Error("Independent Vercel deployment inspection identified a non-Preview target.");
-  if (["preview", "staging", null].includes(submitted.target)) return { ...submitted, submissionTarget: submitted.target, target: deployment.target, targetRepresentation: deployment.target === "preview" ? "LITERAL_PREVIEW" : "REVIEWED_NULL_PREVIEW", independentlyInspected: true };
+  if (Array.isArray(deployment.alias) && deployment.alias.length !== 0) throw new Error("Independent Preview inspection found an unexpected alias assignment.");
+  if (["preview", "staging", null, "production"].includes(submitted.target)) return { ...submitted, submissionTarget: submitted.target, target: deployment.target, targetRepresentation: deployment.target === "preview" ? "LITERAL_PREVIEW" : "REVIEWED_NULL_PREVIEW", independentlyInspected: true };
   throw new Error("Immediate and independently inspected deployment target representations conflict.");
 }
 
