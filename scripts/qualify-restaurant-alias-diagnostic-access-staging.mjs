@@ -251,12 +251,16 @@ export function evaluateBrowserQualification({ accountName, expectedPath, direct
 
 export async function waitForServiceWorkerReady(evaluate, { attempts = 100, intervalMs = 50, sleep = delay } = {}) {
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    const state = await evaluate(`(async()=>{if(!('serviceWorker' in navigator))return {supported:false,ready:false,registrations:[]};const registrations=await navigator.serviceWorker.getRegistrations();const ready=registrations.some(registration=>registration.active?.state==='activated'&&registration.scope===location.origin+'/');return {supported:true,ready,controller:Boolean(navigator.serviceWorker.controller),registrations:registrations.map(registration=>({scope:registration.scope,active:registration.active?.state||null,waiting:registration.waiting?.state||null,installing:registration.installing?.state||null}))}})()`).catch(error => ({ supported: true, ready: false, registrations: [], error: String(error?.message || error) }));
+    const state = await evaluate(`(async()=>{if(!('serviceWorker' in navigator))return {supported:false,ready:false,controller:false,registrations:[]};const registrations=await navigator.serviceWorker.getRegistrations();const activated=registrations.some(registration=>registration.active?.state==='activated'&&registration.scope===location.origin+'/');const controller=Boolean(navigator.serviceWorker.controller);return {supported:true,ready:activated&&controller,activated,controller,registrations:registrations.map(registration=>({scope:registration.scope,active:registration.active?.state||null,waiting:registration.waiting?.state||null,installing:registration.installing?.state||null}))}})()`).catch(error => ({ supported: true, ready: false, controller: false, registrations: [], error: String(error?.message || error) }));
     if (state.ready) return { ...state, attempt };
     if (attempt < attempts) await sleep(intervalMs);
     else return { ...state, attempt };
   }
   return { supported: false, ready: false, registrations: [], attempt: 0 };
+}
+
+export function requiresServiceWorkerControllerReload(state) {
+  return state?.ready !== true && state?.activated === true && state?.controller === false;
 }
 
 export async function qualifyAccount({
@@ -494,6 +498,14 @@ export async function qualifyAccount({
     mainCount = ax.nodes.filter(node => !node.ignored && node.role?.value === "main").length;
     const accessRequests = requests.filter(request => request.path.endsWith("/get_my_access_context_v1")).length;
     serviceWorker = await waitForServiceWorkerReady(evaluate);
+    if (requiresServiceWorkerControllerReload(serviceWorker)) {
+      const qualifiedPath = directPath || expectedPath;
+      stage = "SERVICE_WORKER_CONTROLLER_RESTORATION";
+      failureClassification = "SERVICE_WORKER_CONTROLLER_TIMEOUT";
+      await navigate(stage, new URL(qualifiedPath, baseUrl).href, () => cdp.send("Page.reload", { ignoreCache: true }));
+      await waitFor(qualifiedPath, { operational: qualifiedPath === "/dashboard" || Boolean(directPath) });
+      serviceWorker = { ...(await waitForServiceWorkerReady(evaluate)), recoveryReload: true };
+    }
     const serviceWorkerReady = serviceWorker.ready;
     const decision = evaluateBrowserQualification({ accountName, expectedPath, directPath, baseUrl, authenticated, restored, mainCount, exceptions, consoleErrors, failedRequests, httpErrors, requests, serviceWorkerReady });
     qualificationBlockers = decision.blockers;
