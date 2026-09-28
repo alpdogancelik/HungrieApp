@@ -31,9 +31,9 @@ test("fresh continuation consumes the immutable passing Firebase inspection with
   assert.match(buildAuthorizationText(bindings), /without repeating either inspection/);
 });
 
-test("fresh continuation consumes the completed Vercel inspection proving the reviewed null target", () => {
+test("fresh continuation consumes the completed Vercel project/protection inspection", () => {
   const verified = verifyCompletedVercelInspection(path.resolve(import.meta.dirname, ".."));
-  assert.deepEqual(verified, { passed: true, inspectionId: "restaurant-vercel-project-protection-inspection-20260928a", targetNullReviewed: true, evidenceManifestSha256: "850a3ca589c061cc9127902e2eb42bc980e1f4d56406a3c3216e1edc54bab838" });
+  assert.deepEqual(verified, { passed: true, inspectionId: "restaurant-vercel-project-protection-inspection-20260928a", targetNullReviewed: false, evidenceManifestSha256: "850a3ca589c061cc9127902e2eb42bc980e1f4d56406a3c3216e1edc54bab838" });
   assert.match(buildAuthorizationText(bindings), /without repeating either inspection/);
 });
 
@@ -50,7 +50,7 @@ test("altered completed Vercel inspection evidence fails closed", t => {
   for (const relative of [`${authorityRoot}/${CONTINUATION.vercelInspection.id}.json`, `${authorityRoot}/${CONTINUATION.vercelInspection.id}-source-manifest.tsv`, `${evidenceRoot}/evidence-manifest.tsv`, `${evidenceRoot}/inspection.json`, `${evidenceRoot}/terminal-result.json`]) {
     fs.mkdirSync(path.dirname(path.join(fixtureRoot, relative)), { recursive: true }); fs.copyFileSync(path.join(sourceRoot, relative), path.join(fixtureRoot, relative));
   }
-  assert.equal(verifyCompletedVercelInspection(fixtureRoot).targetNullReviewed, true);
+  assert.equal(verifyCompletedVercelInspection(fixtureRoot).targetNullReviewed, false);
   fs.appendFileSync(path.join(fixtureRoot, evidenceRoot, "inspection.json"), " ");
   assert.throws(() => verifyCompletedVercelInspection(fixtureRoot), error => error.code === "EVIDENCE_INTEGRITY");
 });
@@ -91,11 +91,12 @@ test("malformed, missing, unsafe protection, and ambiguous responses fail closed
   ]) assert.throws(() => validateVercelQualificationPreflight({ ...fixture, requestedScope: CONTINUATION.scope, reviewedInspection: reviewedVercelInspection() }), error => error.code === "IDENTITY");
 });
 
-test("the complete preflight persists the sanitized inspection replay and proceeds", async () => {
+test("the complete preflight persists the sanitized current deployment inspection and proceeds", async () => {
   const inspection = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, "../secure/restaurant-vercel-project-protection-inspection/restaurant-vercel-project-protection-inspection-20260928a/inspection.json"), "utf8"));
+  inspection.deployment = vercelDeployment();
   const persisted = [];
   const result = await runVercelQualificationPreflight({ projectResponse: inspection.project, deploymentResponse: inspection.deployment, requestedScope: CONTINUATION.scope, reviewedInspection: reviewedVercelInspection(), persist: async evidence => persisted.push(evidence) });
-  assert.equal(result.status, "PASS"); assert.equal(result.targetRepresentation, "REVIEWED_NULL_PREVIEW"); assert.equal(persisted.length, 1); assert.equal(persisted[0].productionEvidence, false);
+  assert.equal(result.status, "PASS"); assert.equal(result.targetRepresentation, "LITERAL_PREVIEW"); assert.equal(persisted.length, 1); assert.equal(persisted[0].productionEvidence, false);
   assert.equal(JSON.stringify(persisted).includes("protectionBypass"), false);
 });
 

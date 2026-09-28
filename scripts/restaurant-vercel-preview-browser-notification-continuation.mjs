@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 export const CONTINUATION = Object.freeze({
   schemaVersion: 1,
   kind: "restaurant_vercel_preview_browser_notification_continuation",
-  qualificationId: "restaurant-vercel-browser-notification-qualification-20260928i",
+  qualificationId: "restaurant-vercel-browser-notification-qualification-20260928j",
   consumedQualifications: Object.freeze([
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928b", manifest: "evidence-manifest.tsv", manifestSha256: "8b478d63808742057429821a5704db22d2e6cf4343ce82fe18189db96ba3c592", authoritySha256: "2d4af7ec3c33bbb6fb3836bf3754857be9109c20fe7cb43b5bbfd6aef3f765e6", sourceManifestSha256: "33f95fc58475b5ea3e91c0cf8b6aef045fcde9f043af82abcca05eb7d5811b85" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928c", manifest: "evidence-manifest-final.tsv", manifestSha256: "6dc2701f56fddaf341519b4a6ad78ab88a6d037d8d0993ece3e91ad691ce399f", authoritySha256: "219381cafd5c1ec678a0a3936fc48ebecc7e961fac4a597d8b391eb229a3428e", sourceManifestSha256: "18ddf144ad7e237a3f286557cbd02c54b7be1b126a36d24c44006c1771a16fda" }),
@@ -16,9 +16,10 @@ export const CONTINUATION = Object.freeze({
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928f", manifest: "evidence-manifest.tsv", manifestSha256: "91a91d1d44b431dfa6906b101c262cb45b3e18962462af86c10ff1b3f3ec2de7", authoritySha256: "bdd9415ee191f025b7e0568340b77af9c7b94a3715131db4aecc51acc744ad10", sourceManifestSha256: "794e388e5c2f81927f29df7ea0e143fb2d2405944bbd5872c9bd085e8a7014b8" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928g", manifest: "evidence-manifest.tsv", manifestSha256: "5f6bdfcaec098a679169010db5853ccc1e28a3f218aa697870b94f9486ea49ee", authoritySha256: "ec8c2745c64b55836273f4d5c9268ddd92b360514e2c09a337f20093338d3e29", sourceManifestSha256: "7e2639d62c5370ace2f3d33264e08c73b68952e43a0aae80ba9df9de7f345359" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928h", manifest: "evidence-manifest.tsv", manifestSha256: "8aa3883f5889ca5ee8625337859055976ae7792e952c6d9d47eb5d151aa265d4", authoritySha256: "c8ec6499c1cb039284c71ac15498c2bad9a0855b371f62dc04e36846d3438d18", sourceManifestSha256: "96a2316548e671e61045c2bb33c9358e6e4aa4472a5aabbde48cbeef69e9f7cd" }),
+    Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928i", manifest: "evidence-manifest.tsv", manifestSha256: "4fc0542c93d372b9d9ae7b20d7bb5b8c7e468f5e4bc5a6c9376e6b631c18ff02", authoritySha256: "355f19e9191bfefec195f857a154ea37dfa11fa2dcea04469daa0eb6d5c128ee", sourceManifestSha256: "0e5fee1466299c93856823de2c76f3630f3fa5c610fe3da4d52b157afdb39cbc" }),
   ]),
-  deploymentId: "dpl_8CM3s16BZRwK9Ls1eMMJCVKmWyYt",
-  origin: "https://hungrie-restaurant-web-staging-eval-20260927a-h9m8zpwol.vercel.app",
+  deploymentId: "dpl_iyAFnVmx15xJQbi8JPR63vMEeBYw",
+  origin: "https://hungrie-restaurant-web-staging-eval-20260927a-93ntm3rcs.vercel.app",
   projectId: "prj_PrVORzWTAxmAHL0SqNcA9WXJppS4",
   projectName: "hungrie-restaurant-web-staging-eval-20260927a",
   scope: "nurlan-ildirimli-s-projects",
@@ -50,7 +51,7 @@ export const CONTINUATION = Object.freeze({
     inspectionSha256: "2c760c7dc043372a6c57a23084d3437ed74bfa8e0102b941146caa5be853e79e",
     terminalSha256: "d6d3bcc66e6264f2a050bbb07c849bc399c21d75739f85fdb6644a123340210c",
   }),
-  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260928i",
+  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260928j",
   authorityDirectory: "secure/restaurant-vercel-browser-notification-qualification-authority",
   limits: Object.freeze({ bypassCreates: 1, bypassRevokes: 1, postRevokeProjectGets: 1, preliminaryBypassInventoryGets: 0, accountContexts: 4, concurrentAccountContexts: 1, pushRegistrations: 1, foregroundFcmSends: 1, backgroundFcmSends: 1, pushUnregistrations: 1, retries: 0, authorityValidityMs: 2 * 60 * 60 * 1000 }),
 });
@@ -400,10 +401,10 @@ export function verifyCompletedVercelInspection(repoRoot) {
   const inspection = JSON.parse(fs.readFileSync(files.inspection, "utf8")), terminal = JSON.parse(fs.readFileSync(files.terminal, "utf8"));
   const project = inspection.project || {}, deployment = inspection.deployment || {};
   const projectMatches = project.id === CONTINUATION.projectId && project.name === CONTINUATION.projectName && project.accountId === "team_799flI3SHCD8C2AXbbQ6NlBX" && project.previewToolbar === false && project.protectionType === "all_except_custom_domains" && project.automationBypassRepresentation === "OBJECT";
-  const deploymentMatches = deployment.id === CONTINUATION.deploymentId && deployment.name === CONTINUATION.projectName && deployment.projectId === CONTINUATION.projectId && deployment.target === null && deployment.readyState === "READY" && deployment.url === new URL(CONTINUATION.origin).hostname;
+  const deploymentMatches = deployment.id === "dpl_8CM3s16BZRwK9Ls1eMMJCVKmWyYt" && deployment.name === CONTINUATION.projectName && deployment.projectId === CONTINUATION.projectId && deployment.target === null && deployment.readyState === "READY" && deployment.url === "hungrie-restaurant-web-staging-eval-20260927a-h9m8zpwol.vercel.app";
   if (!projectMatches || !deploymentMatches || inspection.classification !== "PROVIDER_SCHEMA_OR_CANONICALIZATION_CHANGE" || inspection.firstFailure?.field !== "deployment.target" || inspection.firstFailure?.expected !== "preview" || inspection.firstFailure?.observed !== null || inspection.projectGets !== 1 || inspection.deploymentGets !== 1 || inspection.retries !== 0 || inspection.mutations !== 0 || inspection.rawBodiesPersisted !== false || inspection.credentialsPersisted !== false) throw Object.assign(new Error("Completed Vercel inspection does not prove the reviewed null-target Preview identity."), { code: "IDENTITY" });
   if (terminal.inspectionId !== reviewed.id || terminal.classification !== "PROVIDER_SCHEMA_OR_CANONICALIZATION_CHANGE" || terminal.projectGets !== 1 || terminal.deploymentGets !== 1 || terminal.retries !== 0 || terminal.mutations !== 0 || terminal.retryEligible !== false) throw Object.assign(new Error("Completed Vercel inspection terminal contract differs."), { code: "EVIDENCE_INTEGRITY" });
-  return { passed: true, inspectionId: reviewed.id, targetNullReviewed: true, evidenceManifestSha256: reviewed.evidenceManifestSha256 };
+  return { passed: true, inspectionId: reviewed.id, targetNullReviewed: false, evidenceManifestSha256: reviewed.evidenceManifestSha256 };
 }
 
 function unwrapProviderObject(value, key) {

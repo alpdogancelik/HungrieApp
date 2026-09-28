@@ -217,15 +217,17 @@ test("pinned Vercel CLI leaves an omitted deployment target undefined", async ()
   assert.equal(targetChunk.parseTarget({ flagName: "target", flags: { "--prod": true } }), "production");
 });
 
-test("structured deployment output rejects the observed Production classification", () => {
+test("structured deployment output requires independent inspection for the CLI staging representation", () => {
   const preview = { id: "dpl_Example123", url: `https://${VERCEL_STAGING_DEPLOYMENT.project}-abc123.vercel.app`, readyState: "READY", target: "preview" };
   assert.deepEqual(parsePreviewDeploymentOutput({ status: 0, stdout: JSON.stringify(preview) }), preview);
   const nullTarget = { ...preview, target: null };
   assert.deepEqual(parsePreviewDeploymentSubmission({ status: 0, stdout: JSON.stringify(nullTarget) }), nullTarget);
   assert.throws(() => parsePreviewDeploymentOutput({ status: 0, stdout: JSON.stringify(nullTarget) }), /requires independent/);
   const inspected = { id: preview.id, projectId: "prj_PrVORzWTAxmAHL0SqNcA9WXJppS4", name: VERCEL_STAGING_DEPLOYMENT.project, url: new URL(preview.url).hostname, readyState: "READY", target: null };
-  assert.deepEqual(validateInspectedPreviewDeployment(nullTarget, inspected), { ...nullTarget, targetRepresentation: "REVIEWED_NULL_PREVIEW", independentlyInspected: true });
-  assert.deepEqual(parsePreviewDeploymentOutput({ status: 0, stdout: JSON.stringify(nullTarget) }, inspected), { ...nullTarget, targetRepresentation: "REVIEWED_NULL_PREVIEW", independentlyInspected: true });
+  assert.deepEqual(validateInspectedPreviewDeployment(nullTarget, inspected), { ...nullTarget, submissionTarget: null, targetRepresentation: "REVIEWED_NULL_PREVIEW", independentlyInspected: true });
+  assert.deepEqual(parsePreviewDeploymentOutput({ status: 0, stdout: JSON.stringify(nullTarget) }, inspected), { ...nullTarget, submissionTarget: null, targetRepresentation: "REVIEWED_NULL_PREVIEW", independentlyInspected: true });
+  const stagingTarget = { ...preview, target: "staging" };
+  assert.deepEqual(parsePreviewDeploymentOutput({ status: 0, stdout: JSON.stringify(stagingTarget) }, { ...inspected, target: "preview" }), { ...stagingTarget, submissionTarget: "staging", target: "preview", targetRepresentation: "LITERAL_PREVIEW", independentlyInspected: true });
   assert.throws(() => validateInspectedPreviewDeployment(nullTarget, { ...inspected, target: "production" }), /non-Preview/);
   assert.throws(() => validateInspectedPreviewDeployment(nullTarget, { ...inspected, projectId: "wrong" }), /identity/);
   assert.throws(() => parsePreviewDeploymentOutput({ status: 0, stdout: JSON.stringify({ ...preview, target: "production" }) }), /outside Preview/);
