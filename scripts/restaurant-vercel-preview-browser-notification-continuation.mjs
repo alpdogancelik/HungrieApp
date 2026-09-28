@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 export const CONTINUATION = Object.freeze({
   schemaVersion: 1,
   kind: "restaurant_vercel_preview_browser_notification_continuation",
-  qualificationId: "restaurant-vercel-browser-notification-qualification-20260929s",
+  qualificationId: "restaurant-vercel-browser-notification-qualification-20260929t",
   consumedQualifications: Object.freeze([
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928b", manifest: "evidence-manifest.tsv", manifestSha256: "8b478d63808742057429821a5704db22d2e6cf4343ce82fe18189db96ba3c592", authoritySha256: "2d4af7ec3c33bbb6fb3836bf3754857be9109c20fe7cb43b5bbfd6aef3f765e6", sourceManifestSha256: "33f95fc58475b5ea3e91c0cf8b6aef045fcde9f043af82abcca05eb7d5811b85" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928c", manifest: "evidence-manifest-final.tsv", manifestSha256: "6dc2701f56fddaf341519b4a6ad78ab88a6d037d8d0993ece3e91ad691ce399f", authoritySha256: "219381cafd5c1ec678a0a3936fc48ebecc7e961fac4a597d8b391eb229a3428e", sourceManifestSha256: "18ddf144ad7e237a3f286557cbd02c54b7be1b126a36d24c44006c1771a16fda" }),
@@ -24,6 +24,7 @@ export const CONTINUATION = Object.freeze({
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928n", manifest: "evidence-manifest.tsv", manifestSha256: "727495934c661e203c4529c7be6b9b7c2f2270d952c4ec1735dda93a896094db", authoritySha256: "5bce9cda9479722d2163bfe52440b6ccffc4f98a289b337beee1d8d55a36a910", sourceManifestSha256: "e38dc8155f5a3293e82077440d6ea6747c5b83c309aae05238aa292978da776f" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928o", manifest: "evidence-manifest.tsv", manifestSha256: "e85f969661f4037e30c57aaf81f1e139bc75d1cbeb0defe0b3052878662d1a1f", authoritySha256: "1c6352682fed223db52ed115e4218840dcb96d8a0457170a69aabc484eb44627", sourceManifestSha256: "e873e0fd945a730bfc38d5bbb55bc584894d682a824ae5cdfb7fe3cf5e522e15" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928q", manifest: "evidence-manifest.tsv", manifestSha256: "0277a201151ca7ef59d5461056ce766bb6e7f465fda2e3aaec8aca5ffdf5fb4d", authoritySha256: "81328c1f8f08f27e65d482a03cc0b22d85595ee6867553dfd95a9ef83280f5c8", sourceManifestSha256: "4f01c1ce15f818ab0bedec8cdff53fdf25a899a548df35151a0a9361877007b5" }),
+    Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260929s", manifest: "evidence-manifest.tsv", manifestSha256: "3fa385fb7b9c68dd9db48732b9ea35bec3820f32be044cf2d4e078750134eed8", authoritySha256: "ef35c9352b20b81b487071193b51598867302344c3771a75df5f63a1c9c6a8ef", sourceManifestSha256: "da8922626e7e680fdc613c5860f36a40d422e15de53ffe37a8be0f09c4984593" }),
   ]),
   deploymentId: "dpl_GzGAqD9K26AYbyU8RR2VpagXgReV",
   origin: "https://hungrie-restaurant-web-staging-eval-20260927a-cmeqprkgd.vercel.app",
@@ -58,7 +59,7 @@ export const CONTINUATION = Object.freeze({
     inspectionSha256: "2c760c7dc043372a6c57a23084d3437ed74bfa8e0102b941146caa5be853e79e",
     terminalSha256: "d6d3bcc66e6264f2a050bbb07c849bc399c21d75739f85fdb6644a123340210c",
   }),
-  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260929s",
+  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260929t",
   authorityDirectory: "secure/restaurant-vercel-browser-notification-qualification-authority",
   limits: Object.freeze({ bypassCreates: 1, bypassRevokes: 1, postRevokeProjectGets: 1, preliminaryBypassInventoryGets: 0, accountContexts: 4, concurrentAccountContexts: 1, pushRegistrations: 1, foregroundFcmSends: 1, backgroundFcmSends: 1, pushUnregistrations: 1, retries: 0, authorityValidityMs: 2 * 60 * 60 * 1000 }),
 });
