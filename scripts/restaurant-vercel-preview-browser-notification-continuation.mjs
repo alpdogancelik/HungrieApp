@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 export const CONTINUATION = Object.freeze({
   schemaVersion: 1,
   kind: "restaurant_vercel_preview_browser_notification_continuation",
-  qualificationId: "restaurant-vercel-browser-notification-qualification-20260928l",
+  qualificationId: "restaurant-vercel-browser-notification-qualification-20260928m",
   consumedQualifications: Object.freeze([
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928b", manifest: "evidence-manifest.tsv", manifestSha256: "8b478d63808742057429821a5704db22d2e6cf4343ce82fe18189db96ba3c592", authoritySha256: "2d4af7ec3c33bbb6fb3836bf3754857be9109c20fe7cb43b5bbfd6aef3f765e6", sourceManifestSha256: "33f95fc58475b5ea3e91c0cf8b6aef045fcde9f043af82abcca05eb7d5811b85" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928c", manifest: "evidence-manifest-final.tsv", manifestSha256: "6dc2701f56fddaf341519b4a6ad78ab88a6d037d8d0993ece3e91ad691ce399f", authoritySha256: "219381cafd5c1ec678a0a3936fc48ebecc7e961fac4a597d8b391eb229a3428e", sourceManifestSha256: "18ddf144ad7e237a3f286557cbd02c54b7be1b126a36d24c44006c1771a16fda" }),
@@ -19,9 +19,10 @@ export const CONTINUATION = Object.freeze({
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928i", manifest: "evidence-manifest.tsv", manifestSha256: "4fc0542c93d372b9d9ae7b20d7bb5b8c7e468f5e4bc5a6c9376e6b631c18ff02", authoritySha256: "355f19e9191bfefec195f857a154ea37dfa11fa2dcea04469daa0eb6d5c128ee", sourceManifestSha256: "0e5fee1466299c93856823de2c76f3630f3fa5c610fe3da4d52b157afdb39cbc" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928j", manifest: "evidence-manifest.tsv", manifestSha256: "35bd5c9b99688fdedfeba54fc5e804e3385ba6d65d9fdceecc91075f517e5fbc", authoritySha256: "1ec20c911e582e1e6829e81c4e9cdd4159cb31114a0d8be91334d085a4b5999f", sourceManifestSha256: "e2720ac6ad369dca8f83ed2527f6e62b6aacbad82ff253a950d542a214f0b6ee" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928k", manifest: "evidence-manifest.tsv", manifestSha256: "90663b4286dfe832ee1f3849da7f53c49a2998763e39774b94a3453eb6f600bb", authoritySha256: "7681450160ce1bea4c429a6d73eeb34ae6554c9086d5796850716b7f5705da91", sourceManifestSha256: "92188abb4b4232f0a1905d4eb2ba995067efa39094d4c2f421e34a75e4b4a4dc" }),
+    Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928l", manifest: "evidence-manifest.tsv", manifestSha256: "a58c0ff53453aa3173d54e59455dac1397429d7c347b293c3a8712041eeba62b", authoritySha256: "3d5e0037e23f2863a549ae6ef71f1f169912f9ac84946728c995d4a978a50f2e", sourceManifestSha256: "23f84dda9006055954f11a001105963b0ebc3f2e571ed0cb91fc94af4df885af" }),
   ]),
-  deploymentId: "dpl_AiHQzKsdqMDQHgHMin3iA9CY1FJ1",
-  origin: "https://hungrie-restaurant-web-staging-eval-20260927a-gy4r6jmqe.vercel.app",
+  deploymentId: "dpl_BzYTuo3jk8WoKLqNCwtyBAnaVgGe",
+  origin: "https://hungrie-restaurant-web-staging-eval-20260927a-7cchhzni9.vercel.app",
   projectId: "prj_PrVORzWTAxmAHL0SqNcA9WXJppS4",
   projectName: "hungrie-restaurant-web-staging-eval-20260927a",
   scope: "nurlan-ildirimli-s-projects",
@@ -53,7 +54,7 @@ export const CONTINUATION = Object.freeze({
     inspectionSha256: "2c760c7dc043372a6c57a23084d3437ed74bfa8e0102b941146caa5be853e79e",
     terminalSha256: "d6d3bcc66e6264f2a050bbb07c849bc399c21d75739f85fdb6644a123340210c",
   }),
-  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260928l",
+  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260928m",
   authorityDirectory: "secure/restaurant-vercel-browser-notification-qualification-authority",
   limits: Object.freeze({ bypassCreates: 1, bypassRevokes: 1, postRevokeProjectGets: 1, preliminaryBypassInventoryGets: 0, accountContexts: 4, concurrentAccountContexts: 1, pushRegistrations: 1, foregroundFcmSends: 1, backgroundFcmSends: 1, pushUnregistrations: 1, retries: 0, authorityValidityMs: 2 * 60 * 60 * 1000 }),
 });
