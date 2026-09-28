@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { CONTINUATION, assertUniqueBypassSecret, buildAuthorizationText, buildBypassApiRequest, buildProtectedBrowserBootstrap, buildProtectedRedirectRequest, classifySafetyError, executeControlledContinuation, executeReservedQualification, finalizeQualificationEvidence, generateBypassSecret, persistReservedEvidence, reserveQualificationEvidence, sanitizeContinuationError, sanitizeProtectedBootstrapEvidence, sha256, validateApproval, validateBypassSecret, validateProtectedBootstrapResponse, validateProtectedBrowserRequest, verifyBypassApiResponse, verifyBypassInventoryTransition, verifyEvidenceReservation } from "./restaurant-vercel-preview-browser-notification-continuation.mjs";
+import { BASELINE_FIREBASE_AUTHORIZED_DOMAINS, CONTINUATION, EXPECTED_FIREBASE_AUTHORIZED_DOMAINS, FIREBASE_AUTH_CONFIG_SCOPE, FIREBASE_AUTH_CONFIG_URL, assertUniqueBypassSecret, buildAuthorizationText, buildBypassApiRequest, buildFirebaseAuthorizedDomainInspectionRequest, buildProtectedBrowserBootstrap, buildProtectedRedirectRequest, classifySafetyError, createFirebaseAuthorizedDomainTransport, executeControlledContinuation, executeReservedQualification, finalizeQualificationEvidence, generateBypassSecret, inspectFirebaseAuthorizedDomains, persistReservedEvidence, reserveQualificationEvidence, runFirebaseAuthorizedDomainPreflight, sanitizeContinuationError, sanitizeProtectedBootstrapEvidence, sha256, validateApproval, validateBypassSecret, validateFirebaseAuthorizedDomainResponse, validateProtectedBootstrapResponse, validateProtectedBrowserRequest, verifyBypassApiResponse, verifyBypassInventoryTransition, verifyEvidenceReservation } from "./restaurant-vercel-preview-browser-notification-continuation.mjs";
 
 const bindings = { sourceCommit: "a".repeat(40), sourceManifestSha256: "b".repeat(64), operatorSha256: "c".repeat(64), qualifierSha256: "d".repeat(64) };
 const approval = (overrides = {}) => {
@@ -27,6 +27,53 @@ test("consumed or malformed authority cannot reach evidence reservation", () => 
 test("safety errors are distinct from ordinary qualification failures", () => {
   assert.equal(classifySafetyError(Object.assign(new Error(), { code: "UNEXPECTED_ORIGIN" })), true);
   assert.equal(classifySafetyError(Object.assign(new Error(), { code: "HTTP_429" })), false);
+});
+
+const firebaseConfig = (overrides = {}) => ({ name: `projects/${CONTINUATION.firebaseProjectId}/config`, authorizedDomains: [...EXPECTED_FIREBASE_AUTHORIZED_DOMAINS], ...overrides });
+
+test("Firebase authorized-domain inspection uses the exact documented read-only request contract", () => {
+  assert.deepEqual(buildFirebaseAuthorizedDomainInspectionRequest(), {
+    method: "GET", url: FIREBASE_AUTH_CONFIG_URL, scope: FIREBASE_AUTH_CONFIG_SCOPE, projectId: CONTINUATION.firebaseProjectId, requestBody: null,
+  });
+  assert.equal(FIREBASE_AUTH_CONFIG_SCOPE, "https://www.googleapis.com/auth/identitytoolkit");
+});
+
+test("Firebase authorized-domain response accepts only the exact baseline with optional Preview hostname", () => {
+  const pass = validateFirebaseAuthorizedDomainResponse({ status: 200, data: firebaseConfig() });
+  assert.equal(pass.status, "PASS"); assert.equal(pass.authorizedDomainCount, 5); assert.equal(pass.requiredDomainPresent, true); assert.equal(pass.domainState, "AUTHORIZED_DOMAIN_PRESENT");
+  const absent = validateFirebaseAuthorizedDomainResponse({ status: 200, data: firebaseConfig({ authorizedDomains: [...BASELINE_FIREBASE_AUTHORIZED_DOMAINS] }) });
+  assert.equal(absent.status, "PASS"); assert.equal(absent.authorizedDomainCount, 4); assert.equal(absent.requiredDomainPresent, false); assert.equal(absent.domainState, "AUTHORIZED_DOMAIN_ABSENT");
+  assert.equal(validateFirebaseAuthorizedDomainResponse({ status: 200, data: firebaseConfig({ name: "projects/wrong/config" }) }).failureKind, "PROJECT_SELECTION");
+  assert.equal(validateFirebaseAuthorizedDomainResponse({ status: 200, data: firebaseConfig({ authorizedDomains: ["unexpected.example"] }) }).failureKind, "AUTHORIZED_DOMAIN_STATE_UNEXPECTED");
+  assert.equal(validateFirebaseAuthorizedDomainResponse({ status: 200, data: firebaseConfig({ authorizedDomains: [...EXPECTED_FIREBASE_AUTHORIZED_DOMAINS, EXPECTED_FIREBASE_AUTHORIZED_DOMAINS[0]] }) }).failureKind, "RESPONSE_SCHEMA");
+  assert.equal(validateFirebaseAuthorizedDomainResponse({ status: 200, data: { authorizedDomains: EXPECTED_FIREBASE_AUTHORIZED_DOMAINS } }).failureKind, "PROJECT_SELECTION");
+});
+
+test("Firebase inspection distinguishes authentication, permission, HTTP, schema, and transport failures without persisting bodies", async () => {
+  const forbidden = await inspectFirebaseAuthorizedDomains({ transport: async () => { const error = new Error("request rejected with bearer abc"); error.response = { status: 403, data: { error: { status: "PERMISSION_DENIED", message: `denied ${"x".repeat(100)}` } } }; throw error; } });
+  assert.equal(forbidden.failureKind, "PERMISSION_FAILURE"); assert.equal(forbidden.httpStatus, 403); assert.equal(forbidden.providerCode, "PERMISSION_DENIED"); assert.equal(forbidden.responseBodyPersisted, false); assert.equal("providerMessage" in forbidden, false); assert.equal(forbidden.providerMessageBytes, 107); assert.match(forbidden.providerMessageSha256, /^[a-f0-9]{64}$/);
+  assert.equal((await inspectFirebaseAuthorizedDomains({ transport: async () => ({ status: 401, data: {} }) })).failureKind, "AUTHENTICATION_FAILURE");
+  assert.equal((await inspectFirebaseAuthorizedDomains({ transport: async () => ({ status: 500, data: {} }) })).failureKind, "HTTP_OR_PROVIDER_FAILURE");
+  assert.equal((await inspectFirebaseAuthorizedDomains({ transport: async () => ({ status: 200, data: [] }) })).failureKind, "RESPONSE_SCHEMA");
+  assert.equal((await inspectFirebaseAuthorizedDomains({ transport: async () => { throw new Error("socket closed"); } })).failureKind, "TRANSPORT_FAILURE");
+});
+
+test("Firebase preflight persists sanitized evidence before failing", async () => {
+  const persisted = [];
+  await assert.rejects(runFirebaseAuthorizedDomainPreflight({ transport: async () => ({ status: 200, data: firebaseConfig({ authorizedDomains: [] }) }), persist: async evidence => persisted.push(evidence) }), /AUTHORIZED_DOMAIN_STATE_UNEXPECTED/);
+  assert.equal(persisted.length, 1); assert.equal(persisted[0].failureKind, "AUTHORIZED_DOMAIN_STATE_UNEXPECTED"); assert.equal(persisted[0].responseBodyPersisted, false);
+});
+
+test("Firebase transport pins service-account identity, OAuth scope, GET endpoint, and response adapter", async () => {
+  let options, request;
+  class GoogleAuthFixture { constructor(value) { options = value; } async request(value) { request = value; return { status: 200, data: firebaseConfig(), headers: { "content-type": "application/json" } }; } }
+  const credentials = { type: "service_account", project_id: CONTINUATION.firebaseProjectId, client_email: "fixture@hungrieapp-a2288.iam.gserviceaccount.com", private_key: "fixture-private-key" };
+  const transport = createFirebaseAuthorizedDomainTransport({ GoogleAuth: GoogleAuthFixture, credentials });
+  const response = await transport(buildFirebaseAuthorizedDomainInspectionRequest());
+  assert.deepEqual(options.scopes, [FIREBASE_AUTH_CONFIG_SCOPE]); assert.equal(options.credentials, credentials);
+  assert.deepEqual(request, { url: FIREBASE_AUTH_CONFIG_URL, method: "GET", responseType: "json" }); assert.equal(response.status, 200);
+  await assert.rejects(transport({ ...buildFirebaseAuthorizedDomainInspectionRequest(), method: "PATCH" }), /read-only contract/);
+  assert.throws(() => createFirebaseAuthorizedDomainTransport({ GoogleAuth: GoogleAuthFixture, credentials: { ...credentials, project_id: "wrong" } }), /identity is invalid/);
 });
 
 test("bypass generation is cryptographically sourced as exactly 32 lowercase hex characters", () => {

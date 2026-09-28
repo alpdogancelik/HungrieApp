@@ -36,6 +36,123 @@ export const CONTINUATION = Object.freeze({
 export const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 export const canonical = value => `${JSON.stringify(value, null, 2)}\n`;
 export const BYPASS_SECRET_PATTERN = /^[a-f0-9]{32}$/;
+export const FIREBASE_AUTH_CONFIG_SCOPE = "https://www.googleapis.com/auth/identitytoolkit";
+export const FIREBASE_AUTH_CONFIG_URL = `https://identitytoolkit.googleapis.com/admin/v2/projects/${CONTINUATION.firebaseProjectId}/config`;
+export const BASELINE_FIREBASE_AUTHORIZED_DOMAINS = Object.freeze([
+  "hungrie.app",
+  "hungrieapp-a2288.firebaseapp.com",
+  "hungrieapp-a2288.web.app",
+  "localhost",
+].sort());
+export const EXPECTED_FIREBASE_AUTHORIZED_DOMAINS = Object.freeze([
+  ...BASELINE_FIREBASE_AUTHORIZED_DOMAINS,
+  CONTINUATION.firebaseAuthorizedDomain,
+].sort());
+
+function firebaseInspectionFailure(kind, detail = {}) {
+  return {
+    schemaVersion: 1,
+    projectId: CONTINUATION.firebaseProjectId,
+    requiredDomain: CONTINUATION.firebaseAuthorizedDomain,
+    endpoint: FIREBASE_AUTH_CONFIG_URL,
+    method: "GET",
+    scope: FIREBASE_AUTH_CONFIG_SCOPE,
+    status: "FAIL",
+    failureKind: kind,
+    ...detail,
+    credentialsPersisted: false,
+    responseBodyPersisted: false,
+  };
+}
+
+export function buildFirebaseAuthorizedDomainInspectionRequest() {
+  return Object.freeze({
+    method: "GET",
+    url: FIREBASE_AUTH_CONFIG_URL,
+    scope: FIREBASE_AUTH_CONFIG_SCOPE,
+    projectId: CONTINUATION.firebaseProjectId,
+    requestBody: null,
+  });
+}
+
+export function createFirebaseAuthorizedDomainTransport({ GoogleAuth, credentials }) {
+  if (typeof GoogleAuth !== "function") throw new Error("GoogleAuth constructor is required.");
+  if (!credentials || credentials.type !== "service_account" || credentials.project_id !== CONTINUATION.firebaseProjectId || typeof credentials.client_email !== "string" || typeof credentials.private_key !== "string") throw Object.assign(new Error("Firebase inspection credential identity is invalid."), { code: "IDENTITY" });
+  const auth = new GoogleAuth({ credentials, scopes: [FIREBASE_AUTH_CONFIG_SCOPE] });
+  return async request => {
+    const expected = buildFirebaseAuthorizedDomainInspectionRequest();
+    if (!request || request.method !== expected.method || request.url !== expected.url || request.scope !== expected.scope || request.projectId !== expected.projectId || request.requestBody !== null) throw Object.assign(new Error("Firebase inspection request differs from the reviewed read-only contract."), { code: "AUTHORIZATION" });
+    const response = await auth.request({ url: request.url, method: request.method, responseType: "json" });
+    return { status: response.status, data: response.data, headers: response.headers };
+  };
+}
+
+function sanitizedGoogleError(error) {
+  const status = Number(error?.response?.status ?? error?.status ?? error?.code);
+  const providerCode = String(error?.response?.data?.error?.status || error?.response?.data?.error?.code || "").replace(/[^A-Z0-9_.-]/gi, "").slice(0, 80) || null;
+  const providerMessage = String(error?.response?.data?.error?.message || error?.message || "");
+  const providerMessageBytes = Buffer.byteLength(providerMessage);
+  const providerMessageSha256 = providerMessage ? sha256(Buffer.from(providerMessage)) : null;
+  const responseData = error?.response?.data;
+  let responseBytes = null, responseSha256 = null;
+  if (responseData !== undefined) {
+    const bytes = Buffer.from(typeof responseData === "string" ? responseData : canonical(responseData));
+    responseBytes = bytes.length;
+    responseSha256 = sha256(bytes);
+  }
+  return { httpStatus: Number.isInteger(status) && status >= 100 && status <= 599 ? status : null, providerCode, providerMessageBytes, providerMessageSha256, responseBytes, responseSha256 };
+}
+
+export function validateFirebaseAuthorizedDomainResponse(response) {
+  if (!response || typeof response !== "object" || Array.isArray(response)) return firebaseInspectionFailure("RESPONSE_SCHEMA", { assertion: "response_object_required" });
+  if (response.status !== 200) return firebaseInspectionFailure(response.status === 401 ? "AUTHENTICATION_FAILURE" : response.status === 403 ? "PERMISSION_FAILURE" : "HTTP_OR_PROVIDER_FAILURE", { httpStatus: Number.isInteger(response.status) ? response.status : null });
+  const data = response.data;
+  if (!data || typeof data !== "object" || Array.isArray(data)) return firebaseInspectionFailure("RESPONSE_SCHEMA", { httpStatus: 200, assertion: "config_object_required" });
+  if (data.name !== `projects/${CONTINUATION.firebaseProjectId}/config`) return firebaseInspectionFailure("PROJECT_SELECTION", { httpStatus: 200, assertion: "config_name_mismatch", observedNameSha256: typeof data.name === "string" ? sha256(Buffer.from(data.name)) : null });
+  if (!Array.isArray(data.authorizedDomains) || data.authorizedDomains.some(domain => typeof domain !== "string" || !domain || domain !== domain.toLowerCase()) || new Set(data.authorizedDomains).size !== data.authorizedDomains.length) return firebaseInspectionFailure("RESPONSE_SCHEMA", { httpStatus: 200, assertion: "authorized_domains_malformed" });
+  const actual = [...data.authorizedDomains].sort();
+  const actualSha256 = sha256(Buffer.from(canonical(actual)));
+  const requiredDomainPresent = actual.includes(CONTINUATION.firebaseAuthorizedDomain);
+  const expected = requiredDomainPresent ? EXPECTED_FIREBASE_AUTHORIZED_DOMAINS : BASELINE_FIREBASE_AUTHORIZED_DOMAINS;
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) return firebaseInspectionFailure("AUTHORIZED_DOMAIN_STATE_UNEXPECTED", { httpStatus: 200, assertion: "baseline_plus_optional_preview_domain_mismatch", authorizedDomainCount: actual.length, authorizedDomainsSha256: actualSha256, requiredDomainPresent });
+  return {
+    schemaVersion: 1,
+    projectId: CONTINUATION.firebaseProjectId,
+    requiredDomain: CONTINUATION.firebaseAuthorizedDomain,
+    endpoint: FIREBASE_AUTH_CONFIG_URL,
+    method: "GET",
+    scope: FIREBASE_AUTH_CONFIG_SCOPE,
+    status: "PASS",
+    httpStatus: 200,
+    configName: data.name,
+    authorizedDomainCount: actual.length,
+    authorizedDomainsSha256: actualSha256,
+    requiredDomainPresent,
+    domainState: requiredDomainPresent ? "AUTHORIZED_DOMAIN_PRESENT" : "AUTHORIZED_DOMAIN_ABSENT",
+    credentialsPersisted: false,
+    responseBodyPersisted: false,
+  };
+}
+
+export async function inspectFirebaseAuthorizedDomains({ transport }) {
+  if (typeof transport !== "function") throw new Error("Firebase inspection transport is required.");
+  try {
+    const response = await transport(buildFirebaseAuthorizedDomainInspectionRequest());
+    return validateFirebaseAuthorizedDomainResponse(response);
+  } catch (error) {
+    const detail = sanitizedGoogleError(error);
+    const kind = detail.httpStatus === 401 ? "AUTHENTICATION_FAILURE" : detail.httpStatus === 403 ? "PERMISSION_FAILURE" : detail.httpStatus ? "HTTP_OR_PROVIDER_FAILURE" : "TRANSPORT_FAILURE";
+    return firebaseInspectionFailure(kind, detail);
+  }
+}
+
+export async function runFirebaseAuthorizedDomainPreflight({ transport, persist }) {
+  if (typeof persist !== "function") throw new Error("Firebase inspection evidence persistence is required.");
+  const evidence = await inspectFirebaseAuthorizedDomains({ transport });
+  await persist(evidence);
+  if (evidence.status !== "PASS") throw Object.assign(new Error(`Firebase authorized-domain inspection failed: ${evidence.failureKind}.`), { code: evidence.failureKind === "PROJECT_SELECTION" ? "IDENTITY" : "FIREBASE_PREFLIGHT", evidence });
+  return evidence;
+}
 
 export function generateBypassSecret(randomBytes = crypto.randomBytes) {
   const secret = randomBytes(16).toString("hex");
