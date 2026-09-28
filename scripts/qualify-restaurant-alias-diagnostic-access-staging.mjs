@@ -263,6 +263,19 @@ export function requiresServiceWorkerControllerReload(state) {
   return state?.ready !== true && state?.activated === true && state?.controller === false;
 }
 
+export function recoverableSignInTransportFailures(failedRequests = [], responses = []) {
+  const responded = new Set(responses.map(row => row.requestId).filter(Boolean));
+  return failedRequests.filter(row =>
+    row.method === "POST"
+    && row.origin === "https://identitytoolkit.googleapis.com"
+    && row.path === "/v1/accounts:signInWithPassword"
+    && row.errorText === "net::ERR_FAILED"
+    && row.canceled === false
+    && !row.blockedReason
+    && !row.corsErrorStatus
+    && !responded.has(row.requestId));
+}
+
 export async function qualifyAccount({
   accountName,
   account,
@@ -281,6 +294,7 @@ export async function qualifyAccount({
 }) {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), `restaurant-alias-diagnostic-${accountName}-`));
   let browser, version, cdp, evaluate, snapshot, authenticated = null, restored = null, serviceWorker = null, mainCount = null;
+  let recoveredSignInTransportFailures = [];
   let evidencePersisted = false, stage = "BROWSER_START", failureClassification = "BROWSER_QUALIFICATION_EXCEPTION", qualificationBlockers = [];
   const exceptions = [], consoleErrors = [], failedRequests = [], httpErrors = [], responses = [], requests = [], lifecycle = [], navigations = [];
   const responsesByRequestId = new Map(), networkEvidenceTasks = [], automationHeaderObservations = [];
@@ -344,6 +358,7 @@ export async function qualifyAccount({
       uncaughtErrors: exceptions.map(sanitizeDiagnosticText),
       consoleErrors: consoleErrors.map(sanitizeDiagnosticText),
       failedRequests,
+      recoveredSignInTransportFailures,
       httpErrors,
       responseInventory: responses,
       requestInventory: requests,
@@ -486,7 +501,26 @@ export async function qualifyAccount({
 
     stage = "AUTHENTICATED_ROUTE";
     failureClassification = "AUTHENTICATED_ROUTE_TIMEOUT";
-    authenticated = await waitFor(expectedPath, { operational: expectedPath === "/dashboard" });
+    try {
+      authenticated = await waitFor(expectedPath, { operational: expectedPath === "/dashboard" });
+    } catch (error) {
+      const recoverable = recoverableSignInTransportFailures(failedRequests, responses);
+      const currentState = await snapshot().catch(() => null);
+      if (recoverable.length !== 1 || !currentState?.loginFormVisible) throw error;
+      recoveredSignInTransportFailures = recoverable.map(row => ({
+        requestId: row.requestId,
+        origin: row.origin,
+        path: row.path,
+        errorText: row.errorText,
+        recoveredWithSingleResubmission: true,
+      }));
+      stage = "SIGN_IN_TRANSPORT_RECOVERY";
+      failureClassification = "SIGN_IN_TRANSPORT_RECOVERY_FAILED";
+      await evaluate("document.querySelector('button[type=submit],form button')?.click()");
+      stage = "AUTHENTICATED_ROUTE";
+      failureClassification = "AUTHENTICATED_ROUTE_TIMEOUT";
+      authenticated = await waitFor(expectedPath, { operational: expectedPath === "/dashboard" });
+    }
     if (directPath) {
       stage = "DIRECT_ROUTE_RESTORATION";
       failureClassification = "DIRECT_ROUTE_TIMEOUT";
@@ -517,12 +551,14 @@ export async function qualifyAccount({
       serviceWorker = { ...(await waitForServiceWorkerReady(evaluate)), recoveryReload: true };
     }
     const serviceWorkerReady = serviceWorker.ready;
-    const decision = evaluateBrowserQualification({ accountName, expectedPath, directPath, baseUrl, authenticated, restored, mainCount, exceptions, consoleErrors, failedRequests, httpErrors, requests, serviceWorkerReady });
+    const recoveredRequestIds = new Set(recoveredSignInTransportFailures.map(row => row.requestId));
+    const activeFailedRequests = failedRequests.filter(row => !recoveredRequestIds.has(row.requestId));
+    const decision = evaluateBrowserQualification({ accountName, expectedPath, directPath, baseUrl, authenticated, restored, mainCount, exceptions, consoleErrors, failedRequests: activeFailedRequests, httpErrors, requests, serviceWorkerReady });
     qualificationBlockers = decision.blockers;
     if (!decision.passed) throw new Error(`${accountName} immutable access qualification failed: ${decision.blockers.join(",")}.`);
     const screenshot = await captureScreenshot();
     if (!screenshot.captured) throw new Error(`${accountName} screenshot capture failed.`);
-    const accountEvidence = { schemaVersion: 2, capturedAt: new Date().toISOString(), passed: true, account: accountName, browser: version.Browser, expectedPath, directPath, authenticated, restored, mainCount, accessRequests, earningsRequests: decision.earningsRequests, uncaughtErrors: decision.errors, failedRequests, httpErrors: decision.httpErrors, ignoredOptionalHttpErrors: decision.ignoredOptionalHttpErrors, unexpectedRequests: decision.unexpectedRequests, responseInventory: responses, serviceWorker, serviceWorkerReady, requestInventory: requests, navigationObservations: navigations, lifecycleObservations: lifecycle, automationHeaderObservations, screenshot, blockers: [], credentialValuesPersisted: false };
+    const accountEvidence = { schemaVersion: 2, capturedAt: new Date().toISOString(), passed: true, account: accountName, browser: version.Browser, expectedPath, directPath, authenticated, restored, mainCount, accessRequests, earningsRequests: decision.earningsRequests, uncaughtErrors: decision.errors, failedRequests, recoveredSignInTransportFailures, httpErrors: decision.httpErrors, ignoredOptionalHttpErrors: decision.ignoredOptionalHttpErrors, unexpectedRequests: decision.unexpectedRequests, responseInventory: responses, serviceWorker, serviceWorkerReady, requestInventory: requests, navigationObservations: navigations, lifecycleObservations: lifecycle, automationHeaderObservations, screenshot, blockers: [], credentialValuesPersisted: false };
     atomicWrite(evidencePath, accountEvidence);
     evidencePersisted = true;
     return accountEvidence;

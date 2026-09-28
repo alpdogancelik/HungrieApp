@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { classifyHttpFailure, closeChrome, documentScopedAutomationHeaders, evaluateBrowserQualification, isSafetyQualificationError, mergeDocumentAutomationHeaders, openChrome, qualifyAccount, qualifyAccountsExhaustively, requiresServiceWorkerControllerReload, routeStateReady, sanitizeDiagnosticText, sanitizeErrorBody, sanitizeInitiator, sanitizeObservedUrl, sanitizeRequest, sanitizeResponse, sanitizeResponseHeaders, waitForServiceWorkerReady } from "./qualify-restaurant-alias-diagnostic-access-staging.mjs";
+import { classifyHttpFailure, closeChrome, documentScopedAutomationHeaders, evaluateBrowserQualification, isSafetyQualificationError, mergeDocumentAutomationHeaders, openChrome, qualifyAccount, qualifyAccountsExhaustively, recoverableSignInTransportFailures, requiresServiceWorkerControllerReload, routeStateReady, sanitizeDiagnosticText, sanitizeErrorBody, sanitizeInitiator, sanitizeObservedUrl, sanitizeRequest, sanitizeResponse, sanitizeResponseHeaders, waitForServiceWorkerReady } from "./qualify-restaurant-alias-diagnostic-access-staging.mjs";
 
 const base = "https://candidate.example.invalid";
 const state = (path, operational = true) => ({ path, heading: "Dashboard", blank: false, operational, earningsLink: false, diagnostic: { errors: [], navigations: [], protectedBeforeReady: false } });
@@ -57,6 +57,13 @@ test("manager operational rendering passes without Earnings", () => assert.equal
 test("service-worker readiness waits for an activated controlling worker", async () => { let calls = 0, sleeps = 0; const result = await waitForServiceWorkerReady(async () => ({ supported: true, ready: ++calls === 3, activated: calls >= 2, controller: calls >= 3, registrations: [] }), { attempts: 4, intervalMs: 1, sleep: async () => { sleeps += 1; } }); assert.equal(result.ready, true); assert.equal(result.controller, true); assert.equal(result.attempt, 3); assert.equal(sleeps, 2); });
 test("service-worker readiness remains fail closed after the bound", async () => { const result = await waitForServiceWorkerReady(async () => ({ supported: true, ready: false, registrations: [{ scope: base + "/", installing: "installing" }] }), { attempts: 3, intervalMs: 1, sleep: async () => {} }); assert.equal(result.ready, false); assert.equal(result.attempt, 3); });
 test("an activated non-controlling worker permits exactly one explicit recovery reload", () => { assert.equal(requiresServiceWorkerControllerReload({ ready: false, activated: true, controller: false }), true); assert.equal(requiresServiceWorkerControllerReload({ ready: true, activated: true, controller: true }), false); assert.equal(requiresServiceWorkerControllerReload({ ready: false, activated: false, controller: false }), false); });
+test("only a response-free Firebase sign-in transport failure permits bounded recovery", () => {
+  const failure = { requestId: "sign-in", method: "POST", origin: "https://identitytoolkit.googleapis.com", path: "/v1/accounts:signInWithPassword", errorText: "net::ERR_FAILED", canceled: false, blockedReason: null, corsErrorStatus: null };
+  assert.deepEqual(recoverableSignInTransportFailures([failure], []), [failure]);
+  assert.deepEqual(recoverableSignInTransportFailures([failure], [{ requestId: "sign-in", status: 500 }]), []);
+  assert.deepEqual(recoverableSignInTransportFailures([{ ...failure, errorText: "net::ERR_CONNECTION_RESET" }], []), []);
+  assert.deepEqual(recoverableSignInTransportFailures([{ ...failure, corsErrorStatus: { corsError: "DisallowedByMode" } }], []), []);
+});
 test("protected route readiness requires operational rendering and resolved access", () => {
   assert.equal(routeStateReady(state("/dashboard"), "/dashboard", { operational: true }), false);
   assert.equal(routeStateReady({ ...state("/dashboard"), diagnostic: { ...state("/dashboard").diagnostic, accessResolved: true } }, "/dashboard", { operational: true }), true);
@@ -123,7 +130,7 @@ test("a reachable stale DevTools endpoint is ignored when the spawned profile ha
 });
 
 class QualificationCdp {
-  constructor(mode) { this.mode = mode; this.listeners = []; this.signedIn = false; this.direct = false; this.directSnapshots = 0; }
+  constructor(mode) { this.mode = mode; this.listeners = []; this.signedIn = false; this.direct = false; this.directSnapshots = 0; this.submitCount = 0; }
   on(listener) { this.listeners.push(listener); }
   emit(method, params) { this.listeners.forEach(listener => listener({ method, params })); }
   currentState() {
@@ -161,7 +168,14 @@ class QualificationCdp {
     if (method === "Page.reload") return { frameId: "frame", loaderId: "reload-loader" };
     if (method === "Runtime.evaluate") {
       if (params.expression === "!!document.querySelector('input[type=email]')") return { result: { value: !this.signedIn } };
-      if (params.expression.includes("button[type=submit]")) { this.signedIn = true; return { result: { value: true } }; }
+      if (params.expression.includes("button[type=submit]")) {
+        this.submitCount += 1;
+        if (this.mode === "sign-in-transport-once" && this.submitCount === 1) {
+          this.emit("Network.requestWillBeSent", { requestId: "sign-in-transport", type: "Fetch", request: { method: "POST", url: "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=redacted", headers: { "Content-Type": "application/json" } } });
+          this.emit("Network.loadingFailed", { requestId: "sign-in-transport", type: "Fetch", errorText: "net::ERR_FAILED", canceled: false });
+        } else this.signedIn = true;
+        return { result: { value: true } };
+      }
       if (params.expression.includes("serviceWorker.getRegistrations")) return { result: { value: { supported: true, ready: true, controller: true, registrations: [{ scope: `${base}/`, active: "activated", waiting: null, installing: null }] } } };
       if (params.expression.startsWith("({url:location.href")) return { result: { value: this.currentState() } };
       return { result: { value: true } };
@@ -224,6 +238,15 @@ test("delayed direct-route restoration succeeds without weakening the final crit
   assert.equal(result.restored.path, "/orders");
   assert.equal(result.restored.operational, true);
   assert.equal(fixture.cdp.directSnapshots, 3);
+});
+
+test("one response-free Firebase sign-in transport failure is recovered and remains evidenced", async t => {
+  const fixture = await runQualificationFixture(t, "sign-in-transport-once");
+  const result = await qualifyAccount(fixture.options);
+  assert.equal(result.passed, true);
+  assert.equal(fixture.cdp.submitCount, 2);
+  assert.equal(result.failedRequests.length, 1);
+  assert.deepEqual(result.recoveredSignInTransportFailures, [{ requestId: "sign-in-transport", origin: "https://identitytoolkit.googleapis.com", path: "/v1/accounts:signInWithPassword", errorText: "net::ERR_FAILED", recoveredWithSingleResubmission: true }]);
 });
 
 for (const [mode, classification, expectedPath] of [
