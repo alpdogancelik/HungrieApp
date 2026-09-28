@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { BASELINE_FIREBASE_AUTHORIZED_DOMAINS, CONTINUATION, EXPECTED_FIREBASE_AUTHORIZED_DOMAINS, FIREBASE_AUTH_CONFIG_SCOPE, FIREBASE_AUTH_CONFIG_URL, FIREBASE_PROJECT_IDENTITY, assertUniqueBypassSecret, buildAuthorizationText, buildBypassApiRequest, buildFirebaseAuthorizedDomainInspectionRequest, buildProtectedBrowserBootstrap, buildProtectedRedirectRequest, classifySafetyError, createFirebaseAuthorizedDomainTransport, executeControlledContinuation, executeReservedQualification, finalizeQualificationEvidence, generateBypassSecret, inspectFirebaseAuthorizedDomains, persistReservedEvidence, reserveQualificationEvidence, runFirebaseAuthorizedDomainPreflight, sanitizeContinuationError, sanitizeProtectedBootstrapEvidence, sha256, validateApproval, validateBypassSecret, validateFirebaseAuthorizedDomainResponse, validateFirebaseConfigResourceName, validateProtectedBootstrapResponse, validateProtectedBrowserRequest, validateTrustedFirebaseProjectIdentity, verifyBypassApiResponse, verifyBypassInventoryTransition, verifyEvidenceReservation } from "./restaurant-vercel-preview-browser-notification-continuation.mjs";
+import { BASELINE_FIREBASE_AUTHORIZED_DOMAINS, CONTINUATION, EXPECTED_FIREBASE_AUTHORIZED_DOMAINS, FIREBASE_AUTH_CONFIG_SCOPE, FIREBASE_AUTH_CONFIG_URL, FIREBASE_PROJECT_IDENTITY, assertUniqueBypassSecret, buildAuthorizationText, buildBypassApiRequest, buildFirebaseAuthorizedDomainInspectionRequest, buildProtectedBrowserBootstrap, buildProtectedRedirectRequest, classifySafetyError, createFirebaseAuthorizedDomainTransport, executeControlledContinuation, executeReservedQualification, finalizeQualificationEvidence, generateBypassSecret, inspectFirebaseAuthorizedDomains, persistReservedEvidence, reserveQualificationEvidence, runFirebaseAuthorizedDomainPreflight, sanitizeContinuationError, sanitizeProtectedBootstrapEvidence, sha256, validateApproval, validateBypassSecret, validateFirebaseAuthorizedDomainResponse, validateFirebaseConfigResourceName, validateProtectedBootstrapResponse, validateProtectedBrowserRequest, validateTrustedFirebaseProjectIdentity, verifyBypassApiResponse, verifyBypassInventoryTransition, verifyCompletedFirebaseInspection, verifyEvidenceReservation } from "./restaurant-vercel-preview-browser-notification-continuation.mjs";
 
 const bindings = { sourceCommit: "a".repeat(40), sourceManifestSha256: "b".repeat(64), operatorSha256: "c".repeat(64), qualifierSha256: "d".repeat(64) };
 const approval = (overrides = {}) => {
@@ -21,8 +21,26 @@ test("changed text, deployment, origin, limits, or evidence path fails", () => {
   ]) assert.throws(() => validateApproval(approval(changed), { now: Date.parse("2026-09-28T01:00:00Z") }));
 });
 test("consumed or malformed authority cannot reach evidence reservation", () => {
-  assert.throws(() => validateApproval(approval({ qualificationId: "restaurant-vercel-browser-notification-qualification-20260928d" }), { now: Date.parse("2026-09-28T01:00:00Z") }), /Exact continuation approval/);
+  for (const qualificationId of ["restaurant-vercel-browser-notification-qualification-20260928d", "restaurant-vercel-browser-notification-qualification-20260928e"]) assert.throws(() => validateApproval(approval({ qualificationId }), { now: Date.parse("2026-09-28T01:00:00Z") }), /Exact continuation approval/);
   assert.throws(() => validateApproval({ ...approval(), unexpected: true }, { now: Date.parse("2026-09-28T01:00:00Z") }), /fields differ/);
+});
+
+test("fresh continuation consumes the immutable passing Firebase inspection without another GET", () => {
+  const verified = verifyCompletedFirebaseInspection(path.resolve(import.meta.dirname, ".."));
+  assert.deepEqual(verified, { passed: true, inspectionId: "restaurant-vercel-firebase-domain-inspection-20260928b", configProjectIdentifierType: "PROJECT_NUMBER", requiredDomainPresent: true, evidenceManifestSha256: "1f3b1d05a466c01c3ef4ffb5b3592a57b99616c07ffa30524431f9ae702af7b7" });
+  assert.match(buildAuthorizationText(bindings), /without repeating that Firebase inspection/);
+});
+
+test("altered completed Firebase inspection evidence fails closed", t => {
+  const sourceRoot = path.resolve(import.meta.dirname, ".."), fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "firebase-inspection-binding-"));
+  t.after(() => fs.rmSync(fixtureRoot, { recursive: true, force: true }));
+  const authorityRoot = "secure/restaurant-vercel-firebase-domain-inspection-authority", evidenceRoot = `secure/restaurant-vercel-firebase-domain-inspection/${CONTINUATION.firebaseInspection.id}`;
+  for (const relative of [`${authorityRoot}/${CONTINUATION.firebaseInspection.id}.json`, `${authorityRoot}/${CONTINUATION.firebaseInspection.id}-source-manifest.tsv`, `${evidenceRoot}/evidence-manifest.tsv`, `${evidenceRoot}/firebase-authorized-domain-inspection.json`, `${evidenceRoot}/terminal-result.json`]) {
+    fs.mkdirSync(path.dirname(path.join(fixtureRoot, relative)), { recursive: true }); fs.copyFileSync(path.join(sourceRoot, relative), path.join(fixtureRoot, relative));
+  }
+  assert.equal(verifyCompletedFirebaseInspection(fixtureRoot).passed, true);
+  fs.appendFileSync(path.join(fixtureRoot, evidenceRoot, "terminal-result.json"), " ");
+  assert.throws(() => verifyCompletedFirebaseInspection(fixtureRoot), error => error.code === "EVIDENCE_INTEGRITY");
 });
 test("safety errors are distinct from ordinary qualification failures", () => {
   assert.equal(classifySafetyError(Object.assign(new Error(), { code: "UNEXPECTED_ORIGIN" })), true);
@@ -178,7 +196,7 @@ function operations(overrides = {}) {
     qualifyAccounts: async () => (calls.push("accounts"), { pending: "PASS", suspended: "PASS", owner: "PASS", manager: "PASS" }),
     verifyServiceWorker: async () => (calls.push("worker"), true), openOwnerNotificationContext: async () => (calls.push("open"), { id: 1 }),
     registerToken: async () => calls.push("register"), sendForeground: async () => calls.push("foreground"), sendBackground: async () => calls.push("background"),
-    verifyRealClick: async () => (calls.push("click"), true), unregisterToken: async () => calls.push("unregister"), closeBrowser: async () => calls.push("close"), reconcileBypassCreation: async () => (calls.push("reconcile-create"), false), revokeBypass: async () => calls.push("revoke"), verifyBypassRevoked: async () => calls.push("verify-revoked"),
+    verifyRealClick: async () => (calls.push("click"), true), reconcileTokenRegistration: async () => (calls.push("reconcile-token"), false), unregisterToken: async () => calls.push("unregister"), closeBrowser: async () => calls.push("close"), reconcileBypassCreation: async () => (calls.push("reconcile-create"), false), revokeBypass: async () => calls.push("revoke"), verifyBypassRevoked: async () => calls.push("verify-revoked"),
     ...overrides,
   };
   return op;
@@ -293,6 +311,16 @@ test("notification failure triggers scoped cleanup without retry", async () => {
   let sends = 0; const op = operations({ sendForeground: async () => { sends += 1; throw new Error("delivery failed"); } });
   const result = await executeControlledContinuation({ operations: op });
   assert.equal(result.classification, "FAIL"); assert.equal(sends, 1); assert.equal(result.cleanup.token, "PASS"); assert.equal(result.cleanup.bypass, "PASS");
+});
+test("uncertain token registration is reconciled and cleaned without retry", async () => {
+  for (const present of [false, true]) {
+    let registrations = 0, cleanups = 0;
+    const op = operations({ registerToken: async () => { registrations += 1; throw new Error("registration response unavailable"); }, reconcileTokenRegistration: async () => present, unregisterToken: async () => { cleanups += 1; } });
+    const result = await executeControlledContinuation({ operations: op });
+    assert.equal(registrations, 1); assert.equal(cleanups, present ? 1 : 0);
+    assert.equal(result.cleanup.tokenRegistrationReconciliation, present ? "PRESENT_REQUIRES_CLEANUP" : "ABSENT_VERIFIED");
+    if (present) assert.equal(result.cleanup.token, "PASS");
+  }
 });
 test("safety failure aborts and cleanup failure remains terminal", async () => {
   const error = Object.assign(new Error("origin mismatch"), { code: "UNEXPECTED_ORIGIN" });
