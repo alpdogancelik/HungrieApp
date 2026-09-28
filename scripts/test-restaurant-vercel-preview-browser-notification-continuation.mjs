@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { BASELINE_FIREBASE_AUTHORIZED_DOMAINS, CONTINUATION, EXPECTED_FIREBASE_AUTHORIZED_DOMAINS, FIREBASE_AUTH_CONFIG_SCOPE, FIREBASE_AUTH_CONFIG_URL, FIREBASE_PROJECT_IDENTITY, buildAuthorizationText, buildBypassApiRequest, buildFirebaseAuthorizedDomainInspectionRequest, buildPostRevokeProjectVerificationRequest, buildProtectedBrowserBootstrap, buildProtectedRedirectRequest, classifySafetyError, createFirebaseAuthorizedDomainTransport, establishOwnerNotificationRoute, executeControlledContinuation, executeReservedQualification, finalizeQualificationEvidence, generateBypassSecret, inspectFirebaseAuthorizedDomains, persistReservedEvidence, reserveQualificationEvidence, runFirebaseAuthorizedDomainPreflight, runVercelQualificationPreflight, sanitizeContinuationError, sanitizeProtectedBootstrapEvidence, sha256, validateApproval, validateBypassSecret, validateFirebaseAuthorizedDomainResponse, validateFirebaseConfigResourceName, validateProtectedBootstrapResponse, validateProtectedBrowserRequest, validateTrustedFirebaseProjectIdentity, validateVercelQualificationPreflight, verifyBypassApiResponse, verifyBypassInventoryTransition, verifyCompletedFirebaseInspection, verifyCompletedVercelInspection, verifyEvidenceReservation, verifyPostRevokeProjectResponse } from "./restaurant-vercel-preview-browser-notification-continuation.mjs";
+import { BASELINE_FIREBASE_AUTHORIZED_DOMAINS, CONTINUATION, EXPECTED_FIREBASE_AUTHORIZED_DOMAINS, FIREBASE_AUTH_CONFIG_SCOPE, FIREBASE_AUTH_CONFIG_URL, FIREBASE_PROJECT_IDENTITY, buildAuthorizationText, buildBypassApiRequest, buildFirebaseAuthorizedDomainInspectionRequest, buildPostRevokeProjectVerificationRequest, buildProtectedBrowserBootstrap, buildProtectedRedirectRequest, classifySafetyError, createFirebaseAuthorizedDomainTransport, establishOwnerNotificationRoute, executeControlledContinuation, executeReservedQualification, finalizeQualificationEvidence, generateBypassSecret, inspectFirebaseAuthorizedDomains, persistReservedEvidence, reserveQualificationEvidence, runFirebaseAuthorizedDomainPreflight, runVercelQualificationPreflight, sanitizeContinuationError, sanitizeProtectedBootstrapEvidence, selectFirebaseMessagingCredential, sha256, validateApproval, validateBypassSecret, validateFirebaseAuthorizedDomainResponse, validateFirebaseConfigResourceName, validateProtectedBootstrapResponse, validateProtectedBrowserRequest, validateTrustedFirebaseProjectIdentity, validateVercelQualificationPreflight, verifyBypassApiResponse, verifyBypassInventoryTransition, verifyCompletedFirebaseInspection, verifyCompletedVercelInspection, verifyEvidenceReservation, verifyPostRevokeProjectResponse } from "./restaurant-vercel-preview-browser-notification-continuation.mjs";
 
 const bindings = { sourceCommit: "a".repeat(40), sourceManifestSha256: "b".repeat(64), operatorSha256: "c".repeat(64), qualifierSha256: "d".repeat(64) };
 const approval = (overrides = {}) => {
@@ -300,6 +300,19 @@ test("owner notification context waits for authentication then explicitly opens 
 test("owner notification context fails closed when authentication or settings readiness is absent", async () => {
   await assert.rejects(() => establishOwnerNotificationRoute({ origin: CONTINUATION.origin, cdp: { send: async () => ({}) }, evaluate: async () => ({ operational: false, loginFormVisible: true }), attempts: 2, intervalMs: 0, sleep: async () => {} }), /authenticated operational session/);
   await assert.rejects(() => establishOwnerNotificationRoute({ origin: CONTINUATION.origin, cdp: { send: async () => ({}) }, evaluate: async expression => expression.startsWith("({path:") ? { operational: true, loginFormVisible: false } : false, attempts: 2, intervalMs: 0, sleep: async () => {} }), /settings route/);
+});
+
+test("messaging credential selection binds the exact project and Firebase Admin service-account identity", t => {
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "restaurant-messaging-credential-"));
+  t.after(() => fs.rmSync(repoRoot, { recursive: true, force: true }));
+  const secure = path.join(repoRoot, "secure/phase7"); fs.mkdirSync(secure, { recursive: true });
+  const credential = { type: "service_account", project_id: CONTINUATION.firebaseProjectId, client_email: CONTINUATION.firebaseMessagingServiceAccount, client_id: "one-identity", private_key: "fixture-private-key" };
+  const first = path.join(repoRoot, "first.json"), second = path.join(repoRoot, "second.json"), wrong = path.join(repoRoot, "wrong.json");
+  fs.writeFileSync(first, JSON.stringify(credential)); fs.writeFileSync(second, JSON.stringify({ ...credential, private_key: "rotated-key" })); fs.writeFileSync(wrong, JSON.stringify({ ...credential, client_email: "unapproved@example.invalid" }));
+  fs.writeFileSync(path.join(secure, "firebase-credential-candidates.json"), JSON.stringify({ paths: [wrong, second, first] }));
+  assert.equal(selectFirebaseMessagingCredential({ repoRoot }).client_email, CONTINUATION.firebaseMessagingServiceAccount);
+  fs.writeFileSync(second, JSON.stringify({ ...credential, client_id: "ambiguous-identity" }));
+  assert.throws(() => selectFirebaseMessagingCredential({ repoRoot }), /Exactly one Firebase Messaging service-account identity/);
 });
 
 function operations(overrides = {}) {
