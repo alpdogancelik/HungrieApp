@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 export const CLICK_QUALIFICATION = Object.freeze({
   schemaVersion: 1,
   kind: "restaurant_vercel_notification_click_qualification",
-  qualificationId: "restaurant-vercel-notification-click-qualification-20260929af",
+  qualificationId: "restaurant-vercel-notification-click-qualification-20260929ag",
   deploymentId: "dpl_CKP6p798ybfyty1PzF2WxWXP3xsJ",
   origin: "https://hungrie-restaurant-web-staging-eval-20260927a-bda2kh85w.vercel.app",
   projectId: "prj_PrVORzWTAxmAHL0SqNcA9WXJppS4",
@@ -26,9 +26,14 @@ export const CLICK_QUALIFICATION = Object.freeze({
     manifestSha256: "6f45cbc4167e89ee5a0e30de49e84db0ba19d3038adaecc5f6b03e5885081c1f",
     terminalSha256: "b209e177e413af7936fb4e9db7822c07b9f02a9e4eb5ba10671815c9eedcbcaa",
   }),
-  expectedOrderId: "00000000-0000-4000-8000-2026092900af",
+  historicalClickQualification: Object.freeze({
+    id: "restaurant-vercel-notification-click-qualification-20260929af",
+    manifestSha256: "01b1bf4ea7c39f0d4f8b2bd527656d95781e16e022ebbae48fbf4f2f35e55954",
+    terminalSha256: "b90a685056ae0398e4ea672a7a570ffee0cd040cfd73ca10b0aadb9e21e4c545",
+  }),
+  expectedOrderId: "00000000-0000-4000-8000-2026092900a9",
   expectedPath: "/orders/detail",
-  evidenceDirectory: "secure/restaurant-vercel-notification-click-qualification/restaurant-vercel-notification-click-qualification-20260929af",
+  evidenceDirectory: "secure/restaurant-vercel-notification-click-qualification/restaurant-vercel-notification-click-qualification-20260929ag",
   authorityDirectory: "secure/restaurant-vercel-notification-click-qualification-authority",
   limits: Object.freeze({ bypassCreates: 1, bypassRevokes: 1, projectVerificationGets: 1, ownerContexts: 1, registrations: 1, foregroundSends: 0, backgroundSends: 1, clickObservations: 1, unregistrations: 1, retries: 0, authorityValidityMs: 2 * 60 * 60 * 1000 }),
 });
@@ -57,11 +62,32 @@ export function validateClickNavigation(value) {
   return { passed: true, origin: value.origin, path: value.path, orderId: value.orderId };
 }
 
+export function validateRealNotificationClickEvidence(value) {
+  if (!value || value.realPhysicalClick !== true || value.syntheticEventDispatched !== false || value.manualQualifyingNavigation !== false || value.commandIssuedAfterSend !== false) throw new Error("A real, unassisted notification click is required.");
+  if (value.event?.type !== "notificationclick" || value.event.tag !== value.correlationId || value.event.closed !== true || value.event.observerCompleted !== true) throw new Error("The correlated Service Worker notificationclick event is incomplete.");
+  const expectedUrl = `${CLICK_QUALIFICATION.origin}${CLICK_QUALIFICATION.expectedPath}?orderId=${CLICK_QUALIFICATION.expectedOrderId}`;
+  const operations = value.operations || {};
+  const existingClient = operations.navigate?.called === true && operations.navigate?.settled === "fulfilled" && operations.navigate?.targetUrl === expectedUrl
+    && operations.focus?.called === true && operations.focus?.settled === "fulfilled" && operations.focus?.result?.focused === true;
+  const openedClient = operations.openWindow?.called === true && operations.openWindow?.settled === "fulfilled" && operations.openWindow?.targetUrl === expectedUrl;
+  if (!existingClient && !openedClient) throw new Error("The production WindowClient focus/open/navigation operation did not complete.");
+  const after = (value.afterClients || []).find(client => client.url === expectedUrl);
+  if (!after || after.visibilityState !== "visible") throw new Error("The canonical destination WindowClient is not visible.");
+  validateClickNavigation(value.navigation);
+  if (value.page?.visibilityState !== "visible") throw new Error("The canonical destination document is not visible.");
+  return { passed: true, mode: existingClient ? "EXISTING_CLIENT_NAVIGATE_AND_FOCUS" : "OPEN_NEW_CLIENT", documentHasFocus: Boolean(value.page.documentHasFocus), windowClientFocused: Boolean(after.focused), url: expectedUrl };
+}
+
 export function verifyPrerequisiteEvidence(repoRoot) {
   const root = path.join(repoRoot, "secure/restaurant-vercel-browser-notification-qualification", CLICK_QUALIFICATION.prerequisiteQualification.id);
   const manifest = path.join(root, "evidence-manifest.tsv"), terminal = path.join(root, "terminal-result.json");
   if (sha256(fs.readFileSync(manifest)) !== CLICK_QUALIFICATION.prerequisiteQualification.manifestSha256 || sha256(fs.readFileSync(terminal)) !== CLICK_QUALIFICATION.prerequisiteQualification.terminalSha256) throw new Error("Prerequisite notification evidence changed.");
   const value = JSON.parse(fs.readFileSync(terminal, "utf8"));
   if (value.notifications?.foreground !== "PASS" || value.notifications?.background !== "PASS" || value.cleanup?.token !== "PASS" || value.cleanup?.browser !== "PASS" || value.cleanup?.bypass !== "PASS" || value.productionTouched !== false || value.http429Observed !== false) throw new Error("Prerequisite notification qualification is incomplete.");
+  const historicalRoot = path.join(repoRoot, "secure/restaurant-vercel-notification-click-qualification", CLICK_QUALIFICATION.historicalClickQualification.id);
+  const historicalManifest = path.join(historicalRoot, "evidence-manifest.tsv"), historicalTerminal = path.join(historicalRoot, "terminal-result.json");
+  if (sha256(fs.readFileSync(historicalManifest)) !== CLICK_QUALIFICATION.historicalClickQualification.manifestSha256 || sha256(fs.readFileSync(historicalTerminal)) !== CLICK_QUALIFICATION.historicalClickQualification.terminalSha256) throw new Error("Historical AF click evidence changed.");
+  const historical = JSON.parse(fs.readFileSync(historicalTerminal, "utf8"));
+  if (historical.classification !== "FAIL" || historical.clickPassed !== false || historical.retryEligible !== false) throw new Error("Historical AF terminal disposition changed.");
   return true;
 }
