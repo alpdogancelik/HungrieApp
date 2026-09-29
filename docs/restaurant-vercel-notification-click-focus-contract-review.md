@@ -8,7 +8,9 @@ The AF verifier treated `document.hasFocus()` as mandatory proof that a Service 
 
 The first prospective attempt, AG, is also immutable and terminal `FAIL`. Its immutable, Owner, service-worker, and token-registration gates passed, but an ephemeral runner integration used the checkpointed Firebase Admin loader as flat exports instead of its documented `{ app, messaging }` result. It stopped before the authorized FCM send and before asking for a physical click. The bypass was independently removed.
 
-AH is immutable and terminal `FAIL`. Its one background send delivered and its prospective observer recorded fulfilled `navigate()` and `focus()` operations plus the exact visible destination. It failed because the verifier additionally required the returned `WindowClient.focused` snapshot to be true. The Service Workers focus algorithm resolves only when the newly created `WindowClient` focus state is true and otherwise rejects, so the fulfilled promise is the direct normative evidence. The snapshot remains diagnostic because later focus changes can make it false. AI is the fresh prospective qualification.
+AH is immutable and terminal `FAIL`. Its one background send delivered and its prospective observer recorded fulfilled `navigate()` and `focus()` operations plus the exact visible destination. It failed because the verifier additionally required the returned `WindowClient.focused` snapshot to be true. The Service Workers focus algorithm resolves only when the newly created `WindowClient` focus state is true and otherwise rejects, so the fulfilled promise is the direct normative evidence. The snapshot remains diagnostic because later focus changes can make it false.
+
+AI is immutable and terminal `FAIL`. It passed immutable verification but stopped before token registration, sending, or click because its ephemeral runner relied on CDP's optional inline request body for the registration token. AJ observes only the exact registration RPC body inside the isolated page, retains the token only in memory, and persists no raw token or credential.
 
 ## Production flow
 
