@@ -30,7 +30,11 @@ export function validateForegroundSendGate({ events, visibilityState, pageClosed
   if (pageClosed) throw new Error("Foreground qualification page is closed.");
   if (navigationInProgress) throw new Error("Foreground qualification navigation is not settled.");
   if (permission !== "granted") throw new Error("Notification permission is not granted.");
-  if (!serviceWorker || serviceWorker.scopePath !== "/" || serviceWorker.activePath !== "/sw.js" || serviceWorker.controllerPath !== "/sw.js") throw new Error("Messaging service-worker binding is invalid.");
+  let scopePath = serviceWorker?.scopePath;
+  if (scopePath === undefined && typeof serviceWorker?.scope === "string") {
+    try { scopePath = new URL(serviceWorker.scope).pathname; } catch { scopePath = null; }
+  }
+  if (!serviceWorker || scopePath !== "/" || serviceWorker.activePath !== "/sw.js" || serviceWorker.controllerPath !== "/sw.js") throw new Error("Messaging service-worker binding is invalid.");
   if (!pushSubscription?.present || !/^[a-f0-9]{64}$/.test(String(pushSubscription.endpointSha256 || ""))) throw new Error("Push subscription evidence is incomplete.");
   const listenerEvents = events.filter(event => ["foreground_listener_ready", "foreground_listener_removed", "foreground_listener_failed"].includes(event.stage));
   if (!listenerEvents.length || listenerEvents.at(-1).stage !== "foreground_listener_ready") throw new Error("Foreground listener is not ready.");

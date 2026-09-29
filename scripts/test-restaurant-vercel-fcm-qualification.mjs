@@ -11,6 +11,9 @@ const gate = { events: readyEvents, visibilityState: "visible", pageClosed: fals
 
 test("foreground send requires a live listener and exact token/service-worker binding", () => {
   assert.equal(validateForegroundSendGate(gate).status, "PASS");
+  const browserShape = { ...gate, serviceWorker: { scope: identity.scope, activePath: "/sw.js", controllerPath: "/sw.js" } };
+  assert.equal(validateForegroundSendGate(browserShape).status, "PASS");
+  assert.throws(() => validateForegroundSendGate({ ...browserShape, serviceWorker: { ...browserShape.serviceWorker, scope: "https://preview.example/nested/" } }), /binding is invalid/);
   assert.throws(() => validateForegroundSendGate({ ...gate, events: [] }), /listener is not ready/);
   assert.throws(() => validateForegroundSendGate({ ...gate, events: [...readyEvents, { stage: "foreground_listener_removed" }] }), /listener is not ready/);
   assert.throws(() => validateForegroundSendGate({ ...gate, visibilityState: "hidden" }), /not visible/);
