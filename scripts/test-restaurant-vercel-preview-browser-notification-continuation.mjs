@@ -21,7 +21,7 @@ test("changed text, deployment, origin, limits, or evidence path fails", () => {
   ]) assert.throws(() => validateApproval(approval(changed), { now: Date.parse("2026-09-28T01:00:00Z") }));
 });
 test("consumed or malformed authority cannot reach evidence reservation", () => {
-  for (const qualificationId of ["restaurant-vercel-browser-notification-qualification-20260928d", "restaurant-vercel-browser-notification-qualification-20260928e", "restaurant-vercel-browser-notification-qualification-20260928f", "restaurant-vercel-browser-notification-qualification-20260928g", "restaurant-vercel-browser-notification-qualification-20260928h"]) assert.throws(() => validateApproval(approval({ qualificationId }), { now: Date.parse("2026-09-28T01:00:00Z") }), /Exact continuation approval/);
+  for (const qualificationId of ["restaurant-vercel-browser-notification-qualification-20260928d", "restaurant-vercel-browser-notification-qualification-20260928e", "restaurant-vercel-browser-notification-qualification-20260928f", "restaurant-vercel-browser-notification-qualification-20260928g", "restaurant-vercel-browser-notification-qualification-20260928h", "restaurant-vercel-browser-notification-qualification-20260929ad"]) assert.throws(() => validateApproval(approval({ qualificationId }), { now: Date.parse("2026-09-28T01:00:00Z") }), /Exact continuation approval/);
   assert.throws(() => validateApproval({ ...approval(), unexpected: true }, { now: Date.parse("2026-09-28T01:00:00Z") }), /fields differ/);
 });
 
