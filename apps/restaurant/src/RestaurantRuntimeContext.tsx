@@ -8,6 +8,7 @@ import { alertRestaurantOrder, unlockOrderAlert } from "./push";
 import { supabase } from "./supabase";
 import { deriveRestaurantRuntimeStatus, runtimeResultIsCurrent, type RestaurantRuntimeStatus } from "./restaurantRuntimeModel";
 import { resetAcknowledgementIntents } from "./orders/orderAcknowledgementModel";
+import { acceptServiceWorkerQualificationMessage, firebaseMessagingIdentity, recordNotificationQualification } from "./notificationQualification";
 export type { RestaurantRuntimeStatus } from "./restaurantRuntimeModel";
 
 type RestaurantRuntimeValue = {
@@ -87,6 +88,7 @@ export function RestaurantRuntimeProvider({ restaurantId, role, children }: Prop
       if (live && document.visibilityState === "visible" && navigator.onLine) reconcile();
     };
     const unlock = () => void unlockOrderAlert();
+    const observeServiceWorker = (event: MessageEvent) => { acceptServiceWorkerQualificationMessage(event.data); };
 
     window.addEventListener("online", updateNetwork);
     window.addEventListener("offline", updateNetwork);
@@ -94,15 +96,22 @@ export function RestaurantRuntimeProvider({ restaurantId, role, children }: Prop
     document.addEventListener("visibilitychange", recoverVisible);
     window.addEventListener("pointerdown", unlock, { once: true });
     window.addEventListener("keydown", unlock, { once: true });
+    navigator.serviceWorker?.addEventListener?.("message", observeServiceWorker);
 
     reconcile();
 
+    recordNotificationQualification("foreground_listener_initializing", undefined, firebaseMessagingIdentity(firebaseApp));
     void isSupported().then(supported => {
-      if (!live || !supported) return;
+      if (!live || !supported) throw new Error("Firebase Messaging is unavailable.");
       unsubscribeMessage = onMessage(getMessaging(firebaseApp), payload => {
-        void alertRestaurantOrder(payload);
+        recordNotificationQualification("page_on_message", payload);
+        void alertRestaurantOrder(payload).then(
+          () => recordNotificationQualification("app_foreground_handler_completed", payload),
+          () => recordNotificationQualification("app_foreground_handler_failed", payload),
+        );
       });
-    }).catch(() => undefined);
+      recordNotificationQualification("foreground_listener_ready", undefined, firebaseMessagingIdentity(firebaseApp));
+    }).catch(() => { if (live) recordNotificationQualification("foreground_listener_failed"); });
 
     void supabase.realtime.setAuth().then(() => {
       if (!live) return;
@@ -135,6 +144,7 @@ export function RestaurantRuntimeProvider({ restaurantId, role, children }: Prop
       identityGeneration.current += 1;
       resetAcknowledgementIntents();
       unsubscribeMessage?.();
+      recordNotificationQualification("foreground_listener_removed");
       if (channel) void supabase.removeChannel(channel);
       window.removeEventListener("online", updateNetwork);
       window.removeEventListener("offline", updateNetwork);
@@ -142,6 +152,7 @@ export function RestaurantRuntimeProvider({ restaurantId, role, children }: Prop
       document.removeEventListener("visibilitychange", recoverVisible);
       window.removeEventListener("pointerdown", unlock);
       window.removeEventListener("keydown", unlock);
+      navigator.serviceWorker?.removeEventListener?.("message", observeServiceWorker);
     };
   }, [refreshDashboard, restaurantId]);
 

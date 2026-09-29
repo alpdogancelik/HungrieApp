@@ -72,6 +72,7 @@
     "workspace:apps/restaurant/src/managementModel.ts",
     "workspace:apps/restaurant/src/managementRepository.ts",
     "workspace:apps/restaurant/src/menuModel.ts",
+    "workspace:apps/restaurant/src/notificationQualification.ts",
     "workspace:apps/restaurant/src/orders/OrderCard.tsx",
     "workspace:apps/restaurant/src/orders/OrderDetailView.tsx",
     "workspace:apps/restaurant/src/orders/orderAcknowledgement.ts",

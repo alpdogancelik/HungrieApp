@@ -8,6 +8,7 @@ import { Button } from "./components/Button";
 import { PageHeader } from "./components/PageHeader";
 import { parsePushRegistration, StablePushOperation } from "./pushContract";
 import { playOrderAlert, restaurantDeviceId, showRestaurantNotification, unlockOrderAlert, unregisterRestaurantPush } from "./push";
+import { firebaseMessagingIdentity, recordNotificationQualification, validateMessagingServiceWorker } from "./notificationQualification";
 
 type PushState = "idle" | "registering" | "registered" | "disabling" | "denied" | "unsupported" | "ios_install_required" | "unknown" | "error";
 type InstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
@@ -31,8 +32,16 @@ export function NotificationCard() {
   const register = useCallback(async () => {
     setDetail(""); setState("registering"); lastIntent.current = "register";
     let token: string;
-    try { const registration = await navigator.serviceWorker.ready; token = await getToken(getMessaging(firebaseApp), { serviceWorkerRegistration: registration, vapidKey: process.env.EXPO_PUBLIC_FIREBASE_VAPID_KEY }); if (!token) throw new Error("missing-token"); }
-    catch { if (mounted.current) { setState("error"); setDetail(`${c.error} ${c.ref}: ${reference()}`); } return; }
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const binding = validateMessagingServiceWorker(registration);
+      token = await getToken(getMessaging(firebaseApp), { serviceWorkerRegistration: registration, vapidKey: process.env.EXPO_PUBLIC_FIREBASE_VAPID_KEY });
+      if (!token) throw new Error("missing-token");
+      const subscription = await registration.pushManager.getSubscription();
+      if (!subscription?.endpoint) throw new Error("missing-push-subscription");
+      recordNotificationQualification("push_binding_ready", undefined, { ...firebaseMessagingIdentity(firebaseApp), ...binding, subscriptionPresent: true });
+    }
+    catch { recordNotificationQualification("push_binding_failed"); if (mounted.current) { setState("error"); setDetail(`${c.error} ${c.ref}: ${reference()}`); } return; }
     const deviceId = restaurantDeviceId(), operationId = registerOperation.current.prepare([token, deviceId, locale]);
     try {
       const result = await supabase.rpc("restaurant_register_web_push_v1" as never, { p_token: token, p_device_id: deviceId, p_language: locale, p_operation_id: operationId } as never);
