@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 export const CLICK_QUALIFICATION = Object.freeze({
   schemaVersion: 1,
   kind: "restaurant_vercel_notification_click_qualification",
-  qualificationId: "restaurant-vercel-notification-click-qualification-20260929ag",
+  qualificationId: "restaurant-vercel-notification-click-qualification-20260929ah",
   deploymentId: "dpl_CKP6p798ybfyty1PzF2WxWXP3xsJ",
   origin: "https://hungrie-restaurant-web-staging-eval-20260927a-bda2kh85w.vercel.app",
   projectId: "prj_PrVORzWTAxmAHL0SqNcA9WXJppS4",
@@ -31,9 +31,14 @@ export const CLICK_QUALIFICATION = Object.freeze({
     manifestSha256: "01b1bf4ea7c39f0d4f8b2bd527656d95781e16e022ebbae48fbf4f2f35e55954",
     terminalSha256: "b90a685056ae0398e4ea672a7a570ffee0cd040cfd73ca10b0aadb9e21e4c545",
   }),
-  expectedOrderId: "00000000-0000-4000-8000-2026092900a9",
+  historicalProspectiveQualification: Object.freeze({
+    id: "restaurant-vercel-notification-click-qualification-20260929ag",
+    manifestSha256: "9e8e991053127895dabea2616f7beb1277cef640b35bc1f67967f0d7d64bcf72",
+    terminalSha256: "f973238570e515079f19a00f5ede8691bf6bbab152bfb6ee3e6455fed68b883c",
+  }),
+  expectedOrderId: "00000000-0000-4000-8000-2026092900a8",
   expectedPath: "/orders/detail",
-  evidenceDirectory: "secure/restaurant-vercel-notification-click-qualification/restaurant-vercel-notification-click-qualification-20260929ag",
+  evidenceDirectory: "secure/restaurant-vercel-notification-click-qualification/restaurant-vercel-notification-click-qualification-20260929ah",
   authorityDirectory: "secure/restaurant-vercel-notification-click-qualification-authority",
   limits: Object.freeze({ bypassCreates: 1, bypassRevokes: 1, projectVerificationGets: 1, ownerContexts: 1, registrations: 1, foregroundSends: 0, backgroundSends: 1, clickObservations: 1, unregistrations: 1, retries: 0, authorityValidityMs: 2 * 60 * 60 * 1000 }),
 });
@@ -89,5 +94,10 @@ export function verifyPrerequisiteEvidence(repoRoot) {
   if (sha256(fs.readFileSync(historicalManifest)) !== CLICK_QUALIFICATION.historicalClickQualification.manifestSha256 || sha256(fs.readFileSync(historicalTerminal)) !== CLICK_QUALIFICATION.historicalClickQualification.terminalSha256) throw new Error("Historical AF click evidence changed.");
   const historical = JSON.parse(fs.readFileSync(historicalTerminal, "utf8"));
   if (historical.classification !== "FAIL" || historical.clickPassed !== false || historical.retryEligible !== false) throw new Error("Historical AF terminal disposition changed.");
+  const prospectiveRoot = path.join(repoRoot, "secure/restaurant-vercel-notification-click-qualification", CLICK_QUALIFICATION.historicalProspectiveQualification.id);
+  const prospectiveManifest = path.join(prospectiveRoot, "evidence-manifest.tsv"), prospectiveTerminal = path.join(prospectiveRoot, "terminal-result.json");
+  if (sha256(fs.readFileSync(prospectiveManifest)) !== CLICK_QUALIFICATION.historicalProspectiveQualification.manifestSha256 || sha256(fs.readFileSync(prospectiveTerminal)) !== CLICK_QUALIFICATION.historicalProspectiveQualification.terminalSha256) throw new Error("Historical AG evidence changed.");
+  const prospective = JSON.parse(fs.readFileSync(prospectiveTerminal, "utf8"));
+  if (prospective.classification !== "FAIL" || prospective.clickReady !== false || prospective.clickPassed !== false || prospective.retryEligible !== false) throw new Error("Historical AG terminal disposition changed.");
   return true;
 }

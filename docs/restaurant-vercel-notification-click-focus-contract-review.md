@@ -6,6 +6,8 @@ Qualification `restaurant-vercel-notification-click-qualification-20260929af` re
 
 The AF verifier treated `document.hasFocus()` as mandatory proof that a Service Worker notification click focused the application. That probe reports focus for the document's browsing context; it is not the Service Worker `WindowClient.focused` state and is not the fulfillment result of `WindowClient.focus()` or `clients.openWindow()`. AF reached the exact expected origin and order-detail URL, was visible, and had Chrome frontmost, but failed only because the document probe was false. The probe was therefore an unsupported proxy for the Phase 6 requirement.
 
+The first prospective attempt, AG, is also immutable and terminal `FAIL`. Its immutable, Owner, service-worker, and token-registration gates passed, but an ephemeral runner integration used the checkpointed Firebase Admin loader as flat exports instead of its documented `{ app, messaging }` result. It stopped before the authorized FCM send and before asking for a physical click. The bypass was independently removed. AH is the fresh prospective qualification.
+
 ## Production flow
 
 `apps/restaurant/public/sw.js` listens for `notificationclick`, closes the notification, obtains the canonical URL from `event.notification.data.url`, and calls `clients.matchAll({type:"window", includeUncontrolled:true})`. For an existing client it initiates `navigate(url)` and returns `focus()`; otherwise it returns `clients.openWindow(url)`. The returned promise chain is passed to `event.waitUntil()`. The current handler does not await the `navigate()` promise independently, so prospective qualification must observe both the navigation call/result and the resulting client URL in addition to the awaited focus/open operation.
