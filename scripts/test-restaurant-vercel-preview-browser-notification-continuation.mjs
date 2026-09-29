@@ -28,13 +28,13 @@ test("consumed or malformed authority cannot reach evidence reservation", () => 
 test("fresh continuation consumes the immutable passing Firebase inspection without another GET", () => {
   const verified = verifyCompletedFirebaseInspection(path.resolve(import.meta.dirname, ".."));
   assert.deepEqual(verified, { passed: true, inspectionId: CONTINUATION.firebaseInspection.id, configProjectIdentifierType: "PROJECT_NUMBER", requiredDomainPresent: true, evidenceManifestSha256: CONTINUATION.firebaseInspection.evidenceManifestSha256 });
-  assert.match(buildAuthorizationText(bindings), /without repeating either inspection/);
+  assert.match(buildAuthorizationText(bindings), /without repeating either operation/);
 });
 
 test("fresh continuation consumes the completed Vercel project/protection inspection", () => {
   const verified = verifyCompletedVercelInspection(path.resolve(import.meta.dirname, ".."));
   assert.deepEqual(verified, { passed: true, inspectionId: CONTINUATION.vercelInspection.id, targetNullReviewed: false, evidenceManifestSha256: CONTINUATION.vercelInspection.evidenceManifestSha256 });
-  assert.match(buildAuthorizationText(bindings), /without repeating either inspection/);
+  assert.match(buildAuthorizationText(bindings), /without repeating either operation/);
 });
 
 test("authorization explicitly prohibits the obsolete preliminary bypass inventory GET", () => {
