@@ -27,13 +27,13 @@ test("consumed or malformed authority cannot reach evidence reservation", () => 
 
 test("fresh continuation consumes the immutable passing Firebase inspection without another GET", () => {
   const verified = verifyCompletedFirebaseInspection(path.resolve(import.meta.dirname, ".."));
-  assert.deepEqual(verified, { passed: true, inspectionId: "restaurant-vercel-firebase-domain-inspection-20260928b", configProjectIdentifierType: "PROJECT_NUMBER", requiredDomainPresent: true, evidenceManifestSha256: "1f3b1d05a466c01c3ef4ffb5b3592a57b99616c07ffa30524431f9ae702af7b7" });
+  assert.deepEqual(verified, { passed: true, inspectionId: CONTINUATION.firebaseInspection.id, configProjectIdentifierType: "PROJECT_NUMBER", requiredDomainPresent: true, evidenceManifestSha256: CONTINUATION.firebaseInspection.evidenceManifestSha256 });
   assert.match(buildAuthorizationText(bindings), /without repeating either inspection/);
 });
 
 test("fresh continuation consumes the completed Vercel project/protection inspection", () => {
   const verified = verifyCompletedVercelInspection(path.resolve(import.meta.dirname, ".."));
-  assert.deepEqual(verified, { passed: true, inspectionId: "restaurant-vercel-project-protection-inspection-20260928a", targetNullReviewed: true, evidenceManifestSha256: "850a3ca589c061cc9127902e2eb42bc980e1f4d56406a3c3216e1edc54bab838" });
+  assert.deepEqual(verified, { passed: true, inspectionId: CONTINUATION.vercelInspection.id, targetNullReviewed: false, evidenceManifestSha256: CONTINUATION.vercelInspection.evidenceManifestSha256 });
   assert.match(buildAuthorizationText(bindings), /without repeating either inspection/);
 });
 
@@ -50,18 +50,18 @@ test("altered completed Vercel inspection evidence fails closed", t => {
   for (const relative of [`${authorityRoot}/${CONTINUATION.vercelInspection.id}.json`, `${authorityRoot}/${CONTINUATION.vercelInspection.id}-source-manifest.tsv`, `${evidenceRoot}/evidence-manifest.tsv`, `${evidenceRoot}/inspection.json`, `${evidenceRoot}/terminal-result.json`]) {
     fs.mkdirSync(path.dirname(path.join(fixtureRoot, relative)), { recursive: true }); fs.copyFileSync(path.join(sourceRoot, relative), path.join(fixtureRoot, relative));
   }
-  assert.equal(verifyCompletedVercelInspection(fixtureRoot).targetNullReviewed, true);
+  assert.equal(verifyCompletedVercelInspection(fixtureRoot).targetNullReviewed, false);
   fs.appendFileSync(path.join(fixtureRoot, evidenceRoot, "inspection.json"), " ");
   assert.throws(() => verifyCompletedVercelInspection(fixtureRoot), error => error.code === "EVIDENCE_INTEGRITY");
 });
 
-const reviewedVercelInspection = () => ({ passed: true, inspectionId: CONTINUATION.vercelInspection.id, targetNullReviewed: true, evidenceManifestSha256: CONTINUATION.vercelInspection.evidenceManifestSha256 });
+const reviewedVercelInspection = () => ({ passed: true, inspectionId: CONTINUATION.vercelInspection.id, targetNullReviewed: false, evidenceManifestSha256: CONTINUATION.vercelInspection.evidenceManifestSha256 });
 const vercelProject = (overrides = {}) => ({ id: CONTINUATION.projectId, name: CONTINUATION.projectName, accountId: "team_799flI3SHCD8C2AXbbQ6NlBX", enablePreviewFeedback: false, ssoProtection: { deploymentType: "all_except_custom_domains" }, protectionBypass: { existing: { note: "unrelated" } }, ...overrides });
 const vercelDeployment = (overrides = {}) => ({ id: CONTINUATION.deploymentId, name: CONTINUATION.projectName, projectId: CONTINUATION.projectId, target: "preview", readyState: "READY", url: new URL(CONTINUATION.origin).hostname, ...overrides });
 
-test("literal Preview and the exact inspection-backed null representation pass", () => {
+test("the literal Preview representation passes and null remains fail closed", () => {
   assert.equal(validateVercelQualificationPreflight({ projectResponse: vercelProject(), deploymentResponse: vercelDeployment(), requestedScope: CONTINUATION.scope, reviewedInspection: reviewedVercelInspection() }).targetRepresentation, "LITERAL_PREVIEW");
-  assert.equal(validateVercelQualificationPreflight({ projectResponse: vercelProject(), deploymentResponse: vercelDeployment({ target: null }), requestedScope: CONTINUATION.scope, reviewedInspection: reviewedVercelInspection() }).targetRepresentation, "REVIEWED_NULL_PREVIEW");
+  assert.throws(() => validateVercelQualificationPreflight({ projectResponse: vercelProject(), deploymentResponse: vercelDeployment({ target: null }), requestedScope: CONTINUATION.scope, reviewedInspection: reviewedVercelInspection() }), /not the exact reviewed/);
 });
 
 test("inspection-backed null is not generalized to another deployment identity", () => {
@@ -92,7 +92,7 @@ test("malformed, missing, unsafe protection, and ambiguous responses fail closed
 });
 
 test("the complete preflight persists the sanitized current deployment inspection and proceeds", async () => {
-  const inspection = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, "../secure/restaurant-vercel-project-protection-inspection/restaurant-vercel-project-protection-inspection-20260928a/inspection.json"), "utf8"));
+  const inspection = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, `../secure/restaurant-vercel-project-protection-inspection/${CONTINUATION.vercelInspection.id}/inspection.json`), "utf8"));
   inspection.deployment = vercelDeployment();
   const persisted = [];
   const result = await runVercelQualificationPreflight({ projectResponse: inspection.project, deploymentResponse: inspection.deployment, requestedScope: CONTINUATION.scope, reviewedInspection: reviewedVercelInspection(), persist: async evidence => persisted.push(evidence) });
@@ -133,9 +133,9 @@ test("Firebase authorized-domain inspection uses the exact documented read-only 
 
 test("Firebase authorized-domain response accepts only the exact baseline with optional Preview hostname", () => {
   const pass = validateFirebaseAuthorizedDomainResponse({ status: 200, data: firebaseConfig() });
-  assert.equal(pass.status, "PASS"); assert.equal(pass.authorizedDomainCount, 5); assert.equal(pass.requiredDomainPresent, true); assert.equal(pass.domainState, "AUTHORIZED_DOMAIN_PRESENT");
+  assert.equal(pass.status, "PASS"); assert.equal(pass.authorizedDomainCount, 6); assert.equal(pass.requiredDomainPresent, true); assert.equal(pass.domainState, "AUTHORIZED_DOMAIN_PRESENT");
   const absent = validateFirebaseAuthorizedDomainResponse({ status: 200, data: firebaseConfig({ authorizedDomains: [...BASELINE_FIREBASE_AUTHORIZED_DOMAINS] }) });
-  assert.equal(absent.status, "PASS"); assert.equal(absent.authorizedDomainCount, 4); assert.equal(absent.requiredDomainPresent, false); assert.equal(absent.domainState, "AUTHORIZED_DOMAIN_ABSENT");
+  assert.equal(absent.status, "PASS"); assert.equal(absent.authorizedDomainCount, 5); assert.equal(absent.requiredDomainPresent, false); assert.equal(absent.domainState, "AUTHORIZED_DOMAIN_ABSENT");
   assert.equal(validateFirebaseAuthorizedDomainResponse({ status: 200, data: firebaseConfig({ name: "projects/wrong/config" }) }).failureKind, "PROJECT_SELECTION");
   assert.equal(validateFirebaseAuthorizedDomainResponse({ status: 200, data: firebaseConfig({ authorizedDomains: ["unexpected.example"] }) }).failureKind, "AUTHORIZED_DOMAIN_STATE_UNEXPECTED");
   assert.equal(validateFirebaseAuthorizedDomainResponse({ status: 200, data: firebaseConfig({ authorizedDomains: [...EXPECTED_FIREBASE_AUTHORIZED_DOMAINS, EXPECTED_FIREBASE_AUTHORIZED_DOMAINS[0]] }) }).failureKind, "RESPONSE_SCHEMA");

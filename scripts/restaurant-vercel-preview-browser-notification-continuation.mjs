@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 export const CONTINUATION = Object.freeze({
   schemaVersion: 1,
   kind: "restaurant_vercel_preview_browser_notification_continuation",
-  qualificationId: "restaurant-vercel-browser-notification-qualification-20260929x",
+  qualificationId: "restaurant-vercel-browser-notification-qualification-20260929y",
   consumedQualifications: Object.freeze([
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928b", manifest: "evidence-manifest.tsv", manifestSha256: "8b478d63808742057429821a5704db22d2e6cf4343ce82fe18189db96ba3c592", authoritySha256: "2d4af7ec3c33bbb6fb3836bf3754857be9109c20fe7cb43b5bbfd6aef3f765e6", sourceManifestSha256: "33f95fc58475b5ea3e91c0cf8b6aef045fcde9f043af82abcca05eb7d5811b85" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928c", manifest: "evidence-manifest-final.tsv", manifestSha256: "6dc2701f56fddaf341519b4a6ad78ab88a6d037d8d0993ece3e91ad691ce399f", authoritySha256: "219381cafd5c1ec678a0a3936fc48ebecc7e961fac4a597d8b391eb229a3428e", sourceManifestSha256: "18ddf144ad7e237a3f286557cbd02c54b7be1b126a36d24c44006c1771a16fda" }),
@@ -28,9 +28,10 @@ export const CONTINUATION = Object.freeze({
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260929t", manifest: "evidence-manifest.tsv", manifestSha256: "aae0135e70ecd33c9173f5b0431de4b39e4217d9a58ca6060ba5fe84c5762d6d", authoritySha256: "6ad35b12a22169496788d8858c5af2d04eb053745e5aa7615626781648a29415", sourceManifestSha256: "85bf81c74b0320446282447353a59430b3752684a85e54fb165fbe4df1d7a94b" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260929u", manifest: "evidence-manifest.tsv", manifestSha256: "9ba99e2e5ff80ea3d89313299ca3fb9efd99c5953f978512fc6392c7dffb5a66", authoritySha256: "90c30c7bd3f9a0e1ca80c385d9c7fc7017d9ca78654d54bf8daa8b4f7e7709aa", sourceManifestSha256: "36c28585dfd6076f44aec288d278aa11e42538865376bd21beeb0ea98a904c20" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260929v", manifest: "evidence-manifest.tsv", manifestSha256: "e40edd37b2affd68ea6b6bab2806c3ce239eb907c65dfc161aad824cd31a89d2", authoritySha256: "3ec1902db1a17e51850a1243c6391353c408096711783ef0d5c2e5b637ed18f1", sourceManifestSha256: "7c40674088e5b5808e36bc4351a83032e8b299fb5c22d975049614a49615312b" }),
+    Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260929x", manifest: "evidence-manifest.tsv", manifestSha256: "f6d0595c91b4da406c5ae0e5a4c1ca13f048aab7b26f53a6195670a37677eb39", authoritySha256: "2bdd281673c14d7c9465c2ff4432066c075bec400575c2dffa9d2ac28f85b6af", sourceManifestSha256: "b2510cde0ada97d9fe92459da085195647db3568b19772af882fe27c813bbb6c" }),
   ]),
-  deploymentId: "dpl_GzGAqD9K26AYbyU8RR2VpagXgReV",
-  origin: "https://hungrie-restaurant-web-staging-eval-20260927a-cmeqprkgd.vercel.app",
+  deploymentId: "dpl_HcAHHG1HU8N3fSNRohXymef8Eq2o",
+  origin: "https://hungrie-restaurant-web-staging-eval-20260927a-qatdn2q0c.vercel.app",
   projectId: "prj_PrVORzWTAxmAHL0SqNcA9WXJppS4",
   projectName: "hungrie-restaurant-web-staging-eval-20260927a",
   scope: "nurlan-ildirimli-s-projects",
@@ -39,31 +40,31 @@ export const CONTINUATION = Object.freeze({
   firebaseProjectNumber: "405094874808",
   firebaseAppId: "1:405094874808:web:34b9ea3e4b1d3b70a6fe4d",
   firebaseMessagingServiceAccount: "firebase-adminsdk-fbsvc@hungrieapp-a2288.iam.gserviceaccount.com",
-  firebaseAuthorizedDomain: "hungrie-restaurant-web-staging-eval-20260927a-h9m8zpwol.vercel.app",
-  acceptedArtifactManifestSha256: "d42d9f3498a337567f7aff73a7734658bbe8785085f0fa9813b1149fa3781293",
-  canonicalArchiveSha256: "eb738cae2de1986a1888be9a45c0684ff90385976265ec449d9a48379b14dc4b",
+  firebaseAuthorizedDomain: "hungrie-restaurant-web-staging-eval-20260927a-qatdn2q0c.vercel.app",
+  acceptedArtifactManifestSha256: "31a2474c9f3ba11d598aadc68729f6efa76b982ad5818b95a68ca7a00ac1996b",
+  canonicalArchiveSha256: "ebc592da40aaab3b64e28fb91efbad1d8f05e78c7ed3f7ace29235f67244cf2d",
   buildInputContractSha256: "f2c3e37d1e5699ea806e7fe2fd337aef4cb07ebb421ad2215209442546770c2e",
-  acceptedRoot: Object.freeze({ bytes: 17949, sha256: "84a25e7d8872d77470d9d81dbc5c698ddf6d55431f6c405f491660508ed789ec" }),
-  normalRoot: Object.freeze({ bytes: 17949, sha256: "84a25e7d8872d77470d9d81dbc5c698ddf6d55431f6c405f491660508ed789ec", injectionBytes: 0 }),
+  acceptedRoot: Object.freeze({ bytes: 17949, sha256: "09a6432b425baedc2fa3a2163915b9be026667ae729b2b402470e45e2a14a454" }),
+  normalRoot: Object.freeze({ bytes: 17949, sha256: "09a6432b425baedc2fa3a2163915b9be026667ae729b2b402470e45e2a14a454", injectionBytes: 0 }),
   historicalQualificationManifestSha256: "b57ef17c2871ac322afc70148f72d7cc23de02b2ebaf3f9620c0a144e718cfff",
   toolbarInvestigationManifestSha256: "49273bb907a2571847cb7b4e4fb73d494536a16c398d4c40be448f76c39458ee",
   firebaseInspection: Object.freeze({
-    id: "restaurant-vercel-firebase-domain-inspection-20260928b",
-    authoritySha256: "b330a958066cdffc1751ac03d74e3ea5dd4e2505fc2b30d8cb8100424b28a5c3",
-    sourceManifestSha256: "9bb18fdbd3dd2a8dc24b28c7e06839be1dfa3b9239d2b0e84ce8166969e5af06",
-    evidenceManifestSha256: "1f3b1d05a466c01c3ef4ffb5b3592a57b99616c07ffa30524431f9ae702af7b7",
-    inspectionSha256: "e9bea10c20e478534324d95ad1d0fc7130cf6564d18c7a97039439e079624dc3",
-    terminalSha256: "37f4bf3d45b94c2ba6e900d70d89a2248f399da6638e5c1f8316a47278914fe1",
+    id: "restaurant-vercel-firebase-domain-inspection-20260929e",
+    authoritySha256: "01c81afee9981bf6d6441613535244e7f4902ee0bf24f0dd078c959dabbd583a",
+    sourceManifestSha256: "90c7735adbd22f532da7c221f078986f9f829d6bc76ce9e5ffc6c4da48ed1084",
+    evidenceManifestSha256: "7ca9d1cf676e8fab660da018c388a1f5ad3d234efc0365da6ca7a68e48c4524a",
+    inspectionSha256: "b0fa2ab0ef98c2d3d5e7bfa1921f9201c760324bc77a2f6cf0228e32b4ab628e",
+    terminalSha256: "985bc903d22327db49db1b6032c68d0e35688b8be5d98ac0d64865d85208bf38",
   }),
   vercelInspection: Object.freeze({
-    id: "restaurant-vercel-project-protection-inspection-20260928a",
-    authoritySha256: "e9a69730b964ec4e5ad5c828912eae907c0ff6bac792b1208dbd396f195c7dcf",
-    sourceManifestSha256: "4811595648420dee4ae24c603a92e9e643f0d46d4e7e69bcdb3c58745399edc5",
-    evidenceManifestSha256: "850a3ca589c061cc9127902e2eb42bc980e1f4d56406a3c3216e1edc54bab838",
-    inspectionSha256: "2c760c7dc043372a6c57a23084d3437ed74bfa8e0102b941146caa5be853e79e",
-    terminalSha256: "d6d3bcc66e6264f2a050bbb07c849bc399c21d75739f85fdb6644a123340210c",
+    id: "restaurant-vercel-project-protection-inspection-20260929b",
+    authoritySha256: "cf93f0cc6ac5f09b1d782e7324d7a08aecfcf52dc54b20dfcdfffc5f011153e2",
+    sourceManifestSha256: "90c7735adbd22f532da7c221f078986f9f829d6bc76ce9e5ffc6c4da48ed1084",
+    evidenceManifestSha256: "7461f1471efa27bc106d7684b4bee2d56beefab11f8114d44d9a324746bf4bc4",
+    inspectionSha256: "5b11aaca1a5802778b16060e48afc6ec3afe1e6ce7ec428741de740f28cfc74a",
+    terminalSha256: "b345a67ec2e3ed8d95320e2c569656891fd97ea6155f52ca9262dcc752d362e5",
   }),
-  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260929x",
+  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260929y",
   authorityDirectory: "secure/restaurant-vercel-browser-notification-qualification-authority",
   limits: Object.freeze({ bypassCreates: 1, bypassRevokes: 1, postRevokeProjectGets: 1, preliminaryBypassInventoryGets: 0, accountContexts: 1, concurrentAccountContexts: 1, pushRegistrations: 1, foregroundFcmSends: 1, backgroundFcmSends: 1, pushUnregistrations: 1, retries: 0, authorityValidityMs: 2 * 60 * 60 * 1000 }),
 });
@@ -76,6 +77,7 @@ export const BYPASS_PROPAGATION_DELAY_MS = 5_000;
 export const FIREBASE_AUTH_CONFIG_SCOPE = "https://www.googleapis.com/auth/identitytoolkit";
 export const FIREBASE_AUTH_CONFIG_URL = `https://identitytoolkit.googleapis.com/admin/v2/projects/${CONTINUATION.firebaseProjectId}/config`;
 export const BASELINE_FIREBASE_AUTHORIZED_DOMAINS = Object.freeze([
+  "hungrie-restaurant-web-staging-eval-20260927a-h9m8zpwol.vercel.app",
   "hungrie.app",
   "hungrieapp-a2288.firebaseapp.com",
   "hungrieapp-a2288.web.app",
@@ -452,10 +454,10 @@ export function verifyCompletedVercelInspection(repoRoot) {
   const inspection = JSON.parse(fs.readFileSync(files.inspection, "utf8")), terminal = JSON.parse(fs.readFileSync(files.terminal, "utf8"));
   const project = inspection.project || {}, deployment = inspection.deployment || {};
   const projectMatches = project.id === CONTINUATION.projectId && project.name === CONTINUATION.projectName && project.accountId === "team_799flI3SHCD8C2AXbbQ6NlBX" && project.previewToolbar === false && project.protectionType === "all_except_custom_domains" && project.automationBypassRepresentation === "OBJECT";
-  const deploymentMatches = deployment.id === "dpl_8CM3s16BZRwK9Ls1eMMJCVKmWyYt" && deployment.name === CONTINUATION.projectName && deployment.projectId === CONTINUATION.projectId && deployment.target === null && deployment.readyState === "READY" && deployment.url === "hungrie-restaurant-web-staging-eval-20260927a-h9m8zpwol.vercel.app";
-  if (!projectMatches || !deploymentMatches || inspection.classification !== "PROVIDER_SCHEMA_OR_CANONICALIZATION_CHANGE" || inspection.firstFailure?.field !== "deployment.target" || inspection.firstFailure?.expected !== "preview" || inspection.firstFailure?.observed !== null || inspection.projectGets !== 1 || inspection.deploymentGets !== 1 || inspection.retries !== 0 || inspection.mutations !== 0 || inspection.rawBodiesPersisted !== false || inspection.credentialsPersisted !== false) throw Object.assign(new Error("Completed Vercel inspection does not prove the reviewed null-target Preview identity."), { code: "IDENTITY" });
-  if (terminal.inspectionId !== reviewed.id || terminal.classification !== "PROVIDER_SCHEMA_OR_CANONICALIZATION_CHANGE" || terminal.projectGets !== 1 || terminal.deploymentGets !== 1 || terminal.retries !== 0 || terminal.mutations !== 0 || terminal.retryEligible !== false) throw Object.assign(new Error("Completed Vercel inspection terminal contract differs."), { code: "EVIDENCE_INTEGRITY" });
-  return { passed: true, inspectionId: reviewed.id, targetNullReviewed: true, evidenceManifestSha256: reviewed.evidenceManifestSha256 };
+  const deploymentMatches = deployment.id === CONTINUATION.deploymentId && deployment.name === CONTINUATION.projectName && deployment.projectId === CONTINUATION.projectId && deployment.target === "preview" && deployment.readyState === "READY" && deployment.url === new URL(CONTINUATION.origin).hostname;
+  if (!projectMatches || !deploymentMatches || inspection.classification !== "PASS_LITERAL_PREVIEW" || inspection.projectGets !== 1 || inspection.deploymentGets !== 1 || inspection.retries !== 0 || inspection.mutations !== 0 || inspection.rawBodiesPersisted !== false || inspection.credentialsPersisted !== false || inspection.productionTouched !== false) throw Object.assign(new Error("Completed Vercel inspection does not prove the reviewed literal Preview identity."), { code: "IDENTITY" });
+  if (terminal.inspectionId !== reviewed.id || terminal.classification !== "PASS_LITERAL_PREVIEW" || terminal.projectGets !== 1 || terminal.deploymentGets !== 1 || terminal.retries !== 0 || terminal.mutations !== 0 || terminal.retryEligible !== false) throw Object.assign(new Error("Completed Vercel inspection terminal contract differs."), { code: "EVIDENCE_INTEGRITY" });
+  return { passed: true, inspectionId: reviewed.id, targetNullReviewed: false, evidenceManifestSha256: reviewed.evidenceManifestSha256 };
 }
 
 function unwrapProviderObject(value, key) {
