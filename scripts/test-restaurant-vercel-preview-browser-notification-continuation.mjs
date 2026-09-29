@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { BASELINE_FIREBASE_AUTHORIZED_DOMAINS, CONTINUATION, EXPECTED_FIREBASE_AUTHORIZED_DOMAINS, FIREBASE_AUTH_CONFIG_SCOPE, FIREBASE_AUTH_CONFIG_URL, FIREBASE_PROJECT_IDENTITY, buildAuthorizationText, buildBypassApiRequest, buildFirebaseAuthorizedDomainInspectionRequest, buildPostRevokeProjectVerificationRequest, buildProtectedBrowserBootstrap, buildProtectedRedirectRequest, classifySafetyError, createFirebaseAuthorizedDomainTransport, establishOwnerNotificationRoute, executeControlledContinuation, executeReservedQualification, finalizeQualificationEvidence, generateBypassSecret, inspectFirebaseAuthorizedDomains, persistReservedEvidence, reserveQualificationEvidence, runFirebaseAuthorizedDomainPreflight, runVercelQualificationPreflight, sanitizeContinuationError, sanitizeProtectedBootstrapEvidence, selectFirebaseMessagingCredential, sha256, validateApproval, validateBypassSecret, validateFirebaseAuthorizedDomainResponse, validateFirebaseConfigResourceName, validateProtectedBootstrapResponse, validateProtectedBrowserRequest, validateTrustedFirebaseProjectIdentity, validateVercelQualificationPreflight, verifyBypassApiResponse, verifyBypassInventoryTransition, verifyCompletedFirebaseInspection, verifyCompletedVercelInspection, verifyEvidenceReservation, verifyPostRevokeProjectResponse } from "./restaurant-vercel-preview-browser-notification-continuation.mjs";
+import { BASELINE_FIREBASE_AUTHORIZED_DOMAINS, CONTINUATION, EXPECTED_FIREBASE_AUTHORIZED_DOMAINS, FIREBASE_AUTH_CONFIG_SCOPE, FIREBASE_AUTH_CONFIG_URL, FIREBASE_PROJECT_IDENTITY, buildAuthorizationText, buildBypassApiRequest, buildFirebaseAuthorizedDomainInspectionRequest, buildPostRevokeProjectVerificationRequest, buildProtectedBrowserBootstrap, buildProtectedRedirectRequest, classifySafetyError, createFirebaseAuthorizedDomainTransport, establishOwnerNotificationRoute, executeControlledContinuation, executeReservedQualification, finalizeQualificationEvidence, generateBypassSecret, inspectFirebaseAuthorizedDomains, persistReservedEvidence, reserveQualificationEvidence, reconcileVercelDeploymentInspection, runFirebaseAuthorizedDomainPreflight, runVercelQualificationPreflight, sanitizeContinuationError, sanitizeProtectedBootstrapEvidence, selectFirebaseMessagingCredential, sha256, validateApproval, validateBypassSecret, validateFirebaseAuthorizedDomainResponse, validateFirebaseConfigResourceName, validateProtectedBootstrapResponse, validateProtectedBrowserRequest, validateTrustedFirebaseProjectIdentity, validateVercelQualificationPreflight, verifyBypassApiResponse, verifyBypassInventoryTransition, verifyCompletedFirebaseInspection, verifyCompletedVercelInspection, verifyEvidenceReservation, verifyPostRevokeProjectResponse } from "./restaurant-vercel-preview-browser-notification-continuation.mjs";
 
 const bindings = { sourceCommit: "a".repeat(40), sourceManifestSha256: "b".repeat(64), operatorSha256: "c".repeat(64), qualifierSha256: "d".repeat(64) };
 const approval = (overrides = {}) => {
@@ -58,6 +58,28 @@ test("altered completed Vercel inspection evidence fails closed", t => {
 const reviewedVercelInspection = () => ({ passed: true, inspectionId: CONTINUATION.vercelInspection.id, targetNullReviewed: false, evidenceManifestSha256: CONTINUATION.vercelInspection.evidenceManifestSha256 });
 const vercelProject = (overrides = {}) => ({ id: CONTINUATION.projectId, name: CONTINUATION.projectName, accountId: "team_799flI3SHCD8C2AXbbQ6NlBX", enablePreviewFeedback: false, ssoProtection: { deploymentType: "all_except_custom_domains" }, protectionBypass: { existing: { note: "unrelated" } }, ...overrides });
 const vercelDeployment = (overrides = {}) => ({ id: CONTINUATION.deploymentId, name: CONTINUATION.projectName, projectId: CONTINUATION.projectId, target: "preview", readyState: "READY", url: new URL(CONTINUATION.origin).hostname, ...overrides });
+
+const vercelCliDeployment = (overrides = {}) => ({ id: CONTINUATION.deploymentId, name: CONTINUATION.projectName, target: "preview", readyState: "READY", url: new URL(CONTINUATION.origin).hostname, ...overrides });
+
+test("raw API target omission reconciles only with the pinned CLI literal Preview identity", () => {
+  const reconciled = reconcileVercelDeploymentInspection({ apiResponse: vercelDeployment({ target: undefined }), cliResponse: vercelCliDeployment() });
+  assert.equal(reconciled.target, "preview");
+  assert.equal(reconciled.targetSource, "PINNED_VERCEL_CLI_INSPECT");
+  assert.equal(validateVercelQualificationPreflight({ projectResponse: vercelProject(), deploymentResponse: reconciled, requestedScope: CONTINUATION.scope, reviewedInspection: reviewedVercelInspection() }).targetRepresentation, "LITERAL_PREVIEW");
+});
+
+test("deployment inspection reconciliation rejects mismatched identity and any Production evidence", () => {
+  for (const fixture of [
+    { apiResponse: vercelDeployment({ target: undefined }), cliResponse: vercelCliDeployment({ id: "dpl_wrong" }) },
+    { apiResponse: vercelDeployment({ target: undefined }), cliResponse: vercelCliDeployment({ name: "wrong" }) },
+    { apiResponse: vercelDeployment({ target: undefined }), cliResponse: vercelCliDeployment({ url: "wrong.vercel.app" }) },
+    { apiResponse: vercelDeployment({ target: undefined }), cliResponse: vercelCliDeployment({ readyState: "ERROR" }) },
+    { apiResponse: vercelDeployment({ target: undefined }), cliResponse: vercelCliDeployment({ target: "production" }) },
+    { apiResponse: vercelDeployment({ target: "production" }), cliResponse: vercelCliDeployment() },
+    { apiResponse: vercelDeployment({ target: undefined, environment: "production" }), cliResponse: vercelCliDeployment() },
+    { apiResponse: vercelDeployment({ target: undefined, projectId: undefined }), cliResponse: vercelCliDeployment() },
+  ]) assert.throws(() => reconcileVercelDeploymentInspection(fixture), error => error.code === "IDENTITY");
+});
 
 test("the literal Preview representation passes and null remains fail closed", () => {
   assert.equal(validateVercelQualificationPreflight({ projectResponse: vercelProject(), deploymentResponse: vercelDeployment(), requestedScope: CONTINUATION.scope, reviewedInspection: reviewedVercelInspection() }).targetRepresentation, "LITERAL_PREVIEW");

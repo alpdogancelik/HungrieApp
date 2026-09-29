@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 export const CONTINUATION = Object.freeze({
   schemaVersion: 1,
   kind: "restaurant_vercel_preview_browser_notification_continuation",
-  qualificationId: "restaurant-vercel-browser-notification-qualification-20260929y",
+  qualificationId: "restaurant-vercel-browser-notification-qualification-20260929z",
   consumedQualifications: Object.freeze([
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928b", manifest: "evidence-manifest.tsv", manifestSha256: "8b478d63808742057429821a5704db22d2e6cf4343ce82fe18189db96ba3c592", authoritySha256: "2d4af7ec3c33bbb6fb3836bf3754857be9109c20fe7cb43b5bbfd6aef3f765e6", sourceManifestSha256: "33f95fc58475b5ea3e91c0cf8b6aef045fcde9f043af82abcca05eb7d5811b85" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928c", manifest: "evidence-manifest-final.tsv", manifestSha256: "6dc2701f56fddaf341519b4a6ad78ab88a6d037d8d0993ece3e91ad691ce399f", authoritySha256: "219381cafd5c1ec678a0a3936fc48ebecc7e961fac4a597d8b391eb229a3428e", sourceManifestSha256: "18ddf144ad7e237a3f286557cbd02c54b7be1b126a36d24c44006c1771a16fda" }),
@@ -29,6 +29,7 @@ export const CONTINUATION = Object.freeze({
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260929u", manifest: "evidence-manifest.tsv", manifestSha256: "9ba99e2e5ff80ea3d89313299ca3fb9efd99c5953f978512fc6392c7dffb5a66", authoritySha256: "90c30c7bd3f9a0e1ca80c385d9c7fc7017d9ca78654d54bf8daa8b4f7e7709aa", sourceManifestSha256: "36c28585dfd6076f44aec288d278aa11e42538865376bd21beeb0ea98a904c20" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260929v", manifest: "evidence-manifest.tsv", manifestSha256: "e40edd37b2affd68ea6b6bab2806c3ce239eb907c65dfc161aad824cd31a89d2", authoritySha256: "3ec1902db1a17e51850a1243c6391353c408096711783ef0d5c2e5b637ed18f1", sourceManifestSha256: "7c40674088e5b5808e36bc4351a83032e8b299fb5c22d975049614a49615312b" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260929x", manifest: "evidence-manifest.tsv", manifestSha256: "f6d0595c91b4da406c5ae0e5a4c1ca13f048aab7b26f53a6195670a37677eb39", authoritySha256: "2bdd281673c14d7c9465c2ff4432066c075bec400575c2dffa9d2ac28f85b6af", sourceManifestSha256: "b2510cde0ada97d9fe92459da085195647db3568b19772af882fe27c813bbb6c" }),
+    Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260929y", manifest: "evidence-manifest.tsv", manifestSha256: "55d8f4762579514f1840dd10690341bdb7d971ef1d86634ccb94972291a10a06", authoritySha256: "eda433bd840e1df4c40c15926e95dc4ee0f530ecc110baa8ad3bd7b82c3090b8", sourceManifestSha256: "de679745cb8ecb55dcf82f20a8a72135a0f1fe1cd502b3398b0ca439ffb931f8" }),
   ]),
   deploymentId: "dpl_HcAHHG1HU8N3fSNRohXymef8Eq2o",
   origin: "https://hungrie-restaurant-web-staging-eval-20260927a-qatdn2q0c.vercel.app",
@@ -64,7 +65,7 @@ export const CONTINUATION = Object.freeze({
     inspectionSha256: "5b11aaca1a5802778b16060e48afc6ec3afe1e6ce7ec428741de740f28cfc74a",
     terminalSha256: "b345a67ec2e3ed8d95320e2c569656891fd97ea6155f52ca9262dcc752d362e5",
   }),
-  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260929y",
+  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260929z",
   authorityDirectory: "secure/restaurant-vercel-browser-notification-qualification-authority",
   limits: Object.freeze({ bypassCreates: 1, bypassRevokes: 1, postRevokeProjectGets: 1, preliminaryBypassInventoryGets: 0, accountContexts: 1, concurrentAccountContexts: 1, pushRegistrations: 1, foregroundFcmSends: 1, backgroundFcmSends: 1, pushUnregistrations: 1, retries: 0, authorityValidityMs: 2 * 60 * 60 * 1000 }),
 });
@@ -464,6 +465,34 @@ function unwrapProviderObject(value, key) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   if (value[key] !== undefined) return value[key] && typeof value[key] === "object" && !Array.isArray(value[key]) ? value[key] : null;
   return value;
+}
+
+export function reconcileVercelDeploymentInspection({ apiResponse, cliResponse }) {
+  const apiDeployment = unwrapProviderObject(apiResponse, "deployment");
+  const cliDeployment = unwrapProviderObject(cliResponse, "deployment");
+  if (!apiDeployment || !cliDeployment) throw Object.assign(new Error("Vercel deployment inspection response is malformed."), { code: "IDENTITY" });
+  for (const field of ["id", "name", "url", "readyState"]) {
+    if (apiDeployment[field] === undefined || cliDeployment[field] === undefined || apiDeployment[field] !== cliDeployment[field]) {
+      throw Object.assign(new Error(`Vercel API and CLI deployment identity mismatch: ${field}.`), { code: "IDENTITY" });
+    }
+  }
+  if (typeof apiDeployment.projectId !== "string" || apiDeployment.projectId.length === 0) throw Object.assign(new Error("Vercel API deployment project identity is missing."), { code: "IDENTITY" });
+  if (cliDeployment.target !== "preview") throw Object.assign(new Error("Vercel CLI deployment target is not literal Preview."), { code: "IDENTITY" });
+  if (apiDeployment.target !== undefined && apiDeployment.target !== null && apiDeployment.target !== "preview") throw Object.assign(new Error("Vercel API deployment target contradicts Preview."), { code: "IDENTITY" });
+  const apiMarkers = [apiDeployment.environment, apiDeployment.deploymentTarget, apiDeployment.meta?.target].filter(value => value !== undefined && value !== null);
+  if (apiMarkers.some(value => value !== "preview")) throw Object.assign(new Error("Vercel API deployment contains explicit non-Preview environment evidence."), { code: "IDENTITY" });
+  return {
+    id: apiDeployment.id,
+    name: apiDeployment.name,
+    projectId: apiDeployment.projectId,
+    target: cliDeployment.target,
+    readyState: apiDeployment.readyState,
+    url: apiDeployment.url,
+    environment: apiDeployment.environment,
+    deploymentTarget: apiDeployment.deploymentTarget,
+    meta: apiDeployment.meta,
+    targetSource: "PINNED_VERCEL_CLI_INSPECT",
+  };
 }
 
 export function validateVercelQualificationPreflight({ projectResponse, deploymentResponse, requestedScope, reviewedInspection }) {
