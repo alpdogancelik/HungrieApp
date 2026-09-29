@@ -28,11 +28,12 @@ const options = {
   organizationId: valueFor("--organization-id"),
   region: valueFor("--region") || "eu-central-1",
   output: valueFor("--output") || "secure/supabase-projects.local.json",
-  environments: (valueFor("--environments") || "development,staging,production").split(",").filter(Boolean),
+  environments: (valueFor("--environments") || "development,staging").split(",").filter(Boolean),
 };
 
 const invalidEnvironment = options.environments.find((environment) => !PROJECTS.some((entry) => entry.environment === environment));
 if (invalidEnvironment) throw new Error(`Unsupported environment: ${invalidEnvironment}.`);
+if (options.environments.includes("production")) throw new Error("The generic Supabase provisioner is non-production-only; Production requires a separately reviewed owner-bound provisioning operator.");
 const desiredProjects = PROJECTS.filter((entry) => options.environments.includes(entry.environment));
 
 const runSupabase = (commandArgs) => {

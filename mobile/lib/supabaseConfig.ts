@@ -3,6 +3,7 @@ export type SupabaseRuntimeConfig = {
     publishableKey?: string;
     enabled?: string;
     appEnvironment?: string;
+    expectedProjectRef?: string;
 };
 
 const NON_PRODUCTION_PROJECTS: Record<string, string> = {
@@ -25,10 +26,12 @@ export const resolveSupabaseState = (config: SupabaseRuntimeConfig) => {
     const requested = String(config.enabled || "false").trim().toLowerCase() === "true";
     const appEnvironment = String(config.appEnvironment || "").trim().toLowerCase();
     const projectRef = projectRefFromUrl(url);
-    const expectedProjectRef = NON_PRODUCTION_PROJECTS[appEnvironment];
+    const expectedProjectRef = appEnvironment === "production"
+        ? String(config.expectedProjectRef || "").trim()
+        : NON_PRODUCTION_PROJECTS[appEnvironment];
     const environmentMatches = Boolean(projectRef) && (
         expectedProjectRef ? projectRef === expectedProjectRef
-            : appEnvironment === "production" && !Object.values(NON_PRODUCTION_PROJECTS).includes(projectRef)
+            : false
     );
     const credentialsConfigured = Boolean(url && publishableKey);
     const configured = credentialsConfigured && environmentMatches;

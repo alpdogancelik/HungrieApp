@@ -2,6 +2,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { loadProductionOperatorContract } from "./restaurant-production-environment-contract.mjs";
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const args = process.argv.slice(2);
 const value = (name) => args.find((entry) => entry.startsWith(`${name}=`))?.slice(name.length + 1) || "";
@@ -13,6 +17,7 @@ if (!write) {
   process.exit(0);
 }
 if (value("--confirm") !== "configure-private-eu-backups") throw new Error("Use --write --confirm=configure-private-eu-backups.");
+loadProductionOperatorContract({ contractPath: value("--production-contract"), action: "configure-production-backup-bucket", rootDir: root, bindings: { firebaseProjectId: value("--firebase-project-id"), expectedFirebaseProjectId: value("--expect-firebase-project-id"), supabaseProjectRef: value("--supabase-project-ref"), expectedSupabaseProjectRef: value("--expect-supabase-project-ref") } });
 const run = (commandArgs) => {
   const result = spawnSync("gcloud", ["storage", ...commandArgs], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
   if (result.status !== 0) throw new Error("gcloud bucket configuration failed; output was suppressed.");

@@ -2,14 +2,13 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { browserSessionPersistence, getAuth, setPersistence } from "firebase/auth";
 import { getFunctions } from "firebase/functions";
-const config={apiKey:process.env.NEXT_PUBLIC_FIREBASE_API_KEY,authDomain:process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,projectId:process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,appId:process.env.NEXT_PUBLIC_FIREBASE_APP_ID};
+import {resolveAdminEnvironment} from "./environmentConfig";
+const runtime=resolveAdminEnvironment(process.env),config=runtime.firebase;
 if(typeof window!=="undefined"&&Object.values(config).some(value=>!value))throw new Error("Missing Firebase public configuration");
-const app=getApps().length?getApp():initializeApp({apiKey:config.apiKey||"build-proof",authDomain:config.authDomain||"build-proof.invalid",projectId:config.projectId||"build-proof",appId:config.appId||"build-proof"});
+const app=getApps().length?getApp():initializeApp(config);
 export const auth=getAuth(app);
 export const functions=getFunctions(app);
-const environment=process.env.NEXT_PUBLIC_HUNGRIE_ENV;
-if(typeof window!=="undefined"&&environment!=="development"&&environment!=="staging")throw new Error("Invalid Admin environment");
-const suffix=environment==="staging"?"Staging":"Development";
+const suffix=runtime.suffix;
 export const adminFunctionNames={recordMfa:"recordAdminMfaEnrollment"+suffix,setAccountStatus:"setAdminAccountStatus"+suffix,recoverMfa:"recoverAdminMfa"+suffix} as const;
 let persistenceReady:Promise<void>|undefined;
 export const ensureSessionPersistence=()=>persistenceReady??=setPersistence(auth,browserSessionPersistence);

@@ -16,6 +16,7 @@ import {
     updateDoc,
     where,
 } from "firebase/firestore";
+import { resolveFirebaseRuntimeConfig } from "./firebaseConfig";
 
 const extra: Record<string, string | undefined> = Constants.expoConfig?.extra || {};
 const env = (name: string) =>
@@ -38,16 +39,19 @@ const defaultFirebaseConfig = {
     databaseURL: "",
 };
 
-const firebaseConfig = {
-    apiKey: env("EXPO_PUBLIC_FIREBASE_API_KEY") || defaultFirebaseConfig.apiKey,
-    authDomain: env("EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN") || defaultFirebaseConfig.authDomain,
-    projectId: env("EXPO_PUBLIC_FIREBASE_PROJECT_ID") || defaultFirebaseConfig.projectId,
-    storageBucket: env("EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET") || defaultFirebaseConfig.storageBucket,
-    messagingSenderId: env("EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID") || defaultFirebaseConfig.messagingSenderId,
-    appId: env("EXPO_PUBLIC_FIREBASE_APP_ID") || defaultFirebaseConfig.appId,
-    measurementId: env("EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID") || defaultFirebaseConfig.measurementId,
-    databaseURL: env("EXPO_PUBLIC_FIREBASE_DATABASE_URL") || defaultFirebaseConfig.databaseURL,
-};
+const firebaseConfig = resolveFirebaseRuntimeConfig(
+    typeof process !== "undefined" ? (process as any).env || {} : {},
+    { ...defaultFirebaseConfig, ...extra,
+        EXPO_PUBLIC_FIREBASE_API_KEY: extra.EXPO_PUBLIC_FIREBASE_API_KEY || defaultFirebaseConfig.apiKey,
+        EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: extra.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || defaultFirebaseConfig.authDomain,
+        EXPO_PUBLIC_FIREBASE_PROJECT_ID: extra.EXPO_PUBLIC_FIREBASE_PROJECT_ID || defaultFirebaseConfig.projectId,
+        EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: extra.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || defaultFirebaseConfig.storageBucket,
+        EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: extra.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || defaultFirebaseConfig.messagingSenderId,
+        EXPO_PUBLIC_FIREBASE_APP_ID: extra.EXPO_PUBLIC_FIREBASE_APP_ID || defaultFirebaseConfig.appId,
+        EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID: extra.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID || defaultFirebaseConfig.measurementId,
+        EXPO_PUBLIC_FIREBASE_DATABASE_URL: extra.EXPO_PUBLIC_FIREBASE_DATABASE_URL || defaultFirebaseConfig.databaseURL,
+    },
+);
 
 // Allow Firebase by default; can be disabled by setting EXPO_PUBLIC_DISABLE_FIREBASE.
 const firebaseDisabledForDemo = env("EXPO_PUBLIC_DISABLE_FIREBASE") === "true";

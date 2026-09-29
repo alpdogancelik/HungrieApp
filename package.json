@@ -21,6 +21,7 @@
     "websocket-driver": "0.7.5"
   },
   "scripts": {
+    "test:production-isolation": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test scripts/restaurant-production-isolation.test.mjs",
     "start": "npm --prefix mobile run start",
     "android": "npm --prefix mobile run android",
     "ios": "npm --prefix mobile run ios",

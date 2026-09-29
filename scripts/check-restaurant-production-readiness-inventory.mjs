@@ -16,6 +16,7 @@ expect(inventory.method === 'LOCAL_READ_ONLY', 'Inventory method is not local/re
 expect(inventory.hostedRequests === 0 && inventory.productionMutations === 0, 'Inventory recorded hosted or Production activity');
 expect(inventory.production.overall === 'NOT_ESTABLISHED', 'Production must remain not established');
 expect(inventory.confirmedLocalGaps.length === 10, 'Expected ten confirmed local gaps');
+expect(inventory.localRemediation?.status === 'LOCAL_PASS_HOSTED_NOT_EXECUTED' && inventory.localRemediation?.resolvedGapCount === 10, 'Ten-gap local remediation is not recorded');
 const classifications = new Set(['VERIFIED_READ_ONLY', 'DOCUMENTED_BUT_UNVERIFIED', 'NOT_ESTABLISHED', 'UNKNOWN']);
 for (const value of Object.values(inventory.production)) expect(classifications.has(value), `Invalid Production classification: ${value}`);
 
@@ -24,7 +25,11 @@ const statuses = new Set(checklist.allowedStatuses);
 expect(checklist.overallStatus === 'NOT_YET_APPROVED_NOT_EXECUTED', 'Production readiness was advanced');
 expect(checklist.productionMutationsAuthorized === false, 'Production mutation authorization changed');
 for (const item of checklist.items) expect(statuses.has(item.status), `Invalid checklist status: ${item.id}`);
-expect(checklist.items.some(item => item.mandatory && item.status === 'FAIL'), 'Confirmed local gaps are not fail-closed');
+expect(checklist.confirmedLocalGapCount === 0 && checklist.locallyResolvedGapCount === 10, 'Local gap counts are not reconciled');
+for (const id of ['SOURCE_ENVIRONMENT_BINDINGS', 'PRODUCTION_OPERATOR_CONTRACTS']) {
+  const item = checklist.items.find(entry => entry.id === id);
+  expect(item?.status === 'PASS' && item?.evidenceClassification === 'LOCAL_PASS_HOSTED_NOT_EXECUTED', `${id} is not locally remediated`);
+}
 expect(checklist.items.some(item => item.mandatory && item.status === 'BLOCKED'), 'Provider readiness must remain blocked');
 
 const localProjects = await json('secure/supabase-projects.local.json');
@@ -32,17 +37,20 @@ expect(Boolean(localProjects.projects?.development), 'Development Supabase recor
 expect(Boolean(localProjects.projects?.staging), 'Staging Supabase record is missing');
 expect(!localProjects.projects?.production, 'Inventory is stale: a Production Supabase record now exists');
 
-const customerFirebase = await text('mobile/lib/firebase.ts');
-expect(customerFirebase.includes('hungrieapp-a2288'), 'ISO-01 evidence changed');
+const customerFirebase = await text('mobile/lib/firebaseConfig.ts');
+expect(customerFirebase.includes('Production requires explicit') && customerFirebase.includes('cannot use the Development/Staging Firebase project'), 'ISO-01 remediation missing');
 const customerSupabase = await text('mobile/lib/supabaseConfig.ts');
-expect(customerSupabase.includes('appEnvironment === "production" && !Object.values(NON_PRODUCTION_PROJECTS).includes(projectRef)'), 'ISO-02 evidence changed');
+expect(customerSupabase.includes('config.expectedProjectRef'), 'ISO-02 remediation missing');
 const adminFirebase = await text('apps/admin-web/lib/firebase.ts');
-expect(adminFirebase.includes('environment!=="development"&&environment!=="staging"'), 'ISO-04 evidence changed');
+expect(adminFirebase.includes('runtime.suffix'), 'ISO-04 remediation missing');
 const functions = await text('functions/index.js');
-expect(!functions.includes('dispatchRestaurantWebPushProduction'), 'ISO-05 evidence changed');
+expect(functions.includes('dispatchRestaurantWebPushProduction') && functions.includes('deleteHungrieAccountProduction'), 'ISO-05 remediation missing');
 const deploy = await text('scripts/deploy-supabase-milestone10.mjs');
-expect(deploy.includes('|| "hungrieapp-a2288"'), 'ISO-06 evidence changed');
+expect(deploy.includes('loadProductionOperatorContract'), 'ISO-06 remediation missing');
 const catalog = await text('scripts/create-production-catalog-release.mjs');
-expect(catalog.includes('buildImportSql(transformed, "hungrieapp-a2288")'), 'ISO-07 evidence changed');
+expect(catalog.includes('buildImportSql(transformed, firebaseProjectId)'), 'ISO-07 remediation missing');
+expect((await text('scripts/verify-supabase-milestone11-environment.mjs')).includes('row.firebase_project_id !== valueFor("--expect-firebase-project-id")'), 'ISO-08 remediation missing');
+expect((await text('scripts/operate-firebase-production.mjs')).includes('loadProductionOperatorContract'), 'ISO-09 remediation missing');
+expect((await json('docs/restaurant-nonproduction-tool-classification.json')).allowedEnvironments.includes('production') === false, 'ISO-10 remediation missing');
 
-console.log('PASS: local Production architecture inventory verified; 10 gaps remain fail-closed; Production is not established, authorized, or executed.');
+console.log('PASS: ten Production isolation gaps are locally remediated and fail closed; hosted Production remains not established, authorized, or executed.');

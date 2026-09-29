@@ -66,6 +66,7 @@
     "workspace:apps/restaurant/src/design/typography.css",
     "workspace:apps/restaurant/src/earningsModel.ts",
     "workspace:apps/restaurant/src/earningsRepository.ts",
+    "workspace:apps/restaurant/src/environmentConfig.ts",
     "workspace:apps/restaurant/src/firebase.ts",
     "workspace:apps/restaurant/src/foregroundNotificationHandler.ts",
     "workspace:apps/restaurant/src/i18n.ts",

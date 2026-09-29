@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertExactProductionIdentities } from "./restaurant-production-environment-contract.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const environment = process.argv[2];
@@ -10,6 +11,8 @@ const state = JSON.parse(fs.readFileSync(path.join(root, "secure", "supabase-pro
 const managementToken = fs.readFileSync(path.join(root, "secure", "supabase-cli-hungrie", "access-token"), "utf8").trim();
 const project = state.projects?.[environment];
 if (!project?.ref || !project?.publishableKey) throw new Error(`${environment} URL/publishable configuration is unavailable.`);
+const valueFor = (name) => process.argv.find((value) => value.startsWith(`${name}=`))?.slice(name.length + 1) || "";
+if (environment === "production") assertExactProductionIdentities({ environment, firebaseProjectId: valueFor("--firebase-project-id"), expectedFirebaseProjectId: valueFor("--expect-firebase-project-id"), supabaseProjectRef: project.ref, expectedSupabaseProjectRef: valueFor("--expect-supabase-project-ref") });
 const url = project.url || `https://${project.ref}.supabase.co`;
 let webhook = null;
 if (webhookFile) {

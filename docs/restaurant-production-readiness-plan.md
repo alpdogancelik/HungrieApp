@@ -13,10 +13,10 @@ The local/read-only inventory is complete. See `restaurant-production-architectu
 - Production Supabase identity: `NOT ESTABLISHED`
 - Restaurant Production hosting target: `NOT ESTABLISHED`
 - Unrecorded external provider state: `UNKNOWN`
-- Confirmed local environment-binding gaps: 10
+- Confirmed local environment-binding gaps: 0 open; 10 resolved as `LOCAL PASS / HOSTED NOT EXECUTED`
 - Production mutations performed: 0
 
-The next action is local remediation of the fail-closed Production identity/build/operator contracts before any provider inspection or provisioning request.
+The local fail-closed identity/build/operator remediation is complete. Production values and provider state remain unestablished. The next action is owner selection of the hosting target and Firebase/Supabase ownership, followed by a separately authorized bounded read-only provider inventory.
 
 ## Purpose
 
@@ -115,6 +115,10 @@ Staging autonomy and prior authorizations do not transfer to Production.
 
 The machine-readable checklist is `restaurant-production-readiness-checklist.json`. Overall readiness remains `NOT_YET_APPROVED_NOT_EXECUTED`. A Production go decision is forbidden until every mandatory item is `PASS` or explicitly `NOT APPLICABLE`, all required owner approvals are recorded, the exact candidate and rollback are independently verified, and there are no `FAIL`, `BLOCKED`, or `NOT EXECUTED` mandatory items.
 
+## Local isolation remediation
+
+`ISO-01` through `ISO-10` are `LOCAL PASS / HOSTED NOT EXECUTED`. Customer, Restaurant, Admin, Functions, Firebase and Supabase operators now reject missing, non-production, ambiguous, or mismatched Production identities. Legacy hard-bound tools are machine-classified non-production-only. No Production identifier, credential, or provider state was invented.
+
 ## First justified next action
 
-Implement and review the ten confirmed local isolation gaps in `restaurant-production-architecture-inventory.md`. This work must make every Production client, server, service worker, migration/deployment operator, and verifier bind one exact reviewed environment identity and reject non-production reuse before any hosted request. Hosting and provider-organization choices remain owner decisions.
+The owner must choose the final Restaurant Production hosting target and the Firebase and Supabase organization/project ownership model. A separately authorized bounded read-only inventory may then establish whether suitable provider resources exist. Provisioning remains out of scope.

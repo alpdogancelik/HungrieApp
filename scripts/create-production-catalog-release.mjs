@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import { assertExactProductionIdentities } from "./restaurant-production-environment-contract.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const secureRoot = path.join(root, "secure");
@@ -14,10 +15,15 @@ const input = value("--input");
 const expectedChecksum = value("--expect-source-checksum");
 const confirmation = value("--confirm");
 const outputDirectory = path.resolve(root, value("--output-dir") || "secure/production-catalog-release");
+const firebaseProjectId = value("--firebase-project-id");
+const expectedFirebaseProjectId = value("--expect-firebase-project-id");
+const supabaseProjectRef = value("--supabase-project-ref");
+const expectedSupabaseProjectRef = value("--expect-supabase-project-ref");
 
 if (confirmation !== "production-catalog") throw new Error("Use --confirm=production-catalog.");
 if (!input || !fs.existsSync(path.resolve(root, input))) throw new Error("Provide an existing --input catalog export.");
 if (!expectedChecksum) throw new Error("Pin the reviewed export with --expect-source-checksum=<sha256>.");
+assertExactProductionIdentities({ environment: "production", firebaseProjectId, expectedFirebaseProjectId, supabaseProjectRef, expectedSupabaseProjectRef });
 const relativeOutput = path.relative(secureRoot, outputDirectory);
 if (!relativeOutput || relativeOutput.startsWith("..") || path.isAbsolute(relativeOutput)) {
   throw new Error("Production release output must remain under ignored secure/.");
@@ -33,7 +39,7 @@ for (const [key, expected] of Object.entries(expectedCounts)) {
 }
 if (transformed.rejections.length) throw new Error("Catalog release blocked because transformed records contain rejections.");
 
-const { sql } = buildImportSql(transformed, "hungrieapp-a2288");
+const { sql } = buildImportSql(transformed, firebaseProjectId);
 const sqlChecksum = crypto.createHash("sha256").update(sql).digest("hex");
 const releasedAt = new Date().toISOString();
 const artifact = {

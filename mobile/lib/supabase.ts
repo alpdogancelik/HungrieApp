@@ -14,6 +14,7 @@ const runtime = resolveSupabaseState({
     publishableKey: process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY || extra.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     enabled: process.env.EXPO_PUBLIC_SUPABASE_ENABLED || extra.EXPO_PUBLIC_SUPABASE_ENABLED,
     appEnvironment: process.env.EXPO_PUBLIC_APP_ENV || extra.EXPO_PUBLIC_APP_ENV,
+    expectedProjectRef: process.env.EXPO_PUBLIC_EXPECTED_SUPABASE_PROJECT_REF,
 });
 
 export const supabaseConfigured = runtime.configured;

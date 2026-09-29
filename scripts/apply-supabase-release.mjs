@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadProductionOperatorContract } from "./restaurant-production-environment-contract.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const secureRoot = path.join(root, "secure");
@@ -33,6 +34,7 @@ if (environment === "production") {
 const state = JSON.parse(fs.readFileSync(path.join(secureRoot, "supabase-projects.local.json"), "utf8"));
 const project = state.projects?.[environment];
 if (!project?.ref || !project?.databasePassword) throw new Error(`No ${environment} database credentials are recorded.`);
+if (environment === "production") loadProductionOperatorContract({ contractPath: value("--production-contract"), action: "supabase-catalog-release", rootDir: root, bindings: { firebaseProjectId: value("--firebase-project-id"), expectedFirebaseProjectId: value("--expect-firebase-project-id"), supabaseProjectRef: project.ref, expectedSupabaseProjectRef: value("--expect-supabase-project-ref") } });
 const managementTokenPath = path.join(secureRoot, "supabase-cli-hungrie", "access-token");
 if (!fs.existsSync(managementTokenPath)) throw new Error("Missing ignored Supabase management token.");
 const managementToken = fs.readFileSync(managementTokenPath, "utf8").trim();

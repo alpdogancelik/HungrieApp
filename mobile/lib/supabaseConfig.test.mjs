@@ -62,3 +62,10 @@ test("production cannot use either non-production Supabase project", () => {
     });
     assert.equal(state.enabled, false);
 });
+
+test("production requires and honors one exact expected Supabase project", () => {
+    const url = "https://abcdefghijklmnopqrst.supabase.co";
+    assert.equal(resolveSupabaseState({ url, publishableKey: "public", appEnvironment: "production", enabled: "true" }).enabled, false);
+    assert.equal(resolveSupabaseState({ url, publishableKey: "public", appEnvironment: "production", expectedProjectRef: "tsrqponmlkjihgfedcba", enabled: "true" }).enabled, false);
+    assert.equal(resolveSupabaseState({ url, publishableKey: "public", appEnvironment: "production", expectedProjectRef: "abcdefghijklmnopqrst", enabled: "true" }).enabled, true);
+});

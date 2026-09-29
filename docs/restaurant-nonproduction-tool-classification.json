@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "status": "LOCAL_PASS_HOSTED_NOT_EXECUTED",
+  "rule": "These legacy Firebase migration and probe tools are fixed to the archived shared non-production project and are forbidden for Production.",
+  "tools": [
+    "functions/scripts/auditFirebaseMigrationBaseline.js",
+    "functions/scripts/backfillSupabaseAuthClaims.js",
+    "functions/scripts/backupFirebaseArchive.js",
+    "functions/scripts/migrateFirebaseCatalog.js",
+    "functions/scripts/migrateFirebaseIdentity.js",
+    "functions/scripts/migrateFirebaseOrders.js",
+    "functions/scripts/migrateFirebaseReviews.js",
+    "functions/scripts/probeSupabaseFirebaseBridge.js",
+    "mobile/scripts/sync-firestore-from-json-admin.mjs",
+    "mobile/scripts/sync-firestore-from-json.mjs"
+  ],
+  "allowedEnvironments": ["local", "development", "staging"],
+  "productionReplacement": "Use an audited export plus the exact Production catalog-release contract. Identity/account migration requires a separately reviewed Production operator that does not yet exist."
+}

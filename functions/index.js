@@ -10,6 +10,7 @@ const http2 = require("node:http2");
 const { isOperationId, hasTotpFactor, hasTotpSession, accountStatusFailureReason } = require("./phase4AdminLogic");
 const { classifyMessagingFailure, restaurantWakeMessage } = require("./phase5RestaurantPushLogic");
 const { deleteSharedNonProductionAccount } = require("./phase6CustomerDeletionLogic");
+const { assertProductionFunctionIdentity } = require("./productionEnvironmentContract");
 
 admin.initializeApp();
 
@@ -18,8 +19,18 @@ const SUPABASE_URL = defineSecret("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = defineSecret("SUPABASE_SERVICE_ROLE_KEY");
 const SUPABASE_STAGING_URL = defineSecret("SUPABASE_STAGING_URL");
 const SUPABASE_STAGING_SERVICE_ROLE_KEY = defineSecret("SUPABASE_STAGING_SERVICE_ROLE_KEY");
+const SUPABASE_PRODUCTION_URL = defineSecret("SUPABASE_PRODUCTION_URL");
+const SUPABASE_PRODUCTION_SERVICE_ROLE_KEY = defineSecret("SUPABASE_PRODUCTION_SERVICE_ROLE_KEY");
+const PRODUCTION_FIREBASE_PROJECT_ID = defineString("PRODUCTION_FIREBASE_PROJECT_ID", { default: "" });
+const PRODUCTION_SUPABASE_PROJECT_REF = defineString("PRODUCTION_SUPABASE_PROJECT_REF", { default: "" });
 const ORDER_AUTOMATION_BACKEND = defineString("ORDER_AUTOMATION_BACKEND", { default: "firebase" });
 const firebaseOrderAutomationEnabled = () => ORDER_AUTOMATION_BACKEND.value() === "firebase";
+const requireProductionIdentity = () => assertProductionFunctionIdentity({
+    actualFirebaseProjectId: process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || "",
+    expectedFirebaseProjectId: PRODUCTION_FIREBASE_PROJECT_ID.value(),
+    supabaseUrl: SUPABASE_PRODUCTION_URL.value(),
+    expectedSupabaseProjectRef: PRODUCTION_SUPABASE_PROJECT_REF.value(),
+});
 
 const USER_NOTIFIABLE_STATUSES = new Set(["preparing", "ready", "out_for_delivery", "delivered", "canceled"]);
 const ORDER_APPROVAL_SLA_MS = 5 * 60 * 1000;
@@ -656,8 +667,9 @@ const requireAdminBridgeRequest = (request) => {
     return authorization;
 };
 
-const makeRecordAdminMfaEnrollment = (urlSecret, keySecret) => onCall(
+const makeRecordAdminMfaEnrollment = (urlSecret, keySecret, identityGuard = () => {}) => onCall(
     { secrets: [urlSecret, keySecret] }, async (request) => {
+        identityGuard();
         if (!request.auth?.uid || request.auth.token.email_verified !== true) throw new HttpsError("permission-denied", "A verified signed-in identity is required.");
         const operationId = String(request.data?.operationId || "");
         if (!isOperationId(operationId)) throw new HttpsError("invalid-argument", "A valid operation ID is required.");
@@ -669,8 +681,9 @@ const makeRecordAdminMfaEnrollment = (urlSecret, keySecret) => onCall(
             logger.info("Admin TOTP enrollment recorded", { operationId }); return result;
         } catch (error) { logger.error("Admin TOTP enrollment could not be recorded", { operationId, code: error?.code || "unknown" }); throw new HttpsError("internal", "Admin MFA enrollment could not be recorded."); }
     });
-const makeSetAdminAccountStatus = (urlSecret, keySecret) => onCall(
+const makeSetAdminAccountStatus = (urlSecret, keySecret, identityGuard = () => {}) => onCall(
     { secrets: [urlSecret, keySecret] }, async (request) => {
+        identityGuard();
         const authorization=requireAdminBridgeRequest(request),profileId=String(request.data?.profileId||""),status=String(request.data?.status||""),reasonCode=String(request.data?.reasonCode||""),operationId=String(request.data?.operationId||"");
         if(!profileId||!["active","suspended","revoked"].includes(status))throw new HttpsError("invalid-argument","Valid account status input is required.");
         try { const result=await callSupabaseUserRpc("admin_set_account_status_v1",{p_profile_id:profileId,p_status:status,p_reason_code:reasonCode,p_operation_id:operationId},authorization,urlSecret,keySecret); if(status!=="active"){const uid=await callSupabaseAdminRpc("server_get_firebase_uid_v1",{p_profile_id:profileId},urlSecret,keySecret);await admin.auth().revokeRefreshTokens(uid)} return result; }
@@ -680,8 +693,9 @@ const makeSetAdminAccountStatus = (urlSecret, keySecret) => onCall(
             throw new HttpsError("failed-precondition","Account status could not be changed.",reason?{reason}:undefined);
         }
     });
-const makeRecoverAdminMfa = (urlSecret, keySecret) => onCall(
+const makeRecoverAdminMfa = (urlSecret, keySecret, identityGuard = () => {}) => onCall(
     { secrets: [urlSecret, keySecret] }, async (request) => {
+        identityGuard();
         const authorization=requireAdminBridgeRequest(request),profileId=String(request.data?.profileId||""),evidenceReference=String(request.data?.evidenceReference||""),operationId=String(request.data?.operationId||"");
         try { const result=await callSupabaseUserRpc("admin_record_mfa_recovery_v1",{p_profile_id:profileId,p_evidence_reference:evidenceReference,p_operation_id:operationId},authorization,urlSecret,keySecret);const uid=await callSupabaseAdminRpc("server_get_firebase_uid_v1",{p_profile_id:profileId},urlSecret,keySecret);await admin.auth().updateUser(uid,{multiFactor:{enrolledFactors:[]}});await admin.auth().revokeRefreshTokens(uid);return result; }
         catch(error){logger.error("Admin MFA recovery orchestration failed",{operationId,code:error?.code||"unknown"});throw new HttpsError("failed-precondition","MFA recovery could not be completed.")}
@@ -692,9 +706,13 @@ exports.recoverAdminMfaDevelopment=makeRecoverAdminMfa(SUPABASE_URL,SUPABASE_SER
 exports.recordAdminMfaEnrollmentStaging=makeRecordAdminMfaEnrollment(SUPABASE_STAGING_URL,SUPABASE_STAGING_SERVICE_ROLE_KEY);
 exports.setAdminAccountStatusStaging=makeSetAdminAccountStatus(SUPABASE_STAGING_URL,SUPABASE_STAGING_SERVICE_ROLE_KEY);
 exports.recoverAdminMfaStaging=makeRecoverAdminMfa(SUPABASE_STAGING_URL,SUPABASE_STAGING_SERVICE_ROLE_KEY);
+exports.recordAdminMfaEnrollmentProduction=makeRecordAdminMfaEnrollment(SUPABASE_PRODUCTION_URL,SUPABASE_PRODUCTION_SERVICE_ROLE_KEY,requireProductionIdentity);
+exports.setAdminAccountStatusProduction=makeSetAdminAccountStatus(SUPABASE_PRODUCTION_URL,SUPABASE_PRODUCTION_SERVICE_ROLE_KEY,requireProductionIdentity);
+exports.recoverAdminMfaProduction=makeRecoverAdminMfa(SUPABASE_PRODUCTION_URL,SUPABASE_PRODUCTION_SERVICE_ROLE_KEY,requireProductionIdentity);
 
-const makeRestaurantWebPushDispatcher = (urlSecret, keySecret) => onSchedule(
+const makeRestaurantWebPushDispatcher = (urlSecret, keySecret, identityGuard = () => {}) => onSchedule(
     { schedule: "every 1 minutes", secrets: [urlSecret, keySecret] }, async () => {
+        identityGuard();
         const deliveries = await callSupabaseAdminRpc("server_claim_restaurant_web_push_v1", { p_limit: 100 }, urlSecret, keySecret);
         for (const delivery of Array.isArray(deliveries) ? deliveries : []) {
             try {
@@ -717,6 +735,7 @@ const makeRestaurantWebPushDispatcher = (urlSecret, keySecret) => onSchedule(
 
 exports.dispatchRestaurantWebPushDevelopment=makeRestaurantWebPushDispatcher(SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY);
 exports.dispatchRestaurantWebPushStaging=makeRestaurantWebPushDispatcher(SUPABASE_STAGING_URL,SUPABASE_STAGING_SERVICE_ROLE_KEY);
+exports.dispatchRestaurantWebPushProduction=makeRestaurantWebPushDispatcher(SUPABASE_PRODUCTION_URL,SUPABASE_PRODUCTION_SERVICE_ROLE_KEY,requireProductionIdentity);
 
 const deleteFirestoreCollection = async (reference) => {
     while (true) {
@@ -807,9 +826,39 @@ exports.deleteHungrieAccount = onCall(
     },
 );
 
-const makeAccountAnonymizationReconciler = (environment, urlSecret, keySecret) => onSchedule(
+// Production deletion is deliberately a separate export. It can operate only
+// against one explicitly bound Production Supabase project and never iterates
+// over the shared Development/Staging pair.
+exports.deleteHungrieAccountProduction = onCall(
+    { secrets: [SUPABASE_PRODUCTION_URL, SUPABASE_PRODUCTION_SERVICE_ROLE_KEY] },
+    async (request) => {
+        requireProductionIdentity();
+        if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Please sign in before deleting your account.");
+        const authTime = Number(request.auth.token.auth_time || 0) * 1000;
+        if (!authTime || Date.now() - authTime > 5 * 60 * 1000) throw new HttpsError("failed-precondition", "For security, sign in again before deleting your account.");
+        const environment = { name: "production", urlSecret: SUPABASE_PRODUCTION_URL, keySecret: SUPABASE_PRODUCTION_SERVICE_ROLE_KEY };
+        try {
+            const deletion = await deleteSharedNonProductionAccount({
+                uid: request.auth.uid,
+                environments: [environment],
+                begin: (entry, firebaseUid) => callSupabaseAdminRpc("begin_account_anonymization", { p_firebase_uid: firebaseUid }, entry.urlSecret, entry.keySecret),
+                scrub: scrubFirebaseIdentity,
+                deleteIdentity: (firebaseUid) => admin.auth().deleteUser(firebaseUid),
+                finalize: (entry, profileId, firebaseUid) => callSupabaseAdminRpc("finalize_account_anonymization", { p_profile_id: profileId, p_firebase_uid: firebaseUid }, entry.urlSecret, entry.keySecret),
+            });
+            return { deleted: true, pendingFinalization: deletion.finalizationFailures.length > 0 };
+        } catch (error) {
+            if (error?.message === "LAST_RESTAURANT_OWNER") throw new HttpsError("failed-precondition", "Transfer restaurant ownership before deleting this account.");
+            logger.error("Production account deletion failed", { code: error?.code || "unknown" });
+            throw new HttpsError("internal", "Account deletion could not be started.");
+        }
+    },
+);
+
+const makeAccountAnonymizationReconciler = (environment, urlSecret, keySecret, identityGuard = () => {}) => onSchedule(
     { schedule: "every 60 minutes", secrets: [urlSecret, keySecret] },
     async () => {
+        identityGuard();
         const pending = await callSupabaseAdminRpc("pending_account_anonymizations", {}, urlSecret, keySecret);
         let finalized = 0;
         for (const row of Array.isArray(pending) ? pending : []) {
@@ -833,4 +882,7 @@ exports.reconcilePendingAccountAnonymizationsDevelopment = makeAccountAnonymizat
 );
 exports.reconcilePendingAccountAnonymizationsStaging = makeAccountAnonymizationReconciler(
     "staging", SUPABASE_STAGING_URL, SUPABASE_STAGING_SERVICE_ROLE_KEY,
+);
+exports.reconcilePendingAccountAnonymizationsProduction = makeAccountAnonymizationReconciler(
+    "production", SUPABASE_PRODUCTION_URL, SUPABASE_PRODUCTION_SERVICE_ROLE_KEY, requireProductionIdentity,
 );

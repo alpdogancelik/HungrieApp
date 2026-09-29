@@ -53,11 +53,35 @@
     "ISO-09_GENERIC_FIREBASE_DEFAULT_IS_NONPRODUCTION",
     "ISO-10_MIGRATION_TOOLS_ARE_NONPRODUCTION_BOUND"
   ],
-  "nextAction": "LOCAL_FAIL_CLOSED_PRODUCTION_IDENTITY_CONTRACT_REMEDIATION",
+  "nextAction": "OWNER_ARCHITECTURE_DECISIONS_THEN_BOUNDED_READ_ONLY_PROVIDER_INVENTORY",
   "ownerDecisions": [
     "FINAL_RESTAURANT_PRODUCTION_HOSTING_TARGET",
     "PRODUCTION_FIREBASE_ORGANIZATION_OWNERSHIP",
     "PRODUCTION_SUPABASE_ORGANIZATION_OWNERSHIP",
     "PRODUCTION_DOMAIN_AND_ACTIVATION_STRATEGY"
-  ]
+  ],
+  "localRemediation": {
+    "status": "LOCAL_PASS_HOSTED_NOT_EXECUTED",
+    "resolvedGapCount": 10,
+    "gapStatuses": {
+      "ISO-01": "LOCAL_PASS_HOSTED_NOT_EXECUTED",
+      "ISO-02": "LOCAL_PASS_HOSTED_NOT_EXECUTED",
+      "ISO-03": "LOCAL_PASS_HOSTED_NOT_EXECUTED",
+      "ISO-04": "LOCAL_PASS_HOSTED_NOT_EXECUTED",
+      "ISO-05": "LOCAL_PASS_HOSTED_NOT_EXECUTED",
+      "ISO-06": "LOCAL_PASS_HOSTED_NOT_EXECUTED",
+      "ISO-07": "LOCAL_PASS_HOSTED_NOT_EXECUTED",
+      "ISO-08": "LOCAL_PASS_HOSTED_NOT_EXECUTED",
+      "ISO-09": "LOCAL_PASS_HOSTED_NOT_EXECUTED",
+      "ISO-10": "LOCAL_PASS_HOSTED_NOT_EXECUTED"
+    },
+    "productionIdentityValuesPresent": false,
+    "providerVerificationExecuted": false,
+    "contracts": [
+      "scripts/restaurant-production-environment-contract.mjs",
+      "docs/restaurant-production-environment-contract.example.json",
+      "docs/restaurant-nonproduction-tool-classification.json"
+    ],
+    "parentCheckpoint": "604762fca6a3ece127fb38706860c331e573b61a"
+  }
 }

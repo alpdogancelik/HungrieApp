@@ -5,6 +5,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { pipeline } from "node:stream/promises";
 import { fileURLToPath } from "node:url";
+import { loadProductionOperatorContract } from "./restaurant-production-environment-contract.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
@@ -24,6 +25,7 @@ if (confirmation !== "production-backup") throw new Error("Use --write --confirm
 const state = JSON.parse(fs.readFileSync(statePath, "utf8"));
 const project = state.projects?.production;
 if (!project?.ref || !project?.databasePassword) throw new Error("Production Supabase credentials are not recorded.");
+loadProductionOperatorContract({ contractPath: value("--production-contract"), action: "supabase-production-backup", rootDir: root, bindings: { firebaseProjectId: value("--firebase-project-id"), expectedFirebaseProjectId: value("--expect-firebase-project-id"), supabaseProjectRef: project.ref, expectedSupabaseProjectRef: value("--expect-supabase-project-ref") } });
 const databaseHost = process.env.SUPABASE_PRODUCTION_DB_HOST || `db.${project.ref}.supabase.co`;
 
 const run = (command, commandArgs, options = {}) => {

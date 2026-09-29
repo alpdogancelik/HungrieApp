@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadProductionOperatorContract } from "./restaurant-production-environment-contract.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const [environment, mode] = process.argv.slice(2).filter((value) => !value.startsWith("--"));
@@ -16,6 +17,8 @@ const state = JSON.parse(fs.readFileSync(path.join(root, "secure", "supabase-pro
 const token = fs.readFileSync(path.join(root, "secure", "supabase-cli-hungrie", "access-token"), "utf8").trim();
 const project = state.projects?.[environment];
 if (!project?.ref) throw new Error(`No ${environment} project is recorded.`);
+const valueFor = (name) => process.argv.find((value) => value.startsWith(`${name}=`))?.slice(name.length + 1) || "";
+if (environment === "production") loadProductionOperatorContract({ contractPath: valueFor("--production-contract"), action: `supabase-runtime-${mode}`, rootDir: root, bindings: { firebaseProjectId: valueFor("--firebase-project-id"), expectedFirebaseProjectId: valueFor("--expect-firebase-project-id"), supabaseProjectRef: project.ref, expectedSupabaseProjectRef: valueFor("--expect-supabase-project-ref") } });
 if (environment === "production" && mode === "active") {
   const inspection = await fetch(`https://api.supabase.com/v1/projects/${project.ref}/database/query`, {
     method: "POST",
@@ -24,9 +27,7 @@ if (environment === "production" && mode === "active") {
   });
   if (!inspection.ok) throw new Error(`Unable to verify production identity configuration (${inspection.status}).`);
   const rows = await inspection.json();
-  if (rows?.[0]?.firebase_project_id === "hungrieapp-a2288") {
-    throw new Error("Production activation is blocked while it still trusts the archived Firebase test project.");
-  }
+  if (rows?.[0]?.firebase_project_id !== valueFor("--expect-firebase-project-id")) throw new Error("Production activation requires exact reviewed Firebase identity.");
 }
 const query = `update private.runtime_settings set environment='${environment}', mode='${mode}', changed_at=now(), changed_by='explicit_runtime_command' where singleton returning environment, mode::text;`;
 const response = await fetch(`https://api.supabase.com/v1/projects/${project.ref}/database/query`, {

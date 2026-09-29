@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { loadProductionOperatorContract } from "./restaurant-production-environment-contract.mjs";
 
 const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const STATE_PATH = path.join(ROOT_DIR, "secure", "supabase-projects.local.json");
@@ -23,6 +24,8 @@ const state = JSON.parse(fs.readFileSync(STATE_PATH, "utf8"));
 const accessToken = fs.readFileSync(CLI_TOKEN_PATH, "utf8").trim();
 const project = state.projects?.[environment];
 if (!project?.ref) throw new Error(`No ${environment} project is recorded.`);
+const valueFor = (name) => process.argv.find((value) => value.startsWith(`${name}=`))?.slice(name.length + 1) || "";
+if (environment === "production") loadProductionOperatorContract({ contractPath: valueFor("--production-contract"), action: `supabase-${action}`, rootDir: ROOT_DIR, bindings: { firebaseProjectId: valueFor("--firebase-project-id"), expectedFirebaseProjectId: valueFor("--expect-firebase-project-id"), supabaseProjectRef: project.ref, expectedSupabaseProjectRef: valueFor("--expect-supabase-project-ref") } });
 
 const run = (commandArgs, stdio = "inherit") => {
   const result = spawnSync("supabase", commandArgs, {

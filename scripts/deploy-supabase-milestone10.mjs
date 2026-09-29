@@ -5,12 +5,14 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
+import { loadProductionOperatorContract } from "./restaurant-production-environment-contract.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const environment = process.argv.find((value) => value.startsWith("--environment="))?.split("=")[1] || "development";
 const confirmation = process.argv.find((value) => value.startsWith("--confirm="))?.split("=")[1];
 const firebaseProjectId = process.argv.find((value) => value.startsWith("--firebase-project-id="))?.split("=")[1] || "hungrieapp-a2288";
 const expoTokenFile = process.argv.find((value) => value.startsWith("--expo-token-file="))?.slice("--expo-token-file=".length);
+const valueFor = (name) => process.argv.find((value) => value.startsWith(`${name}=`))?.slice(name.length + 1) || "";
 if (!new Set(["development", "staging", "production"]).has(environment) || confirmation !== environment) {
   throw new Error(`Refusing hosted changes without matching --environment=${environment} --confirm=${environment}.`);
 }
@@ -32,6 +34,7 @@ if (!project?.ref || !project?.databasePassword || !fs.existsSync(accessTokenPat
   throw new Error(`Ignored ${environment} Supabase credentials are unavailable.`);
 }
 project.url ||= `https://${project.ref}.supabase.co`;
+if (environment === "production") loadProductionOperatorContract({ contractPath: valueFor("--production-contract"), action: "supabase-environment-deploy", rootDir: root, bindings: { firebaseProjectId, expectedFirebaseProjectId: valueFor("--expect-firebase-project-id"), supabaseProjectRef: project.ref, expectedSupabaseProjectRef: valueFor("--expect-supabase-project-ref"), supabaseUrl: project.url } });
 
 const expoAccessToken = fs.readFileSync(expoTokenFile, "utf8").trim();
 if (!/^[A-Za-z0-9._~-]+$/.test(expoAccessToken)) throw new Error("Expo access-token file is empty or malformed.");

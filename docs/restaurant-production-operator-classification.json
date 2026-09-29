@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "status": "LOCAL_PASS_HOSTED_NOT_EXECUTED",
+  "exactContractRequired": [
+    "scripts/operate-firebase-production.mjs",
+    "scripts/deploy-supabase-milestone10.mjs",
+    "scripts/apply-supabase-release.mjs",
+    "scripts/configure-supabase-firebase-auth.mjs",
+    "scripts/configure-supabase-mobile-env.mjs",
+    "scripts/set-supabase-runtime-mode.mjs",
+    "scripts/supabase-environment.mjs",
+    "scripts/backup-supabase-postgres.mjs",
+    "scripts/configure-backup-bucket.mjs"
+  ],
+  "exactReadOnlyIdentityRequired": [
+    "scripts/verify-supabase-milestone11-environment.mjs",
+    "scripts/check-supabase-health.mjs"
+  ],
+  "localArtifactIdentityRequired": [
+    "scripts/create-production-catalog-release.mjs"
+  ],
+  "productionForbidden": [
+    "scripts/provision-supabase-projects.mjs"
+  ],
+  "isolatedRestoreOnly": [
+    "scripts/restore-supabase-postgres-drill.mjs"
+  ]
+}

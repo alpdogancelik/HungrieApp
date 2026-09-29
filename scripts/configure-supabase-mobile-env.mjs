@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { loadProductionOperatorContract } from "./restaurant-production-environment-contract.mjs";
 
 const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const STATE_PATH = path.join(ROOT_DIR, "secure", "supabase-projects.local.json");
@@ -26,6 +27,8 @@ const state = JSON.parse(fs.readFileSync(STATE_PATH, "utf8"));
 const accessToken = fs.readFileSync(CLI_TOKEN_PATH, "utf8").trim();
 const project = state.projects?.[environment];
 if (!project?.ref) throw new Error(`No ${environment} project is recorded.`);
+const valueFor = (name) => process.argv.find((value) => value.startsWith(`${name}=`))?.slice(name.length + 1) || "";
+if (environment === "production") loadProductionOperatorContract({ contractPath: valueFor("--production-contract"), action: "supabase-mobile-environment", rootDir: ROOT_DIR, bindings: { firebaseProjectId: valueFor("--firebase-project-id"), expectedFirebaseProjectId: valueFor("--expect-firebase-project-id"), supabaseProjectRef: project.ref, expectedSupabaseProjectRef: valueFor("--expect-supabase-project-ref") } });
 
 const result = spawnSync(
   "supabase",
@@ -83,6 +86,7 @@ fs.writeFileSync(
     `EXPO_PUBLIC_APP_ENV=${environment}`,
     `EXPO_PUBLIC_SUPABASE_URL=${project.url}`,
     `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${publishableKey}`,
+    ...(environment === "production" ? [`EXPO_PUBLIC_EXPECTED_FIREBASE_PROJECT_ID=${valueFor("--expect-firebase-project-id")}`, `EXPO_PUBLIC_EXPECTED_SUPABASE_PROJECT_REF=${valueFor("--expect-supabase-project-ref")}`] : []),
     "EXPO_PUBLIC_SUPABASE_ENABLED=true",
     "EXPO_PUBLIC_AUTH_REPOSITORY=firebase",
     ...repositoryLines,
