@@ -9,6 +9,7 @@ import { supabase } from "./supabase";
 import { deriveRestaurantRuntimeStatus, runtimeResultIsCurrent, type RestaurantRuntimeStatus } from "./restaurantRuntimeModel";
 import { resetAcknowledgementIntents } from "./orders/orderAcknowledgementModel";
 import { acceptServiceWorkerQualificationMessage, firebaseMessagingIdentity, recordNotificationQualification } from "./notificationQualification";
+import { runForegroundNotificationHandler } from "./foregroundNotificationHandler";
 export type { RestaurantRuntimeStatus } from "./restaurantRuntimeModel";
 
 type RestaurantRuntimeValue = {
@@ -105,10 +106,7 @@ export function RestaurantRuntimeProvider({ restaurantId, role, children }: Prop
       if (!live || !supported) throw new Error("Firebase Messaging is unavailable.");
       unsubscribeMessage = onMessage(getMessaging(firebaseApp), payload => {
         recordNotificationQualification("page_on_message", payload);
-        void alertRestaurantOrder(payload).then(
-          () => recordNotificationQualification("app_foreground_handler_completed", payload),
-          () => recordNotificationQualification("app_foreground_handler_failed", payload),
-        );
+        void runForegroundNotificationHandler({ payload, alert: alertRestaurantOrder, record: recordNotificationQualification });
       });
       recordNotificationQualification("foreground_listener_ready", undefined, firebaseMessagingIdentity(firebaseApp));
     }).catch(() => { if (live) recordNotificationQualification("foreground_listener_failed"); });

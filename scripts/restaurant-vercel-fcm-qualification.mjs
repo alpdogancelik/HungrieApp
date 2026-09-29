@@ -44,18 +44,21 @@ export function validateForegroundSendGate({ events, visibilityState, pageClosed
 }
 
 export function classifyDeliveryStages(events, correlationId, providerAccepted) {
-  const observed = new Set(events.filter(event => event.correlationId === correlationId).map(event => event.stage));
+  const correlated = events.filter(event => event.correlationId === correlationId), observed = new Set(correlated.map(event => event.stage));
+  const completionCount = correlated.filter(event => event.stage === "app_foreground_handler_completed").length;
   const stages = {
     providerAccepted: Boolean(providerAccepted),
     browserPush: observed.has("browser_push_event"),
     firebaseMessaging: observed.has("page_on_message") || observed.has("firebase_background_message"),
     pageOnMessage: observed.has("page_on_message"),
+    appHandlerEntered: observed.has("app_foreground_handler_entered"),
+    appHandlerFailed: observed.has("app_foreground_handler_failed"),
     appForegroundHandler: observed.has("app_foreground_handler_completed"),
     qualifierObserver: observed.has("app_foreground_handler_completed"),
   };
-  const order = [["providerAccepted", "FCM_PROVIDER"], ["browserPush", "BROWSER_PUSH_SERVICE"], ["firebaseMessaging", "FIREBASE_MESSAGING_RUNTIME"], ["pageOnMessage", "PAGE_ON_MESSAGE"], ["appForegroundHandler", "APP_FOREGROUND_HANDLER"], ["qualifierObserver", "QUALIFIER_OBSERVER"]];
-  const firstMissingStage = order.find(([key]) => !stages[key])?.[1] || null;
-  return { stages, firstMissingStage, status: firstMissingStage ? "FAIL" : "PASS" };
+  const order = [["providerAccepted", "FCM_PROVIDER"], ["browserPush", "BROWSER_PUSH_SERVICE"], ["firebaseMessaging", "FIREBASE_MESSAGING_RUNTIME"], ["pageOnMessage", "PAGE_ON_MESSAGE"], ["appHandlerEntered", "APP_FOREGROUND_HANDLER_ENTERED"], ["appForegroundHandler", "APP_FOREGROUND_HANDLER"], ["qualifierObserver", "QUALIFIER_OBSERVER"]];
+  const firstMissingStage = stages.appHandlerFailed ? "APP_FOREGROUND_HANDLER_FAILED" : completionCount > 1 ? "DUPLICATE_APP_FOREGROUND_HANDLER_COMPLETION" : order.find(([key]) => !stages[key])?.[1] || null;
+  return { stages, completionCount, firstMissingStage, status: firstMissingStage ? "FAIL" : "PASS" };
 }
 
 export class ForegroundSendGuard {

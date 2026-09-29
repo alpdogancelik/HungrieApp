@@ -4,6 +4,8 @@ import type { MessagePayload } from "firebase/messaging";
 export type NotificationQualificationStage =
   | "foreground_listener_initializing" | "foreground_listener_ready" | "foreground_listener_failed" | "foreground_listener_removed"
   | "browser_push_event" | "firebase_background_message" | "page_on_message"
+  | "app_foreground_handler_entered" | "app_foreground_handler_deduplicated"
+  | "app_foreground_audio_settled" | "app_foreground_notification_settled"
   | "app_foreground_handler_completed" | "app_foreground_handler_failed" | "app_background_handler_completed"
   | "push_binding_ready" | "push_binding_failed";
 

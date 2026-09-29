@@ -3,6 +3,7 @@ import { deleteToken, getMessaging, isSupported } from "firebase/messaging";
 import { firebaseApp } from "./firebase";
 import { supabase } from "./supabase";
 import { parsePushUnregistration } from "./pushContract";
+import { settleBestEffortPresentation, type RestaurantAlertOutcome } from "./foregroundNotificationHandler";
 
 type RestaurantAlertPayload = Pick<MessagePayload, "data" | "notification">;
 
@@ -91,7 +92,7 @@ const persistRecentAlerts = () => {
   }
 };
 
-export const alertRestaurantOrder = async (payload: RestaurantAlertPayload) => {
+export const alertRestaurantOrder = async (payload: RestaurantAlertPayload): Promise<RestaurantAlertOutcome> => {
   if (!recentAlerts.size) loadRecentAlerts();
   const orderId = String(payload.data?.orderId || "");
   const eventId = String(payload.data?.eventId || "");
@@ -99,10 +100,14 @@ export const alertRestaurantOrder = async (payload: RestaurantAlertPayload) => {
   const key = orderId && eventType === "restaurant_new_order" ? `new:${orderId}` : eventId ? `event:${eventId}` : "";
   const now = Date.now();
   for (const [storedKey, alertedAt] of recentAlerts) if (now - alertedAt > 10 * 60_000) recentAlerts.delete(storedKey);
-  if (key && recentAlerts.has(key)) return;
+  if (key && recentAlerts.has(key)) return { disposition: "deduplicated", audio: "skipped", notification: "skipped" };
   if (key) {
     recentAlerts.set(key, now);
     persistRecentAlerts();
   }
-  await Promise.all([playOrderAlert(), showRestaurantNotification(payload)]);
+  const [audio, notification] = await Promise.all([
+    settleBestEffortPresentation(() => playOrderAlert()),
+    settleBestEffortPresentation(() => showRestaurantNotification(payload)),
+  ]);
+  return { disposition: "presented", audio, notification };
 };

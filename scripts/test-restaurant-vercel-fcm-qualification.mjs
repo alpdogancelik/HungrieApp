@@ -34,10 +34,13 @@ test("qualification message matches the production data-only Web Push contract",
 test("delivery evidence identifies the first missing stage without retrying", () => {
   const correlationId = "q1";
   const pageOnly = [{ stage: "browser_push_event", correlationId }, { stage: "page_on_message", correlationId }];
-  assert.equal(classifyDeliveryStages(pageOnly, correlationId, true).firstMissingStage, "APP_FOREGROUND_HANDLER");
+  assert.equal(classifyDeliveryStages(pageOnly, correlationId, true).firstMissingStage, "APP_FOREGROUND_HANDLER_ENTERED");
   assert.equal(classifyDeliveryStages([], correlationId, true).firstMissingStage, "BROWSER_PUSH_SERVICE");
-  const complete = [...pageOnly, { stage: "app_foreground_handler_completed", correlationId }];
+  const complete = [...pageOnly, { stage: "app_foreground_handler_entered", correlationId }, { stage: "app_foreground_handler_completed", correlationId }];
   assert.equal(classifyDeliveryStages(complete, correlationId, true).status, "PASS");
+  assert.equal(classifyDeliveryStages([...complete, { stage: "app_foreground_handler_completed", correlationId }], correlationId, true).firstMissingStage, "DUPLICATE_APP_FOREGROUND_HANDLER_COMPLETION");
+  assert.equal(classifyDeliveryStages([...pageOnly, { stage: "app_foreground_handler_entered", correlationId }, { stage: "app_foreground_handler_failed", correlationId }], correlationId, true).firstMissingStage, "APP_FOREGROUND_HANDLER_FAILED");
+  assert.equal(classifyDeliveryStages([...pageOnly, { stage: "app_foreground_handler_entered", correlationId: "wrong" }, { stage: "app_foreground_handler_completed", correlationId: "wrong" }], correlationId, true).firstMissingStage, "APP_FOREGROUND_HANDLER_ENTERED");
 });
 
 test("a delivery timeout cannot authorize a duplicate foreground send", () => {
@@ -54,7 +57,7 @@ test("application source records bounded sanitized stages before timeout classif
   const worker = fs.readFileSync(new URL("../apps/restaurant/public/sw.js", import.meta.url), "utf8");
   assert.match(runtime, /foreground_listener_ready/);
   assert.match(runtime, /page_on_message/);
-  assert.match(runtime, /app_foreground_handler_completed/);
+  assert.match(runtime, /runForegroundNotificationHandler/);
   assert.match(card, /validateMessagingServiceWorker\(registration\)/);
   assert.match(card, /pushManager\.getSubscription\(\)/);
   assert.match(worker, /browser_push_event/);
