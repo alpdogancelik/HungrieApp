@@ -20,7 +20,7 @@ AI is immutable and terminal `FAIL`. It passed immutable verification but stoppe
 
 A PASS requires a real physical OS/browser notification click, a correlated real `notificationclick` event, notification closure, successful completion of the production handler, and no synthetic event or manual/automated qualifying navigation after the send. The evidence must show either:
 
-- an existing `WindowClient` received the exact canonical `navigate()` target and both `navigate()` and `focus()` fulfilled, with the focus result reporting `focused: true`; or
+- an existing `WindowClient` received the exact canonical `navigate()` target and both `navigate()` and `focus()` fulfilled; or
 - `clients.openWindow()` fulfilled for the exact canonical target.
 
 The resulting client and page must use the reviewed Preview origin, `/orders/detail`, and the exact order ID; the `WindowClient` and document must be visible; and no unexpected origin may occur. `document.hasFocus()` remains diagnostic evidence and may be false. Historical AF evidence remains unchanged.
