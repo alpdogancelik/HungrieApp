@@ -2,12 +2,13 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { createRequire } from "node:module";
 import { spawnSync } from "node:child_process";
 
 export const CONTINUATION = Object.freeze({
   schemaVersion: 1,
   kind: "restaurant_vercel_preview_browser_notification_continuation",
-  qualificationId: "restaurant-vercel-browser-notification-qualification-20260929ab",
+  qualificationId: "restaurant-vercel-browser-notification-qualification-20260929ac",
   consumedQualifications: Object.freeze([
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928b", manifest: "evidence-manifest.tsv", manifestSha256: "8b478d63808742057429821a5704db22d2e6cf4343ce82fe18189db96ba3c592", authoritySha256: "2d4af7ec3c33bbb6fb3836bf3754857be9109c20fe7cb43b5bbfd6aef3f765e6", sourceManifestSha256: "33f95fc58475b5ea3e91c0cf8b6aef045fcde9f043af82abcca05eb7d5811b85" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928c", manifest: "evidence-manifest-final.tsv", manifestSha256: "6dc2701f56fddaf341519b4a6ad78ab88a6d037d8d0993ece3e91ad691ce399f", authoritySha256: "219381cafd5c1ec678a0a3936fc48ebecc7e961fac4a597d8b391eb229a3428e", sourceManifestSha256: "18ddf144ad7e237a3f286557cbd02c54b7be1b126a36d24c44006c1771a16fda" }),
@@ -32,6 +33,7 @@ export const CONTINUATION = Object.freeze({
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260929y", manifest: "evidence-manifest.tsv", manifestSha256: "55d8f4762579514f1840dd10690341bdb7d971ef1d86634ccb94972291a10a06", authoritySha256: "eda433bd840e1df4c40c15926e95dc4ee0f530ecc110baa8ad3bd7b82c3090b8", sourceManifestSha256: "de679745cb8ecb55dcf82f20a8a72135a0f1fe1cd502b3398b0ca439ffb931f8" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260929z", manifest: "evidence-manifest.tsv", manifestSha256: "1f647df09594b5c5883c68d26e715df06360f9c9d6372c84d4b4b3b614000cf0", authoritySha256: "945094e70d818fb24484ef0be13e9a6de26c59deb9a574e819e10c9a7b660de2", sourceManifestSha256: "1a93c30d376debd1445b54b46e6dde1dcd2e1459a299e92fdc9bd63e9c455c86" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260929aa", manifest: "evidence-manifest.tsv", manifestSha256: "b27603bcf6f9ad169b54b807708a934b911f208ca1b02e1915197b924b6c2b5d", authoritySha256: "c098adb6a11ad991317ff02a0e18968d44a8b1d4478cdb1f3af8cba45749a5ec", sourceManifestSha256: "1029eb329f4fcc8753dd93bc14b709739e865537bef7576eeecacd01f53b13d9" }),
+    Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260929ab", manifest: "evidence-manifest.tsv", manifestSha256: "5fd79528e26b66ce9ef058200ba3d818edf665b0e75c789d1a04d51aaccd3752", authoritySha256: "4510c9d886b1b31908215f7c53dfecf4fc2b5eb8ab82d3e95d7cfc1ac65ee6a3", sourceManifestSha256: "ab346d1d8c32dfd235754e0d817874b20b16a0ed059bf7dd401bdd21bc4986a9" }),
   ]),
   deploymentId: "dpl_HcAHHG1HU8N3fSNRohXymef8Eq2o",
   origin: "https://hungrie-restaurant-web-staging-eval-20260927a-qatdn2q0c.vercel.app",
@@ -67,7 +69,7 @@ export const CONTINUATION = Object.freeze({
     inspectionSha256: "5b11aaca1a5802778b16060e48afc6ec3afe1e6ce7ec428741de740f28cfc74a",
     terminalSha256: "b345a67ec2e3ed8d95320e2c569656891fd97ea6155f52ca9262dcc752d362e5",
   }),
-  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260929ab",
+  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260929ac",
   authorityDirectory: "secure/restaurant-vercel-browser-notification-qualification-authority",
   limits: Object.freeze({ bypassCreates: 1, bypassRevokes: 1, postRevokeProjectGets: 1, preliminaryBypassInventoryGets: 0, accountContexts: 1, concurrentAccountContexts: 1, pushRegistrations: 1, foregroundFcmSends: 1, backgroundFcmSends: 1, pushUnregistrations: 1, retries: 0, authorityValidityMs: 2 * 60 * 60 * 1000 }),
 });
@@ -95,6 +97,16 @@ export const FIREBASE_PROJECT_IDENTITY = Object.freeze({
   projectNumber: CONTINUATION.firebaseProjectNumber,
   firebaseAppId: CONTINUATION.firebaseAppId,
 });
+
+export function loadFirebaseAdminModules({ repoRoot }) {
+  if (typeof repoRoot !== "string" || !path.isAbsolute(repoRoot)) throw new Error("An absolute repository root is required for Firebase Admin resolution.");
+  const packagePath = path.join(repoRoot, "functions/package.json");
+  if (!fs.existsSync(packagePath)) throw new Error("The Functions package manifest is unavailable.");
+  const requireFromFunctions = createRequire(packagePath);
+  const app = requireFromFunctions("firebase-admin/app"), messaging = requireFromFunctions("firebase-admin/messaging");
+  if (typeof app?.initializeApp !== "function" || typeof app?.cert !== "function" || typeof app?.deleteApp !== "function" || typeof messaging?.getMessaging !== "function") throw new Error("Firebase Admin package exports are incomplete.");
+  return { app, messaging, resolutionBase: "functions/package.json" };
+}
 
 function firebaseInspectionFailure(kind, detail = {}) {
   return {
