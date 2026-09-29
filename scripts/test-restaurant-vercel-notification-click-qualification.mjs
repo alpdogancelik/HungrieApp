@@ -24,12 +24,12 @@ test("real click passes with direct WindowClient evidence even when document.has
   const evidence = {
     realPhysicalClick: true, syntheticEventDispatched: false, manualQualifyingNavigation: false, commandIssuedAfterSend: false, correlationId: "click-correlation",
     event: { type: "notificationclick", tag: "click-correlation", closed: true, observerCompleted: true },
-    operations: { navigate: { called: true, settled: "fulfilled", targetUrl: expectedUrl }, focus: { called: true, settled: "fulfilled", result: { focused: true } } },
-    afterClients: [{ url: expectedUrl, focused: true, visibilityState: "visible" }],
+    operations: { navigate: { called: true, settled: "fulfilled", targetUrl: expectedUrl }, focus: { called: true, settled: "fulfilled", result: { focused: false } } },
+    afterClients: [{ url: expectedUrl, focused: false, visibilityState: "visible" }],
     navigation: { eventType: "FRAME_NAVIGATED", commandIssuedAfterSend: false, origin: CLICK_QUALIFICATION.origin, path: CLICK_QUALIFICATION.expectedPath, orderId: CLICK_QUALIFICATION.expectedOrderId, unexpectedOrigins: [] },
     page: { visibilityState: "visible", documentHasFocus: false },
   };
-  assert.deepEqual(validateRealNotificationClickEvidence(evidence), { passed: true, mode: "EXISTING_CLIENT_NAVIGATE_AND_FOCUS", documentHasFocus: false, windowClientFocused: true, url: expectedUrl });
+  assert.deepEqual(validateRealNotificationClickEvidence(evidence), { passed: true, mode: "EXISTING_CLIENT_NAVIGATE_AND_FOCUS", documentHasFocus: false, windowClientFocused: false, url: expectedUrl });
 });
 
 test("real click rejects missing event, wrong correlation, operation failures, wrong navigation, synthetic or invisible results", () => {

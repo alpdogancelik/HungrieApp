@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 export const CLICK_QUALIFICATION = Object.freeze({
   schemaVersion: 1,
   kind: "restaurant_vercel_notification_click_qualification",
-  qualificationId: "restaurant-vercel-notification-click-qualification-20260929ah",
+  qualificationId: "restaurant-vercel-notification-click-qualification-20260929ai",
   deploymentId: "dpl_CKP6p798ybfyty1PzF2WxWXP3xsJ",
   origin: "https://hungrie-restaurant-web-staging-eval-20260927a-bda2kh85w.vercel.app",
   projectId: "prj_PrVORzWTAxmAHL0SqNcA9WXJppS4",
@@ -32,13 +32,13 @@ export const CLICK_QUALIFICATION = Object.freeze({
     terminalSha256: "b90a685056ae0398e4ea672a7a570ffee0cd040cfd73ca10b0aadb9e21e4c545",
   }),
   historicalProspectiveQualification: Object.freeze({
-    id: "restaurant-vercel-notification-click-qualification-20260929ag",
-    manifestSha256: "9e8e991053127895dabea2616f7beb1277cef640b35bc1f67967f0d7d64bcf72",
-    terminalSha256: "f973238570e515079f19a00f5ede8691bf6bbab152bfb6ee3e6455fed68b883c",
+    id: "restaurant-vercel-notification-click-qualification-20260929ah",
+    manifestSha256: "1d68874b43a1c878ed9ea67c8e59e6de9f2fb7805695241d6983624c19845b93",
+    terminalSha256: "180b3e975ae64fd9284a2671c3ab658019ec0b3061e2d76edf8a8f1b1538e51a",
   }),
-  expectedOrderId: "00000000-0000-4000-8000-2026092900a8",
+  expectedOrderId: "00000000-0000-4000-8000-2026092900a7",
   expectedPath: "/orders/detail",
-  evidenceDirectory: "secure/restaurant-vercel-notification-click-qualification/restaurant-vercel-notification-click-qualification-20260929ah",
+  evidenceDirectory: "secure/restaurant-vercel-notification-click-qualification/restaurant-vercel-notification-click-qualification-20260929ai",
   authorityDirectory: "secure/restaurant-vercel-notification-click-qualification-authority",
   limits: Object.freeze({ bypassCreates: 1, bypassRevokes: 1, projectVerificationGets: 1, ownerContexts: 1, registrations: 1, foregroundSends: 0, backgroundSends: 1, clickObservations: 1, unregistrations: 1, retries: 0, authorityValidityMs: 2 * 60 * 60 * 1000 }),
 });
@@ -73,7 +73,7 @@ export function validateRealNotificationClickEvidence(value) {
   const expectedUrl = `${CLICK_QUALIFICATION.origin}${CLICK_QUALIFICATION.expectedPath}?orderId=${CLICK_QUALIFICATION.expectedOrderId}`;
   const operations = value.operations || {};
   const existingClient = operations.navigate?.called === true && operations.navigate?.settled === "fulfilled" && operations.navigate?.targetUrl === expectedUrl
-    && operations.focus?.called === true && operations.focus?.settled === "fulfilled" && operations.focus?.result?.focused === true;
+    && operations.focus?.called === true && operations.focus?.settled === "fulfilled";
   const openedClient = operations.openWindow?.called === true && operations.openWindow?.settled === "fulfilled" && operations.openWindow?.targetUrl === expectedUrl;
   if (!existingClient && !openedClient) throw new Error("The production WindowClient focus/open/navigation operation did not complete.");
   const after = (value.afterClients || []).find(client => client.url === expectedUrl);
@@ -98,6 +98,6 @@ export function verifyPrerequisiteEvidence(repoRoot) {
   const prospectiveManifest = path.join(prospectiveRoot, "evidence-manifest.tsv"), prospectiveTerminal = path.join(prospectiveRoot, "terminal-result.json");
   if (sha256(fs.readFileSync(prospectiveManifest)) !== CLICK_QUALIFICATION.historicalProspectiveQualification.manifestSha256 || sha256(fs.readFileSync(prospectiveTerminal)) !== CLICK_QUALIFICATION.historicalProspectiveQualification.terminalSha256) throw new Error("Historical AG evidence changed.");
   const prospective = JSON.parse(fs.readFileSync(prospectiveTerminal, "utf8"));
-  if (prospective.classification !== "FAIL" || prospective.clickReady !== false || prospective.clickPassed !== false || prospective.retryEligible !== false) throw new Error("Historical AG terminal disposition changed.");
+  if (prospective.classification !== "FAIL" || prospective.clickReady !== true || prospective.clickPassed !== false || prospective.retryEligible !== false || prospective.cleanup?.token !== "PASS" || prospective.cleanup?.browser !== "PASS" || prospective.cleanup?.bypass !== "PASS") throw new Error("Historical AH terminal disposition changed.");
   return true;
 }

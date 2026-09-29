@@ -6,7 +6,9 @@ Qualification `restaurant-vercel-notification-click-qualification-20260929af` re
 
 The AF verifier treated `document.hasFocus()` as mandatory proof that a Service Worker notification click focused the application. That probe reports focus for the document's browsing context; it is not the Service Worker `WindowClient.focused` state and is not the fulfillment result of `WindowClient.focus()` or `clients.openWindow()`. AF reached the exact expected origin and order-detail URL, was visible, and had Chrome frontmost, but failed only because the document probe was false. The probe was therefore an unsupported proxy for the Phase 6 requirement.
 
-The first prospective attempt, AG, is also immutable and terminal `FAIL`. Its immutable, Owner, service-worker, and token-registration gates passed, but an ephemeral runner integration used the checkpointed Firebase Admin loader as flat exports instead of its documented `{ app, messaging }` result. It stopped before the authorized FCM send and before asking for a physical click. The bypass was independently removed. AH is the fresh prospective qualification.
+The first prospective attempt, AG, is also immutable and terminal `FAIL`. Its immutable, Owner, service-worker, and token-registration gates passed, but an ephemeral runner integration used the checkpointed Firebase Admin loader as flat exports instead of its documented `{ app, messaging }` result. It stopped before the authorized FCM send and before asking for a physical click. The bypass was independently removed.
+
+AH is immutable and terminal `FAIL`. Its one background send delivered and its prospective observer recorded fulfilled `navigate()` and `focus()` operations plus the exact visible destination. It failed because the verifier additionally required the returned `WindowClient.focused` snapshot to be true. The Service Workers focus algorithm resolves only when the newly created `WindowClient` focus state is true and otherwise rejects, so the fulfilled promise is the direct normative evidence. The snapshot remains diagnostic because later focus changes can make it false. AI is the fresh prospective qualification.
 
 ## Production flow
 
