@@ -10,7 +10,7 @@ const workspace = path.resolve(import.meta.dirname, "..");
 
 test("the reviewed production module map is complete, compact, unique, and sorted", () => {
   assert.equal(reviewedMap.schemaVersion, 1);
-  assert.equal(reviewedMap.modules.length, 2561);
+  assert.equal(reviewedMap.modules.length, 2562);
   assert.equal(new Set(reviewedMap.modules).size, reviewedMap.modules.length);
   assert.deepEqual(reviewedMap.modules, [...reviewedMap.modules].sort((left, right) => Buffer.from(left).compare(Buffer.from(right))));
   const factory = createDeterministicMetroModuleIdFactory(workspace, reviewedMap.modules);

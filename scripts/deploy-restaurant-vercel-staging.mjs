@@ -9,9 +9,10 @@ import { validateStagingPublicBuildInputs } from "./restaurant-alias-staging-pub
 import { VERCEL_STAGING_ARTIFACT } from "./restaurant-vercel-staging-artifact-contract.mjs";
 
 export const VERCEL_STAGING_DEPLOYMENT = Object.freeze({
-  actionId: "restaurant-vercel-staging-evaluation-20260929j",
-  consumedActionId: "restaurant-vercel-staging-evaluation-20260928i",
-  previousActionId: "restaurant-vercel-staging-evaluation-20260928h",
+  actionId: "restaurant-vercel-staging-evaluation-20260929k",
+  consumedActionId: "restaurant-vercel-staging-evaluation-20260929j",
+  previousActionId: "restaurant-vercel-staging-evaluation-20260928i",
+  supersededActionId: "restaurant-vercel-staging-evaluation-20260928h",
   priorActionId: "restaurant-vercel-staging-evaluation-20260928g",
   earlierActionId: "restaurant-vercel-staging-evaluation-20260927f",
   legacyActionId: "restaurant-vercel-staging-evaluation-20260927e",
@@ -36,10 +37,12 @@ export const VERCEL_STAGING_DEPLOYMENT = Object.freeze({
   earlierManifestSha256: "47ee7b605f13f46d0363fc89198757982082f02087e5472b9f29684d927fa721",
   priorProgressSha256: "674b6f14bb5ca2eae20ef16fa927a0660d06593fb35c890fd00fb99cc08482f8",
   priorManifestSha256: "0b1206849a0fa03fd88d493dbabbc9dad41b1daf81a3611cce9a606ed4477c80",
-  previousProgressSha256: "efd709491813dff93c4af70c23e5bb6244c586eb44435e0942bbe1ac00156f00",
-  previousManifestSha256: "4a32ed8d41e3a6e41f1a504216e69fb9ece5d79175841fbf945f448d7990e052",
-  consumedProgressSha256: "292340d19d389539c9ee5e1cef58f7ff3a8bc33976cd834aad7edd17a1ab30bb",
-  consumedManifestSha256: "83ffe1d25d9a70cb0aceb34222d1ea08ab6e8551e8d5bd0f9455c971077a6134",
+  previousProgressSha256: "292340d19d389539c9ee5e1cef58f7ff3a8bc33976cd834aad7edd17a1ab30bb",
+  previousManifestSha256: "83ffe1d25d9a70cb0aceb34222d1ea08ab6e8551e8d5bd0f9455c971077a6134",
+  supersededProgressSha256: "efd709491813dff93c4af70c23e5bb6244c586eb44435e0942bbe1ac00156f00",
+  supersededManifestSha256: "4a32ed8d41e3a6e41f1a504216e69fb9ece5d79175841fbf945f448d7990e052",
+  consumedProgressSha256: "e428836ce7a8b1031097b481310bcaeeee6e6aff25a7dc49fd01290375142f8e",
+  consumedManifestSha256: "16f61bc2ce76e4c8dcc48fb357d47eb5b1439fe4518dce70b324bce64933e94d",
   containmentProgressSha256: "443dc2be27f76f96a62f050f80dcea60c1087534b46ba23167bf869d5a4a24d3",
   containmentResultSha256: "028b4180df2e93df358eb4cdf379ad12fe99b81e8d1513701dda98a9c5cedcba",
   containmentHttpSha256: "e3a3c98d16f6e0c6df3e082a598cbfe6c79cf2045b4da4c7ea75584d9cbe60a8",
@@ -60,6 +63,7 @@ const evidenceParent = path.join(root, "secure/restaurant-vercel-staging-deploym
 const evidenceRoot = path.join(evidenceParent, VERCEL_STAGING_DEPLOYMENT.actionId);
 const consumedRoot = path.join(evidenceParent, VERCEL_STAGING_DEPLOYMENT.consumedActionId);
 const previousRoot = path.join(evidenceParent, VERCEL_STAGING_DEPLOYMENT.previousActionId);
+const supersededRoot = path.join(evidenceParent, VERCEL_STAGING_DEPLOYMENT.supersededActionId);
 const priorRoot = path.join(evidenceParent, VERCEL_STAGING_DEPLOYMENT.priorActionId);
 const earlierRoot = path.join(evidenceParent, VERCEL_STAGING_DEPLOYMENT.earlierActionId);
 const legacyRoot = path.join(evidenceParent, VERCEL_STAGING_DEPLOYMENT.legacyActionId);
@@ -95,10 +99,10 @@ export function classifyReviewedVariables(names) {
 export function validateConsumedProgress(progress, bytes) {
   if (sha256(bytes) !== VERCEL_STAGING_DEPLOYMENT.consumedProgressSha256) throw new Error("Consumed attempt evidence hash mismatch.");
   if (progress?.actionId !== VERCEL_STAGING_DEPLOYMENT.consumedActionId || progress?.scope !== VERCEL_STAGING_DEPLOYMENT.scope || progress?.project !== VERCEL_STAGING_DEPLOYMENT.project || progress?.environment !== "preview") throw new Error("Consumed attempt identity mismatch.");
-  if (progress?.continuationOf !== VERCEL_STAGING_DEPLOYMENT.previousActionId || progress?.schemaVersion !== 2 || progress?.terminal !== "FAIL" || progress?.error !== "Vercel classified the deployment outside Preview; hosted qualification is prohibited." || progress?.limits?.productionDeployments !== 0 || progress?.limits?.deployments !== 1 || progress?.limits?.retries !== 0) throw new Error("Consumed continuation terminal state mismatch.");
+  if (progress?.continuationOf !== VERCEL_STAGING_DEPLOYMENT.previousActionId || progress?.schemaVersion !== 2 || progress?.terminal !== "FAIL" || progress?.error !== "Vercel returned an unknown deployment target representation." || progress?.limits?.productionDeployments !== 0 || progress?.limits?.deployments !== 1 || progress?.limits?.retries !== 0) throw new Error("Consumed continuation terminal state mismatch.");
   const prefixes = ["verify-authenticated-account", "verify-scope-organization-mapping", "verify-existing-project", "inspect-preview-environment", "pull-effective-preview-environment"];
-  if (!Array.isArray(progress.steps) || progress.steps.length !== 16 || progress.steps.slice(0, 5).some((step, index) => step?.action !== prefixes[index] || step?.status !== 0) || progress.steps.slice(5, 14).some(step => step?.action !== "reconcile-preview-build-input" || step?.status !== 0 || step?.disposition !== "already-exact") || progress.steps[14]?.action !== "verify-preview-environment" || progress.steps[14]?.status !== 0 || progress.steps[15]?.action !== "verify-effective-preview-environment" || progress.steps[15]?.status !== 0) throw new Error("Consumed continuation progress is not the reviewed null-target Preview attempt.");
-  return { deploymentCommands: 1, immediateTargetRepresentationRejected: "NULL", hostedQualificationStarted: false };
+  if (!Array.isArray(progress.steps) || progress.steps.length !== 16 || progress.steps.slice(0, 5).some((step, index) => step?.action !== prefixes[index] || step?.status !== 0) || progress.steps.slice(5, 14).some(step => step?.action !== "reconcile-preview-build-input" || step?.status !== 0 || step?.disposition !== "already-exact") || progress.steps[14]?.action !== "verify-preview-environment" || progress.steps[14]?.status !== 0 || progress.steps[15]?.action !== "verify-effective-preview-environment" || progress.steps[15]?.status !== 0) throw new Error("Consumed continuation progress differs from the reviewed unknown-target Preview attempt.");
+  return { deploymentCommands: 1, immediateTargetRepresentationRejected: "UNKNOWN", hostedQualificationStarted: false };
 }
 
 export function validateContainmentEvidence(directory) {
@@ -344,6 +348,7 @@ async function main() {
   validateConsumedProgress(JSON.parse(consumedBytes), consumedBytes);
   if (sha256(fs.readFileSync(path.join(consumedRoot, "evidence-manifest.tsv"))) !== VERCEL_STAGING_DEPLOYMENT.consumedManifestSha256) throw new Error("Consumed continuation evidence manifest mismatch.");
   if (sha256(fs.readFileSync(path.join(previousRoot, "progress.json"))) !== VERCEL_STAGING_DEPLOYMENT.previousProgressSha256 || sha256(fs.readFileSync(path.join(previousRoot, "evidence-manifest.tsv"))) !== VERCEL_STAGING_DEPLOYMENT.previousManifestSha256) throw new Error("Previous continuation evidence mismatch.");
+  if (sha256(fs.readFileSync(path.join(supersededRoot, "progress.json"))) !== VERCEL_STAGING_DEPLOYMENT.supersededProgressSha256 || sha256(fs.readFileSync(path.join(supersededRoot, "evidence-manifest.tsv"))) !== VERCEL_STAGING_DEPLOYMENT.supersededManifestSha256) throw new Error("Superseded continuation evidence mismatch.");
   if (sha256(fs.readFileSync(path.join(priorRoot, "progress.json"))) !== VERCEL_STAGING_DEPLOYMENT.priorProgressSha256 || sha256(fs.readFileSync(path.join(priorRoot, "evidence-manifest.tsv"))) !== VERCEL_STAGING_DEPLOYMENT.priorManifestSha256) throw new Error("Prior continuation evidence mismatch.");
   if (sha256(fs.readFileSync(path.join(earlierRoot, "progress.json"))) !== VERCEL_STAGING_DEPLOYMENT.earlierProgressSha256 || sha256(fs.readFileSync(path.join(earlierRoot, "evidence-manifest.tsv"))) !== VERCEL_STAGING_DEPLOYMENT.earlierManifestSha256) throw new Error("Earlier continuation evidence mismatch.");
   if (sha256(fs.readFileSync(path.join(legacyRoot, "progress.json"))) !== VERCEL_STAGING_DEPLOYMENT.legacyProgressSha256 || sha256(fs.readFileSync(path.join(legacyRoot, "evidence-manifest.tsv"))) !== VERCEL_STAGING_DEPLOYMENT.legacyManifestSha256) throw new Error("Legacy continuation evidence mismatch.");

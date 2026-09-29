@@ -67,6 +67,7 @@
     "workspace:apps/restaurant/src/earningsModel.ts",
     "workspace:apps/restaurant/src/earningsRepository.ts",
     "workspace:apps/restaurant/src/firebase.ts",
+    "workspace:apps/restaurant/src/foregroundNotificationHandler.ts",
     "workspace:apps/restaurant/src/i18n.ts",
     "workspace:apps/restaurant/src/managementContract.ts",
     "workspace:apps/restaurant/src/managementModel.ts",
