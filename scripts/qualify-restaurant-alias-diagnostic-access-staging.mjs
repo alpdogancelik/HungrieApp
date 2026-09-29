@@ -208,9 +208,11 @@ export async function openChrome(chromePath, profile, { spawnImpl = spawn, fetch
   const page = await pageResponse.json();
   const pageEndpoint = new URL(page.webSocketDebuggerUrl);
   if (pageEndpoint.hostname !== "127.0.0.1" || Number(pageEndpoint.port) !== port || !pageEndpoint.pathname.startsWith("/devtools/page/")) { processHandle.kill("SIGTERM"); throw new Error("Chrome page endpoint does not belong to the spawned profile."); }
+  const targetId = typeof page.id === "string" && page.id.length > 0 ? page.id : pageEndpoint.pathname.slice("/devtools/page/".length);
+  if (!/^[A-Za-z0-9-]+$/.test(targetId)) { processHandle.kill("SIGTERM"); throw new Error("Owned Chrome page target identity is invalid."); }
   const socket = socketFactory(page.webSocketDebuggerUrl);
   await new Promise((resolve, reject) => { socket.addEventListener("open", resolve, { once: true }); socket.addEventListener("error", reject, { once: true }); });
-  return { processHandle, version, port, browserSocketPath, profile, cdp: new Cdp(socket) };
+  return { processHandle, version, port, browserSocketPath, targetId, profile, cdp: new Cdp(socket) };
 }
 
 export async function closeChrome(browser, { sleep = delay } = {}) {

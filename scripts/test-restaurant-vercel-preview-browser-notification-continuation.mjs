@@ -468,6 +468,19 @@ test("notification failure triggers scoped cleanup without retry", async () => {
   const result = await executeControlledContinuation({ operations: op });
   assert.equal(result.classification, "FAIL"); assert.equal(sends, 1); assert.equal(result.cleanup.token, "PASS"); assert.equal(result.cleanup.bypass, "PASS");
 });
+test("account-qualification exception reconciles and closes its owned browser context", async () => {
+  const owned = { id: "owned-browser" }; let closed = null;
+  const op = operations({
+    qualifyAccounts: async () => { throw new Error("post-open account failure"); },
+    reconcileBrowserContext: async () => owned,
+    closeBrowser: async browser => { closed = browser; },
+  });
+  const result = await executeControlledContinuation({ operations: op });
+  assert.equal(result.classification, "FAIL");
+  assert.equal(result.cleanup.browserReconciliation, "PRESENT_REQUIRES_CLEANUP");
+  assert.equal(result.cleanup.browser, "PASS");
+  assert.equal(closed, owned);
+});
 test("uncertain token registration is reconciled and cleaned without retry", async () => {
   for (const present of [false, true]) {
     let registrations = 0, cleanups = 0;

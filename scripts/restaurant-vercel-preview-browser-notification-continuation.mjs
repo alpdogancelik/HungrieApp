@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 export const CONTINUATION = Object.freeze({
   schemaVersion: 1,
   kind: "restaurant_vercel_preview_browser_notification_continuation",
-  qualificationId: "restaurant-vercel-browser-notification-qualification-20260929z",
+  qualificationId: "restaurant-vercel-browser-notification-qualification-20260929aa",
   consumedQualifications: Object.freeze([
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928b", manifest: "evidence-manifest.tsv", manifestSha256: "8b478d63808742057429821a5704db22d2e6cf4343ce82fe18189db96ba3c592", authoritySha256: "2d4af7ec3c33bbb6fb3836bf3754857be9109c20fe7cb43b5bbfd6aef3f765e6", sourceManifestSha256: "33f95fc58475b5ea3e91c0cf8b6aef045fcde9f043af82abcca05eb7d5811b85" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260928c", manifest: "evidence-manifest-final.tsv", manifestSha256: "6dc2701f56fddaf341519b4a6ad78ab88a6d037d8d0993ece3e91ad691ce399f", authoritySha256: "219381cafd5c1ec678a0a3936fc48ebecc7e961fac4a597d8b391eb229a3428e", sourceManifestSha256: "18ddf144ad7e237a3f286557cbd02c54b7be1b126a36d24c44006c1771a16fda" }),
@@ -30,6 +30,7 @@ export const CONTINUATION = Object.freeze({
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260929v", manifest: "evidence-manifest.tsv", manifestSha256: "e40edd37b2affd68ea6b6bab2806c3ce239eb907c65dfc161aad824cd31a89d2", authoritySha256: "3ec1902db1a17e51850a1243c6391353c408096711783ef0d5c2e5b637ed18f1", sourceManifestSha256: "7c40674088e5b5808e36bc4351a83032e8b299fb5c22d975049614a49615312b" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260929x", manifest: "evidence-manifest.tsv", manifestSha256: "f6d0595c91b4da406c5ae0e5a4c1ca13f048aab7b26f53a6195670a37677eb39", authoritySha256: "2bdd281673c14d7c9465c2ff4432066c075bec400575c2dffa9d2ac28f85b6af", sourceManifestSha256: "b2510cde0ada97d9fe92459da085195647db3568b19772af882fe27c813bbb6c" }),
     Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260929y", manifest: "evidence-manifest.tsv", manifestSha256: "55d8f4762579514f1840dd10690341bdb7d971ef1d86634ccb94972291a10a06", authoritySha256: "eda433bd840e1df4c40c15926e95dc4ee0f530ecc110baa8ad3bd7b82c3090b8", sourceManifestSha256: "de679745cb8ecb55dcf82f20a8a72135a0f1fe1cd502b3398b0ca439ffb931f8" }),
+    Object.freeze({ id: "restaurant-vercel-browser-notification-qualification-20260929z", manifest: "evidence-manifest.tsv", manifestSha256: "1f647df09594b5c5883c68d26e715df06360f9c9d6372c84d4b4b3b614000cf0", authoritySha256: "945094e70d818fb24484ef0be13e9a6de26c59deb9a574e819e10c9a7b660de2", sourceManifestSha256: "1a93c30d376debd1445b54b46e6dde1dcd2e1459a299e92fdc9bd63e9c455c86" }),
   ]),
   deploymentId: "dpl_HcAHHG1HU8N3fSNRohXymef8Eq2o",
   origin: "https://hungrie-restaurant-web-staging-eval-20260927a-qatdn2q0c.vercel.app",
@@ -65,7 +66,7 @@ export const CONTINUATION = Object.freeze({
     inspectionSha256: "5b11aaca1a5802778b16060e48afc6ec3afe1e6ce7ec428741de740f28cfc74a",
     terminalSha256: "b345a67ec2e3ed8d95320e2c569656891fd97ea6155f52ca9262dcc752d362e5",
   }),
-  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260929z",
+  evidenceDirectory: "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260929aa",
   authorityDirectory: "secure/restaurant-vercel-browser-notification-qualification-authority",
   limits: Object.freeze({ bypassCreates: 1, bypassRevokes: 1, postRevokeProjectGets: 1, preliminaryBypassInventoryGets: 0, accountContexts: 1, concurrentAccountContexts: 1, pushRegistrations: 1, foregroundFcmSends: 1, backgroundFcmSends: 1, pushUnregistrations: 1, retries: 0, authorityValidityMs: 2 * 60 * 60 * 1000 }),
 });
@@ -677,14 +678,14 @@ export function classifySafetyError(error) {
 
 export async function executeControlledContinuation({ operations, persist = async () => {} }) {
   const results = { prerequisites: "NOT_EXECUTED", accounts: {}, notifications: {}, cleanup: {}, classification: "ABORTED" };
-  let bypassAttempted = false, bypassCreated = false, tokenRegistrationAttempted = false, tokenRegistered = false, browser = null;
+  let bypassAttempted = false, bypassCreated = false, accountQualificationAttempted = false, tokenRegistrationAttempted = false, tokenRegistered = false, browser = null;
   try {
     await operations.verifyPrerequisites(); results.prerequisites = "PASS"; await persist(results);
     bypassAttempted = true; await operations.createBypass(); bypassCreated = true; await persist(results);
     await operations.awaitBypassPropagation(); results.bypassPropagation = "PASS"; await persist(results);
     await operations.bootstrapProtectedBrowser(); results.bootstrap = "PASS"; await persist(results);
     await operations.verifyParityEvidence();
-    const matrix = await operations.qualifyAccounts(); results.accounts = matrix; await persist(results);
+    accountQualificationAttempted = true; const matrix = await operations.qualifyAccounts(); results.accounts = matrix; await persist(results);
     const mandatoryBrowserPass = matrix.owner === "PASS" && Object.keys(matrix).length === 1 && await operations.verifyServiceWorker();
     if (!mandatoryBrowserPass) { results.notifications = { registration: "NOT_EXECUTED", foreground: "NOT_EXECUTED", background: "NOT_EXECUTED", click: "NOT_EXECUTED" }; results.classification = "FAIL"; return results; }
     browser = await operations.openOwnerNotificationContext();
@@ -699,6 +700,10 @@ export async function executeControlledContinuation({ operations, persist = asyn
     results.error = sanitizeContinuationError(error);
     return results;
   } finally {
+    if (accountQualificationAttempted && !browser && typeof operations.reconcileBrowserContext === "function") {
+      try { browser = await operations.reconcileBrowserContext(); results.cleanup.browserReconciliation = browser ? "PRESENT_REQUIRES_CLEANUP" : "ABSENT_VERIFIED"; }
+      catch { results.cleanup.browserReconciliation = "FAILED"; results.classification = "ABORTED"; }
+    }
     if (tokenRegistrationAttempted && !tokenRegistered) {
       try { tokenRegistered = await operations.reconcileTokenRegistration(browser); results.cleanup.tokenRegistrationReconciliation = tokenRegistered ? "PRESENT_REQUIRES_CLEANUP" : "ABSENT_VERIFIED"; }
       catch { results.cleanup.tokenRegistrationReconciliation = "FAILED"; results.classification = "ABORTED"; }

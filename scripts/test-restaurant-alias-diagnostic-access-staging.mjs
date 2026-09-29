@@ -113,6 +113,7 @@ test("Chrome qualification binds DevTools to the newly spawned profile instead o
   assert.equal(args.some(value => value === "--remote-debugging-port=9580" || value === "--remote-debugging-port=9581"), false);
   assert.equal(browser.port, 43127);
   assert.equal(browser.browserSocketPath, "/devtools/browser/owned-fixture");
+  assert.equal(browser.targetId, "owned-page");
   await closeChrome(browser, { sleep: async () => {} });
   assert.equal(processHandle.signal, "SIGTERM");
 });
