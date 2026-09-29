@@ -1,7 +1,7 @@
 # Restaurant Responsive UI Integration Plan
 
-**Status:** Planning only  
-**Audited:** 2026-09-23  
+**Status:** `Phase 6 PASS / ACCEPTED / CLOSED`; Production-readiness preparation
+**Audited:** 2026-09-29
 **Source design:** `apps/restaurant-ui-mock`  
 **Target application:** `apps/restaurant`  
 **Production impact:** None until separately implemented, qualified, approved, and released
@@ -419,6 +419,8 @@ Each phase ends with a review artifact. The next phase must not begin until the 
 
 ### UI Phase 6 — Staging qualification and release readiness
 
+**Final status:** `PASS / ACCEPTED / CLOSED` on 2026-09-29 for the qualified Vercel Restaurant Staging browser/PWA/FCM path. The accepted qualification is `restaurant-vercel-notification-click-qualification-20260929aj`; its evidence-manifest SHA-256 is `766e0459606747a72753b7238ca91eb284b5b0a198934fa9d546740c5238f433` and terminal-record SHA-256 is `f9a7c43fa69ed5c352621a4e6bb22c5c04b05393b7cc8131e7d6e6320f9977a2`. Production was untouched. See `docs/restaurant-responsive-ui-phase6-acceptance.md`.
+
 - Deploy to Staging only through the existing reviewed process.
 - Run real owner and manager accounts, cross-tenant denial, active order lifecycle, push from background/closed page, menu edit/upload, reviews/reporting, and Earnings checks.
 - Verify Turkish/English notifications and direct order-detail refresh.
@@ -427,6 +429,10 @@ Each phase ends with a review artifact. The next phase must not begin until the 
 
 **Exit:** explicit owner acceptance of the redesign. Production remains unchanged until the later production release phase authorizes deployment.  
 **Approval:** “Approve Restaurant responsive UI migration.”
+
+### Next phase — Restaurant Production Readiness
+
+Production is a separate release boundary. Its initial state is `NOT YET APPROVED / NOT EXECUTED`; follow `docs/restaurant-production-readiness-plan.md` and its machine-readable checklist. Phase 6 acceptance does not authorize a Production deployment, provider configuration, identity, domain, FCM send, Earnings activation, store submission, or public release.
 
 ## 12. Test and evidence matrix
 

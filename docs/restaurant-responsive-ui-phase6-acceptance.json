@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "recordKind": "restaurant_responsive_ui_phase6_acceptance",
+  "status": "PASS_ACCEPTED_CLOSED",
+  "acceptedAt": "2026-09-29",
+  "scope": "Qualified Vercel Restaurant Staging browser/PWA/FCM path",
+  "productionAuthorized": false,
+  "productionTouched": false,
+  "acceptedQualification": {
+    "id": "restaurant-vercel-notification-click-qualification-20260929aj",
+    "checkpoint": "0f02dc14912ae7d27a90c6ac2094a1120e354e28",
+    "sourceManifestSha256": "8e34babbac2003975bd1d634a4551b394a3354f2ce622a7f2f939321a914419f",
+    "deploymentId": "dpl_CKP6p798ybfyty1PzF2WxWXP3xsJ",
+    "origin": "https://hungrie-restaurant-web-staging-eval-20260927a-bda2kh85w.vercel.app",
+    "sourceManifestPath": "secure/restaurant-vercel-notification-click-qualification-authority/restaurant-vercel-notification-click-qualification-20260929aj-source-manifest.tsv",
+    "evidenceManifestPath": "secure/restaurant-vercel-notification-click-qualification/restaurant-vercel-notification-click-qualification-20260929aj/evidence-manifest.tsv",
+    "terminalRecordPath": "secure/restaurant-vercel-notification-click-qualification/restaurant-vercel-notification-click-qualification-20260929aj/terminal-result.json",
+    "evidenceManifestSha256": "766e0459606747a72753b7238ca91eb284b5b0a198934fa9d546740c5238f433",
+    "terminalRecordSha256": "f9a7c43fa69ed5c352621a4e6bb22c5c04b05393b7cc8131e7d6e6320f9977a2",
+    "result": "PASS"
+  },
+  "prerequisiteQualification": {
+    "id": "restaurant-vercel-browser-notification-qualification-20260929ae",
+    "classification": "INCONCLUSIVE_CLICK_NOT_EXECUTED",
+    "acceptedResults": [
+      "Owner authentication and Restaurant access",
+      "service worker activation and control",
+      "FCM token registration and Supabase persistence",
+      "foreground FCM delivery",
+      "background FCM delivery",
+      "token, browser, and bypass cleanup"
+    ],
+    "evidenceManifestPath": "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260929ae/evidence-manifest.tsv",
+    "terminalRecordPath": "secure/restaurant-vercel-browser-notification-qualification/restaurant-vercel-browser-notification-qualification-20260929ae/terminal-result.json",
+    "evidenceManifestSha256": "6f45cbc4167e89ee5a0e30de49e84db0ba19d3038adaecc5f6b03e5885081c1f",
+    "terminalRecordSha256": "b209e177e413af7936fb4e9db7822c07b9f02a9e4eb5ba10671815c9eedcbcaa"
+  },
+  "finalClick": {
+    "realPhysicalClick": true,
+    "correlatedNotificationclick": true,
+    "canonicalPath": "/orders/detail",
+    "orderId": "00000000-0000-4000-8000-2026092900a6",
+    "windowClientNavigate": "PASS",
+    "windowClientFocus": "PASS",
+    "destinationVisible": true,
+    "syntheticClick": false,
+    "manualQualifyingNavigation": false,
+    "documentHasFocusDiagnostic": false,
+    "windowClientFocusedDiagnostic": false
+  },
+  "cleanup": {
+    "token": "PASS",
+    "browserProfile": "PASS",
+    "vercelBypassRevocation": "PASS",
+    "independentBypassAbsence": "PASS",
+    "evidenceIntegrity": "PASS"
+  },
+  "historicalDisposition": {
+    "qualificationAF": "FAIL_UNCHANGED",
+    "qualificationAE": "INCONCLUSIVE_UNCHANGED",
+    "failedAbortedInconclusiveEvidence": "PRESERVED_BYTE_FOR_BYTE"
+  },
+  "releaseBoundary": "Production readiness preparation only; every Production mutation remains separately owner-authorized."
+}
