@@ -46,8 +46,8 @@ test("authorization explicitly prohibits the obsolete preliminary bypass invento
 test("altered completed Vercel inspection evidence fails closed", t => {
   const sourceRoot = path.resolve(import.meta.dirname, ".."), fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "vercel-inspection-binding-"));
   t.after(() => fs.rmSync(fixtureRoot, { recursive: true, force: true }));
-  const authorityRoot = "secure/restaurant-vercel-project-protection-inspection-authority", evidenceRoot = `secure/restaurant-vercel-project-protection-inspection/${CONTINUATION.vercelInspection.id}`;
-  for (const relative of [`${authorityRoot}/${CONTINUATION.vercelInspection.id}.json`, `${authorityRoot}/${CONTINUATION.vercelInspection.id}-source-manifest.tsv`, `${evidenceRoot}/evidence-manifest.tsv`, `${evidenceRoot}/inspection.json`, `${evidenceRoot}/terminal-result.json`]) {
+  const evidenceRoot = `secure/restaurant-vercel-staging-deployment/${CONTINUATION.vercelInspection.id}`;
+  for (const relative of [`${evidenceRoot}/evidence-manifest.tsv`, `${evidenceRoot}/inspection.json`, `${evidenceRoot}/terminal-result.json`]) {
     fs.mkdirSync(path.dirname(path.join(fixtureRoot, relative)), { recursive: true }); fs.copyFileSync(path.join(sourceRoot, relative), path.join(fixtureRoot, relative));
   }
   assert.equal(verifyCompletedVercelInspection(fixtureRoot).targetNullReviewed, false);
@@ -114,7 +114,7 @@ test("malformed, missing, unsafe protection, and ambiguous responses fail closed
 });
 
 test("the complete preflight persists the sanitized current deployment inspection and proceeds", async () => {
-  const inspection = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, `../secure/restaurant-vercel-project-protection-inspection/${CONTINUATION.vercelInspection.id}/inspection.json`), "utf8"));
+  const inspection = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, `../secure/restaurant-vercel-staging-deployment/${CONTINUATION.vercelInspection.id}/inspection.json`), "utf8"));
   inspection.deployment = vercelDeployment();
   const persisted = [];
   const result = await runVercelQualificationPreflight({ projectResponse: inspection.project, deploymentResponse: inspection.deployment, requestedScope: CONTINUATION.scope, reviewedInspection: reviewedVercelInspection(), persist: async evidence => persisted.push(evidence) });
@@ -131,8 +131,8 @@ test("full preflight persists a sanitized failure before throwing", async () => 
 test("altered completed Firebase inspection evidence fails closed", t => {
   const sourceRoot = path.resolve(import.meta.dirname, ".."), fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "firebase-inspection-binding-"));
   t.after(() => fs.rmSync(fixtureRoot, { recursive: true, force: true }));
-  const authorityRoot = "secure/restaurant-vercel-firebase-domain-inspection-authority", evidenceRoot = `secure/restaurant-vercel-firebase-domain-inspection/${CONTINUATION.firebaseInspection.id}`;
-  for (const relative of [`${authorityRoot}/${CONTINUATION.firebaseInspection.id}.json`, `${authorityRoot}/${CONTINUATION.firebaseInspection.id}-source-manifest.tsv`, `${evidenceRoot}/evidence-manifest.tsv`, `${evidenceRoot}/firebase-authorized-domain-inspection.json`, `${evidenceRoot}/terminal-result.json`]) {
+  const evidenceRoot = `secure/restaurant-vercel-firebase-domain-change/${CONTINUATION.firebaseInspection.id}`;
+  for (const relative of [`${evidenceRoot}/evidence-manifest.tsv`, `${evidenceRoot}/firebase-authorized-domain-change.json`, `${evidenceRoot}/terminal-result.json`]) {
     fs.mkdirSync(path.dirname(path.join(fixtureRoot, relative)), { recursive: true }); fs.copyFileSync(path.join(sourceRoot, relative), path.join(fixtureRoot, relative));
   }
   assert.equal(verifyCompletedFirebaseInspection(fixtureRoot).passed, true);
@@ -155,9 +155,9 @@ test("Firebase authorized-domain inspection uses the exact documented read-only 
 
 test("Firebase authorized-domain response accepts only the exact baseline with optional Preview hostname", () => {
   const pass = validateFirebaseAuthorizedDomainResponse({ status: 200, data: firebaseConfig() });
-  assert.equal(pass.status, "PASS"); assert.equal(pass.authorizedDomainCount, 6); assert.equal(pass.requiredDomainPresent, true); assert.equal(pass.domainState, "AUTHORIZED_DOMAIN_PRESENT");
+  assert.equal(pass.status, "PASS"); assert.equal(pass.authorizedDomainCount, 7); assert.equal(pass.requiredDomainPresent, true); assert.equal(pass.domainState, "AUTHORIZED_DOMAIN_PRESENT");
   const absent = validateFirebaseAuthorizedDomainResponse({ status: 200, data: firebaseConfig({ authorizedDomains: [...BASELINE_FIREBASE_AUTHORIZED_DOMAINS] }) });
-  assert.equal(absent.status, "PASS"); assert.equal(absent.authorizedDomainCount, 5); assert.equal(absent.requiredDomainPresent, false); assert.equal(absent.domainState, "AUTHORIZED_DOMAIN_ABSENT");
+  assert.equal(absent.status, "PASS"); assert.equal(absent.authorizedDomainCount, 6); assert.equal(absent.requiredDomainPresent, false); assert.equal(absent.domainState, "AUTHORIZED_DOMAIN_ABSENT");
   assert.equal(validateFirebaseAuthorizedDomainResponse({ status: 200, data: firebaseConfig({ name: "projects/wrong/config" }) }).failureKind, "PROJECT_SELECTION");
   assert.equal(validateFirebaseAuthorizedDomainResponse({ status: 200, data: firebaseConfig({ authorizedDomains: ["unexpected.example"] }) }).failureKind, "AUTHORIZED_DOMAIN_STATE_UNEXPECTED");
   assert.equal(validateFirebaseAuthorizedDomainResponse({ status: 200, data: firebaseConfig({ authorizedDomains: [...EXPECTED_FIREBASE_AUTHORIZED_DOMAINS, EXPECTED_FIREBASE_AUTHORIZED_DOMAINS[0]] }) }).failureKind, "RESPONSE_SCHEMA");
