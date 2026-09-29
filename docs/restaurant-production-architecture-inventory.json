@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "inventory": "restaurant_production_architecture",
+  "inspectedCheckpoint": "5c57d4ceeb11fbaee95cb92a24dc3fa6332738a1",
+  "inventoryDate": "2026-09-29",
+  "method": "LOCAL_READ_ONLY",
+  "hostedRequests": 0,
+  "productionMutations": 0,
+  "classificationValues": [
+    "VERIFIED_READ_ONLY",
+    "DOCUMENTED_BUT_UNVERIFIED",
+    "NOT_ESTABLISHED",
+    "UNKNOWN"
+  ],
+  "production": {
+    "overall": "NOT_ESTABLISHED",
+    "firebaseProject": "NOT_ESTABLISHED",
+    "supabaseProject": "NOT_ESTABLISHED",
+    "restaurantHostingTarget": "NOT_ESTABLISHED",
+    "vercelProject": "NOT_ESTABLISHED",
+    "customDomains": "NOT_ESTABLISHED",
+    "releaseCandidate": "NOT_ESTABLISHED",
+    "accounts": "NOT_ESTABLISHED",
+    "backupRestore": "NOT_ESTABLISHED",
+    "externalUnrecordedState": "UNKNOWN"
+  },
+  "intendedIsolation": {
+    "dedicatedFirebase": true,
+    "dedicatedSupabase": true,
+    "copyNonProductionIdentities": false,
+    "copyNonProductionApplicationData": false,
+    "bidirectionalTokenIsolationRequired": true,
+    "productionSpecificClientConfiguration": true,
+    "productionSpecificServerCredentials": true,
+    "initialRuntimeMode": "maintenance"
+  },
+  "localRecords": {
+    "supabaseDevelopmentRecordPresent": true,
+    "supabaseStagingRecordPresent": true,
+    "supabaseProductionRecordPresent": false,
+    "linkedVercelProjectClassification": "STAGING_EVALUATION_ONLY",
+    "productionFirebaseIdentityRecorded": false
+  },
+  "confirmedLocalGaps": [
+    "ISO-01_CUSTOMER_FIREBASE_NONPRODUCTION_FALLBACK",
+    "ISO-02_CUSTOMER_SUPABASE_PRODUCTION_NOT_EXACT_BOUND",
+    "ISO-03_RESTAURANT_CROSS_PROVIDER_IDENTITY_NOT_BOUND",
+    "ISO-04_ADMIN_PRODUCTION_ENVIRONMENT_UNSUPPORTED",
+    "ISO-05_FIREBASE_PRODUCTION_FUNCTION_VARIANTS_MISSING",
+    "ISO-06_SUPABASE_PRODUCTION_DEPLOY_DEFAULTS_NONPRODUCTION_FIREBASE",
+    "ISO-07_PRODUCTION_CATALOG_BINDS_NONPRODUCTION_FIREBASE",
+    "ISO-08_PRODUCTION_VERIFIER_ACCEPTS_ANY_NON_ARCHIVED_FIREBASE_ID",
+    "ISO-09_GENERIC_FIREBASE_DEFAULT_IS_NONPRODUCTION",
+    "ISO-10_MIGRATION_TOOLS_ARE_NONPRODUCTION_BOUND"
+  ],
+  "nextAction": "LOCAL_FAIL_CLOSED_PRODUCTION_IDENTITY_CONTRACT_REMEDIATION",
+  "ownerDecisions": [
+    "FINAL_RESTAURANT_PRODUCTION_HOSTING_TARGET",
+    "PRODUCTION_FIREBASE_ORGANIZATION_OWNERSHIP",
+    "PRODUCTION_SUPABASE_ORGANIZATION_OWNERSHIP",
+    "PRODUCTION_DOMAIN_AND_ACTIVATION_STRATEGY"
+  ]
+}

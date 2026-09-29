@@ -5,6 +5,19 @@
 **Phase 6:** `PASS / ACCEPTED / CLOSED`
 **Production mutations authorized:** None
 
+## Local architecture inventory result
+
+The local/read-only inventory is complete. See `restaurant-production-architecture-inventory.md` and its machine-readable JSON. No hosted provider request was made.
+
+- Production Firebase identity: `NOT ESTABLISHED`
+- Production Supabase identity: `NOT ESTABLISHED`
+- Restaurant Production hosting target: `NOT ESTABLISHED`
+- Unrecorded external provider state: `UNKNOWN`
+- Confirmed local environment-binding gaps: 10
+- Production mutations performed: 0
+
+The next action is local remediation of the fail-closed Production identity/build/operator contracts before any provider inspection or provisioning request.
+
 ## Purpose
 
 Prepare an exact, isolated Restaurant Production release candidate and an owner-reviewable go/no-go package. This plan does not authorize deployment, configuration changes, credentials, identities, real messages, store submission, Earnings activation, public activation, or destructive cleanup.
@@ -104,4 +117,4 @@ The machine-readable checklist is `restaurant-production-readiness-checklist.jso
 
 ## First justified next action
 
-Perform a local/read-only Production architecture inventory: identify the intended Production hosting target and the proposed Firebase/Supabase project identities from existing repository configuration and owner-approved records, without creating credentials or contacting/mutating Production. Produce a gap matrix for owner review before requesting any Production provider access.
+Implement and review the ten confirmed local isolation gaps in `restaurant-production-architecture-inventory.md`. This work must make every Production client, server, service worker, migration/deployment operator, and verifier bind one exact reviewed environment identity and reject non-production reuse before any hosted request. Hosting and provider-organization choices remain owner decisions.
