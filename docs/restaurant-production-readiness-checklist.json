@@ -13,6 +13,12 @@
   "productionMutationsAuthorized": false,
   "localArchitectureInventory": "PASS",
   "productionEnvironmentClassification": "NOT_ESTABLISHED",
+  "restaurantProductionHostingPlatform": "VERCEL_INTENDED_DOCUMENTED_NOT_PROVISIONED",
+  "firebaseProductionProvisioning": "DEFERRED_BY_OWNER",
+  "supabaseProductionProvisioning": "DEFERRED_BY_OWNER",
+  "additionalVercelPreviewTesting": "IN_PROGRESS_ALLOWED",
+  "productionActivation": "NOT_AUTHORIZED",
+  "deferredWorkHandoff": "docs/production-firebase-supabase-deferred-work.md",
   "externalUnrecordedState": "UNKNOWN",
   "confirmedLocalGapCount": 0,
   "items": [
@@ -101,8 +107,10 @@
     },
     {
       "id": "HOSTING_TARGET_DECISION",
-      "status": "BLOCKED",
-      "mandatory": true
+      "status": "PASS",
+      "mandatory": true,
+      "evidenceClassification": "DOCUMENTED_BUT_UNVERIFIED",
+      "decision": "VERCEL_INTENDED"
     },
     {
       "id": "HOSTING_PROJECT_DOMAIN_HTTPS",

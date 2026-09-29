@@ -17,6 +17,8 @@ expect(inventory.hostedRequests === 0 && inventory.productionMutations === 0, 'I
 expect(inventory.production.overall === 'NOT_ESTABLISHED', 'Production must remain not established');
 expect(inventory.confirmedLocalGaps.length === 10, 'Expected ten confirmed local gaps');
 expect(inventory.localRemediation?.status === 'LOCAL_PASS_HOSTED_NOT_EXECUTED' && inventory.localRemediation?.resolvedGapCount === 10, 'Ten-gap local remediation is not recorded');
+expect(inventory.ownerSequencingDecision?.restaurantProductionHostingPlatform === 'VERCEL_INTENDED_DOCUMENTED_NOT_PROVISIONED', 'Intended Vercel decision is missing');
+expect(inventory.ownerSequencingDecision?.firebaseProduction === 'DEFERRED_BY_OWNER' && inventory.ownerSequencingDecision?.supabaseProduction === 'DEFERRED_BY_OWNER', 'Production backend deferral is missing');
 const classifications = new Set(['VERIFIED_READ_ONLY', 'DOCUMENTED_BUT_UNVERIFIED', 'NOT_ESTABLISHED', 'UNKNOWN']);
 for (const value of Object.values(inventory.production)) expect(classifications.has(value), `Invalid Production classification: ${value}`);
 
@@ -24,6 +26,8 @@ const checklist = await json('docs/restaurant-production-readiness-checklist.jso
 const statuses = new Set(checklist.allowedStatuses);
 expect(checklist.overallStatus === 'NOT_YET_APPROVED_NOT_EXECUTED', 'Production readiness was advanced');
 expect(checklist.productionMutationsAuthorized === false, 'Production mutation authorization changed');
+expect(checklist.firebaseProductionProvisioning === 'DEFERRED_BY_OWNER' && checklist.supabaseProductionProvisioning === 'DEFERRED_BY_OWNER', 'Checklist backend deferral mismatch');
+expect(checklist.restaurantProductionHostingPlatform === 'VERCEL_INTENDED_DOCUMENTED_NOT_PROVISIONED', 'Checklist Vercel decision mismatch');
 for (const item of checklist.items) expect(statuses.has(item.status), `Invalid checklist status: ${item.id}`);
 expect(checklist.confirmedLocalGapCount === 0 && checklist.locallyResolvedGapCount === 10, 'Local gap counts are not reconciled');
 for (const id of ['SOURCE_ENVIRONMENT_BINDINGS', 'PRODUCTION_OPERATOR_CONTRACTS']) {
@@ -31,6 +35,13 @@ for (const id of ['SOURCE_ENVIRONMENT_BINDINGS', 'PRODUCTION_OPERATOR_CONTRACTS'
   expect(item?.status === 'PASS' && item?.evidenceClassification === 'LOCAL_PASS_HOSTED_NOT_EXECUTED', `${id} is not locally remediated`);
 }
 expect(checklist.items.some(item => item.mandatory && item.status === 'BLOCKED'), 'Provider readiness must remain blocked');
+const hostingDecision = checklist.items.find(item => item.id === 'HOSTING_TARGET_DECISION');
+expect(hostingDecision?.status === 'PASS' && hostingDecision?.decision === 'VERCEL_INTENDED', 'Hosting target decision is not recorded');
+
+const deferred = await text('docs/production-firebase-supabase-deferred-work.md');
+expect(deferred.includes('Production Firebase provisioning: **DEFERRED BY OWNER**'), 'Firebase deferral handoff missing');
+expect(deferred.includes('Production Supabase provisioning: **DEFERRED BY OWNER**'), 'Supabase deferral handoff missing');
+expect(deferred.includes('Production Firebase ve Supabase\'e geçelim'), 'Exact resume trigger missing');
 
 const localProjects = await json('secure/supabase-projects.local.json');
 expect(Boolean(localProjects.projects?.development), 'Development Supabase record is missing');

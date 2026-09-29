@@ -102,7 +102,7 @@ The database's final identity functions read `private.runtime_settings.firebase_
 
 | Requirement | State | Finding / decision needed |
 |---|---|---|
-| Final Restaurant host | `BLOCKED` | Owner must choose Vercel or another reviewed target. Vercel Preview success is evidence, not a Production decision. |
+| Final Restaurant host | `DOCUMENTED BUT UNVERIFIED` | Owner selected Vercel as the intended Production platform. No Production Vercel project, deployment, domain, or activation is provisioned. The staging/evaluation project remains non-production. |
 | Production project/scope | `NOT ESTABLISHED` | The linked Vercel project is the isolated Staging evaluation project. It must not be promoted or repurposed silently. |
 | Domain/DNS/HTTPS | `NOT ESTABLISHED` | Intended `restaurant.hungrie.app`; ownership, DNS, certificate, and activation are unverified and separately authorized. |
 | Headers/CSP | `DOCUMENTED BUT UNVERIFIED` | `apps/restaurant/vercel.json` defines HSTS, CSP, no-store HTML/config, immutable assets, and service-worker scope. Production behavior needs immutable qualification. |
@@ -141,7 +141,7 @@ Approval is required before any Production provider read unless an existing auth
 ## Safest dependency order
 
 1. **Local remediation:** close `ISO-01`–`ISO-10`; add exact identity manifests and tests.
-2. **Owner architecture decisions:** choose Restaurant/Customer/Admin hosting, domain strategy, provider organizations/regions, account ownership, observability, backup custody, and whether any legacy Firebase Functions remain.
+2. **Owner architecture decisions:** Vercel is selected for Restaurant hosting. Choose the Production Firebase/Supabase organizations and projects, domain strategy, account ownership, observability, backup custody, and whether any legacy Firebase Functions remain.
 3. **Read-only provider inventory:** under a bounded authorization, establish whether candidate Production resources already exist; record exact identities without mutation.
 4. **Provisioning authorization:** create/adopt clean Firebase and Supabase projects and hosting projects in maintenance/protected state; configure least privilege and secret custody.
 5. **Backend foundation:** apply reviewed migrations/config, exact Firebase OIDC issuer, RLS/RPC/Realtime/Storage/Edge/Vault/Cron, backup and isolated restore drill; keep maintenance.
@@ -152,4 +152,4 @@ Approval is required before any Production provider read unless an existing auth
 
 ## Next action
 
-The local fail-closed Production identity contract is complete. The next decisions are the final Restaurant Production hosting target and Firebase/Supabase organization ownership. After those decisions, prepare a separately authorized bounded read-only provider inventory; do not provision before that review.
+The local fail-closed Production identity contract is complete. Production Firebase and Supabase provisioning are `DEFERRED BY OWNER` while additional isolated Vercel Preview testing continues. Resume from `production-firebase-supabase-deferred-work.md` only after the owner says “Production Firebase ve Supabase'e geçelim”. Production remains not established and activation remains unauthorized.

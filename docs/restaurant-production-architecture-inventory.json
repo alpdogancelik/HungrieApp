@@ -24,6 +24,14 @@
     "backupRestore": "NOT_ESTABLISHED",
     "externalUnrecordedState": "UNKNOWN"
   },
+  "ownerSequencingDecision": {
+    "restaurantProductionHostingPlatform": "VERCEL_INTENDED_DOCUMENTED_NOT_PROVISIONED",
+    "firebaseProduction": "DEFERRED_BY_OWNER",
+    "supabaseProduction": "DEFERRED_BY_OWNER",
+    "additionalVercelPreviewTesting": "IN_PROGRESS_ALLOWED",
+    "productionActivation": "NOT_AUTHORIZED",
+    "deferredWorkHandoff": "docs/production-firebase-supabase-deferred-work.md"
+  },
   "intendedIsolation": {
     "dedicatedFirebase": true,
     "dedicatedSupabase": true,
@@ -55,7 +63,6 @@
   ],
   "nextAction": "OWNER_ARCHITECTURE_DECISIONS_THEN_BOUNDED_READ_ONLY_PROVIDER_INVENTORY",
   "ownerDecisions": [
-    "FINAL_RESTAURANT_PRODUCTION_HOSTING_TARGET",
     "PRODUCTION_FIREBASE_ORGANIZATION_OWNERSHIP",
     "PRODUCTION_SUPABASE_ORGANIZATION_OWNERSHIP",
     "PRODUCTION_DOMAIN_AND_ACTIVATION_STRATEGY"

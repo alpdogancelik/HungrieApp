@@ -11,12 +11,16 @@ The local/read-only inventory is complete. See `restaurant-production-architectu
 
 - Production Firebase identity: `NOT ESTABLISHED`
 - Production Supabase identity: `NOT ESTABLISHED`
-- Restaurant Production hosting target: `NOT ESTABLISHED`
+- Restaurant Production hosting platform: `VERCEL / INTENDED / DOCUMENTED / NOT PROVISIONED`
+- Production Firebase provisioning: `DEFERRED BY OWNER`
+- Production Supabase provisioning: `DEFERRED BY OWNER`
+- Additional isolated Vercel Preview testing: `IN PROGRESS / ALLOWED`
+- Production activation: `NOT AUTHORIZED`
 - Unrecorded external provider state: `UNKNOWN`
 - Confirmed local environment-binding gaps: 0 open; 10 resolved as `LOCAL PASS / HOSTED NOT EXECUTED`
 - Production mutations performed: 0
 
-The local fail-closed identity/build/operator remediation is complete. Production values and provider state remain unestablished. The next action is owner selection of the hosting target and Firebase/Supabase ownership, followed by a separately authorized bounded read-only provider inventory.
+The local fail-closed identity/build/operator remediation is complete. Vercel is selected as the intended Restaurant Production platform, but no Production project, deployment, domain, or activation exists. Firebase and Supabase Production provisioning are deferred by owner while additional isolated Preview testing continues. Resume backend work from `production-firebase-supabase-deferred-work.md` only after the explicit resume trigger.
 
 ## Purpose
 
@@ -57,7 +61,7 @@ Every item uses `PASS`, `FAIL`, `BLOCKED`, `NOT EXECUTED`, or `NOT APPLICABLE`.
 
 ### Vercel and hosting
 
-- `BLOCKED` — owner decision on the final Restaurant Production hosting target.
+- `PASS` — Vercel selected as the intended Restaurant Production platform; project/domain provisioning remains unexecuted.
 - `NOT EXECUTED` — define the Production project, domain, HTTPS, deployment protection, and access model.
 - `NOT EXECUTED` — qualify headers/CSP, static routing, cache policy, service-worker scope, and absence of Preview Toolbar behavior.
 - `NOT EXECUTED` — define immutable candidate, promotion, rollback, and independent verification procedures.
@@ -121,4 +125,4 @@ The machine-readable checklist is `restaurant-production-readiness-checklist.jso
 
 ## First justified next action
 
-The owner must choose the final Restaurant Production hosting target and the Firebase and Supabase organization/project ownership model. A separately authorized bounded read-only inventory may then establish whether suitable provider resources exist. Provisioning remains out of scope.
+Continue owner-directed testing on the existing non-production Vercel Preview workflow. Production backend work resumes only when the owner says “Production Firebase ve Supabase'e geçelim”; then refresh this repository and the dedicated deferred-work handoff before proposing any provider action.
