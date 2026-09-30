@@ -1,6 +1,8 @@
 import type { Locale } from "../contracts";
 import type { CancellationReason, OrderStatus } from "./orderContract";
 
+export const orderReference = (id: string) => /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(id) ? id.slice(-8).toUpperCase() : id;
+
 export const statusLabel = (status: OrderStatus, locale: Locale) => ({
   pending: locale === "tr" ? "Yanıt bekliyor" : "Waiting for response",
   preparing: locale === "tr" ? "Hazırlanıyor" : "Preparing",

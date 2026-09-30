@@ -7,7 +7,7 @@ import { useRestaurantRuntime } from "../RestaurantRuntimeContext";
 import { useVisibleOrderAcknowledgement } from "./orderAcknowledgement";
 import { CANCELLATION_REASONS, normalizeCancellationMessage, type CancellationReason, type RestaurantOrder } from "./orderContract";
 import { classifyMutationResult, deadlineRemainingMs, discardMutationIntent, getMutationIntent, mutationFailureKind, nextOrderStatus, type MutationIntent } from "./orderModel";
-import { customizationLabels, reasonLabel, statusLabel } from "./orderPresentation";
+import { customizationLabels, orderReference, reasonLabel, statusLabel } from "./orderPresentation";
 import { restaurantOrderRepository } from "./orderRepository";
 
 export function OrderDetailView({ order, reload, compact = false, stale = false, scrollRootRef }: { order: RestaurantOrder; reload: () => Promise<RestaurantOrder | null>; compact?: boolean; stale?: boolean; scrollRootRef?: RefObject<Element | null> }) {
@@ -90,7 +90,7 @@ export function OrderDetailView({ order, reload, compact = false, stale = false,
     ? Object.values(current.delivery_address_snapshot as Record<string, unknown>).filter(value => typeof value === "string" && value.trim()).join(", ") : "";
 
   return <section ref={acknowledgement.targetRef} className={`order-detail ${compact ? "order-detail--compact" : ""}`} aria-labelledby={`order-${current.id}-title`}>
-    <header className="order-detail__header"><div><p className="eyebrow">{locale === "tr" ? "Sipariş" : "Order"}</p>{compact ? <h2 id={`order-${current.id}-title`}>#{current.id.slice(0, 8)}</h2> : <h1 id={`order-${current.id}-title`}>#{current.id.slice(0, 8)}</h1>}</div><span className={`order-status status-${current.status}`}>{statusLabel(current.status, locale)}</span></header>
+    <header className="order-detail__header"><div><p className="eyebrow">{locale === "tr" ? "Sipariş" : "Order"}</p>{compact ? <h2 id={`order-${current.id}-title`}>#{orderReference(current.id)}</h2> : <h1 id={`order-${current.id}-title`}>#{orderReference(current.id)}</h1>}</div><span className={`order-status status-${current.status}`}>{statusLabel(current.status, locale)}</span></header>
     {runtime.status !== "connected" && <p className="ui-notice ui-notice--warning" role="status">{locale === "tr" ? "İşlemler için canlı bağlantının yeniden kurulmasını bekleyin." : "Wait for the live connection before changing this order."}</p>}
     {expiredAwaiting && <p className="ui-notice ui-notice--warning" role="status"><AlertTriangle size={18} aria-hidden /> {copy.expired}</p>}
     {notice && <p className="ui-notice ui-notice--warning" role="status" aria-live="polite">{notice}</p>}

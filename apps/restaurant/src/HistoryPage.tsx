@@ -6,6 +6,7 @@ import { Button } from "./components/Button";
 import { PageHeader } from "./components/PageHeader";
 import { restaurantManagementRepository } from "./managementRepository";
 import type { RestaurantOrder } from "./orders/orderContract";
+import { orderReference } from "./orders/orderPresentation";
 import { useLocale } from "./providers";
 
 const money = (value: number, locale: string) => new Intl.NumberFormat(locale === "tr" ? "tr-TR" : "en-GB", { style: "currency", currency: "TRY" }).format(value / 100);
@@ -39,8 +40,8 @@ export function HistoryPage() {
     {stale && <p className="ui-notice ui-notice--warning" role="status">{copy.stale}</p>}
     {loading && !orders.length && <div className="ui-card history-loading" aria-busy="true"><Clock3 aria-hidden /><p>{t.loading}</p></div>}
     {!loading && !orders.length && !error && <section className="ui-card order-empty"><Clock3 aria-hidden /><p>{copy.empty}</p></section>}
-    {!!orders.length && <><div className="history-table ui-card"><table><thead><tr><th>{copy.order}</th><th>{copy.status}</th><th>{copy.total}</th><th>{copy.date}</th></tr></thead><tbody>{orders.map(order => <tr key={order.id}><td><Link href={`/orders/detail?orderId=${encodeURIComponent(order.id)}` as never}>#{order.id.slice(0, 8)}</Link></td><td><span className={`order-status order-status--${order.status}`}>{status(order.status)}</span></td><td>{money(order.total_kurus, locale)}</td><td>{date(order.created_at, locale)}</td></tr>)}</tbody></table></div>
-      <div className="history-cards">{orders.map(order => <article className="ui-card history-card" key={order.id}><div><Link href={`/orders/detail?orderId=${encodeURIComponent(order.id)}` as never}>#{order.id.slice(0, 8)}</Link><span className={`order-status order-status--${order.status}`}>{status(order.status)}</span></div><strong>{money(order.total_kurus, locale)}</strong><time dateTime={order.created_at}>{date(order.created_at, locale)}</time></article>)}</div>
+    {!!orders.length && <><div className="history-table ui-card"><table><thead><tr><th>{copy.order}</th><th>{copy.status}</th><th>{copy.total}</th><th>{copy.date}</th></tr></thead><tbody>{orders.map(order => <tr key={order.id}><td><Link href={`/orders/detail?orderId=${encodeURIComponent(order.id)}` as never}>#{orderReference(order.id)}</Link></td><td><span className={`order-status order-status--${order.status}`}>{status(order.status)}</span></td><td>{money(order.total_kurus, locale)}</td><td>{date(order.created_at, locale)}</td></tr>)}</tbody></table></div>
+      <div className="history-cards">{orders.map(order => <article className="ui-card history-card" key={order.id}><div><Link href={`/orders/detail?orderId=${encodeURIComponent(order.id)}` as never}>#{orderReference(order.id)}</Link><span className={`order-status order-status--${order.status}`}>{status(order.status)}</span></div><strong>{money(order.total_kurus, locale)}</strong><time dateTime={order.created_at}>{date(order.created_at, locale)}</time></article>)}</div>
       {hasMore && cursor && <div className="history-more"><Button variant="secondary" disabled={loading} onClick={() => void load(cursor)}>{loading ? t.loading : copy.more}</Button></div>}</>}
   </Shell>;
 }

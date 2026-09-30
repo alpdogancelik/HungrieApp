@@ -32,7 +32,7 @@ export type RestaurantOrder = {
   discount_kurus: number;
   tip_kurus: number;
   total_kurus: number;
-  eta_minutes: number;
+  eta_minutes: number | null;
   approval_deadline_at?: string;
   reminder_pending: boolean;
   reminder_requested_at?: string;
@@ -66,21 +66,23 @@ const allowed = (value: Record<string, unknown>, keys: readonly string[]) => {
 const required = (value: Record<string, unknown>, keys: readonly string[]) => { if (keys.some(key => !(key in value))) invalid(); return value; };
 const text = (value: unknown) => typeof value === "string" && value.trim() === value && value.length > 0 ? value : invalid();
 const optionalText = (value: unknown) => value === undefined ? undefined : text(value);
+const optionalString = (value: unknown) => value === undefined ? undefined : typeof value === "string" ? value : invalid();
 const timestamp = (value: unknown) => { const result = text(value); if (Number.isNaN(Date.parse(result))) invalid(); return result; };
 const optionalTimestamp = (value: unknown) => value === undefined ? undefined : timestamp(value);
 const integer = (value: unknown, minimum = 0) => typeof value === "number" && Number.isSafeInteger(value) && value >= minimum ? value : invalid();
+const optionalInteger = (value: unknown, minimum = 0) => value === undefined || value === null ? null : integer(value, minimum);
 const boolean = (value: unknown) => typeof value === "boolean" ? value : invalid();
 const choice = <T extends string>(value: unknown, values: readonly T[]) => values.includes(value as T) ? value as T : invalid();
 
 const ITEM_KEYS = ["id", "menu_item_id", "source_menu_item_id", "name", "image_url", "unit_price_kurus", "customization_total_kurus", "quantity", "customizations"] as const;
 const ORDER_KEYS = ["id", "restaurant_id", "restaurant_name", "status", "cancellation_reason_code", "payment_method", "notes", "subtotal_kurus", "delivery_fee_kurus", "service_fee_kurus", "discount_kurus", "tip_kurus", "total_kurus", "eta_minutes", "approval_deadline_at", "reminder_pending", "reminder_requested_at", "preparing_at", "ready_at", "out_for_delivery_at", "delivered_at", "canceled_at", "created_at", "updated_at", "customer_name", "customer_email", "customer_whatsapp", "delivery_address_snapshot", "items"] as const;
-const ORDER_REQUIRED = ["id", "restaurant_id", "restaurant_name", "status", "payment_method", "subtotal_kurus", "delivery_fee_kurus", "service_fee_kurus", "discount_kurus", "tip_kurus", "total_kurus", "eta_minutes", "reminder_pending", "created_at", "updated_at", "items"] as const;
+const ORDER_REQUIRED = ["id", "restaurant_id", "restaurant_name", "status", "payment_method", "subtotal_kurus", "delivery_fee_kurus", "service_fee_kurus", "discount_kurus", "tip_kurus", "total_kurus", "reminder_pending", "created_at", "updated_at", "items"] as const;
 
 function parseItem(value: unknown): RestaurantOrderItem {
-  const row = required(allowed(object(value), ITEM_KEYS), ITEM_KEYS.filter(key => key !== "image_url"));
+  const row = required(allowed(object(value), ITEM_KEYS), ITEM_KEYS.filter(key => key !== "image_url" && key !== "source_menu_item_id"));
   const customizations = Array.isArray(row.customizations) ? row.customizations : invalid();
   return {
-    id: text(row.id), menu_item_id: text(row.menu_item_id), source_menu_item_id: row.source_menu_item_id === null ? null : text(row.source_menu_item_id), name: text(row.name),
+    id: text(row.id), menu_item_id: text(row.menu_item_id), source_menu_item_id: row.source_menu_item_id === null || row.source_menu_item_id === undefined ? null : text(row.source_menu_item_id), name: text(row.name),
     image_url: row.image_url === null || row.image_url === undefined ? null : text(row.image_url),
     unit_price_kurus: integer(row.unit_price_kurus), customization_total_kurus: integer(row.customization_total_kurus),
     quantity: integer(row.quantity, 1), customizations,
@@ -95,9 +97,9 @@ export function parseRestaurantOrder(value: unknown): RestaurantOrder {
   return {
     id: text(row.id), restaurant_id: text(row.restaurant_id), restaurant_name: text(row.restaurant_name),
     status: choice(row.status, ORDER_STATUSES), cancellation_reason_code: optionalText(row.cancellation_reason_code),
-    payment_method: choice(row.payment_method, ["cash", "pos"] as const), notes: optionalText(row.notes),
+    payment_method: choice(row.payment_method, ["cash", "pos"] as const), notes: optionalString(row.notes),
     subtotal_kurus: integer(row.subtotal_kurus), delivery_fee_kurus: integer(row.delivery_fee_kurus), service_fee_kurus: integer(row.service_fee_kurus),
-    discount_kurus: integer(row.discount_kurus), tip_kurus: integer(row.tip_kurus), total_kurus: integer(row.total_kurus), eta_minutes: integer(row.eta_minutes),
+    discount_kurus: integer(row.discount_kurus), tip_kurus: integer(row.tip_kurus), total_kurus: integer(row.total_kurus), eta_minutes: optionalInteger(row.eta_minutes),
     approval_deadline_at: optionalTimestamp(row.approval_deadline_at), reminder_pending: boolean(row.reminder_pending), reminder_requested_at: optionalTimestamp(row.reminder_requested_at),
     preparing_at: optionalTimestamp(row.preparing_at), ready_at: optionalTimestamp(row.ready_at), out_for_delivery_at: optionalTimestamp(row.out_for_delivery_at),
     delivered_at: optionalTimestamp(row.delivered_at), canceled_at: optionalTimestamp(row.canceled_at), created_at: timestamp(row.created_at), updated_at: timestamp(row.updated_at),

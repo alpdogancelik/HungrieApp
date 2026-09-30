@@ -7,16 +7,17 @@ const root = new URL("../", import.meta.url);
 const contract = await import(pathToFileURL(new URL("apps/restaurant/src/orders/orderContract.ts", root).pathname));
 const model = await import(pathToFileURL(new URL("apps/restaurant/src/orders/orderModel.ts", root).pathname));
 const acknowledgement = await import(pathToFileURL(new URL("apps/restaurant/src/orders/orderAcknowledgementModel.ts", root).pathname));
+const presentation = await import(pathToFileURL(new URL("apps/restaurant/src/orders/orderPresentation.ts", root).pathname));
 const read = path => fs.readFileSync(new URL(path, root), "utf8");
 
-const item = { id: "line-1", menu_item_id: "menu-1", source_menu_item_id: null, name: "Soup", image_url: null, unit_price_kurus: 1200, customization_total_kurus: 100, quantity: 2, customizations: [] };
-const order = { id: "order-1", restaurant_id: "restaurant-1", restaurant_name: "Restaurant", status: "pending", payment_method: "cash", subtotal_kurus: 2600, delivery_fee_kurus: 200, service_fee_kurus: 0, discount_kurus: 0, tip_kurus: 0, total_kurus: 2800, eta_minutes: 25, approval_deadline_at: "2026-09-23T20:00:00.000Z", reminder_pending: false, created_at: "2026-09-23T19:50:00.000Z", updated_at: "2026-09-23T19:51:00.000Z", items: [item] };
+const item = { id: "line-1", menu_item_id: "menu-1", name: "Soup", unit_price_kurus: 1200, customization_total_kurus: 100, quantity: 2, customizations: [] };
+const order = { id: "order-1", restaurant_id: "restaurant-1", restaurant_name: "Restaurant", status: "pending", payment_method: "cash", notes: "", subtotal_kurus: 2600, delivery_fee_kurus: 200, service_fee_kurus: 0, discount_kurus: 0, tip_kurus: 0, total_kurus: 2800, approval_deadline_at: "2026-09-23T20:00:00.000Z", reminder_pending: false, created_at: "2026-09-23T19:50:00.000Z", updated_at: "2026-09-23T19:51:00.000Z", items: [item] };
 
 test("exact order and page parsing accepts the backend projection", () => {
   const parsed = contract.parseRestaurantOrder(order);
   assert.equal(parsed.id, order.id);
   assert.equal(parsed.status, order.status);
-  assert.deepEqual(parsed.items, order.items);
+  assert.deepEqual(parsed.items, [{ ...item, source_menu_item_id: null, image_url: null }]);
   assert.deepEqual(contract.parseActiveOrderPage({ items: [order], has_more: true, next_cursor: "opaque" }).next_cursor, "opaque");
 });
 
@@ -24,9 +25,19 @@ test("current and imported item identities retain their exact nullable source co
   const current = contract.parseRestaurantOrder(order);
   assert.equal(current.items[0].menu_item_id, "menu-1");
   assert.equal(current.items[0].source_menu_item_id, null);
+  assert.equal(current.eta_minutes, null);
+  assert.equal(current.notes, "");
   const imported = contract.parseRestaurantOrder({ ...order, items: [{ ...item, menu_item_id: "legacy-menu", source_menu_item_id: "legacy-menu" }] });
   assert.equal(imported.items[0].source_menu_item_id, "legacy-menu");
   assert.throws(() => contract.parseRestaurantOrder({ ...order, items: [{ ...item, source_menu_item_id: "" }] }), contract.RestaurantOrderContractError);
+});
+
+test("Restaurant and Customer surfaces use the same canonical order reference", () => {
+  assert.equal(presentation.orderReference("07634b8c-0000-4000-8000-0000188944be"), "188944BE");
+  assert.equal(presentation.orderReference("legacy-order"), "legacy-order");
+  for (const relative of ["apps/restaurant/src/orders/OrderCard.tsx", "apps/restaurant/src/orders/OrderDetailView.tsx", "apps/restaurant/src/HistoryPage.tsx"]) {
+    assert.match(read(relative), /orderReference\(/, `${relative} does not use the canonical reference`);
+  }
 });
 
 test("order parsing rejects unknown fields, malformed values, duplicates, and inactive rows", () => {
