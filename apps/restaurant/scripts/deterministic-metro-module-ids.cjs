@@ -23,4 +23,8 @@ function createDeterministicMetroModuleIdFactory(workspaceRoot, reviewedIdentiti
   };
 }
 
-module.exports = { canonicalMetroModulePath, createDeterministicMetroModuleIdFactory };
+function shouldUseDeterministicMetroModuleIds(environment = process.env) {
+  return environment.HUNGRIE_DETERMINISTIC_EXPORT === "1";
+}
+
+module.exports = { canonicalMetroModulePath, createDeterministicMetroModuleIdFactory, shouldUseDeterministicMetroModuleIds };

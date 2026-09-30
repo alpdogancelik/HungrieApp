@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const { canonicalMetroModulePath, createDeterministicMetroModuleIdFactory } = require("../apps/restaurant/scripts/deterministic-metro-module-ids.cjs");
+const { canonicalMetroModulePath, createDeterministicMetroModuleIdFactory, shouldUseDeterministicMetroModuleIds } = require("../apps/restaurant/scripts/deterministic-metro-module-ids.cjs");
 const reviewedMap = require("../apps/restaurant/scripts/deterministic-metro-module-map.json");
 const workspace = path.resolve(import.meta.dirname, "..");
 
@@ -39,4 +40,13 @@ test("Metro module identity normalizes separators and rejects outside-workspace 
   assert.throws(() => createDeterministicMetroModuleIdFactory(workspace, ["workspace:z", "workspace:a"]), /unique and sorted/);
   const factory = createDeterministicMetroModuleIdFactory(workspace, ["workspace:apps/restaurant/app/index.tsx"]);
   assert.throws(() => factory(path.join(workspace, "apps/restaurant/app/unknown.tsx")), /absent from the reviewed deterministic map/);
+});
+
+test("strict reviewed module IDs apply only to explicit deterministic exports", () => {
+  assert.equal(shouldUseDeterministicMetroModuleIds({}), false);
+  assert.equal(shouldUseDeterministicMetroModuleIds({ NODE_ENV: "production" }), false);
+  assert.equal(shouldUseDeterministicMetroModuleIds({ HUNGRIE_DETERMINISTIC_EXPORT: "0" }), false);
+  assert.equal(shouldUseDeterministicMetroModuleIds({ HUNGRIE_DETERMINISTIC_EXPORT: "1" }), true);
+  const metro = fs.readFileSync(new URL("../apps/restaurant/metro.config.js", import.meta.url), "utf8");
+  assert.match(metro, /if \(shouldUseDeterministicMetroModuleIds\(\)\)/);
 });

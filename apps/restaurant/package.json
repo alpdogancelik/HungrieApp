@@ -7,7 +7,7 @@
     "start": "expo start",
     "web": "expo start --web",
     "prepare:web": "node scripts/write-firebase-config.mjs",
-    "export:web": "npm run prepare:web && expo export --platform web",
+    "export:web": "HUNGRIE_DETERMINISTIC_EXPORT=1 npm run prepare:web && HUNGRIE_DETERMINISTIC_EXPORT=1 expo export --platform web",
     "typecheck": "tsc --noEmit --project tsconfig.json"
   },
   "dependencies": {
