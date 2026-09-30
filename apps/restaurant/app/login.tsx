@@ -6,7 +6,7 @@ import { useLocale } from "../src/providers";
 import { AuthLayout } from "../src/components/AuthLayout";
 import { Button } from "../src/components/Button";
 import { Card } from "../src/components/Card";
-import { FormField } from "../src/components/FormField";
+import { FormField, PasswordField } from "../src/components/FormField";
 
 export default function Login() {
   const { t } = useLocale();
@@ -28,7 +28,7 @@ export default function Login() {
     <div><p className="auth-eyebrow">Hungrie Restaurant</p><h1>{t.signIn}</h1></div>
     {reasonCopy && <p className="ui-notice ui-notice--warning" role="alert">{reasonCopy}</p>}
     <FormField label={t.email} type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} />
-    <FormField label={t.password} type="password" autoComplete="current-password" minLength={8} required value={password} onChange={e => setPassword(e.target.value)} />
+    <PasswordField label={t.password} showLabel={t.showPassword} hideLabel={t.hidePassword} autoComplete="current-password" minLength={8} required value={password} onChange={e => setPassword(e.target.value)} />
     {error && <p className="ui-field__error" role="alert">{error}</p>}
     <Link className="auth-link" href={"/forgot-password" as never}>{t.forgotPassword}</Link>
     <Button disabled={submitting}>{submitting ? t.signingIn : t.signIn}</Button>

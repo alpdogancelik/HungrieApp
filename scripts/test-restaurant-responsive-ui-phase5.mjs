@@ -42,6 +42,16 @@ test("locked accessible colors and 44px targets remain present", () => {
   assert.match(components, /min-height:\s*44px/);
 });
 
+test("sign-in password visibility control is accessible and does not change submission behavior", () => {
+  const login = read("apps/restaurant/app/login.tsx");
+  const field = read("apps/restaurant/src/components/FormField.tsx");
+  assert.match(login, /<PasswordField[^>]*showLabel=\{t\.showPassword\}[^>]*hideLabel=\{t\.hidePassword\}/s);
+  assert.match(field, /type=\{visible \? "text" : "password"\}/);
+  assert.match(field, /type="button"[^>]*aria-label=\{toggleLabel\}[^>]*aria-pressed=\{visible\}/s);
+  assert.match(field, /EyeOff[\s\S]*Eye/);
+  assert.match(login, /signInWithEmailAndPassword\(auth, email, password\)/);
+});
+
 test("dialogs, route focus, and tabs retain complete keyboard behavior", () => {
   const dialog = read("apps/restaurant/src/components/Dialog.tsx");
   for (const token of ["createPortal", ".inert", "aria-hidden", "document.body.style.overflow", 'event.key === "Escape"', "restoreRef.current?.focus"]) assert.ok(dialog.includes(token), `Missing dialog behavior: ${token}`);

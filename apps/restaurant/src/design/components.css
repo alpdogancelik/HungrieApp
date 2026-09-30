@@ -32,6 +32,7 @@
 .ui-status--success { background: var(--color-green-soft); color: #0f7e51; }.ui-status--danger { background: var(--color-red-soft); color: #a72b25; }.ui-status--warning { background: var(--color-amber-soft); color: var(--color-amber); }.ui-status--info { background: var(--color-blue-soft); color: var(--color-blue); }
 .ui-field { display: grid; gap: 7px; color: var(--color-muted); font-size: 13px; font-weight: 700; }
 .ui-field input, .ui-field textarea, .ui-field select { width: 100%; min-height: 46px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-canvas); padding: 11px 14px; color: var(--color-ink); font-size: 15px; font-weight: 400; }
+.ui-field__password-control { position: relative; display: block; }.ui-field__password-control input { padding-right: 50px; }.ui-field__password-toggle { position: absolute; top: 50%; right: 4px; width: 40px; min-height: 40px; display: grid; place-items: center; transform: translateY(-50%); border: 0; border-radius: 10px; background: transparent; color: var(--color-muted); cursor: pointer; }.ui-field__password-toggle:hover { background: var(--color-card); color: var(--color-ink); }.ui-field__password-toggle:focus-visible { outline: 3px solid var(--color-blue); outline-offset: 1px; }
 .ui-field select { height: 46px; }
 .ui-field textarea { min-height: 96px; resize: vertical; }
 .ui-field__error { margin: 0; color: #b3261e; font-weight: 700; }
