@@ -9,7 +9,7 @@ export type CancellationReason = typeof CANCELLATION_REASONS[number];
 export type RestaurantOrderItem = {
   id: string;
   menu_item_id: string;
-  source_menu_item_id: string;
+  source_menu_item_id: string | null;
   name: string;
   image_url: string | null;
   unit_price_kurus: number;
@@ -80,7 +80,7 @@ function parseItem(value: unknown): RestaurantOrderItem {
   const row = required(allowed(object(value), ITEM_KEYS), ITEM_KEYS.filter(key => key !== "image_url"));
   const customizations = Array.isArray(row.customizations) ? row.customizations : invalid();
   return {
-    id: text(row.id), menu_item_id: text(row.menu_item_id), source_menu_item_id: text(row.source_menu_item_id), name: text(row.name),
+    id: text(row.id), menu_item_id: text(row.menu_item_id), source_menu_item_id: row.source_menu_item_id === null ? null : text(row.source_menu_item_id), name: text(row.name),
     image_url: row.image_url === null || row.image_url === undefined ? null : text(row.image_url),
     unit_price_kurus: integer(row.unit_price_kurus), customization_total_kurus: integer(row.customization_total_kurus),
     quantity: integer(row.quantity, 1), customizations,

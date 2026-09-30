@@ -9,7 +9,7 @@ const model = await import(pathToFileURL(new URL("apps/restaurant/src/orders/ord
 const acknowledgement = await import(pathToFileURL(new URL("apps/restaurant/src/orders/orderAcknowledgementModel.ts", root).pathname));
 const read = path => fs.readFileSync(new URL(path, root), "utf8");
 
-const item = { id: "line-1", menu_item_id: "menu-1", source_menu_item_id: "menu-1", name: "Soup", image_url: null, unit_price_kurus: 1200, customization_total_kurus: 100, quantity: 2, customizations: [] };
+const item = { id: "line-1", menu_item_id: "menu-1", source_menu_item_id: null, name: "Soup", image_url: null, unit_price_kurus: 1200, customization_total_kurus: 100, quantity: 2, customizations: [] };
 const order = { id: "order-1", restaurant_id: "restaurant-1", restaurant_name: "Restaurant", status: "pending", payment_method: "cash", subtotal_kurus: 2600, delivery_fee_kurus: 200, service_fee_kurus: 0, discount_kurus: 0, tip_kurus: 0, total_kurus: 2800, eta_minutes: 25, approval_deadline_at: "2026-09-23T20:00:00.000Z", reminder_pending: false, created_at: "2026-09-23T19:50:00.000Z", updated_at: "2026-09-23T19:51:00.000Z", items: [item] };
 
 test("exact order and page parsing accepts the backend projection", () => {
@@ -18,6 +18,15 @@ test("exact order and page parsing accepts the backend projection", () => {
   assert.equal(parsed.status, order.status);
   assert.deepEqual(parsed.items, order.items);
   assert.deepEqual(contract.parseActiveOrderPage({ items: [order], has_more: true, next_cursor: "opaque" }).next_cursor, "opaque");
+});
+
+test("current and imported item identities retain their exact nullable source contract", () => {
+  const current = contract.parseRestaurantOrder(order);
+  assert.equal(current.items[0].menu_item_id, "menu-1");
+  assert.equal(current.items[0].source_menu_item_id, null);
+  const imported = contract.parseRestaurantOrder({ ...order, items: [{ ...item, menu_item_id: "legacy-menu", source_menu_item_id: "legacy-menu" }] });
+  assert.equal(imported.items[0].source_menu_item_id, "legacy-menu");
+  assert.throws(() => contract.parseRestaurantOrder({ ...order, items: [{ ...item, source_menu_item_id: "" }] }), contract.RestaurantOrderContractError);
 });
 
 test("order parsing rejects unknown fields, malformed values, duplicates, and inactive rows", () => {
