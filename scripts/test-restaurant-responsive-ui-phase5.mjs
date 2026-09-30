@@ -27,6 +27,13 @@ test("responsive.css is the single media-query owner at approved boundaries", ()
   for (const edge of ["safe-area-inset-top", "safe-area-inset-right", "safe-area-inset-bottom", "safe-area-inset-left"]) assert.ok(responsive.includes(edge), `Missing ${edge}`);
 });
 
+test("desktop sidebar is viewport-fixed while mobile layout removes its offset", () => {
+  const responsive = read("apps/restaurant/src/design/responsive.css");
+  assert.match(responsive, /\.app-shell\s*\{[^}]*padding-left:\s*258px/s);
+  assert.match(responsive, /\.app-sidebar\s*\{[^}]*position:\s*fixed[^}]*inset:\s*0 auto 0 0[^}]*width:\s*258px[^}]*100dvh/s);
+  assert.match(responsive, /@media\s*\(max-width:\s*1023px\)[\s\S]*?\.app-shell\s*\{[^}]*padding-left:\s*0/s);
+});
+
 test("locked accessible colors and 44px targets remain present", () => {
   const tokens = read("apps/restaurant/src/design/tokens.css"), components = read("apps/restaurant/src/design/components.css"), responsive = read("apps/restaurant/src/design/responsive.css");
   assert.match(tokens, /--color-muted-soft:\s*#697386/i);
