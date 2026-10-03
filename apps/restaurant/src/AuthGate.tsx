@@ -46,6 +46,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const [retry, setRetry] = useState(0);
   const verified = useRef(false);
   const verifiedUid = useRef("");
+  const logoutRedirectingRef = useRef(false);
+  const [logoutRedirecting, setLogoutRedirecting] = useState(false);
   const runtimeReady = state === "ready"
     && Boolean(restaurantId)
     && accessContext?.accountStatus === "active"
@@ -77,6 +79,27 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     const unsubscribe = onIdTokenChanged(auth, async (user) => {
       if (!live) return;
       const wasVerified = verified.current;
+      if (!user) {
+        if (publicPath(path)) {
+          verified.current = false;
+          verifiedUid.current = "";
+          logoutRedirectingRef.current = false;
+          setLogoutRedirecting(false);
+          setRestaurantId("");
+          setAccessContext(null);
+          setState("ready");
+        } else if (!logoutRedirectingRef.current) {
+          // Keep the authenticated runtime and navigator mounted until the
+          // public route commits. Clearing them before replace() makes React
+          // Navigation update its store while the Stack is being destroyed.
+          logoutRedirectingRef.current = true;
+          setLogoutRedirecting(true);
+          router.replace(wasVerified ? "/login?reason=session-expired" : "/login");
+        }
+        return;
+      }
+      logoutRedirectingRef.current = false;
+      setLogoutRedirecting(false);
       if (user?.uid !== verifiedUid.current) {
         verified.current = false;
         verifiedUid.current = "";
@@ -88,12 +111,6 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         setState("ready");
         return;
       }
-      if (!user) {
-        if (publicPath(path)) setState("ready");
-        else router.replace(wasVerified ? "/login?reason=session-expired" : "/login");
-        return;
-      }
-
       try {
         const { data, error } = await restoreAccessContext(user);
         if (error) throw error;
@@ -168,13 +185,24 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     };
   }, [path, retry, router]);
 
+  useEffect(() => {
+    if (!logoutRedirecting || !publicPath(path)) return;
+    verified.current = false;
+    verifiedUid.current = "";
+    logoutRedirectingRef.current = false;
+    setLogoutRedirecting(false);
+    setRestaurantId("");
+    setAccessContext(null);
+    setState("ready");
+  }, [logoutRedirecting, path]);
+
   // Navigation runs only after React has committed the ready render. At that
   // point protected content is already wrapped by RestaurantRuntimeProvider.
   useEffect(() => {
-    if (runtimeReady && (publicPath(path) || path === "/pending" || path === "/suspended")) {
+    if (!logoutRedirecting && runtimeReady && (publicPath(path) || path === "/pending" || path === "/suspended")) {
       router.replace("/dashboard");
     }
-  }, [path, router, runtimeReady]);
+  }, [logoutRedirecting, path, router, runtimeReady]);
 
   // Inactive access context is committed before navigation so a recreated
   // auth subscription cannot clear the route tree between access pages.

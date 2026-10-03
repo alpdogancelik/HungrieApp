@@ -335,9 +335,13 @@ test("logout removes authenticated runtime access", async () => {
   harness.accessResults.push(active("owner"));
   await harness.emit(user("logout-owner"));
   await harness.emit(null);
-  assert.ok(harness.events.includes("provider-unmounted:restaurant-local:owner"));
   assert.ok(harness.events.includes("replace:/login?reason=session-expired"));
-  assert.equal(harness.tree()?.props?.className, "access-overlay");
+  assert.equal(harness.events.includes("provider-unmounted:restaurant-local:owner"), false, "Logout destroyed the navigator before its login replacement committed");
+  assert.equal(harness.tree()?.props?.["data-route"], "/dashboard");
+  assert.equal(await harness.applyReplacement(), "/login");
+  assert.ok(harness.events.includes("provider-unmounted:restaurant-local:owner"));
+  assert.equal(harness.tree()?.props?.["data-route"], "/login");
+  assert.equal(harness.events.filter(event => event === "replace:/login?reason=session-expired").length, 1);
   await harness.unmount();
 });
 
