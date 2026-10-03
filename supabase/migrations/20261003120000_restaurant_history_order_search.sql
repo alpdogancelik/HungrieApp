@@ -43,6 +43,8 @@ begin
   return private.order_page_result(v_ids,v_limit);
 end $$;
 
+grant create on schema public to hungrie_api_owner;
 alter function public.restaurant_list_orders_v2(text,text,integer,text) owner to hungrie_api_owner;
+revoke create on schema public from hungrie_api_owner;
 revoke all on function public.restaurant_list_orders_v2(text,text,integer,text) from public,anon,authenticated,service_role;
 grant execute on function public.restaurant_list_orders_v2(text,text,integer,text) to authenticated;

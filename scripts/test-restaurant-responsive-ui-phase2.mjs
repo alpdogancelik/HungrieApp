@@ -52,6 +52,7 @@ test("history search remains server-authoritative and restaurant-bound", () => {
   assert.match(migration, /private\.require_active_restaurant\(\)/);
   assert.match(migration, /o\.restaurant_id=v_restaurant/);
   assert.match(migration, /p_search/);
+  assert.match(migration, /grant create on schema public to hungrie_api_owner[^]*alter function public\.restaurant_list_orders_v2[^]*revoke create on schema public from hungrie_api_owner/);
   assert.match(migration, /grant execute on function public\.restaurant_list_orders_v2[^]*to authenticated/);
 });
 
