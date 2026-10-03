@@ -2295,6 +2295,15 @@ export type Database = {
         Args: { p_cursor?: string; p_limit?: number; p_queue?: string }
         Returns: Json
       }
+      restaurant_list_orders_v2: {
+        Args: {
+          p_cursor?: string
+          p_limit?: number
+          p_queue?: string
+          p_search?: string
+        }
+        Returns: Json
+      }
       restaurant_list_reviews_v1: { Args: { p_limit?: number }; Returns: Json }
       restaurant_moderate_review_v1: {
         Args: {

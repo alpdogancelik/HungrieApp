@@ -82,7 +82,7 @@ test("dirty state changes only for normalized edits or pending file input", () =
 
 test("repositories are caller-bound and use only accepted RPC and media contracts", () => {
   const repository=source("../apps/restaurant/src/managementRepository.ts");
-  for (const rpc of ["restaurant_list_orders_v1","restaurant_get_menu_v2","restaurant_save_category_v1","restaurant_reorder_categories_v1","restaurant_reorder_menu_items_v1","restaurant_bulk_set_item_availability_v1","restaurant_save_menu_item_v2","restaurant_get_settings_v1","restaurant_update_settings_v1"]) assert.match(repository,new RegExp(rpc));
+  for (const rpc of ["restaurant_list_orders_v2","restaurant_get_menu_v2","restaurant_save_category_v1","restaurant_reorder_categories_v1","restaurant_reorder_menu_items_v1","restaurant_bulk_set_item_availability_v1","restaurant_save_menu_item_v2","restaurant_get_settings_v1","restaurant_update_settings_v1"]) assert.match(repository,new RegExp(rpc));
   assert.doesNotMatch(repository,/p_restaurant_id|selectedRestaurant/); assert.match(repository,/buildMenuMediaPath\(restaurantId, file\.name, operationId\)/);
 });
 
@@ -94,7 +94,7 @@ test("pages retain generation, abort, stale, cursor, retry, and authoritative re
 
 test("deferred controls and unauthorized role gates remain absent", () => {
   const history=source("../apps/restaurant/src/HistoryPage.tsx"),restaurant=source("../apps/restaurant/src/RestaurantPage.tsx"),menu=source("../apps/restaurant/src/MenuPage.tsx");
-  assert.doesNotMatch(history,/type="search"|date filter|status filter/i); assert.doesNotMatch(restaurant,/openingHours|opening_hours|type="file"/); assert.doesNotMatch(menu+restaurant,/isActiveRestaurantOwner|restaurantRole\s*===/);
+  assert.match(history,/type="search"/); assert.match(history,/restaurant_list_orders_v2|listHistory/); assert.doesNotMatch(history,/date filter|status filter/i); assert.doesNotMatch(restaurant,/openingHours|opening_hours|type="file"/); assert.doesNotMatch(menu+restaurant,/isActiveRestaurantOwner|restaurantRole\s*===/);
 });
 
 test("Dashboard and Restaurant share the accepted acceptance controller", () => {

@@ -17,8 +17,8 @@ async function rpc<T>(name: string, args: Record<string, unknown>, parse: (value
 
 const identity = <T>(value: unknown) => value as T;
 export const restaurantManagementRepository = {
-  listHistory(cursor: string | null, limit = 25, signal?: AbortSignal): Promise<HistoryOrderPage> {
-    return rpc("restaurant_list_orders_v1", { p_queue: "history", p_cursor: cursor, p_limit: Math.min(50, Math.max(1, limit)) }, parseHistoryOrderPage, signal);
+  listHistory(cursor: string | null, search = "", limit = 25, signal?: AbortSignal): Promise<HistoryOrderPage> {
+    return rpc("restaurant_list_orders_v2", { p_queue: "history", p_cursor: cursor, p_search: search || null, p_limit: Math.min(50, Math.max(1, limit)) }, parseHistoryOrderPage, signal);
   },
   getMenu(signal?: AbortSignal): Promise<MenuSnapshot> { return rpc("restaurant_get_menu_v2", {}, parseMenuSnapshot, signal); },
   saveCategory(input: { id?: string; name: string; description: string; icon: string | null; active: boolean }, operationId: string) {

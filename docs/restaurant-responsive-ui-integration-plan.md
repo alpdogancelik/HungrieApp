@@ -225,11 +225,12 @@ Immediate UI scope:
 
 - Responsive history cards on phone and a compact table/card workspace on desktop.
 - Existing keyset pagination and direct order-detail links.
+- Server-authoritative order-reference search through tenant-bound `restaurant_list_orders_v2`.
 - Delivered/canceled status styling, localized dates, currency, loading, empty, error, and retry states.
 
-Contract gap:
+Remaining contract gap:
 
-`restaurant_list_orders_v1` currently accepts only queue, cursor, and limit. Server-authoritative search, status, and date filters need a new versioned RPC with tenant checks, bounded query rules, stable keyset pagination, indexes, tests, and typed response validation. Do not label a filter as complete if it only searches the currently loaded page.
+Status and date filters still require a reviewed server contract. They must retain tenant checks, bounded query rules, stable keyset pagination, indexes where required, tests, and typed response validation. Do not label a filter as complete if it only searches the currently loaded page.
 
 ### 7.6 Menu management
 

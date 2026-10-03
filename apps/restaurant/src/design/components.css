@@ -88,6 +88,12 @@
 
 /* Phase 3 management workspaces */
 .history-table { overflow-x: auto; padding: 0; }
+.history-search { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 16px; }
+.history-search__field { width: min(420px, 100%); min-height: 46px; display: flex; align-items: center; gap: 9px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: #fff; padding: 0 10px 0 14px; color: var(--color-muted); }
+.history-search__field:focus-within { border-color: var(--color-blue); box-shadow: 0 0 0 3px var(--color-blue-soft); }
+.history-search__field input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--color-ink); font: inherit; }
+.history-search__field button { width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 10px; background: transparent; color: var(--color-muted); cursor: pointer; }
+.history-search__field button:hover { background: var(--color-canvas); color: var(--color-ink); }
 .history-table table { width: 100%; border-collapse: collapse; }
 .history-table th, .history-table td { padding: 15px 18px; border-bottom: 1px solid var(--color-line); text-align: left; }
 .history-table th { color: var(--color-muted); font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }

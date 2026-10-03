@@ -40,6 +40,21 @@ test("Restaurant and Customer surfaces use the same canonical order reference", 
   }
 });
 
+test("Restaurant history search normalizes displayed order references", () => {
+  assert.equal(presentation.normalizeOrderSearch(" #1889-44be "), "188944BE");
+  assert.equal(presentation.normalizeOrderSearch(" 0f7cb3fd "), "0F7CB3FD");
+  assert.equal(presentation.normalizeOrderSearch("#"), "");
+});
+
+test("history search remains server-authoritative and restaurant-bound", () => {
+  const migration = read("supabase/migrations/20261003120000_restaurant_history_order_search.sql");
+  assert.match(migration, /security definer/);
+  assert.match(migration, /private\.require_active_restaurant\(\)/);
+  assert.match(migration, /o\.restaurant_id=v_restaurant/);
+  assert.match(migration, /p_search/);
+  assert.match(migration, /grant execute on function public\.restaurant_list_orders_v2[^]*to authenticated/);
+});
+
 test("order parsing rejects unknown fields, malformed values, duplicates, and inactive rows", () => {
   for (const invalid of [
     { ...order, invented: true },

@@ -124,6 +124,7 @@
 }
 @media (max-width: 767px) {
 .history-table { display: none; }
+  .history-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
   .history-cards { display: grid; }
   .menu-layout { grid-template-columns: 1fr; }
   .menu-categories { position: static; }
