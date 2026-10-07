@@ -199,6 +199,7 @@ export class OrderRealtimeCoordinator {
         entry.channel = channel;
         channel
             .on("broadcast", { event: "order_changed" }, () => {
+                if (!this.topics.has(entry.topic) || entry.channel !== channel) return;
                 for (const id of entry.subscribers) this.invalidate(id);
             })
             .subscribe((status: string) => {
@@ -255,26 +256,23 @@ export class OrderRealtimeCoordinator {
         const identity = this.dependencies.authIdentity();
         const identityChanged = identity !== this.currentIdentity;
         this.currentIdentity = identity;
+        // Topic names are bound to the canonical authz_version. Re-resolve
+        // them on every auth/foreground/network cycle, even when the Firebase
+        // UID is unchanged, so a role/status generation can never be reused.
+        this.topicsPromise = null;
+        for (const entry of [...this.topics.values()]) this.removeTopic(entry);
+        for (const subscriber of this.subscribers.values()) subscriber.topics.clear();
         if (identityChanged) {
-            this.topicsPromise = null;
             for (const entry of this.sharedQueries.values()) {
                 entry.value = undefined;
                 entry.hasValue = false;
             }
-            for (const entry of [...this.topics.values()]) this.removeTopic(entry);
-            for (const subscriber of this.subscribers.values()) subscriber.topics.clear();
-            if (!identity) {
-                for (const subscriber of this.subscribers.values()) subscriber.generation += 1;
-                return;
-            }
-            for (const subscriber of this.subscribers.values()) void this.initializeSubscriber(subscriber);
+        }
+        if (!identity) {
+            for (const subscriber of this.subscribers.values()) subscriber.generation += 1;
             return;
         }
-        try { await this.authenticateRealtime(); } catch { /* bounded channel retries recover */ }
-        this.refreshAll();
-        for (const entry of this.topics.values()) {
-            if (!entry.channel) this.scheduleReconnect(entry);
-        }
+        for (const subscriber of this.subscribers.values()) void this.initializeSubscriber(subscriber);
     }
 
     private startLifecycle() {

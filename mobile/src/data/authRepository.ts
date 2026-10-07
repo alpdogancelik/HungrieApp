@@ -1,4 +1,5 @@
 import * as firebaseAuthRepository from "@/lib/firebaseAuth";
+import { createSingleFlightLogout, runLogoutBoundary } from "@/src/features/auth/logoutBoundary";
 import { auth } from "@/lib/firebase";
 import { selectRepository } from "./backendFlags";
 import type { AuthRepository } from "./contracts";
@@ -38,20 +39,56 @@ export const getCurrentAuthIdentity = async (forceServerValidation = false) => {
 export const signIn = authRepository.signIn;
 export const createUser = authRepository.createUser;
 export const getCurrentUser = authRepository.getCurrentUser;
-export const signOut = async () => {
-    // Push ownership must be revoked while the Firebase identity can still
-    // authenticate the Supabase RPC. Do not silently sign out on failure.
-    const { unregisterPushToken } = await import("./notificationRepository");
-    await unregisterPushToken();
-    const result = await authRepository.signOut();
-    const { clearStoredRecentSearches } = await import("@/src/lib/recentSearchesStorage");
-    await clearStoredRecentSearches().catch(() => undefined);
-    const { clearAddressSessionCache } = await import("./addressRepository");
-    clearAddressSessionCache();
-    return result;
+export const getCurrentVerificationSession = firebaseAuthRepository.getCurrentVerificationSession;
+export const resendEmailVerification = firebaseAuthRepository.resendEmailVerification;
+export const refreshEmailVerification = firebaseAuthRepository.refreshEmailVerification;
+export const getVerificationErrorMessage = firebaseAuthRepository.getVerificationErrorMessage;
+
+const protectLocalCustomerState = async () => {
+    await import("@/store/cart.store").then(({ destroyCartForSessionBoundary }) =>
+        destroyCartForSessionBoundary(),
+    ).catch(() => undefined);
+    const { destroyRecentSearchesForSessionBoundary } = await import("@/src/lib/recentSearchesStorage");
+    await destroyRecentSearchesForSessionBoundary().catch(() => undefined);
+    await import("./addressRepository").then(({ clearAddressSessionCache }) =>
+        clearAddressSessionCache(),
+    ).catch(() => undefined);
 };
+
+const executeSignOut = async () => {
+    return runLogoutBoundary({
+        // The authenticated identity is still present for this bounded attempt.
+        // Failure is observed but never controls Firebase/session termination.
+        attemptPushCleanup: async () => {
+            const { unregisterPushToken } = await import("./notificationRepository");
+            await unregisterPushToken();
+        },
+        terminateFirebaseSession: authRepository.signOut,
+        protectLocalState: protectLocalCustomerState,
+        reportPushCleanupFailure: (category) => console.warn(
+            "[auth] Push-token cleanup failed; continuing logout.",
+            { operation: "push_unregister", result: "failure", category, environment: process.env.EXPO_PUBLIC_APP_ENV || "unknown" },
+        ),
+    });
+};
+
+export const signOut = createSingleFlightLogout(executeSignOut);
 export const logout = signOut;
-export const deleteCurrentUserProfile = authRepository.deleteCurrentUserProfile;
+export const terminateCustomerSession = signOut;
+export const signOutVerificationSession = signOut;
+export const clearDeletedAccountSession = async () => {
+    // The server has already removed push ownership and the Firebase identity.
+    // Only clear local persistence here; calling the authenticated push RPC
+    // after identity deletion would turn successful deletion into a false error.
+    const deletedUid = auth?.currentUser?.uid || null;
+    if (deletedUid) {
+        await import("@/src/features/notifications/orderStatusWatcher")
+            .then(({ clearOrderStatusForIdentity }) => clearOrderStatusForIdentity(deletedUid))
+            .catch(() => undefined);
+    }
+    await firebaseAuthRepository.signOut().catch(() => undefined);
+    await protectLocalCustomerState();
+};
 export const sendPasswordReset = authRepository.sendPasswordReset;
 export const updateUserProfile = authRepository.updateUserProfile;
 export const getMockOwnerAccount = authRepository.getMockOwnerAccount;

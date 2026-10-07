@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { sanitizeError } from "./logic.ts";
+import { safeOperationalErrorCode } from "./logic.ts";
 import { checkNotificationReceipts, dispatchNotifications } from "./worker.ts";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
@@ -19,11 +19,26 @@ Deno.serve(async (request) => {
   try {
     const body = await request.json().catch(() => ({}));
     const accessToken = Deno.env.get("EXPO_ACCESS_TOKEN")!;
-    return json(body?.mode === "receipts"
+    const mode = body?.mode === "receipts" ? "receipts" : "dispatch";
+    const result = mode === "receipts"
       ? await checkNotificationReceipts(admin, accessToken)
-      : await dispatchNotifications(admin, accessToken));
+      : await dispatchNotifications(admin, accessToken);
+    console.info(JSON.stringify({
+      event: "push.worker.completed",
+      component: "notification-worker",
+      environment: Deno.env.get("HUNGRIE_ENVIRONMENT") || "provider",
+      mode,
+      ...result,
+    }));
+    return json(result);
   } catch (cause) {
-    console.error("notification-worker failed", sanitizeError(cause));
+    console.error(JSON.stringify({
+      event: "push.worker.internal_failure",
+      component: "notification-worker",
+      environment: Deno.env.get("HUNGRIE_ENVIRONMENT") || "provider",
+      errorCode: safeOperationalErrorCode(cause),
+      retryable: true,
+    }));
     return json({ error: "Worker failed" }, 500);
   }
 });

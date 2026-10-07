@@ -138,7 +138,7 @@ test("repository is caller-bound and sends exact RPC arguments", () => {
 test("one shared private channel dispatches invalidation while pages retain bounded recovery", () => {
   const runtime = read("apps/restaurant/src/RestaurantRuntimeContext.tsx");
   const allProduction = fs.readdirSync(new URL("apps/restaurant/src", root), { recursive: true }).filter(x => String(x).endsWith(".tsx") || String(x).endsWith(".ts")).map(x => read(`apps/restaurant/src/${x}`)).join("\n");
-  assert.equal((allProduction.match(/restaurant-orders:v1:/g) || []).length, 1);
+  assert.equal((allProduction.match(/restaurant_order_realtime_topic_v2/g) || []).length, 1);
   assert.match(runtime, /orderEventRevision/);
   for (const path of ["apps/restaurant/src/orders/useActiveOrders.ts", "apps/restaurant/src/orders/useOrderDetail.ts"]) {
     const source = read(path);
@@ -175,6 +175,9 @@ test("visibility acknowledgement and mutation code never fire from fetch or real
   assert.doesNotMatch(runtime, /acknowledge_order_seen|transition_order|cancel_order/);
   assert.match(detail, /classifyMutationResult/);
   assert.match(detail, /never retried automatically/);
+  assert.match(detail, /if \(stale \|\| submitting \|\| !runtime\.online \|\| expiredAwaiting\) return/);
+  assert.match(detail, /const mutationDisabled = !runtime\.online \|\| stale \|\| submitting \|\| expiredAwaiting/);
+  assert.doesNotMatch(detail, /if \([^\n]*runtime\.status !== "connected"[^\n]*\) return/);
 });
 
 test("production sources and exported bundle contain no mock runtime, fixtures, secrets, or environment additions", () => {

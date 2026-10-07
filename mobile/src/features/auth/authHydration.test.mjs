@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { resolveAuthHydration, resolveAuthSyncHydration } from "./authHydration.ts";
+import { resolveAuthHydration, resolveAuthSessionHydration, resolveAuthSyncHydration } from "./authHydration.ts";
 
 test("uses the complete repository profile when it is available", () => {
     const result = resolveAuthHydration({
@@ -51,6 +51,22 @@ test("reports signed out only when neither profile nor persisted Firebase identi
         isAuthenticated: false,
         user: null,
     });
+});
+
+test("restores an authenticated unverified Firebase session into verification recovery", () => {
+    assert.deepEqual(resolveAuthSessionHydration(null, {
+        email: "unverified@example.test",
+        emailVerified: false,
+    }), {
+        isAuthenticated: false,
+        user: null,
+        verificationRequired: { email: "unverified@example.test" },
+    });
+});
+
+test("verified and signed-out sessions cannot be mistaken for verification recovery", () => {
+    assert.equal(resolveAuthSessionHydration(null, { email: "verified@example.test", emailVerified: true }).verificationRequired, null);
+    assert.equal(resolveAuthSessionHydration(null, null).verificationRequired, null);
 });
 
 test("cold-start token hydration releases loading and preserves the Supabase profile", () => {

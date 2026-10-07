@@ -70,10 +70,9 @@ try {
   `);
 
   const results = await Promise.all([claim(), claim()]);
-  const successes = results.filter((result) => result.code === 0);
   const denials = results.filter((result) => result.code !== 0);
-  if (successes.length !== 1 || denials.length !== 1) {
-    throw new Error("Exactly one of two concurrent courier claims must succeed.");
+  if (denials.length !== 2) {
+    throw new Error("Both concurrent legacy courier claims must be denied.");
   }
 
   const reconciliation = runSql(`
@@ -83,10 +82,10 @@ try {
     ))
     from public.orders where id = '${orderId}';
   `);
-  if (reconciliation !== "fixture_courier|out_for_delivery|1") {
-    throw new Error("Concurrent courier claim did not reconcile to one assignment and history row.");
+  if (reconciliation !== "ready|0") {
+    throw new Error("Denied legacy courier claims changed the assignment, status, or history.");
   }
-  process.stdout.write("Milestone 3 courier concurrency test passed.\n");
+  process.stdout.write("Milestone 3 legacy courier concurrency denial test passed.\n");
 } finally {
   runSql(`
     set session_replication_role=replica;

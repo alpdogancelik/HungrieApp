@@ -1,5 +1,7 @@
 begin;
 
+\ir account_access_fixture.psql
+
 select plan(30);
 
 select has_table('migration', 'identity_profiles_stage', 'profile staging exists');

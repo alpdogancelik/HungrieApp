@@ -18,7 +18,6 @@ import {
     cartLineKey,
     extractRecommendations,
     FOOTER_CONTENT_HEIGHT,
-    MINIMUM_ORDER_TOTAL,
     ORANGE,
     resolveCartRestaurantId,
     restaurantEta,
@@ -26,6 +25,7 @@ import {
     restaurantReviewCount,
     type Recommendation,
 } from "./cartCheckoutModel";
+import { getMinimumOrderState, kurusToTry } from "./minimumOrderModel";
 
 const CartScreen = () => {
     const router = useRouter();
@@ -49,7 +49,6 @@ const CartScreen = () => {
     const [restaurant, setRestaurant] = useState<any>(null);
     const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
     const [recommendationsLoading, setRecommendationsLoading] = useState(false);
-    const belowMinimum = subtotal < MINIMUM_ORDER_TOTAL;
     const navigationClearance = 45 + Math.max(insets.bottom, Platform.OS === "web" ? 8 : 0);
 
     useEffect(() => {
@@ -122,6 +121,9 @@ const CartScreen = () => {
     const rating = restaurantRating(restaurant);
     const reviews = restaurantReviewCount(restaurant);
     const eta = restaurantEta(restaurant, Boolean(turkish));
+    const minimumOrder = getMinimumOrderState(restaurant, subtotal);
+    const minimumUnavailable = minimumOrder.status === "unavailable";
+    const belowMinimum = minimumOrder.status === "below";
     const restaurantSource = getRestaurantImageSource(restaurant?.logoUrl || restaurant?.logo || restaurant?.imageUrl || restaurant?.image_url, undefined, restaurantName);
 
     const header = (
@@ -144,7 +146,9 @@ const CartScreen = () => {
                                 <Ionicons color="#FFB800" name="star" size={14} />
                                 <Text numberOfLines={1} style={styles.restaurantMetaText}>{rating || copy("New", "Yeni")}{reviews ? ` (${reviews})` : ""} · {eta}</Text>
                             </View>
-                            <Text style={styles.restaurantMinimum}>{copy("Minimum order", "Min. sipariş tutarı")} {formatCurrency(MINIMUM_ORDER_TOTAL)}</Text>
+                            <Text style={styles.restaurantMinimum}>{minimumOrder.minimumKurus === null
+                                ? copy("Minimum order unavailable", "Min. sipariş tutarı kullanılamıyor")
+                                : `${copy("Minimum order", "Min. sipariş tutarı")} ${formatCurrency(kurusToTry(minimumOrder.minimumKurus))}`}</Text>
                         </View>
                     </View>
                 </Pressable>
@@ -189,8 +193,12 @@ const CartScreen = () => {
             />
             <TransactionFooter
                 amount={formatCurrency(subtotal)}
-                disabled={belowMinimum}
-                label={belowMinimum ? copy(`Add ${formatCurrency(MINIMUM_ORDER_TOTAL - subtotal)} more`, `${formatCurrency(MINIMUM_ORDER_TOTAL - subtotal)} daha ekle`) : copy("Proceed to payment", "Ödemeye Geç")}
+                disabled={belowMinimum || minimumUnavailable}
+                label={minimumUnavailable
+                    ? copy("Verifying minimum order", "Minimum sipariş doğrulanıyor")
+                    : belowMinimum
+                      ? copy(`Add ${formatCurrency(kurusToTry(minimumOrder.remainingKurus))} more`, `${formatCurrency(kurusToTry(minimumOrder.remainingKurus))} daha ekle`)
+                      : copy("Proceed to payment", "Ödemeye Geç")}
                 bottom={navigationClearance}
                 onPress={() => router.push("/checkout")}
                 safeBottom={8}

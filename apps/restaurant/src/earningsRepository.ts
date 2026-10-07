@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@hungrie/database-types";
-import type { EarningsPaymentBreakdownV1, EarningsPaymentMethod, EarningsSeriesBucket, RestaurantEarningsOrdersPageV1, RestaurantEarningsOrderRowV1, RestaurantEarningsSeriesPointV1, RestaurantEarningsSeriesV1, RestaurantEarningsSummaryV1 } from "@hungrie/domain";
+import type { EarningsPaymentBreakdownV2, EarningsPaymentMethodV2, EarningsSeriesBucket, RestaurantEarningsOrdersPageV2, RestaurantEarningsOrderRowV2, RestaurantEarningsSeriesPointV2, RestaurantEarningsSeriesV2, RestaurantEarningsSummaryV2 } from "@hungrie/domain";
 import { supabase } from "./supabase";
 
 type Client = SupabaseClient<Database>;
@@ -32,49 +32,53 @@ const date = (value: unknown) => {
 };
 const timestamp = (value: unknown) => { const result = text(value); if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(result) || !Number.isFinite(Date.parse(result))) malformed(); return new Date(result).toISOString(); };
 const timezone = (value: unknown) => { const result = text(value); try { new Intl.DateTimeFormat("en", { timeZone: result }).format(); } catch { malformed(); } return result; };
-const method = (value: unknown): EarningsPaymentMethod => value === "cash" || value === "pos" ? value : malformed();
+const method = (value: unknown): EarningsPaymentMethodV2 => value === "cash" || value === "pos" || value === "virtual_pos" ? value : malformed();
 const bucket = (value: unknown): EarningsSeriesBucket => value === "day" || value === "week" || value === "month" ? value : malformed();
 const currency = (value: unknown) => value === "TRY" ? "TRY" as const : malformed();
 const cursor = (value: unknown) => value === null ? null : typeof value === "string" && value.length > 0 && value.length <= 2048 ? value : malformed();
 
-const mapBreakdown = (value: unknown): EarningsPaymentBreakdownV1 => {
-  const row = exact(object(value), ["eligibleGrossKurus", "commissionKurus", "estimatedNetKurus", "deliveredOrderCount"]);
-  const result = { eligibleGrossKurus: integer(row.eligibleGrossKurus), commissionKurus: integer(row.commissionKurus), estimatedNetKurus: integer(row.estimatedNetKurus), deliveredOrderCount: integer(row.deliveredOrderCount) };
-  if (result.eligibleGrossKurus - result.commissionKurus !== result.estimatedNetKurus) malformed();
+const mapBreakdown = (value: unknown): EarningsPaymentBreakdownV2 => {
+  const row = exact(object(value), ["eligibleGrossKurus", "hungrieCommissionKurus", "virtualPosCommissionKurus", "totalDeductionsKurus", "estimatedNetKurus", "deliveredOrderCount"]);
+  const result = { eligibleGrossKurus: integer(row.eligibleGrossKurus), hungrieCommissionKurus: integer(row.hungrieCommissionKurus), virtualPosCommissionKurus: integer(row.virtualPosCommissionKurus), totalDeductionsKurus: integer(row.totalDeductionsKurus), estimatedNetKurus: integer(row.estimatedNetKurus), deliveredOrderCount: integer(row.deliveredOrderCount) };
+  if (result.hungrieCommissionKurus + result.virtualPosCommissionKurus !== result.totalDeductionsKurus || result.eligibleGrossKurus - result.totalDeductionsKurus !== result.estimatedNetKurus) malformed();
   return result;
 };
 const mapFinancials = (row: Record<string, unknown>) => {
-  const eligibleGrossKurus = integer(row.eligibleGrossKurus), commissionKurus = integer(row.commissionKurus), estimatedNetKurus = integer(row.estimatedNetKurus), deliveredOrderCount = integer(row.deliveredOrderCount);
-  if (eligibleGrossKurus - commissionKurus !== estimatedNetKurus) malformed();
-  const payments = exact(object(row.paymentBreakdown), ["cash", "pos"]), cash = mapBreakdown(payments.cash), pos = mapBreakdown(payments.pos);
-  if (cash.eligibleGrossKurus + pos.eligibleGrossKurus !== eligibleGrossKurus || cash.commissionKurus + pos.commissionKurus !== commissionKurus || cash.estimatedNetKurus + pos.estimatedNetKurus !== estimatedNetKurus || cash.deliveredOrderCount + pos.deliveredOrderCount !== deliveredOrderCount) malformed();
-  return { eligibleGrossKurus, commissionKurus, estimatedNetKurus, deliveredOrderCount, paymentBreakdown: { cash, pos } };
+  const eligibleGrossKurus = integer(row.eligibleGrossKurus), hungrieCommissionKurus = integer(row.hungrieCommissionKurus), virtualPosCommissionKurus = integer(row.virtualPosCommissionKurus), totalDeductionsKurus = integer(row.totalDeductionsKurus), estimatedNetKurus = integer(row.estimatedNetKurus), deliveredOrderCount = integer(row.deliveredOrderCount);
+  if (hungrieCommissionKurus + virtualPosCommissionKurus !== totalDeductionsKurus || eligibleGrossKurus - totalDeductionsKurus !== estimatedNetKurus) malformed();
+  const payments = exact(object(row.paymentBreakdown), ["cash", "pos", "virtual_pos"]), cash = mapBreakdown(payments.cash), pos = mapBreakdown(payments.pos), virtual_pos = mapBreakdown(payments.virtual_pos);
+  const values = [cash, pos, virtual_pos];
+  if (values.reduce((sum, item) => sum + item.eligibleGrossKurus, 0) !== eligibleGrossKurus || values.reduce((sum, item) => sum + item.hungrieCommissionKurus, 0) !== hungrieCommissionKurus || values.reduce((sum, item) => sum + item.virtualPosCommissionKurus, 0) !== virtualPosCommissionKurus || values.reduce((sum, item) => sum + item.totalDeductionsKurus, 0) !== totalDeductionsKurus || values.reduce((sum, item) => sum + item.estimatedNetKurus, 0) !== estimatedNetKurus || values.reduce((sum, item) => sum + item.deliveredOrderCount, 0) !== deliveredOrderCount) malformed();
+  return { eligibleGrossKurus, hungrieCommissionKurus, virtualPosCommissionKurus, totalDeductionsKurus, estimatedNetKurus, deliveredOrderCount, paymentBreakdown: { cash, pos, virtual_pos } };
 };
 const identity = (row: Record<string, unknown>) => ({ restaurantId: text(row.restaurantId), from: date(row.from), to: date(row.to), reportingTimezone: timezone(row.reportingTimezone), currencyCode: currency(row.currencyCode) });
 
-export const parseEarningsSummary = (value: unknown): RestaurantEarningsSummaryV1 => {
-  const row = exact(object(value), ["restaurantId", "from", "to", "reportingTimezone", "currencyCode", "eligibleGrossKurus", "commissionKurus", "estimatedNetKurus", "deliveredOrderCount", "paymentBreakdown"]);
-  return { ...identity(row), ...mapFinancials(row) };
+export const parseEarningsSummary = (value: unknown): RestaurantEarningsSummaryV2 => {
+  const row = exact(object(value), ["restaurantId", "from", "to", "reportingTimezone", "currencyCode", "eligibleGrossKurus", "hungrieCommissionKurus", "virtualPosCommissionKurus", "totalDeductionsKurus", "estimatedNetKurus", "deliveredOrderCount", "providerFeesReconciled", "paymentBreakdown"]);
+  if (row.providerFeesReconciled !== false) malformed();
+  return { ...identity(row), ...mapFinancials(row), providerFeesReconciled: false };
 };
-const mapPoint = (value: unknown): RestaurantEarningsSeriesPointV1 => {
-  const row = exact(object(value), ["bucketStart", "eligibleGrossKurus", "commissionKurus", "estimatedNetKurus", "deliveredOrderCount", "paymentBreakdown"]);
-  return { bucketStart: date(row.bucketStart), ...mapFinancials(row) };
+const mapPoint = (value: unknown): RestaurantEarningsSeriesPointV2 => {
+  const row = exact(object(value), ["bucketStart", "eligibleGrossKurus", "hungrieCommissionKurus", "virtualPosCommissionKurus", "totalDeductionsKurus", "estimatedNetKurus", "deliveredOrderCount"]);
+  const point = { bucketStart: date(row.bucketStart), eligibleGrossKurus: integer(row.eligibleGrossKurus), hungrieCommissionKurus: integer(row.hungrieCommissionKurus), virtualPosCommissionKurus: integer(row.virtualPosCommissionKurus), totalDeductionsKurus: integer(row.totalDeductionsKurus), estimatedNetKurus: integer(row.estimatedNetKurus), deliveredOrderCount: integer(row.deliveredOrderCount) };
+  if (point.hungrieCommissionKurus + point.virtualPosCommissionKurus !== point.totalDeductionsKurus || point.eligibleGrossKurus - point.totalDeductionsKurus !== point.estimatedNetKurus) malformed();
+  return point;
 };
-export const parseEarningsSeries = (value: unknown): RestaurantEarningsSeriesV1 => {
+export const parseEarningsSeries = (value: unknown): RestaurantEarningsSeriesV2 => {
   const row = exact(object(value), ["restaurantId", "from", "to", "bucket", "reportingTimezone", "currencyCode", "points"]);
   if (!Array.isArray(row.points)) malformed();
   const points = (row.points as unknown[]).map(mapPoint);
   if (points.some((point, index) => index > 0 && point.bucketStart <= points[index - 1].bucketStart)) malformed();
   return { ...identity(row), bucket: bucket(row.bucket), points };
 };
-const mapOrder = (value: unknown): RestaurantEarningsOrderRowV1 => {
-  const row = exact(object(value), ["orderReference", "deliveredAt", "paymentMethod", "currencyCode", "eligibleGrossKurus", "commissionRateBps", "commissionKurus", "estimatedNetKurus"]);
+const mapOrder = (value: unknown): RestaurantEarningsOrderRowV2 => {
+  const row = exact(object(value), ["orderReference", "deliveredAt", "paymentMethod", "currencyCode", "eligibleGrossKurus", "hungrieRateBps", "hungrieCommissionKurus", "virtualPosRateBps", "virtualPosCommissionKurus", "totalDeductionsKurus", "estimatedNetKurus", "providerFeesReconciled"]);
   const orderReference = text(row.orderReference); if (!/^[A-F0-9]{8}$/.test(orderReference)) malformed();
-  const eligibleGrossKurus = integer(row.eligibleGrossKurus), commissionKurus = integer(row.commissionKurus), estimatedNetKurus = integer(row.estimatedNetKurus);
-  if (eligibleGrossKurus - commissionKurus !== estimatedNetKurus) malformed();
-  return { orderReference, deliveredAt: timestamp(row.deliveredAt), paymentMethod: method(row.paymentMethod), currencyCode: currency(row.currencyCode), eligibleGrossKurus, commissionRateBps: integer(row.commissionRateBps, 0, 10_000), commissionKurus, estimatedNetKurus };
+  const eligibleGrossKurus = integer(row.eligibleGrossKurus), hungrieCommissionKurus = integer(row.hungrieCommissionKurus), virtualPosCommissionKurus = integer(row.virtualPosCommissionKurus), totalDeductionsKurus = integer(row.totalDeductionsKurus), estimatedNetKurus = integer(row.estimatedNetKurus);
+  if (row.providerFeesReconciled !== false || hungrieCommissionKurus + virtualPosCommissionKurus !== totalDeductionsKurus || eligibleGrossKurus - totalDeductionsKurus !== estimatedNetKurus) malformed();
+  return { orderReference, deliveredAt: timestamp(row.deliveredAt), paymentMethod: method(row.paymentMethod), currencyCode: currency(row.currencyCode), eligibleGrossKurus, hungrieRateBps: integer(row.hungrieRateBps, 0, 10_000), hungrieCommissionKurus, virtualPosRateBps: integer(row.virtualPosRateBps, 0, 10_000), virtualPosCommissionKurus, totalDeductionsKurus, estimatedNetKurus, providerFeesReconciled: false };
 };
-export const parseEarningsPage = (value: unknown): RestaurantEarningsOrdersPageV1 => {
+export const parseEarningsPage = (value: unknown): RestaurantEarningsOrdersPageV2 => {
   const row = exact(object(value), ["restaurantId", "from", "to", "reportingTimezone", "currencyCode", "limit", "items", "nextCursor"]);
   if (!Array.isArray(row.items)) malformed();
   const items = (row.items as unknown[]).map(mapOrder), seen = new Set<string>();
@@ -89,7 +93,7 @@ const localDateForTimestamp = (value: string, timeZone: string) => {
   const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(value)).filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
   return `${parts.year}-${parts.month}-${parts.day}`;
 };
-const validateSeriesSemantics = (series: RestaurantEarningsSeriesV1) => {
+const validateSeriesSemantics = (series: RestaurantEarningsSeriesV2) => {
   for (const point of series.points) {
     const pointDay = utcDay(point.bucketStart), fromDay = utcDay(series.from), toDay = utcDay(series.to);
     if (pointDay > toDay) malformed();
@@ -98,19 +102,19 @@ const validateSeriesSemantics = (series: RestaurantEarningsSeriesV1) => {
     if (series.bucket === "month" && (point.bucketStart.slice(8) !== "01" || point.bucketStart.slice(0, 7) < series.from.slice(0, 7))) malformed();
   }
 };
-const validatePageRows = (page: RestaurantEarningsOrdersPageV1) => {
+const validatePageRows = (page: RestaurantEarningsOrdersPageV2) => {
   for (const item of page.items) { const delivered = localDateForTimestamp(item.deliveredAt, page.reportingTimezone); if (delivered < page.from || delivered > page.to) malformed(); }
 };
 
-export const validateEarningsBundle = (summary: RestaurantEarningsSummaryV1, series: RestaurantEarningsSeriesV1, page: RestaurantEarningsOrdersPageV1, expected: { restaurantId: string; from: string; to: string; bucket: EarningsSeriesBucket }) => {
+export const validateEarningsBundle = (summary: RestaurantEarningsSummaryV2, series: RestaurantEarningsSeriesV2, page: RestaurantEarningsOrdersPageV2, expected: { restaurantId: string; from: string; to: string; bucket: EarningsSeriesBucket }) => {
   for (const result of [summary, series, page]) if (result.restaurantId !== expected.restaurantId || result.from !== expected.from || result.to !== expected.to || result.reportingTimezone !== summary.reportingTimezone || result.currencyCode !== "TRY") malformed();
   if (series.bucket !== expected.bucket || page.limit !== 25) malformed();
   if ((summary.deliveredOrderCount === 0) !== (page.items.length === 0)) malformed();
   validateSeriesSemantics(series); validatePageRows(page);
-  const totals = series.points.reduce((value, point) => ({ gross: value.gross + point.eligibleGrossKurus, commission: value.commission + point.commissionKurus, net: value.net + point.estimatedNetKurus, count: value.count + point.deliveredOrderCount }), { gross: 0, commission: 0, net: 0, count: 0 });
-  if (totals.gross !== summary.eligibleGrossKurus || totals.commission !== summary.commissionKurus || totals.net !== summary.estimatedNetKurus || totals.count !== summary.deliveredOrderCount) malformed();
+  const totals = series.points.reduce((value, point) => ({ gross: value.gross + point.eligibleGrossKurus, hungrie: value.hungrie + point.hungrieCommissionKurus, virtualPos: value.virtualPos + point.virtualPosCommissionKurus, deductions: value.deductions + point.totalDeductionsKurus, net: value.net + point.estimatedNetKurus, count: value.count + point.deliveredOrderCount }), { gross: 0, hungrie: 0, virtualPos: 0, deductions: 0, net: 0, count: 0 });
+  if (totals.gross !== summary.eligibleGrossKurus || totals.hungrie !== summary.hungrieCommissionKurus || totals.virtualPos !== summary.virtualPosCommissionKurus || totals.deductions !== summary.totalDeductionsKurus || totals.net !== summary.estimatedNetKurus || totals.count !== summary.deliveredOrderCount) malformed();
 };
-export const validateEarningsPageIdentity = (page: RestaurantEarningsOrdersPageV1, expected: { restaurantId: string; from: string; to: string; reportingTimezone: string }) => {
+export const validateEarningsPageIdentity = (page: RestaurantEarningsOrdersPageV2, expected: { restaurantId: string; from: string; to: string; reportingTimezone: string }) => {
   if (page.restaurantId !== expected.restaurantId || page.from !== expected.from || page.to !== expected.to || page.reportingTimezone !== expected.reportingTimezone || page.currencyCode !== "TRY" || page.limit !== 25) malformed();
   validatePageRows(page);
 };
@@ -119,8 +123,8 @@ const resolve = async (request: PromiseLike<{ data: unknown; error: RpcError | n
 const withSignal = <T>(request: T, signal?: AbortSignal): T => signal && request && typeof request === "object" && "abortSignal" in request && typeof (request as { abortSignal?: unknown }).abortSignal === "function" ? (request as { abortSignal: (signal: AbortSignal) => T }).abortSignal(signal) : request;
 
 export const createEarningsRepository = (client: Client = supabase) => ({
-  async summary(from: string, to: string, signal?: AbortSignal) { return parseEarningsSummary(await resolve(withSignal(client.rpc("restaurant_get_earnings_summary_v1", { p_from: from, p_to: to }), signal))); },
-  async series(from: string, to: string, selectedBucket: EarningsSeriesBucket, signal?: AbortSignal) { return parseEarningsSeries(await resolve(withSignal(client.rpc("restaurant_get_earnings_series_v1", { p_from: from, p_to: to, p_bucket: selectedBucket }), signal))); },
-  async page(from: string, to: string, opaqueCursor: string | null = null, signal?: AbortSignal) { return parseEarningsPage(await resolve(withSignal(client.rpc("restaurant_get_earnings_orders_page_v1", { p_from: from, p_to: to, p_cursor: opaqueCursor || undefined, p_limit: 25 }), signal))); },
+  async summary(from: string, to: string, signal?: AbortSignal) { return parseEarningsSummary(await resolve(withSignal(client.rpc("restaurant_get_earnings_summary_v2", { p_from: from, p_to: to }), signal))); },
+  async series(from: string, to: string, selectedBucket: EarningsSeriesBucket, signal?: AbortSignal) { return parseEarningsSeries(await resolve(withSignal(client.rpc("restaurant_get_earnings_series_v2", { p_from: from, p_to: to, p_bucket: selectedBucket }), signal))); },
+  async page(from: string, to: string, opaqueCursor: string | null = null, signal?: AbortSignal) { return parseEarningsPage(await resolve(withSignal(client.rpc("restaurant_get_earnings_orders_page_v2", { p_from: from, p_to: to, p_cursor: opaqueCursor || undefined, p_limit: 25 }), signal))); },
 });
 export const earningsRepository = createEarningsRepository();

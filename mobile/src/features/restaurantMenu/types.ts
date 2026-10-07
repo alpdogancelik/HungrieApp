@@ -42,6 +42,8 @@ export type Restaurant = {
     closing_time?: string;
     isActive?: boolean;
     isOpen?: boolean;
+    acceptingOrders?: boolean;
+    accepting_orders?: boolean;
     status?: string;
     ratingAverage?: number;
     ratingCount?: number;
@@ -52,6 +54,7 @@ export type Restaurant = {
     deliveryTime?: string | number;
     etaMinutes?: number | string;
     eta?: string | number;
+    minimumOrderKurus?: number;
     minimumOrderAmount?: number | string;
     minimumOrder?: number | string;
     minOrderAmount?: number | string;

@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { signOut } from "firebase/auth";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { AccessContext, AdminRestaurantCommissionV1, RestaurantCommissionRuleV1, RestaurantFinancialWarningV1 } from "@hungrie/domain";
+import type { AccessContext, AdminRestaurantCommissionV1, AdminVirtualPosFoundationV1, RestaurantCommissionRuleV1, RestaurantFinancialWarningV1, VirtualPosCommissionRuleV1 } from "@hungrie/domain";
 import { auth } from "@/lib/firebase";
 import { commissionRepository, CommissionRepositoryError, type AdminRestaurantDetail } from "@/lib/commissionRepository";
-import { CommissionValidationError, formatBasisPoints, isRecentAuthentication, parsePercentageToBasisPoints, restaurantLocalToUtc, schedulingAccess, StableCommissionOperation, validateCommissionReason, type CommissionDraft } from "@/lib/commissionManagementModel";
+import { CommissionValidationError, formatBasisPoints, isRecentAuthentication, parsePercentageToBasisPoints, restaurantLocalToUtc, schedulingAccess, StableCommissionOperation, StableVirtualPosCommissionOperation, validateCommissionReason, type CommissionDraft } from "@/lib/commissionManagementModel";
 import { useLocale } from "./AdminProviders";
 
 const copy = {
@@ -21,6 +21,7 @@ const copy = {
     schedule: "Schedule a commission rule", readOnly: "Your Admin role has read-only commission access.", unauthorized: "Scheduling is unavailable because the current access context is not an active, MFA-verified Admin context.", percentHelp: "Enter 0–100 with at most two decimal places.", localTime: "Effective Restaurant-local date and time", localHelp: "Interpreted in", utcPreview: "Exact UTC", reasonHelp: "Required; 1–500 characters after trimming.", review: "Review rule", validationRate: "Enter a valid percentage from 0 to 100 with at most two decimals.", validationReason: "Enter a reason between 1 and 500 characters.", validationTime: "Enter a valid local date and time.", nonexistentTime: "That local time does not exist because of a daylight-saving transition.", ambiguousTime: "That local time occurs twice. Choose an unambiguous time.",
     confirmTitle: "Confirm commission rule", prior: "Prior/current rate", none: "None", newRate: "New rate", localEffective: "Restaurant-local effective time", utcEffective: "UTC effective time", cancel: "Cancel", confirm: "Confirm and schedule", scheduling: "Scheduling…", confirmWarning: "This append-only rule cannot be edited and will not recalculate existing orders.",
     createdSuccess: "The commission rule was created and authoritative data was refreshed.", replaySuccess: "The server confirmed this exact operation was already completed. Authoritative data was refreshed.", recent: "Recent authentication is required. Sign out and sign in again with your authenticator.", reauthenticate: "Sign out and re-authenticate", permission: "The server denied this scheduling operation.", conflict: "This operation ID was used for different inputs. Review the form and try again.", duplicate: "A rule already exists at that exact effective time.", retroactive: "That effective time would change the rule selected for an existing order and cannot be used.", genericValidation: "The server rejected the scheduling input.",
+    virtualTitle: "Virtual POS commission preparation", virtualDisabled: "Online payments: Disabled — no payment provider configured", virtualWarning: "Preparing a rate does not enable checkout, configure a provider, or authorize Production activation.", virtualCurrent: "Current planned Virtual POS rate", virtualNext: "Next planned Virtual POS rate", virtualSchedule: "Schedule planned Virtual POS commission", providerContract: "Commercial contract version", providerContractHelp: "Provider-neutral metadata only. This is not a selected bank or provider API version.", virtualCreated: "The planned Virtual POS commission was recorded. Online payments remain disabled.",
   },
   tr: {
     back: "Restoranlara dön", loading: "Restoran komisyon verileri yükleniyor…", retry: "Tekrar dene", malformed: "Sunucu beklenmeyen bir yanıt döndürdü. Güvenlik için planlama devre dışı bırakıldı.", service: "Komisyon hizmetlerine geçici olarak ulaşılamıyor.", network: "Ağ isteği tamamlanmadı. Güvenli tekrar deneme için işlem kimliğiniz korundu.",
@@ -33,6 +34,7 @@ const copy = {
     schedule: "Komisyon kuralı planla", readOnly: "Yönetici rolünüz komisyonları salt okunur olarak inceleyebilir.", unauthorized: "Mevcut erişim bağlamı etkin ve MFA doğrulanmış bir Yönetici olmadığı için planlama kullanılamıyor.", percentHelp: "En fazla iki ondalıkla 0–100 arası girin.", localTime: "Restoran yerel yürürlük tarihi ve saati", localHelp: "Şu saat diliminde yorumlanır:", utcPreview: "Kesin UTC", reasonHelp: "Zorunlu; kırpıldıktan sonra 1–500 karakter.", review: "Kuralı incele", validationRate: "En fazla iki ondalıkla 0–100 arası geçerli bir yüzde girin.", validationReason: "1–500 karakter arasında bir neden girin.", validationTime: "Geçerli bir yerel tarih ve saat girin.", nonexistentTime: "Bu yerel saat yaz saati geçişi nedeniyle mevcut değil.", ambiguousTime: "Bu yerel saat iki kez oluşuyor. Belirsiz olmayan bir saat seçin.",
     confirmTitle: "Komisyon kuralını onayla", prior: "Önceki/mevcut oran", none: "Yok", newRate: "Yeni oran", localEffective: "Restoran yerel yürürlük zamanı", utcEffective: "UTC yürürlük zamanı", cancel: "İptal", confirm: "Onayla ve planla", scheduling: "Planlanıyor…", confirmWarning: "Bu yalnızca eklenen kural düzenlenemez ve mevcut siparişleri yeniden hesaplamaz.",
     createdSuccess: "Komisyon kuralı oluşturuldu ve yetkili veriler yenilendi.", replaySuccess: "Sunucu bu işlemin daha önce tamamlandığını doğruladı. Yetkili veriler yenilendi.", recent: "Yakın tarihli kimlik doğrulaması gerekli. Çıkış yapıp kimlik doğrulayıcınızla tekrar giriş yapın.", reauthenticate: "Çıkış yap ve yeniden doğrula", permission: "Sunucu bu planlama işlemini reddetti.", conflict: "Bu işlem kimliği farklı girdilerle kullanılmış. Formu inceleyip tekrar deneyin.", duplicate: "Tam olarak bu yürürlük zamanında zaten bir kural var.", retroactive: "Bu yürürlük zamanı mevcut bir sipariş için seçilen kuralı değiştirir ve kullanılamaz.", genericValidation: "Sunucu planlama girdisini reddetti.",
+    virtualTitle: "Sanal POS komisyon hazırlığı", virtualDisabled: "Çevrimiçi ödemeler: Devre dışı — ödeme sağlayıcısı yapılandırılmadı", virtualWarning: "Oran hazırlamak ödeme adımını etkinleştirmez, sağlayıcı yapılandırmaz veya Production etkinleştirmesine izin vermez.", virtualCurrent: "Mevcut planlı Sanal POS oranı", virtualNext: "Sonraki planlı Sanal POS oranı", virtualSchedule: "Planlı Sanal POS komisyonu oluştur", providerContract: "Ticari sözleşme sürümü", providerContractHelp: "Yalnızca sağlayıcıdan bağımsız meta veri. Seçilmiş banka veya sağlayıcı API sürümü değildir.", virtualCreated: "Planlı Sanal POS komisyonu kaydedildi. Çevrimiçi ödemeler devre dışı kalır.",
   },
 } as const;
 
@@ -44,6 +46,11 @@ const formatTry = (kurus: number, locale: "en" | "tr") => new Intl.NumberFormat(
 function RuleCard({ rule, locale, timeZone, label }: { rule: RestaurantCommissionRuleV1; locale: "en" | "tr"; timeZone: string; label: string }) {
   const c = copy[locale];
   return <article className="commission-rule-card"><span className="status-pill">{label}</span><strong>{formatBasisPoints(rule.rateBps, locale)}</strong><dl><div><dt>{c.effective}</dt><dd>{formatDate(rule.effectiveFrom, locale, timeZone)}</dd></div><div><dt>{c.created}</dt><dd>{formatDate(rule.createdAt, locale, timeZone)}</dd></div><div><dt>{c.version}</dt><dd>v{rule.contractVersion}</dd></div><div><dt>{c.reason}</dt><dd className="long-copy">{rule.reason}</dd></div></dl></article>;
+}
+
+function VirtualRuleCard({ rule, locale, timeZone, label }: { rule: VirtualPosCommissionRuleV1; locale: "en" | "tr"; timeZone: string; label: string }) {
+  const c = copy[locale];
+  return <article className="commission-rule-card"><span className="status-pill">{label}</span><strong>{formatBasisPoints(rule.rateBps, locale)}</strong><dl><div><dt>{c.effective}</dt><dd>{formatDate(rule.effectiveFrom, locale, timeZone)}</dd></div><div><dt>{c.version}</dt><dd>v{rule.financialContractVersion} · <code>{rule.providerContractVersion}</code></dd></div><div><dt>{c.reason}</dt><dd className="long-copy">{rule.reason}</dd></div></dl></article>;
 }
 
 function WarningCard({ warning, locale, timeZone }: { warning: RestaurantFinancialWarningV1; locale: "en" | "tr"; timeZone: string }) {
@@ -78,14 +85,17 @@ export function AdminRestaurantCommissionPage({ restaurantId }: { restaurantId: 
   const [restaurant, setRestaurant] = useState<AdminRestaurantDetail | null>(null);
   const [context, setContext] = useState<AccessContext | null>(null);
   const [commission, setCommission] = useState<AdminRestaurantCommissionV1 | null>(null);
+  const [virtualPos, setVirtualPos] = useState<AdminVirtualPosFoundationV1 | null>(null);
   const [loading, setLoading] = useState(true); const [loadError, setLoadError] = useState<"malformed" | "service" | "network" | "permission" | null>(null);
   const [rate, setRate] = useState(""); const [localTime, setLocalTime] = useState(""); const [reason, setReason] = useState("");
   const [fieldError, setFieldError] = useState(""); const [message, setMessage] = useState(""); const [messageKind, setMessageKind] = useState<"success" | "error">("error");
   const [confirmation, setConfirmation] = useState<DraftForConfirmation | null>(null); const [busy, setBusy] = useState(false);
   const operations = useRef(new StableCommissionOperation());
+  const virtualOperations = useRef(new StableVirtualPosCommissionOperation());
+  const [virtualRate, setVirtualRate] = useState(""); const [virtualTime, setVirtualTime] = useState(""); const [virtualReason, setVirtualReason] = useState(""); const [virtualContract, setVirtualContract] = useState("provisional-v1"); const [virtualBusy, setVirtualBusy] = useState(false); const [virtualMessage, setVirtualMessage] = useState("");
 
   const classifyLoad = (value: unknown) => value instanceof CommissionRepositoryError && value.code === "malformed_response" ? "malformed" : value instanceof CommissionRepositoryError && value.code === "network" ? "network" : value instanceof CommissionRepositoryError && (value.code === "permission_denied" || value.code === "session_expired") ? "permission" : "service";
-  const load = useCallback(async () => { setLoading(true); setLoadError(null); try { const [nextRestaurant, nextContext, nextCommission] = await Promise.all([commissionRepository.getRestaurant(restaurantId), commissionRepository.getAccessContext(), commissionRepository.getCommission(restaurantId)]); setRestaurant(nextRestaurant); setContext(nextContext); setCommission(nextCommission); } catch (value) { setLoadError(classifyLoad(value)); } finally { setLoading(false); } }, [restaurantId]);
+  const load = useCallback(async () => { setLoading(true); setLoadError(null); try { const [nextRestaurant, nextContext, nextCommission, nextVirtualPos] = await Promise.all([commissionRepository.getRestaurant(restaurantId), commissionRepository.getAccessContext(), commissionRepository.getCommission(restaurantId), commissionRepository.getVirtualPosFoundation(restaurantId)]); setRestaurant(nextRestaurant); setContext(nextContext); setCommission(nextCommission); setVirtualPos(nextVirtualPos); } catch (value) { setLoadError(classifyLoad(value)); } finally { setLoading(false); } }, [restaurantId]);
   useEffect(() => { void load(); }, [load]);
   const access = useMemo(() => restaurant ? schedulingAccess(context, restaurant.lifecycleStatus) : "unauthorized", [context, restaurant]);
   const timezone = commission?.reportingTimezone || "UTC";
@@ -113,8 +123,22 @@ export function AdminRestaurantCommissionPage({ restaurantId }: { restaurantId: 
     } finally { setBusy(false); }
   };
 
+  const scheduleVirtualPos = async (event: React.FormEvent) => {
+    event.preventDefault(); if (virtualBusy || access !== "allowed") return;
+    try {
+      const draft = { restaurantId, rateBps: parsePercentageToBasisPoints(virtualRate), effectiveFromUtc: restaurantLocalToUtc(virtualTime, timezone), reason: validateCommissionReason(virtualReason), providerContractVersion: virtualContract.trim() };
+      if (!draft.providerContractVersion || draft.providerContractVersion.length > 100) throw new Error("contract");
+      const token = await auth.currentUser?.getIdTokenResult();
+      if (!isRecentAuthentication(token?.authTime ? Date.parse(token.authTime) / 1000 : undefined)) { setVirtualMessage(c.recent); return; }
+      setVirtualBusy(true); setVirtualMessage("");
+      await commissionRepository.scheduleVirtualPos({ ...draft, effectiveFrom: draft.effectiveFromUtc, operationId: virtualOperations.current.prepare(draft) });
+      setVirtualPos(await commissionRepository.getVirtualPosFoundation(restaurantId)); virtualOperations.current.clear(); setVirtualRate(""); setVirtualTime(""); setVirtualReason(""); setVirtualMessage(c.virtualCreated);
+    } catch (value) { setVirtualMessage(value instanceof CommissionRepositoryError && value.code === "recent_auth_required" ? c.recent : c.genericValidation); }
+    finally { setVirtualBusy(false); }
+  };
+
   if (loading) return <section className="commission-page" aria-busy="true"><p role="status">{c.loading}</p></section>;
-  if (loadError || !restaurant || !commission) return <section className="commission-page"><p className="error" role="alert">{loadError === "malformed" ? c.malformed : loadError === "network" ? c.network : loadError === "permission" ? c.permission : c.service}</p><button onClick={() => void load()}>{c.retry}</button></section>;
+  if (loadError || !restaurant || !commission || !virtualPos) return <section className="commission-page"><p className="error" role="alert">{loadError === "malformed" ? c.malformed : loadError === "network" ? c.network : loadError === "permission" ? c.permission : c.service}</p><button onClick={() => void load()}>{c.retry}</button></section>;
   const futureWithoutCurrent = !commission.currentRule && !!commission.nextScheduledRule;
   return <section className="commission-page">
     <Link className="back-link" href="/restaurants">← {c.back}</Link>
@@ -128,6 +152,7 @@ export function AdminRestaurantCommissionPage({ restaurantId }: { restaurantId: 
       {message && <div className={messageKind === "success" ? "success-message" : "error"} role={messageKind === "success" ? "status" : "alert"}><p>{message}</p>{message === c.recent && <button type="button" onClick={() => void signOut(auth)}>{c.reauthenticate}</button>}</div>}
     </section>
     <section className="history-section"><h3>{c.history}</h3>{commission.history.length ? <ol className="commission-history">{commission.history.map((rule) => { const label = rule.id === commission.currentRule?.id ? c.currentBadge : (!commission.currentRule || rule.effectiveFrom > commission.currentRule.effectiveFrom) ? c.scheduledBadge : c.supersededBadge; return <li key={rule.id}><RuleCard rule={rule} locale={locale} timeZone={timezone} label={label} /></li>; })}</ol> : <p className="empty-state">{c.noHistory}</p>}{commission.historyHasMore && <p className="notice">{c.moreHistory}</p>}</section>
+    <section className="panel schedule-panel" aria-labelledby="virtual-pos-preparation-title"><h3 id="virtual-pos-preparation-title">{c.virtualTitle}</h3><p className="notice warning"><strong>{c.virtualDisabled}</strong></p><p>{c.virtualWarning}</p><dl className="metadata"><div><dt>{c.virtualCurrent}</dt><dd>{virtualPos.currentRule ? formatBasisPoints(virtualPos.currentRule.rateBps, locale) : c.none}</dd></div><div><dt>{c.virtualNext}</dt><dd>{virtualPos.nextScheduledRule ? formatBasisPoints(virtualPos.nextScheduledRule.rateBps, locale) : c.none}</dd></div><div><dt>{c.capability}</dt><dd><span className="status-pill status-muted">{virtualPos.activationState}</span></dd></div></dl>{virtualPos.currentRule && <VirtualRuleCard rule={virtualPos.currentRule} locale={locale} timeZone={timezone} label={c.currentBadge} />}{virtualPos.nextScheduledRule && <VirtualRuleCard rule={virtualPos.nextScheduledRule} locale={locale} timeZone={timezone} label={c.scheduledBadge} />}{access === "allowed" ? <form onSubmit={scheduleVirtualPos} noValidate><h4>{c.virtualSchedule}</h4><label>{c.rate}<input value={virtualRate} onChange={(event) => setVirtualRate(event.target.value)} inputMode="decimal" autoComplete="off" /></label><label>{c.localTime}<input type="datetime-local" value={virtualTime} onChange={(event) => setVirtualTime(event.target.value)} /></label><label>{c.providerContract}<input value={virtualContract} onChange={(event) => setVirtualContract(event.target.value)} maxLength={100} /></label><small>{c.providerContractHelp}</small><label>{c.reason}<textarea value={virtualReason} onChange={(event) => setVirtualReason(event.target.value)} maxLength={520} /></label><button className="primary" disabled={virtualBusy}>{virtualBusy ? c.scheduling : c.review}</button></form> : <p className="notice">{access === "read_only" ? c.readOnly : c.unauthorized}</p>}{virtualMessage && <p role="status" className={virtualMessage === c.virtualCreated ? "success-message" : "error"}>{virtualMessage}</p>}<section className="history-section"><h4>{c.history}</h4>{virtualPos.history.length ? <ol className="commission-history">{virtualPos.history.map((rule) => <li key={rule.id}><VirtualRuleCard rule={rule} locale={locale} timeZone={timezone} label={rule.id === virtualPos.currentRule?.id ? c.currentBadge : c.scheduledBadge} /></li>)}</ol> : <p className="empty-state">{c.noHistory}</p>}</section></section>
     {confirmation && <ConfirmationDialog draft={confirmation} current={commission.currentRule} locale={locale} timeZone={timezone} busy={busy} onCancel={() => setConfirmation(null)} onConfirm={() => void schedule()} />}
   </section>;
 }

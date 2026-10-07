@@ -16,6 +16,8 @@ export const resolveRestaurantEnvironment = (env: Record<string, string | undefi
     messagingSenderId: env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
   };
   const supabaseUrl = env.EXPO_PUBLIC_SUPABASE_URL || "";
+  const appCheckSiteKey = env.EXPO_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_ENTERPRISE_SITE_KEY || "";
+  const appCheckDebugToken = env.EXPO_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN || "";
   const supabaseProjectRef = refFromUrl(supabaseUrl);
   if (environment === "production") {
     if (Object.values(firebase).some((value) => !value)) throw new Error("Production Restaurant Firebase config is incomplete.");
@@ -26,6 +28,8 @@ export const resolveRestaurantEnvironment = (env: Record<string, string | undefi
       throw new Error("Production Restaurant Supabase binding is missing, mismatched, or non-production.");
     }
     if (!env.EXPO_PUBLIC_FIREBASE_VAPID_KEY) throw new Error("Production Restaurant VAPID key is required.");
+    if (!appCheckSiteKey) throw new Error("Production Restaurant App Check site key is required.");
+    if (appCheckDebugToken) throw new Error("Production Restaurant App Check debug mode is forbidden.");
     const origin = String(env.EXPO_PUBLIC_APP_ORIGIN || "");
     const expectedOrigin = String(env.EXPO_PUBLIC_EXPECTED_APP_ORIGIN || "");
     let validOrigin = false;
@@ -33,9 +37,12 @@ export const resolveRestaurantEnvironment = (env: Record<string, string | undefi
     if (!validOrigin) throw new Error("Production Restaurant origin must be one exact reviewed HTTPS origin.");
   }
   const buildProof = environment === "build-proof";
+  const suffix = environment === "production" ? "Production" : environment === "staging" ? "Staging" : "Development";
   return {
     environment,
+    suffix,
     firebase: Object.fromEntries(Object.entries(firebase).map(([key, value]) => [key, value || (buildProof ? `build-${key}` : "")])),
+    appCheck: { siteKey: appCheckSiteKey, debugToken: appCheckDebugToken },
     supabaseUrl: supabaseUrl || (buildProof ? "https://buildproof0000000000.supabase.co" : ""),
     supabaseKey: env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY || (buildProof ? "build-proof" : ""),
     supabaseProjectRef,

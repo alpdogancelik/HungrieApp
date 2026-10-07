@@ -1,4 +1,5 @@
 import { getCategoryLabel, normalizeCategoryKey } from "@/src/lib/categoryLabels";
+import { isRestaurantOpenForOrdering } from "@/src/lib/restaurantAvailability";
 
 import type { MenuCategory, MenuEntry, Restaurant, MenuSection } from "./types";
 
@@ -94,28 +95,8 @@ export const createMenuSections = (
     return keys.map((key) => ({ key, label: getCategoryLabel(key, locale), data: grouped[key] || [] }));
 };
 
-const clockMinutes = (value: unknown) => {
-    const match = String(value || "").trim().match(/^(\d{1,2})(?::(\d{2}))?/);
-    if (!match) return null;
-    const hours = Number(match[1]);
-    const minutes = Number(match[2] || 0);
-    return hours <= 23 && minutes <= 59 ? hours * 60 + minutes : null;
-};
-
-export const isRestaurantOpen = (restaurant?: Restaurant | null) => {
-    const status = String(restaurant?.status || "").trim().toLowerCase();
-    if (
-        restaurant?.isActive === false ||
-        restaurant?.isOpen === false ||
-        ["closed", "kapalı", "kapali", "inactive", "disabled", "offline"].includes(status)
-    ) return false;
-    const opens = clockMinutes(restaurant?.openingTime || restaurant?.opening_time);
-    const closes = clockMinutes(restaurant?.closingTime || restaurant?.closing_time);
-    if (opens === null || closes === null || opens === closes) return true;
-    const now = new Date();
-    const current = now.getHours() * 60 + now.getMinutes();
-    return opens < closes ? current >= opens && current < closes : current >= opens || current < closes;
-};
+export const isRestaurantOpen = (restaurant?: Restaurant | null) =>
+    isRestaurantOpenForOrdering(restaurant);
 
 export const getEta = (restaurant: Restaurant | null, isTurkish: boolean) => {
     const minimum = parseNumber(restaurant?.deliveryEtaMin);

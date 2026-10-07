@@ -11,7 +11,9 @@ const routes=["login","invite/[token]","onboarding/mfa","suspended","(admin)/das
 for(const route of routes)assert.ok(fs.existsSync(path.join(app,"app",route,"page.tsx")),"missing "+route);
 for(const route of ["onboarding","suspended"])assert.ok(fs.readFileSync(path.join(app,"app",route,"layout.tsx"),"utf8").includes("AuthGate"),route+" lacks an authorization gate");
 const config=fs.readFileSync(path.join(app,"next.config.ts"),"utf8");
-for(const value of ["Content-Security-Policy","Cache-Control","private, no-store","X-Frame-Options","Permissions-Policy"])assert.ok(config.includes(value),"missing header "+value);
+for(const value of ["Cache-Control","private, no-store","X-Frame-Options","Permissions-Policy"])assert.ok(config.includes(value),"missing header "+value);
+const proxy=fs.readFileSync(path.join(app,"proxy.ts"),"utf8");
+assert.ok(proxy.includes("Content-Security-Policy"),"request-time CSP enforcement is missing");
 const output=fs.readFileSync(path.join(app,".next/server/app-paths-manifest.json"),"utf8");
 for(const route of ["/dashboard","/restaurants","/accounts","/orders","/incidents","/audit","/security"])assert.ok(output.includes(route),"build missing "+route);
 assert.ok(!output.includes("/private/page"),"obsolete private proof route remains");
@@ -22,7 +24,7 @@ for(const value of ["Create restaurant","Restoran oluştur","Operation failed","
 assert.ok(controls.includes("crypto.randomUUID()"),"privileged operations lack operation IDs");
 assert.ok(controls.includes("crypto.subtle.digest"),"invitation token is not browser-digested");
 const firebase=fs.readFileSync(path.join(app,"lib/firebase.ts"),"utf8");
-for(const value of ["recordAdminMfaEnrollment","setAdminAccountStatus","recoverAdminMfa",'environment==="staging"?"Staging":"Development"'])assert.ok(firebase.includes(value),"missing environment-bound callable selection: "+value);
+for(const value of ["recordAdminMfaEnrollment","setAdminAccountStatus","recoverAdminMfa","runtime.suffix"])assert.ok(firebase.includes(value),"missing environment-bound callable selection: "+value);
 for(const file of ["app/login/page.tsx","app/onboarding/mfa/page.tsx","components/AuthGate.tsx"]){
   const source=fs.readFileSync(path.join(app,file),"utf8");
   assert.ok(source.includes("firebase")||source.includes("@/lib/firebase"),file+" lacks Firebase integration");

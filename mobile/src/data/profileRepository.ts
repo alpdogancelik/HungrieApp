@@ -6,10 +6,12 @@ import { supabaseProfileRepository } from "./supabase/profileRepository";
 const firebaseProfileRepository: ProfileRepository = {
     getCurrentUser: firebaseAuthRepository.getCurrentUser,
     updateUserProfile: firebaseAuthRepository.updateUserProfile,
-    deleteCurrentUserProfile: firebaseAuthRepository.deleteCurrentUserProfile,
+    // Profile reads can still follow the repository flag, but destructive
+    // account deletion has exactly one server-controlled implementation.
+    deleteCurrentUserProfile: supabaseProfileRepository.deleteCurrentUserProfile,
 };
 
-export const profileRepository = selectRepository<ProfileRepository>("profile", {
+const profileRepository = selectRepository<ProfileRepository>("profile", {
     firebase: firebaseProfileRepository,
     supabase: supabaseProfileRepository,
 });
@@ -17,7 +19,9 @@ export const profileRepository = selectRepository<ProfileRepository>("profile", 
 export const getCurrentUser = profileRepository.getCurrentUser;
 export const updateUserProfile = profileRepository.updateUserProfile;
 export const deleteCurrentUserProfile = async () => {
-    const result = await profileRepository.deleteCurrentUserProfile();
+    // Customer deletion is server-orchestrated in the Supabase data domain.
+    // Never allow the legacy profile backend flag to select client-side deleteUser.
+    const result = await supabaseProfileRepository.deleteCurrentUserProfile();
     const { clearAddressSessionCache } = await import("./addressRepository");
     clearAddressSessionCache();
     return result;

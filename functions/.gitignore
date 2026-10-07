@@ -1,4 +1,5 @@
 node_modules/
 *.log
+.secret.local
 service-account*.json
 *-firebase-adminsdk-*.json

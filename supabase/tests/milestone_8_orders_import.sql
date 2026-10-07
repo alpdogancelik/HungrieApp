@@ -1,5 +1,7 @@
 begin;
 
+\ir account_access_fixture.psql
+
 select plan(29);
 
 select has_table('migration', 'orders_stage', 'order staging exists');

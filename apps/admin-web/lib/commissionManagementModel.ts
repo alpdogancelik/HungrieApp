@@ -107,6 +107,16 @@ export class StableCommissionOperation {
   current() { return this.entry?.operationId ?? null; }
 }
 
+export class StableVirtualPosCommissionOperation {
+  private entry: { signature: string; operationId: string } | null = null;
+  prepare(draft: CommissionDraft & { providerContractVersion: string }) {
+    const signature = JSON.stringify([canonicalCommissionDraft(draft), draft.providerContractVersion]);
+    if (!this.entry || this.entry.signature !== signature) this.entry = { signature, operationId: crypto.randomUUID() };
+    return this.entry.operationId;
+  }
+  clear() { this.entry = null; }
+}
+
 export const schedulingAccess = (context: AccessContext | null, lifecycle: RestaurantLifecycleStatus): SchedulingAccess => {
   if (lifecycle === "closed") return "lifecycle_restricted";
   if (!context || context.state !== "resolved" || context.accountType !== "admin" || context.accountStatus !== "active" || context.onboardingStep !== "none" || !context.currentSessionMfaVerified) return "unauthorized";

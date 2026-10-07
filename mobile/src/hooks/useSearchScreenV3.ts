@@ -1,15 +1,18 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { AppState } from "react-native";
 
 import useSearch, { SearchResult } from "@/src/hooks/useSearch";
 import { CATEGORY_CARDS } from "@/src/lib/categoryCards";
-import { RECENT_SEARCHES_KEY, clearStoredRecentSearches } from "@/src/lib/recentSearchesStorage";
-import { storage } from "@/src/lib/storage";
+import {
+    addRecentSearch,
+    clearStoredRecentSearches,
+    getRecentSearchesSnapshot,
+    removeRecentSearch,
+    subscribeRecentSearches,
+} from "@/src/lib/recentSearchesStorage";
 import { useCartStore } from "@/store/cart.store";
-
-const MAX_RECENT_SEARCHES = 5;
 
 export type SearchSegment = "meals" | "restaurants";
 
@@ -116,25 +119,13 @@ export const useSearchScreenV3 = () => {
     const setItemQuantity = useCartStore((state) => state.setItemQuantity);
 
     const [segment, setSegment] = useState<SearchSegment>("meals");
-    const [recentSearches, setRecentSearches] = useState<string[]>([]);
+    const recentSearchState = useSyncExternalStore(
+        subscribeRecentSearches,
+        getRecentSearchesSnapshot,
+        getRecentSearchesSnapshot,
+    );
+    const recentSearches = recentSearchState.identityReady ? recentSearchState.searches : [];
     const [refreshing, setRefreshing] = useState(false);
-
-    useEffect(() => {
-        storage.getItem(RECENT_SEARCHES_KEY).then((raw) => {
-            if (!raw) return;
-            try {
-                const parsed = JSON.parse(raw);
-                if (!Array.isArray(parsed)) return;
-                const cleaned = parsed
-                    .map((x) => String(x ?? "").trim())
-                    .filter(Boolean)
-                    .slice(0, MAX_RECENT_SEARCHES);
-                setRecentSearches(cleaned);
-            } catch {
-                // ignore
-            }
-        });
-    }, []);
 
     useEffect(() => {
         return () => {
@@ -159,29 +150,15 @@ export const useSearchScreenV3 = () => {
     }, [routeCategory, routeQuery, routeRefresh, setCategory, setQuery]);
 
     const persistRecent = useCallback((term: string) => {
-        const normalized = term.trim();
-        if (!normalized) return;
-
-        setRecentSearches((prev) => {
-            const normalizedKey = normalizeText(normalized);
-            const next = [normalized, ...prev.filter((entry) => normalizeText(entry) !== normalizedKey)].slice(0, MAX_RECENT_SEARCHES);
-            void storage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
-            return next;
-        });
+        addRecentSearch(term);
     }, []);
 
     const removeRecent = useCallback((term: string) => {
-        const normalizedKey = normalizeText(term);
-        setRecentSearches((prev) => {
-            const next = prev.filter((entry) => normalizeText(entry) !== normalizedKey);
-            void storage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
-            return next;
-        });
+        removeRecentSearch(term);
     }, []);
 
     const clearRecents = useCallback(() => {
-        setRecentSearches([]);
-        void clearStoredRecentSearches();
+        clearStoredRecentSearches();
     }, []);
 
     const submitQuery = useCallback(() => {

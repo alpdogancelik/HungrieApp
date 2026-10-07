@@ -50,7 +50,7 @@ export function OrderDetailView({ order, reload, compact = false, stale = false,
   }, [deadlineRemaining]);
 
   const execute = useCallback(async (intent: MutationIntent) => {
-    if (stale || submitting || runtime.status !== "connected" || expiredAwaiting) return;
+    if (stale || submitting || !runtime.online || expiredAwaiting) return;
     setSubmitting(true); setError(""); setNotice(""); setUnknownIntent(null);
     const before = current;
     let failure: unknown = null;
@@ -71,10 +71,10 @@ export function OrderDetailView({ order, reload, compact = false, stale = false,
     else if (failure && mutationFailureKind(failure) !== "unknown") { discardMutationIntent(intent); setNotice(mutationFailureKind(failure) === "conflict" ? copy.conflict : copy.unavailable); }
     else { setUnknownIntent(intent); setNotice(copy.unknown); }
     setSubmitting(false);
-  }, [copy.conflict, copy.unavailable, copy.unknown, current, expiredAwaiting, reload, runtime.status, stale, submitting]);
+  }, [copy.conflict, copy.unavailable, copy.unknown, current, expiredAwaiting, reload, runtime.online, stale, submitting]);
 
   const next = nextOrderStatus(current.status);
-  const mutationDisabled = runtime.status !== "connected" || stale || submitting || expiredAwaiting;
+  const mutationDisabled = !runtime.online || stale || submitting || expiredAwaiting;
   const transition = () => {
     if (!next) return;
     void execute(getMutationIntent({ orderId: current.id, expectedVersion: current.updated_at, target: next, reason: null, message: "" }));
@@ -91,7 +91,7 @@ export function OrderDetailView({ order, reload, compact = false, stale = false,
 
   return <section ref={acknowledgement.targetRef} className={`order-detail ${compact ? "order-detail--compact" : ""}`} aria-labelledby={`order-${current.id}-title`}>
     <header className="order-detail__header"><div><p className="eyebrow">{locale === "tr" ? "Sipariş" : "Order"}</p>{compact ? <h2 id={`order-${current.id}-title`}>#{orderReference(current.id)}</h2> : <h1 id={`order-${current.id}-title`}>#{orderReference(current.id)}</h1>}</div><span className={`order-status status-${current.status}`}>{statusLabel(current.status, locale)}</span></header>
-    {runtime.status !== "connected" && <p className="ui-notice ui-notice--warning" role="status">{locale === "tr" ? "İşlemler için canlı bağlantının yeniden kurulmasını bekleyin." : "Wait for the live connection before changing this order."}</p>}
+    {runtime.status !== "connected" && runtime.online && <p className="ui-notice ui-notice--warning" role="status">{locale === "tr" ? "Canlı güncellemeler yeniden bağlanıyor. İşlemler sunucu tarafından doğrulanmaya devam eder." : "Live updates are reconnecting. Actions continue to be verified by the server."}</p>}
     {expiredAwaiting && <p className="ui-notice ui-notice--warning" role="status"><AlertTriangle size={18} aria-hidden /> {copy.expired}</p>}
     {notice && <p className="ui-notice ui-notice--warning" role="status" aria-live="polite">{notice}</p>}
     {error && <p className="danger" role="alert">{error}</p>}

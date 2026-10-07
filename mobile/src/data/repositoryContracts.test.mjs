@@ -13,6 +13,8 @@ import * as supabaseOrders from "./supabase/orderRepository.ts";
 import * as supabaseReviews from "./supabase/reviewRepository.ts";
 import * as reviewV2 from "./supabase/reviewV2Repository.ts";
 import * as supabaseNotifications from "./supabase/notificationRepository.ts";
+import { setFirebaseUserForTests } from "@/lib/firebase";
+import { clearStorageForTests, storage } from "@/src/lib/storage";
 import i18n from "../lib/i18n.ts";
 import * as supabaseRestaurants from "./supabase/restaurantRepository.ts";
 import { supabaseFavoritesRepository } from "./supabase/favoritesRepository.ts";
@@ -20,6 +22,7 @@ import { getMembershipForFirebaseUser } from "./supabase/membershipQueries.ts";
 import { OrderRealtimeCoordinator } from "./supabase/orderRealtimeCoordinator.ts";
 import { createBoundedRetry } from "../features/notifications/boundedRetry.ts";
 import { createMenuSections } from "../features/restaurantMenu/menuUtils.ts";
+import { isRestaurantOpenForOrdering } from "../lib/restaurantAvailability.ts";
 import { getCancellationReasonText } from "../features/orders/cancellationReason.ts";
 import {
     canonicalizeCustomerReviewDraft,
@@ -87,6 +90,7 @@ const wait = (milliseconds) => new Promise((resolve) => globalThis.setTimeout(re
 
 const createRealtimeHarness = () => {
     let identity = "firebase-user-1";
+    let authorityGeneration = 1;
     const listeners = {};
     const channels = [];
     const client = {
@@ -94,7 +98,7 @@ const createRealtimeHarness = () => {
         realtime: { setAuth(token) { client.calls.push(["auth", token]); return Promise.resolve(); } },
         rpc(name) {
             client.calls.push(["rpc", name]);
-            return Promise.resolve({ data: [{ topic: `orders:profile:${identity}`, topic_kind: "profile", resource_id: identity }], error: null });
+            return Promise.resolve({ data: [{ topic: `orders:profile:v2:${identity}:${authorityGeneration}`, topic_kind: "profile", resource_id: identity }], error: null });
         },
         channel(topic, options) {
             const channel = {
@@ -115,7 +119,11 @@ const createRealtimeHarness = () => {
         watchForeground: (listener) => { listeners.foreground = listener; return () => { delete listeners.foreground; }; },
         watchNetwork: (listener) => { listeners.network = listener; return () => { delete listeners.network; }; },
     };
-    return { client, channels, dependencies, listeners, setIdentity: (value) => { identity = value; } };
+    return {
+        client, channels, dependencies, listeners,
+        setIdentity: (value) => { identity = value; },
+        setAuthorityGeneration: (value) => { authorityGeneration = value; },
+    };
 };
 
 const firebaseOrders = {
@@ -341,8 +349,9 @@ test("Customer order list and detail render cancellation reasons", () => {
 });
 
 test("Restaurant cancellation options submit stable reason codes", () => {
-    const restaurantOrder = readDataFile("../../../apps/restaurant/app/orders/[orderId].tsx");
-    assert.match(restaurantOrder, /<option key=\{value\} value=\{value\}>/);
+    const restaurantOrder = readDataFile("../../../apps/restaurant/src/orders/OrderDetailView.tsx");
+    assert.match(restaurantOrder, /CANCELLATION_REASONS\.map\(value => <option value=\{value\} key=\{value\}>/);
+    assert.match(restaurantOrder, /restaurantOrderRepository\.cancel\([^;]+intent\.reason!/);
 });
 
 test("Customer order expiry remains server-owned and notification taps open order detail", () => {
@@ -385,6 +394,34 @@ test("Supabase notifications register Expo tokens, persist preferences, and revo
     });
     await supabaseNotifications.unregisterPushToken();
     assert.ok(client.calls.some((call) => call.kind === "rpc" && call.name === "unregister_my_customer_push_token_v1"));
+});
+
+test("late A unregister cannot erase B's reconciled local token binding", async () => {
+    clearStorageForTests();
+    setFirebaseUserForTests("firebase-a");
+    setSupabaseClientForTests(createMockClient());
+    await supabaseNotifications.registerPushToken();
+
+    let finishUnregister;
+    const unregisterResult = new Promise((resolve) => { finishUnregister = resolve; });
+    setSupabaseClientForTests(createMockClient({
+        rpc: (name) => name === "unregister_my_customer_push_token_v1"
+            ? unregisterResult
+            : { data: null, error: null },
+    }));
+    const lateAUnregister = supabaseNotifications.unregisterPushToken();
+    await flushPromises();
+
+    setFirebaseUserForTests("firebase-b");
+    await supabaseNotifications.registerPushToken();
+    finishUnregister({ data: null, error: null });
+    await lateAUnregister;
+
+    const raw = await storage.getItem("supabase_push_token_active_binding_v1");
+    assert.equal(JSON.parse(raw).ownerUid, "firebase-b");
+    assert.equal(JSON.parse(raw).token, "ExpoPushToken[fixture_mobile]");
+    setFirebaseUserForTests("fixture");
+    clearStorageForTests();
 });
 
 test("Customer push registration and later language changes use the app language", async () => {
@@ -523,6 +560,61 @@ test("Home refreshes restaurant summaries on focus and foreground recovery", () 
     assert.match(source, /reloadRestaurants\(true\)/);
     assert.match(source, /AppState\.addEventListener\("change"/);
     assert.match(source, /reloadRestaurants\(true\)/);
+});
+
+test("Restaurant acceptance state closes customer entry without changing legacy defaults", async () => {
+    assert.equal(isRestaurantOpenForOrdering({ acceptingOrders: false }), false);
+    assert.equal(isRestaurantOpenForOrdering({ accepting_orders: false }), false);
+    assert.equal(isRestaurantOpenForOrdering({ acceptingOrders: true }), true);
+    assert.equal(isRestaurantOpenForOrdering({ name: "Legacy restaurant" }), true);
+    assert.equal(
+        isRestaurantOpenForOrdering({ acceptingOrders: true, openingTime: "09:00", closingTime: "17:00" }, new Date("2026-10-03T12:00:00")),
+        true,
+    );
+    assert.equal(
+        isRestaurantOpenForOrdering({ acceptingOrders: true, openingTime: "09:00", closingTime: "17:00" }, new Date("2026-10-03T20:00:00")),
+        false,
+    );
+
+    const client = createMockClient({
+        query: (builder) => builder.table === "active_restaurants"
+            ? { data: [{ id: "restaurant-closed", name: "Paused", accepting_orders: false }], error: null }
+            : { data: null, error: null },
+        rpc: (name) => ({ data: name === "get_restaurant_review_summary_v2" ? {
+            restaurantId: "restaurant-closed", overallRating: null, tasteRating: null, speedRating: null, reviewCount: 0,
+        } : null, error: null }),
+    });
+    setCatalogSupabaseClientForTests(client);
+    const [restaurant] = await supabaseRestaurants.getRestaurants();
+    assert.equal(restaurant.acceptingOrders, false);
+    assert.match(
+        client.calls.find((call) => call.kind === "select" && call.table === "active_restaurants").columns,
+        /accepting_orders/,
+    );
+});
+
+test("Restaurant catalog remains readable before the acceptance projection migration", async () => {
+    const client = createMockClient({
+        query: (builder) => {
+            if (builder.table !== "active_restaurants") return { data: null, error: null };
+            if (builder.columns.includes("accepting_orders")) return {
+                data: null,
+                error: { code: "42703", message: "column active_restaurants.accepting_orders does not exist" },
+            };
+            return { data: [{ id: "legacy-restaurant", name: "Legacy" }], error: null };
+        },
+        rpc: (name) => ({ data: name === "get_restaurant_review_summary_v2" ? {
+            restaurantId: "legacy-restaurant", overallRating: null, tasteRating: null, speedRating: null, reviewCount: 0,
+        } : null, error: null }),
+    });
+    setCatalogSupabaseClientForTests(client);
+    const [restaurant] = await supabaseRestaurants.getRestaurants({ search: "legacy" });
+    assert.equal(restaurant.name, "Legacy");
+    assert.equal(restaurant.acceptingOrders, true);
+    const selects = client.calls.filter((call) => call.kind === "select" && call.table === "active_restaurants");
+    assert.equal(selects.length, 2);
+    assert.match(selects[0].columns, /accepting_orders/);
+    assert.doesNotMatch(selects[1].columns, /accepting_orders/);
 });
 
 test("Customer catalog v2 maps required, multiple-choice, priced, and removable options", async () => {
@@ -671,12 +763,51 @@ test("order Realtime tears down and re-resolves topics on Firebase account switc
     harness.listeners.auth();
     await flushPromises();
     await flushPromises();
-    assert.equal(harness.channels.at(-1).topic, "orders:profile:firebase-user-2");
-    assert.ok(harness.client.calls.some(([kind, topic]) => kind === "remove" && topic === "orders:profile:firebase-user-1"));
+    assert.equal(harness.channels.at(-1).topic, "orders:profile:v2:firebase-user-2:1");
+    assert.ok(harness.client.calls.some(([kind, topic]) => kind === "remove" && topic === "orders:profile:v2:firebase-user-1:1"));
     harness.setIdentity(null);
     harness.listeners.auth();
     await flushPromises();
-    assert.ok(harness.client.calls.some(([kind, topic]) => kind === "remove" && topic === "orders:profile:firebase-user-2"));
+    assert.ok(harness.client.calls.some(([kind, topic]) => kind === "remove" && topic === "orders:profile:v2:firebase-user-2:1"));
+    unsubscribe();
+});
+
+test("order Realtime discards an old callback after account switch", async () => {
+    const harness = createRealtimeHarness();
+    const coordinator = new OrderRealtimeCoordinator(harness.dependencies);
+    let fetches = 0;
+    const unsubscribe = coordinator.subscribe(async () => ++fetches, () => undefined);
+    await flushPromises();
+    await flushPromises();
+    const oldChannel = harness.channels[0];
+    harness.setIdentity("firebase-user-2");
+    harness.listeners.auth();
+    await flushPromises();
+    await flushPromises();
+    const beforeLateCallback = fetches;
+    oldChannel.broadcast({ payload: { order_id: "customer-a-order" } });
+    await wait(100);
+    assert.equal(fetches, beforeLateCallback);
+    unsubscribe();
+});
+
+test("order Realtime re-resolves canonical authority generation on refresh and reconnect", async () => {
+    const harness = createRealtimeHarness();
+    const coordinator = new OrderRealtimeCoordinator(harness.dependencies);
+    const unsubscribe = coordinator.subscribe(async () => [], () => undefined);
+    await flushPromises();
+    await flushPromises();
+    harness.setAuthorityGeneration(2);
+    harness.listeners.foreground();
+    await flushPromises();
+    await flushPromises();
+    assert.equal(harness.channels.at(-1).topic, "orders:profile:v2:firebase-user-1:2");
+    assert.ok(harness.client.calls.some(([kind, topic]) => kind === "remove" && topic === "orders:profile:v2:firebase-user-1:1"));
+    harness.setAuthorityGeneration(3);
+    harness.listeners.network();
+    await flushPromises();
+    await flushPromises();
+    assert.equal(harness.channels.at(-1).topic, "orders:profile:v2:firebase-user-1:3");
     unsubscribe();
 });
 
@@ -691,17 +822,24 @@ test("order Realtime refetches on foreground/network recovery and reconnects wit
     harness.listeners.network();
     await flushPromises();
     assert.ok(fetches >= 4);
-    harness.channels[0].status("TIMED_OUT");
-    harness.channels[0].status("CHANNEL_ERROR");
+    const channelCountBeforeFailure = harness.channels.length;
+    const activeChannel = harness.channels.at(-1);
+    activeChannel.status("TIMED_OUT");
+    activeChannel.status("CHANNEL_ERROR");
     await wait(550);
-    assert.equal(harness.channels.length, 2, "duplicate failures schedule one reconnect");
+    assert.equal(harness.channels.length, channelCountBeforeFailure + 1, "duplicate failures schedule one reconnect");
     unsubscribe();
 });
 
 test("Supabase favorites replace the caller set atomically", async () => {
     const client = createMockClient({ rpc: (name, args) => ({ data: name === "replace_my_customer_favorites_v1" ? args.p_restaurant_ids.length : null, error: null }) });
     setSupabaseClientForTests(client);
-    await supabaseFavoritesRepository.persistFavorites("profile-1", ["restaurant-1", "restaurant-2"]);
+    setFirebaseUserForTests("profile-1");
+    try {
+        await supabaseFavoritesRepository.persistFavorites("profile-1", ["restaurant-1", "restaurant-2"]);
+    } finally {
+        setFirebaseUserForTests("fixture");
+    }
     assert.deepEqual(client.calls, [{ kind: "rpc", name: "replace_my_customer_favorites_v1", args: { p_restaurant_ids: ["restaurant-1", "restaurant-2"] } }]);
     assert.equal(client.calls.some((call) => call.kind === "delete" || call.kind === "insert"), false);
 });
@@ -852,7 +990,9 @@ test("Customer startup withholds navigation until configuration, release, and ac
     const releaseGate = readDataFile("../features/runtime/CustomerReleaseGate.tsx");
     assert.match(layout, /releaseReady && customerAccessReady \? <Stack/);
     assert.match(layout, /customerAccessReadyFor === customerIdentityKey/);
-    assert.match(layout, /onIdTokenChanged\(auth/);
+    assert.match(layout, /onIdTokenChanged\(firebaseAuth/);
+    assert.match(layout, /invalidateCartIdentity\(\)/);
+    assert.match(layout, /bindCartToIdentity\(ownerUid\)/);
     assert.match(layout, /single callback own cold-start auth/);
     assert.doesNotMatch(layout, /useEffect\(\(\) => \{\s*fetchAuthenticatedUser\(\);/);
     assert.match(layout, /syncAuthenticatedUser\(true\)/);
@@ -1042,6 +1182,36 @@ test("v2 review operations canonicalize drafts, retain uncertain attempts, and r
     await recoverCustomerReviewsIfAuthorized(false, "profile-b", async () => { unauthorizedCalls += 1; throw new Error("must not run"); }, target);
     assert.equal(unauthorizedCalls, 0);
     await clearCustomerReviewOperation("profile-b", "order-other", undefined, target);
+
+    const delayedValues = new Map();
+    let delayFirstWrite = true;
+    let releaseAWrite;
+    const aWriteGate = new Promise((resolve) => { releaseAWrite = resolve; });
+    const delayedTarget = {
+        getItem: async (key) => delayedValues.get(key) ?? null,
+        setItem: async (key, value) => {
+            if (delayFirstWrite) {
+                delayFirstWrite = false;
+                await aWriteGate;
+            }
+            delayedValues.set(key, value);
+        },
+        removeItem: async (key) => void delayedValues.delete(key),
+    };
+    setFirebaseUserForTests("firebase-a");
+    let staleSubmitCalls = 0;
+    const delayedA = submitCustomerReviewWithDurableOperation("profile-a", draft, delayedTarget, async () => {
+        staleSubmitCalls += 1;
+        return { reviewId: "review-a", replayed: false };
+    });
+    await flushPromises();
+    setFirebaseUserForTests("firebase-b");
+    releaseAWrite();
+    await assert.rejects(delayedA, /identity changed/i);
+    assert.equal(staleSubmitCalls, 0, "A's delayed operation never submits through B's session");
+    assert.equal((await listPendingCustomerReviewOperations("profile-a", delayedTarget)).length, 1);
+    assert.equal((await listPendingCustomerReviewOperations("profile-b", delayedTarget)).length, 0);
+    setFirebaseUserForTests("fixture");
 });
 
 test("v2 recovery coordinator cannot mount before active Customer authorization", () => {

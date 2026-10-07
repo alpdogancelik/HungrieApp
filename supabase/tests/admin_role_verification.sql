@@ -1,5 +1,7 @@
 begin;
 
+\ir account_access_fixture.psql
+
 select plan(14);
 
 select has_function(
@@ -30,7 +32,7 @@ select is((public.get_my_admin_authorization() ->> 'is_admin')::boolean, false, 
 
 select set_config(
   'request.jwt.claims',
-  '{"role":"authenticated","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_admin"}',
+  '{"role":"authenticated","email_verified":true,"firebase":{"sign_in_second_factor":"totp"},"iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_admin"}',
   true
 );
 select is(public.get_my_admin_authorization() ->> 'profile_id', 'fixture_admin', 'admin receives own profile ID');
@@ -40,7 +42,7 @@ select is((public.get_my_admin_authorization() ->> 'is_super_admin')::boolean, f
 
 select set_config(
   'request.jwt.claims',
-  '{"role":"authenticated","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_super_admin"}',
+  '{"role":"authenticated","email_verified":true,"firebase":{"sign_in_second_factor":"totp"},"iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_super_admin"}',
   true
 );
 select is(public.get_my_admin_authorization() ->> 'profile_id', 'fixture_super_admin', 'super-admin receives own profile ID');

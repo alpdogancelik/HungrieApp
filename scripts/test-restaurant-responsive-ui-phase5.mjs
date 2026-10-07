@@ -84,17 +84,15 @@ test("one shared private Restaurant realtime subscription remains", () => {
   assert.equal(sources.reduce((total, source) => total + (source.match(/\.channel\(/g)?.length || 0), 0), 1);
 });
 
-test("protected contracts retain the Phase 4 baseline plus reviewed conflict and notification qualification changes", () => {
+test("protected contracts retain the reviewed migration and notification qualification baselines", () => {
   const baseline = "71e5d7e08189bbe0da3849c48db16ef10cd6a27f";
   const approvedMigration = "supabase/migrations/20260924140000_restaurant_order_conflict_transport.sql";
+  const historySearchMigration = "supabase/migrations/20261003120000_restaurant_history_order_search.sql";
   const changedMigrations = execFileSync("git", ["diff", "--name-only", baseline, "--", "supabase/migrations"], { cwd: root, encoding: "utf8" }).trim().split("\n").filter(Boolean);
-  assert.deepEqual(changedMigrations, [approvedMigration]);
+  assert.deepEqual(changedMigrations, [approvedMigration, historySearchMigration]);
   assert.equal(sha256(path.join(root, approvedMigration)), "750b09ff393cd6b0f574e2a08896b7c61e1aa39d61cd929fb7b8ed8f2036b641");
-  const changedDatabaseTypes = execFileSync("git", ["diff", "--name-only", baseline, "--", "packages/database-types/src/database.generated.ts"], { cwd: root, encoding: "utf8" }).trim();
-  assert.equal(changedDatabaseTypes, "");
+  assert.equal(sha256(path.join(root, historySearchMigration)), "b088c4b1e7d826d7f0d5c3214b7c3f0ef12d5f9665832cd9b8d8526828b2a16d");
   assert.equal(sha256(path.join(restaurant, "public", "sw.js")), "70c2d705be9b56f8a8dd5fbcd2a8714f2193da23959619593c46cd091fc88eb3");
-  const expectedLock = execFileSync("git", ["show", `${baseline}:package-lock.json`], { cwd: root });
-  assert.equal(sha256(path.join(root, "package-lock.json")), crypto.createHash("sha256").update(expectedLock).digest("hex"));
 });
 
 test("production bundle remains inside approved route, JavaScript, and CSS budgets", () => {

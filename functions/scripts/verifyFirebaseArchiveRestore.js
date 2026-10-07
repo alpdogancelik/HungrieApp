@@ -1,6 +1,6 @@
 const crypto = require("node:crypto");
 const fs = require("node:fs");
-const admin = require("firebase-admin");
+const admin = require("../firebaseAdminCompat");
 
 const args = process.argv.slice(2);
 const value = (name) => args.find((entry) => entry.startsWith(`${name}=`))?.slice(name.length + 1) || "";

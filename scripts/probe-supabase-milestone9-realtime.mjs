@@ -98,24 +98,35 @@ try {
     insert into public.categories(id,restaurant_id,name,is_active,sort_order) values (${quote(categoryId)},${quote(restaurantId)},'Probe',true,0);
     insert into public.menu_items(id,restaurant_id,category_id,name,price_kurus,is_active,sort_order) values (${quote(menuId)},${quote(restaurantId)},${quote(categoryId)},'Probe Meal',1000,true,0);
     insert into public.addresses(id,profile_id,label,line1,city,country,is_default) values (${quote(addressId)},${quote(ids.customer)},'Home','Synthetic','Test','Test',true);
+    insert into private.account_access(profile_id,account_type,status,activated_at) values
+      (${quote(ids.customer)},'customer','active',statement_timestamp()),
+      (${quote(ids.outsider)},'customer','active',statement_timestamp());
+    insert into private.account_access(profile_id,account_type,status,activated_at,restaurant_id,restaurant_role) values
+      (${quote(ids.manager)},'restaurant','active',statement_timestamp(),${quote(restaurantId)},'manager');
+    insert into private.account_access(profile_id,account_type,status,activated_at,admin_role,admin_mfa_enrolled_at) values
+      (${quote(ids.admin)},'admin','active',statement_timestamp(),'admin',statement_timestamp());
     insert into private.restaurant_members(restaurant_id,profile_id,role) values (${quote(restaurantId)},${quote(ids.manager)},'manager');
-    insert into private.user_roles(profile_id,role) values (${quote(ids.courierA)},'courier'),(${quote(ids.courierB)},'courier'),(${quote(ids.admin)},'admin');
-    insert into private.restaurant_couriers(restaurant_id,profile_id) values (${quote(restaurantId)},${quote(ids.courierA)}),(${quote(restaurantId)},${quote(ids.courierB)});
+    insert into private.user_roles(profile_id,role) values (${quote(ids.manager)},'admin'),(${quote(ids.admin)},'admin');
   commit;`);
   fixturesCreated = true;
 
+  const customerTopicResult = await rest("rpc/my_customer_order_realtime_topics_v1", tokens.customer, {});
+  const restaurantTopicResult = await rest("rpc/restaurant_order_realtime_topic_v2", tokens.manager, {});
+  const adminTopicResult = await rest("rpc/my_order_realtime_topics", tokens.admin, {});
+  const customerTopic = customerTopicResult.body?.[0]?.topic;
+  const restaurantTopic = restaurantTopicResult.body;
+  const adminTopic = adminTopicResult.body?.[0]?.topic;
+  if (![customerTopic, restaurantTopic, adminTopic].every(value => typeof value === "string" && value)) throw new Error("Generation-bound Realtime topic discovery failed.");
   const requested = {
-    customer: await subscribe(tokens.customer, `orders:profile:${ids.customer}`),
-    restaurant: await subscribe(tokens.manager, `orders:restaurant:${restaurantId}`),
-    queueA: await subscribe(tokens.courierA, `orders:courier-queue:${restaurantId}`),
-    queueB: await subscribe(tokens.courierB, `orders:courier-queue:${restaurantId}`),
-    assignedA: await subscribe(tokens.courierA, `orders:courier:${ids.courierA}`),
-    admin: await subscribe(tokens.admin, "orders:admin"),
-    crossCustomer: await subscribe(tokens.outsider, `orders:profile:${ids.customer}`),
-    publicAnonymous: await subscribe(tokens.outsider, `orders:profile:${ids.outsider}`, { privateChannel: false }),
+    customer: await subscribe(tokens.customer, customerTopic),
+    restaurant: await subscribe(tokens.manager, restaurantTopic),
+    admin: await subscribe(tokens.admin, adminTopic),
+    crossCustomer: await subscribe(tokens.outsider, customerTopic),
+    crossRestaurant: await subscribe(tokens.customer, restaurantTopic),
+    publicChannel: await subscribe(tokens.outsider, customerTopic, { privateChannel: false }),
   };
   subscriptions.push(...Object.values(requested));
-  const authorizedJoined = [requested.customer, requested.restaurant, requested.queueA, requested.queueB, requested.assignedA, requested.admin].every((item) => item.status === "SUBSCRIBED");
+  const authorizedJoined = [requested.customer, requested.restaurant, requested.admin].every((item) => item.status === "SUBSCRIBED");
 
   const created = await rest("rpc/create_order", tokens.customer, { p_restaurant_id: restaurantId, p_address_id: addressId, p_payment_method: "cash", p_items: [{ menu_item_id: menuId, quantity: 1, customization_ids: [] }], p_notes: "M9 probe" });
   orderId = typeof created.body === "string" ? created.body : null;
@@ -124,15 +135,16 @@ try {
   await rest("rpc/transition_order", tokens.manager, { p_order_id: orderId, p_new_status: "preparing", p_reason: null });
   await rest("rpc/transition_order", tokens.manager, { p_order_id: orderId, p_new_status: "ready", p_reason: null });
   await wait(800);
-  const queueEventsBeforeClaim = requested.queueB.events.length;
-  await rest("rpc/claim_delivery", tokens.courierA, { p_order_id: orderId });
+  const restaurantEventsBeforeSuspension = requested.restaurant.events.length;
+  runSql(`update private.account_access set status='suspended',suspended_at=statement_timestamp() where profile_id=${quote(ids.manager)}; update public.orders set updated_at=statement_timestamp() where id=${quote(orderId)};`);
   await wait(800);
-  const queueAfterClaim = await rest(`courier_available_orders?select=id&id=eq.${encodeURIComponent(orderId)}`, tokens.courierB);
+  const suspendedJoin = await subscribe(tokens.manager, restaurantTopic);
+  subscriptions.push(suspendedJoin);
   const customerEventsBeforeClientSend = requested.customer.events.length;
   await requested.customer.channel.send({ type: "broadcast", event: "order_changed", payload: { order_id: "client-forbidden" } });
   await wait(500);
   const clientBroadcastDenied = requested.customer.events.length === customerEventsBeforeClientSend;
-  const payloads = [requested.customer, requested.restaurant, requested.queueA, requested.queueB, requested.assignedA, requested.admin].flatMap((item) => item.events.map((event) => event.payload));
+  const payloads = [requested.customer, requested.restaurant, requested.admin].flatMap((item) => item.events.map((event) => event.payload));
   const minimalPayloads = payloads.length > 0 && payloads.every((payload) => {
     const keys = Object.keys(payload || {}).sort();
     return JSON.stringify(keys) === JSON.stringify(["id", "operation", "order_id", "version"])
@@ -141,17 +153,17 @@ try {
   const cases = {
     authorizedTopicsJoined: authorizedJoined,
     crossCustomerDenied: requested.crossCustomer.status !== "SUBSCRIBED",
-    publicChannelDenied: requested.publicAnonymous.status !== "SUBSCRIBED",
+    crossRestaurantDenied: requested.crossRestaurant.status !== "SUBSCRIBED",
+    publicChannelDenied: requested.publicChannel.status !== "SUBSCRIBED",
     customerInvalidationReceived: requested.customer.events.length > 0,
     restaurantInvalidationReceived: requested.restaurant.events.length > 0,
-    scopedCouriersReceivedReadyQueue: requested.queueA.events.length > 0 && queueEventsBeforeClaim > 0,
-    claimInvalidatedOtherCourierQueue: requested.queueB.events.length > queueEventsBeforeClaim && queueAfterClaim.ok && Array.isArray(queueAfterClaim.body) && queueAfterClaim.body.length === 0,
-    assignedCourierInvalidationReceived: requested.assignedA.events.length > 0,
     adminInvalidationReceived: requested.admin.events.length > 0,
+    suspendedFreshJoinDenied: suspendedJoin.status !== "SUBSCRIBED",
+    suspendedExistingChannelReceivedNoFurtherEvent: requested.restaurant.events.length === restaurantEventsBeforeSuspension,
     payloadsAreMinimal: minimalPayloads,
     clientBroadcastDenied,
   };
-  report = { generatedAt: new Date().toISOString(), firebaseProject, cases, passed: Object.values(cases).every(Boolean), authorizedJoinLatencyMs: { min: Math.min(...Object.values(requested).slice(0, 6).map((item) => item.joinLatencyMs)), max: Math.max(...Object.values(requested).slice(0, 6).map((item) => item.joinLatencyMs)) }, diagnostics: Object.fromEntries(Object.entries(requested).map(([name, item]) => [name, { status: item.status, failure: item.failure }])), payloadKeySets: [...new Set(payloads.map((payload) => Object.keys(payload || {}).sort().join(",")))], firebaseUsersRemoved: false, databaseFixturesRemoved: false };
+  report = { generatedAt: new Date().toISOString(), firebaseProject, cases, passed: Object.values(cases).every(Boolean), authorizedJoinLatencyMs: { min: Math.min(...Object.values(requested).slice(0, 3).map((item) => item.joinLatencyMs)), max: Math.max(...Object.values(requested).slice(0, 3).map((item) => item.joinLatencyMs)) }, diagnostics: Object.fromEntries(Object.entries(requested).map(([name, item]) => [name, { status: item.status, failure: item.failure }])), payloadKeySets: [...new Set(payloads.map((payload) => Object.keys(payload || {}).sort().join(",")))], firebaseUsersRemoved: false, databaseFixturesRemoved: false };
   fs.writeFileSync(outputPath, `${JSON.stringify(report, null, 2)}\n`, { mode: 0o600 });
   if (!report.passed) throw new Error("Hosted Milestone 9 Realtime matrix failed.");
 } finally {
@@ -167,6 +179,7 @@ try {
       delete from private.restaurant_couriers where restaurant_id=${quote(restaurantId)};
       delete from private.restaurant_members where restaurant_id=${quote(restaurantId)};
       delete from private.user_roles where profile_id in (${profiles});
+      delete from private.account_access where profile_id in (${profiles});
       delete from public.addresses where profile_id in (${profiles});
       delete from public.menu_items where restaurant_id=${quote(restaurantId)};
       delete from public.categories where restaurant_id=${quote(restaurantId)};

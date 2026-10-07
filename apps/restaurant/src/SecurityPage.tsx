@@ -9,6 +9,7 @@ import { restaurantSignOut } from "./restaurantSignOut";
 import { Button } from "./components/Button";
 import { Dialog } from "./components/Dialog";
 import { PageHeader } from "./components/PageHeader";
+import { requestRestaurantPasswordReset } from "./passwordResetFlow";
 
 const copy={
   en:{title:"Security",intro:"Manage password recovery and securely end this browser session.",account:"Account",email:"Email",role:"Restaurant role",owner:"Owner",manager:"Manager",password:"Password recovery",passwordHelp:"Firebase sends reset instructions when the signed-in account is eligible.",send:"Send reset email",resetTitle:"Send password reset email?",resetDetail:"Instructions will be requested for the signed-in account. The result does not reveal account eligibility.",sent:"If the account is eligible, password reset instructions have been sent.",failed:"The request could not be completed. Check your connection and try again.",signout:"Sign out",signoutHelp:"Notification cleanup is attempted before Firebase signs out this browser.",signoutTitle:"Sign out of Hungrie Restaurant?",signoutDetail:"You will need to sign in again to manage this Restaurant.",cancel:"Cancel",sending:"Sending…",signingOut:"Signing out…",safe:"Authentication and Restaurant authorization remain server verified."},
@@ -19,7 +20,7 @@ export function SecurityPage(){
   const{locale}=useLocale(),c=copy[locale],access=useRestaurantAccessContext(),email=auth.currentUser?.email||"";
   const[dialog,setDialog]=useState<"reset"|"signout"|null>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState<"sent"|"failed"|null>(null);
   const close=()=>{if(!busy)setDialog(null)};
-  const reset=async()=>{if(busy||!email)return;setBusy(true);setMessage(null);try{await sendPasswordResetEmail(auth,email);setMessage("sent");setDialog(null);}catch{setMessage("failed");setDialog(null);}finally{setBusy(false)}};
+  const reset=async()=>{if(busy||!email)return;setBusy(true);setMessage(null);const outcome=await requestRestaurantPasswordReset({email,send:(normalizedEmail)=>sendPasswordResetEmail(auth,normalizedEmail)});setMessage(outcome==="accepted"?"sent":"failed");setDialog(null);setBusy(false)};
   const signout=async()=>{if(busy)return;setBusy(true);try{await restaurantSignOut();}catch{setMessage("failed");setBusy(false);setDialog(null)}};
   return <Shell><div className="security-page"><PageHeader title={c.title} subtitle={c.intro}/>
     {message&&<p className={`ui-notice ${message==="failed"?"ui-notice--danger":"ui-notice--success"}`} role="status">{c[message]}</p>}

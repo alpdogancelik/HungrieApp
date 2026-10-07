@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { createAdaptiveStyleSheet } from "@/src/theme/adaptiveStyles";
 import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import {
     Inter_400Regular,
@@ -19,6 +19,8 @@ import LanguageToggle from "@/components/LanguageToggle";
 import { sendPasswordReset } from "@/src/data/authRepository";
 import { getAuthErrorMessage, getAuthScreenCopy, isTurkishLanguage } from "@/src/features/auth/authCopy";
 import { isStrictValidEmail } from "@/src/features/auth/emailValidation";
+import { passwordResetPresentation } from "@/src/features/auth/passwordResetFlow";
+import { captureOperationalError } from "@/src/lib/operationalTelemetry";
 import OnlineOrder from "@/assets/illustrations/Online Order.svg";
 import RobotDelivery from "@/assets/illustrations/Robot Delivery.svg";
 import { makeShadow } from "@/src/lib/shadowStyle";
@@ -242,16 +244,9 @@ const ForgotPasswordScreen = () => {
     const insets = useSafeAreaInsets();
     const copy = getAuthScreenCopy(i18n.language).forgotPassword;
     const isTurkish = isTurkishLanguage(i18n.language);
-    const params = useLocalSearchParams<{ email?: string | string[] }>();
     const { width } = useWindowDimensions();
     const isWide = width >= 700;
-    const initialEmail = useMemo(() => {
-        if (typeof params.email === "string") return params.email;
-        if (Array.isArray(params.email)) return params.email[0] || "";
-        return "";
-    }, [params.email]);
-
-    const [email, setEmail] = useState(initialEmail);
+    const [email, setEmail] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitPressed, setIsSubmitPressed] = useState(false);
     const [emailFocused, setEmailFocused] = useState(false);
@@ -300,17 +295,49 @@ const ForgotPasswordScreen = () => {
         setFeedback(null);
 
         try {
-            await sendPasswordReset(trimmedEmail);
-            setFeedback({
-                tone: "success",
-                title: copy.successTitle,
-                message: copy.successBody,
-            });
-        } catch (error: any) {
+            const outcome = await sendPasswordReset(trimmedEmail);
+            const presentation = passwordResetPresentation(outcome);
+            if (presentation.copy === "privacy_acknowledgement") {
+                setFeedback({
+                    tone: "success",
+                    title: copy.successTitle,
+                    message: copy.successBody,
+                });
+                return;
+            }
+            if (presentation.copy === "rate_limited") {
+                setFeedback({
+                    tone: "error",
+                    title: copy.emptyTitle,
+                    message: getAuthErrorMessage(i18n.language, "tooManyRequests") || copy.fallbackError,
+                });
+                return;
+            }
+            if (presentation.copy === "invalid_input") {
+                setFeedback({
+                    tone: "error",
+                    title: copy.emptyTitle,
+                    message: getAuthErrorMessage(i18n.language, "invalidEmail") || copy.fallbackError,
+                });
+                return;
+            }
+            if (outcome === "technical_failure") {
+                captureOperationalError(
+                    "customer.auth.password_reset_technical_failure",
+                    { code: "password_reset_provider_failure", name: "PasswordResetProviderFailure" },
+                    { component: "customer-auth" },
+                );
+            }
             setFeedback({
                 tone: "error",
                 title: copy.emptyTitle,
-                message: error?.message || copy.fallbackError,
+                message: copy.fallbackError,
+            });
+        } catch {
+            setFeedback({
+                tone: "error",
+                title: copy.emptyTitle,
+                message: copy.fallbackError,
             });
         } finally {
             setIsSubmitting(false);

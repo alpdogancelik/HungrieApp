@@ -7,9 +7,11 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { assertExactProductionIdentities, assertNonProductionOnly, loadProductionOperatorContract, supabaseProjectRefFromUrl } from "./restaurant-production-environment-contract.mjs";
 import { resolveFirebaseRuntimeConfig } from "../mobile/lib/firebaseConfig.ts";
+import { resolveCustomerAppCheckConfig } from "../mobile/lib/appCheckConfig.ts";
 import { resolveSupabaseState } from "../mobile/lib/supabaseConfig.ts";
 import { resolveRestaurantEnvironment } from "../apps/restaurant/src/environmentConfig.ts";
 import { resolveAdminEnvironment } from "../apps/admin-web/lib/environmentConfig.ts";
+import { buildAdminContentSecurityPolicy } from "../apps/admin-web/lib/contentSecurityPolicy.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const require = createRequire(import.meta.url);
@@ -30,21 +32,41 @@ test("ISO-01 Production Android Firebase file cannot inherit tracked non-product
   assert.throws(() => config.resolveProductionGoogleServicesFile({ EXPO_PUBLIC_APP_ENV: "production" }), /requires/);
 });
 
+test("Customer Production web App Check rejects missing providers and debug bypass", () => {
+  assert.throws(() => resolveCustomerAppCheckConfig({ environment: "production", platform: "web" }), /site key/);
+  assert.throws(() => resolveCustomerAppCheckConfig({ environment: "production", platform: "web", siteKey: "public-site-key", debugToken: "debug" }), /debug mode/);
+  assert.deepEqual(resolveCustomerAppCheckConfig({ environment: "production", platform: "web", siteKey: "public-site-key" }), { enabled: true, siteKey: "public-site-key", debugToken: "" });
+  assert.equal(resolveCustomerAppCheckConfig({ environment: "production", platform: "ios" }).enabled, false);
+});
+
 test("ISO-02 Customer Production Supabase requires exact ref", () => {
   assert.equal(resolveSupabaseState({ url: prodUrl, publishableKey: "public", appEnvironment: "production", enabled: "true" }).enabled, false);
   assert.equal(resolveSupabaseState({ url: prodUrl, publishableKey: "public", appEnvironment: "production", expectedProjectRef: prodRef, enabled: "true" }).enabled, true);
 });
 
-test("ISO-03 Restaurant binds exact Firebase and Supabase identities", () => {
-  const env = { EXPO_PUBLIC_HUNGRIE_ENV: "production", EXPO_PUBLIC_FIREBASE_API_KEY: "public", EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: `${prodFirebase}.firebaseapp.com`, EXPO_PUBLIC_FIREBASE_PROJECT_ID: prodFirebase, EXPO_PUBLIC_FIREBASE_APP_ID: "app", EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "123", EXPO_PUBLIC_EXPECTED_FIREBASE_PROJECT_ID: prodFirebase, EXPO_PUBLIC_SUPABASE_URL: prodUrl, EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "public", EXPO_PUBLIC_EXPECTED_SUPABASE_PROJECT_REF: prodRef, EXPO_PUBLIC_FIREBASE_VAPID_KEY: "public-vapid", EXPO_PUBLIC_APP_ORIGIN: "https://restaurant.example.com", EXPO_PUBLIC_EXPECTED_APP_ORIGIN: "https://restaurant.example.com" };
+test("ISO-03 Restaurant binds exact Firebase, Supabase, and App Check identities", () => {
+  const env = { EXPO_PUBLIC_HUNGRIE_ENV: "production", EXPO_PUBLIC_FIREBASE_API_KEY: "public", EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: `${prodFirebase}.firebaseapp.com`, EXPO_PUBLIC_FIREBASE_PROJECT_ID: prodFirebase, EXPO_PUBLIC_FIREBASE_APP_ID: "app", EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "123", EXPO_PUBLIC_EXPECTED_FIREBASE_PROJECT_ID: prodFirebase, EXPO_PUBLIC_SUPABASE_URL: prodUrl, EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "public", EXPO_PUBLIC_EXPECTED_SUPABASE_PROJECT_REF: prodRef, EXPO_PUBLIC_FIREBASE_VAPID_KEY: "public-vapid", EXPO_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_ENTERPRISE_SITE_KEY: "public-site-key", EXPO_PUBLIC_APP_ORIGIN: "https://restaurant.example.com", EXPO_PUBLIC_EXPECTED_APP_ORIGIN: "https://restaurant.example.com" };
   assert.equal(resolveRestaurantEnvironment(env).supabaseProjectRef, prodRef);
   assert.throws(() => resolveRestaurantEnvironment({ ...env, EXPO_PUBLIC_EXPECTED_SUPABASE_PROJECT_REF: "tsrqponmlkjihgfedcba" }), /Supabase binding/);
+  assert.throws(() => resolveRestaurantEnvironment({ ...env, EXPO_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN: "debug" }), /debug mode/);
 });
 
-test("ISO-04 Admin Production resolves Production functions only after exact binding", () => {
-  const env = { NEXT_PUBLIC_HUNGRIE_ENV: "production", NEXT_PUBLIC_FIREBASE_API_KEY: "public", NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: `${prodFirebase}.firebaseapp.com`, NEXT_PUBLIC_FIREBASE_PROJECT_ID: prodFirebase, NEXT_PUBLIC_FIREBASE_APP_ID: "app", NEXT_PUBLIC_EXPECTED_FIREBASE_PROJECT_ID: prodFirebase, NEXT_PUBLIC_SUPABASE_URL: prodUrl, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "public", NEXT_PUBLIC_EXPECTED_SUPABASE_PROJECT_REF: prodRef };
+test("ISO-04 Admin Production resolves App Check-protected Production functions only after exact binding", () => {
+  const env = { NEXT_PUBLIC_HUNGRIE_ENV: "production", NEXT_PUBLIC_FIREBASE_API_KEY: "public", NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: `${prodFirebase}.firebaseapp.com`, NEXT_PUBLIC_FIREBASE_PROJECT_ID: prodFirebase, NEXT_PUBLIC_FIREBASE_APP_ID: "app", NEXT_PUBLIC_EXPECTED_FIREBASE_PROJECT_ID: prodFirebase, NEXT_PUBLIC_SUPABASE_URL: prodUrl, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "public", NEXT_PUBLIC_EXPECTED_SUPABASE_PROJECT_REF: prodRef, NEXT_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_ENTERPRISE_SITE_KEY: "public-site-key" };
   assert.equal(resolveAdminEnvironment(env).suffix, "Production");
   assert.throws(() => resolveAdminEnvironment({ ...env, NEXT_PUBLIC_EXPECTED_FIREBASE_PROJECT_ID: "wrong-project" }), /Firebase binding/);
+  assert.throws(() => resolveAdminEnvironment({ ...env, NEXT_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN: "debug" }), /debug mode/);
+});
+
+test("ISO-04 Admin Production CSP uses exact service origins and no development authority", () => {
+  const nonce = "a".repeat(32);
+  const policy = buildAdminContentSecurityPolicy(nonce, { NODE_ENV: "production", NEXT_PUBLIC_HUNGRIE_ENV: "production", NEXT_PUBLIC_FIREBASE_PROJECT_ID: prodFirebase, NEXT_PUBLIC_SUPABASE_URL: prodUrl });
+  assert.match(policy, new RegExp(`script-src 'self' 'nonce-${nonce}' https://www\\.google\\.com https://www\\.gstatic\\.com`));
+  assert.match(policy, new RegExp(`https://us-central1-${prodFirebase}\\.cloudfunctions\\.net`));
+  assert.match(policy, new RegExp(prodUrl.replaceAll(".", "\\.")));
+  assert.match(policy, /https:\/\/content-firebaseappcheck\.googleapis\.com/);
+  assert.doesNotMatch(policy, /'unsafe-eval'|localhost|127\.0\.0\.1|script-src[^;]*\s\*|connect-src[^;]*\s\*/);
+  assert.throws(() => buildAdminContentSecurityPolicy(nonce, { NODE_ENV: "production", NEXT_PUBLIC_HUNGRIE_ENV: "production", NEXT_PUBLIC_FIREBASE_PROJECT_ID: prodFirebase }), /Supabase URL/);
 });
 
 test("ISO-05 Functions Production identity binds Firebase service context and Supabase URL", () => {

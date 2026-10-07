@@ -6,8 +6,10 @@
     "node": "22"
   },
   "scripts": {
-    "deploy": "firebase deploy --only functions",
-    "serve": "firebase emulators:start --only functions",
+    "deploy": "node scripts/serveFunctionsEmulator.js deploy --only functions",
+    "serve": "node scripts/serveFunctionsEmulator.js emulators:start --only functions",
+    "local:secrets": "node scripts/writeLocalSecrets.js",
+    "test:local-secrets": "node --test scripts/writeLocalSecrets.test.js scripts/serveFunctionsEmulator.test.js",
     "audit:migration-baseline": "node scripts/auditFirebaseMigrationBaseline.js",
     "test:audit-migration-baseline": "node --test scripts/auditFirebaseMigrationBaseline.test.js",
     "test:supabase-auth-claims": "node --test scripts/backfillSupabaseAuthClaims.test.js",
@@ -22,7 +24,9 @@
     "test:order-migration": "node --test scripts/orderMigration.test.js",
     "test:phase4-admin": "node --test phase4AdminLogic.test.js",
     "test:phase5-restaurant": "node --test phase5RestaurantPushLogic.test.js",
-    "test:phase6-customer": "node --test phase6CustomerDeletionLogic.test.js",
+    "test:phase6-customer": "node --test accountDeletionRequest.test.js accountDeletionEnvironment.test.js phase6CustomerDeletionLogic.test.js",
+    "test:abuse-protection": "node --test abuseProtection.test.js appCheckEnforcement.test.js",
+    "test:restaurant-media": "node --test restaurantMedia.test.js restaurantMediaUpload.test.js",
     "identity:migrate": "node scripts/migrateFirebaseIdentity.js",
     "review:migrate": "node scripts/migrateFirebaseReviews.js",
     "order:migrate": "node scripts/migrateFirebaseOrders.js",
@@ -33,7 +37,12 @@
     "provision:restaurant-panel-accounts": "node scripts/provisionRestaurantPanelAccounts.js"
   },
   "dependencies": {
-    "firebase-admin": "^13.8.0",
-    "firebase-functions": "^7.2.5"
+    "firebase-admin": "14.5.0",
+    "firebase-functions": "7.4.0",
+    "sharp": "0.35.5"
+  },
+  "overrides": {
+    "@fastify/busboy": "3.2.2",
+    "protobufjs": "7.6.5"
   }
 }

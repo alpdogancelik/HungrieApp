@@ -36,4 +36,4 @@ export function buildRestaurantSettingsChanges(initial: RestaurantSettingsForm, 
   if ("minimum_order_kurus" in changes) changes.minimum_order_kurus = minimum;
   return changes;
 }
-import { formatKurusInput, parseKurus } from "./managementContract";
+import { formatKurusInput, parseKurus } from "./managementContract.ts";

@@ -2,7 +2,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@hungrie/database-types";
-import type { AccessContext, AdminRestaurantCommissionV1, RestaurantCommissionRuleV1, RestaurantFinancialWarningV1, ScheduleRestaurantCommissionResultV1 } from "@hungrie/domain";
+import type { AccessContext, AdminRestaurantCommissionV1, AdminVirtualPosFoundationV1, RestaurantCommissionRuleV1, RestaurantFinancialWarningV1, ScheduleRestaurantCommissionResultV1, ScheduleVirtualPosCommissionResultV1, VirtualPosCommissionRuleV1 } from "@hungrie/domain";
 import { supabase } from "./supabase";
 
 type Client = SupabaseClient<Database>;
@@ -109,14 +109,35 @@ const mapScheduleResult = (value: unknown, input: ScheduleInput): ScheduleRestau
   return result;
 };
 
+const virtualRule = (value: unknown): VirtualPosCommissionRuleV1 => {
+  const row = exact(object(value), ["id", "rateBps", "financialContractVersion", "providerContractVersion", "effectiveFrom", "createdAt", "reason"]);
+  return { id: uuid(row.id), rateBps: integer(row.rateBps, 0, 10_000), financialContractVersion: integer(row.financialContractVersion, 1, 1) as 1, providerContractVersion: text(row.providerContractVersion), effectiveFrom: timestamp(row.effectiveFrom), createdAt: timestamp(row.createdAt), reason: commissionReason(row.reason) };
+};
+const nullableVirtualRule = (value: unknown) => value === null ? null : virtualRule(value);
+const mapVirtualPosFoundation = (value: unknown, restaurantId: string): AdminVirtualPosFoundationV1 => {
+  const row = exact(object(value), ["restaurantId", "activationState", "customerAvailable", "providerConfigured", "currentRule", "nextScheduledRule", "history", "historyHasMore"]);
+  if (text(row.restaurantId) !== restaurantId || row.customerAvailable !== false || row.providerConfigured !== false || !Array.isArray(row.history)) malformed();
+  const history = row.history as unknown[];
+  return { restaurantId, activationState: oneOf(row.activationState, ["unconfigured", "sandbox_configured", "sandbox_qualified", "production_configured", "production_qualified", "active", "suspended"] as const), customerAvailable: false, providerConfigured: false, currentRule: nullableVirtualRule(row.currentRule), nextScheduledRule: nullableVirtualRule(row.nextScheduledRule), history: history.map(virtualRule), historyHasMore: bool(row.historyHasMore) };
+};
+const mapVirtualScheduleResult = (value: unknown, input: ScheduleVirtualPosInput): ScheduleVirtualPosCommissionResultV1 => {
+  const row = exact(object(value), ["ruleId", "restaurantId", "rateBps", "financialContractVersion", "providerContractVersion", "effectiveFrom", "reason", "operationId", "replayed"]);
+  const result = { ruleId: uuid(row.ruleId), restaurantId: text(row.restaurantId), rateBps: integer(row.rateBps, 0, 10_000), financialContractVersion: integer(row.financialContractVersion, 1, 1) as 1, providerContractVersion: text(row.providerContractVersion), effectiveFrom: timestamp(row.effectiveFrom), reason: commissionReason(row.reason), operationId: uuid(row.operationId), replayed: bool(row.replayed) };
+  if (result.restaurantId !== input.restaurantId || result.rateBps !== input.rateBps || result.effectiveFrom !== input.effectiveFrom || result.providerContractVersion !== input.providerContractVersion || result.reason !== input.reason || result.operationId !== input.operationId) malformed();
+  return result;
+};
+
 const data = async (request: PromiseLike<{ data: unknown; error: RpcError | null }>) => { const result = await request; if (result.error) throw new CommissionRepositoryError(classifyCommissionError(result.error)); return result.data; };
 export type ScheduleInput = { restaurantId: string; rateBps: number; effectiveFrom: string; reason: string; operationId: string };
+export type ScheduleVirtualPosInput = ScheduleInput & { providerContractVersion: string };
 
 export const createCommissionRepository = (client: Client = supabase) => ({
   async getRestaurant(restaurantId: string) { return mapRestaurant(await data(client.rpc("admin_get_restaurant_v1", { p_restaurant_id: restaurantId })), restaurantId); },
   async getAccessContext() { return mapAccessContext(await data(client.rpc("get_my_access_context_v1"))); },
   async getCommission(restaurantId: string) { return mapCommission(await data(client.rpc("admin_get_restaurant_commission_v1", { p_restaurant_id: restaurantId })), restaurantId); },
+  async getVirtualPosFoundation(restaurantId: string) { return mapVirtualPosFoundation(await data(client.rpc("admin_get_virtual_pos_foundation_v1", { p_restaurant_id: restaurantId })), restaurantId); },
   async schedule(input: ScheduleInput) { return mapScheduleResult(await data(client.rpc("admin_schedule_restaurant_commission_v1", { p_restaurant_id: input.restaurantId, p_rate_bps: input.rateBps, p_effective_from: input.effectiveFrom, p_reason: input.reason, p_operation_id: input.operationId })), input); },
+  async scheduleVirtualPos(input: ScheduleVirtualPosInput) { return mapVirtualScheduleResult(await data(client.rpc("admin_schedule_virtual_pos_commission_v1", { p_restaurant_id: input.restaurantId, p_rate_bps: input.rateBps, p_effective_from: input.effectiveFrom, p_provider_contract_version: input.providerContractVersion, p_reason: input.reason, p_operation_id: input.operationId })), input); },
 });
 
 export const commissionRepository = createCommissionRepository();

@@ -2,6 +2,7 @@ import Constants from "expo-constants";
 import ReactNativeAsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import { FirebaseApp, getApp, getApps, initializeApp } from "firebase/app";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import { Auth, getAuth, initializeAuth } from "firebase/auth";
 import { Functions, getFunctions } from "firebase/functions";
 import {
@@ -17,16 +18,19 @@ import {
     where,
 } from "firebase/firestore";
 import { resolveFirebaseRuntimeConfig } from "./firebaseConfig";
+import { resolveCustomerAppCheckConfig } from "./appCheckConfig";
 
 const extra: Record<string, string | undefined> = Constants.expoConfig?.extra || {};
 const env = (name: string) =>
     (typeof process !== "undefined" ? (process as any).env?.[name] : undefined) || (extra[name] as string | undefined);
 
-// Enable App Check debug token for local/dev if provided.
-const appCheckDebugToken = env("EXPO_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN");
-if (appCheckDebugToken && typeof globalThis !== "undefined") {
-    (globalThis as any).FIREBASE_APPCHECK_DEBUG_TOKEN = appCheckDebugToken;
-}
+const appEnvironment = env("EXPO_PUBLIC_APP_ENV") || "development";
+const appCheckConfig = resolveCustomerAppCheckConfig({
+    environment: appEnvironment,
+    platform: Platform.OS,
+    siteKey: env("EXPO_PUBLIC_FIREBASE_APPCHECK_RECAPTCHA_ENTERPRISE_SITE_KEY"),
+    debugToken: env("EXPO_PUBLIC_FIREBASE_APPCHECK_DEBUG_TOKEN"),
+});
 
 const defaultFirebaseConfig = {
     apiKey: "AIzaSyCOCAEeBf5IgKP50zSyqFJKBcygwXUuqUA",
@@ -67,6 +71,23 @@ if (firebaseConfigured) {
     console.info("[Firebase] Disabled via EXPO_PUBLIC_DISABLE_FIREBASE flag.");
 } else if (__DEV__) {
     console.warn("[Firebase] Missing config. Populate EXPO_PUBLIC_FIREBASE_* values in app.json.");
+}
+
+// Expo Router evaluates application modules in Node while statically rendering
+// web routes. reCAPTCHA Enterprise requires a browser document, so initialize
+// App Check only when this module is running in the generated browser bundle.
+if (firebaseApp && appCheckConfig.enabled && typeof document !== "undefined") {
+    if (appCheckConfig.debugToken && typeof globalThis !== "undefined") {
+        (globalThis as any).FIREBASE_APPCHECK_DEBUG_TOKEN = appCheckConfig.debugToken;
+    }
+    try {
+        initializeAppCheck(firebaseApp, {
+            provider: new ReCaptchaEnterpriseProvider(appCheckConfig.siteKey),
+            isTokenAutoRefreshEnabled: true,
+        });
+    } catch (error) {
+        if ((error as { code?: string })?.code !== "appCheck/already-initialized") throw error;
+    }
 }
 
 let auth: Auth | undefined;

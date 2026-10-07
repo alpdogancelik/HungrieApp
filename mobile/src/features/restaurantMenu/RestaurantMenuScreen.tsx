@@ -29,6 +29,7 @@ import { getRestaurantBundle } from "@/src/data/menuRepository";
 import { refreshRestaurantReviewSummaryV2 } from "@/src/data/reviewV2Repository";
 import { useFavoritesStore } from "@/src/data/favoritesRepository";
 import { StandaloneBottomNavigation } from "@/src/features/navigation/BottomNavigation";
+import { kurusToTry, minimumOrderKurusFromRestaurant } from "@/src/features/cartCheckout/minimumOrderModel";
 import { useMenuItemImage } from "@/src/features/restaurantMenu/hooks/useMenuItemImage";
 import { showUserMessage } from "@/src/lib/showUserMessage";
 import { useTheme } from "@/src/theme/themeContext";
@@ -248,7 +249,7 @@ const RestaurantMenuScreen = () => {
     const rating = reviewSummary?.overallRating ?? parseNumber(restaurant?.ratingAverage);
     const ratingCount = reviewSummary?.reviewCount ?? Math.max(0, Math.round(parseNumber(restaurant?.ratingCount) || 0));
     const cuisine = String(restaurant?.cuisine || (isTurkish ? "Restoran" : "Restaurant"));
-    const minimum = parseNumber(restaurant?.minimumOrderAmount ?? restaurant?.minimumOrder ?? restaurant?.minOrderAmount ?? restaurant?.minBasketAmount);
+    const minimumKurus = minimumOrderKurusFromRestaurant(restaurant);
     const promotion = getPromotionText(restaurant, locale);
     const logoSource = restaurant ? getRestaurantImageSource(restaurant.imageUrl || restaurant.image_url, undefined, `${restaurant.id || restaurantId} ${restaurant.name || ""}`) : null;
     const heroItem = useMemo(() => {
@@ -539,7 +540,7 @@ const RestaurantMenuScreen = () => {
                 </View>
                 <View onLayout={(event) => { sheetYRef.current = event.nativeEvent.layout.y; sheetMeasuredRef.current = true; updateSearchFadeThreshold(); }} style={styles.sheet}>
                     <View style={styles.identityRow}><View style={styles.logo}>{logoSource ? <Image contentFit="contain" source={logoSource} style={styles.logoImage} /> : null}</View><View style={styles.identityCopy}><Text style={styles.restaurantName}>{restaurant.name || "Restaurant"}</Text><Text style={styles.cuisine}>{cuisine}</Text><Pressable onPress={() => router.push({ pathname: "/restaurant-reviews/[id]", params: { id: restaurantId } })} style={styles.ratingRow}><Ionicons color="#FFB800" name="star" size={15} /><Text style={styles.rating}>{rating ? rating.toFixed(1) : isTurkish ? "Yeni" : "New"}</Text>{ratingCount ? <Text style={styles.ratingCount}>({ratingCount})</Text> : null}<View style={[styles.statusDot, !open && styles.statusDotClosed]} /><Text style={styles.statusText}>{open ? (isTurkish ? "Açık" : "Open") : (isTurkish ? "Kapalı" : "Closed")}</Text></Pressable></View></View>
-                    <View style={styles.metaRow}><Meta icon="time-outline" label={isTurkish ? "Teslimat süresi" : "Delivery time"} styles={styles} value={getEta(restaurant, isTurkish)} /><View style={styles.metaDivider} /><Meta icon="bicycle-outline" label={isTurkish ? "Minimum tutar" : "Minimum order"} styles={styles} value={minimum !== null ? formatTry(minimum, locale) : "—"} /><View style={styles.metaDivider} /><Pressable onPress={() => router.push({ pathname: "/restaurant-reviews/[id]", params: { id: restaurantId } })} style={styles.metaItem}><Ionicons color={ORANGE} name="chatbubble-ellipses-outline" size={18} /><Text numberOfLines={1} style={styles.metaValue}>{ratingCount || "—"}</Text><Text numberOfLines={1} style={styles.metaLabel}>{isTurkish ? "Yorumlar" : "Reviews"}</Text></Pressable></View>
+                    <View style={styles.metaRow}><Meta icon="time-outline" label={isTurkish ? "Teslimat süresi" : "Delivery time"} styles={styles} value={getEta(restaurant, isTurkish)} /><View style={styles.metaDivider} /><Meta icon="bicycle-outline" label={isTurkish ? "Minimum tutar" : "Minimum order"} styles={styles} value={minimumKurus !== null ? formatTry(kurusToTry(minimumKurus), locale) : "—"} /><View style={styles.metaDivider} /><Pressable onPress={() => router.push({ pathname: "/restaurant-reviews/[id]", params: { id: restaurantId } })} style={styles.metaItem}><Ionicons color={ORANGE} name="chatbubble-ellipses-outline" size={18} /><Text numberOfLines={1} style={styles.metaValue}>{ratingCount || "—"}</Text><Text numberOfLines={1} style={styles.metaLabel}>{isTurkish ? "Yorumlar" : "Reviews"}</Text></Pressable></View>
                     <View style={styles.courierStrip}><Ionicons color="#147A48" name="bicycle" size={19} /><Text style={styles.courierText}>{isTurkish ? "Hungrie kuryesiyle teslimat" : "Delivered by a Hungrie courier"}</Text><Ionicons color="#147A48" name="checkmark-circle" size={18} /></View>
                     {promotion ? <View style={styles.promoStrip}><Ionicons color={ORANGE} name="pricetag" size={17} /><Text style={styles.promoText}>{promotion}</Text></View> : null}
                     <View

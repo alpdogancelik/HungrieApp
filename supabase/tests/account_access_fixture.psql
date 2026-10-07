@@ -1,0 +1,14 @@
+-- Canonical active authority for legacy SQL suites that predate account_access.
+-- Kept as .psql so `supabase test db` does not discover it as a TAP suite.
+insert into private.account_access (
+  profile_id, account_type, status, activated_at,
+  restaurant_id, restaurant_role, admin_role, admin_mfa_enrolled_at
+) values
+  ('fixture_customer', 'customer', 'active', statement_timestamp(), null, null, null, null),
+  ('fixture_owner', 'restaurant', 'active', statement_timestamp(), 'fixture_restaurant_a', 'owner', null, null),
+  ('fixture_manager', 'restaurant', 'active', statement_timestamp(), 'fixture_restaurant_a', 'manager', null, null),
+  ('fixture_outsider', 'customer', 'active', statement_timestamp(), null, null, null, null),
+  ('fixture_courier', 'customer', 'active', statement_timestamp(), null, null, null, null),
+  ('fixture_unscoped_courier', 'customer', 'active', statement_timestamp(), null, null, null, null),
+  ('fixture_admin', 'admin', 'active', statement_timestamp(), null, null, 'admin', statement_timestamp()),
+  ('fixture_super_admin', 'admin', 'active', statement_timestamp(), null, null, 'super_admin', statement_timestamp());

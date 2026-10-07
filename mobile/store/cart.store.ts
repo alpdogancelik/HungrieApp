@@ -2,9 +2,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Alert, AppState, Platform } from "react-native";
 import { create } from "zustand";
-import { persist, type PersistStorage, type StorageValue } from "zustand/middleware";
 import type { CartCustomization, CartItemType } from "@/src/domain/types";
 import useAuthStore from "@/store/auth.store";
+import { auth } from "@/lib/firebase";
 import i18n from "@/src/lib/i18n";
 import {
     changeCartLineQuantity,
@@ -15,6 +15,7 @@ import {
     summarizeCartLines,
     type CartLineItem,
 } from "@/store/cartModel";
+import { createCartHydrationGuard, encodeOwnedCart } from "@/store/cartIdentity";
 
 export const normalizeCartRestaurantKey = (value?: string | null) => {
     if (!value) return null;
@@ -47,37 +48,37 @@ const inferCartRestaurant = (items: CartLineItem[]) => {
     return null;
 };
 
-// Coalesce rapid taps into one persisted write. Backgrounding always flushes.
-type PersistedCart = { items: CartLineItem[] };
-const pendingWrites = new Map<string, StorageValue<PersistedCart>>();
+// Coalesce rapid taps into one persisted write. Storage operations are serialized
+// so an older account's delayed write cannot land after a new identity binds.
+const CART_STORAGE_KEY = "hungrie-cart";
+let pendingWrite: string | null = null;
 let persistenceTimer: ReturnType<typeof setTimeout> | null = null;
+let storageOperations = Promise.resolve();
+const serializeStorage = <T>(operation: () => Promise<T>) => {
+    const result = storageOperations.then(operation, operation);
+    storageOperations = result.then(() => undefined, () => undefined);
+    return result;
+};
 const flushCartPersistence = async () => {
     if (persistenceTimer) clearTimeout(persistenceTimer);
     persistenceTimer = null;
-    const writes = [...pendingWrites.entries()];
-    writes.forEach(([key]) => pendingWrites.delete(key));
-    await Promise.all(writes.map(([key, value]) => AsyncStorage.setItem(key, JSON.stringify(value))));
+    const value = pendingWrite;
+    pendingWrite = null;
+    if (value !== null) await serializeStorage(() => AsyncStorage.setItem(CART_STORAGE_KEY, value));
 };
-const cartStorage: PersistStorage<PersistedCart> = {
-    getItem: async (name) => {
-        const pending = pendingWrites.get(name);
-        if (pending) return pending;
-        const stored = await AsyncStorage.getItem(name);
-        return stored ? JSON.parse(stored) as StorageValue<PersistedCart> : null;
-    },
-    setItem: (name, value) => {
-        pendingWrites.set(name, value);
-        if (persistenceTimer) clearTimeout(persistenceTimer);
-        persistenceTimer = setTimeout(() => void flushCartPersistence().catch(() => undefined), 120);
-    },
-    removeItem: async (name) => {
-        pendingWrites.delete(name);
-        await AsyncStorage.removeItem(name);
-    },
+const queueCartPersistence = (ownerUid: string, items: CartLineItem[]) => {
+    pendingWrite = JSON.stringify(encodeOwnedCart(ownerUid, items));
+    if (persistenceTimer) clearTimeout(persistenceTimer);
+    persistenceTimer = setTimeout(() => void flushCartPersistence().catch(() => undefined), 120);
+};
+const discardPendingCartWrite = () => {
+    if (persistenceTimer) clearTimeout(persistenceTimer);
+    persistenceTimer = null;
+    pendingWrite = null;
 };
 if (Platform.OS !== "web") {
     AppState.addEventListener("change", (state) => {
-        if (state !== "active" && pendingWrites.size > 0) void flushCartPersistence().catch(() => undefined);
+        if (state !== "active" && pendingWrite !== null) void flushCartPersistence().catch(() => undefined);
     });
 }
 
@@ -86,6 +87,8 @@ export interface CartStore {
     totalItems: number;
     totalPrice: number;
     restaurantId: string | null;
+    ownerUid: string | null;
+    identityReady: boolean;
     addItem: (item: Omit<CartItemType, "quantity">) => void;
     addItems: (items: CartItemType[], options?: { replaceExisting?: boolean }) => boolean;
     setItemQuantity: (item: Omit<CartItemType, "quantity">, quantity: number) => void;
@@ -106,7 +109,9 @@ export const subscribeCartLock = (listener: CartLockListener) => {
 const notifyLock = (message: string) => lockListeners.forEach((listener) => listener(message));
 
 const requireSignedIn = () => {
-    if (useAuthStore.getState().isAuthenticated) return true;
+    const cart = useCartStore.getState();
+    const uid = auth?.currentUser?.uid || "";
+    if (useAuthStore.getState().isAuthenticated && cart.identityReady && cart.ownerUid === uid) return true;
     const isTurkish = i18n.language?.toLowerCase().startsWith("tr");
     Alert.alert(
         isTurkish ? "Giriş gerekli" : "Sign in required",
@@ -117,9 +122,31 @@ const requireSignedIn = () => {
     return false;
 };
 
+const emptyCart = { items: [] as CartLineItem[], totalItems: 0, totalPrice: 0, restaurantId: null };
+
+const normalizePersistedCartLines = (rawItems: CartLineItem[]) => {
+    if (rawItems.some((item) => !item || typeof item !== "object")) return [];
+    try {
+        return normalizeCartLines(rawItems);
+    } catch {
+        return [];
+    }
+};
+
 export const useCartStore = create<CartStore>()(
-    persist(
         (set, get) => {
+            const commit = (next: Pick<CartStore, "items" | "totalItems" | "totalPrice" | "restaurantId">) => {
+                const state = get();
+                const currentUid = auth?.currentUser?.uid || "";
+                if (
+                    !useAuthStore.getState().isAuthenticated ||
+                    !state.identityReady ||
+                    !state.ownerUid ||
+                    state.ownerUid !== currentUid
+                ) return;
+                set(next);
+                queueCartPersistence(state.ownerUid, next.items);
+            };
             const setQuantity = (item: Omit<CartItemType, "quantity">, quantity: number) => {
                 if (!requireSignedIn()) return;
                 const state = get();
@@ -143,7 +170,7 @@ export const useCartStore = create<CartStore>()(
                     : state.items;
                 const mutation = setCartLineQuantity(baseItems, { ...item, restaurantId: effectiveRestaurant }, quantity);
                 if (!mutation.changed && !needsBackfill) return;
-                set({
+                commit({
                     items: mutation.items,
                     totalItems: Math.max(0, state.totalItems + mutation.itemCountDelta),
                     totalPrice: Math.max(0, state.totalPrice + mutation.priceDelta),
@@ -157,7 +184,7 @@ export const useCartStore = create<CartStore>()(
                 const state = get();
                 const mutation = mutate(state.items);
                 if (!mutation.changed) return;
-                set({
+                commit({
                     items: mutation.items,
                     totalItems: Math.max(0, state.totalItems + mutation.itemCountDelta),
                     totalPrice: Math.max(0, state.totalPrice + mutation.priceDelta),
@@ -166,7 +193,7 @@ export const useCartStore = create<CartStore>()(
             };
 
             return {
-                items: [], totalItems: 0, totalPrice: 0, restaurantId: null,
+                ...emptyCart, ownerUid: null, identityReady: false,
                 addItem: (item) => {
                     const lineKey = createCartLineKey(String(item.id), item.customizations ?? []);
                     const current = get().items.find((entry) => entry.lineKey === lineKey);
@@ -198,7 +225,7 @@ export const useCartStore = create<CartStore>()(
                         nextItems = setCartLineQuantity(nextItems, normalizedItem, existingQuantity + item.quantity).items;
                     }
 
-                    set({
+                    commit({
                         items: nextItems,
                         ...summarizeCartLines(nextItems),
                         restaurantId: incomingRestaurant,
@@ -212,20 +239,51 @@ export const useCartStore = create<CartStore>()(
                     applyExistingMutation((items) => changeCartLineQuantity(items, id, customizations, 1)),
                 decreaseQty: (id, customizations = []) =>
                     applyExistingMutation((items) => changeCartLineQuantity(items, id, customizations, -1)),
-                clearCart: () => set({ items: [], totalItems: 0, totalPrice: 0, restaurantId: null }),
+                clearCart: () => commit(emptyCart),
                 getTotalItems: () => get().totalItems,
                 getTotalPrice: () => get().totalPrice,
             };
         },
-        {
-            name: "hungrie-cart",
-            storage: cartStorage,
-            partialize: (state) => ({ items: state.items }),
-            merge: (persisted, current) => {
-                const candidate = persisted as Partial<CartStore> | undefined;
-                const items = normalizeCartLines(Array.isArray(candidate?.items) ? candidate.items : []);
-                return { ...current, items, ...summarizeCartLines(items), restaurantId: inferCartRestaurant(items) };
-            },
-        },
-    ),
 );
+
+const cartHydration = createCartHydrationGuard<CartLineItem>({
+    read: async () => {
+        await storageOperations;
+        return AsyncStorage.getItem(CART_STORAGE_KEY);
+    },
+    remove: async () => {
+        discardPendingCartWrite();
+        await serializeStorage(() => AsyncStorage.removeItem(CART_STORAGE_KEY));
+    },
+    lock: () => useCartStore.setState({ ...emptyCart, ownerUid: null, identityReady: false }),
+    commit: ({ ownerUid, items: rawItems }) => {
+        if (ownerUid && (
+            !useAuthStore.getState().isAuthenticated ||
+            auth?.currentUser?.uid !== ownerUid
+        )) return;
+        const items = normalizePersistedCartLines(rawItems);
+        useCartStore.setState({
+            items,
+            ...summarizeCartLines(items),
+            restaurantId: inferCartRestaurant(items),
+            ownerUid,
+            identityReady: true,
+        });
+    },
+});
+
+export const invalidateCartIdentity = () => {
+    discardPendingCartWrite();
+    cartHydration.invalidate();
+};
+
+export const bindCartToIdentity = async (uid: string | null) => {
+    discardPendingCartWrite();
+    await cartHydration.bind(uid);
+};
+
+export const destroyCartForSessionBoundary = async () => {
+    // bind(null) locks memory synchronously before attempting local storage I/O.
+    // Even a storage failure therefore cannot expose the previous cart in UI.
+    await bindCartToIdentity(null);
+};

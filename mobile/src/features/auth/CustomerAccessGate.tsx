@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { AppState, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { signOut as firebaseSignOut } from "firebase/auth";
 import { useTranslation } from "react-i18next";
 import { auth } from "@/lib/firebase";
+import { terminateCustomerSession } from "@/src/data/authRepository";
 import useAuthStore from "@/store/auth.store";
 import { getCurrentUser } from "@/src/data/profileRepository";
 import { resolveCustomerAccess, type CustomerAccessOutcome } from "./customerAccess";
@@ -36,7 +36,7 @@ const CustomerAccessGate = ({ onReadyChange }: { onReadyChange?: (ready: boolean
                 }).catch(() => null);
             }
             if (next.state === "wrong_portal" || next.state === "revoked") {
-                if (auth) await firebaseSignOut(auth).catch(() => null);
+                await terminateCustomerSession();
                 resetAuthState();
             }
             setOutcome(next);
@@ -88,10 +88,15 @@ const CustomerAccessGate = ({ onReadyChange }: { onReadyChange?: (ready: boolean
     const canRecoverBySigningOut = isAuthenticated && (canRetry || suspended || outcome?.state === "session_error");
     const recoverBySigningOut = async () => {
         setSigningOut(true);
-        if (auth) await firebaseSignOut(auth).catch(() => null);
-        resetAuthState();
-        setOutcome(null);
-        setSigningOut(false);
+        try {
+            await terminateCustomerSession();
+            resetAuthState();
+            setOutcome(null);
+        } catch {
+            setOutcome({ state: "unavailable", referenceId: "customer-signout-failed" });
+        } finally {
+            setSigningOut(false);
+        }
     };
     return <SafeAreaView style={styles.overlay}><View style={styles.card} accessibilityRole="alert"><Text style={styles.title}>{title}</Text><Text style={styles.body}>{body}</Text>{portalUrl ? <Pressable style={styles.button} onPress={() => void Linking.openURL(portalUrl)}><Text style={styles.buttonText}>{tr ? "Doğru portalı aç" : "Open correct portal"}</Text></Pressable> : suspended ? <Pressable style={styles.button} onPress={() => void Linking.openURL("https://hungrie.app/support")}><Text style={styles.buttonText}>{tr ? "Destek" : "Support"}</Text></Pressable> : canRetry ? <Pressable disabled={checking || signingOut} style={styles.button} onPress={() => void check()}><Text style={styles.buttonText}>{checking ? (tr ? "Kontrol ediliyor…" : "Checking…") : (tr ? "Tekrar dene" : "Try again")}</Text></Pressable> : null}{canRecoverBySigningOut ? <Pressable disabled={signingOut} style={styles.secondaryButton} onPress={() => void recoverBySigningOut()}><Text style={styles.secondaryButtonText}>{signingOut ? (tr ? "Çıkış yapılıyor…" : "Signing out…") : suspended ? (tr ? "Çıkış yap" : "Sign out") : (tr ? "Başka hesapla giriş yap" : "Sign in with another account")}</Text></Pressable> : !isAuthenticated && (wrong || outcome?.state === "revoked") ? <Pressable style={styles.secondaryButton} onPress={() => setOutcome(null)}><Text style={styles.secondaryButtonText}>{tr ? "Başka hesapla giriş yap" : "Sign in with another account"}</Text></Pressable> : null}</View></SafeAreaView>;
 };

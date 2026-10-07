@@ -49,7 +49,7 @@ test("Security reuses the shared push-clean sign-out and sanitizes reset outcome
 
 test("Earnings remains owner-only and server-authoritative",()=>{
   const page=readFileSync(new URL("../apps/restaurant/src/EarningsPage.tsx",import.meta.url),"utf8"),repo=readFileSync(new URL("../apps/restaurant/src/earningsRepository.ts",import.meta.url),"utf8");
-  assert.match(page,/isActiveRestaurantOwner/);assert.match(page,/validateEarningsBundle/);assert.match(page,/EarningsPageStack/);assert.match(page,/reportingTimezone/);assert.match(page,/not payouts, transfers, settlements/);assert.match(page,/No Customer details/);assert.doesNotMatch(page,/orderRepository|listOrders|calculateCommission/);assert.match(repo,/restaurant_get_earnings_summary_v1/);assert.match(repo,/restaurant_get_earnings_series_v1/);assert.match(repo,/restaurant_get_earnings_orders_page_v1/);
+  assert.match(page,/isActiveRestaurantOwner/);assert.match(page,/validateEarningsBundle/);assert.match(page,/EarningsPageStack/);assert.match(page,/reportingTimezone/);assert.match(page,/not payouts, transfers, settlements/);assert.match(page,/No Customer details/);assert.doesNotMatch(page,/orderRepository|listOrders|calculateCommission/);assert.match(repo,/restaurant_get_earnings_summary_v2/);assert.match(repo,/restaurant_get_earnings_series_v2/);assert.match(repo,/restaurant_get_earnings_orders_page_v2/);assert.doesNotMatch(repo,/restaurant_get_earnings_(?:summary|series|orders_page)_v1/);
 });
 
 test("Phase 4 creates no second private Restaurant realtime subscription",()=>{

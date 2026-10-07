@@ -1,5 +1,7 @@
 begin;
 
+\ir account_access_fixture.psql
+
 select plan(16);
 
 select ok(

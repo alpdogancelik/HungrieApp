@@ -1,5 +1,7 @@
 begin;
 
+\ir account_access_fixture.psql
+
 select plan(30);
 
 select has_table('migration', 'product_reviews_stage', 'product review staging exists');

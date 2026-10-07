@@ -13,21 +13,22 @@ import { getRestaurant } from "@/src/data/restaurantRepository";
 import type { Address, PaymentMethod } from "@/src/domain/types";
 import { addressStore, useAddresses } from "@/src/features/address/addressFeature";
 import { showUserMessage } from "@/src/lib/showUserMessage";
+import { captureOperationalError } from "@/src/lib/operationalTelemetry";
 import { useTheme } from "@/src/theme/themeContext";
 import useAuthStore from "@/store/auth.store";
 import { useCartStore } from "@/store/cart.store";
 import { clearCheckoutOperation, discardCheckoutOperationAfterCartChange, resolveCheckoutOperation } from "./checkoutOperation";
-import { classifyCheckoutQuoteFailure, type CheckoutQuoteFailure } from "./checkoutQuoteFailure";
+import { classifyCheckoutQuoteFailure, getMinimumOrderFailureDetails, type CheckoutQuoteFailure, type MinimumOrderFailureDetails } from "./checkoutQuoteFailure";
 import {
     FOOTER_CONTENT_HEIGHT,
     isRestaurantOpenForOrdering,
     MAX_NOTES,
-    MINIMUM_ORDER_TOTAL,
     ORANGE,
     resolveCartRestaurantId,
     restaurantEta,
     stringifyId,
 } from "./cartCheckoutModel";
+import { getMinimumOrderState, kurusToTry } from "./minimumOrderModel";
 
 const CheckoutScreen = () => {
     const router = useRouter();
@@ -55,6 +56,7 @@ const CheckoutScreen = () => {
     const [serverQuote, setServerQuote] = useState<any>(null);
     const [quoteLoading, setQuoteLoading] = useState(false);
     const [quoteError, setQuoteError] = useState<CheckoutQuoteFailure | null>(null);
+    const [minimumOrderFailure, setMinimumOrderFailure] = useState<MinimumOrderFailureDetails | null>(null);
     const [quoteAttempt, setQuoteAttempt] = useState(0);
     const scrollRef = useRef<ScrollView>(null);
     const deliveryFee = serverQuote ? Number(serverQuote.delivery_fee_kurus||0)/100 : 0;
@@ -62,7 +64,15 @@ const CheckoutScreen = () => {
     const discount = serverQuote ? Number(serverQuote.discount_kurus||0)/100 : 0;
     const quotedSubtotal=serverQuote?Number(serverQuote.subtotal_kurus||0)/100:subtotal;
     const total = serverQuote?Number(serverQuote.total_kurus||0)/100:Math.max(0, subtotal + deliveryFee + serviceFee - discount);
-    const belowMinimum = subtotal < MINIMUM_ORDER_TOTAL;
+    const minimumOrder = minimumOrderFailure
+        ? {
+            status: "below" as const,
+            minimumKurus: minimumOrderFailure.minimumOrderKurus,
+            subtotalKurus: minimumOrderFailure.qualifyingSubtotalKurus,
+            remainingKurus: Math.max(0, minimumOrderFailure.minimumOrderKurus - minimumOrderFailure.qualifyingSubtotalKurus),
+        }
+        : getMinimumOrderState(serverQuote || restaurant, serverQuote ? quotedSubtotal : subtotal);
+    const belowMinimum = minimumOrder.status === "below";
 
     useEffect(() => {
         if (!restaurantId) {
@@ -81,16 +91,21 @@ const CheckoutScreen = () => {
         if (!isAuthenticated || !restaurantId || !items.length) {
             setServerQuote(null);
             setQuoteError(null);
+            setMinimumOrderFailure(null);
             setQuoteLoading(false);
             return;
         }
         setServerQuote(null);
         setQuoteError(null);
+        setMinimumOrderFailure(null);
         setQuoteLoading(true);
         void quoteOrder(restaurantId, items).then((quote: any) => {
             if (active) setServerQuote(quote);
         }).catch((error) => {
-            if (active) setQuoteError(classifyCheckoutQuoteFailure(error));
+            if (active) {
+                setMinimumOrderFailure(getMinimumOrderFailureDetails(error));
+                setQuoteError(classifyCheckoutQuoteFailure(error));
+            }
         }).finally(() => {
             if (active) setQuoteLoading(false);
         });
@@ -171,6 +186,7 @@ const CheckoutScreen = () => {
             return;
         }
         const pendingEta = 120;
+        let operationId: string | null = null;
         try {
             setPlacingOrder(true);
             const currentRestaurant = await getRestaurant(resolvedRestaurantId);
@@ -189,7 +205,7 @@ const CheckoutScreen = () => {
                     customizationIds: (item.customizations || []).map((entry) => `${entry.type || "option"}:${entry.id}`).sort(),
                 })),
             });
-            const operationId = await resolveCheckoutOperation(operationScope, requestSignature, cartSignature);
+            operationId = await resolveCheckoutOperation(operationScope, requestSignature, cartSignature);
             const orderId = await placeOrder({
                 userId: user?.id ?? user?.$id ?? user?.accountId ?? "guest",
                 restaurantId: resolvedRestaurantId,
@@ -212,8 +228,24 @@ const CheckoutScreen = () => {
             clearCart();
             await clearCheckoutOperation(operationScope, operationId);
             router.replace({ pathname: "/order/pending", params: { orderId, restaurantName, eta: String(pendingEta) } });
-        } catch {
-            Alert.alert(t("cart.screen.alerts.placeErrorTitle"), t("cart.screen.alerts.placeErrorBody"));
+        } catch (error) {
+            const failure = classifyCheckoutQuoteFailure(error);
+            const minimumFailure = getMinimumOrderFailureDetails(error);
+            captureOperationalError("order.create.unexpected_failure", error, {
+                component: "customer-checkout",
+                operationId,
+            });
+            if (failure === "minimum_order_not_met") {
+                setServerQuote(null);
+                setQuoteError(failure);
+                setMinimumOrderFailure(minimumFailure);
+                Alert.alert(
+                    copy("Minimum order changed", "Minimum sipariş tutarı değişti"),
+                    copy("The restaurant's current minimum is not met. Review your cart and retry the server quote.", "Restoranın güncel minimum sipariş tutarı karşılanmıyor. Sepetinizi kontrol edip sunucu teklifini yeniden deneyin."),
+                );
+            } else {
+                Alert.alert(t("cart.screen.alerts.placeErrorTitle"), t("cart.screen.alerts.placeErrorBody"));
+            }
         } finally {
             setPlacingOrder(false);
         }
@@ -273,9 +305,9 @@ const CheckoutScreen = () => {
                     <View style={styles.noteHeader}><Text style={styles.noteTitle}>{copy("Note to restaurant", "Restorana not")}</Text><Text style={styles.optional}>{copy("Optional", "İsteğe bağlı")}</Text></View>
                     <View style={styles.noteShell}><TextInput maxLength={MAX_NOTES} multiline onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 120)} onChangeText={(value) => setNotes(value.slice(0, MAX_NOTES))} placeholder={copy("Door code, dorm details, special requests...", "Kapı kodu, yurt detayları, özel istekler...")} placeholderTextColor={styles.tertiary.color} style={styles.noteInput} textAlignVertical="top" value={notes} /><Text style={styles.counter}>{notes.length}/{MAX_NOTES}</Text></View>
 
-                    {belowMinimum ? <View style={styles.minimumWarning}><Ionicons color="#F79009" name="warning-outline" size={18} /><Text style={styles.minimumText}>{copy(`Add ${formatCurrency(MINIMUM_ORDER_TOTAL - subtotal)} more to meet the minimum order.`, `Minimum sipariş tutarına ulaşmak için ${formatCurrency(MINIMUM_ORDER_TOTAL - subtotal)} daha ekleyin.`)}</Text></View> : null}
+                    {belowMinimum ? <View style={styles.minimumWarning}><Ionicons color="#F79009" name="warning-outline" size={18} /><Text style={styles.minimumText}>{copy(`Add ${formatCurrency(kurusToTry(minimumOrder.remainingKurus))} more to meet the ${formatCurrency(kurusToTry(minimumOrder.minimumKurus))} minimum order.`, `${formatCurrency(kurusToTry(minimumOrder.minimumKurus))} minimum sipariş tutarına ulaşmak için ${formatCurrency(kurusToTry(minimumOrder.remainingKurus))} daha ekleyin.`)}</Text></View> : null}
                     {quoteLoading ? <View style={styles.quoteState}><ActivityIndicator color={ORANGE} size="small" /><Text style={styles.quoteStateText}>{copy("Verifying the current server price…", "Güncel sunucu fiyatı doğrulanıyor…")}</Text></View> : null}
-                    {quoteError ? <View style={styles.quoteState}><Ionicons color="#D92D20" name={quoteError === "restaurant_closed" ? "storefront-outline" : quoteError === "customer_access_denied" ? "lock-closed-outline" : "cloud-offline-outline"} size={18} /><Text style={styles.quoteStateText}>{quoteError === "restaurant_closed" ? copy("This restaurant is not accepting orders right now.", "Bu restoran şu anda sipariş almıyor.") : quoteError === "customer_access_denied" ? copy("Your Customer access has changed. Return to the app or sign in again.", "Müşteri erişiminiz değişti. Uygulamaya dönün veya tekrar giriş yapın.") : quoteError === "invalid_menu" ? copy("The current menu configuration could not be verified.", "Güncel menü yapılandırması doğrulanamadı.") : copy("The current server price could not be reached.", "Güncel sunucu fiyatına ulaşılamadı.")}</Text>{quoteError !== "customer_access_denied" ? <Pressable accessibilityRole="button" onPress={() => setQuoteAttempt((value) => value + 1)}><Text style={styles.quoteRetry}>{copy("Retry", "Tekrar dene")}</Text></Pressable> : null}</View> : null}
+                    {quoteError ? <View style={styles.quoteState}><Ionicons color="#D92D20" name={quoteError === "restaurant_closed" ? "storefront-outline" : quoteError === "customer_access_denied" ? "lock-closed-outline" : quoteError === "minimum_order_not_met" ? "warning-outline" : "cloud-offline-outline"} size={18} /><Text style={styles.quoteStateText}>{quoteError === "restaurant_closed" ? copy("This restaurant is not accepting orders right now.", "Bu restoran şu anda sipariş almıyor.") : quoteError === "customer_access_denied" ? copy("Your Customer access has changed. Return to the app or sign in again.", "Müşteri erişiminiz değişti. Uygulamaya dönün veya tekrar giriş yapın.") : quoteError === "minimum_order_not_met" ? copy("The restaurant's current minimum order has not been met.", "Restoranın güncel minimum sipariş tutarı karşılanmadı.") : quoteError === "invalid_menu" ? copy("The current menu configuration could not be verified.", "Güncel menü yapılandırması doğrulanamadı.") : copy("The current server price could not be reached.", "Güncel sunucu fiyatına ulaşılamadı.")}</Text>{quoteError !== "customer_access_denied" ? <Pressable accessibilityRole="button" onPress={() => setQuoteAttempt((value) => value + 1)}><Text style={styles.quoteRetry}>{copy("Retry", "Tekrar dene")}</Text></Pressable> : null}</View> : null}
                 </ScrollView>
                 <TransactionFooter amount={formatCurrency(total)} ctaLabel={copy("Complete order", "Siparişi Tamamla")} disabled={!canSubmit} loading={placingOrder} onPress={() => void placeCheckoutOrder()} processingLabel={copy("Processing...", "İşleniyor...")} safeBottom={insets.bottom} styles={styles} totalLabel={copy("Total", "Toplam")} />
             </KeyboardAvoidingView>

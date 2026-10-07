@@ -8,6 +8,7 @@ import { doc, getDoc } from "firebase/firestore";
 
 import { auth, firestore } from "@/lib/firebase";
 import { unregisterPushToken } from "@/src/data/notificationRepository";
+import { runLogoutBoundary } from "@/src/features/auth/logoutBoundary";
 import type { RestaurantSession } from "@/src/data/contracts";
 
 type StaffProfile = {
@@ -60,10 +61,15 @@ export const signInRestaurant = async (email: string, password: string): Promise
 
 export const signOutRestaurant = async () => {
     ensureFirebase();
-    // Keep the authenticated session until token ownership has been revoked.
-    // This mirrors the unified account logout contract used by the app shell.
-    await unregisterPushToken();
-    await signOut(auth!);
+    await runLogoutBoundary({
+        attemptPushCleanup: unregisterPushToken,
+        terminateFirebaseSession: () => signOut(auth!),
+        protectLocalState: async () => undefined,
+        reportPushCleanupFailure: (category) => console.warn(
+            "[restaurant-auth] Push-token cleanup failed; continuing logout.",
+            { operation: "push_unregister", result: "failure", category },
+        ),
+    });
 };
 
 export const listenRestaurantSession = (cb: (session: RestaurantSession | null) => void) => {

@@ -1,5 +1,7 @@
 begin;
 
+\ir account_access_fixture.psql
+
 select plan(50);
 
 update public.menu_items set customizations =
@@ -93,9 +95,9 @@ select set_config('request.jwt.claims', '{"role":"authenticated","iss":"https://
 select throws_ok($$select public.claim_delivery('m3_claim_order')$$, '42501', null, 'unscoped courier cannot claim delivery');
 
 select set_config('request.jwt.claims', '{"role":"authenticated","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_courier"}', true);
-select is(public.claim_delivery('m3_claim_order'), 'm3_claim_order', 'scoped courier claims ready order');
-select throws_ok($$select public.claim_delivery('m3_claim_order')$$, '42501', null, 'an order cannot be claimed twice');
-select lives_ok($$select public.transition_order('m3_claim_order', 'delivered')$$, 'assigned courier can deliver claimed order');
+select throws_ok($$select public.claim_delivery('m3_claim_order')$$, '42501', null, 'legacy scoped courier cannot claim without canonical authority');
+select throws_ok($$select public.claim_delivery('m3_claim_order')$$, '42501', null, 'repeated legacy courier claim remains denied');
+select throws_ok($$select public.transition_order('m3_claim_order', 'delivered')$$, '42501', null, 'legacy courier cannot transition an unclaimed order');
 select throws_ok($$select public.claim_delivery('m3_other_claim')$$, '42501', null, 'courier cannot claim another restaurant order');
 
 select set_config('request.jwt.claims', '{"role":"authenticated","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_customer"}', true);
@@ -118,13 +120,13 @@ select throws_ok($$select public.set_restaurant_member('fixture_restaurant_a', '
 select lives_ok($$select public.set_restaurant_courier('fixture_restaurant_a', 'fixture_unscoped_courier', true)$$, 'owner can scope an existing platform courier');
 select throws_ok($$select public.set_restaurant_courier('fixture_restaurant_a', 'fixture_outsider', true)$$, '22023', null, 'owner cannot scope a non-courier');
 
-select set_config('request.jwt.claims', '{"role":"authenticated","platform_role":"super_admin","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_super_admin"}', true);
+select set_config('request.jwt.claims', '{"role":"authenticated","platform_role":"super_admin","email_verified":true,"firebase":{"sign_in_second_factor":"totp"},"iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_super_admin"}', true);
 select lives_ok($$select public.set_platform_role('fixture_outsider', 'admin', true)$$, 'super-admin can grant platform role');
 select lives_ok($$select public.set_restaurant_member('fixture_restaurant_a', 'fixture_outsider', null)$$, 'super-admin clears the prior membership before ownership transfer');
 select lives_ok($$select public.set_restaurant_member('fixture_restaurant_b', 'fixture_outsider', 'owner')$$, 'super-admin can grant restaurant ownership');
 select throws_ok($$select public.set_platform_role('fixture_super_admin', 'super_admin', false)$$, '22023', null, 'last super-admin cannot remove itself');
 
-select set_config('request.jwt.claims', '{"role":"authenticated","platform_role":"admin","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_admin"}', true);
+select set_config('request.jwt.claims', '{"role":"authenticated","platform_role":"admin","email_verified":true,"firebase":{"sign_in_second_factor":"totp"},"iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_admin"}', true);
 select lives_ok($$select public.transition_order('m3_admin_cancel', 'canceled', 'Synthetic support cancellation')$$, 'admin can cancel after courier pickup');
 select throws_ok($$select public.set_platform_role('fixture_outsider', 'admin', false)$$, '42501', null, 'admin cannot manage platform roles');
 
@@ -137,7 +139,7 @@ select throws_ok($$select public.upsert_category('fixture_restaurant_b', 'bad_ca
 
 reset role;
 select ok((select count(*) >= 12 from private.audit_log where created_at >= current_date), 'privileged operations append audit records');
-select ok((select count(*) >= 4 from private.order_status_history where order_id in ('m3_flow_order','m3_claim_order')), 'workflow operations append status history');
+select ok((select count(*) >= 3 from private.order_status_history where order_id in ('m3_flow_order','m3_claim_order')), 'authorized workflow operations append status history');
 
 select * from finish();
 rollback;

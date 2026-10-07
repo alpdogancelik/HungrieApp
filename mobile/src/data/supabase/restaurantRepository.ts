@@ -13,9 +13,13 @@ import { getRestaurantReviewSummaryV2 } from "./reviewV2Repository";
 const ACTIVE_RESTAURANT_COLUMNS = [
     "id", "name", "description", "cuisine", "image_url", "delivery_eta_min_minutes",
     "delivery_eta_max_minutes", "delivery_fee_kurus", "minimum_order_kurus", "opening_hours",
-    "preferred_language", "created_at", "updated_at",
+    "preferred_language", "accepting_orders", "created_at", "updated_at",
     "sort_order",
 ].join(",");
+const LEGACY_ACTIVE_RESTAURANT_COLUMNS = ACTIVE_RESTAURANT_COLUMNS
+    .split(",")
+    .filter((column) => column !== "accepting_orders")
+    .join(",");
 const RESTAURANT_ORDER_COLUMNS = [
     "id", "restaurant_id", "status", "payment_method", "subtotal_kurus", "delivery_fee_kurus",
     "service_fee_kurus", "discount_kurus", "tip_kurus", "total_kurus", "eta_minutes",
@@ -23,6 +27,10 @@ const RESTAURANT_ORDER_COLUMNS = [
     "out_for_delivery_at", "delivered_at", "canceled_at", "created_at", "updated_at", "customer_name",
     "customer_email", "customer_whatsapp", "delivery_address_snapshot",
 ].join(",");
+const exactKurus = (value: unknown) => {
+    const parsed = typeof value === "string" && /^\d+$/.test(value) ? Number(value) : value;
+    return typeof parsed === "number" && Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : Number.NaN;
+};
 
 export const mapCatalogRestaurant = (row: any, summary: { overallRating: number | null; reviewCount: number }) => ({
     id: String(row.id || ""),
@@ -32,9 +40,11 @@ export const mapCatalogRestaurant = (row: any, summary: { overallRating: number 
     imageUrl: row.image_url || "",
     image_url: row.image_url || "",
     isActive: true,
+    acceptingOrders: row.accepting_orders !== false,
     ratingAverage: summary.overallRating,
     ratingCount: summary.reviewCount,
     deliveryFee: fromKurus(row.delivery_fee_kurus),
+    minimumOrderKurus: exactKurus(row.minimum_order_kurus),
     minimumOrderAmount: fromKurus(row.minimum_order_kurus),
     deliveryTime:
         row.delivery_eta_min_minutes && row.delivery_eta_max_minutes
@@ -46,6 +56,12 @@ export const hydrateCatalogRestaurant = async (row: any) =>
     mapCatalogRestaurant(row, await getRestaurantReviewSummaryV2(String(row.id || "")));
 
 export const invalidateRestaurantCatalog = () => invalidateCatalogCache("restaurants:");
+
+const acceptingOrdersColumnUnavailable = (error: any) => {
+    const code = String(error?.code || "").toUpperCase();
+    const message = `${error?.message || ""} ${error?.details || ""} ${error?.hint || ""}`.toLowerCase();
+    return (code === "42703" || code === "PGRST204") && message.includes("accepting_orders");
+};
 
 const getOwnedRestaurantId = async () => {
     const client = requireSupabase();
@@ -70,12 +86,17 @@ const fetchRestaurantSession = async (user: FirebaseUser): Promise<RestaurantSes
 export const getRestaurants: RestaurantRepository["getRestaurants"] = async (filters) => {
     const rows = await readCatalogCached(`restaurants:${filters?.search || ""}:${filters?.category || ""}`, async () => {
         const client = requireCatalogSupabase();
-        let query = client.from("active_restaurants").select(ACTIVE_RESTAURANT_COLUMNS).order("sort_order", { ascending: true }).order("name", { ascending: true }).order("id", { ascending: true });
-        if (filters?.search) {
-            const term = `%${filters.search}%`;
-            query = query.or(`name.ilike.${term},cuisine.ilike.${term}`);
-        }
-        return throwIfError(await query);
+        const read = async (columns: string) => {
+            let query = client.from("active_restaurants").select(columns).order("sort_order", { ascending: true }).order("name", { ascending: true }).order("id", { ascending: true });
+            if (filters?.search) {
+                const term = `%${filters.search}%`;
+                query = query.or(`name.ilike.${term},cuisine.ilike.${term}`);
+            }
+            return query;
+        };
+        const result = await read(ACTIVE_RESTAURANT_COLUMNS);
+        if (acceptingOrdersColumnUnavailable(result.error)) return throwIfError(await read(LEGACY_ACTIVE_RESTAURANT_COLUMNS));
+        return throwIfError(result);
     });
     return Promise.all(rows.map(hydrateCatalogRestaurant));
 };
@@ -94,7 +115,10 @@ export const subscribeRestaurants: RestaurantRepository["subscribeRestaurants"] 
 export const getRestaurant: RestaurantRepository["getRestaurant"] = async (restaurantId) => {
     const row = await readCatalogCached(`restaurant:${String(restaurantId)}`, async () => {
         const client = requireCatalogSupabase();
-        return throwIfError(await client.from("active_restaurants").select(ACTIVE_RESTAURANT_COLUMNS).eq("id", String(restaurantId)).maybeSingle());
+        const read = (columns: string) => client.from("active_restaurants").select(columns).eq("id", String(restaurantId)).maybeSingle();
+        const result = await read(ACTIVE_RESTAURANT_COLUMNS);
+        if (acceptingOrdersColumnUnavailable(result.error)) return throwIfError(await read(LEGACY_ACTIVE_RESTAURANT_COLUMNS));
+        return throwIfError(result);
     });
     return row ? hydrateCatalogRestaurant(row) : null;
 };

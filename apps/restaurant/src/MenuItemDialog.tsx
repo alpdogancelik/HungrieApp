@@ -29,11 +29,14 @@ export function MenuItemDialog({ open, categoryId, restaurantId, knownItemIds, i
       setError("");
       if (file) { setState("uploading"); uploaded = await restaurantManagementRepository.uploadMenuImage(restaurantId, file, operationId); definition = menuDefinition(draft, categoryId, uploaded.publicUrl); }
       setState("saving"); await restaurantManagementRepository.saveItem(definition, operationId); await onSaved(); completeManagementIntent(`item:${intentKey}`); setBaseline(normalizeMenuDraft(draft)); setFile(null); onClose();
-    } catch {
+    } catch (cause) {
       const current = await onSaved();
       const reached = Boolean(current && menuDefinitionReached(current, definition as ReturnType<typeof menuDefinition>, new Set(knownItemIds)));
       if (reached) { completeManagementIntent(`item:${intentKey}`); setBaseline(normalizeMenuDraft(draft)); setFile(null); onClose(); }
-      else { if (uploaded) { try { await restaurantManagementRepository.removeNewMenuImage(uploaded.path); } catch { /* Keep the stable intent and surface the save failure. */ } } setError(t.menuSaveFailed); }
+      else {
+        const reason = String((cause as any)?.details?.reason || (cause as any)?.customData?.details?.reason || "");
+        setError(["INVALID_IMAGE_CONTENT", "UNSUPPORTED_MEDIA_TYPE", "MEDIA_TYPE_MISMATCH", "IMAGE_TOO_LARGE", "IMAGE_DIMENSIONS_EXCEEDED"].includes(reason) ? t.invalidMedia : t.menuSaveFailed);
+      }
     } finally { setState("idle"); }
   }
   const update = (next: Partial<MenuItemDraft>) => setDraft(value => ({ ...value, ...next }));

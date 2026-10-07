@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
@@ -16,6 +16,14 @@ import AuthFeedbackCard from "@/components/auth/AuthFeedbackCard";
 import CustomButton from "@/components/CustomButton";
 import LanguageToggle from "@/components/LanguageToggle";
 import { getAuthScreenCopy, isTurkishLanguage } from "@/src/features/auth/authCopy";
+import {
+    getCurrentVerificationSession,
+    getVerificationErrorMessage,
+    refreshEmailVerification,
+    resendEmailVerification,
+    signOutVerificationSession,
+} from "@/src/data/authRepository";
+import useAuthStore from "@/store/auth.store";
 import DeliveryBoy from "@/assets/illustrations/Delivery Boy.svg";
 import { makeShadow } from "@/src/lib/shadowStyle";
 import { useTheme } from "@/src/theme/themeContext";
@@ -195,6 +203,12 @@ const styles = createAdaptiveStyleSheet({
         fontSize: 16,
         lineHeight: 20,
     },
+    actionStack: {
+        gap: 10,
+    },
+    secondaryButton: {
+        backgroundColor: "#475467",
+    },
     footerRow: {
         flexDirection: "row",
         justifyContent: "center",
@@ -222,7 +236,7 @@ const CheckEmailScreen = () => {
     const insets = useSafeAreaInsets();
     const copy = getAuthScreenCopy(i18n.language).checkEmail;
     const isTurkish = isTurkishLanguage(i18n.language);
-    const params = useLocalSearchParams<{ email?: string | string[] }>();
+    const params = useLocalSearchParams<{ email?: string | string[]; status?: string | string[] }>();
     const { width } = useWindowDimensions();
     const isWide = width >= 700;
     const [interLoaded] = useFonts({
@@ -235,11 +249,120 @@ const CheckEmailScreen = () => {
     const interMedium = interLoaded ? "Inter_500Medium" : readableHeroFont;
     const interSemiBold = interLoaded ? "Inter_600SemiBold" : readableHeroFont;
     const interBold = interLoaded ? "Inter_700Bold" : readableHeroFont;
-    const email = useMemo(() => {
+    const parameterEmail = useMemo(() => {
         if (typeof params.email === "string") return params.email;
         if (Array.isArray(params.email)) return params.email[0] || "";
         return "";
     }, [params.email]);
+    const parameterStatus = useMemo(() => {
+        const value = Array.isArray(params.status) ? params.status[0] : params.status;
+        return value === "requested" || value === "failed" ? value : "unverified";
+    }, [params.status]);
+    const [email, setEmail] = useState(parameterEmail);
+    const [deliveryState, setDeliveryState] = useState<"requested" | "failed" | "unverified">(parameterStatus);
+    const [operation, setOperation] = useState<"resend" | "refresh" | "signout" | null>(null);
+    const [operationFeedback, setOperationFeedback] = useState<{ tone: "error" | "success" | "info"; title: string; message: string } | null>(null);
+    const [resendCoolingDown, setResendCoolingDown] = useState(parameterStatus === "requested");
+    const mountedRef = useRef(true);
+    const cooldownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const syncAuthenticatedUser = useAuthStore((state) => state.syncAuthenticatedUser);
+    const resetAuthState = useAuthStore((state) => state.resetAuthState);
+
+    const startResendCooldown = () => {
+        if (cooldownTimerRef.current) clearTimeout(cooldownTimerRef.current);
+        setResendCoolingDown(true);
+        cooldownTimerRef.current = setTimeout(() => {
+            if (mountedRef.current) setResendCoolingDown(false);
+        }, 30_000);
+    };
+
+    useEffect(() => {
+        mountedRef.current = true;
+        setDeliveryState(parameterStatus);
+        setOperationFeedback(null);
+        if (parameterStatus === "requested") startResendCooldown();
+        else setResendCoolingDown(false);
+        void getCurrentVerificationSession().then((session) => {
+            if (!mountedRef.current) return;
+            if (!session) {
+                setOperationFeedback({ tone: "error", title: copy.pendingTitle, message: copy.sessionMissing });
+                return;
+            }
+            if (session.email) setEmail(session.email);
+            if (session.emailVerified) {
+                void syncAuthenticatedUser(true).then(() => {
+                    if (mountedRef.current) router.replace("/home");
+                });
+            }
+        }).catch(() => {
+            if (mountedRef.current) setOperationFeedback({ tone: "error", title: copy.pendingTitle, message: copy.sessionMissing });
+        });
+        return () => {
+            mountedRef.current = false;
+            if (cooldownTimerRef.current) clearTimeout(cooldownTimerRef.current);
+        };
+    }, [copy.pendingTitle, copy.sessionMissing, parameterStatus, syncAuthenticatedUser]);
+
+    const resend = async () => {
+        if (operation || resendCoolingDown) return;
+        setOperation("resend");
+        setOperationFeedback(null);
+        const result = await resendEmailVerification();
+        if (!mountedRef.current) return;
+        if (result.state === "requested") {
+            setDeliveryState("requested");
+            setOperationFeedback({ tone: "success", title: copy.cardTitle, message: copy.resendSucceeded });
+            startResendCooldown();
+        } else if (result.state === "already_verified") {
+            await syncAuthenticatedUser(true);
+            if (mountedRef.current) router.replace("/home");
+        } else {
+            setDeliveryState("failed");
+            setOperationFeedback({ tone: "error", title: copy.failedTitle, message: getVerificationErrorMessage(result.category) });
+        }
+        if (mountedRef.current) setOperation(null);
+    };
+
+    const checkVerification = async () => {
+        if (operation) return;
+        setOperation("refresh");
+        setOperationFeedback(null);
+        const result = await refreshEmailVerification();
+        if (!mountedRef.current) return;
+        if (result.state === "verified") {
+            await syncAuthenticatedUser(false);
+            if (mountedRef.current) router.replace("/home");
+        } else if (result.state === "unverified") {
+            setOperationFeedback({ tone: "info", title: copy.pendingTitle, message: copy.stillUnverified });
+        } else if (result.state === "no_session") {
+            setOperationFeedback({ tone: "error", title: copy.pendingTitle, message: copy.sessionMissing });
+        } else {
+            setOperationFeedback({ tone: "error", title: copy.pendingTitle, message: getVerificationErrorMessage(result.category) });
+        }
+        if (mountedRef.current) setOperation(null);
+    };
+
+    const leaveVerification = async (destination: "/home" | "/sign-in") => {
+        if (operation) return;
+        setOperation("signout");
+        try {
+            await signOutVerificationSession();
+            resetAuthState();
+            if (mountedRef.current) router.replace(destination);
+        } catch {
+            if (mountedRef.current) {
+                setOperationFeedback({ tone: "error", title: copy.pendingTitle, message: copy.signOutFailed });
+                setOperation(null);
+            }
+        }
+    };
+
+    const defaultFeedback = deliveryState === "requested"
+        ? { tone: "success" as const, title: copy.cardTitle, message: copy.cardBody }
+        : deliveryState === "failed"
+            ? { tone: "error" as const, title: copy.failedTitle, message: copy.failedBody }
+            : { tone: "info" as const, title: copy.pendingTitle, message: copy.pendingBody };
+    const visibleFeedback = operationFeedback || defaultFeedback;
 
     const heroVisualWidth = isWide ? 360 : Math.min(266, Math.max(210, width * 0.43));
     const heroVisualHeight = isWide ? 320 : Math.min(224, Math.max(230, width * 0.36));
@@ -271,7 +394,7 @@ const CheckEmailScreen = () => {
                                     styles.closeButton,
                                     { backgroundColor: pressed ? theme.colors.surfaceMuted : theme.colors.surface },
                                 ]}
-                                onPress={() => router.replace("/home")}
+                                onPress={() => void leaveVerification("/home")}
                                 hitSlop={8}
                             >
                                 <Ionicons name="close" size={18} color={theme.colors.ink} />
@@ -344,15 +467,15 @@ const CheckEmailScreen = () => {
                         ]}
                     >
                         <View style={styles.authCardHeader}>
-                            <Text style={[styles.cardTitle, { color: theme.colors.ink, fontFamily: interBold }, isWide ? { fontSize: 46, lineHeight: 54 } : null]}>{copy.title}</Text>
-                            <Text style={[styles.cardBody, { color: theme.colors.textSecondary, fontFamily: interRegular }]}>{copy.subtitle}</Text>
+                            <Text style={[styles.cardTitle, { color: theme.colors.ink, fontFamily: interBold }, isWide ? { fontSize: 46, lineHeight: 54 } : null]}>{visibleFeedback.title}</Text>
+                            <Text style={[styles.cardBody, { color: theme.colors.textSecondary, fontFamily: interRegular }]}>{visibleFeedback.message}</Text>
                         </View>
 
                         <View style={styles.feedbackWrap}>
                             <AuthFeedbackCard
-                                tone="success"
-                                title={copy.cardTitle}
-                                message={copy.cardBody}
+                                tone={visibleFeedback.tone}
+                                title={visibleFeedback.title}
+                                message={visibleFeedback.message}
                                 Illustration={DeliveryBoy}
                             />
                         </View>
@@ -364,17 +487,28 @@ const CheckEmailScreen = () => {
                             </View>
                         ) : null}
 
-                        <CustomButton
-                            title={copy.backToSignIn}
-                            onPress={() => router.replace("/sign-in")}
-                            style={styles.submitButton}
-                            textStyle={[styles.submitText, { fontFamily: interSemiBold }]}
-                        />
+                        <View style={styles.actionStack}>
+                            <CustomButton
+                                title={operation === "resend" ? copy.resending : copy.resend}
+                                onPress={() => void resend()}
+                                disabled={Boolean(operation) || resendCoolingDown}
+                                isLoading={operation === "resend"}
+                                style={styles.submitButton}
+                                textStyle={[styles.submitText, { fontFamily: interSemiBold }]}
+                            />
+                            <CustomButton
+                                title={operation === "refresh" ? copy.checking : copy.checkAgain}
+                                onPress={() => void checkVerification()}
+                                disabled={Boolean(operation)}
+                                isLoading={operation === "refresh"}
+                                style={[styles.submitButton, styles.secondaryButton]}
+                                textStyle={[styles.submitText, { fontFamily: interSemiBold }]}
+                            />
+                        </View>
 
                         <View style={styles.footerRow}>
-                            <Text style={[styles.footerText, { fontFamily: interRegular }]}>{copy.editPrompt}</Text>
-                            <Pressable onPress={() => router.replace("/sign-up")} hitSlop={6}>
-                                <Text style={[styles.footerLink, { fontFamily: interSemiBold }]}>{copy.editLink}</Text>
+                            <Pressable disabled={Boolean(operation)} onPress={() => void leaveVerification("/sign-in")} hitSlop={6}>
+                                <Text style={[styles.footerLink, { fontFamily: interSemiBold }]}>{copy.signOut}</Text>
                             </Pressable>
                         </View>
                     </View>

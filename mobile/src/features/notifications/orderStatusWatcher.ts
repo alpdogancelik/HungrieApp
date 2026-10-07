@@ -3,11 +3,15 @@ import { isRemotePushSupported, NotificationManager } from "@/src/features/notif
 import { autoCancelExpiredPendingOrders, subscribeLatestOrderSummary } from "@/src/data/orderRepository";
 import { getRepositoryBackend } from "@/src/data/backendFlags";
 import i18n from "@/src/lib/i18n";
+import {
+    clearOwnedOrderStatusMap,
+    loadOwnedOrderStatusMap,
+    saveOwnedOrderStatusMap,
+    type PersistedOrderStatusMap,
+} from "./orderStatusPersistence";
 
 type NormalizedOrderStatus = "pending" | "preparing" | "ready" | "out_for_delivery" | "delivered" | "canceled";
-type StatusMap = Record<string, NormalizedOrderStatus>;
-
-const STORAGE_KEY = "@hungrie/notifications/order-status-map";
+type StatusMap = PersistedOrderStatusMap;
 const KNOWN_STATUSES: NormalizedOrderStatus[] = [
     "pending",
     "preparing",
@@ -25,21 +29,6 @@ const normalizeStatus = (value?: string | null): NormalizedOrderStatus => {
         return raw as NormalizedOrderStatus;
     }
     return "pending";
-};
-
-const parseStoredMap = (value: string | null): StatusMap => {
-    if (!value) return {};
-    try {
-        const parsed = JSON.parse(value) as Record<string, string>;
-        const next: StatusMap = {};
-        Object.entries(parsed || {}).forEach(([orderId, status]) => {
-            const normalized = normalizeStatus(status);
-            next[orderId] = normalized;
-        });
-        return next;
-    } catch {
-        return {};
-    }
 };
 
 const getRestaurantName = (order: any) =>
@@ -98,27 +87,45 @@ const toNotification = (order: any, status: NormalizedOrderStatus) => {
     }
 };
 
-const persistMap = async (map: StatusMap) => {
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(map)).catch(() => null);
+type WatcherDependencies = {
+    storage: typeof AsyncStorage;
+    subscribe: typeof subscribeLatestOrderSummary;
+    backend: typeof getRepositoryBackend;
+    autoCancel: typeof autoCancelExpiredPendingOrders;
+    remotePushSupported: typeof isRemotePushSupported;
+    notify: typeof NotificationManager.notifyLocal;
 };
 
-export const startOrderStatusWatcher = (userId: string) => {
+const defaultDependencies: WatcherDependencies = {
+    storage: AsyncStorage,
+    subscribe: subscribeLatestOrderSummary,
+    backend: getRepositoryBackend,
+    autoCancel: autoCancelExpiredPendingOrders,
+    remotePushSupported: isRemotePushSupported,
+    notify: NotificationManager.notifyLocal.bind(NotificationManager),
+};
+
+export const clearOrderStatusForIdentity = async (ownerUid: string) => {
+    await clearOwnedOrderStatusMap(AsyncStorage, ownerUid).catch(() => undefined);
+};
+
+export const createOrderStatusWatcher = (dependencies: WatcherDependencies) => (userId: string) => {
     let active = true;
     let primed = false;
     let statusMap: StatusMap = {};
     const autoCancelingIds = new Set<string>();
 
     const init = async () => {
-        const raw = await AsyncStorage.getItem(STORAGE_KEY).catch(() => null);
+        const stored = await loadOwnedOrderStatusMap(dependencies.storage, userId);
         if (!active) return;
-        statusMap = parseStoredMap(raw);
+        statusMap = stored;
 
-        const unsubscribe = subscribeLatestOrderSummary(userId, (latestOrder: any | null) => {
+        const unsubscribe = dependencies.subscribe(userId, (latestOrder: any | null) => {
             const orders = latestOrder ? [latestOrder] : [];
             if (!active) return;
             const list = Array.isArray(orders) ? orders : [];
-            if (getRepositoryBackend("order") === "firebase") {
-                void autoCancelExpiredPendingOrders(list, {
+            if (dependencies.backend("order") === "firebase") {
+                void dependencies.autoCancel(list, {
                     inFlightIds: autoCancelingIds,
                     onError: (error) => {
                         console.warn("[orders] Failed to auto-cancel expired pending order", error);
@@ -135,7 +142,7 @@ export const startOrderStatusWatcher = (userId: string) => {
                 });
                 statusMap = initialMap;
                 primed = true;
-                void persistMap(statusMap);
+                void saveOwnedOrderStatusMap(dependencies.storage, userId, statusMap).catch(() => undefined);
                 return;
             }
 
@@ -154,9 +161,9 @@ export const startOrderStatusWatcher = (userId: string) => {
                     return;
                 }
 
-                if (prevStatus !== nextStatus && !isRemotePushSupported()) {
+                if (prevStatus !== nextStatus && !dependencies.remotePushSupported()) {
                     const payload = toNotification(order, nextStatus);
-                    void NotificationManager.notifyLocal(payload.title, payload.body, {
+                    void dependencies.notify(payload.title, payload.body, {
                         withSound: true,
                         channelId: NotificationManager.ORDER_STATUS_CHANNEL_ID,
                         soundName: NotificationManager.SYSTEM_DEFAULT_SOUND,
@@ -172,7 +179,7 @@ export const startOrderStatusWatcher = (userId: string) => {
 
             if (hasChanges) {
                 statusMap = nextMap;
-                void persistMap(statusMap);
+                void saveOwnedOrderStatusMap(dependencies.storage, userId, statusMap).catch(() => undefined);
             }
         });
 
@@ -195,5 +202,7 @@ export const startOrderStatusWatcher = (userId: string) => {
         stopRef?.();
     };
 };
+
+export const startOrderStatusWatcher = createOrderStatusWatcher(defaultDependencies);
 
 export default startOrderStatusWatcher;

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { getCurrentAuthIdentity } from '@/src/data/authRepository';
-import { resolveAuthHydration, resolveAuthSyncHydration, type AuthHydrationUser } from '@/src/features/auth/authHydration';
+import { getCurrentAuthIdentity, getCurrentVerificationSession } from '@/src/data/authRepository';
+import { resolveAuthSessionHydration, resolveAuthSyncHydration, type AuthHydrationUser } from '@/src/features/auth/authHydration';
 
 type User = AuthHydrationUser | null;
 let authHydrationGeneration = 0;
@@ -9,6 +9,7 @@ type AuthState = {
     isAuthenticated: boolean;
     user: User;
     isLoading: boolean;
+    verificationRequired: { email: string } | null;
     preferredEmoji?: string;
 
     setIsAuthenticated: (value: boolean) => void;
@@ -25,9 +26,10 @@ const useAuthStore = create<AuthState>((set) => ({
     isAuthenticated: false,
     user: null,
     isLoading: true,
+    verificationRequired: null,
     preferredEmoji: undefined,
 
-    setIsAuthenticated: (value) => set({ isAuthenticated: value }),
+    setIsAuthenticated: (value) => set({ isAuthenticated: value, ...(value ? { verificationRequired: null } : {}) }),
     setUser: (user) => set({ user }),
     setLoading: (value) => set({ isLoading: value }),
     setPreferredEmoji: (emoji) => set({ preferredEmoji: emoji }),
@@ -38,6 +40,7 @@ const useAuthStore = create<AuthState>((set) => ({
             user: null,
             isLoading: false,
             preferredEmoji: undefined,
+            verificationRequired: null,
         });
     },
 
@@ -50,12 +53,13 @@ const useAuthStore = create<AuthState>((set) => ({
             // request. A slow profile RPC must not keep the root navigator
             // unmounted or bypass the access-context/bootstrap gate.
             const identity = await getCurrentAuthIdentity(false);
+            const verificationSession = identity ? null : await getCurrentVerificationSession();
             if (requestGeneration === authHydrationGeneration) {
-                set(resolveAuthHydration(null, identity));
+                set(resolveAuthSessionHydration(identity, verificationSession));
             }
         } catch {
             if (requestGeneration === authHydrationGeneration) {
-                set(resolveAuthHydration(null, null));
+                set(resolveAuthSessionHydration(null, null));
             }
         } finally {
             if (requestGeneration === authHydrationGeneration) {
@@ -68,17 +72,26 @@ const useAuthStore = create<AuthState>((set) => ({
         const requestGeneration = ++authHydrationGeneration;
         try {
             const identity = await getCurrentAuthIdentity(forceServerValidation);
+            const verificationSession = identity ? null : await getCurrentVerificationSession();
             if (requestGeneration !== authHydrationGeneration) return;
             if (!identity) {
-                set({ isAuthenticated: false, user: null, isLoading: false, preferredEmoji: undefined });
+                set({
+                    isAuthenticated: false,
+                    user: null,
+                    isLoading: false,
+                    preferredEmoji: undefined,
+                    verificationRequired: verificationSession && !verificationSession.emailVerified
+                        ? { email: verificationSession.email }
+                        : null,
+                });
                 return;
             }
-            set((state) => resolveAuthSyncHydration(state, identity));
+            set((state) => ({ ...resolveAuthSyncHydration(state, identity), verificationRequired: null }));
         } catch (error: any) {
             const code = String(error?.code || "");
             if (requestGeneration !== authHydrationGeneration) return;
             if (["auth/user-token-expired", "auth/user-disabled", "auth/user-not-found"].includes(code)) {
-                set({ isAuthenticated: false, user: null, isLoading: false, preferredEmoji: undefined });
+                set({ isAuthenticated: false, user: null, isLoading: false, preferredEmoji: undefined, verificationRequired: null });
                 return;
             }
             // A listener or foreground refresh owns the current hydration

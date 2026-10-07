@@ -5,17 +5,17 @@ import { EarningsPageStack, EarningsRangeError, RequestGeneration, earningsBucke
 import { isActiveRestaurantOwner, parseRestaurantAccessContext } from "../apps/restaurant/src/RestaurantAccessContext.ts";
 import { EarningsRepositoryError, classifyEarningsError, createEarningsRepository, parseEarningsPage, parseEarningsSeries, parseEarningsSummary, validateEarningsBundle } from "../apps/restaurant/src/earningsRepository.ts";
 
-const breakdown = (gross, commission, count) => ({ eligibleGrossKurus: gross, commissionKurus: commission, estimatedNetKurus: gross - commission, deliveredOrderCount: count });
+const breakdown = (gross, hungrie, count, virtualPos = 0) => ({ eligibleGrossKurus: gross, hungrieCommissionKurus: hungrie, virtualPosCommissionKurus: virtualPos, totalDeductionsKurus: hungrie + virtualPos, estimatedNetKurus: gross - hungrie - virtualPos, deliveredOrderCount: count });
 const identity = { restaurantId: "restaurant-1", from: "2026-09-01", to: "2026-09-30", reportingTimezone: "Asia/Famagusta", currencyCode: "TRY" };
-const summary = { ...identity, ...breakdown(30_000, 2_400, 2), paymentBreakdown: { cash: breakdown(10_000, 800, 1), pos: breakdown(20_000, 1_600, 1) } };
+const summary = { ...identity, ...breakdown(30_000, 2_400, 2), providerFeesReconciled: false, paymentBreakdown: { cash: breakdown(10_000, 800, 1), pos: breakdown(20_000, 1_600, 1), virtual_pos: breakdown(0, 0, 0) } };
 const points = [
-  { bucketStart: "2026-09-10", ...breakdown(10_000, 800, 1), paymentBreakdown: { cash: breakdown(10_000, 800, 1), pos: breakdown(0, 0, 0) } },
-  { bucketStart: "2026-09-11", ...breakdown(20_000, 1_600, 1), paymentBreakdown: { cash: breakdown(0, 0, 0), pos: breakdown(20_000, 1_600, 1) } },
+  { bucketStart: "2026-09-10", ...breakdown(10_000, 800, 1) },
+  { bucketStart: "2026-09-11", ...breakdown(20_000, 1_600, 1) },
 ];
 const series = { ...identity, bucket: "day", points };
 const items = [
-  { orderReference: "ABCDEF12", deliveredAt: "2026-09-11T10:00:00Z", paymentMethod: "pos", currencyCode: "TRY", eligibleGrossKurus: 20_000, commissionRateBps: 800, commissionKurus: 1_600, estimatedNetKurus: 18_400 },
-  { orderReference: "1234ABCD", deliveredAt: "2026-09-10T10:00:00Z", paymentMethod: "cash", currencyCode: "TRY", eligibleGrossKurus: 10_000, commissionRateBps: 800, commissionKurus: 800, estimatedNetKurus: 9_200 },
+  { orderReference: "ABCDEF12", deliveredAt: "2026-09-11T10:00:00Z", paymentMethod: "pos", currencyCode: "TRY", eligibleGrossKurus: 20_000, hungrieRateBps: 800, hungrieCommissionKurus: 1_600, virtualPosRateBps: 0, virtualPosCommissionKurus: 0, totalDeductionsKurus: 1_600, estimatedNetKurus: 18_400, providerFeesReconciled: false },
+  { orderReference: "1234ABCD", deliveredAt: "2026-09-10T10:00:00Z", paymentMethod: "cash", currencyCode: "TRY", eligibleGrossKurus: 10_000, hungrieRateBps: 800, hungrieCommissionKurus: 800, virtualPosRateBps: 0, virtualPosCommissionKurus: 0, totalDeductionsKurus: 800, estimatedNetKurus: 9_200, providerFeesReconciled: false },
 ];
 const page = { ...identity, limit: 25, items, nextCursor: "opaque-next-value" };
 const owner = { state: "resolved", profileId: "profile-1", accountType: "restaurant", accountStatus: "active", onboardingStep: "none", restaurantId: "restaurant-1", restaurantRole: "owner", restaurantStatus: "active", acceptingOrders: true };
@@ -44,7 +44,7 @@ test("automatic series density changes exactly at 31/32 and 180/181 without expa
   assert.equal(earningsBucketForRange({ from: "2026-01-01", to: "2026-06-30" }), "month");
   const partialIdentity = { ...identity, from: "2026-09-01", to: "2026-09-07" };
   const partialSummary = { ...summary, ...partialIdentity };
-  const partialSeries = { ...series, ...partialIdentity, bucket: "week", points: [{ bucketStart: "2026-08-31", ...breakdown(30_000, 2_400, 2), paymentBreakdown: partialSummary.paymentBreakdown }] };
+  const partialSeries = { ...series, ...partialIdentity, bucket: "week", points: [{ bucketStart: "2026-08-31", ...breakdown(30_000, 2_400, 2) }] };
   const partialPage = { ...page, ...partialIdentity, items: [{ ...items[0], deliveredAt: "2026-09-02T10:00:00Z" }, { ...items[1], deliveredAt: "2026-09-01T10:00:00Z" }] };
   validateEarningsBundle(partialSummary, partialSeries, partialPage, { restaurantId: identity.restaurantId, from: partialIdentity.from, to: partialIdentity.to, bucket: "week" });
 });
@@ -95,9 +95,9 @@ test("repository invokes only approved owner-scoped RPCs with exact arguments an
   const repository = createEarningsRepository(client);
   await repository.summary(identity.from, identity.to); await repository.series(identity.from, identity.to, "day"); await repository.page(identity.from, identity.to, "opaque-next-value");
   assert.deepEqual(calls, [
-    { name: "restaurant_get_earnings_summary_v1", args: { p_from: identity.from, p_to: identity.to } },
-    { name: "restaurant_get_earnings_series_v1", args: { p_from: identity.from, p_to: identity.to, p_bucket: "day" } },
-    { name: "restaurant_get_earnings_orders_page_v1", args: { p_from: identity.from, p_to: identity.to, p_cursor: "opaque-next-value", p_limit: 25 } },
+    { name: "restaurant_get_earnings_summary_v2", args: { p_from: identity.from, p_to: identity.to } },
+    { name: "restaurant_get_earnings_series_v2", args: { p_from: identity.from, p_to: identity.to, p_bucket: "day" } },
+    { name: "restaurant_get_earnings_orders_page_v2", args: { p_from: identity.from, p_to: identity.to, p_cursor: "opaque-next-value", p_limit: 25 } },
   ]);
 });
 

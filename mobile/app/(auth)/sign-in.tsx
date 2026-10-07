@@ -13,7 +13,6 @@ import {
     Inter_700Bold,
     useFonts,
 } from "@expo-google-fonts/inter";
-import * as Sentry from "@sentry/react-native";
 import { useTranslation } from "react-i18next";
 
 import AuthFeedbackCard from "@/components/auth/AuthFeedbackCard";
@@ -26,6 +25,8 @@ import useAuthStore from "@/store/auth.store";
 import RobotDelivery from "@/assets/illustrations/Robot Delivery.svg";
 import { makeShadow } from "@/src/lib/shadowStyle";
 import { useTheme } from "@/src/theme/themeContext";
+import { captureOperationalError } from "@/src/lib/operationalTelemetry";
+import { classifyPublicSignInFailure } from "@/src/features/auth/credentialPrivacy";
 
 type FeedbackState = {
     title: string;
@@ -369,7 +370,11 @@ const SignIn = () => {
         setFeedback(null);
 
         try {
-            await signIn({ email, password });
+            const signInResult = await signIn({ email, password });
+            if (signInResult?.verificationRequired) {
+                router.replace({ pathname: "/check-email", params: { email: signInResult.email, status: "unverified" } });
+                return;
+            }
             const identity = await getCurrentAuthIdentity();
 
             if (identity) {
@@ -388,30 +393,22 @@ const SignIn = () => {
             }
         } catch (error: any) {
             const errorCode = String(error?.code || "");
-            const hidesAccountKind = [
-                "auth/invalid-credential",
-                "auth/invalid-login-credentials",
-                "auth/user-not-found",
-                "auth/wrong-password",
-                "auth/multi-factor-auth-required",
-            ].includes(errorCode);
+            const hidesAccountKind = classifyPublicSignInFailure(errorCode) === "invalid_credentials"
+                || errorCode === "auth/multi-factor-auth-required";
             setFeedback({
                 title: copy.emptyErrorTitle,
                 message: hidesAccountKind
                     ? getAuthErrorMessage(i18n.language, "invalidCredentials") || copy.fallbackError
                     : error?.message || copy.fallbackError,
             });
-            Sentry.captureException(error);
+            captureOperationalError("customer.auth.unexpected_failure", error, { component: "customer-auth" });
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const handleForgotPassword = () => {
-        router.push({
-            pathname: "/forgot-password",
-            params: form.email.trim() ? { email: form.email.trim() } : {},
-        });
+        router.push("/forgot-password");
     };
 
     const features = isTurkish

@@ -1,7 +1,7 @@
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
-const admin = require("firebase-admin");
+const admin = require("../firebaseAdminCompat");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 const EXPECTED_PROJECT = "hungrieapp-a2288";

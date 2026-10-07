@@ -81,6 +81,14 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       const wasVerified = verified.current;
       if (!user) {
         if (publicPath(path)) {
+          // Expo Router can keep the outgoing protected screen mounted while
+          // the public route commits. During an explicit/session-expired
+          // redirect, retain its context boundary in suspended mode so those
+          // outgoing components cannot render outside their provider.
+          if (logoutRedirectingRef.current) {
+            setState("ready");
+            return;
+          }
           verified.current = false;
           verifiedUid.current = "";
           logoutRedirectingRef.current = false;
@@ -88,19 +96,24 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           setRestaurantId("");
           setAccessContext(null);
           setState("ready");
-        } else if (!logoutRedirectingRef.current) {
-          // Keep the authenticated runtime and navigator mounted until the
-          // public route commits. Clearing them before replace() makes React
-          // Navigation update its store while the Stack is being destroyed.
-          logoutRedirectingRef.current = true;
-          setLogoutRedirecting(true);
+        } else {
+          if (!logoutRedirectingRef.current) {
+            // Keep the authenticated runtime and navigator mounted until the
+            // public route commits. Clearing them before replace() makes React
+            // Navigation update its store while the Stack is being destroyed.
+            logoutRedirectingRef.current = true;
+            setLogoutRedirecting(true);
+          }
+          // Reassert the public route if browser history tries to reveal a
+          // protected screen while the signed-out boundary is suspended.
           router.replace(wasVerified ? "/login?reason=session-expired" : "/login");
         }
         return;
       }
+      const resumedAfterLogout = logoutRedirectingRef.current;
       logoutRedirectingRef.current = false;
       setLogoutRedirecting(false);
-      if (user?.uid !== verifiedUid.current) {
+      if (resumedAfterLogout || user.uid !== verifiedUid.current) {
         verified.current = false;
         verifiedUid.current = "";
         setRestaurantId("");
@@ -185,17 +198,6 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     };
   }, [path, retry, router]);
 
-  useEffect(() => {
-    if (!logoutRedirecting || !publicPath(path)) return;
-    verified.current = false;
-    verifiedUid.current = "";
-    logoutRedirectingRef.current = false;
-    setLogoutRedirecting(false);
-    setRestaurantId("");
-    setAccessContext(null);
-    setState("ready");
-  }, [logoutRedirecting, path]);
-
   // Navigation runs only after React has committed the ready render. At that
   // point protected content is already wrapped by RestaurantRuntimeProvider.
   useEffect(() => {
@@ -220,9 +222,13 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   return <>
     <RestaurantAccessContext.Provider value={accessContext}>
       <RestaurantAccessReady.Provider value={runtimeReady}>
-        {runtimeReady && accessContext
-          ? <RestaurantRuntimeProvider restaurantId={restaurantId} role={accessContext.restaurantRole}>{children}</RestaurantRuntimeProvider>
-          : contentReady ? children : null}
+        <RestaurantRuntimeProvider
+          restaurantId={runtimeReady ? restaurantId : null}
+          role={runtimeReady && accessContext ? accessContext.restaurantRole : null}
+          suspended={!runtimeReady || logoutRedirecting}
+        >
+          {contentReady ? children : null}
+        </RestaurantRuntimeProvider>
       </RestaurantAccessReady.Provider>
     </RestaurantAccessContext.Provider>
     {(state !== "ready" || !contentReady) && <div className="access-overlay">

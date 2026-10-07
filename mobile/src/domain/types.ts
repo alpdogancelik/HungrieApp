@@ -79,6 +79,7 @@ export type Restaurant = BaseDocument & {
     deliveryEtaMax?: number;
     deliveryFee?: number | string;
     deliveryTime?: string | number;
+    minimumOrderKurus?: number;
     minimumOrderAmount?: number | string;
     minimumOrder?: number | string;
     minOrderAmount?: number | string;

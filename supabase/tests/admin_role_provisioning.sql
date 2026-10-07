@@ -1,5 +1,7 @@
 begin;
 
+\ir account_access_fixture.psql
+
 select plan(33);
 
 select has_function(
@@ -41,34 +43,34 @@ select ok(not private.has_platform_role('admin'), 'database admin role without F
 
 select set_config(
   'request.jwt.claims',
-  '{"role":"authenticated","platform_role":"admin","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_admin"}',
+  '{"role":"authenticated","platform_role":"admin","email_verified":true,"firebase":{"sign_in_second_factor":"totp"},"iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_admin"}',
   true
 );
 select ok(private.has_platform_role('admin'), 'matching admin signals are authorized');
 
 select set_config(
   'request.jwt.claims',
-  '{"role":"authenticated","platform_role":"super_admin","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_admin"}',
+  '{"role":"authenticated","platform_role":"super_admin","email_verified":true,"firebase":{"sign_in_second_factor":"totp"},"iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_admin"}',
   true
 );
 select ok(
-  not private.has_platform_role('admin') and not private.has_platform_role('super_admin'),
-  'mismatched admin role signals are denied'
+  private.has_platform_role('admin') and not private.has_platform_role('super_admin'),
+  'legacy Firebase platform role cannot override the canonical database admin role'
 );
 
 select set_config(
   'request.jwt.claims',
-  '{"role":"authenticated","platform_role":"owner","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_admin"}',
+  '{"role":"authenticated","platform_role":"owner","email_verified":true,"firebase":{"sign_in_second_factor":"totp"},"iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_admin"}',
   true
 );
 select ok(
-  not private.has_platform_role('admin') and not private.has_platform_role('super_admin'),
-  'unknown Firebase platform role is denied'
+  private.has_platform_role('admin') and not private.has_platform_role('super_admin'),
+  'unknown legacy Firebase platform role cannot suppress the canonical database admin role'
 );
 
 select set_config(
   'request.jwt.claims',
-  '{"role":"authenticated","platform_role":"super_admin","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_super_admin"}',
+  '{"role":"authenticated","platform_role":"super_admin","email_verified":true,"firebase":{"sign_in_second_factor":"totp"},"iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_super_admin"}',
   true
 );
 select ok(private.has_platform_role('super_admin'), 'matching super-admin signals are authorized');
@@ -78,7 +80,7 @@ select set_config(
   '{"role":"authenticated","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_courier"}',
   true
 );
-select ok(private.has_platform_role('courier'), 'courier remains database-authorized without an admin claim');
+select ok(not private.has_platform_role('courier'), 'legacy courier role confers no canonical account authority');
 
 set local role authenticated;
 select set_config(
@@ -93,7 +95,7 @@ select throws_ok(
 
 select set_config(
   'request.jwt.claims',
-  '{"role":"authenticated","platform_role":"super_admin","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_super_admin"}',
+  '{"role":"authenticated","platform_role":"super_admin","email_verified":true,"firebase":{"sign_in_second_factor":"totp"},"iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_super_admin"}',
   true
 );
 select lives_ok(

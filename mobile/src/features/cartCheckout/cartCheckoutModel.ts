@@ -1,7 +1,7 @@
 import type { CartItemType } from "@/src/domain/types";
+export { isRestaurantOpenForOrdering } from "@/src/lib/restaurantAvailability";
 
 export const ORANGE = "#FF5A00";
-export const MINIMUM_ORDER_TOTAL = 250;
 export const MAX_NOTES = 200;
 export const FOOTER_CONTENT_HEIGHT = 82;
 
@@ -84,23 +84,4 @@ export const restaurantEta = (restaurant: any, turkish: boolean) => {
     const range = String(restaurant?.deliveryTime || restaurant?.eta || "").match(/(\d+)\s*[-–]\s*(\d+)/);
     if (range) return `${range[1]}–${range[2]} ${turkish ? "dk" : "min"}`;
     return turkish ? "25–35 dk" : "25–35 min";
-};
-
-const clockMinutes = (value: unknown) => {
-    const match = String(value || "").trim().match(/^(\d{1,2})(?::(\d{2}))?/);
-    if (!match) return null;
-    const hours = Number(match[1]);
-    const minutes = Number(match[2] || 0);
-    return hours <= 23 && minutes <= 59 ? hours * 60 + minutes : null;
-};
-
-export const isRestaurantOpenForOrdering = (restaurant: any) => {
-    const status = String(restaurant?.status || "").trim().toLowerCase();
-    if (restaurant?.isActive === false || restaurant?.isOpen === false || ["closed", "kapalı", "kapali", "inactive", "disabled", "offline"].includes(status)) return false;
-    const opens = clockMinutes(restaurant?.openingTime || restaurant?.opening_time);
-    const closes = clockMinutes(restaurant?.closingTime || restaurant?.closing_time);
-    if (opens === null || closes === null || opens === closes) return true;
-    const now = new Date();
-    const current = now.getHours() * 60 + now.getMinutes();
-    return opens < closes ? current >= opens && current < closes : current >= opens || current < closes;
 };

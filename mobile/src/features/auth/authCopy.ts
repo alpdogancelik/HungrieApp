@@ -63,8 +63,8 @@ export const getAuthScreenCopy = (language?: string | null) => ({
         heroTitle: byLanguage(language, "Şifreni yenile ve devam et.", "Reset your password and continue."),
         heroBody: byLanguage(
             language,
-            "Mail adresini yaz, sana şifre sıfırlama bağlantısını gönderelim.",
-            "Enter your email and we will send you a password reset link.",
+            "Şifre sıfırlama talimatı istemek için e-posta adresini gir.",
+            "Enter your email to request password reset instructions.",
         ),
         title: byLanguage(language, "Şifremi unuttum", "Forgot password"),
         subtitle: byLanguage(language, "Hesabına tekrar ulaşmak için e-posta adresini gir.", "Enter your email to get back into your account."),
@@ -83,11 +83,11 @@ export const getAuthScreenCopy = (language?: string | null) => ({
             "Lütfen şifre sıfırlama linki için e-posta adresini gir.",
             "Please enter your email to receive a password reset link.",
         ),
-        successTitle: byLanguage(language, "E-posta gönderildi", "Email sent"),
+        successTitle: byLanguage(language, "İstek alındı", "Request received"),
         successBody: byLanguage(
             language,
-            "Şifre sıfırlama bağlantısı gönderildi. Gelen kutunu ve spam klasörünü kontrol et.",
-            "We sent a password reset link. Please check your inbox and spam folder.",
+            "Bu e-posta için uygun bir hesap varsa şifre sıfırlama talimatları gönderilecektir.",
+            "If an eligible account exists for this email, password reset instructions will be sent.",
         ),
         fallbackError: byLanguage(
             language,
@@ -118,6 +118,27 @@ export const getAuthScreenCopy = (language?: string | null) => ({
         backToSignIn: byLanguage(language, "Giriş yap ekranına dön", "Back to Sign In"),
         editPrompt: byLanguage(language, "E-postayı düzeltmek ister misin?", "Need to fix your email address?"),
         editLink: byLanguage(language, "Kayıt ol", "Sign Up"),
+        failedTitle: byLanguage(language, "Hesabın oluşturuldu", "Your account was created"),
+        failedBody: byLanguage(
+            language,
+            "Doğrulama e-postası şu anda istenemedi. Hesabın güvende; aşağıdan tekrar deneyebilirsin.",
+            "We couldn't request a verification email. Your account is safe; you can try again below.",
+        ),
+        pendingTitle: byLanguage(language, "E-posta doğrulaması gerekli", "Email verification required"),
+        pendingBody: byLanguage(
+            language,
+            "Hesabına devam etmek için doğrulama e-postası iste veya e-postadaki bağlantıyı açtıktan sonra tekrar kontrol et.",
+            "Request a verification email, or check again after opening the link in your email.",
+        ),
+        resend: byLanguage(language, "Doğrulama e-postasını tekrar gönder", "Resend verification email"),
+        resending: byLanguage(language, "Gönderiliyor…", "Sending…"),
+        checkAgain: byLanguage(language, "Doğrulamayı kontrol et", "Check verification"),
+        checking: byLanguage(language, "Kontrol ediliyor…", "Checking…"),
+        stillUnverified: byLanguage(language, "E-posta henüz doğrulanmadı. Bağlantıyı açtıktan sonra tekrar dene.", "Your email is not verified yet. Open the link and check again."),
+        resendSucceeded: byLanguage(language, "Doğrulama isteği gönderildi. Gelen kutunu ve spam klasörünü kontrol et.", "Verification requested. Check your inbox and spam folder."),
+        sessionMissing: byLanguage(language, "Doğrulamaya devam etmek için hesabına tekrar giriş yap.", "Sign in again to continue verification."),
+        signOut: byLanguage(language, "Başka hesapla giriş yap", "Sign in with another account"),
+        signOutFailed: byLanguage(language, "Şu anda çıkış yapılamıyor. Lütfen tekrar dene.", "Unable to sign out right now. Please try again."),
     },
 });
 
@@ -125,8 +146,14 @@ export const getAuthErrorMessage = (language: string | null | undefined, key: st
     switch (key) {
         case "invalidCredentials":
             return byLanguage(language, "Kullanıcı adı veya şifre hatalı.", "Incorrect username or password.");
-        case "emailAlreadyInUse":
-            return byLanguage(language, "Bu e-posta adresi ile zaten bir hesap var.", "An account already exists for this email address.");
+        case "signupUnavailable":
+            return byLanguage(
+                language,
+                "Bu bilgilerle kayıt işlemini tamamlayamadık. Daha önce hesap oluşturduysan giriş yapmayı veya erişimini kurtarmayı dene.",
+                "We couldn't complete registration with these details. If you may already have an account, try signing in or recovering access.",
+            );
+        case "signupNetwork":
+            return byLanguage(language, "Bağlantını kontrol edip kayıt işlemini tekrar dene.", "Check your connection and try registration again.");
         case "weakPassword":
             return byLanguage(
                 language,
@@ -145,8 +172,12 @@ export const getAuthErrorMessage = (language: string | null | undefined, key: st
             return byLanguage(language, "Şifre hatalı. Lütfen tekrar dene.", "Password is incorrect. Please try again.");
         case "emailRequired":
             return byLanguage(language, "E-posta adresi gerekli.", "Email address is required.");
-        case "resetUserNotFound":
-            return byLanguage(language, "Bu e-posta adresi ile eşleşen bir hesap bulunamadı.", "No account was found for this email address.");
+        case "verificationNetwork":
+            return byLanguage(language, "Bağlantını kontrol edip tekrar dene.", "Check your connection and try again.");
+        case "verificationSession":
+            return byLanguage(language, "Doğrulamaya devam etmek için tekrar giriş yap.", "Sign in again to continue verification.");
+        case "verificationRequestFailed":
+            return byLanguage(language, "Doğrulama e-postası şu anda istenemedi. Lütfen tekrar dene.", "We couldn't request a verification email. Please try again.");
         default:
             return null;
     }

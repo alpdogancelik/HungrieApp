@@ -24,11 +24,13 @@ import { getRestaurantImageSource } from "@/lib/assets";
 import { formatCurrency } from "@/lib/cart.utils";
 import { useFavoritesStore } from "@/src/data/favoritesRepository";
 import { useMenuItemImage } from "@/src/features/restaurantMenu/hooks/useMenuItemImage";
+import { kurusToTry, minimumOrderKurusFromRestaurant } from "@/src/features/cartCheckout/minimumOrderModel";
 import type { SearchResult } from "@/src/hooks/useSearch";
 import { useSearchScreenV3 } from "@/src/hooks/useSearchScreenV3";
 import { CATEGORY_CARDS } from "@/src/lib/categoryCards";
 import { makeShadow } from "@/src/lib/shadowStyle";
 import { showUserMessage } from "@/src/lib/showUserMessage";
+import { isRestaurantOpenForOrdering } from "@/src/lib/restaurantAvailability";
 import { useWebDocumentTitle } from "@/src/lib/useWebDocumentTitle";
 import { useTheme } from "@/src/theme/themeContext";
 import useAuthStore from "@/store/auth.store";
@@ -115,10 +117,8 @@ const restaurantEta = (restaurant: any, locale: "tr" | "en") => {
 };
 
 const restaurantMinimum = (restaurant: any) => {
-    const value = parseNumber(
-        restaurant?.minimumOrderAmount ?? restaurant?.minimumOrder ?? restaurant?.minOrderAmount ?? restaurant?.minBasketAmount,
-    );
-    return value === null ? null : formatCurrency(value);
+    const value = minimumOrderKurusFromRestaurant(restaurant);
+    return value === null ? null : formatCurrency(kurusToTry(value));
 };
 
 const restaurantRating = (restaurant: any) => {
@@ -234,12 +234,14 @@ const RestaurantResult = memo(({ colors, restaurant, foodItem, locale, favorite,
     const eta = restaurantEta(restaurant, locale);
     const minimum = restaurantMinimum(restaurant);
     const cuisine = restaurantCuisine(restaurant, locale === "tr" ? "Mutfak" : "Cuisine");
+    const open = isRestaurantOpenForOrdering(restaurant);
 
     useEffect(() => setCandidateIndex(0), [foodItem?.id, id]);
 
     return (
-        <View style={[styles.restaurantCardShell, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View style={[styles.restaurantCardShell, { backgroundColor: colors.surface, borderColor: colors.border }, !open && styles.restaurantCardClosed]}>
             <Pressable
+                accessibilityHint={!open ? (locale === "tr" ? "Bu restoran şu anda sipariş almıyor." : "This restaurant is not accepting orders right now.") : undefined}
                 accessibilityLabel={name}
                 accessibilityRole="button"
                 onPress={onPress}
@@ -255,6 +257,11 @@ const RestaurantResult = memo(({ colors, restaurant, foodItem, locale, favorite,
                 />
                 <View style={styles.restaurantCardCopy}>
                     <Text numberOfLines={1} style={[styles.restaurantCardName, { color: colors.text }]}>{name}</Text>
+                    {!open ? (
+                        <View style={[styles.restaurantClosedBadge, { backgroundColor: colors.placeholder }]}>
+                            <Text style={[styles.restaurantClosedText, { color: colors.secondary }]}>{locale === "tr" ? "Kapalı" : "Closed"}</Text>
+                        </View>
+                    ) : null}
                     <View style={styles.restaurantRatingRow}>
                         {rating ? (
                             <View style={styles.restaurantRatingBadge}>
@@ -373,8 +380,18 @@ export default function SearchScreen() {
     }, [setCategory, setQuery]);
     const openRestaurant = useCallback((value: any, fallback = "") => {
         const id = restaurantId(value, fallback);
+        if (!isRestaurantOpenForOrdering(value)) {
+            showUserMessage(
+                copy("Restaurant closed", "Restoran kapalı"),
+                copy(
+                    "This restaurant is not accepting orders right now.",
+                    "Bu restoran şu anda sipariş almıyor.",
+                ),
+            );
+            return;
+        }
         if (id) router.push({ pathname: "/restaurants/[id]", params: { id } });
-    }, [router]);
+    }, [copy, router]);
     const restaurantFoodById = useMemo(() => {
         const firstFoodByRestaurant = new Map<string, SearchResult>();
         mealsFlat.forEach((dish) => {
@@ -588,9 +605,12 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "stretch",
     },
+    restaurantCardClosed: { opacity: 0.58 },
     restaurantCardImage: { width: 104, height: 104, borderRadius: 12 },
     restaurantCardCopy: { flex: 1, minWidth: 0, paddingLeft: 12, paddingRight: 38, paddingTop: 3, paddingBottom: 3 },
     restaurantCardName: { fontFamily: "ChairoSans", fontSize: 16, lineHeight: 20, fontWeight: "700" },
+    restaurantClosedBadge: { alignSelf: "flex-start", marginTop: 6, minHeight: 23, borderRadius: 8, paddingHorizontal: 8, alignItems: "center", justifyContent: "center" },
+    restaurantClosedText: { fontFamily: "ChairoSans", fontSize: 12, lineHeight: 15, fontWeight: "700" },
     restaurantRatingRow: { minWidth: 0, marginTop: 7, flexDirection: "row", alignItems: "center", gap: 7 },
     restaurantRatingBadge: { height: 25, borderRadius: 8, paddingHorizontal: 7, backgroundColor: "#16B364", flexDirection: "row", alignItems: "center", gap: 4 },
     restaurantRatingText: { color: "#FFFFFF", fontFamily: "ChairoSans", fontSize: 12.5, lineHeight: 16, fontWeight: "700" },

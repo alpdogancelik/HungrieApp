@@ -3,6 +3,7 @@ import "./styles.css";
 import { AdminProviders } from "@/components/AdminProviders";
 
 export const metadata: Metadata = { title: "Hungrie Admin" };
+export const dynamic = "force-dynamic";
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

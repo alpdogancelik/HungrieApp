@@ -2,6 +2,17 @@ begin;
 
 select plan(38);
 
+-- Token RPCs now require the canonical active account state established by the
+-- legacy-authorization remediation; make that dependency explicit in this test.
+insert into private.account_access(profile_id,account_type,status,activated_at)
+values ('fixture_customer','customer','active',statement_timestamp());
+insert into private.account_access(
+  profile_id,account_type,status,activated_at,restaurant_id,restaurant_role
+) values ('fixture_owner','restaurant','active',statement_timestamp(),'fixture_restaurant_a','owner');
+insert into private.account_access(
+  profile_id,account_type,status,activated_at,admin_role,admin_mfa_enrolled_at
+) values ('fixture_super_admin','admin','active',statement_timestamp(),'super_admin',statement_timestamp());
+
 select has_table('private','notification_preferences','notification preferences are protected');
 select has_table('private','notification_events','notification events are protected');
 select has_table('private','notification_deliveries','notification deliveries are protected');
@@ -60,7 +71,7 @@ select is(private.expire_pending_orders(100),1,'expiry job cancels one expired o
 select is((select status::text from public.orders where id='m10_expired'),'canceled','expired order becomes canceled');
 select is((select count(*)::integer from private.order_status_history where order_id='m10_expired' and source='system'),1,'expiry writes status history');
 
-select set_config('request.jwt.claims','{"role":"authenticated","platform_role":"super_admin","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_super_admin"}',true);
+select set_config('request.jwt.claims','{"role":"authenticated","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_super_admin","email_verified":true,"firebase":{"sign_in_second_factor":"totp"}}',true);
 set local role authenticated;
 select ok(length(public.create_restaurant('{"name":"M10 Synthetic","is_active":false}'::jsonb))>0,'super-admin can create an inactive restaurant');
 reset role;

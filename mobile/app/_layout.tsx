@@ -14,12 +14,14 @@ import { onIdTokenChanged } from "firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import useAuthStore from "@/store/auth.store";
+import { bindCartToIdentity, invalidateCartIdentity } from "@/store/cart.store";
 import { ThemeProvider, useTheme } from "@/src/theme/themeContext";
 import i18n from "@/src/lib/i18n";
 import "./globals.css";
 import { isRemotePushSupported, NotificationManager } from "@/src/features/notifications/NotificationManager";
 import { startOrderStatusWatcher } from "@/src/features/notifications/orderStatusWatcher";
 import { createBoundedRetry } from "@/src/features/notifications/boundedRetry";
+import { classifyPushCleanupFailure } from "@/src/features/auth/logoutBoundary";
 import { getCurrentAuthUserId } from "@/src/data/authRepository";
 import CartLockNotice from "@/components/CartLockNotice";
 import SplashPulse from "@/components/SplashPulse";
@@ -35,6 +37,9 @@ import { useReducedMotion } from "@/src/lib/useReducedMotion";
 import webSplashImage from "../assets/hungriesplash.png";
 import mobileSplashImage from "../assets/hungriesplashmobile.png";
 import { auth } from "@/lib/firebase";
+import { bindRecentSearchesToIdentity, invalidateRecentSearchIdentity } from "@/src/lib/recentSearchesStorage";
+import { sanitizeSentryEvent } from "@/src/lib/operationalTelemetryCore";
+import { clearAddressSessionCache } from "@/src/data/addressRepository";
 
 const extra = Constants.expoConfig?.extra ?? {};
 const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN || extra.EXPO_PUBLIC_SENTRY_DSN;
@@ -60,13 +65,7 @@ if (enableSentry) {
             };
         },
         beforeSend(event) {
-            event.user = undefined;
-            if (event.request) {
-                event.request.cookies = undefined;
-                event.request.data = undefined;
-                event.request.headers = undefined;
-            }
-            return event;
+            return sanitizeSentryEvent(event);
         },
     });
 }
@@ -131,7 +130,7 @@ const ThemeTransitionOverlay = ({ backgroundColor }: { backgroundColor: string }
 
 function RootLayoutBase() {
     const { theme, variant, hydrated: themeHydrated } = useTheme();
-    const { isLoading, isAuthenticated, user, fetchAuthenticatedUser, syncAuthenticatedUser } = useAuthStore();
+    const { isLoading, isAuthenticated, verificationRequired, user, fetchAuthenticatedUser, syncAuthenticatedUser } = useAuthStore();
     const router = useRouter();
     const rootNavigationState = useRootNavigationState();
     const pathname = usePathname();
@@ -184,12 +183,31 @@ function RootLayoutBase() {
 
     useEffect(() => {
         if (!auth) return;
+        const firebaseAuth = auth;
         // onIdTokenChanged emits the persisted Firebase identity once initial
         // restoration finishes. Let this single callback own cold-start auth
         // hydration; starting fetchAuthenticatedUser in parallel can invalidate
         // it and leave the root loading gate waiting indefinitely.
-        const unsubscribe = onIdTokenChanged(auth, () => {
-            void syncAuthenticatedUser(false);
+        const unsubscribe = onIdTokenChanged(firebaseAuth, (firebaseUser) => {
+            // Hide all cart consumers synchronously before resolving the next
+            // Firebase identity. This prevents a badge/screen flash on A → B.
+            invalidateCartIdentity();
+            invalidateRecentSearchIdentity();
+            clearAddressSessionCache();
+            void syncAuthenticatedUser(false).then(() => {
+                const state = useAuthStore.getState();
+                const current = firebaseAuth.currentUser;
+                const ownerUid = state.isAuthenticated
+                    && current
+                    && current.uid === firebaseUser?.uid
+                    && current.emailVerified
+                    ? current.uid
+                    : null;
+                return Promise.all([
+                    bindCartToIdentity(ownerUid),
+                    bindRecentSearchesToIdentity(ownerUid),
+                ]);
+            });
         });
         const appStateSubscription = AppState.addEventListener("change", (state) => {
             if (state === "active") void syncAuthenticatedUser(true);
@@ -242,6 +260,14 @@ function RootLayoutBase() {
         if (typeof document === "undefined") return;
         document.title = "HungrieApp";
     }, [pathname]);
+
+    useEffect(() => {
+        if (!rootNavigationState?.key || isLoading || !verificationRequired || pathname === "/check-email") return;
+        router.replace({
+            pathname: "/check-email",
+            params: { email: verificationRequired.email, status: "unverified" },
+        });
+    }, [isLoading, pathname, rootNavigationState?.key, router, verificationRequired]);
 
     useEffect(() => {
         NotificationManager.ensureNotificationHandler();
@@ -316,7 +342,11 @@ function RootLayoutBase() {
         if (!isRemotePushSupported()) return;
 
         unregisterPushToken().catch((error) => {
-            console.warn("[notifications] Failed to unregister push token", error);
+            console.warn("[notifications] Post-session push cleanup failed", {
+                operation: "push_unregister",
+                result: "failure",
+                category: classifyPushCleanupFailure(error),
+            });
         });
     }, [isAuthenticated, isLoading]);
 

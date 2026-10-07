@@ -1,5 +1,6 @@
 import { parseHistoryOrderPage, type HistoryOrderPage } from "./orders/orderContract";
-import { buildMenuMediaPath, parseMenuSnapshot, parseRestaurantSettings, type MenuSnapshot, type RestaurantSettings } from "./managementContract";
+import { callRestaurantFunction, restaurantFunctionNames } from "./firebase";
+import { parseMenuSnapshot, parseRestaurantSettings, type MenuSnapshot, type RestaurantSettings } from "./managementContract";
 import { supabase } from "./supabase";
 
 const timeoutMs = 12000;
@@ -16,6 +17,11 @@ async function rpc<T>(name: string, args: Record<string, unknown>, parse: (value
 }
 
 const identity = <T>(value: unknown) => value as T;
+const bytesToBase64 = (bytes: Uint8Array) => {
+  let binary = "";
+  for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+  return btoa(binary);
+};
 export const restaurantManagementRepository = {
   listHistory(cursor: string | null, search = "", limit = 25, signal?: AbortSignal): Promise<HistoryOrderPage> {
     return rpc("restaurant_list_orders_v2", { p_queue: "history", p_cursor: cursor, p_search: search || null, p_limit: Math.min(50, Math.max(1, limit)) }, parseHistoryOrderPage, signal);
@@ -29,13 +35,12 @@ export const restaurantManagementRepository = {
   setAvailability(ids: string[], active: boolean, operationId: string) { return rpc("restaurant_bulk_set_item_availability_v1", { p_item_ids: ids, p_active: active, p_operation_id: operationId }, identity); },
   saveItem(definition: Record<string, unknown>, operationId: string) { return rpc("restaurant_save_menu_item_v2", { p_definition: definition, p_operation_id: operationId }, identity); },
   async uploadMenuImage(restaurantId: string, file: File, operationId: string) {
-    const path = buildMenuMediaPath(restaurantId, file.name, operationId);
-    const result = await supabase.storage.from("restaurant-media").upload(path, file, { contentType: file.type, upsert: false });
-    if (result.error) throw result.error;
-    return { path, publicUrl: supabase.storage.from("restaurant-media").getPublicUrl(path).data.publicUrl };
-  },
-  async removeNewMenuImage(path: string) {
-    const result = await supabase.storage.from("restaurant-media").remove([path]); if (result.error) throw result.error;
+    // restaurantId is intentionally not sent: the trusted boundary derives the
+    // tenant from current canonical account state.
+    void restaurantId;
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const result = await callRestaurantFunction<{ path: string; publicUrl: string; mime: string; width: number; height: number; replayed: boolean }>(restaurantFunctionNames.uploadMedia, { operationId, declaredMime: file.type, bytesBase64: bytesToBase64(bytes) });
+    return { path: result.path, publicUrl: result.publicUrl };
   },
   getSettings(signal?: AbortSignal): Promise<RestaurantSettings> { return rpc("restaurant_get_settings_v1", {}, parseRestaurantSettings, signal); },
   updateSettings(changes: Record<string, unknown>, operationId: string, signal?: AbortSignal): Promise<RestaurantSettings> {

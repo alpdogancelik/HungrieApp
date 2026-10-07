@@ -12,7 +12,6 @@ import { auth, firestore } from "@/lib/firebase";
 import type { Address } from "@/src/domain/types";
 
 const LEGACY_STORAGE_KEY = "@hungrie/addresses";
-const LEGACY_CLAIM_KEY = "@hungrie/addresses/legacy-claimed-by";
 
 export type AddressInput = Omit<Address, "id" | "createdAt"> & { id?: string; isDefault?: boolean };
 type Listener = (addresses: Address[]) => void;
@@ -156,68 +155,11 @@ const getUserContext = () => {
     return { userId, col };
 };
 
-const coerceLegacyAddress = (value: any): Address | null => {
-    if (!value || typeof value !== "object") return null;
-    const label = String(value.label ?? "").trim();
-    const line1 = String(value.line1 ?? "").trim();
-    const city = String(value.city ?? "").trim();
-    const country = String(value.country ?? "").trim();
-    if (!label || !line1 || !city || !country) return null;
-
-    return {
-        id: String(value.id ?? nanoid()),
-        label,
-        line1,
-        block: value.block ? String(value.block).trim() : undefined,
-        room: value.room ? String(value.room).trim() : undefined,
-        city,
-        country,
-        isDefault: Boolean(value.isDefault),
-        createdAt: String(value.createdAt ?? new Date().toISOString()),
-    };
-};
-
-const readLegacyAddresses = async (): Promise<Address[]> => {
-    const raw = await AsyncStorage.getItem(LEGACY_STORAGE_KEY).catch((error) => {
-        debugWarn("Failed to read legacy addresses key.", error);
-        return null;
-    });
-    if (!raw) return [];
-
-    try {
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return [];
-        const normalized = parsed
-            .map((item) => coerceLegacyAddress(item))
-            .filter((item): item is Address => Boolean(item));
-        return sortAddresses(normalized);
-    } catch {
-        return [];
-    }
-};
-
-const migrateLegacyAddressesIfNeeded = async (userId: string) => {
-    const claimedBy = await AsyncStorage.getItem(LEGACY_CLAIM_KEY).catch((error) => {
-        debugWarn("Failed to read legacy migration claim key.", error);
-        return null;
-    });
-    if (claimedBy) return;
-
-    const legacyAddresses = await readLegacyAddresses();
-    if (!legacyAddresses.length) return;
-
-    const remoteAddresses = await readFromFirestore(userId);
-    if (remoteAddresses.length) return;
-
-    await writeAllToFirestore(userId, legacyAddresses);
-    await syncUserAddressSummary(userId, legacyAddresses).catch((error) => {
-        debugWarn("Failed to sync legacy address summary to user profile.", error);
-    });
-    await AsyncStorage.setItem(LEGACY_CLAIM_KEY, userId).catch((error) => {
-        debugWarn("Failed to persist legacy migration claim key.", error);
-    });
+const discardOwnerlessLegacyAddresses = async () => {
+    // The v1 array has no trustworthy Firebase UID. It must never be assigned
+    // to the account that happens to sign in after an upgrade.
     await AsyncStorage.removeItem(LEGACY_STORAGE_KEY).catch((error) => {
-        debugWarn("Failed to clear legacy addresses key after migration.", error);
+        debugWarn("Failed to discard ownerless legacy addresses.", error);
     });
 };
 
@@ -232,7 +174,7 @@ export const list = async () => {
     }
 
     try {
-        await migrateLegacyAddressesIfNeeded(userId);
+        await discardOwnerlessLegacyAddresses();
         const remote = await readFromFirestore(userId);
         if (getCurrentUserId() !== userId) {
             return [];

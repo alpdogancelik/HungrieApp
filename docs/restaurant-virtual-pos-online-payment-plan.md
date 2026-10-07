@@ -1,8 +1,135 @@
 # Hungrie Restaurant Virtual POS and Online Payment Plan
 
-**Status:** Planned / disabled / not approved for hosted implementation
+**Status:** Milestone A implemented locally and deployed to Staging / customer online payment HARD DISABLED / Production activation NOT AUTHORIZED
 **Prepared:** 2026-10-03
+**Last implementation update:** 2026-10-07
 **Scope:** Provider-neutral Turkish Virtual POS preparation, dual commission accounting, Admin configuration, Restaurant earnings, payment execution, refunds, settlement, and controlled activation
+
+> **SAFETY WARNING — ONLINE PAYMENTS ARE NOT AVAILABLE.** The existence of payment types, private tables, a simulated adapter, commission preparation UI, or earnings projections does not mean that online payments are approved, configured, safe to activate, or deployed. No real provider is selected, no provider credentials exist, and Production activation is unauthorized.
+
+## Implementation Status — 2026-10-07
+
+### A. Current commercial status
+
+```text
+Bank/provider selected: NO
+Agreement signed: NO
+Real provider integration: NOT STARTED
+Customer online payment: HARD DISABLED
+Production activation: NOT AUTHORIZED
+```
+
+On 2026-10-07, migrations `20261007110000_virtual_pos_payment_method.sql` and `20261007120000_virtual_pos_provider_independent_foundation.sql` were applied to the registered Staging Supabase project so the Restaurant application could use the guarded earnings v2 projections. Production was not touched. No real payment or refund was attempted.
+
+### B. Milestone A — Virtual POS Foundation (Provider-Independent)
+
+| Planned item | Status | Repository evidence / boundary |
+|---|---|---|
+| Distinct `virtual_pos` payment method | IMPLEMENTED | `20261007110000_virtual_pos_payment_method.sql`; existing `cash` and physical-at-delivery `pos` meanings are unchanged. |
+| Customer feature gate | IMPLEMENTED | `private.virtual_pos_configuration` is constrained against `active` and customer availability; `private.virtual_pos_customer_available_v1()` always returns false; every `virtual_pos` order insert is rejected. Customer checkout still renders only cash and physical POS. |
+| Provider-neutral contract and capability declaration | IMPLEMENTED | `packages/domain/src/virtualPos.ts`; core types contain no provider-specific API types. |
+| Deterministic simulated provider | IMPLEMENTED | Local/test-only `SimulatedVirtualPosProvider`; constructor rejects Staging and Production; outcomes are opaque tokens and contain no card fixtures. |
+| Activation lifecycle | PARTIALLY IMPLEMENTED | Lifecycle states are modeled, but Milestone A deliberately makes `active` impossible and exposes no activation mutation. Later provider gates and approval workflow are deferred. |
+| Payment state machine | IMPLEMENTED | Guarded server transition function, row lock/version, valid-transition matrix, immutable operation/event records, and `unknown` reconciliation gate. |
+| Callback/webhook idempotency foundation | IMPLEMENTED | Stable operation IDs and optional provider-event identity digests provide replay/deduplication storage. Real signature and payload adapters are deferred. |
+| Payment attempt persistence | IMPLEMENTED | Private, FORCE-RLS checkout intent, attempt, operation, and sanitized event tables. Direct client access is denied. |
+| Payment/order separation | IMPLEMENTED | Checkout intents and attempts do not create or activate Restaurant orders; order linkage is nullable and deterministic. |
+| Separate Virtual POS commission rules | IMPLEMENTED | Append-only, Restaurant-scoped, effective-dated rules with operation IDs, reason, contract metadata, Super Admin authority, recent auth, and audit event. |
+| Immutable dual financial snapshots | IMPLEMENTED | Existing order terms/snapshots were extended in place. Hungrie and configured Virtual POS deductions are independently calculated from the same base. Cash and physical POS retain a zero Virtual POS deduction. |
+| Admin preparation UI | IMPLEMENTED | Existing Restaurant commission screen now shows the HARD DISABLED state and can prepare/view Virtual POS rules without any activation control. |
+| Restaurant estimated earnings | IMPLEMENTED | V2 server projections and Restaurant UI distinguish Hungrie commission, estimated Virtual POS commission, total deductions, estimated Restaurant net, and unreconciled provider fees. Existing v1 RPCs remain for compatibility. The v2 projections were verified in Staging for an active Restaurant owner on 2026-10-07. |
+| Refund/reconciliation domain | PARTIALLY IMPLEMENTED | Append-only intent/adjustment categories, reconciliation status, unknown-state resolution, chargeback state, and nullable/deferred provider-cost semantics exist. Provider-specific deadlines, fee behavior, automated discrepancy detector, settlement imports, and operational case UI are deferred. |
+| Real Customer payment orchestration | DEFERRED | Requires a selected provider and later approval. There is intentionally no customer route, session endpoint, callback endpoint, or success authority. |
+| Real provider adapter | DEFERRED | Requires the signed provider agreement and exact API documentation/version. |
+| Sandbox/Staging/Production qualification | DEFERRED | No provider sandbox or credentials exist. Production qualification and BLOCKER-03 were not changed. |
+
+### C. Explicit deferred work
+
+The following require a real bank/payment-provider agreement, legal/accounting resolution, later hosted-mutation approval, or explicit Production approval:
+
+- final commercial model;
+- merchant, submerchant, or merchant-of-record decision;
+- provider selection and exact provider API/documentation version;
+- provider credentials and approved secret-storage configuration;
+- provider request, callback, and webhook signatures;
+- exact 3DS flow and exact callback/webhook format;
+- exact preauthorization, capture, and void behavior;
+- exact full/partial refund rules and deadlines;
+- actual provider fee, tax, and fee-refund rules;
+- installment behavior;
+- settlement ownership, reports, references, and timing;
+- provider certification and sandbox qualification;
+- full Staging payment qualification;
+- Production callback registration;
+- real payments and refunds;
+- Production activation and pilot expansion.
+
+No provider-specific behavior should be inferred from the simulated adapter or provider-neutral event names.
+
+### D. Resume Here After Bank / Payment Provider Agreement
+
+1. Re-read the current repository before modifying anything.
+2. Re-open Phase 0 commercial, legal, and accounting decisions.
+3. Record the selected provider and exact API/documentation version.
+4. Record the selected settlement/commercial model.
+5. Confirm fee, tax, and commission-base treatment with legal and accounting.
+6. Implement exactly one real provider adapter against the provider-neutral contract.
+7. Add provider secrets only to approved server-side secret storage.
+8. Configure separate Development, Staging, and Production merchant identities.
+9. Register HTTPS callback and webhook endpoints.
+10. Implement and verify the provider's signature validation.
+11. Implement provider status lookup and reconciliation.
+12. Implement the provider's actual authorization, capture, void, and refund behavior.
+13. Run provider sandbox certification.
+14. Run full Staging payment qualification.
+15. Re-run release/security qualification, including BLOCKER-08.
+16. Run BLOCKER-03 against the new exact release candidate.
+17. Require explicit approval before Production activation.
+18. Pilot with one approved Restaurant and a bounded low-value real payment/refund.
+19. Reconcile the provider settlement before expansion.
+
+The first implementation task after the agreement is to review, not remove, the Milestone A hard-disable constraint and order guard. They may be replaced only by a reviewed multi-gate activation design after the real adapter and qualification evidence exist.
+
+### E. Provisional accounting rule
+
+```text
+Both configured Hungrie commission and configured Virtual POS commission
+currently use the same immutable commission base.
+```
+
+**PROVISIONAL — MUST BE RECONFIRMED AFTER PROVIDER, LEGAL, AND ACCOUNTING REVIEW.**
+
+The current formula uses integer kuruş, basis points, and half-up rounding. Historical snapshots are immutable; a reviewed future contract must receive a new contract version and must not recalculate prior orders.
+
+### F. Provider cost distinction
+
+```text
+Configured Restaurant Virtual POS commission
+!=
+Actual bank/payment-provider fee
+```
+
+This distinction is permanent unless a future reviewed contract explicitly makes the values identical. Milestone A does not fabricate actual provider fees, provider tax, settlement references, or settlement timestamps.
+
+### G. Safety boundary retained
+
+- No customer-visible or deep-linkable online-card action exists.
+- Browser state cannot establish payment success.
+- Direct Customer or Restaurant writes to authoritative payment records are denied.
+- Payment tables use FORCE RLS and are accessed only by locked-down server functions.
+- Provider payload dumping and common sensitive card-data keys are rejected by schema/function checks.
+- No PAN, CVV/CVC, expiry, 3DS challenge content, provider secrets, or realistic card fixtures were introduced.
+- Admin can prepare commercial rules but cannot enable online payment.
+- Production deployment, provider configuration, and payment activation remain outside this milestone.
+
+### H. Staging foundation deployment — 2026-10-07
+
+- Applied exactly migrations `20261007110000` and `20261007120000` to the registered Staging Supabase project; no seed or role files were applied.
+- Verified all three guarded Restaurant earnings v2 RPCs through an active owner context.
+- Verified the authoritative configuration remained `unconfigured`, `customer_available=false`, and `provider_adapter_id=null`.
+- Verified Staging contained zero `virtual_pos` orders and existing cash/physical-POS snapshots had zero Virtual POS deductions.
+- Verified historical order counts and the pre/post order digest were unchanged.
+- This was a foundation/earnings availability deployment only. It was not provider sandbox qualification, payment qualification, Production qualification, or authorization to activate online payments.
 
 ## 1. Objective
 

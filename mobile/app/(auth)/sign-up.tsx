@@ -332,10 +332,10 @@ const SignUp = () => {
         if (feedback) setFeedback(null);
     };
 
-    const goToCheckEmail = (email: string) => {
+    const goToCheckEmail = (email: string, status: "requested" | "failed") => {
         router.replace({
             pathname: "/check-email",
-            params: { email },
+            params: { email, status },
         });
     };
 
@@ -373,8 +373,8 @@ const SignUp = () => {
         setFeedback(null);
 
         try {
-            await createUser({ email, password, name, whatsappNumber: whatsappNumber || undefined });
-            goToCheckEmail(email);
+            const result = await createUser({ email, password, name, whatsappNumber: whatsappNumber || undefined });
+            goToCheckEmail(email, result.verificationRequest.state === "requested" ? "requested" : "failed");
         } catch (error: any) {
             setFeedback({
                 title: copy.emptyErrorTitle,

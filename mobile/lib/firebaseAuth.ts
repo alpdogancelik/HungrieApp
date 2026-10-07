@@ -1,6 +1,5 @@
 ﻿import {
     createUserWithEmailAndPassword,
-    deleteUser,
     onAuthStateChanged,
     sendPasswordResetEmail,
     signInWithEmailAndPassword,
@@ -37,6 +36,14 @@ import { transitionOrder as transitionFirebaseOrder } from "@/src/services/fireb
 import i18n from "@/src/lib/i18n";
 import { getAuthErrorMessage } from "@/src/features/auth/authCopy";
 import { isStrongPassword } from "@/src/features/auth/passwordValidation";
+import {
+    createAccountAndRequestVerification,
+    createEmailVerificationCoordinator,
+    type VerificationFailureCategory,
+} from "@/src/features/auth/emailVerificationFlow";
+import { requestPasswordReset } from "@/src/features/auth/passwordResetFlow";
+import { classifyPublicSignInFailure } from "@/src/features/auth/credentialPrivacy";
+import { classifyPublicSignupFailure, signupFailureCopyKey } from "@/src/features/auth/signupPrivacy";
 
 export { getOwnedRestaurantId } from "./restaurantOwnership";
 
@@ -77,16 +84,8 @@ const normalizeAuthErrorMessage = (error: any) => {
     const rawMessage = parseErr(error);
     const message = rawMessage.toLowerCase();
 
-    if (
-        code === "auth/wrong-password" ||
-        code === "auth/user-not-found" ||
-        code === "auth/invalid-credential" ||
-        code === "auth/invalid-login-credentials"
-    ) {
+    if (classifyPublicSignInFailure(code) === "invalid_credentials") {
         return getAuthErrorMessage(language, "invalidCredentials") || rawMessage;
-    }
-    if (code === "auth/email-already-in-use") {
-        return getAuthErrorMessage(language, "emailAlreadyInUse") || rawMessage;
     }
     if (code === "auth/weak-password") {
         return getAuthErrorMessage(language, "weakPassword") || rawMessage;
@@ -123,6 +122,13 @@ const normalizeAuthErrorMessage = (error: any) => {
     return rawMessage;
 };
 
+const normalizeSignupErrorMessage = (error: unknown) => {
+    const failure = classifyPublicSignupFailure(error);
+    return getAuthErrorMessage(i18n.language, signupFailureCopyKey(failure))
+        || getAuthErrorMessage(i18n.language, "signupUnavailable")
+        || "We couldn't complete registration with these details.";
+};
+
 const waitForAuthUser = async (): Promise<FirebaseUser | null> => {
     const firebaseAuth = auth;
     if (!firebaseAuth) return null;
@@ -155,14 +161,35 @@ const waitForAuthUser = async (): Promise<FirebaseUser | null> => {
     });
 };
 
+const emailVerificationCoordinator = createEmailVerificationCoordinator({
+    send: (user) => sendEmailVerification(user as FirebaseUser),
+    reload: (user) => reload(user as FirebaseUser),
+    forceTokenRefresh: (user) => (user as FirebaseUser).getIdToken(true),
+});
+
+const logVerificationFailure = (operation: "initial_request" | "resend" | "refresh", category: VerificationFailureCategory) => {
+    console.warn("[auth] Email verification operation failed", { operation, category });
+};
+
+export const getVerificationErrorMessage = (category: VerificationFailureCategory) => {
+    if (category === "too_many_requests") {
+        return getAuthErrorMessage(i18n.language, "tooManyRequests") || "Too many attempts. Please try again later.";
+    }
+    if (category === "network") {
+        return getAuthErrorMessage(i18n.language, "verificationNetwork") || "Check your connection and try again.";
+    }
+    if (category === "invalid_session") {
+        return getAuthErrorMessage(i18n.language, "verificationSession") || "Sign in again to continue verification.";
+    }
+    return getAuthErrorMessage(i18n.language, "verificationRequestFailed") || "We couldn't request a verification email. Please try again.";
+};
+
 const ensureVerified = async (user: FirebaseUser | null) => {
     if (!user) return null;
-    await reload(user).catch(() => null);
-    if (user.emailVerified) return user;
-    await firebaseSignOut(requireAuth()).catch(() => null);
-    throw new Error(
-        getAuthErrorMessage(i18n.language, "verifyEmail") || "Please verify your email using the link we sent and then sign in again.",
-    );
+    const result = await emailVerificationCoordinator.refresh(user);
+    if (result.state === "verified") return user;
+    if (result.state === "failed") throw new Error(getVerificationErrorMessage(result.category));
+    return null;
 };
 
 const syncProfile = async (user: FirebaseUser, overrides: Partial<Profile> = {}) => {
@@ -213,7 +240,11 @@ export const signIn = async ({ email, password }: { email: string; password: str
     try {
         const credential = await signInWithEmailAndPassword(requireAuth(), email, password);
         const verifiedUser = await ensureVerified(credential.user);
-        return verifiedUser ? mapFirebaseUser(verifiedUser) : null;
+        if (verifiedUser) return mapFirebaseUser(verifiedUser);
+        return {
+            verificationRequired: true as const,
+            email: credential.user.email || email,
+        };
     } catch (e: any) {
         throw new Error(normalizeAuthErrorMessage(e));
     }
@@ -235,21 +266,22 @@ export const createUser = async ({
     }
 
     try {
-        const credential = await createUserWithEmailAndPassword(requireAuth(), email, password);
-        const user = credential.user;
-        if (user) {
-            await updateProfile(user, {
-                displayName: name,
-                photoURL: whatsappNumber ? `wa:${whatsappNumber}` : user.photoURL ?? undefined,
-            }).catch(() => null);
-            await sendEmailVerification(user).catch(() => null);
+        const result = await createAccountAndRequestVerification({
+            createAccount: async () => (await createUserWithEmailAndPassword(requireAuth(), email, password)).user,
+            prepareAccount: async (user) => {
+                await updateProfile(user, {
+                    displayName: name,
+                    photoURL: whatsappNumber ? `wa:${whatsappNumber}` : user.photoURL ?? undefined,
+                }).catch(() => null);
+            },
+            requestVerification: (user) => emailVerificationCoordinator.request(user),
+        });
+        if (result.verificationRequest.state === "failed") {
+            logVerificationFailure("initial_request", result.verificationRequest.category);
         }
-        const target = user || (await waitForAuthUser());
-        if (!target) throw new Error("User session could not be established.");
-        await firebaseSignOut(requireAuth()).catch(() => null);
-        return { emailVerificationSent: true, email: target.email || email };
+        return result;
     } catch (e: any) {
-        throw new Error(normalizeAuthErrorMessage(e));
+        throw new Error(normalizeSignupErrorMessage(e));
     }
 };
 
@@ -260,86 +292,37 @@ export const getCurrentUser = async () => {
     return verified ? mapFirebaseUser(verified) : null;
 };
 
+export const getCurrentVerificationSession = async () => {
+    const user = await waitForAuthUser();
+    if (!user) return null;
+    return { uid: user.uid, email: user.email || "", emailVerified: user.emailVerified };
+};
+
+export const resendEmailVerification = async () => {
+    const user = await waitForAuthUser();
+    if (!user) return { state: "failed" as const, category: "invalid_session" as const };
+    const result = await emailVerificationCoordinator.request(user);
+    if (result.state === "failed") logVerificationFailure("resend", result.category);
+    return result;
+};
+
+export const refreshEmailVerification = async () => {
+    const result = await emailVerificationCoordinator.refresh(await waitForAuthUser());
+    if (result.state === "failed") logVerificationFailure("refresh", result.category);
+    return result;
+};
+
+export const signOutVerificationSession = async () => firebaseSignOut(requireAuth());
+
 export const signOut = async () => {
     return firebaseSignOut(requireAuth());
 };
 
-const RECENT_LOGIN_MAX_AGE_MS = 10 * 60 * 1000;
-
-const hasRecentLogin = (authUser: FirebaseUser) => {
-    const lastSignInTime = authUser.metadata.lastSignInTime ? new Date(authUser.metadata.lastSignInTime).getTime() : 0;
-    if (!lastSignInTime) return false;
-    return Date.now() - lastSignInTime <= RECENT_LOGIN_MAX_AGE_MS;
-};
-
-const deleteCollectionDocs = async (segments: string[]) => {
-    const db = requireDB();
-    const [firstSegment, ...restSegments] = segments;
-    if (!firstSegment) return;
-    const snapshot = await getDocs(collection(db, firstSegment, ...restSegments)).catch(() => null);
-    if (!snapshot || snapshot.empty) return;
-    await Promise.all(snapshot.docs.map((entry) => deleteDoc(entry.ref).catch(() => null)));
-};
-
-const scrubUserOrders = async (userId: string) => {
-    const db = requireDB();
-    const ordersSnapshot = await getDocs(query(collection(db, FIREBASE_COLLECTIONS.orders), where("userId", "==", userId))).catch(() => null);
-    if (!ordersSnapshot || ordersSnapshot.empty) return;
-
-    await Promise.all(
-        ordersSnapshot.docs.map((orderDoc) =>
-            updateDoc(orderDoc.ref, {
-                userId: `deleted:${userId}`,
-                customerName: "Deleted User",
-                customerEmail: deleteField(),
-                customerWhatsapp: deleteField(),
-                customer: {
-                    name: "Deleted User",
-                },
-                deliveryAddress: deleteField(),
-                deliveryAddressText: deleteField(),
-                updatedAt: Date.now(),
-            }).catch(() => null),
-        ),
-    );
-};
-
-export const deleteCurrentUserProfile = async () => {
-    const authUser = await waitForAuthUser();
-    if (!authUser) throw new Error("User is not signed in.");
-    if (!hasRecentLogin(authUser)) {
-        throw new Error("For security, please sign in again and then try deleting your profile.");
-    }
-
-    const db = requireDB();
-    const userId = authUser.uid;
-
-    await deleteCollectionDocs([FIREBASE_COLLECTIONS.users, userId, "pushTokens"]).catch(() => null);
-    await deleteCollectionDocs([FIREBASE_COLLECTIONS.users, userId, "addresses"]).catch(() => null);
-    await scrubUserOrders(userId).catch(() => null);
-    await deleteDoc(doc(db, FIREBASE_COLLECTIONS.users, userId)).catch(() => null);
-
-    try {
-        await deleteUser(authUser);
-    } catch (error: any) {
-        throw new Error(normalizeAuthErrorMessage(error));
-    }
-
-    await firebaseSignOut(requireAuth()).catch(() => null);
-};
-
 export const sendPasswordReset = async (email: string) => {
-    const trimmed = email.trim();
-    if (!trimmed) throw new Error(getAuthErrorMessage(i18n.language, "emailRequired") || "Email address is required.");
-    try {
-        await sendPasswordResetEmail(requireAuth(), trimmed);
-    } catch (e: any) {
-        const code = String(e?.code || "").toLowerCase();
-        if (code === "auth/user-not-found") {
-            throw new Error(getAuthErrorMessage(i18n.language, "resetUserNotFound") || "No account was found for this email address.");
-        }
-        throw new Error(normalizeAuthErrorMessage(e));
-    }
+    return requestPasswordReset({
+        email,
+        send: (normalizedEmail) => sendPasswordResetEmail(requireAuth(), normalizedEmail),
+    });
 };
 
 export const updateUserProfile = async ({

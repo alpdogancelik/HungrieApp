@@ -2,6 +2,19 @@ const beginSharedAccountDeletion = async ({ uid, environments, begin }) => {
     const begun = [];
     for (const environment of environments) {
         const result = await begin(environment, uid);
+        const state = result?.state;
+        const profileId = result?.profile_id;
+        const valid = state === "not_found"
+            ? !profileId
+            : state === "pending" || state === "completed"
+              ? typeof profileId === "string" && profileId.length > 0
+              : false;
+        if (!valid) {
+            throw Object.assign(new Error("Account anonymization returned an invalid state."), {
+                code: "invalid-begin-result",
+                environment: environment.name,
+            });
+        }
         begun.push({ environment, result });
     }
     return begun;
@@ -10,6 +23,7 @@ const beginSharedAccountDeletion = async ({ uid, environments, begin }) => {
 const finalizeSharedAccountDeletion = async ({ uid, begun, finalize }) => {
     const failures = [];
     for (const entry of begun) {
+        if (entry.result?.state === "completed") continue;
         const profileId = entry.result?.profile_id;
         if (!profileId) continue;
         try {

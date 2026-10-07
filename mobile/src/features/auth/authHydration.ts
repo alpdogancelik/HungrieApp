@@ -16,6 +16,11 @@ type AuthIdentity = {
     avatar?: string;
 };
 
+type VerificationSession = {
+    email: string;
+    emailVerified: boolean;
+} | null;
+
 export type AuthSyncState = {
     user: AuthHydrationUser | null;
 };
@@ -45,6 +50,16 @@ export const resolveAuthHydration = (
         ? { isAuthenticated: true as const, user }
         : { isAuthenticated: false as const, user: null };
 };
+
+export const resolveAuthSessionHydration = (
+    persistedIdentity: AuthIdentity | null,
+    verificationSession: VerificationSession,
+) => ({
+    ...resolveAuthHydration(null, persistedIdentity),
+    verificationRequired: !persistedIdentity && verificationSession && !verificationSession.emailVerified
+        ? { email: verificationSession.email }
+        : null,
+});
 
 export const resolveAuthSyncHydration = (
     state: AuthSyncState,

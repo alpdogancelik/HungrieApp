@@ -4,6 +4,7 @@ import {
   buildExpoMessage,
   classifyExpoError,
   classifyHttpFailure,
+  safeOperationalErrorCode,
   sanitizeError,
 } from "./logic.ts";
 import { checkNotificationReceipts, dispatchNotifications } from "./worker.ts";
@@ -52,6 +53,13 @@ test("classifies retryable and permanent transport errors", () => {
 
 test("redacts Expo push tokens from errors", () => {
   assert.equal(sanitizeError("bad ExpoPushToken[secret_value]"), "bad [push-token]");
+});
+
+test("operational worker errors retain only a stable code", () => {
+  const sensitive = new Error("customer@example.test Bearer synthetic-token ExpoPushToken[secret]");
+  sensitive.code = "WORKER_UNAVAILABLE";
+  assert.equal(safeOperationalErrorCode(sensitive), "WORKER_UNAVAILABLE");
+  assert.equal(safeOperationalErrorCode({ code: "unsafe code customer@example.test" }), "unknown");
 });
 
 const createAdmin = (claims) => {

@@ -1,4 +1,4 @@
-import { formatKurusInput, parseKurus, type MenuItem, type MenuSnapshot } from "./managementContract";
+import { formatKurusInput, parseKurus, type MenuItem, type MenuSnapshot } from "./managementContract.ts";
 
 export type IngredientDraft = { id?: string; name: string; removable: boolean };
 export type OptionDraft = { id?: string; name: string; price: string };

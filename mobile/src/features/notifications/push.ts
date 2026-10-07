@@ -1,6 +1,8 @@
 export const registerTokenWithBackend = async (userId: string | undefined | null, token: string, platform: string) => {
-    // Placeholder for wiring up to backend later
-    console.log("[push] registering token", { userId, token, platform });
+    // Legacy placeholder retained for compatibility. Never log identity or raw
+    // device-token material; the active repository owns registration.
+    void userId;
+    void token;
+    void platform;
     await new Promise((resolve) => setTimeout(resolve, 250));
 };
-

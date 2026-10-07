@@ -1,7 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
-const admin = require("firebase-admin");
+const admin = require("../firebaseAdminCompat");
 const { buildIdentityImportSql, canonicalJson, transformIdentity } = require("./identityMigration");
 
 const ROOT_DIR = path.resolve(__dirname, "..", "..");

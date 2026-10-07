@@ -3,21 +3,28 @@ select no_plan();
 
 insert into private.account_access(profile_id,account_type,status,activated_at,restaurant_id,restaurant_role)
 values('fixture_owner','restaurant','active',statement_timestamp(),'fixture_restaurant_a','owner');
+insert into private.account_access(profile_id,account_type,status,activated_at)
+values('fixture_customer','customer','active',statement_timestamp());
 select set_config('request.jwt.claims','{"role":"authenticated","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_owner"}',true);
 
 select ok(has_function_privilege('authenticated','public.restaurant_get_dashboard_v1()','execute'),'guarded Restaurant dashboard is reachable');
 select ok(has_function_privilege('authenticated','public.restaurant_can_manage_media_object_v1(text)','execute'),'Restaurant media predicate is callable by Storage RLS');
+select ok(has_function_privilege('authenticated','public.restaurant_media_upload_allowed_v1(text)','execute'),'Restaurant upload quota predicate is callable by Storage RLS');
 select ok(not has_function_privilege('authenticated','private.current_restaurant_id()','execute'),'canonical Restaurant helper remains private');
 select ok(not has_table_privilege('authenticated','private.restaurant_operations','select'),'operation ledger is private');
 select ok(not has_table_privilege('authenticated','public.menu_option_groups','select'),'menu definition tables are not directly exposed');
 select is((public.restaurant_get_dashboard_v1()->>'restaurantId'),'fixture_restaurant_a','dashboard derives canonical scope');
-select ok(private.can_subscribe_restaurant_v1_topic('restaurant-orders:v1:fixture_restaurant_a'),'canonical topic allows own Restaurant');
-select ok(not private.can_subscribe_restaurant_v1_topic('restaurant-orders:v1:fixture_restaurant_b'),'canonical topic denies another Restaurant');
+select ok(private.can_subscribe_restaurant_v2_topic(public.restaurant_order_realtime_topic_v2()),'generation-bound topic allows own Restaurant');
+select ok(not private.can_subscribe_restaurant_v1_topic('restaurant-orders:v1:fixture_restaurant_a'),'static legacy Restaurant topic fails closed');
 select ok(public.restaurant_can_manage_media_object_v1('fixture_restaurant_a/item.png'),'Restaurant media predicate allows its canonical folder');
+select ok(public.restaurant_media_upload_allowed_v1('fixture_restaurant_a/rate-limited-item.png'),'Restaurant upload predicate allows an in-quota canonical object');
+select ok(not public.restaurant_media_upload_allowed_v1('fixture_restaurant_b/cross-tenant.png'),'Restaurant upload predicate denies another tenant before quota consumption');
 select ok(not public.restaurant_can_manage_media_object_v1('fixture_restaurant_b/item.png'),'Restaurant media predicate denies another folder');
 select ok(not public.restaurant_can_manage_media_object_v1('fixture_restaurant_a'),'Restaurant media predicate requires an object below the folder');
 
 select is((public.restaurant_set_accepting_orders_v1(false,'55555555-0000-4000-8000-000000000001')->>'acceptingOrders')::boolean,false,'Restaurant can close order acceptance');
+select is((select accepting_orders from public.active_restaurants where id='fixture_restaurant_a'),false,'Customer catalog exposes paused order acceptance');
+select is((public.get_active_restaurant_bundle_v2('fixture_restaurant_a')->'restaurant'->>'accepting_orders')::boolean,false,'Customer menu bundle exposes paused order acceptance');
 select is((public.restaurant_set_accepting_orders_v1(false,'55555555-0000-4000-8000-000000000001')->>'acceptingOrders')::boolean,false,'acceptance retry is idempotent');
 select throws_ok($$select public.restaurant_set_accepting_orders_v1(true,'55555555-0000-4000-8000-000000000001')$$,'22023',null,'operation ID cannot be reused with changed request');
 
@@ -51,8 +58,6 @@ select is((select count(*)::integer from private.notification_deliveries d
 select throws_ok($$select public.restaurant_transition_order_v1('phase5_pending',(select updated_at from public.orders where id='phase5_pending'),'canceled',null,null,'55555555-0000-4000-8000-000000000006')$$,'22023',null,'cancellation requires supported reason');
 
 select is((public.restaurant_set_accepting_orders_v1(true,'55555555-0000-4000-8000-000000000007')->>'acceptingOrders')::boolean,true,'Restaurant can reopen after readiness');
-insert into private.account_access(profile_id,account_type,status,activated_at)
-values('fixture_customer','customer','active',statement_timestamp());
 select set_config('request.jwt.claims','{"role":"authenticated","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_customer"}',true);
 select is((public.quote_order_v2('fixture_restaurant_a',jsonb_build_array(jsonb_build_object(
   'menuItemId','phase5_item_a','quantity',2,'optionValueIds',jsonb_build_array('large'),

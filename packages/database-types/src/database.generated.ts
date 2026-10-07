@@ -1027,6 +1027,7 @@ export type Database = {
       }
       active_restaurants: {
         Row: {
+          accepting_orders: boolean | null
           created_at: string | null
           cuisine: string | null
           delivery_eta_max_minutes: number | null
@@ -1045,6 +1046,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          accepting_orders?: boolean | null
           created_at?: string | null
           cuisine?: string | null
           delivery_eta_max_minutes?: number | null
@@ -1063,6 +1065,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          accepting_orders?: boolean | null
           created_at?: string | null
           cuisine?: string | null
           delivery_eta_max_minutes?: number | null
@@ -1714,6 +1717,10 @@ export type Database = {
         Args: { p_restaurant_id: string }
         Returns: Json
       }
+      admin_get_virtual_pos_foundation_v1: {
+        Args: { p_restaurant_id: string }
+        Returns: Json
+      }
       admin_get_restaurant_earnings_summary_v1: {
         Args: { p_from: string; p_restaurant_id: string; p_to: string }
         Returns: Json
@@ -1829,6 +1836,17 @@ export type Database = {
         Args: {
           p_effective_from: string
           p_operation_id: string
+          p_rate_bps: number
+          p_reason: string
+          p_restaurant_id: string
+        }
+        Returns: Json
+      }
+      admin_schedule_virtual_pos_commission_v1: {
+        Args: {
+          p_effective_from: string
+          p_operation_id: string
+          p_provider_contract_version: string
           p_rate_bps: number
           p_reason: string
           p_restaurant_id: string
@@ -2098,6 +2116,7 @@ export type Database = {
           writes_enabled: boolean
         }[]
       }
+      hungrie_data_api_abuse_check: { Args: never; Returns: undefined }
       list_my_customer_addresses_v1: { Args: never; Returns: Json }
       list_my_customer_favorites_v1: { Args: never; Returns: string[] }
       list_my_customer_order_reviews_v1: {
@@ -2235,6 +2254,10 @@ export type Database = {
         }
         Returns: Json
       }
+      restaurant_begin_media_upload_v1: {
+        Args: { p_operation_id: string }
+        Returns: Json
+      }
       restaurant_bulk_set_item_availability_v1: {
         Args: {
           p_active: boolean
@@ -2267,11 +2290,23 @@ export type Database = {
         }
         Returns: Json
       }
+      restaurant_get_earnings_orders_page_v2: {
+        Args: { p_cursor?: string; p_from: string; p_limit?: number; p_to: string }
+        Returns: Json
+      }
       restaurant_get_earnings_series_v1: {
         Args: { p_bucket: string; p_from: string; p_to: string }
         Returns: Json
       }
+      restaurant_get_earnings_series_v2: {
+        Args: { p_bucket: string; p_from: string; p_to: string }
+        Returns: Json
+      }
       restaurant_get_earnings_summary_v1: {
+        Args: { p_from: string; p_to: string }
+        Returns: Json
+      }
+      restaurant_get_earnings_summary_v2: {
         Args: { p_from: string; p_to: string }
         Returns: Json
       }
@@ -2305,6 +2340,10 @@ export type Database = {
         Returns: Json
       }
       restaurant_list_reviews_v1: { Args: { p_limit?: number }; Returns: Json }
+      restaurant_media_upload_allowed_v1: {
+        Args: { p_object_name: string }
+        Returns: boolean
+      }
       restaurant_moderate_review_v1: {
         Args: {
           p_operation_id: string
@@ -2315,6 +2354,7 @@ export type Database = {
         }
         Returns: Json
       }
+      restaurant_order_realtime_topic_v2: { Args: never; Returns: string }
       restaurant_register_web_push_v1: {
         Args: {
           p_device_id: string
@@ -2412,6 +2452,30 @@ export type Database = {
       server_record_admin_mfa_enrollment_v1: {
         Args: { p_firebase_uid: string; p_operation_id: string }
         Returns: Json
+      }
+      server_record_validated_restaurant_media_v1: {
+        Args: {
+          p_byte_size: number
+          p_content_sha256: string
+          p_extension: string
+          p_firebase_uid: string
+          p_height: number
+          p_mime_type: string
+          p_object_path: string
+          p_operation_id: string
+          p_public_url: string
+          p_restaurant_id: string
+          p_width: number
+        }
+        Returns: Json
+      }
+      server_release_restaurant_media_upload_v1: {
+        Args: {
+          p_firebase_uid: string
+          p_operation_id: string
+          p_restaurant_id: string
+        }
+        Returns: undefined
       }
       set_category_active: {
         Args: { p_category_id: string; p_is_active: boolean }
@@ -2634,7 +2698,7 @@ export type Database = {
         | "out_for_delivery"
         | "delivered"
         | "canceled"
-      payment_method: "cash" | "pos"
+      payment_method: "cash" | "pos" | "virtual_pos"
       platform_role: "admin" | "super_admin" | "courier"
       restaurant_lifecycle_status: "pending" | "active" | "suspended" | "closed"
       restaurant_role: "owner" | "manager"
@@ -2786,7 +2850,7 @@ export const Constants = {
         "delivered",
         "canceled",
       ],
-      payment_method: ["cash", "pos"],
+      payment_method: ["cash", "pos", "virtual_pos"],
       platform_role: ["admin", "super_admin", "courier"],
       restaurant_lifecycle_status: ["pending", "active", "suspended", "closed"],
       restaurant_role: ["owner", "manager"],

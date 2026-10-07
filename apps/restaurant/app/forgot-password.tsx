@@ -1,4 +1,3 @@
-import { FirebaseError } from "firebase/app";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { Link } from "expo-router";
 import { FormEvent, useState } from "react";
@@ -8,6 +7,7 @@ import { Card } from "../src/components/Card";
 import { FormField } from "../src/components/FormField";
 import { auth, ensureSessionPersistence } from "../src/firebase";
 import { useLocale } from "../src/providers";
+import { requestRestaurantPasswordReset } from "../src/passwordResetFlow";
 
 export default function ForgotPassword() {
   const { t } = useLocale();
@@ -16,14 +16,14 @@ export default function ForgotPassword() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     setState("submitting");
-    try {
-      await ensureSessionPersistence();
-      await sendPasswordResetEmail(auth, email);
-      setState("sent");
-    } catch (error) {
-      const code = error instanceof FirebaseError ? error.code : "";
-      setState(code === "auth/network-request-failed" || code === "auth/too-many-requests" ? "error" : "sent");
-    }
+    const outcome = await requestRestaurantPasswordReset({
+      email,
+      send: async (normalizedEmail) => {
+        await ensureSessionPersistence();
+        await sendPasswordResetEmail(auth, normalizedEmail);
+      },
+    });
+    setState(outcome === "accepted" ? "sent" : "error");
   }
   return <AuthLayout><Card><form className="auth-form" onSubmit={submit} aria-busy={state === "submitting"}>
     <div><p className="auth-eyebrow">Hungrie Restaurant</p><h1>{t.resetPassword}</h1><p>{t.resetIntro}</p></div>

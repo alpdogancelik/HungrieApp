@@ -10,16 +10,26 @@ import type {
     RestaurantReviewSummary,
 } from "@/src/domain/types";
 import type { PanelLocale } from "@/src/features/restaurantPanel/panelLocale";
+import type {
+    VerificationFailureCategory,
+    VerificationRefreshResult,
+    VerificationRequestResult,
+} from "@/src/features/auth/emailVerificationFlow";
+import type { PasswordResetOutcome } from "@/src/features/auth/passwordResetFlow";
 import type { Unsubscribe } from "./types";
 
 export type AuthRepository = {
     signIn: (input: { email: string; password: string }) => Promise<any>;
     createUser: (input: { email: string; password: string; name: string; whatsappNumber?: string }) => Promise<any>;
     getCurrentUser: () => Promise<any | null>;
+    getCurrentVerificationSession: () => Promise<{ uid: string; email: string; emailVerified: boolean } | null>;
+    resendEmailVerification: () => Promise<VerificationRequestResult>;
+    refreshEmailVerification: () => Promise<VerificationRefreshResult>;
+    signOutVerificationSession: () => Promise<void>;
+    getVerificationErrorMessage: (category: VerificationFailureCategory) => string;
     signOut: () => Promise<any>;
     logout: () => Promise<any>;
-    deleteCurrentUserProfile: () => Promise<void>;
-    sendPasswordReset: (email: string) => Promise<void>;
+    sendPasswordReset: (email: string) => Promise<PasswordResetOutcome>;
     updateUserProfile: (input: { name: string; whatsappNumber?: string }) => Promise<any>;
     getMockOwnerAccount: () => Promise<null>;
     clearMockOwnerAccount: () => Promise<void>;

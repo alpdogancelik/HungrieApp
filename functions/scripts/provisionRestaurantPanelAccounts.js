@@ -2,7 +2,7 @@
 const fsp = require("node:fs/promises");
 const path = require("node:path");
 const crypto = require("node:crypto");
-const admin = require("firebase-admin");
+const admin = require("../firebaseAdminCompat");
 
 const ROOT_DIR = path.resolve(__dirname, "..", "..");
 const MOBILE_DIR = path.join(ROOT_DIR, "mobile");
@@ -576,4 +576,3 @@ main().catch((error) => {
   );
   process.exit(1);
 });
-

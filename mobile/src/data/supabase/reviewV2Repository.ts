@@ -19,6 +19,7 @@ import type {
 } from "@hungrie/domain";
 import { invalidateCatalogCache, readCatalogCached } from "./publicCatalogCache";
 import { requireCatalogSupabase, requireSupabase, throwIfError, withSupabaseAuthRetry } from "./utils";
+import { requireTrustedCustomerUid, withBoundCustomerClient } from "./identityBoundary";
 
 type ObjectValue = Record<string, any>;
 const object = (value: unknown, label: string): ObjectValue => {
@@ -196,10 +197,14 @@ export const getCustomerReviewPromptV2 = async (): Promise<CustomerReviewPrompt 
 
 export const submitCustomerOrderReviewV2 = async (input: CustomerReviewDraft & { operationId: string }): Promise<CustomerReviewSubmissionResult> => {
     try {
-        const row = object(await withSupabaseAuthRetry(() => requireSupabase().rpc("submit_my_customer_order_review_v2", {
-            p_order_id: input.orderId, p_taste_rating: input.tasteRating, p_speed_rating: input.speedRating,
-            p_comment: input.comment || "", p_meal_reactions_json: input.mealReactions, p_operation_id: input.operationId,
-        }).then(throwIfError)), "review submission");
+        const ownerUid = requireTrustedCustomerUid();
+        const row = object(await withBoundCustomerClient(ownerUid, async (client) => throwIfError(await client.rpc(
+            "submit_my_customer_order_review_v2",
+            {
+                p_order_id: input.orderId, p_taste_rating: input.tasteRating, p_speed_rating: input.speedRating,
+                p_comment: input.comment || "", p_meal_reactions_json: input.mealReactions, p_operation_id: input.operationId,
+            },
+        ))), "review submission");
         const result = { reviewId: text(row.reviewId, "review ID"), replayed: row.replayed === true };
         invalidateRestaurantReviewV2Caches(input.restaurantId);
         return result;

@@ -78,3 +78,9 @@ export const classifyExpoError = (code?: string | null) => {
 export const sanitizeError = (value: unknown) => String(value instanceof Error ? value.message : value || "Unknown error")
   .replace(/(Expo|Exponent)PushToken\[[^\]]+\]/g, "[push-token]")
   .slice(0, 300);
+
+export const safeOperationalErrorCode = (value: unknown) => {
+  const candidate = String((value as { code?: unknown; name?: unknown })?.code ||
+    (value as { name?: unknown })?.name || "unknown").trim();
+  return /^[a-zA-Z0-9_.:/-]{1,80}$/.test(candidate) ? candidate : "unknown";
+};

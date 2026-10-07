@@ -3,6 +3,7 @@ import type { CustomerReviewDraft, CustomerOrderReviewState } from "@hungrie/dom
 import { storage } from "@/src/lib/storage";
 import { createUuid } from "@/src/lib/uuid";
 import { submitCustomerOrderReviewV2 } from "@/src/data/reviewV2Repository";
+import { assertTrustedCustomerUid, requireTrustedCustomerUid } from "@/src/data/supabase/identityBoundary";
 
 export type PendingCustomerReviewOperation = {
     orderId: string;
@@ -111,8 +112,11 @@ export const submitCustomerReviewWithDurableOperation = async (
     const existing = submissionLocks.get(lockKey);
     if (existing) return existing;
     const request = (async () => {
+        const ownerUid = requireTrustedCustomerUid();
         const pending = await resolveCustomerReviewOperation(profileId, draft, target);
+        assertTrustedCustomerUid(ownerUid);
         const result = await submit({ ...draft, operationId: pending.operationId });
+        assertTrustedCustomerUid(ownerUid);
         await clearCustomerReviewOperation(profileId, draft.orderId, pending.operationId, target);
         return result;
     })().finally(() => submissionLocks.delete(lockKey));

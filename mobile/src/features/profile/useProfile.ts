@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { router } from "expo-router";
 import useAuthStore from "@/store/auth.store";
 import { useCartStore } from "@/store/cart.store";
-import { logout } from "@/src/data/authRepository";
+import { clearDeletedAccountSession, logout } from "@/src/data/authRepository";
 import { useDefaultAddress } from "@/src/features/address/addressFeature";
 import { autoCancelExpiredPendingOrders, fetchUserOrdersPage, subscribeLatestOrderSummary } from "@/src/data/orderRepository";
 import { deleteCurrentUserProfile, updateUserProfile } from "@/src/data/profileRepository";
@@ -210,6 +210,7 @@ export function useProfile() {
             try {
                 setDeletingProfile(true);
                 await deleteCurrentUserProfile();
+                await clearDeletedAccountSession();
                 setOrders([]);
                 setNotifModalVisible(false);
                 setIsEditingProfile(false);

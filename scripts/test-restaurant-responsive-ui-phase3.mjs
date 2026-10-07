@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { parseMenuSnapshot, parseRestaurantSettings, parseKurus, buildMenuMediaPath } from "../apps/restaurant/src/managementContract.ts";
+import { parseMenuSnapshot, parseRestaurantSettings, parseKurus } from "../apps/restaurant/src/managementContract.ts";
 import { buildRestaurantSettingsChanges, changedSettings, completeManagementIntent, normalizeRestaurantSettingsForm, stableManagementOperationId } from "../apps/restaurant/src/managementModel.ts";
 import { draftFromItem, menuDefinition, menuDefinitionReached, normalizeMenuDraft } from "../apps/restaurant/src/menuModel.ts";
 import { parseHistoryOrderPage } from "../apps/restaurant/src/orders/orderContract.ts";
@@ -53,11 +53,13 @@ test("menu definition preserves existing nested IDs and validates selection boun
   assert.throws(()=>menuDefinition({...draft,groups:[{...draft.groups[0],maximum:2}]},"cat-1"));
 });
 
-test("media paths are caller-identity rooted and sanitize filenames", () => {
-  assert.equal(buildMenuMediaPath("restaurant-1","my photo.webp","operation-1"),"restaurant-1/operation-1-my-photo.webp");
-  assert.throws(()=>buildMenuMediaPath("restaurant-1/other","x.png","operation-1"));
-  const migration=source("../supabase/migrations/20260913141000_phase5_restaurant_contracts.sql");
-  assert.match(migration,/storage\.foldername\(name\)\)\[1\]=private\.current_restaurant_id\(\)/);
+test("media publication is caller-bound at a trusted callable and validated registry", () => {
+  const repository=source("../apps/restaurant/src/managementRepository.ts");
+  const migration=source("../supabase/migrations/20261006120000_restaurant_media_content_validation.sql");
+  assert.match(repository,/callRestaurantFunction/);
+  assert.doesNotMatch(repository,/storage\.from\("restaurant-media"\)\.upload/);
+  assert.match(migration,/drop policy if exists restaurant_media_canonical_insert/);
+  assert.match(migration,/private\.is_validated_restaurant_media_url/);
 });
 
 test("operation IDs remain stable only for unchanged management intents", () => {
@@ -83,7 +85,7 @@ test("dirty state changes only for normalized edits or pending file input", () =
 test("repositories are caller-bound and use only accepted RPC and media contracts", () => {
   const repository=source("../apps/restaurant/src/managementRepository.ts");
   for (const rpc of ["restaurant_list_orders_v2","restaurant_get_menu_v2","restaurant_save_category_v1","restaurant_reorder_categories_v1","restaurant_reorder_menu_items_v1","restaurant_bulk_set_item_availability_v1","restaurant_save_menu_item_v2","restaurant_get_settings_v1","restaurant_update_settings_v1"]) assert.match(repository,new RegExp(rpc));
-  assert.doesNotMatch(repository,/p_restaurant_id|selectedRestaurant/); assert.match(repository,/buildMenuMediaPath\(restaurantId, file\.name, operationId\)/);
+  assert.doesNotMatch(repository,/p_restaurant_id|selectedRestaurant/); assert.match(repository,/declaredMime: file\.type/); assert.match(repository,/callRestaurantFunction/);
 });
 
 test("pages retain generation, abort, stale, cursor, retry, and authoritative reload controls", () => {

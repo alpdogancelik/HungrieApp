@@ -21,11 +21,14 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { addressStore } from "@/src/data/addressRepository";
+import { formatCurrency } from "@/lib/cart.utils";
 import { useFavoritesStore } from "@/src/data/favoritesRepository";
 import type { Address } from "@/src/domain/types";
 import { useDefaultAddress } from "@/src/features/address/hooks";
+import { kurusToTry, minimumOrderKurusFromRestaurant } from "@/src/features/cartCheckout/minimumOrderModel";
 import useHome from "@/src/hooks/useHome";
 import { showUserMessage } from "@/src/lib/showUserMessage";
+import { isRestaurantOpenForOrdering } from "@/src/lib/restaurantAvailability";
 import { useTheme } from "@/src/theme/themeContext";
 import useAuthStore from "@/store/auth.store";
 
@@ -40,10 +43,10 @@ const CATEGORY_DURUM_IMAGE = require("../../../assets/home/category-durum.png");
 const CATEGORY_KEBAP_IMAGE = require("../../../assets/home/category-kebap.png");
 const CATEGORY_SALATA_IMAGE = require("../../../assets/home/category-salata.png");
 const FALLBACK_META = [
-    { eta: "25–35 min", minimum: 0 },
-    { eta: "20–30 min", minimum: 1 },
-    { eta: "20–30 min", minimum: 0 },
-    { eta: "25–35 min", minimum: 0 },
+    { eta: "25–35 min" },
+    { eta: "20–30 min" },
+    { eta: "20–30 min" },
+    { eta: "25–35 min" },
 ] as const;
 const CATEGORIES = [
     { id: "burger", searchKey: "burger", en: "Burgers", tr: "Burger", image: CATEGORY_BURGER_IMAGE },
@@ -63,27 +66,6 @@ const normalizeRestaurantId = (restaurant: any, fallback: string) =>
     String(restaurant?.id || restaurant?.$id || restaurant?.slug || restaurant?.code || restaurant?.name || fallback)
         .toLowerCase()
         .replace(/[^a-z0-9-]+/g, "-");
-const clockMinutes = (value: unknown) => {
-    const match = String(value || "").trim().match(/^(\d{1,2})(?::(\d{2}))?/);
-    if (!match) return null;
-    const hours = Number(match[1]);
-    const minutes = Number(match[2] || 0);
-    return hours <= 23 && minutes <= 59 ? hours * 60 + minutes : null;
-};
-const isRestaurantOpen = (restaurant: any) => {
-    const status = String(restaurant?.status || "").trim().toLowerCase();
-    if (
-        restaurant?.isActive === false ||
-        restaurant?.isOpen === false ||
-        ["closed", "kapalı", "kapali", "inactive", "disabled", "offline"].includes(status)
-    ) return false;
-    const opens = clockMinutes(restaurant?.openingTime || restaurant?.opening_time);
-    const closes = clockMinutes(restaurant?.closingTime || restaurant?.closing_time);
-    if (opens === null || closes === null || opens === closes) return true;
-    const now = new Date();
-    const current = now.getHours() * 60 + now.getMinutes();
-    return opens < closes ? current >= opens && current < closes : current >= opens || current < closes;
-};
 const rating = (restaurant: any) => {
     const value = parseNumber(restaurant?.ratingAverage);
     return value && value > 0 ? value.toFixed(1) : null;
@@ -98,10 +80,9 @@ const eta = (restaurant: any, fallback: string, isTurkish: boolean) => {
     if (match) return `${match[1]}–${match[2]} ${isTurkish ? "dk" : "min"}`;
     return isTurkish ? fallback.replace("min", "dk") : fallback;
 };
-const minimumOrder = (restaurant: any, fallback: number) => {
-    const value = parseNumber(restaurant?.minimumOrderAmount) ?? parseNumber(restaurant?.minimumOrder) ??
-        parseNumber(restaurant?.minOrderAmount) ?? parseNumber(restaurant?.minBasketAmount) ?? fallback;
-    return `Min. ${Math.round(value)} TL`;
+const minimumOrder = (restaurant: any) => {
+    const value = minimumOrderKurusFromRestaurant(restaurant);
+    return value === null ? "Min. —" : `Min. ${formatCurrency(kurusToTry(value))}`;
 };
 const cuisines = (restaurant: any, isTurkish: boolean) => {
     const values = [restaurant?.cuisine, restaurant?.category, restaurant?.categories, restaurant?.tags, restaurant?.cuisines]
@@ -155,7 +136,7 @@ const HomeScreen = () => {
     const sortedRestaurants = useMemo(() => {
         const list = Array.isArray(restaurants) ? restaurants : [];
         return list.map((restaurant, index) => ({ restaurant, index })).sort((left, right) => {
-            const openDifference = Number(isRestaurantOpen(right.restaurant)) - Number(isRestaurantOpen(left.restaurant));
+            const openDifference = Number(isRestaurantOpenForOrdering(right.restaurant)) - Number(isRestaurantOpenForOrdering(left.restaurant));
             if (openDifference) return openDifference;
             const favoriteDifference = Number(favoriteIdSet.has(normalizeRestaurantId(right.restaurant, String(right.index)))) -
                 Number(favoriteIdSet.has(normalizeRestaurantId(left.restaurant, String(left.index))));
@@ -181,6 +162,18 @@ const HomeScreen = () => {
         setAddressSheetVisible(false);
     }, [addresses]);
     const openSearch = useCallback(() => router.push("/search"), [router]);
+    const openRestaurant = useCallback((restaurant: any, id: string) => {
+        if (!isRestaurantOpenForOrdering(restaurant)) {
+            showUserMessage(
+                isTurkish ? "Restoran kapalı" : "Restaurant closed",
+                isTurkish
+                    ? "Bu restoran şu anda sipariş almıyor."
+                    : "This restaurant is not accepting orders right now.",
+            );
+            return;
+        }
+        router.push({ pathname: "/restaurants/[id]", params: { id } });
+    }, [isTurkish, router]);
     const openCategory = (category: (typeof CATEGORIES)[number]) => router.push({
         pathname: "/search",
         params: { query: isTurkish ? category.tr : category.en, category: category.searchKey, refresh: String(Date.now()) },
@@ -291,7 +284,7 @@ const HomeScreen = () => {
                         const originalIndex = entry.index;
                         const fallback = FALLBACK_META[originalIndex % FALLBACK_META.length];
                         const id = normalizeRestaurantId(restaurant, String(originalIndex));
-                        const open = isRestaurantOpen(restaurant);
+                        const open = isRestaurantOpenForOrdering(restaurant);
                         const favorite = favoriteIdSet.has(id);
                         const restaurantRating = rating(restaurant);
                         const restaurantReviewCount = reviewCount(restaurant);
@@ -304,7 +297,12 @@ const HomeScreen = () => {
                                 ? PIZZA_CARD_IMAGE
                                 : CAFE_CARD_IMAGE;
                         return (
-                            <Pressable key={`${id}-${originalIndex}`} onPress={() => router.push({ pathname: "/restaurants/[id]", params: { id } })} style={[styles.restaurantCard, !open && styles.closedCard]}>
+                            <Pressable
+                                accessibilityHint={!open ? (isTurkish ? "Bu restoran şu anda sipariş almıyor." : "This restaurant is not accepting orders right now.") : undefined}
+                                key={`${id}-${originalIndex}`}
+                                onPress={() => openRestaurant(restaurant, id)}
+                                style={[styles.restaurantCard, !open && styles.closedCard]}
+                            >
                                 <View style={styles.restaurantImageFrame}>
                                     <Image contentFit="cover" source={source} style={styles.restaurantImage} />
                                     <View style={[styles.etaBadge, !open && styles.closedBadge]}><Text style={[styles.etaText, !open && styles.closedBadgeText]}>{open ? eta(restaurant, fallback.eta, isTurkish) : isTurkish ? "Kapalı" : "Closed"}</Text></View>
@@ -326,7 +324,7 @@ const HomeScreen = () => {
                                         )}
                                     </View>
                                     <Text numberOfLines={1} style={styles.restaurantMeta}>{cuisines(restaurant, isTurkish)}</Text>
-                                    <Text numberOfLines={1} style={styles.restaurantMeta}>{minimumOrder(restaurant, fallback.minimum)} · {location(restaurant)}</Text>
+                                    <Text numberOfLines={1} style={styles.restaurantMeta}>{minimumOrder(restaurant)} · {location(restaurant)}</Text>
                                 </View>
                             </Pressable>
                         );

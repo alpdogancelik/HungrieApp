@@ -10,6 +10,7 @@ import { deriveRestaurantRuntimeStatus, runtimeResultIsCurrent, type RestaurantR
 import { resetAcknowledgementIntents } from "./orders/orderAcknowledgementModel";
 import { acceptServiceWorkerQualificationMessage, firebaseMessagingIdentity, recordNotificationQualification } from "./notificationQualification";
 import { runForegroundNotificationHandler } from "./foregroundNotificationHandler";
+import { restaurantOrderRepository } from "./orders/orderRepository";
 export type { RestaurantRuntimeStatus } from "./restaurantRuntimeModel";
 
 type RestaurantRuntimeValue = {
@@ -23,6 +24,7 @@ type RestaurantRuntimeValue = {
 };
 
 const RestaurantRuntimeContext = createContext<RestaurantRuntimeValue | null>(null);
+const REALTIME_RETRY_DELAYS_MS = [1_000, 2_000, 5_000, 10_000, 30_000] as const;
 
 export function useRestaurantRuntime() {
   const value = useContext(RestaurantRuntimeContext);
@@ -30,7 +32,7 @@ export function useRestaurantRuntime() {
   return value;
 }
 
-export function RestaurantRuntimeProvider({ restaurantId, role, children }: PropsWithChildren<{ restaurantId: string; role: RestaurantRole }>) {
+export function RestaurantRuntimeProvider({ restaurantId, role, suspended = false, children }: PropsWithChildren<{ restaurantId: string | null; role: RestaurantRole | null; suspended?: boolean }>) {
   const [dashboard, setDashboard] = useState<RestaurantDashboard | null>(null);
   const [online, setOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
   const [realtimeConnected, setRealtimeConnected] = useState(false);
@@ -40,8 +42,10 @@ export function RestaurantRuntimeProvider({ restaurantId, role, children }: Prop
   const identityGeneration = useRef(0);
   const requestSequence = useRef(0);
   const latestAppliedRequest = useRef(0);
+  const inactive = suspended || !restaurantId || !role;
 
   const refreshDashboard = useCallback(async () => {
+    if (suspended || !restaurantId || !role) return null;
     const generation = identityGeneration.current;
     const request = ++requestSequence.current;
     const result = await supabase.rpc("restaurant_get_dashboard_v1");
@@ -62,12 +66,15 @@ export function RestaurantRuntimeProvider({ restaurantId, role, children }: Prop
       setRefreshFailed(true);
       return null;
     }
-  }, [restaurantId, role]);
+  }, [restaurantId, role, suspended]);
 
   useEffect(() => {
     let live = true;
     let unsubscribeMessage: (() => void) | undefined;
     let channel: ReturnType<typeof supabase.channel> | undefined;
+    let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+    let reconnectAttempt = 0;
+    let connectionSequence = 0;
     identityGeneration.current += 1;
     resetAcknowledgementIntents();
     requestSequence.current = 0;
@@ -77,13 +84,95 @@ export function RestaurantRuntimeProvider({ restaurantId, role, children }: Prop
     setRefreshFailed(false);
     setLastDashboardReconciledAt(null);
     setOrderEventRevision(0);
+    if (inactive) {
+      setOnline(false);
+      return;
+    }
+    setOnline(typeof navigator === "undefined" ? true : navigator.onLine);
 
     const reconcile = () => { if (live) void refreshDashboard(); };
+    const removeRealtimeChannel = () => {
+      const current = channel;
+      channel = undefined;
+      if (current) void supabase.removeChannel(current);
+    };
+    const scheduleRealtimeReconnect = (delayOverride?: number) => {
+      if (!live || !navigator.onLine || reconnectTimer) return;
+      const delay = delayOverride ?? REALTIME_RETRY_DELAYS_MS[Math.min(reconnectAttempt, REALTIME_RETRY_DELAYS_MS.length - 1)];
+      reconnectAttempt += 1;
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = undefined;
+        void connectRealtime();
+      }, delay);
+    };
+    const connectRealtime = async () => {
+      if (!live || !navigator.onLine) return;
+      const sequence = ++connectionSequence;
+      removeRealtimeChannel();
+      setRealtimeConnected(false);
+      try {
+        await supabase.realtime.setAuth();
+        if (!live || sequence !== connectionSequence) return;
+        // Re-resolve the authorized topic on every attempt. The topic embeds
+        // the current account authorization version and must not be cached
+        // across membership, suspension, or sign-in transitions.
+        const topicResult = await supabase.rpc("restaurant_order_realtime_topic_v2");
+        if (!live || sequence !== connectionSequence) return;
+        if (topicResult.error || typeof topicResult.data !== "string" || !topicResult.data) {
+          throw topicResult.error || new Error("Restaurant Realtime authority is unavailable.");
+        }
+        const nextChannel = supabase.channel(topicResult.data, { config: { private: true } })
+          .on("broadcast", { event: "order_changed" }, ({ payload }) => {
+            if (!live || channel !== nextChannel) return;
+            setOrderEventRevision(value => value + 1);
+            // A second request receives a larger sequence number, so an older
+            // initialization response cannot overwrite this reconciliation.
+            reconcile();
+            if (payload?.operation === "insert" && payload?.order_id) {
+              const generation = identityGeneration.current;
+              const orderId = String(payload.order_id);
+              // Broadcast is only an invalidation hint. Re-authorize the order
+              // before turning even its identifier into a user-visible alert.
+              void restaurantOrderRepository.get(orderId).then(order => {
+                if (!live || channel !== nextChannel || generation !== identityGeneration.current || order.id !== orderId) return;
+                return alertRestaurantOrder({ data: { eventType: "restaurant_new_order", orderId } });
+              }).catch(() => undefined);
+            }
+          });
+        channel = nextChannel;
+        nextChannel.subscribe(status => {
+          if (!live || channel !== nextChannel) return;
+          if (status === "SUBSCRIBED") {
+            reconnectAttempt = 0;
+            setRealtimeConnected(true);
+            reconcile();
+            return;
+          }
+          setRealtimeConnected(false);
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            scheduleRealtimeReconnect();
+          }
+        });
+      } catch {
+        if (!live || sequence !== connectionSequence) return;
+        setRealtimeConnected(false);
+        scheduleRealtimeReconnect();
+      }
+    };
     const updateNetwork = () => {
       if (!live) return;
       const nextOnline = navigator.onLine;
       setOnline(nextOnline);
-      if (nextOnline) reconcile();
+      if (nextOnline) {
+        reconcile();
+        scheduleRealtimeReconnect(0);
+      } else {
+        connectionSequence += 1;
+        if (reconnectTimer) clearTimeout(reconnectTimer);
+        reconnectTimer = undefined;
+        removeRealtimeChannel();
+        setRealtimeConnected(false);
+      }
     };
     const recoverVisible = () => {
       if (live && document.visibilityState === "visible" && navigator.onLine) reconcile();
@@ -111,31 +200,7 @@ export function RestaurantRuntimeProvider({ restaurantId, role, children }: Prop
       recordNotificationQualification("foreground_listener_ready", undefined, firebaseMessagingIdentity(firebaseApp));
     }).catch(() => { if (live) recordNotificationQualification("foreground_listener_failed"); });
 
-    void supabase.realtime.setAuth().then(() => {
-      if (!live) return;
-      channel = supabase.channel(`restaurant-orders:v1:${restaurantId}`, { config: { private: true } })
-        .on("broadcast", { event: "order_changed" }, ({ payload }) => {
-          if (!live) return;
-          setOrderEventRevision(value => value + 1);
-          // A second request receives a larger sequence number, so an older
-          // initialization response cannot overwrite this reconciliation.
-          reconcile();
-          if (payload?.operation === "insert" && payload?.order_id) {
-            void alertRestaurantOrder({ data: {
-              eventType: "restaurant_new_order",
-              orderId: String(payload.order_id),
-            } });
-          }
-        })
-        .subscribe(status => {
-          if (!live) return;
-          const subscribed = status === "SUBSCRIBED";
-          setRealtimeConnected(subscribed);
-          if (subscribed) reconcile();
-        });
-    }).catch(() => {
-      if (live) setRealtimeConnected(false);
-    });
+    void connectRealtime();
 
     return () => {
       live = false;
@@ -143,7 +208,9 @@ export function RestaurantRuntimeProvider({ restaurantId, role, children }: Prop
       resetAcknowledgementIntents();
       unsubscribeMessage?.();
       recordNotificationQualification("foreground_listener_removed");
-      if (channel) void supabase.removeChannel(channel);
+      connectionSequence += 1;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      removeRealtimeChannel();
       window.removeEventListener("online", updateNetwork);
       window.removeEventListener("offline", updateNetwork);
       window.removeEventListener("focus", reconcile);
@@ -152,7 +219,7 @@ export function RestaurantRuntimeProvider({ restaurantId, role, children }: Prop
       window.removeEventListener("keydown", unlock);
       navigator.serviceWorker?.removeEventListener?.("message", observeServiceWorker);
     };
-  }, [refreshDashboard, restaurantId]);
+  }, [inactive, refreshDashboard, restaurantId]);
 
   const status = deriveRestaurantRuntimeStatus({ online, realtimeConnected, dashboard, refreshFailed });
 

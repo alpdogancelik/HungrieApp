@@ -57,7 +57,7 @@ const cleanup = () => runSql(`
   delete from public.orders where id in ('${orderRaceId}','${deliveryOrderId}');
   delete from private.restaurant_commission_rules where operation_id in
     ('${stableOperation}','${raceOperation}');
-  delete from private.account_access where profile_id='fixture_super_admin';
+  delete from private.account_access where profile_id in ('fixture_owner','fixture_super_admin');
   set session_replication_role=origin;
 `);
 
@@ -73,8 +73,11 @@ const schedule = (operationId, effective, rate = 875) => runConcurrentSql(`
 try {
   cleanup();
   runSql(`insert into private.account_access(profile_id,account_type,status,activated_at,
-    admin_role,admin_mfa_enrolled_at) values('fixture_super_admin','admin','active',
-    statement_timestamp(),'super_admin',statement_timestamp());`);
+    restaurant_id,restaurant_role,admin_role,admin_mfa_enrolled_at) values
+    ('fixture_owner','restaurant','active',statement_timestamp(),
+      'fixture_restaurant_a','owner',null,null),
+    ('fixture_super_admin','admin','active',statement_timestamp(),
+      null,null,'super_admin',statement_timestamp());`);
 
   const stableResults = await Promise.all([
     schedule(stableOperation, stableEffective),

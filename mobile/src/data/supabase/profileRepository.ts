@@ -1,6 +1,7 @@
 import { httpsCallable } from "firebase/functions";
-import { auth, functions } from "@/lib/firebase";
+import { auth, firebaseConfig, functions } from "@/lib/firebase";
 import type { ProfileRepository } from "@/src/data/contracts";
+import { resolveAccountDeletionCallableName } from "@/src/data/accountDeletionRouting";
 import i18n from "@/src/lib/i18n";
 import { requireSupabase, throwIfError, withSupabaseAuthRetry } from "./utils";
 
@@ -43,7 +44,8 @@ export const updateUserProfile: ProfileRepository["updateUserProfile"] = async (
 
 export const deleteCurrentUserProfile: ProfileRepository["deleteCurrentUserProfile"] = async () => {
     if (!functions) throw new Error("Account deletion is not configured.");
-    await httpsCallable(functions, "deleteHungrieAccount")({});
+    const callableName = resolveAccountDeletionCallableName(firebaseConfig.environment);
+    await httpsCallable(functions, callableName)({});
 };
 
 export const supabaseProfileRepository: ProfileRepository = {

@@ -2,7 +2,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const admin = require("firebase-admin");
+const admin = require("../firebaseAdminCompat");
 
 const REQUIRED_PROJECT_ID = "hungrieapp-a2288";
 const REQUIRED_ROLE = "authenticated";

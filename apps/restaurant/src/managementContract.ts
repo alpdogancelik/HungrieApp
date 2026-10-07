@@ -69,10 +69,3 @@ export function parseKurus(value: string): number | null {
   return Number.isSafeInteger(amount) ? amount : null;
 }
 export const formatKurusInput = (value: number) => `${Math.floor(value / 100)}.${String(value % 100).padStart(2, "0")}`;
-
-export function buildMenuMediaPath(restaurantId: string, fileName: string, operationId: string) {
-  const tenant = text(restaurantId), operation = text(operationId);
-  if (tenant.includes("/") || operation.includes("/")) invalid();
-  const safeName = fileName.normalize("NFKC").replace(/[^a-zA-Z0-9._-]/g, "-").replace(/-+/g, "-").slice(-120) || "image";
-  return `${tenant}/${operation}-${safeName}`;
-}

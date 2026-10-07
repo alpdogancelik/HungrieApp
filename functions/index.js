@@ -4,15 +4,31 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { defineSecret, defineString } = require("firebase-functions/params");
 const functionsV1 = require("firebase-functions/v1");
 const logger = require("firebase-functions/logger");
-const admin = require("firebase-admin");
+const { initializeApp } = require("firebase-admin/app");
+const { getAuth } = require("firebase-admin/auth");
+const { FieldValue, getFirestore } = require("firebase-admin/firestore");
+const { getMessaging } = require("firebase-admin/messaging");
 const crypto = require("node:crypto");
 const http2 = require("node:http2");
 const { isOperationId, hasTotpFactor, hasTotpSession, accountStatusFailureReason } = require("./phase4AdminLogic");
 const { classifyMessagingFailure, restaurantWakeMessage } = require("./phase5RestaurantPushLogic");
 const { deleteSharedNonProductionAccount } = require("./phase6CustomerDeletionLogic");
-const { assertProductionFunctionIdentity } = require("./productionEnvironmentContract");
+const { requireAccountDeletionUid } = require("./accountDeletionRequest");
+const { AbuseLimitError, enforceFirestoreRateLimit } = require("./abuseProtection");
+const { RestaurantMediaError } = require("./restaurantMedia");
+const { uploadValidatedRestaurantMedia } = require("./restaurantMediaUpload");
+const {
+    logOperationalEvent,
+    opaqueIdentifier,
+    operationalErrorCode,
+} = require("./operationalLogging");
+const {
+    assertNonProductionFirebaseIdentity,
+    assertProductionFunctionIdentity,
+    assertSharedNonProductionFunctionIdentity,
+} = require("./productionEnvironmentContract");
 
-admin.initializeApp();
+initializeApp();
 
 const SUPABASE_AUTHENTICATED_ROLE = "authenticated";
 const SUPABASE_URL = defineSecret("SUPABASE_URL");
@@ -25,6 +41,41 @@ const PRODUCTION_FIREBASE_PROJECT_ID = defineString("PRODUCTION_FIREBASE_PROJECT
 const PRODUCTION_SUPABASE_PROJECT_REF = defineString("PRODUCTION_SUPABASE_PROJECT_REF", { default: "" });
 const ORDER_AUTOMATION_BACKEND = defineString("ORDER_AUTOMATION_BACKEND", { default: "firebase" });
 const firebaseOrderAutomationEnabled = () => ORDER_AUTOMATION_BACKEND.value() === "firebase";
+const CALLABLE_ABUSE_LIMITS = Object.freeze({
+    adminMfaEnrollment: { limit: 5, windowMs: 60 * 60 * 1000 },
+    adminMutation: { limit: 30, windowMs: 10 * 60 * 1000 },
+    accountDeletion: { limit: 3, windowMs: 24 * 60 * 60 * 1000 },
+    restaurantMediaUpload: { limit: 30, windowMs: 60 * 60 * 1000 },
+});
+const enforceCallableAbuseLimit = async (uid, operation, policy) => {
+    try {
+        await enforceFirestoreRateLimit({
+            firestore: getFirestore(),
+            actorId: uid,
+            operation,
+            ...policy,
+        });
+    } catch (error) {
+        if (error instanceof AbuseLimitError) {
+            logOperationalEvent(logger, "warn", "security.rate_limit.triggered", {
+                component: "callable-abuse-protection",
+                operation,
+                retryAfterSeconds: error.retryAfterSeconds,
+                retryable: true,
+            });
+            throw new HttpsError("resource-exhausted", "Too many requests. Try again later.", {
+                retryAfterSeconds: error.retryAfterSeconds,
+            });
+        }
+        logOperationalEvent(logger, "error", "security.rate_limit.internal_failure", {
+            component: "callable-abuse-protection",
+            operation,
+            errorCode: operationalErrorCode(error),
+            retryable: true,
+        });
+        throw new HttpsError("internal", "The operation is temporarily unavailable.");
+    }
+};
 const requireProductionIdentity = () => assertProductionFunctionIdentity({
     actualFirebaseProjectId: process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || "",
     expectedFirebaseProjectId: PRODUCTION_FIREBASE_PROJECT_ID.value(),
@@ -217,9 +268,12 @@ const sendApnsNotifications = async ({ entries, title, body, sound, data, contex
 
     const config = getApnsConfig();
     if (!config) {
-        logger.error("APNs configuration is missing", {
+        logOperationalEvent(logger, "error", "push.direct.configuration_missing", {
+            component: "push-direct",
             ...context,
-            requiredEnv: ["APNS_KEY_ID", "APNS_TEAM_ID", "APNS_PRIVATE_KEY", "APNS_BUNDLE_ID"],
+            provider: "apns",
+            errorCode: "configuration_missing",
+            retryable: false,
         });
         return;
     }
@@ -233,7 +287,14 @@ const sendApnsNotifications = async ({ entries, title, body, sound, data, contex
                 new Promise((resolve) => {
                     const client = http2.connect(config.host);
                     client.on("error", (error) => {
-                        logger.error("APNs connection error", { ...context, tokenDocId: entry.tokenDocId, error: String(error) });
+                        logOperationalEvent(logger, "error", "push.direct.connection_failure", {
+                            component: "push-direct",
+                            ...context,
+                            provider: "apns",
+                            tokenBindingId: opaqueIdentifier(entry.tokenDocId),
+                            errorCode: operationalErrorCode(error),
+                            retryable: true,
+                        });
                         client.close();
                         resolve();
                     });
@@ -276,12 +337,14 @@ const sendApnsNotifications = async ({ entries, title, body, sound, data, contex
                         }
 
                         const reason = String(parsed?.reason || "");
-                        logger.warn("APNs push failed", {
+                        logOperationalEvent(logger, "warn", "push.direct.delivery_failure", {
+                            component: "push-direct",
                             ...context,
-                            tokenDocId: entry.tokenDocId,
+                            provider: "apns",
+                            tokenBindingId: opaqueIdentifier(entry.tokenDocId),
                             statusCode,
                             reason,
-                            body: parsed || responseBody,
+                            retryable: !isApnsInvalidReason(reason),
                         });
 
                         if (isApnsInvalidReason(reason)) {
@@ -291,7 +354,14 @@ const sendApnsNotifications = async ({ entries, title, body, sound, data, contex
                     });
                     request.on("error", (error) => {
                         client.close();
-                        logger.error("APNs request error", { ...context, tokenDocId: entry.tokenDocId, error: String(error) });
+                        logOperationalEvent(logger, "error", "push.direct.request_failure", {
+                            component: "push-direct",
+                            ...context,
+                            provider: "apns",
+                            tokenBindingId: opaqueIdentifier(entry.tokenDocId),
+                            errorCode: operationalErrorCode(error),
+                            retryable: true,
+                        });
                         resolve();
                     });
 
@@ -306,11 +376,23 @@ const sendApnsNotifications = async ({ entries, title, body, sound, data, contex
     await Promise.all(
         uniqueIds.map((tokenDocId) =>
             deleteInvalidToken(tokenDocId).catch((error) => {
-                logger.error("Failed to delete invalid APNs token", { ...context, tokenDocId, error: String(error) });
+                logOperationalEvent(logger, "error", "push.direct.invalid_binding_cleanup_failure", {
+                    component: "push-direct",
+                    ...context,
+                    provider: "apns",
+                    tokenBindingId: opaqueIdentifier(tokenDocId),
+                    errorCode: operationalErrorCode(error),
+                    retryable: true,
+                });
             }),
         ),
     );
-    logger.info("Invalid APNs tokens removed", { ...context, removedCount: uniqueIds.length });
+    logOperationalEvent(logger, "info", "push.direct.invalid_bindings_removed", {
+        component: "push-direct",
+        ...context,
+        provider: "apns",
+        removedCount: uniqueIds.length,
+    });
 };
 
 const sendFcmNotifications = async ({ entries, title, body, channelId, sound, data, context, deleteInvalidToken }) => {
@@ -320,7 +402,7 @@ const sendFcmNotifications = async ({ entries, title, body, channelId, sound, da
     const batches = chunk(entries, 500);
 
     for (const batch of batches) {
-        const response = await admin.messaging().sendEachForMulticast({
+        const response = await getMessaging().sendEachForMulticast({
             tokens: batch.map((entry) => entry.token),
             data: Object.fromEntries(
                 Object.entries(data || {}).map(([key, value]) => [key, String(value)]),
@@ -343,11 +425,13 @@ const sendFcmNotifications = async ({ entries, title, body, channelId, sound, da
             if (result.success) return;
             const tokenEntry = batch[index];
             const code = String(result.error?.code || "");
-            logger.warn("FCM push failed", {
+            logOperationalEvent(logger, "warn", "push.direct.delivery_failure", {
+                component: "push-direct",
                 ...context,
-                tokenDocId: tokenEntry?.tokenDocId,
+                provider: "fcm",
+                tokenBindingId: opaqueIdentifier(tokenEntry?.tokenDocId),
                 errorCode: code,
-                errorMessage: String(result.error?.message || ""),
+                retryable: !["messaging/registration-token-not-registered", "messaging/invalid-registration-token"].includes(code),
             });
             if (["messaging/registration-token-not-registered", "messaging/invalid-registration-token"].includes(code)) {
                 invalidTokenDocIds.push(tokenEntry.tokenDocId);
@@ -361,11 +445,23 @@ const sendFcmNotifications = async ({ entries, title, body, channelId, sound, da
     await Promise.all(
         uniqueIds.map((tokenDocId) =>
             deleteInvalidToken(tokenDocId).catch((error) => {
-                logger.error("Failed to delete invalid FCM token", { ...context, tokenDocId, error: String(error) });
+                logOperationalEvent(logger, "error", "push.direct.invalid_binding_cleanup_failure", {
+                    component: "push-direct",
+                    ...context,
+                    provider: "fcm",
+                    tokenBindingId: opaqueIdentifier(tokenDocId),
+                    errorCode: operationalErrorCode(error),
+                    retryable: true,
+                });
             }),
         ),
     );
-    logger.info("Invalid FCM tokens removed", { ...context, removedCount: uniqueIds.length });
+    logOperationalEvent(logger, "info", "push.direct.invalid_bindings_removed", {
+        component: "push-direct",
+        ...context,
+        provider: "fcm",
+        removedCount: uniqueIds.length,
+    });
 };
 
 const sendDirectNotifications = async ({
@@ -417,7 +513,7 @@ const sendRestaurantNewOrderPush = async ({ orderId, data, trigger }) => {
         return;
     }
 
-    const restaurantRef = admin.firestore().collection("restaurants").doc(restaurantId);
+    const restaurantRef = getFirestore().collection("restaurants").doc(restaurantId);
     const [restaurantSnap, tokenSnap] = await Promise.all([restaurantRef.get(), restaurantRef.collection("pushTokens").get()]);
 
     if (tokenSnap.empty) {
@@ -457,7 +553,7 @@ const sendRestaurantNewOrderPush = async ({ orderId, data, trigger }) => {
         },
         context: { orderId, restaurantId, trigger },
         deleteInvalidToken: (tokenDocId) =>
-            admin.firestore().collection("restaurants").doc(restaurantId).collection("pushTokens").doc(tokenDocId).delete(),
+            getFirestore().collection("restaurants").doc(restaurantId).collection("pushTokens").doc(tokenDocId).delete(),
     });
 };
 
@@ -476,7 +572,7 @@ const sendUserOrderStatusPush = async ({ orderId, before, after }) => {
         return;
     }
 
-    const userRef = admin.firestore().collection("users").doc(userId);
+    const userRef = getFirestore().collection("users").doc(userId);
     const [userSnap, tokenSnap] = await Promise.all([userRef.get(), userRef.collection("pushTokens").get()]);
     if (tokenSnap.empty) {
         logger.info("No push tokens for user", { userId, orderId, status: afterStatus });
@@ -552,7 +648,7 @@ exports.cancelExpiredPendingOrders = onSchedule(
     },
     async () => {
         if (!firebaseOrderAutomationEnabled()) return;
-        const db = admin.firestore();
+        const db = getFirestore();
         const nowMs = Date.now();
         const snap = await db.collection("orders").where("status", "==", "pending").limit(200).get();
 
@@ -572,17 +668,17 @@ exports.cancelExpiredPendingOrders = onSchedule(
 
             const update = {
                 status: "canceled",
-                statusChangedAt: admin.firestore.FieldValue.serverTimestamp(),
+                statusChangedAt: FieldValue.serverTimestamp(),
                 statusChangedAtMs: nowMs,
-                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                updatedAt: FieldValue.serverTimestamp(),
                 updatedAtMs: nowMs,
                 reminderPending: false,
-                reminderHandledAt: admin.firestore.FieldValue.serverTimestamp(),
+                reminderHandledAt: FieldValue.serverTimestamp(),
                 reminderHandledAtMs: nowMs,
             };
 
             if (!order.canceledAt && !order.canceledAtMs) {
-                update.canceledAt = admin.firestore.FieldValue.serverTimestamp();
+                update.canceledAt = FieldValue.serverTimestamp();
                 update.canceledAtMs = nowMs;
             }
 
@@ -612,7 +708,7 @@ exports.assignSupabaseRoleOnUserCreate = functionsV1.auth.user().onCreate(async 
     const existingClaims = user.customClaims || {};
     if (existingClaims.role === SUPABASE_AUTHENTICATED_ROLE) return;
 
-    await admin.auth().setCustomUserClaims(user.uid, {
+    await getAuth().setCustomUserClaims(user.uid, {
         ...existingClaims,
         role: SUPABASE_AUTHENTICATED_ROLE,
     });
@@ -658,6 +754,145 @@ const callSupabaseUserRpc = async (name, body, authorization, urlSecret, keySecr
     return payload;
 };
 
+const supabaseStorageObjectUrl = (urlSecret, path) => {
+    const base = urlSecret.value().replace(/\/$/, "");
+    const encodedPath = String(path).split("/").map(encodeURIComponent).join("/");
+    return `${base}/storage/v1/object/restaurant-media/${encodedPath}`;
+};
+const uploadSupabaseRestaurantMedia = async ({ path, bytes, mime }, urlSecret, keySecret) => {
+    const key = keySecret.value();
+    if (!urlSecret.value() || !key) throw new Error("Supabase media storage is not configured.");
+    const response = await fetch(supabaseStorageObjectUrl(urlSecret, path), {
+        method: "POST",
+        headers: {
+            apikey: key,
+            Authorization: `Bearer ${key}`,
+            "Content-Type": mime,
+            "Cache-Control": "31536000, immutable",
+            "Content-Disposition": "inline",
+            "x-upsert": "false",
+        },
+        body: bytes,
+    });
+    if (response.status === 409) return { alreadyExists: true };
+    if (!response.ok) {
+        const error = new Error("Validated media could not be stored.");
+        error.code = `storage/${response.status}`;
+        throw error;
+    }
+    return { alreadyExists: false };
+};
+const removeSupabaseRestaurantMedia = async (path, urlSecret, keySecret) => {
+    const key = keySecret.value();
+    const response = await fetch(supabaseStorageObjectUrl(urlSecret, path), {
+        method: "DELETE",
+        headers: { apikey: key, Authorization: `Bearer ${key}` },
+    });
+    if (!response.ok && response.status !== 404) throw new Error("Validated media cleanup failed.");
+};
+const restaurantMediaPublicUrl = (urlSecret, path) => {
+    const base = urlSecret.value().replace(/\/$/, "");
+    return `${base}/storage/v1/object/public/restaurant-media/${path}`;
+};
+
+const restaurantMediaHttpsError = (error) => {
+    const reason = error instanceof RestaurantMediaError ? error.code : String(error?.message || "");
+    if (["INVALID_UPLOAD_REQUEST", "INVALID_IMAGE_CONTENT", "UNSUPPORTED_MEDIA_TYPE", "MEDIA_TYPE_MISMATCH", "IMAGE_TOO_LARGE", "IMAGE_DIMENSIONS_EXCEEDED"].includes(reason)) {
+        return new HttpsError("invalid-argument", "Choose a valid JPEG, PNG, or WebP image up to 5 MB.", { reason });
+    }
+    if (/Active Restaurant account|required|permission|42501/i.test(reason)) {
+        return new HttpsError("permission-denied", "This Restaurant account cannot upload media.");
+    }
+    if (/QUOTA_EXCEEDED|RATE_LIMITED|resource-exhausted/i.test(reason)) {
+        return new HttpsError("resource-exhausted", "The Restaurant media upload limit has been reached.");
+    }
+    return new HttpsError("internal", "The image could not be uploaded.");
+};
+
+const makeRestaurantMediaUpload = (urlSecret, keySecret, identityGuard = () => {}, enforceAppCheck = true) => onCall(
+    { enforceAppCheck, secrets: [urlSecret, keySecret], memory: "512MiB", timeoutSeconds: 60 },
+    async (request) => {
+        identityGuard();
+        if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Sign in before uploading Restaurant media.");
+        const authorization = request.rawRequest?.headers?.authorization;
+        if (!authorization) throw new HttpsError("unauthenticated", "The current ID token is required.");
+        await enforceCallableAbuseLimit(request.auth.uid, "restaurant-media-upload", CALLABLE_ABUSE_LIMITS.restaurantMediaUpload);
+        let restaurantId = "";
+        const operationId = String(request.data?.operationId || "");
+        try {
+            const result = await uploadValidatedRestaurantMedia({
+                data: request.data,
+                begin: async (currentOperationId) => {
+                    const boundary = await callSupabaseUserRpc("restaurant_begin_media_upload_v1", { p_operation_id: currentOperationId }, authorization, urlSecret, keySecret);
+                    restaurantId = String(boundary?.restaurantId || "");
+                    return boundary;
+                },
+                upload: (media) => uploadSupabaseRestaurantMedia(media, urlSecret, keySecret),
+                record: (media) => callSupabaseAdminRpc("server_record_validated_restaurant_media_v1", {
+                    p_firebase_uid: request.auth.uid,
+                    p_restaurant_id: media.restaurantId,
+                    p_operation_id: media.operationId,
+                    p_object_path: media.path,
+                    p_public_url: restaurantMediaPublicUrl(urlSecret, media.path),
+                    p_mime_type: media.mime,
+                    p_extension: media.extension,
+                    p_byte_size: media.byteSize,
+                    p_width: media.width,
+                    p_height: media.height,
+                    p_content_sha256: media.contentSha256,
+                }, urlSecret, keySecret),
+                remove: (path) => removeSupabaseRestaurantMedia(path, urlSecret, keySecret),
+                release: () => restaurantId ? callSupabaseAdminRpc("server_release_restaurant_media_upload_v1", {
+                    p_firebase_uid: request.auth.uid,
+                    p_restaurant_id: restaurantId,
+                    p_operation_id: operationId,
+                }, urlSecret, keySecret) : Promise.resolve(),
+                reportCleanupFailure: (stage, cleanupError) => logOperationalEvent(
+                    logger,
+                    "error",
+                    "media.process.cleanup_failure",
+                    {
+                        component: "restaurant-media",
+                        operationId,
+                        restaurantId,
+                        stage,
+                        errorCode: operationalErrorCode(cleanupError),
+                        retryable: true,
+                    },
+                ),
+            });
+            logOperationalEvent(logger, "info", "media.process.completed", {
+                component: "restaurant-media",
+                operationId,
+                replayed: result.replayed,
+            });
+            return result;
+        } catch (error) {
+            const category = error instanceof RestaurantMediaError ? error.code : error?.code || "validation_processing_failure";
+            const expected = error instanceof RestaurantMediaError
+                || /Active Restaurant account|required|permission|42501|QUOTA_EXCEEDED|RATE_LIMITED|resource-exhausted/i.test(String(error?.message || error?.code || ""));
+            logOperationalEvent(
+                logger,
+                expected ? "warn" : "error",
+                expected ? "media.process.expected_rejection" : "media.process.internal_failure",
+                {
+                    component: "restaurant-media",
+                    operationId,
+                    restaurantId,
+                    category,
+                    errorCode: operationalErrorCode(error),
+                    retryable: !expected,
+                },
+            );
+            throw restaurantMediaHttpsError(error);
+        }
+    },
+);
+
+exports.uploadRestaurantMediaDevelopment = makeRestaurantMediaUpload(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, () => {}, false);
+exports.uploadRestaurantMediaStaging = makeRestaurantMediaUpload(SUPABASE_STAGING_URL, SUPABASE_STAGING_SERVICE_ROLE_KEY);
+exports.uploadRestaurantMediaProduction = makeRestaurantMediaUpload(SUPABASE_PRODUCTION_URL, SUPABASE_PRODUCTION_SERVICE_ROLE_KEY, requireProductionIdentity);
+
 const requireAdminBridgeRequest = (request) => {
     if (!request.auth?.uid || !hasTotpSession(request.auth.token)) {
         throw new HttpsError("permission-denied", "A verified TOTP Admin session is required.");
@@ -667,42 +902,48 @@ const requireAdminBridgeRequest = (request) => {
     return authorization;
 };
 
-const makeRecordAdminMfaEnrollment = (urlSecret, keySecret, identityGuard = () => {}) => onCall(
-    { secrets: [urlSecret, keySecret] }, async (request) => {
+const makeRecordAdminMfaEnrollment = (urlSecret, keySecret, identityGuard = () => {}, enforceAppCheck = true) => onCall(
+    { enforceAppCheck, secrets: [urlSecret, keySecret] }, async (request) => {
         identityGuard();
         if (!request.auth?.uid || request.auth.token.email_verified !== true) throw new HttpsError("permission-denied", "A verified signed-in identity is required.");
         const operationId = String(request.data?.operationId || "");
         if (!isOperationId(operationId)) throw new HttpsError("invalid-argument", "A valid operation ID is required.");
-        const user = await admin.auth().getUser(request.auth.uid);
+        const user = await getAuth().getUser(request.auth.uid);
         if (!hasTotpFactor(user)) throw new HttpsError("failed-precondition", "A TOTP factor must be enrolled first.");
+        await enforceCallableAbuseLimit(request.auth.uid, "admin-mfa-enrollment", CALLABLE_ABUSE_LIMITS.adminMfaEnrollment);
         try {
             const result = await callSupabaseAdminRpc("server_record_admin_mfa_enrollment_v1", { p_firebase_uid: request.auth.uid, p_operation_id: operationId }, urlSecret, keySecret);
-            await admin.auth().revokeRefreshTokens(request.auth.uid);
+            await getAuth().revokeRefreshTokens(request.auth.uid);
             logger.info("Admin TOTP enrollment recorded", { operationId }); return result;
         } catch (error) { logger.error("Admin TOTP enrollment could not be recorded", { operationId, code: error?.code || "unknown" }); throw new HttpsError("internal", "Admin MFA enrollment could not be recorded."); }
     });
-const makeSetAdminAccountStatus = (urlSecret, keySecret, identityGuard = () => {}) => onCall(
-    { secrets: [urlSecret, keySecret] }, async (request) => {
+const makeSetAdminAccountStatus = (urlSecret, keySecret, identityGuard = () => {}, enforceAppCheck = true) => onCall(
+    { enforceAppCheck, secrets: [urlSecret, keySecret] }, async (request) => {
         identityGuard();
         const authorization=requireAdminBridgeRequest(request),profileId=String(request.data?.profileId||""),status=String(request.data?.status||""),reasonCode=String(request.data?.reasonCode||""),operationId=String(request.data?.operationId||"");
         if(!profileId||!["active","suspended","revoked"].includes(status))throw new HttpsError("invalid-argument","Valid account status input is required.");
-        try { const result=await callSupabaseUserRpc("admin_set_account_status_v1",{p_profile_id:profileId,p_status:status,p_reason_code:reasonCode,p_operation_id:operationId},authorization,urlSecret,keySecret); if(status!=="active"){const uid=await callSupabaseAdminRpc("server_get_firebase_uid_v1",{p_profile_id:profileId},urlSecret,keySecret);await admin.auth().revokeRefreshTokens(uid)} return result; }
+        await enforceCallableAbuseLimit(request.auth.uid, "admin-account-status", CALLABLE_ABUSE_LIMITS.adminMutation);
+        try { const result=await callSupabaseUserRpc("admin_set_account_status_v1",{p_profile_id:profileId,p_status:status,p_reason_code:reasonCode,p_operation_id:operationId},authorization,urlSecret,keySecret); if(status!=="active"){const uid=await callSupabaseAdminRpc("server_get_firebase_uid_v1",{p_profile_id:profileId},urlSecret,keySecret);await getAuth().revokeRefreshTokens(uid)} return result; }
         catch(error){
             const reason=accountStatusFailureReason(error);
             logger.error("Admin account status orchestration failed",{operationId,status,code:error?.code||"unknown",reason:reason||"unknown"});
             throw new HttpsError("failed-precondition","Account status could not be changed.",reason?{reason}:undefined);
         }
     });
-const makeRecoverAdminMfa = (urlSecret, keySecret, identityGuard = () => {}) => onCall(
-    { secrets: [urlSecret, keySecret] }, async (request) => {
+const makeRecoverAdminMfa = (urlSecret, keySecret, identityGuard = () => {}, enforceAppCheck = true) => onCall(
+    { enforceAppCheck, secrets: [urlSecret, keySecret] }, async (request) => {
         identityGuard();
         const authorization=requireAdminBridgeRequest(request),profileId=String(request.data?.profileId||""),evidenceReference=String(request.data?.evidenceReference||""),operationId=String(request.data?.operationId||"");
-        try { const result=await callSupabaseUserRpc("admin_record_mfa_recovery_v1",{p_profile_id:profileId,p_evidence_reference:evidenceReference,p_operation_id:operationId},authorization,urlSecret,keySecret);const uid=await callSupabaseAdminRpc("server_get_firebase_uid_v1",{p_profile_id:profileId},urlSecret,keySecret);await admin.auth().updateUser(uid,{multiFactor:{enrolledFactors:[]}});await admin.auth().revokeRefreshTokens(uid);return result; }
+        await enforceCallableAbuseLimit(request.auth.uid, "admin-mfa-recovery", CALLABLE_ABUSE_LIMITS.adminMutation);
+        try { const result=await callSupabaseUserRpc("admin_record_mfa_recovery_v1",{p_profile_id:profileId,p_evidence_reference:evidenceReference,p_operation_id:operationId},authorization,urlSecret,keySecret);const uid=await callSupabaseAdminRpc("server_get_firebase_uid_v1",{p_profile_id:profileId},urlSecret,keySecret);await getAuth().updateUser(uid,{multiFactor:{enrolledFactors:[]}});await getAuth().revokeRefreshTokens(uid);return result; }
         catch(error){logger.error("Admin MFA recovery orchestration failed",{operationId,code:error?.code||"unknown"});throw new HttpsError("failed-precondition","MFA recovery could not be completed.")}
     });
-exports.recordAdminMfaEnrollmentDevelopment=makeRecordAdminMfaEnrollment(SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY);
-exports.setAdminAccountStatusDevelopment=makeSetAdminAccountStatus(SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY);
-exports.recoverAdminMfaDevelopment=makeRecoverAdminMfa(SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY);
+// Local/shared Development deliberately does not enforce App Check so emulator
+// and local-web workflows do not require a reusable debug credential. Staging
+// and Production enforce it and require registered web providers.
+exports.recordAdminMfaEnrollmentDevelopment=makeRecordAdminMfaEnrollment(SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY,()=>{},false);
+exports.setAdminAccountStatusDevelopment=makeSetAdminAccountStatus(SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY,()=>{},false);
+exports.recoverAdminMfaDevelopment=makeRecoverAdminMfa(SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY,()=>{},false);
 exports.recordAdminMfaEnrollmentStaging=makeRecordAdminMfaEnrollment(SUPABASE_STAGING_URL,SUPABASE_STAGING_SERVICE_ROLE_KEY);
 exports.setAdminAccountStatusStaging=makeSetAdminAccountStatus(SUPABASE_STAGING_URL,SUPABASE_STAGING_SERVICE_ROLE_KEY);
 exports.recoverAdminMfaStaging=makeRecoverAdminMfa(SUPABASE_STAGING_URL,SUPABASE_STAGING_SERVICE_ROLE_KEY);
@@ -716,21 +957,28 @@ const makeRestaurantWebPushDispatcher = (urlSecret, keySecret, identityGuard = (
         const deliveries = await callSupabaseAdminRpc("server_claim_restaurant_web_push_v1", { p_limit: 100 }, urlSecret, keySecret);
         for (const delivery of Array.isArray(deliveries) ? deliveries : []) {
             try {
-                await admin.messaging().send(restaurantWakeMessage(delivery));
+                await getMessaging().send(restaurantWakeMessage(delivery));
                 await callSupabaseAdminRpc("server_complete_restaurant_web_push_v1", {
                     p_delivery_id: delivery.deliveryId, p_success: true, p_error_code: null, p_retryable: false,
                 }, urlSecret, keySecret);
             } catch (error) {
                 const failure = classifyMessagingFailure(error);
-                logger.error("Restaurant Web Push delivery failed", {
-                    deliveryId: delivery.deliveryId, eventId: delivery.eventId, code: failure.code, retryable: failure.retryable,
+                logOperationalEvent(logger, "error", "push.web.delivery_failure", {
+                    component: "restaurant-web-push",
+                    deliveryId: delivery.deliveryId,
+                    eventId: delivery.eventId,
+                    errorCode: failure.code,
+                    retryable: failure.retryable,
                 });
                 await callSupabaseAdminRpc("server_complete_restaurant_web_push_v1", {
                     p_delivery_id: delivery.deliveryId, p_success: false, p_error_code: failure.code, p_retryable: failure.retryable,
                 }, urlSecret, keySecret);
             }
         }
-        logger.info("Restaurant Web Push dispatch completed", { claimed: Array.isArray(deliveries) ? deliveries.length : 0 });
+        logOperationalEvent(logger, "info", "push.web.dispatch_completed", {
+            component: "restaurant-web-push",
+            claimedCount: Array.isArray(deliveries) ? deliveries.length : 0,
+        });
     });
 
 exports.dispatchRestaurantWebPushDevelopment=makeRestaurantWebPushDispatcher(SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY);
@@ -741,14 +989,14 @@ const deleteFirestoreCollection = async (reference) => {
     while (true) {
         const snapshot = await reference.limit(250).get();
         if (snapshot.empty) return;
-        const batch = admin.firestore().batch();
+        const batch = getFirestore().batch();
         snapshot.docs.forEach((document) => batch.delete(document.ref));
         await batch.commit();
     }
 };
 
 const scrubFirebaseIdentity = async (uid) => {
-    const db = admin.firestore();
+    const db = getFirestore();
     const userRef = db.collection("users").doc(uid);
     await deleteFirestoreCollection(userRef.collection("addresses"));
     await deleteFirestoreCollection(userRef.collection("pushTokens"));
@@ -758,12 +1006,12 @@ const scrubFirebaseIdentity = async (uid) => {
         orders.docs.slice(offset, offset + 250).forEach((document) => batch.update(document.ref, {
             userId: `deleted:${document.id}`,
             customerName: "Deleted user",
-            customerEmail: admin.firestore.FieldValue.delete(),
-            customerWhatsapp: admin.firestore.FieldValue.delete(),
+            customerEmail: FieldValue.delete(),
+            customerWhatsapp: FieldValue.delete(),
             customer: { name: "Deleted user" },
-            deliveryAddress: admin.firestore.FieldValue.delete(),
-            deliveryAddressText: admin.firestore.FieldValue.delete(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            deliveryAddress: FieldValue.delete(),
+            deliveryAddressText: FieldValue.delete(),
+            updatedAt: FieldValue.serverTimestamp(),
         }));
         await batch.commit();
     }
@@ -776,16 +1024,28 @@ const sharedNonProductionSupabaseEnvironments = [
     { name: "development", urlSecret: SUPABASE_URL, keySecret: SUPABASE_SERVICE_ROLE_KEY },
     { name: "staging", urlSecret: SUPABASE_STAGING_URL, keySecret: SUPABASE_STAGING_SERVICE_ROLE_KEY },
 ];
+const actualFirebaseProjectId = () => process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || "";
+const requireSharedNonProductionDeletionIdentity = () => assertSharedNonProductionFunctionIdentity({
+    actualFirebaseProjectId: actualFirebaseProjectId(),
+    environments: sharedNonProductionSupabaseEnvironments.map((environment) => ({
+        name: environment.name,
+        supabaseUrl: environment.urlSecret.value(),
+    })),
+});
+const deletionUidFromRequest = (request) => {
+    try {
+        return requireAccountDeletionUid(request);
+    } catch (error) {
+        throw new HttpsError(error?.code || "internal", error?.message || "Account deletion could not be started.");
+    }
+};
 
 exports.deleteHungrieAccount = onCall(
     { secrets: [SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_STAGING_URL, SUPABASE_STAGING_SERVICE_ROLE_KEY] },
     async (request) => {
-        if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Please sign in before deleting your account.");
-        const authTime = Number(request.auth.token.auth_time || 0) * 1000;
-        if (!authTime || Date.now() - authTime > 5 * 60 * 1000) {
-            throw new HttpsError("failed-precondition", "For security, sign in again before deleting your account.");
-        }
-        const uid = request.auth.uid;
+        requireSharedNonProductionDeletionIdentity();
+        const uid = deletionUidFromRequest(request);
+        await enforceCallableAbuseLimit(uid, "account-deletion", CALLABLE_ABUSE_LIMITS.accountDeletion);
         let deletion;
         try {
             deletion = await deleteSharedNonProductionAccount({
@@ -798,7 +1058,7 @@ exports.deleteHungrieAccount = onCall(
                     environment.keySecret,
                 ),
                 scrub: scrubFirebaseIdentity,
-                deleteIdentity: (firebaseUid) => admin.auth().deleteUser(firebaseUid),
+                deleteIdentity: (firebaseUid) => getAuth().deleteUser(firebaseUid),
                 finalize: (environment, profileId, firebaseUid) => callSupabaseAdminRpc(
                     "finalize_account_anonymization",
                     { p_profile_id: profileId, p_firebase_uid: firebaseUid },
@@ -810,17 +1070,26 @@ exports.deleteHungrieAccount = onCall(
             if (error?.message === "LAST_RESTAURANT_OWNER") {
                 throw new HttpsError("failed-precondition", "Transfer restaurant ownership before deleting this account.");
             }
-            logger.error("Account deletion orchestration failed before completion", { code: error?.code || "unknown" });
+            logOperationalEvent(logger, "error", "account.delete.orchestration_failure", {
+                component: "account-deletion",
+                environment: "shared-nonproduction",
+                errorCode: operationalErrorCode(error),
+                retryable: true,
+            });
             throw new HttpsError("internal", "Account deletion could not be started.");
         }
         if (deletion.finalizationFailures.length) {
-            logger.error("Account deletion requires database finalization reconciliation", {
-                environments: deletion.finalizationFailures.map((failure) => failure.environment),
+            logOperationalEvent(logger, "error", "account.delete.reconciliation_required", {
+                component: "account-deletion",
+                environment: "shared-nonproduction",
+                pendingCount: deletion.finalizationFailures.length,
+                retryable: true,
             });
         }
-        logger.info("Account deletion completed", {
-            environments: deletion.begun.map((entry) => entry.environment.name),
-            pendingFinalization: deletion.finalizationFailures.length,
+        logOperationalEvent(logger, "info", "account.delete.completed", {
+            component: "account-deletion",
+            environment: "shared-nonproduction",
+            pendingCount: deletion.finalizationFailures.length,
         });
         return { deleted: true, pendingFinalization: deletion.finalizationFailures.length > 0 };
     },
@@ -833,23 +1102,40 @@ exports.deleteHungrieAccountProduction = onCall(
     { secrets: [SUPABASE_PRODUCTION_URL, SUPABASE_PRODUCTION_SERVICE_ROLE_KEY] },
     async (request) => {
         requireProductionIdentity();
-        if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Please sign in before deleting your account.");
-        const authTime = Number(request.auth.token.auth_time || 0) * 1000;
-        if (!authTime || Date.now() - authTime > 5 * 60 * 1000) throw new HttpsError("failed-precondition", "For security, sign in again before deleting your account.");
+        const uid = deletionUidFromRequest(request);
+        await enforceCallableAbuseLimit(uid, "account-deletion-production", CALLABLE_ABUSE_LIMITS.accountDeletion);
         const environment = { name: "production", urlSecret: SUPABASE_PRODUCTION_URL, keySecret: SUPABASE_PRODUCTION_SERVICE_ROLE_KEY };
         try {
             const deletion = await deleteSharedNonProductionAccount({
-                uid: request.auth.uid,
+                uid,
                 environments: [environment],
                 begin: (entry, firebaseUid) => callSupabaseAdminRpc("begin_account_anonymization", { p_firebase_uid: firebaseUid }, entry.urlSecret, entry.keySecret),
                 scrub: scrubFirebaseIdentity,
-                deleteIdentity: (firebaseUid) => admin.auth().deleteUser(firebaseUid),
+                deleteIdentity: (firebaseUid) => getAuth().deleteUser(firebaseUid),
                 finalize: (entry, profileId, firebaseUid) => callSupabaseAdminRpc("finalize_account_anonymization", { p_profile_id: profileId, p_firebase_uid: firebaseUid }, entry.urlSecret, entry.keySecret),
+            });
+            if (deletion.finalizationFailures.length) {
+                logOperationalEvent(logger, "error", "account.delete.reconciliation_required", {
+                    component: "account-deletion",
+                    environment: "production",
+                    pendingCount: deletion.finalizationFailures.length,
+                    retryable: true,
+                });
+            }
+            logOperationalEvent(logger, "info", "account.delete.completed", {
+                component: "account-deletion",
+                environment: "production",
+                pendingCount: deletion.finalizationFailures.length,
             });
             return { deleted: true, pendingFinalization: deletion.finalizationFailures.length > 0 };
         } catch (error) {
             if (error?.message === "LAST_RESTAURANT_OWNER") throw new HttpsError("failed-precondition", "Transfer restaurant ownership before deleting this account.");
-            logger.error("Production account deletion failed", { code: error?.code || "unknown" });
+            logOperationalEvent(logger, "error", "account.delete.orchestration_failure", {
+                component: "account-deletion",
+                environment: "production",
+                errorCode: operationalErrorCode(error),
+                retryable: true,
+            });
             throw new HttpsError("internal", "Account deletion could not be started.");
         }
     },
@@ -861,27 +1147,64 @@ const makeAccountAnonymizationReconciler = (environment, urlSecret, keySecret, i
         identityGuard();
         const pending = await callSupabaseAdminRpc("pending_account_anonymizations", {}, urlSecret, keySecret);
         let finalized = 0;
+        let failed = 0;
         for (const row of Array.isArray(pending) ? pending : []) {
             try {
-                await admin.auth().getUser(row.firebase_uid);
+                await getAuth().getUser(row.firebase_uid);
             } catch (error) {
-                if (error?.code !== "auth/user-not-found") continue;
-                const completed = await callSupabaseAdminRpc("finalize_account_anonymization", {
-                    p_profile_id: row.profile_id,
-                    p_firebase_uid: row.firebase_uid,
-                }, urlSecret, keySecret);
-                if (completed === true) finalized += 1;
+                if (error?.code !== "auth/user-not-found") {
+                    failed += 1;
+                    logOperationalEvent(logger, "error", "account.delete.reconciliation_lookup_failure", {
+                        component: "account-deletion-reconciler",
+                        environment,
+                        errorCode: operationalErrorCode(error),
+                        retryable: true,
+                    });
+                    continue;
+                }
+                try {
+                    const completed = await callSupabaseAdminRpc("finalize_account_anonymization", {
+                        p_profile_id: row.profile_id,
+                        p_firebase_uid: row.firebase_uid,
+                    }, urlSecret, keySecret);
+                    if (completed === true) finalized += 1;
+                    else failed += 1;
+                } catch (finalizeError) {
+                    failed += 1;
+                    logOperationalEvent(logger, "error", "account.delete.reconciliation_finalize_failure", {
+                        component: "account-deletion-reconciler",
+                        environment,
+                        errorCode: operationalErrorCode(finalizeError),
+                        retryable: true,
+                    });
+                }
             }
         }
-        logger.info("Pending account anonymization reconciliation completed", { environment, checked: pending?.length || 0, finalized });
+        logOperationalEvent(logger, failed ? "error" : "info", failed
+            ? "account.delete.reconciliation_incomplete"
+            : "account.delete.reconciliation_completed", {
+            component: "account-deletion-reconciler",
+            environment,
+            checkedCount: pending?.length || 0,
+            finalizedCount: finalized,
+            failedCount: failed,
+            retryable: failed > 0,
+        });
+        if (failed) {
+            const error = new Error("Account deletion reconciliation remains incomplete.");
+            error.code = "reconciliation-incomplete";
+            throw error;
+        }
     },
 );
 
 exports.reconcilePendingAccountAnonymizationsDevelopment = makeAccountAnonymizationReconciler(
     "development", SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+    () => assertNonProductionFirebaseIdentity(actualFirebaseProjectId()),
 );
 exports.reconcilePendingAccountAnonymizationsStaging = makeAccountAnonymizationReconciler(
     "staging", SUPABASE_STAGING_URL, SUPABASE_STAGING_SERVICE_ROLE_KEY,
+    () => assertNonProductionFirebaseIdentity(actualFirebaseProjectId()),
 );
 exports.reconcilePendingAccountAnonymizationsProduction = makeAccountAnonymizationReconciler(
     "production", SUPABASE_PRODUCTION_URL, SUPABASE_PRODUCTION_SERVICE_ROLE_KEY, requireProductionIdentity,

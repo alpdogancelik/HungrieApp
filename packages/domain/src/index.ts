@@ -219,6 +219,39 @@ export type ScheduleRestaurantCommissionResultV1 = {
   replayed: boolean;
 };
 
+export type VirtualPosCommissionRuleV1 = {
+  id: string;
+  rateBps: BasisPoints;
+  financialContractVersion: 1;
+  providerContractVersion: string;
+  effectiveFrom: string;
+  createdAt: string;
+  reason: string;
+};
+
+export type AdminVirtualPosFoundationV1 = {
+  restaurantId: string;
+  activationState: "unconfigured" | "sandbox_configured" | "sandbox_qualified" | "production_configured" | "production_qualified" | "active" | "suspended";
+  customerAvailable: false;
+  providerConfigured: false;
+  currentRule: VirtualPosCommissionRuleV1 | null;
+  nextScheduledRule: VirtualPosCommissionRuleV1 | null;
+  history: VirtualPosCommissionRuleV1[];
+  historyHasMore: boolean;
+};
+
+export type ScheduleVirtualPosCommissionResultV1 = {
+  ruleId: string;
+  restaurantId: string;
+  rateBps: BasisPoints;
+  financialContractVersion: 1;
+  providerContractVersion: string;
+  effectiveFrom: string;
+  reason: string;
+  operationId: string;
+  replayed: boolean;
+};
+
 export type EarningsPaymentBreakdownV1 = {
   eligibleGrossKurus: Kurus;
   commissionKurus: Kurus;
@@ -279,3 +312,37 @@ export type RestaurantEarningsOrdersPageV1 = {
   items: RestaurantEarningsOrderRowV1[];
   nextCursor: string | null;
 };
+
+export type EarningsPaymentMethodV2 = "cash" | "pos" | "virtual_pos";
+export type EarningsPaymentBreakdownV2 = {
+  eligibleGrossKurus: Kurus;
+  hungrieCommissionKurus: Kurus;
+  virtualPosCommissionKurus: Kurus;
+  totalDeductionsKurus: Kurus;
+  estimatedNetKurus: Kurus;
+  deliveredOrderCount: number;
+};
+export type RestaurantEarningsSummaryV2 = {
+  restaurantId: string; from: string; to: string; reportingTimezone: string; currencyCode: "TRY";
+  eligibleGrossKurus: Kurus; hungrieCommissionKurus: Kurus; virtualPosCommissionKurus: Kurus;
+  totalDeductionsKurus: Kurus; estimatedNetKurus: Kurus; deliveredOrderCount: number;
+  providerFeesReconciled: false;
+  paymentBreakdown: Record<EarningsPaymentMethodV2, EarningsPaymentBreakdownV2>;
+};
+export type RestaurantEarningsSeriesPointV2 = Omit<EarningsPaymentBreakdownV2, "deliveredOrderCount"> & { bucketStart: string; deliveredOrderCount: number };
+export type RestaurantEarningsSeriesV2 = {
+  restaurantId: string; from: string; to: string; bucket: EarningsSeriesBucket; reportingTimezone: string; currencyCode: "TRY";
+  points: RestaurantEarningsSeriesPointV2[];
+};
+export type RestaurantEarningsOrderRowV2 = {
+  orderReference: string; deliveredAt: string; paymentMethod: EarningsPaymentMethodV2; currencyCode: "TRY";
+  eligibleGrossKurus: Kurus; hungrieRateBps: BasisPoints; hungrieCommissionKurus: Kurus;
+  virtualPosRateBps: BasisPoints; virtualPosCommissionKurus: Kurus; totalDeductionsKurus: Kurus;
+  estimatedNetKurus: Kurus; providerFeesReconciled: false;
+};
+export type RestaurantEarningsOrdersPageV2 = {
+  restaurantId: string; from: string; to: string; reportingTimezone: string; currencyCode: "TRY";
+  limit: number; items: RestaurantEarningsOrderRowV2[]; nextCursor: string | null;
+};
+
+export * from "./virtualPos";

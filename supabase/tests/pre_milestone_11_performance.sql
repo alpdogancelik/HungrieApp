@@ -1,5 +1,7 @@
 begin;
 
+\ir account_access_fixture.psql
+
 select plan(26);
 
 select has_function('public', 'get_my_orders_page', array['text','integer'], 'customer order page RPC exists');

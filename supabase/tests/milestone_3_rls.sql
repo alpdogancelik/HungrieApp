@@ -1,5 +1,7 @@
 begin;
 
+\ir account_access_fixture.psql
+
 select plan(34);
 
 insert into public.orders (
@@ -60,15 +62,15 @@ select is((select count(*)::integer from public.restaurant_orders), 2, 'manager 
 select is((select count(*)::integer from public.my_restaurant_memberships), 1, 'manager sees only own membership');
 
 select set_config('request.jwt.claims', '{"role":"authenticated","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_courier"}', true);
-select is((select count(*)::integer from public.courier_available_orders), 1, 'scoped courier sees privacy-safe ready queue');
-select is((select count(*)::integer from public.orders), 2, 'courier base RLS exposes assigned and privacy-safe available orders');
+select is((select count(*)::integer from public.courier_available_orders), 0, 'legacy scoped courier sees no ready queue without canonical authority');
+select is((select count(*)::integer from public.orders), 0, 'legacy courier base RLS exposes no orders without canonical authority');
 select is((select customer_email from public.courier_assigned_orders where id = 'fixture_order'), null, 'terminal courier contact is masked');
 
 select set_config('request.jwt.claims', '{"role":"authenticated","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_unscoped_courier"}', true);
 select is((select count(*)::integer from public.courier_available_orders), 0, 'unscoped courier sees no ready queue');
 select is((select count(*)::integer from public.orders), 0, 'unscoped courier sees no orders');
 
-select set_config('request.jwt.claims', '{"role":"authenticated","platform_role":"admin","iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_admin"}', true);
+select set_config('request.jwt.claims', '{"role":"authenticated","platform_role":"admin","email_verified":true,"firebase":{"sign_in_second_factor":"totp"},"iss":"https://securetoken.google.com/hungrieapp-a2288","aud":"hungrieapp-a2288","sub":"fixture_firebase_admin"}', true);
 select is((select count(*)::integer from public.admin_orders), 3, 'admin sees all orders through support view');
 select is((select customer_email from public.admin_orders where id = 'fixture_order'), 'customer@example.invalid', 'admin support view retains terminal contact');
 select is((select count(*)::integer from public.profiles), 8, 'admin profile RLS is global');
